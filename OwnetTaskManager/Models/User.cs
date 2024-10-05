@@ -1,7 +1,10 @@
-﻿namespace OwnetTaskManager.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace OwnetTaskManager.Models;
 
 public class User
 {
+    [Key]
     public int Id { get; set; }
     public string Username { get; set; }
     public string PasswordHash { get; set; }
@@ -14,6 +17,6 @@ public class User
     public int RoleId { get; set; }
     public Role Role { get; set; } // Relación con la entidad Role
     
-    public ICollection<Task> Tasks { get; set; } // Relación con tareas asignadas
+    public ICollection<TaskItem> TaskItems { get; set; } // Relación con tareas asignadas
 }
 

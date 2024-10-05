@@ -1,7 +1,10 @@
-﻿namespace OwnetTaskManager.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace OwnetTaskManager.Models;
 
 public class Company
 {
+    [Key]
     public int Id { get; set; }
     public string Name { get; set; }
     public string Phone { get; set; }
@@ -12,6 +15,6 @@ public class Company
     public string IsDeleted { get; set; }
 
     public ICollection<User> Users { get; set; } // Relación con usuarios
-    public ICollection<Task> Tasks { get; set; } // Relación con tareas
+    public ICollection<TaskItem> TaskItems { get; set; } // Relación con tareas
     public ICollection<Location> Locations { get; set; } // Relación con ubicaciones
 }
