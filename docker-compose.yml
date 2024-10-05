@@ -1,0 +1,6 @@
+﻿services:
+  ownettaskmanager:
+    image: ownettaskmanager
+    build:
+      context: .
+      dockerfile: OwnetTaskManager/Dockerfile

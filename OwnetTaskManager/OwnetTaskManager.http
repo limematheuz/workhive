@@ -1,0 +1,6 @@
+@OwnetTaskManager_HostAddress = http://localhost:5244
+
+GET {{OwnetTaskManager_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
