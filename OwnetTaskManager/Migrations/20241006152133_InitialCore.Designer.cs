@@ -12,8 +12,8 @@ using OwnetTaskManager.Data;
 namespace OwnetTaskManager.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241005230420_Initial")]
-    partial class Initial
+    [Migration("20241006152133_InitialCore")]
+    partial class InitialCore
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
