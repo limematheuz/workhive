@@ -1,5 +1,7 @@
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using Microsoft.Azure.KeyVault;
+using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration.AzureKeyVault;
 using OwnetTaskManager.Data;
@@ -14,20 +16,16 @@ builder.Services.AddSwaggerGen();
 if (builder.Environment.IsProduction())
 {
     var keyVaultURL = builder.Configuration.GetSection("KeyVault:keyVaultURL");
-    var keyVaultClientId = builder.Configuration.GetSection("KeyVault:keyVaultClientId");
-    var keyVaultClientSecret = builder.Configuration.GetSection("KeyVault:keyVaultClientSecret");
-    var keyVaultDirectoryID = builder.Configuration.GetSection("KeyVault:keyVaultDirectoryID");
 
-    var credential = new ClientSecretCredential(keyVaultClientId.Value!.ToString(),
-        keyVaultClientSecret.Value!.ToString(), keyVaultDirectoryID.Value!.ToString());
+    var keyVaultClient = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback));
+    
 
-    builder.Configuration.AddAzureKeyVault(keyVaultURL.Value!.ToString(), keyVaultClientSecret.Value!.ToString(),
-        keyVaultClientId.Value!.ToString(), new DefaultKeyVaultSecretManager());
+    builder.Configuration.AddAzureKeyVault(keyVaultURL.Value!.ToString(), new DefaultKeyVaultSecretManager());
 
-    var client = new SecretClient(new Uri(keyVaultURL.Value!.ToString()), credential);
+    var client = new SecretClient(new Uri(keyVaultURL.Value!.ToString()), new DefaultAzureCredential());
 
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(client.GetSecret("ProductionConnection").Value.Value).ToString());
+        options.UseSqlServer(client.GetSecret("DefaultConnection").Value.Value).ToString());
 }
 
 if (builder.Environment.IsDevelopment())

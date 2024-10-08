@@ -12,7 +12,7 @@ using OwnetTaskManager.Data;
 namespace OwnetTaskManager.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20241006152133_InitialCore")]
+    [Migration("20241007011025_InitialCore")]
     partial class InitialCore
     {
         /// <inheritdoc />
