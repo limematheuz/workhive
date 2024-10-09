@@ -23,28 +23,22 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
-// if (builder.Environment.IsProduction())
-// {
-//     var keyVaultURL = builder.Configuration.GetSection("KeyVault:keyVaultURL");
-//
-//     var keyVaultClient =
-//         new KeyVaultClient(
-//             new KeyVaultClient.AuthenticationCallback(new AzureServiceTokenProvider().KeyVaultTokenCallback));
-//
-//
-//     builder.Configuration.AddAzureKeyVault(keyVaultURL.Value!.ToString(), new DefaultKeyVaultSecretManager());
-//
-//     var client = new SecretClient(new Uri(keyVaultURL.Value!.ToString()), new DefaultAzureCredential());
-//
-//     builder.Services.AddDbContext<AppDbContext>(options =>
-//         options.UseSqlServer(client.GetSecret("DefaultConnection").Value.Value).ToString());
-// }
+if (builder.Environment.IsProduction())
+{
+    var keyVaultURL = builder.Configuration.GetSection("KeyVault:KeyVaultUrl").Value;
 
-// if (builder.Environment.IsDevelopment())
-// {
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-// }
+    var client = new SecretClient(new Uri(keyVaultURL), new DefaultAzureCredential());
+
+    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultURL), new DefaultAzureCredential());
+
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(client.GetSecret("DefaultConnection").Value.Value));
+}
+else
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 
 var app = builder.Build();
@@ -60,4 +54,8 @@ app.MapControllers();
 app.UseAuthorization();
 app.UseHttpsRedirection();
 
-app.Run();
+await app.RunAsync();
+
+//
+// mribeiro17.info@gmail.com
+// Bemvindomrl10
