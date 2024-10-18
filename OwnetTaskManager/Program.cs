@@ -48,8 +48,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.MapControllers();
-app.UseAuthorization();
 app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
 
 await app.RunAsync();
