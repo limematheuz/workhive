@@ -1,6 +1,11 @@
-﻿namespace OwnetTaskManager.DTOs.Role;
+﻿using System.ComponentModel.DataAnnotations;
 
-public class RoleCreateDto
+namespace OwnetTaskManager.DTOs.Role
 {
-    public string Name { get; set; }
+    public class RoleCreateDto
+    {
+        [Required(ErrorMessage = "The role name is required")]
+        [StringLength(50, ErrorMessage = "The role name cannot exceed 50 characters")]
+        public string Name { get; set; }
+    }
 }
