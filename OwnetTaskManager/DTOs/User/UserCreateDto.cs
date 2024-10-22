@@ -13,17 +13,10 @@ public class UserCreateDto
     public string PasswordHash { get; set; }
 
     [Required(ErrorMessage = "CompanyId is required")]
-    public int CompanyId { get; set; } // Relación con la empresa
-    
-    // [Required(ErrorMessage = "CompanyName is required")]
-    // [StringLength(100, ErrorMessage = "CompanyName cannot exceed 100 characters")]
-    // public string CompanyName { get; set; } // Nombre de la empresa
+    public int CompanyId { get; set; }
 
     [Required(ErrorMessage = "RoleId is required")]
-    public int RoleId { get; set; } // Relación con el rol
-
-    // [Required(ErrorMessage = "RoleName is required")]
-    // [StringLength(50, ErrorMessage = "RoleName cannot exceed 50 characters")]
-    // public string RoleName { get; set; } // Nombre del rol
+    public int RoleId { get; set; }
 }
+
 

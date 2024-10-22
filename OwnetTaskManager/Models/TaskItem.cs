@@ -29,7 +29,7 @@ public class TaskItem
 
     [Required(ErrorMessage = "Completion status is required")]
     [StringLength(10, ErrorMessage = "The completion status cannot exceed 10 characters")]
-    public string IsCompleted { get; set; }
+    public bool IsCompleted { get; set; }
 
     // Relación con la entidad User
     [ForeignKey("UserId")]

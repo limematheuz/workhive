@@ -26,13 +26,10 @@ namespace OwnetTaskManager.DTOs.TaskItem
 
         [Required(ErrorMessage = "Completion status is required")]
         [StringLength(10, ErrorMessage = "The completion status cannot exceed 10 characters")]
-        public string IsCompleted { get; set; }
+        public bool IsCompleted { get; set; }
 
         public int UserId { get; set; } // Relación con User
-        public string UserName { get; set; } // Nombre del usuario
         public int LocationId { get; set; } // Relación con Location
-        public string LocationAddress { get; set; } // Dirección de la ubicación
         public int CompanyId { get; set; } // Relación con Company
-        public string CompanyName { get; set; } // Nombre de la empresa
     }
 }

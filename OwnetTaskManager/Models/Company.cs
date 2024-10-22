@@ -25,10 +25,16 @@ public class Company
 
     [Required(ErrorMessage = "The status is required")]
     public string Status { get; set; }
-
+    
     [Required]
-    public string IsDeleted { get; set; } = "false";
-    public ICollection<User> Users { get; set; } // Relación con usuarios
-    public ICollection<TaskItem> TaskItems { get; set; } // Relación con tareas
-    public ICollection<Location> Locations { get; set; } // Relación con ubicaciones
+    public bool IsDeleted { get; set; } = false;
+
+    // Relación con usuarios
+    public ICollection<User> Users { get; set; }
+
+    // Relación con tareas
+    public ICollection<TaskItem> TaskItems { get; set; }
+
+    // Relación con ubicaciones
+    public ICollection<Location> Locations { get; set; }
 }

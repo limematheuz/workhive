@@ -8,7 +8,6 @@ namespace OwnetTaskManager.Repositories;
 public class UserRepository : IUserRepository
 {
     private readonly AppDbContext _context;
-    private readonly IUserRepository _userRepository;
 
     public UserRepository(AppDbContext context)
     {
@@ -17,12 +16,18 @@ public class UserRepository : IUserRepository
 
     public async Task<IEnumerable<User>> GetAllUsersAsync()
     {
-        return await _context.Users.Include(u => u.Company).Include(r => r.Role).ToListAsync();
+        return await _context.Users
+            .Include(u => u.Company)
+            .Include(r => r.Role)
+            .ToListAsync();
     }
 
-    public async Task<User> GetUserByIdAsync(int id)
+    public async Task<User?> GetUserByIdAsync(int id)
     {
-        return await _context.Users.Include(u => u.Company).Include(r => r.Role).FirstOrDefaultAsync(u => u.Id == id);
+        return await _context.Users
+            .Include(u => u.Company)
+            .Include(r => r.Role)
+            .FirstOrDefaultAsync(u => u.Id == id);
     }
 
     public async Task CreateUserAsync(User user)

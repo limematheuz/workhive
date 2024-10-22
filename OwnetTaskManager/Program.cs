@@ -17,6 +17,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ITaskItemRepository, TaskItemRepository>();
 
 if (builder.Environment.IsProduction())
 {

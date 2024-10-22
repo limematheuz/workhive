@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace OwnetTaskManager.Models
 {
@@ -20,17 +19,14 @@ namespace OwnetTaskManager.Models
         [Required(ErrorMessage = "CompanyId is required")]
         public int CompanyId { get; set; }
 
-        [JsonIgnore]
         public Company Company { get; set; }
 
         // Relación con el rol
         [Required(ErrorMessage = "RoleId is required")]
         public int RoleId { get; set; }
 
-        [JsonIgnore]
         public Role Role { get; set; }
 
-        [JsonIgnore]
         public ICollection<TaskItem> TaskItems { get; set; }
     }
 }
