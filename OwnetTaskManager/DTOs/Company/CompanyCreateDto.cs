@@ -23,4 +23,4 @@ namespace OwnetTaskManager.DTOs.Company
         [Required(ErrorMessage = "The status is required")]
         public string Status { get; set; }
     }
-}
+} 

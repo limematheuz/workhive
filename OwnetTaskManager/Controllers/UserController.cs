@@ -45,12 +45,11 @@ namespace OwnetTaskManager.Controllers
             {
                 var user = _mapper.Map<User>(userCreateDto);
                 await _userRepository.CreateUserAsync(user);
-
-
+                
                 var userDto = _mapper.Map<UserDto>(user);
                 return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, userDto);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 return StatusCode(500, "Ocurrió un error al crear el usuario.");
             }
@@ -74,7 +73,7 @@ namespace OwnetTaskManager.Controllers
     }
 }
 
-// Busca el usuario por su ID.
+//     Busca el usuario por su ID.
 //     Si no se encuentra, devuelve un 404 Not Found.
 //     Si el usuario existe, actualiza sus datos con los del DTO recibido.
 //     Guarda los cambios en la base de datos.
