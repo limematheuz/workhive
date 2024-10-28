@@ -11,6 +11,5 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
-.idea/dataSources.xml
-# Database local storage ignored files
-
+dataSources.xml
+dataSources
