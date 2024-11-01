@@ -82,14 +82,21 @@ namespace OwnetTaskManager.Controllers
         [HttpDelete("{id}")]
         public async Task<ActionResult<TaskItemDto>> DeleteTaskItemAsync(int id)
         {
-            var taskItem = await _taskItemRepository.GetTaskItemByIdAsync(id);
-            if (taskItem == null)
+            try
             {
-                return NotFound();
-            }
+                var taskItem = await _taskItemRepository.GetTaskItemByIdAsync(id);
+                if (taskItem == null)
+                {
+                    return NotFound();
+                }
 
-            await _taskItemRepository.DeleteTaskItemAsync(taskItem.Id);
-            return Ok(taskItem);
+                await _taskItemRepository.DeleteTaskItemAsync(taskItem.Id);
+                return Ok(taskItem);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Ocurrió un error al eliminar la tarea.");
+            }
         }
     }
 }

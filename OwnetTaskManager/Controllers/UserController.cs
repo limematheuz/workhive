@@ -41,11 +41,16 @@ namespace OwnetTaskManager.Controllers
         [HttpPost]
         public async Task<ActionResult<UserDto>> CreateUser([FromBody] UserCreateDto userCreateDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
                 var user = _mapper.Map<User>(userCreateDto);
                 await _userRepository.CreateUserAsync(user);
-                
+
                 var userDto = _mapper.Map<UserDto>(user);
                 return CreatedAtAction(nameof(GetUserById), new { id = user.Id }, userDto);
             }
@@ -70,11 +75,25 @@ namespace OwnetTaskManager.Controllers
             var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
         }
+
+        [HttpDelete("{id}")]
+        public async Task<ActionResult<UserDto>> DeleteUserAsync(int id)
+        {
+            try
+            {
+                var user = await _userRepository.GetUserByIdAsync(id);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                await _userRepository.DeleteUserAsync(user.Id);
+                return Ok(user);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "Ocurrió un error al eliminar el usuario.");
+            }
+        }
     }
 }
-
-//     Busca el usuario por su ID.
-//     Si no se encuentra, devuelve un 404 Not Found.
-//     Si el usuario existe, actualiza sus datos con los del DTO recibido.
-//     Guarda los cambios en la base de datos.
-//     Devuelve un 200 OK junto con los datos actualizados del usuario.

@@ -9,5 +9,5 @@ public interface ILocationRepository
     Task<Location> CreateLocationAsync(Location location);
     Task<Location> UpdateLocationAsync(Location location);
     Task DeleteLocationAsync(int id);
-    Task ExistLocationAsync(int id);
+    Task<bool> ExistLocationAsync(int id);
 }
