@@ -1,15 +1,15 @@
-"""track when invoices are paid
+"""track when invoices are paid and merge migration branches
 
-Revision ID: a7b8c9d0e1f2
-Revises: z4q5r6s7t8u9
+Revision ID: b8c9d0e1f2a3
+Revises: a5b6c7d8e9f0, a7b8c9d0e1f2
 """
 
 from alembic import op
 import sqlalchemy as sa
 
 
-revision = "a7b8c9d0e1f2"
-down_revision = "z4q5r6s7t8u9"
+revision = "b8c9d0e1f2a3"
+down_revision = ("a5b6c7d8e9f0", "a7b8c9d0e1f2")
 branch_labels = None
 depends_on = None
 
