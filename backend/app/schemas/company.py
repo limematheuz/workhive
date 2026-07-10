@@ -105,3 +105,13 @@ class CompanyExpenseResponse(BaseModel):
     amount: float
     provider_company_id: int
     provider_company_name: str
+
+
+class CompanyMemberResponse(BaseModel):
+    id: int
+    full_name: str | None = None
+    email: EmailStr
+    role: str
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)

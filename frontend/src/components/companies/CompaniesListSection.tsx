@@ -1,6 +1,7 @@
 "use client";
 
-import { Building2, MoreVertical } from "lucide-react";
+import { Fragment } from "react";
+import { Building2, ChevronDown, Loader2, MoreVertical, Users } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,8 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import type { Company } from "@/services/company.service";
+import type { CompanyMember } from "./company-members";
+import { CompanyMembersPanel } from "./CompanyMembersPanel";
 
 import {
     getCompanyAccessBadgeClass,
@@ -31,8 +34,18 @@ type CompaniesListSectionProps = {
         actions: string;
         active: string;
         inactive: string;
+        viewTeam: string;
+        admins: string;
+        workers: string;
+        noAdmins: string;
+        noWorkers: string;
+        memberInactive: string;
     };
     getCompanyActions: (company: Company) => PopoverOption[];
+    expandedCompanyId: number | null;
+    loadingCompanyId: number | null;
+    membersByCompany: Record<number, CompanyMember[]>;
+    onToggleMembers: (company: Company) => void;
 };
 
 export function CompaniesListSection({
@@ -40,6 +53,10 @@ export function CompaniesListSection({
     emptyLabel,
     labels,
     getCompanyActions,
+    expandedCompanyId,
+    loadingCompanyId,
+    membersByCompany,
+    onToggleMembers,
 }: CompaniesListSectionProps) {
     if (companies.length === 0) {
         return (
@@ -107,6 +124,34 @@ export function CompaniesListSection({
                                 </div>
                             )}
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => onToggleMembers(company)}
+                            aria-expanded={expandedCompanyId === company.id}
+                            className="flex w-full items-center justify-between rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-bold text-[var(--text-main)]"
+                        >
+                            <span className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-accent" />
+                                {labels.viewTeam}
+                            </span>
+                            {loadingCompanyId === company.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <ChevronDown className={`h-4 w-4 transition ${expandedCompanyId === company.id ? "rotate-180" : ""}`} />
+                            )}
+                        </button>
+                        {expandedCompanyId === company.id && (
+                            <CompanyMembersPanel
+                                members={membersByCompany[company.id] || []}
+                                labels={{
+                                    admins: labels.admins,
+                                    workers: labels.workers,
+                                    noAdmins: labels.noAdmins,
+                                    noWorkers: labels.noWorkers,
+                                    inactive: labels.memberInactive,
+                                }}
+                            />
+                        )}
                     </div>
                 ))}
             </div>
@@ -125,10 +170,24 @@ export function CompaniesListSection({
                     </TableHeader>
                     <TableBody>
                         {companies.map((company) => (
-                            <TableRow key={company.id}>
-                                <TableCell className="font-semibold flex items-center gap-2">
-                                    <Building2 className="h-4 w-4 text-accent" />
-                                    {company.name}
+                            <Fragment key={company.id}>
+                            <TableRow>
+                                <TableCell className="font-semibold">
+                                    <button
+                                        type="button"
+                                        onClick={() => onToggleMembers(company)}
+                                        aria-expanded={expandedCompanyId === company.id}
+                                        className="flex items-center gap-2 text-left"
+                                        title={labels.viewTeam}
+                                    >
+                                        {loadingCompanyId === company.id ? (
+                                            <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                                        ) : (
+                                            <ChevronDown className={`h-4 w-4 text-accent transition ${expandedCompanyId === company.id ? "rotate-180" : ""}`} />
+                                        )}
+                                        <Building2 className="h-4 w-4 text-accent" />
+                                        {company.name}
+                                    </button>
                                 </TableCell>
                                 <TableCell className="font-mono text-xs">{company.tax_id || company.cif || "—"}</TableCell>
                                 <TableCell className="hidden md:table-cell text-[var(--text-muted)]">{company.email || "—"}</TableCell>
@@ -142,6 +201,23 @@ export function CompaniesListSection({
                                     <ActionPopover options={getCompanyActions(company)} />
                                 </TableCell>
                             </TableRow>
+                            {expandedCompanyId === company.id && (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="p-3">
+                                        <CompanyMembersPanel
+                                            members={membersByCompany[company.id] || []}
+                                            labels={{
+                                                admins: labels.admins,
+                                                workers: labels.workers,
+                                                noAdmins: labels.noAdmins,
+                                                noWorkers: labels.noWorkers,
+                                                inactive: labels.memberInactive,
+                                            }}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                            </Fragment>
                         ))}
                     </TableBody>
                 </Table>

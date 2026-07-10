@@ -8,6 +8,7 @@ from app.schemas.company import (
     CompanyUpdate,
     CompanyResponse,
     CompanyExpenseResponse,
+    CompanyMemberResponse,
 )
 from app.models.user import User
 from app.services import audit_service
@@ -59,6 +60,18 @@ def read_company(
     current_user: User = ActiveUser,
 ):
     return company_service.get_company(db, company_id, current_user)
+
+
+@router.get(
+    "/{company_id}/members",
+    response_model=list[CompanyMemberResponse],
+)
+def read_company_members(
+    company_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    return company_service.get_company_members(db, company_id, current_user)
 
 
 @router.get(
