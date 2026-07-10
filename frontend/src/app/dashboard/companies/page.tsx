@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Building2, Plus, Power, RotateCcw, Trash2, Pencil } from "lucide-react";
 
 import { CompaniesListSection } from "@/components/companies/CompaniesListSection";
+import type { CompanyMember } from "@/components/companies/company-members";
 import { CompanyEditDialog, type CompanyEditFormData } from "@/components/companies/CompanyEditDialog";
 import {
     CompanyProvisionDialog,
@@ -56,6 +57,9 @@ export default function CompaniesAdminPage() {
     const [statusTarget, setStatusTarget] = useState<Company | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
     const [submitting, setSubmitting] = useState(false);
+    const [expandedCompanyId, setExpandedCompanyId] = useState<number | null>(null);
+    const [loadingCompanyId, setLoadingCompanyId] = useState<number | null>(null);
+    const [membersByCompany, setMembersByCompany] = useState<Record<number, CompanyMember[]>>({});
     const [formData, setFormData] = useState<CompanyEditFormData>(EMPTY_FORM);
     const [provisionData, setProvisionData] = useState<CompanyProvisionData>(EMPTY_PROVISION);
 
@@ -192,6 +196,26 @@ export default function CompaniesAdminPage() {
         }
     };
 
+    const handleToggleMembers = async (company: Company) => {
+        if (expandedCompanyId === company.id) {
+            setExpandedCompanyId(null);
+            return;
+        }
+        setExpandedCompanyId(company.id);
+        if (membersByCompany[company.id]) return;
+        try {
+            setLoadingCompanyId(company.id);
+            const members = await CompanyService.getCompanyMembers(company.id);
+            setMembersByCompany((current) => ({ ...current, [company.id]: members }));
+        } catch (error) {
+            setExpandedCompanyId(null);
+            toast.error(dict.companies.members_error);
+            console.error(error);
+        } finally {
+            setLoadingCompanyId(null);
+        }
+    };
+
     const getCompanyActions = (company: Company): PopoverOption[] => {
         const hasAccess = isCompanyAccessEnabled(company);
         return [
@@ -263,8 +287,18 @@ export default function CompaniesAdminPage() {
                     actions: dict.companies.actions,
                     active: dict.companies.active,
                     inactive: dict.companies.inactive,
+                    viewTeam: dict.companies.view_team,
+                    admins: dict.companies.admins,
+                    workers: dict.companies.workers,
+                    noAdmins: dict.companies.no_admins,
+                    noWorkers: dict.companies.no_workers,
+                    memberInactive: dict.companies.member_inactive,
                 }}
                 getCompanyActions={getCompanyActions}
+                expandedCompanyId={expandedCompanyId}
+                loadingCompanyId={loadingCompanyId}
+                membersByCompany={membersByCompany}
+                onToggleMembers={(company) => void handleToggleMembers(company)}
             />
 
             <CompanyProvisionDialog

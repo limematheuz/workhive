@@ -17,6 +17,16 @@ def get_all_users(
     )
 
 
+def get_company_members(db: Session, company_id: int) -> list[User]:
+    return (
+        db.query(User)
+        .filter(User.company_id == company_id)
+        .join(User.role)
+        .order_by(User.is_active.desc(), User.full_name.asc(), User.id.asc())
+        .all()
+    )
+
+
 def get_user_by_email(db: Session, email: str) -> User | None:
     return db.query(User).filter(User.email == email).first()
 

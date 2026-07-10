@@ -24,7 +24,12 @@ from app.models.template_task import TemplateTask
 from app.models.trial_request import TrialRequest
 from app.models.user import User
 from app.models.work_session import WorkSession
-from app.schemas.company import CompanyCreate, CompanyProvisionCreate, CompanyUpdate
+from app.schemas.company import (
+    CompanyCreate,
+    CompanyMemberResponse,
+    CompanyProvisionCreate,
+    CompanyUpdate,
+)
 from app.repositories import company as company_repo
 from app.repositories import user as user_repo
 from app.repositories import role as role_repo
@@ -62,6 +67,29 @@ def get_company(db: Session, company_id: int, current_user: User) -> Company:
         collaboration_service.get_or_generate_partner_code(db, existing_company.id)
         
     return existing_company
+
+
+def get_company_members(
+    db: Session,
+    company_id: int,
+    current_user: User,
+) -> list[CompanyMemberResponse]:
+    require_superadmin(current_user)
+    if not company_repo.get_company_by_id(db, company_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found",
+        )
+    return [
+        CompanyMemberResponse(
+            id=member.id,
+            full_name=member.full_name,
+            email=member.email,
+            role=member.role.name,
+            is_active=member.is_active,
+        )
+        for member in user_repo.get_company_members(db, company_id)
+    ]
 
 
 def create_company(
