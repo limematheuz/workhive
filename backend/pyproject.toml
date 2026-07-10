@@ -1,0 +1,12 @@
+[tool.bandit]
+exclude_dirs = ["tests", "alembic", "scripts", ".pytest_cache"]
+# Low-severity noise: bearer scheme label, OAuth URLs, test asserts, stdlib XML in PDFs.
+skips = ["B101", "B105", "B106", "B110", "B406"]
+
+[tool.bandit.assert_used]
+skips = ["**/tests/**"]
+
+[tool.pip-audit]
+# python-jose pulls ecdsa; WorkHive JWTs use HS256 only (see app/core/config.py).
+# PYSEC-2026-1325 is a P-256 signing side-channel with no upstream fix.
+ignore-vulns = ["PYSEC-2026-1325"]

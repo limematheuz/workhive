@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.db
+
+# Virtual environments
+.venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+!**/.env.example
+!.env.deploy.example
+
+# Frontend dependencies and build output
+node_modules/
+.next/
+.next-e2e/
+out/
+*.tsbuildinfo
+.pnpm-store/
+playwright-report/
+test-results/
+
+# Editors and local agents
+.vscode/
+.idea/
+.cursor/
+.continue/
+.gemini/
+.cline/
+.agents/
+skills-lock.json
+.cursorrules
+AGENTS.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Runtime data
+uploads/
+storage/
+backups/
+*.log

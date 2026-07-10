@@ -1,0 +1,127 @@
+import type { Dictionary } from "@/lib/dictionary-context";
+import { cn } from "@/lib/utils";
+
+export function parseInvoiceDate(value: string) {
+    const [year, month, day] = value.split("-").map(Number);
+    if (year && month && day) {
+        return new Date(year, month - 1, day);
+    }
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export function getInvoiceServiceMonthName(issueDate: string, locale: "en" | "es") {
+    const date = parseInvoiceDate(issueDate);
+    if (!date) return "";
+    const serviceDate = new Date(date);
+    serviceDate.setMonth(serviceDate.getMonth() - 1);
+    return serviceDate.toLocaleDateString(locale === "en" ? "en-US" : "es-ES", { month: "long" });
+}
+
+export function buildDefaultInvoiceEmailMessage({
+    recipientName,
+    issueDate,
+    issuerName,
+    isDraft,
+    dict,
+    locale,
+}: {
+    recipientName: string;
+    issueDate: string;
+    issuerName: string;
+    isDraft: boolean;
+    dict: Dictionary;
+    locale: "en" | "es";
+}) {
+    const month = getInvoiceServiceMonthName(issueDate, locale);
+    const serviceMonth = month ? dict.invoices.service_month_fragment.replace("{month}", month) : "";
+    return [
+        dict.invoices.email_default_greeting.replace("{recipient}", recipientName || dict.invoices.client.toLowerCase()),
+        "",
+        (isDraft ? dict.invoices.email_default_proforma_body : dict.invoices.email_default_invoice_body)
+            .replace("{serviceMonth}", serviceMonth),
+        "",
+        dict.invoices.email_default_thanks,
+        dict.invoices.email_default_regards,
+        "",
+        issuerName,
+    ].join("\n");
+}
+
+export function getInvoiceStatusMeta(status: string, dict: Dictionary) {
+    if (status === "draft") {
+        return {
+            label: dict.invoices.status_draft || "Borrador",
+            className: "border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]",
+        };
+    }
+    if (status === "issued") {
+        return {
+            label: dict.invoices.status_issued || "Emitida",
+            className: "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]",
+        };
+    }
+    if (status === "paid") {
+        return {
+            label: dict.invoices.status_paid || "Pagada",
+            className: "border-[color-mix(in_srgb,var(--color-green-500)_34%,transparent)] bg-[color-mix(in_srgb,var(--color-green-500)_14%,transparent)] text-[var(--color-green-700)]",
+        };
+    }
+    if (status === "overdue") {
+        return {
+            label: dict.invoices.status_overdue || "Vencida",
+            className: "border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_35%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_8%,transparent)] text-[var(--btn-cancel-hover-bg)]",
+        };
+    }
+    if (status === "cancelled") {
+        return {
+            label: dict.invoices.status_cancelled || "Cancelada",
+            className: "border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_35%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_8%,transparent)] text-[var(--btn-cancel-hover-bg)]",
+        };
+    }
+    return {
+        label: status,
+        className: "border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]",
+    };
+}
+
+export function statusActionMeta(state: string, dict: Dictionary) {
+    if (state === "issued") {
+        return {
+            label: dict.invoices.issue_fiscal_invoice,
+            className: "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:border-[var(--btn-secondary-border)] hover:bg-[var(--btn-secondary-hover-bg)]",
+        };
+    }
+    if (state === "paid") {
+        return {
+            label: dict.invoices.status_paid,
+            className: "border-[color-mix(in_srgb,var(--color-green-500)_36%,transparent)] bg-[color-mix(in_srgb,var(--color-green-500)_10%,transparent)] text-[var(--color-green-700)] hover:border-[var(--color-green-600)] hover:bg-[color-mix(in_srgb,var(--color-green-500)_18%,transparent)]",
+        };
+    }
+    if (state === "cancelled") {
+        return {
+            label: dict.invoices.status_cancelled,
+            className: "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
+        };
+    }
+    if (state === "overdue") {
+        return {
+            label: dict.invoices.status_overdue,
+            className: "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
+        };
+    }
+    return {
+        label: state,
+        className: "border-[var(--border-soft)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]",
+    };
+}
+
+export function actionButtonClass(tone: "primary" | "neutral" | "danger" | "disabled" = "neutral") {
+    return cn(
+        "inline-flex min-h-10 max-w-full items-center justify-center gap-2 rounded-2xl border px-3.5 text-center text-[12px] font-black leading-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[8.5rem]",
+        tone === "primary" && "border-[var(--border-soft)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
+        tone === "neutral" && "border-[var(--btn-neutral-border)] bg-[var(--bg-card-solid)] text-[var(--text-main)] hover:border-[var(--border-color)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-main)]",
+        tone === "danger" && "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
+        tone === "disabled" && "cursor-not-allowed border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]",
+    );
+}

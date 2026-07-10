@@ -1,0 +1,162 @@
+from datetime import datetime
+from app.schemas.work_session import WorkSessionCreate
+from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+from app.models.reservation import Reservation
+from app.models.task_item import TaskItem
+from app.models.work_session import WorkSession
+from app.models.user import User
+
+
+def get_active_session_by_user(db: Session, user_id: int) -> WorkSession | None:
+    sessions = get_active_sessions_by_user(db, user_id)
+    return sessions[0] if sessions else None
+
+
+def get_active_sessions_by_user(
+    db: Session, user_id: int
+) -> list[WorkSession]:
+    return (
+        db.query(WorkSession)
+        .filter(WorkSession.user_id == user_id)
+        .filter(WorkSession.end_time.is_(None))
+        .order_by(WorkSession.id.desc())
+        .all()
+    )
+
+
+def get_work_session_by_id(
+    db: Session, session_id: int, user_id: int
+) -> WorkSession | None:
+    return (
+        db.query(WorkSession)
+        .filter(WorkSession.id == session_id)
+        .filter(WorkSession.user_id == user_id)
+        .first()
+    )
+
+
+def get_work_session_by_user(
+    db: Session, user_id: int, skip: int = 0, limit: int = 100
+) -> list[WorkSession]:
+    return (
+        db.query(WorkSession)
+        .filter(WorkSession.user_id == user_id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def create_work_session(
+    db: Session, user_id: int, session_data: WorkSessionCreate, start_time: datetime
+) -> WorkSession:
+    db_work_session = WorkSession(
+        **session_data.model_dump(), start_time=start_time, user_id=user_id
+    )
+    db.add(db_work_session)
+    db.commit()
+    db.refresh(db_work_session)
+    return db_work_session
+
+
+def close_work_session(
+    db: Session, db_session: WorkSession, end_time: datetime
+) -> WorkSession:
+    db_session.end_time = end_time
+    db.add(db_session)
+    db.commit()
+    db.refresh(db_session)
+    return db_session
+
+
+def get_closed_sessions_by_user(
+    db: Session, user_id: int, start_date: datetime | None = None
+) -> list[WorkSession]:
+    query = (
+        db.query(WorkSession)
+        .filter(WorkSession.user_id == user_id)
+        .filter(WorkSession.end_time.isnot(None))
+    )
+    if start_date:
+        query = query.filter(WorkSession.start_time >= start_date)
+    return query.all()
+
+
+def get_distinct_location_ids_by_user(
+    db: Session, user_id: int, start_date: datetime | None = None
+) -> list[int]:
+    query = (
+        db.query(WorkSession.location_id)
+        .filter(WorkSession.user_id == user_id)
+        .filter(WorkSession.location_id.isnot(None))
+    )
+    if start_date:
+        query = query.filter(WorkSession.start_time >= start_date)
+    results = query.distinct().all()
+    return [r[0] for r in results]
+
+
+def get_sessions_by_task(db: Session, task_item_id: int) -> list[WorkSession]:
+    return (
+        db.query(WorkSession)
+        .filter(WorkSession.task_item_id == task_item_id)
+        .order_by(WorkSession.start_time.asc())
+        .all()
+    )
+
+
+def get_visible_sessions_by_task(
+    db: Session, company_id: int, task_item_id: int
+) -> list[WorkSession]:
+    return (
+        db.query(WorkSession)
+        .join(User, WorkSession.user_id == User.id)
+        .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
+        .outerjoin(
+            Reservation,
+            TaskItem.checkout_reservation_id == Reservation.id,
+        )
+        .filter(
+            WorkSession.task_item_id == task_item_id,
+            User.is_active.is_(True),
+            or_(
+                User.company_id == company_id,
+                and_(
+                    User.company_id != company_id,
+                    TaskItem.company_id == User.company_id,
+                    Reservation.owner_company_id == company_id,
+                ),
+            ),
+        )
+        .order_by(WorkSession.start_time.asc())
+        .all()
+    )
+
+
+def get_visible_active_sessions(
+    db: Session, company_id: int
+) -> list[WorkSession]:
+    return (
+        db.query(WorkSession)
+        .join(User, WorkSession.user_id == User.id)
+        .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
+        .outerjoin(
+            Reservation,
+            TaskItem.checkout_reservation_id == Reservation.id,
+        )
+        .filter(
+            User.is_active.is_(True),
+            WorkSession.end_time.is_(None),
+            or_(
+                User.company_id == company_id,
+                and_(
+                    User.company_id != company_id,
+                    TaskItem.company_id == User.company_id,
+                    Reservation.owner_company_id == company_id,
+                ),
+            ),
+        )
+        .order_by(User.company_id.asc(), WorkSession.start_time.asc())
+        .all()
+    )

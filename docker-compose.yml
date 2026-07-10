@@ -1,0 +1,156 @@
+name: workhive
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-workhive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-workhive_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-workhive} -d ${POSTGRES_DB:-workhive_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-workhive}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-workhive_db}
+      MIGRATION_DATABASE_URL: postgresql://${POSTGRES_USER:-workhive}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-workhive_db}
+      DATABASE_USE_NULL_POOL: "false"
+      SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY}
+      ENVIRONMENT: production
+      FRONTEND_URL: https://${APP_DOMAIN:?Define APP_DOMAIN}
+      CORS_ORIGINS: https://${APP_DOMAIN}
+      TRUSTED_HOSTS: ${APP_DOMAIN},backend,localhost,127.0.0.1
+      FORCE_HTTPS: "true"
+      SESSION_COOKIE_SAMESITE: lax
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
+      HEALTH_READY_TOKEN: ${HEALTH_READY_TOKEN:-}
+      ALLOW_PUBLIC_REGISTRATION: ${ALLOW_PUBLIC_REGISTRATION:-false}
+      LOG_JSON: "true"
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+      RUN_CALENDAR_BACKGROUND_SYNC: ${RUN_CALENDAR_BACKGROUND_SYNC:-false}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-false}
+      CONTACT_FORM_ENABLED: ${CONTACT_FORM_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-}
+      SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      SMTP_USE_SSL: ${SMTP_USE_SSL:-false}
+      CONTACT_RECIPIENT_EMAIL: ${CONTACT_RECIPIENT_EMAIL:-}
+      BILLING_ENABLED: ${BILLING_ENABLED:-false}
+      SUBSCRIPTION_ENFORCEMENT_ENABLED: ${SUBSCRIPTION_ENFORCEMENT_ENABLED:-false}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_BUSINESS_PRICE_ID: ${STRIPE_BUSINESS_PRICE_ID:-}
+      STRIPE_PRO_PRICE_ID: ${STRIPE_PRO_PRICE_ID:-}
+      VERIFACTU_ENABLED: ${VERIFACTU_ENABLED:-false}
+      VERIFACTU_ENVIRONMENT: ${VERIFACTU_ENVIRONMENT:-test}
+      VERIFACTU_AUTO_SUBMIT: ${VERIFACTU_AUTO_SUBMIT:-false}
+      VERIFACTU_CERTIFICATE_PATH: ${VERIFACTU_CERTIFICATE_PATH:-}
+      VERIFACTU_CERTIFICATE_PASSWORD: ${VERIFACTU_CERTIFICATE_PASSWORD:-}
+      VERIFACTU_SOFTWARE_PRODUCER_NAME: ${VERIFACTU_SOFTWARE_PRODUCER_NAME:-}
+      VERIFACTU_SOFTWARE_PRODUCER_TAX_ID: ${VERIFACTU_SOFTWARE_PRODUCER_TAX_ID:-}
+      VERIFACTU_SOFTWARE_ID: ${VERIFACTU_SOFTWARE_ID:-WH}
+      VERIFACTU_INSTALLATION_ID: ${VERIFACTU_INSTALLATION_ID:-1}
+      VERIFACTU_TIMEOUT_SECONDS: ${VERIFACTU_TIMEOUT_SECONDS:-30}
+      VERIFACTU_MAX_RETRIES: ${VERIFACTU_MAX_RETRIES:-8}
+      GOOGLE_CALENDAR_ENABLED: ${GOOGLE_CALENDAR_ENABLED:-false}
+      GOOGLE_CALENDAR_CLIENT_ID: ${GOOGLE_CALENDAR_CLIENT_ID:-}
+      GOOGLE_CALENDAR_CLIENT_SECRET: ${GOOGLE_CALENDAR_CLIENT_SECRET:-}
+      GOOGLE_CALENDAR_REDIRECT_URI: ${GOOGLE_CALENDAR_REDIRECT_URI:-https://${APP_DOMAIN}/api/v1/calendar/google/callback}
+      GOOGLE_CALENDAR_TIMEZONE: ${GOOGLE_CALENDAR_TIMEZONE:-Europe/Madrid}
+      GOOGLE_TOKEN_ENCRYPTION_KEY: ${GOOGLE_TOKEN_ENCRYPTION_KEY:-}
+      GOOGLE_CALENDAR_BACKGROUND_SYNC_INTERVAL_SECONDS: ${GOOGLE_CALENDAR_BACKGROUND_SYNC_INTERVAL_SECONDS:-300}
+      MEDIA_STORAGE_BACKEND: ${MEDIA_STORAGE_BACKEND:-local}
+      MEDIA_STORAGE_PATH: ${MEDIA_STORAGE_PATH:-/data/media}
+      INVOICE_PDF_STORAGE_PATH: ${INVOICE_PDF_STORAGE_PATH:-/data/invoices}
+      ELECTRONIC_INVOICE_STORAGE_PATH: ${ELECTRONIC_INVOICE_STORAGE_PATH:-/data/electronic-invoices}
+      FISCAL_CERTIFICATE_STORAGE_PATH: ${FISCAL_CERTIFICATE_STORAGE_PATH:-/data/fiscal-certificates}
+      S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-}
+      S3_REGION: ${S3_REGION:-eu-west-1}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      FACTURAE_CERTIFICATE_PATH: ${FACTURAE_CERTIFICATE_PATH:-}
+      FACTURAE_CERTIFICATE_PASSWORD: ${FACTURAE_CERTIFICATE_PASSWORD:-}
+    volumes:
+      - appdata:/data
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=5)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_SUPPORT_EMAIL: ${NEXT_PUBLIC_SUPPORT_EMAIL:-}
+        NEXT_PUBLIC_SUPPORT_PHONE: ${NEXT_PUBLIC_SUPPORT_PHONE:-}
+        NEXT_PUBLIC_BUSINESS_LOCATION: ${NEXT_PUBLIC_BUSINESS_LOCATION:-}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      BACKEND_URL: http://backend:8000
+      NEXT_PUBLIC_SUPPORT_EMAIL: ${NEXT_PUBLIC_SUPPORT_EMAIL:-}
+      NEXT_PUBLIC_SUPPORT_PHONE: ${NEXT_PUBLIC_SUPPORT_PHONE:-}
+      NEXT_PUBLIC_BUSINESS_LOCATION: ${NEXT_PUBLIC_BUSINESS_LOCATION:-}
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/login').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  appdata:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,799 @@
+@import "tailwindcss";
+
+:root {
+  --brand-blue: #2563eb;
+  --brand-blue-hover: #1d4ed8;
+  --brand-blue-soft: rgba(37, 99, 235, 0.1);
+  --brand-blue-border: rgba(37, 99, 235, 0.24);
+  --accent-color: var(--brand-blue);
+  --accent-light-color: var(--brand-blue-hover);
+  --accent-toast-color: rgba(37, 99, 235, 0.25);
+
+  /* Theme Variables - Default (Dark) */
+  --bg-primary: #191919;
+  --bg-card-solid: #222222;            /* Opaque card for popovers / dialogs / selects */
+  --dialog-bg: #222222;
+  --dialog-control-bg: #2b2b2b;
+  --dialog-control-border: rgba(255, 255, 255, 0.12);
+  --bg-secondary: rgba(25, 25, 25, 0.6);
+  --bg-tertiary: rgba(255, 255, 255, 0.08);
+  --bg-card: rgba(34, 34, 34, 0.65);
+  --sidebar-bg: var(--bg-primary);
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-soft: rgba(255, 255, 255, 0.05);
+  --text-main: #e3e3e3;
+  --text-muted: #8c8c8c;
+  --text-inverse: #191919;
+  --logo-filter: brightness(0) invert(0.9);
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  
+  /* Pill Switch Variables */
+  --pill-bg: #202020;
+  --pill-active: #303030;
+  --pill-active-text: #ffffff;
+
+  /* Sidebar Active Link */
+  --sidebar-active-bg: rgba(59, 130, 246, 0.12);
+  --sidebar-active-text: var(--brand-blue);
+  --sidebar-active-border: rgba(59, 130, 246, 0.22);
+  --sidebar-active-shadow: none;
+
+  /* Onboarding / Guided Tour Popovers - Default (Dark Mode): White background, dark text */
+  --popover-tour-bg: #ffffff;
+  --popover-tour-text: #18181b;       /* zinc-900 */
+  --popover-tour-text-muted: #52525b; /* zinc-600 */
+  --popover-tour-border: #e4e4e7;     /* zinc-200 */
+
+  /* Primary Button Variables - Dark mode (default): White background, black text */
+  --btn-primary-bg: #ffffff;
+  --btn-primary-text: #000000;
+  --btn-primary-hover-bg: #e4e4e7; /* zinc-200 */
+
+  /* Cancel Button Variables - Dark mode (default): Rose background, bright text */
+  --btn-cancel-bg: rgba(239, 68, 68, 0.15);
+  --btn-cancel-text: #f87171;
+  --btn-cancel-border: rgba(239, 68, 68, 0.3);
+  --btn-cancel-hover-bg: #ef4444;
+  --btn-cancel-hover-text: #ffffff;
+
+  /* Secondary Button (blue/action) - Dark mode */
+  --btn-secondary-bg: var(--brand-blue-soft);
+  --btn-secondary-text: var(--brand-blue);
+  --btn-secondary-border: var(--brand-blue-border);
+  --btn-secondary-hover-bg: rgba(37, 99, 235, 0.18);
+
+  /* Neutral Button (grey/add) - Dark mode */
+  --btn-neutral-bg: rgba(255, 255, 255, 0.06);
+  --btn-neutral-text: #a1a1aa;
+  --btn-neutral-border: rgba(255, 255, 255, 0.1);
+  --btn-neutral-hover-bg: rgba(255, 255, 255, 0.12);
+
+  /* Warning Alert - Dark mode (replaces yellow-500 direct usage) */
+  --alert-warning-bg: rgba(245, 158, 11, 0.1);
+  --alert-warning-text: #fbbf24;
+  --alert-warning-border: rgba(245, 158, 11, 0.2);
+
+  /* Priority Badges - Dark mode */
+  --priority-high-bg: rgba(239, 68, 68, 0.18);
+  --priority-high-text: #f87171;
+  --priority-high-border: rgba(239, 68, 68, 0.35);
+
+  --priority-medium-bg: rgba(231, 138, 8, 0.18);
+  --priority-medium-text: var(--color-amber-500);
+  --priority-medium-border: rgba(231, 138, 8, 0.35);
+
+  --priority-low-bg: rgba(59, 130, 246, 0.18);
+  --priority-low-text: var(--brand-blue);
+  --priority-low-border: rgba(59, 130, 246, 0.35);
+
+  --badge-collaborator-bg: rgba(139, 92, 246, 0.12);
+  --badge-collaborator-text: #a78bfa;
+  --badge-collaborator-border: rgba(139, 92, 246, 0.28);
+
+  /* Standardized amber and orange colors */
+  --color-amber-500: #e78a08; /* Vibrant, accessible golden amber-orange intermediate */
+  --color-orange-300: var(--color-amber-500);
+  --color-orange-400: var(--color-amber-500);
+  --color-orange-500: var(--color-amber-500);
+  --color-orange-600: var(--color-amber-500);
+  --color-orange-700: var(--color-amber-500);
+  --color-orange-800: var(--color-amber-500);
+
+  /* Status greens with enough contrast in dark mode */
+  --color-green-300: #86efac;
+  --color-green-400: #4ade80;
+  --color-green-500: #22c55e;
+  --color-green-600: #16a34a;
+  --color-green-700: #86efac;
+  --color-green-800: #bbf7d0;
+}
+
+/* Custom sidebar background for mobile viewports */
+.sidebar-mobile-bg {
+  background-color: var(--bg-card-solid) !important;
+}
+@media (min-width: 1024px) {
+  .sidebar-mobile-bg {
+    background-color: var(--sidebar-bg) !important;
+  }
+}
+
+@theme {
+  --color-accent: var(--accent-color);
+  --color-accent-light: var(--accent-light-color);
+  --color-accent-toast: var(--accent-toast-color);
+
+  --color-surface-dark: #1C1C1C;
+  --color-bg-dark: #121212;
+  
+  --color-surface-light: #FFFFFF;
+  --color-bg-light: #FAFAFA;
+  
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Map shadcn tokens to solid background so Dialogs/Popovers/Selects are opaque */
+  --color-background: var(--bg-card-solid);
+  --color-popover: var(--bg-card-solid);
+  --color-card: var(--bg-card-solid);
+
+  /* Tailwind v4 font sizes standardisation */
+  --font-size-2xs: 0.625rem; /* 10px */
+  --font-size-3xs: 0.5rem;   /* 8px */
+}
+
+.light-mode {
+  --brand-blue: #2563eb;
+  --brand-blue-hover: #1d4ed8;
+  --brand-blue-soft: rgba(37, 99, 235, 0.09);
+  --brand-blue-border: rgba(37, 99, 235, 0.22);
+  --accent-color: var(--brand-blue); /* High-contrast dark blue */
+  --accent-light-color: var(--brand-blue-hover);
+  --accent-toast-color: rgba(37, 99, 235, 0.15);
+
+  /* Override Tailwind green/emerald colors in light mode for a vibrant but accessible contrast */
+  --color-emerald-300: #10b981;
+  --color-emerald-400: #059669;
+  --color-emerald-500: #047857; /* Vibrant emerald with excellent contrast (4.8:1) */
+  --color-emerald-600: #047857;
+  --color-emerald-700: #065f46;
+  --color-emerald-800: #064e3b;
+
+  --color-green-300: #4ade80;
+  --color-green-400: #22c55e;
+  --color-green-500: #15803d; /* Vibrant green with great contrast (5.4:1) */
+  --color-green-600: #166534;
+  --color-green-700: #166534;
+  --color-green-800: #14532d;
+
+  /* Standardized amber and orange colors in light mode */
+  --color-amber-500: #e78a08; /* Vibrant, accessible golden amber-orange intermediate */
+  --color-orange-300: var(--color-amber-500);
+  --color-orange-400: var(--color-amber-500);
+  --color-orange-500: var(--color-amber-500);
+  --color-orange-600: var(--color-amber-500);
+  --color-orange-700: var(--color-amber-500);
+  --color-orange-800: var(--color-amber-500);
+
+  --bg-primary: #cbd4db;
+  --bg-card-solid: #f4f8fb;            /* Opaque card for popovers / dialogs / selects (light) */
+  --dialog-bg: #e3eaf0;
+  --dialog-control-bg: #f8fbfd;
+  --dialog-control-border: rgba(82, 101, 119, 0.34);
+  --bg-secondary: rgba(213, 224, 231, 0.78);
+  --bg-tertiary: rgba(236, 244, 246, 0.62);
+  --bg-card: rgba(248, 252, 252, 0.5);
+  --sidebar-bg: var(--bg-primary);
+  --border-color: rgba(82, 101, 119, 0.28);
+  --border-soft: rgba(255, 255, 255, 0.68);
+  --text-main: #111827;
+  --text-muted: #526070;
+  --text-inverse: #ffffff;
+  --logo-filter: brightness(0); /* Black */
+  --shadow-color: rgba(52, 74, 94, 0.22);
+
+  /* Map shadcn tokens for light mode */
+  --color-background: var(--bg-card-solid);
+  --color-popover: var(--bg-card-solid);
+  --color-card: var(--bg-card-solid);
+
+  /* Pill Switch Variables */
+  --pill-bg: rgba(227, 234, 238, 0.7);
+  --pill-active: rgba(255, 255, 255, 0.78);
+  --pill-active-text: #111827;
+
+  /* Sidebar Active Link */
+  --sidebar-active-bg: rgba(255, 255, 255, 0.66);
+  --sidebar-active-text: #111827;
+  --sidebar-active-border: rgba(255, 255, 255, 0.72);
+  --sidebar-active-shadow: none;
+
+  /* Onboarding / Guided Tour Popovers - Light Mode: Black background, white text */
+  --popover-tour-bg: #09090b;         /* zinc-950 */
+  --popover-tour-text: #ffffff;
+  --popover-tour-text-muted: #a1a1aa; /* zinc-400 */
+  --popover-tour-border: #27272a;     /* zinc-800 */
+
+  /* Primary Button Variables - Light mode: Black background, white text */
+  --btn-primary-bg: #09090b;          /* zinc-950 */
+  --btn-primary-text: #ffffff;
+  --btn-primary-hover-bg: #27272a;    /* zinc-800 */
+
+  /* Cancel Button Variables - Light mode: Red outline/translucent bg */
+  --btn-cancel-bg: rgba(220, 38, 38, 0.08);
+  --btn-cancel-text: #dc2626;
+  --btn-cancel-border: rgba(220, 38, 38, 0.25);
+  --btn-cancel-hover-bg: #dc2626;
+  --btn-cancel-hover-text: #ffffff;
+
+  /* Secondary Button (blue/action) - Light mode */
+  --btn-secondary-bg: rgba(37, 99, 235, 0.08);
+  --btn-secondary-text: #1d4ed8;
+  --btn-secondary-border: rgba(37, 99, 235, 0.18);
+  --btn-secondary-hover-bg: rgba(37, 99, 235, 0.16);
+
+  /* Neutral Button (grey/add) - Light mode */
+  --btn-neutral-bg: rgba(0, 0, 0, 0.04);
+  --btn-neutral-text: #52525b;
+  --btn-neutral-border: rgba(0, 0, 0, 0.08);
+  --btn-neutral-hover-bg: rgba(0, 0, 0, 0.08);
+
+  /* Warning Alert - Light mode */
+  --alert-warning-bg: rgba(217, 119, 6, 0.08);
+  --alert-warning-text: #b45309;
+  --alert-warning-border: rgba(217, 119, 6, 0.15);
+
+  /* Priority Badges - Light mode */
+  --priority-high-bg: rgba(220, 38, 38, 0.09);
+  --priority-high-text: #dc2626;
+  --priority-high-border: rgba(220, 38, 38, 0.25);
+
+  --priority-medium-bg: rgba(231, 138, 8, 0.1);
+  --priority-medium-text: var(--color-amber-500);
+  --priority-medium-border: rgba(231, 138, 8, 0.3);
+
+  --priority-low-bg: rgba(37, 99, 235, 0.09);
+  --priority-low-text: #1d4ed8;
+  --priority-low-border: rgba(37, 99, 235, 0.25);
+
+  --badge-collaborator-bg: rgba(124, 58, 237, 0.1);
+  --badge-collaborator-text: #6d28d9;
+  --badge-collaborator-border: rgba(124, 58, 237, 0.25);
+}
+@layer base {
+  /* Dark mode body gradient (default) */
+  body {
+    background:
+      radial-gradient(circle at 15% 10%, rgba(0, 230, 118, 0.03), transparent 30%),
+      radial-gradient(circle at 85% 20%, rgba(35, 35, 45, 0.6), transparent 35%),
+      linear-gradient(135deg, #191919 0%, #242424 50%, #191919 100%);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+
+  /* Light mode body background */
+  body.light-mode {
+    background: var(--bg-primary);
+  }
+}
+
+/* Custom utility classes for the Glassmorphism/Bento design */
+@layer components {
+  .glass-card {
+    @apply bg-surface-dark/80 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl;
+  }
+  
+  .input-field {
+    @apply w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors;
+  }
+  
+  .btn-primary {
+    @apply w-full bg-accent hover:bg-accent-light text-black font-semibold rounded-lg px-4 py-3 transition-transform active:scale-[0.98];
+  }
+
+  .badge-standard {
+    font-size: 9px !important;
+    line-height: 1rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    border-width: 1px !important;
+  }
+
+  .badge-collaborator {
+    background-color: var(--badge-collaborator-bg) !important;
+    border-color: var(--badge-collaborator-border) !important;
+    color: var(--badge-collaborator-text) !important;
+  }
+
+  .btn-app-secondary {
+    background-color: var(--btn-secondary-bg) !important;
+    border-color: var(--btn-secondary-border) !important;
+    color: var(--btn-secondary-text) !important;
+  }
+
+  .btn-app-secondary:hover {
+    background-color: var(--btn-secondary-hover-bg) !important;
+    color: var(--btn-secondary-text) !important;
+  }
+
+  .btn-app-danger-soft {
+    background-color: var(--btn-cancel-bg) !important;
+    border-color: var(--btn-cancel-border) !important;
+    color: var(--btn-cancel-text) !important;
+  }
+
+  .btn-app-danger-soft:hover {
+    background-color: var(--btn-cancel-hover-bg) !important;
+    color: var(--btn-cancel-hover-text) !important;
+  }
+}
+
+/* Global print rules for invoices and reports */
+@media print {
+  /* Hide the sidebar, headers, toaster, overlays, and buttons */
+  aside,
+  header,
+  .print-hidden,
+  [role="status"],
+  button,
+  .fixed {
+    display: none !important;
+  }
+
+  /* Reset the layout to use the full page width */
+  html,
+  body,
+  main,
+  #root,
+  .flex-1 {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Remove rounded borders and shadows from the dashboard wrapper when printing */
+  .rounded-3xl,
+  .border,
+  .shadow-md {
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Hide the TradingView logo and watermark in charts */
+a#tv-attr-logo {
+  display: none !important;
+}
+
+/* Explicit font-size classes for high-density layouts */
+.text-2xs {
+  font-size: 0.6875rem !important; /* 11px */
+  line-height: 0.875rem !important;
+}
+
+.text-3xs {
+  font-size: 0.6rem !important; /* 9.6px */
+  line-height: 0.75rem !important;
+}
+
+/* Automatically apply Glassmorphism to layout and card containers */
+.bg-\[var\(--bg-secondary\)\] {
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+.bg-\[var\(--bg-card\)\] {
+  backdrop-filter: blur(22px) saturate(135%);
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.58),
+    0 18px 45px var(--shadow-color);
+}
+
+.light-mode .bg-\[var\(--bg-primary\)\],
+.light-mode .bg-\[var\(--bg-secondary\)\],
+.light-mode .bg-\[var\(--bg-tertiary\)\] {
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+}
+
+.light-mode input,
+.light-mode textarea {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+select,
+select option {
+  background-color: var(--bg-card-solid) !important;
+  color: var(--text-main) !important;
+}
+
+.light-mode .shadow-md,
+.light-mode .shadow-lg,
+.light-mode .shadow-xl,
+.light-mode .shadow-2xl {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.48),
+    0 18px 46px rgba(77, 96, 116, 0.14);
+}
+
+/* Global Subtle Focus Styles for Form Fields */
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.04) !important;
+}
+
+body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode select:focus {
+  border-color: rgba(0, 0, 0, 0.14) !important;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* WorkHive task calendar */
+.workhive-fullcalendar .fc {
+  --fc-page-bg-color: transparent;
+  --fc-neutral-bg-color: var(--dialog-control-bg);
+  --fc-border-color: var(--border-color);
+  --fc-today-bg-color: color-mix(in srgb, var(--accent-color) 12%, transparent);
+  --fc-now-indicator-color: #ef4444;
+  --fc-small-font-size: 0.72rem;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+}
+
+.workhive-fullcalendar .fc-scrollgrid {
+  overflow: hidden;
+  border-color: var(--border-color);
+  border-radius: 1.25rem;
+  background: var(--bg-card);
+  box-shadow: 0 18px 45px var(--shadow-color);
+}
+
+.workhive-fullcalendar .fc-theme-standard td,
+.workhive-fullcalendar .fc-theme-standard th {
+  border-color: var(--border-color);
+}
+
+.workhive-fullcalendar .fc-col-header-cell {
+  background: var(--dialog-control-bg);
+  padding: 0.35rem 0;
+}
+
+.workhive-fullcalendar .fc-col-header-cell-cushion,
+.workhive-fullcalendar .fc-timegrid-axis-cushion,
+.workhive-fullcalendar .fc-timegrid-slot-label-cushion {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.workhive-fullcalendar .fc-timegrid-slot {
+  background: var(--bg-card);
+  height: 2.55rem;
+}
+
+.workhive-fullcalendar .fc-timegrid-event-harness {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.workhive-fullcalendar .fc-timegrid-event {
+  border-radius: 0.5rem !important;
+  box-shadow: none !important;
+  cursor: grab;
+  overflow: hidden;
+  position: relative;
+  inset: 0px !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-external {
+  border-left: 4px solid #8b5cf6 !important;
+  background-image:
+    linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(255, 255, 255, 0) 42%),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 7px);
+  outline: 1px solid rgba(139, 92, 246, 0.35);
+  outline-offset: -1px;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-external::after {
+  content: "EXTERNA";
+  position: absolute;
+  right: 0.35rem;
+  bottom: 0.25rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.16);
+  color: #312e81;
+  padding: 0.08rem 0.42rem;
+  font-size: 0.48rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.workhive-fullcalendar .fc-timegrid-event:hover {
+  box-shadow: 0 12px 28px var(--shadow-color);
+  transform: translateY(-1px);
+}
+
+.workhive-fullcalendar .fc-timegrid-event:active {
+  cursor: grabbing;
+}
+
+.workhive-fullcalendar .fc-event-main {
+  color: #ffffff;
+}
+
+.workhive-fullcalendar .fc-timegrid-now-indicator-line {
+  border-color: #ef4444;
+  border-width: 2px 0 0;
+}
+
+.workhive-fullcalendar .fc-timegrid-now-indicator-arrow {
+  border-color: #ef4444;
+  border-top-color: transparent;
+  border-bottom-color: transparent;
+}
+
+.workhive-fullcalendar .fc-v-event {
+  border-width: 0;
+}
+
+@media (max-width: 767px) {
+  .workhive-fullcalendar .fc-timegrid-slot {
+    height: 3rem;
+  }
+
+  .workhive-fullcalendar .fc-timegrid-axis {
+    width: 2.75rem;
+  }
+
+  .workhive-fullcalendar .fc-col-header-cell-cushion,
+  .workhive-fullcalendar .fc-timegrid-axis-cushion,
+  .workhive-fullcalendar .fc-timegrid-slot-label-cushion {
+    font-size: 0.62rem;
+  }
+}
+
+/* Unified premium styling for form fields inside modals/sheets to match iOS styling */
+[data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
+[data-slot="dialog-content"] select,
+[data-slot="dialog-content"] textarea,
+[data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
+[data-slot="sheet-content"] select,
+[data-slot="sheet-content"] textarea {
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-soft) !important;
+  border-radius: 0.875rem !important; /* rounded-xl (14px) */
+  color: var(--text-main) !important;
+  outline: none !important;
+  font-size: 0.875rem !important; /* text-sm */
+  padding: 0.625rem 0.875rem !important;
+  min-height: 2.75rem !important;
+  height: auto !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  width: 100% !important;
+}
+
+.light-mode [data-slot="dialog-content"],
+.light-mode [data-slot="sheet-content"] {
+  background-color: var(--dialog-bg) !important;
+  border-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.light-mode [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
+.light-mode [data-slot="dialog-content"] select,
+.light-mode [data-slot="dialog-content"] textarea,
+.light-mode [data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
+.light-mode [data-slot="sheet-content"] select,
+.light-mode [data-slot="sheet-content"] textarea {
+  background-color: var(--dialog-control-bg) !important;
+  border-color: var(--dialog-control-border) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(52, 74, 94, 0.06) !important;
+}
+
+/* Make selects look premium and adapt option background */
+[data-slot="dialog-content"] select option,
+[data-slot="sheet-content"] select option {
+  background-color: var(--bg-card-solid) !important;
+  color: var(--text-main) !important;
+}
+
+/* Form fields focus state */
+[data-slot="dialog-content"] input:focus,
+[data-slot="dialog-content"] select:focus,
+[data-slot="dialog-content"] textarea:focus,
+[data-slot="sheet-content"] input:focus,
+[data-slot="sheet-content"] select:focus,
+[data-slot="sheet-content"] textarea:focus {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 0 0 1px var(--accent-color) !important;
+  background-color: var(--dialog-control-bg) !important;
+}
+
+[data-slot="dialog-content"] input.invoice-email-token-input {
+  width: auto !important;
+  min-height: auto !important;
+  height: auto !important;
+  padding: 0.375rem 0.25rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-slot="dialog-content"] input.invoice-email-token-input:focus {
+  border: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-slot="dialog-content"] textarea.invoice-email-message-field {
+  height: 12rem !important;
+  min-height: 12rem !important;
+  padding: 1.25rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: var(--bg-card) !important;
+  box-shadow: none !important;
+  line-height: 1.75rem !important;
+  resize: vertical;
+}
+
+@media (min-width: 1024px) {
+  [data-slot="dialog-content"] textarea.invoice-email-message-field {
+    height: 13rem !important;
+    min-height: 13rem !important;
+  }
+}
+
+/* Unified uppercase bold labels inside modals */
+[data-slot="dialog-content"] label,
+[data-slot="sheet-content"] label {
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  color: var(--text-muted) !important;
+  display: inline-block !important;
+  margin-bottom: 0.25rem !important;
+}
+
+/* Custom horizontal separators inside modals */
+[data-slot="dialog-content"] hr,
+[data-slot="sheet-content"] hr {
+  border: 0 !important;
+  border-top: 1px solid var(--border-soft) !important;
+  margin: 1.25rem 0 !important;
+}
+
+.expense-input {
+  width: 100%;
+  min-height: 2.75rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  background: color-mix(in srgb, var(--bg-tertiary) 78%, transparent);
+  padding: 0.625rem 0.875rem;
+  color: var(--text-main);
+  font-size: 0.875rem;
+  outline: none;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--border-soft) 54%, transparent);
+  transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.light-mode .expense-input {
+  background: color-mix(in srgb, var(--bg-secondary) 84%, var(--bg-primary) 16%);
+  border-color: color-mix(in srgb, var(--border-color) 72%, transparent);
+}
+
+.expense-input:focus {
+  border-color: color-mix(in srgb, var(--accent-color) 58%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-secondary) 90%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--border-soft) 70%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--accent-color) 12%, transparent);
+}
+
+.expense-input::placeholder {
+  color: var(--text-muted);
+}
+
+.expense-input option {
+  background: var(--bg-card-solid);
+  color: var(--text-main);
+}
+
+.invoice-detail-backlight {
+  pointer-events: none;
+  position: absolute;
+  bottom: -3rem;
+  left: 0;
+  right: 0;
+  top: -3rem;
+  z-index: 0;
+  border-radius: 2.5rem;
+  opacity: 0.42;
+  filter: blur(34px);
+  transform: translate3d(0, 0, 0);
+  animation: invoice-detail-backlight-drift 13s ease-in-out infinite alternate;
+  background:
+    radial-gradient(circle at 28% 18%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 42%),
+    radial-gradient(circle at 74% 68%, color-mix(in srgb, var(--accent-color) 10%, transparent), transparent 48%);
+}
+
+.light-mode .invoice-detail-backlight {
+  opacity: 0.58;
+  background:
+    radial-gradient(circle at 28% 18%, color-mix(in srgb, var(--accent-color) 24%, transparent), transparent 42%),
+    radial-gradient(circle at 74% 68%, color-mix(in srgb, var(--accent-color) 14%, transparent), transparent 48%);
+}
+
+.dashboard-shell-backlight {
+  pointer-events: none;
+  position: absolute;
+  inset: -10%;
+  z-index: 0;
+  opacity: 0.34;
+  filter: blur(42px);
+  transform: translate3d(0, 0, 0);
+  animation: dashboard-shell-backlight-drift 18s ease-in-out infinite alternate;
+  background:
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 34%),
+    radial-gradient(circle at 78% 26%, color-mix(in srgb, var(--accent-color) 14%, transparent), transparent 38%),
+    radial-gradient(circle at 48% 86%, color-mix(in srgb, var(--accent-color) 12%, transparent), transparent 42%);
+}
+
+.light-mode .dashboard-shell-backlight {
+  opacity: 0.48;
+  background:
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent-color) 24%, transparent), transparent 34%),
+    radial-gradient(circle at 78% 26%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 38%),
+    radial-gradient(circle at 48% 86%, color-mix(in srgb, var(--accent-color) 16%, transparent), transparent 42%);
+}
+
+@keyframes dashboard-shell-backlight-drift {
+  0% {
+    transform: translate3d(-1.5rem, -0.75rem, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1.25rem, 1rem, 0) scale(1.035);
+  }
+  100% {
+    transform: translate3d(0.5rem, -1.25rem, 0) scale(1.055);
+  }
+}
+
+@keyframes invoice-detail-backlight-drift {
+  0% {
+    transform: translate3d(-1.2rem, -0.6rem, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(1rem, 0.75rem, 0) scale(1.025);
+  }
+  100% {
+    transform: translate3d(0.35rem, -0.8rem, 0) scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invoice-detail-backlight,
+  .dashboard-shell-backlight {
+    animation: none;
+  }
+}
+
+/* Standardize orange colors to amber */
+.text-amber-500 {
+  color: var(--color-amber-500) !important;
+}

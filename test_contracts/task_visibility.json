@@ -1,0 +1,28 @@
+{
+  "users": [
+    { "id": 1, "role": "admin", "fullName": "Admin User" },
+    { "id": 2, "role": "manager", "fullName": "Manager User" },
+    { "id": 3, "role": "viewer", "fullName": "Viewer User" },
+    { "id": 4, "role": "viewer", "fullName": "Second Viewer" }
+  ],
+  "cases": [
+    {
+      "name": "hidden all-worker assignment reaches every company user",
+      "description": "<!-- workhive_assignees:1,2,3,4 -->\n- [ ] Cocina\n- [ ] Baño",
+      "assignedUserIds": [1, 2, 3, 4],
+      "unassignedUserIds": [999]
+    },
+    {
+      "name": "line assignment reaches only selected users",
+      "description": "- [ ] Cocina (@1:Admin User)\n- [ ] Baño (@2:Manager User)\n- [ ] Terraza (@3:Viewer User)",
+      "assignedUserIds": [1, 2, 3],
+      "unassignedUserIds": [4],
+      "checklistByUser": {
+        "1": ["Cocina"],
+        "2": ["Baño"],
+        "3": ["Terraza"],
+        "4": []
+      }
+    }
+  ]
+}

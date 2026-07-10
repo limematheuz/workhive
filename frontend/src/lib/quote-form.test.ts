@@ -1,0 +1,121 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import type { Client } from "@/types/client";
+import type { Company } from "@/types/company";
+import type { Quote } from "@/types/quote";
+import {
+    buildQuotePayload,
+    createQuoteConceptRow,
+    formatQuoteValidUntilDate,
+    getQuoteIssuerFieldsFromCompany,
+    getQuoteItemChanges,
+    getQuoteRecipientFieldsFromClient,
+    mapQuoteItemsToConceptRows,
+} from "./quote-form.ts";
+
+const client: Client = {
+    id: 25,
+    name: "Port Blanc",
+    client_type: "company",
+    email: "port@example.com",
+    phone: "621261405",
+    address: "Carrer del Gregal, 52",
+    city: "Girona",
+    postal_code: "17130",
+    country: "España",
+    legal_number: "B55370720",
+    is_active: true,
+    company_id: 1,
+};
+
+test("quote valid-until date formats for date input", () => {
+    assert.equal(formatQuoteValidUntilDate("2026-07-08T12:00:00.000Z"), "2026-07-08");
+    assert.equal(formatQuoteValidUntilDate(null), "");
+    assert.equal(formatQuoteValidUntilDate("bad-date"), "");
+});
+
+test("quote issuer fields keep company fiscal and bank data", () => {
+    const fields = getQuoteIssuerFieldsFromCompany({
+        id: 1,
+        name: "Ownet",
+        tax_id: "Y1149377N",
+        address: "Carrer Illa Mateua, 22",
+        phone: "+34 634 92 09 23",
+        email: "ownet@example.com",
+        bank_account: "ES0000",
+        is_active: true,
+    } as Company);
+
+    assert.equal(fields.name, "Ownet");
+    assert.equal(fields.bank, "ES0000");
+});
+
+test("quote recipient fields include fiscal address data", () => {
+    assert.deepEqual(getQuoteRecipientFieldsFromClient(client), {
+        name: "Port Blanc",
+        taxId: "B55370720",
+        address: "Carrer del Gregal, 52\n17130 Girona, España",
+        phone: "621261405",
+        email: "port@example.com",
+    });
+});
+
+test("quote items map to editable concept rows", () => {
+    const quote = {
+        tax_rate: 0.21,
+        items: [
+            { id: 7, description: "Limpieza", unit_price: 165, quantity: 2 },
+        ],
+    } as Quote;
+    const rows = mapQuoteItemsToConceptRows(quote);
+
+    assert.deepEqual(rows, [{
+        id: "7",
+        description: "Limpieza",
+        unitPrice: 165,
+        quantity: 2,
+        taxRate: 0.21,
+    }]);
+});
+
+test("quote payload preserves optional document fields", () => {
+    const payload = buildQuotePayload({
+        selectedClientId: "25",
+        title: "Presupuesto limpieza",
+        validUntil: "2026-07-08",
+        notesEnabled: false,
+        notes: "hidden",
+        taxRateGlobal: 0.21,
+        discount: 5,
+        equivalenceSurcharge: 0,
+        retention: 0,
+        termsEnabled: true,
+        terms: "Terms",
+        shippingAddress: "",
+        customIssuerInfo: "Issuer",
+        customRecipientInfo: "Recipient",
+        signatureUrl: null,
+    });
+
+    assert.equal(payload.client_id, 25);
+    assert.equal(payload.notes, null);
+    assert.equal(payload.terms, "Terms");
+    assert.equal(payload.shipping_address, null);
+});
+
+test("quote item changes split deleted updated and new rows", () => {
+    const originalItems = [
+        { id: 1, quote_id: 1, description: "Old", quantity: 1, unit_price: 10, subtotal: 10 },
+        { id: 2, quote_id: 1, description: "Delete", quantity: 1, unit_price: 20, subtotal: 20 },
+    ] as Quote["items"];
+    const concepts = [
+        { id: "1", description: "Updated", quantity: 2, unitPrice: 15, taxRate: 0.21 },
+        createQuoteConceptRow(0.21, "manual-new"),
+    ];
+    const result = getQuoteItemChanges(originalItems, concepts);
+
+    assert.deepEqual(result.deletedItems.map(item => item.id), [2]);
+    assert.deepEqual(result.updatedItems.map(item => item.id), ["1"]);
+    assert.deepEqual(result.newItems.map(item => item.id), ["manual-new"]);
+});

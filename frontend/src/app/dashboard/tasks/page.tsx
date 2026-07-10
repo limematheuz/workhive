@@ -1,0 +1,171 @@
+"use client";
+
+import React, { Suspense } from "react";
+import { Plus, Columns3, ListTodo, Library, Loader2, CalendarDays } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useTasksPage } from "@/hooks/useTasksPage";
+import { TasksKanban } from "@/components/tasks/TasksKanban";
+import { TasksList } from "@/components/tasks/TasksList";
+import { TasksTemplates } from "@/components/tasks/TasksTemplates";
+import { TaskFormModals } from "@/components/tasks/TaskFormModals";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { CompanyCalendar } from "@/components/calendar/CompanyCalendar";
+
+function TasksPageContent() {
+    const state = useTasksPage();
+
+    return (
+        <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto overflow-x-hidden max-w-full">
+            {/* Page header */}
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+                <div>
+                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
+                        <ListTodo className="w-6 h-6 text-accent" />
+                        {state.dict.tasks?.page_title || "Tareas y Operaciones"}
+                    </h1>
+                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
+                        {state.dict.tasks?.page_subtitle || "Planifica el trabajo, sigue su avance y estandariza los servicios."}
+                    </p>
+                </div>
+                <div className="flex items-center gap-3">
+                    {/* Template creation button shown on the templates tab */}
+                    {state.activeTab === "templates" && state.isAdminOrManager && (
+                        <Button
+                            onClick={() => state.handleOpenTemplateModal(null)}
+                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {state.dict.tasks?.create_template || "Nuevo servicio"}
+                        </Button>
+                    )}
+
+                    {state.activeTab !== "templates" && state.isAdminOrManager && (
+                        <Button
+                            onClick={() => state.setIsCreateOpen(true)}
+                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                        >
+                            <Plus className="w-4 h-4" />
+                            {state.dict.tasks?.new_task || "Nueva Tarea"}
+                        </Button>
+                    )}
+                </div>
+            </div>
+
+            {/* Tab selector (Premium Navigation) */}
+            <PremiumTabs
+                tabs={[
+                    { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Operaciones", icon: Columns3 },
+                    { id: "calendar" as const, label: state.dict.tasks?.tab_calendar || "Calendario", icon: CalendarDays },
+                    ...(state.isAdminOrManager
+                        ? [
+                            { id: "list" as const, label: state.dict.tasks?.tab_list || "Todas las tareas", icon: ListTodo },
+                            { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Catálogo de servicios", icon: Library }
+                          ]
+                        : [])
+                ]}
+                activeTab={state.activeTab}
+                onChange={state.setActiveTab}
+                className="mb-6"
+            />
+
+            {state.loadingData ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
+                    <Loader2 className="w-8 h-8 text-[var(--text-main)] animate-spin" />
+                    <span className="text-xs text-[var(--text-muted)]">{state.dict.tasks?.syncing_flows || "Sincronizando flujos..."}</span>
+                </div>
+            ) : (
+                <>
+                    {/* CONTENT: KANBAN BOARD TAB */}
+                    {state.activeTab === "kanban" && (
+                        <TasksKanban
+                            tasks={state.tasks}
+                            locations={state.locations}
+                            users={state.users}
+                            onTaskUpdate={state.loadTasks}
+                            currentUser={state.currentUser}
+                            onCreateTask={() => state.setIsCreateOpen(true)}
+                        />
+                    )}
+
+                    {/* CONTENT: GENERAL LIST TAB */}
+                    {state.activeTab === "list" && state.isAdminOrManager && (
+                        <TasksList
+                            dict={state.dict}
+                            tasks={state.tasks}
+                            locations={state.locations}
+                            users={state.users}
+                            isAdminOrManager={state.isAdminOrManager}
+                            currentUser={state.currentUser}
+                            loadingTasks={state.loadingTasks}
+                            selectedLocationId={state.selectedLocationId}
+                            setSelectedLocationId={state.setSelectedLocationId}
+                            selectedUserId={state.selectedUserId}
+                            setSelectedUserId={state.setSelectedUserId}
+                            selectedStatus={state.selectedStatus}
+                            setSelectedStatus={state.setSelectedStatus}
+                            handleOpenDetail={state.handleOpenDetail}
+                            handleToggleStatus={state.handleToggleStatus}
+                            getLocationName={state.getLocationName}
+                            getAssigneeName={state.getAssigneeName}
+                        />
+                    )}
+
+                    {state.activeTab === "calendar" && (
+                        <CompanyCalendar
+                            tasks={state.tasks}
+                            locations={state.locations}
+                            users={state.users}
+                            currentUser={state.currentUser}
+                            onTasksChanged={state.loadTasks}
+                        />
+                    )}
+
+                    {/* CONTENT: GLOBAL TEMPLATES TAB */}
+                    {state.activeTab === "templates" && state.isAdminOrManager && (
+                        <TasksTemplates
+                            templates={state.templates}
+                            handleOpenTemplateModal={state.handleOpenTemplateModal}
+                            onDeleteTemplate={state.handleDeleteTemplate}
+                            isDeletingTemplate={state.isDeletingTemplate}
+                            onDuplicateTemplate={state.handleDuplicateTemplate}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* FORM MODALS */}
+            <TaskFormModals
+                {...state}
+                onAccept={state.handleAcceptTask}
+                onReject={state.handleRejectTask}
+            />
+
+            <DeleteConfirmDialog
+                open={state.isDeleteTaskDialogOpen}
+                onOpenChange={state.setIsDeleteTaskDialogOpen}
+                title={state.dict.tasks?.delete_confirm_dialog?.title || "Eliminar Tarea"}
+                description={state.dict.tasks?.delete_confirm_dialog?.description
+                    ? state.dict.tasks.delete_confirm_dialog.description.replace("{title}", state.taskToDelete?.title || "")
+                    : `¿Estás seguro de que deseas eliminar la tarea "${state.taskToDelete?.title || ""}"? Esta acción no se puede deshacer.`}
+                onConfirm={state.handleDeleteTaskConfirm}
+                isDeleting={state.isDeletingTask}
+                confirmText={state.dict.tasks?.delete_confirm_dialog?.confirm || "Eliminar"}
+                cancelText={state.dict.tasks?.delete_confirm_dialog?.cancel || "Cancelar"}
+            />
+        </div>
+    );
+}
+
+export default function TasksPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="w-8 h-8 text-[var(--text-main)] animate-spin" />
+                <span className="text-xs text-[var(--text-muted)]">Sincronizando flujos...</span>
+            </div>
+        }>
+            <TasksPageContent />
+        </Suspense>
+    );
+}
