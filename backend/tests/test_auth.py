@@ -1,3 +1,8 @@
+from datetime import datetime, timezone
+
+from jose import jwt
+
+from app.core.config import settings
 from credentials import TEST_NEW, TEST_OLD, TEST_SECRET, login_form, with_credential, with_new_credential, CREDENTIAL_FIELD, NEW_CREDENTIAL_FIELD
 
 
@@ -45,6 +50,38 @@ def test_login_user(client):
     assert response.cookies.get("auth_token")
     assert response.cookies.get("csrf_token")
     assert "HttpOnly" in response.headers["set-cookie"]
+
+
+def test_login_session_uses_configured_seven_day_lifetime(client, monkeypatch):
+    monkeypatch.setattr(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", 7 * 24 * 60)
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "session-lifetime@workhive.com",
+            CREDENTIAL_FIELD: TEST_SECRET,
+            "full_name": "Session Lifetime",
+            "accept_terms": True,
+            "accept_privacy": True,
+            "policy_version": "2026-06-15",
+        },
+    )
+
+    response = client.post(
+        "/api/v1/auth/login",
+        data=login_form("session-lifetime@workhive.com", TEST_SECRET),
+    )
+
+    payload = jwt.decode(
+        response.json()["access_token"],
+        settings.SECRET_KEY,
+        algorithms=[settings.ALGORITHM],
+    )
+    remaining_seconds = payload["exp"] - datetime.now(timezone.utc).timestamp()
+
+    assert response.status_code == 200
+    assert settings.ACCESS_TOKEN_EXPIRE_MINUTES == 7 * 24 * 60
+    assert 7 * 24 * 60 * 60 - 5 <= remaining_seconds <= 7 * 24 * 60 * 60
+    assert "Max-Age=604800" in response.headers["set-cookie"]
 
 
 def test_cookie_session_requires_csrf_for_mutations(client):
