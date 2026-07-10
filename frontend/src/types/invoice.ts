@@ -28,6 +28,7 @@ export interface Invoice {
     invoice_hash?: string | null;
     previous_invoice_hash?: string | null;
     issued_at?: string | null;
+    paid_at?: string | null;
     issuer_snapshot?: Record<string, unknown> | null;
     recipient_snapshot?: Record<string, unknown> | null;
     rectification_reason?: string | null;
