@@ -5,10 +5,11 @@ from app.api.v1.task_items import accept_task_item
 from app.models.client import Client
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.location_template import LocationTemplate
+from app.models.invoice import Invoice
 from app.models.task_item import TaskItem
 from app.models.template_task import TemplateTask
 from app.schemas.reservation import ReservationCreate
-from app.schemas.invoice import InvoiceDraftCreate
+from app.schemas.invoice import InvoiceDraftCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate
 from app.schemas.task_item import TaskAcceptRequest, TaskItemUpdate
 from app.services import (
@@ -220,3 +221,45 @@ def test_viewer_sees_accepted_external_task_in_company_pool(db):
     assert task_assignment_service.can_viewer_access_task(
         task, receiver_worker.id
     )
+
+
+def test_marking_invoice_paid_records_collection_time(db):
+    company = _company(db, "Cobros", "COBROS")
+    client = Client(
+        name="Cliente cobrado",
+        email="cliente-cobrado@example.com",
+        legal_number="CLIENTE-COBRADO",
+        address="Calle Uno",
+        city="Madrid",
+        postal_code="28001",
+        country="España",
+        phone="600000000",
+        company_id=company.id,
+    )
+    db.add(client)
+    db.flush()
+    invoice = Invoice(
+        invoice_number="INV-2026-PAID",
+        issue_date=datetime.now(timezone.utc) - timedelta(days=30),
+        status="issued",
+        company_id=company.id,
+        client_id=client.id,
+    )
+    db.add(invoice)
+    db.commit()
+    db.refresh(invoice)
+
+    before_payment = datetime.now(timezone.utc)
+    updated = invoice_service.update_invoice(
+        db,
+        company.id,
+        invoice.id,
+        InvoiceUpdate(status="paid"),
+    )
+
+    assert updated.status == "paid"
+    assert updated.paid_at is not None
+    paid_at = updated.paid_at
+    if paid_at.tzinfo is None:
+        paid_at = paid_at.replace(tzinfo=timezone.utc)
+    assert paid_at >= before_payment

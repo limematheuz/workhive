@@ -62,6 +62,7 @@ class InvoiceResponse(InvoiceBase):
     invoice_hash: str | None = None
     previous_invoice_hash: str | None = None
     issued_at: datetime | None = None
+    paid_at: datetime | None = None
     issuer_snapshot: dict | None = None
     recipient_snapshot: dict | None = None
     rectification_reason: str | None = None

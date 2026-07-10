@@ -144,12 +144,18 @@ function summarizeRange(
 ): FinancePeriodSummary {
     const summary = emptyPeriodSummary();
     invoices.forEach((invoice) => {
-        const date = parseDate(invoice.issue_date);
-        if (!isInRange(date, start, end)) return;
-        if (invoice.status === "paid") summary.paid += invoice.total_amount;
-        if (invoice.status === "issued") summary.pending += invoice.total_amount;
-        if (invoice.status === "overdue") summary.overdue += invoice.total_amount;
-        if (isRevenueInvoice(invoice)) {
+        const issueDate = parseDate(invoice.issue_date);
+        const paymentDate = parseDate(invoice.paid_at || invoice.issue_date);
+        if (invoice.status === "paid" && isInRange(paymentDate, start, end)) {
+            summary.paid += invoice.total_amount;
+        }
+        if (invoice.status === "issued" && isInRange(issueDate, start, end)) {
+            summary.pending += invoice.total_amount;
+        }
+        if (invoice.status === "overdue" && isInRange(issueDate, start, end)) {
+            summary.overdue += invoice.total_amount;
+        }
+        if (isRevenueInvoice(invoice) && isInRange(issueDate, start, end)) {
             summary.revenue += invoice.total_amount;
             summary.invoiceTax += invoice.tax_amount;
         }

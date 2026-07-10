@@ -1,5 +1,6 @@
 import logging
 import uuid
+from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -466,6 +467,8 @@ def update_invoice(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid invoice status transition",
             )
+        if requested_status == "paid":
+            invoice.paid_at = datetime.now(timezone.utc)
 
     try:
         if "invoice_number" in changes and changes["invoice_number"] is not None:

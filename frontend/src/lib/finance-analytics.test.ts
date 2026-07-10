@@ -157,6 +157,28 @@ test("finance period comparison separates current and previous period values", (
     assert.equal(comparison.previous.expenses, 12);
 });
 
+test("paid totals use collection date while revenue keeps issue date", () => {
+    const comparison = summarizeFinancePeriod(
+        [
+            makeInvoice({
+                status: "paid",
+                issue_date: "2026-06-20T10:00:00",
+                paid_at: "2026-07-06T10:00:00",
+                total_amount: 121,
+                tax_amount: 21,
+            }),
+        ],
+        [],
+        "month",
+        new Date("2026-07-07T12:00:00"),
+    );
+
+    assert.equal(comparison.current.paid, 121);
+    assert.equal(comparison.current.revenue, 0);
+    assert.equal(comparison.previous.paid, 0);
+    assert.equal(comparison.previous.revenue, 121);
+});
+
 test("finance series includes stable buckets and ignores invalid dates", () => {
     const series = buildFinanceSeries(
         [
