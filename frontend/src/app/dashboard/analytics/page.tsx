@@ -71,8 +71,8 @@ export default function FinanceAnalyticsPage() {
         try {
             setLoading(true);
             const [invoiceData, expenseData] = await Promise.all([
-                InvoiceService.getInvoices({ limit: 500 }),
-                ExpenseService.getExpenses({ limit: 500 }),
+                InvoiceService.getAllInvoices(),
+                ExpenseService.getAllExpenses(),
             ]);
             setInvoices(invoiceData);
             setExpenses(expenseData);
@@ -100,7 +100,10 @@ export default function FinanceAnalyticsPage() {
         () => summarizeFinancePeriod(invoices, expenses, period),
         [expenses, invoices, period],
     );
-    const categoryTotals = useMemo(() => groupExpensesByCategory(expenses), [expenses]);
+    const categoryTotals = useMemo(
+        () => groupExpensesByCategory(expenses, period),
+        [expenses, period],
+    );
 
     if (userLoading || loading) {
         return (
@@ -240,7 +243,7 @@ function FinanceDashboard({
                     text={text}
                     categoryTotals={categoryTotals}
                     categoryLabels={categoryLabels}
-                    totalExpenses={Math.max(current.expenses, categoryTotals.reduce((sum, item) => sum + item.total, 0))}
+                    totalExpenses={current.expenses}
                 />
             </section>
         </>

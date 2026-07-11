@@ -157,6 +157,85 @@ test("finance period comparison separates current and previous period values", (
     assert.equal(comparison.previous.expenses, 12);
 });
 
+test("paid totals use collection date while revenue keeps issue date", () => {
+    const comparison = summarizeFinancePeriod(
+        [
+            makeInvoice({
+                status: "paid",
+                issue_date: "2026-06-20T10:00:00",
+                paid_at: "2026-07-06T10:00:00",
+                total_amount: 121,
+                tax_amount: 21,
+            }),
+        ],
+        [],
+        "month",
+        new Date("2026-07-07T12:00:00"),
+    );
+
+    assert.equal(comparison.current.paid, 121);
+    assert.equal(comparison.current.revenue, 0);
+    assert.equal(comparison.previous.paid, 0);
+    assert.equal(comparison.previous.revenue, 121);
+});
+
+test("overdue totals use due date instead of issue date", () => {
+    const comparison = summarizeFinancePeriod(
+        [
+            makeInvoice({
+                status: "overdue",
+                issue_date: "2026-06-15T10:00:00",
+                due_date: "2026-07-05T10:00:00",
+                total_amount: 300,
+            }),
+        ],
+        [],
+        "month",
+        new Date("2026-07-07T12:00:00"),
+    );
+
+    assert.equal(comparison.current.overdue, 300);
+    assert.equal(comparison.previous.overdue, 0);
+    assert.equal(comparison.previous.revenue, 300);
+});
+
+test("the latest chart bucket exactly matches every current-period summary", () => {
+    const invoices = [
+        makeInvoice({ id: 1, status: "paid", paid_at: "2026-07-07T09:00:00", total_amount: 100 }),
+        makeInvoice({ id: 2, status: "issued", issue_date: "2026-07-07T10:00:00", total_amount: 70 }),
+        makeInvoice({ id: 3, status: "overdue", issue_date: "2026-06-01T10:00:00", due_date: "2026-07-07T11:00:00", total_amount: 30 }),
+    ];
+    const expenses = [
+        makeExpense({ id: 1, expense_date: "2026-07-07T08:00:00", total_amount: 25 }),
+    ];
+    const now = new Date("2026-07-07T12:00:00");
+
+    for (const period of ["day", "week", "month", "year"] as const) {
+        const latestPoint = buildFinanceSeries(invoices, expenses, "es", period, now).at(-1);
+        const current = summarizeFinancePeriod(invoices, expenses, period, now).current;
+
+        assert.ok(latestPoint);
+        assert.deepEqual(
+            {
+                paid: latestPoint.paid,
+                pending: latestPoint.pending,
+                overdue: latestPoint.overdue,
+                revenue: latestPoint.revenue,
+                expenses: latestPoint.expenses,
+                profit: latestPoint.profit,
+            },
+            {
+                paid: current.paid,
+                pending: current.pending,
+                overdue: current.overdue,
+                revenue: current.revenue,
+                expenses: current.expenses,
+                profit: current.profit,
+            },
+        );
+    }
+});
+
 test("finance series includes stable buckets and ignores invalid dates", () => {
     const series = buildFinanceSeries(
         [
@@ -186,4 +265,22 @@ test("expenses are grouped by category from highest to lowest total", () => {
         { category: "supplies", total: 80 },
         { category: "transport", total: 50 },
     ]);
+});
+
+test("expense categories only represent the selected current period", () => {
+    const grouped = groupExpensesByCategory(
+        [
+            makeExpense({ id: 1, category: "supplies", expense_date: "2026-07-05T10:00:00", total_amount: 80 }),
+            makeExpense({ id: 2, category: "transport", expense_date: "2026-07-06T10:00:00", total_amount: 20 }),
+            makeExpense({ id: 3, category: "transport", expense_date: "2026-06-30T10:00:00", total_amount: 999 }),
+        ],
+        "month",
+        new Date("2026-07-07T12:00:00"),
+    );
+
+    assert.deepEqual(grouped, [
+        { category: "supplies", total: 80 },
+        { category: "transport", total: 20 },
+    ]);
+    assert.equal(grouped.reduce((sum, item) => sum + item.total, 0), 100);
 });

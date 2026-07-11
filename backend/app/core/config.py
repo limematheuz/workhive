@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     DATABASE_USE_NULL_POOL: bool | None = None
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080
     SESSION_COOKIE_NAME: str = "auth_token"
     CSRF_COOKIE_NAME: str = "csrf_token"
     SESSION_COOKIE_DOMAIN: str | None = None

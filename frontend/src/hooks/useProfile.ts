@@ -14,6 +14,7 @@ import { Invoice } from "@/types/invoice";
 import { getErrorMessage } from "@/lib/errors";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
 import type { CompanyExpense } from "@/types/company";
+import { buildCompanyTaskStats } from "@/lib/operations-analytics";
 
 export interface FinancialChartStats {
     labels: string[];
@@ -140,11 +141,17 @@ export function useProfile() {
             
             allInvoices.forEach(inv => {
                 try {
-                    const invDate = new Date(inv.issue_date);
+                    const invDate = new Date(
+                        inv.status === "paid"
+                            ? inv.paid_at || inv.issue_date
+                            : inv.status === "overdue"
+                                ? inv.due_date || inv.issue_date
+                                : inv.issue_date,
+                    );
                     if (invDate.getFullYear() === year && invDate.getMonth() === month) {
                         if (inv.status === "paid") {
                             paidSum += inv.total_amount;
-                        } else if (inv.status === "issued" || inv.status === "draft") {
+                        } else if (inv.status === "issued") {
                             pendingSum += inv.total_amount;
                         } else if (inv.status === "overdue") {
                             overdueSum += inv.total_amount;
@@ -180,78 +187,10 @@ export function useProfile() {
         };
     }, [allInvoices, companyExpenses, locale]);
 
-    // Dynamic grouping of tasks at company level (completed vs pending vs overdue)
-    const companyTaskStats = useMemo(() => {
-        const months = [];
-        const totalData = [];
-        const completedData = [];
-        const pendingData = [];
-        const overdueData = [];
-        const requestedData = [];
-        const rejectedData = [];
-        
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthName = new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1)).toLocaleDateString(
-                locale === "es" ? "es-ES" : "en-US",
-                { month: "short", timeZone: "UTC" },
-            );
-            months.push(monthName);
-            
-            const year = d.getFullYear();
-            const month = d.getMonth();
-            
-            let totalCount = 0;
-            let completedCount = 0;
-            let pendingCount = 0;
-            let overdueCount = 0;
-            let requestedCount = 0;
-            let rejectedCount = 0;
-            
-            allCompanyTasks.forEach(task => {
-                try {
-                    const taskDate = new Date(task.created_at);
-                    if (taskDate.getFullYear() === year && taskDate.getMonth() === month) {
-                        totalCount++;
-                        const normalizedStatus = task.status.toLowerCase().replaceAll("-", "_");
-                        if (normalizedStatus === "completed") {
-                            completedCount++;
-                        } else if (normalizedStatus === "requested") {
-                            requestedCount++;
-                        } else if (normalizedStatus === "rejected" || normalizedStatus === "cancelled") {
-                            rejectedCount++;
-                        } else {
-                            const deadline = task.due_at || task.scheduled_start_at;
-                            if (deadline && new Date(deadline).getTime() < now.getTime()) {
-                                overdueCount++;
-                            } else {
-                                pendingCount++;
-                            }
-                        }
-                    }
-                } catch {}
-            });
-            
-            totalData.push(totalCount);
-            completedData.push(completedCount);
-            pendingData.push(pendingCount);
-            overdueData.push(overdueCount);
-            requestedData.push(requestedCount);
-            rejectedData.push(rejectedCount);
-        }
-
-        return {
-            labels: months,
-            total: totalData,
-            completed: completedData,
-            pending: pendingData,
-            overdue: overdueData,
-            requested: requestedData,
-            rejected: rejectedData,
-            hasData: totalData.some(v => v > 0),
-        };
-    }, [allCompanyTasks, locale]);
+    const companyTaskStats = useMemo(
+        () => buildCompanyTaskStats(allCompanyTasks, locale),
+        [allCompanyTasks, locale],
+    );
 
     // Dynamic self weekly performance for Installer
     const installerWeeklyStats = useMemo(() => {
@@ -335,8 +274,8 @@ export function useProfile() {
                 userIsPlatformSuperadmin ? Promise.resolve([]) : UserService.getUserWorkSessions(10),
                 userIsPlatformSuperadmin ? Promise.resolve([]) : UserService.getUserTasks(user.id, 100),
                 userIsPlatformSuperadmin ? Promise.resolve([]) : LocationService.getLocations(),
-                isAdm && !userIsPlatformSuperadmin ? InvoiceService.getInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
-                (isAdm || isMgr) && !userIsPlatformSuperadmin ? TaskService.getTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
+                isAdm && !userIsPlatformSuperadmin ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
+                (isAdm || isMgr) && !userIsPlatformSuperadmin ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
                 isAdm && user.company_id && !userIsPlatformSuperadmin
                     ? CompanyService.getCompanyExpenses(user.company_id).catch(() => [] as CompanyExpense[])
                     : Promise.resolve([] as CompanyExpense[])

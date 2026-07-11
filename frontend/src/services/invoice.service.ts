@@ -1,6 +1,7 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api"
 import { Invoice, InvoiceItem } from "@/types/invoice"
 import { TaskItem } from "@/types/user"
+import { collectPaginated } from "@/lib/pagination"
 
 export interface InvoiceCreate {
     client_id: number;
@@ -135,6 +136,10 @@ export const InvoiceService = {
         }
         return await response.json()
     },
+
+    getAllInvoices: async (): Promise<Invoice[]> => collectPaginated(
+        (skip, limit) => InvoiceService.getInvoices({ skip, limit }),
+    ),
 
     getCompletedJobs: async (): Promise<InvoiceableTask[]> => {
         const response = await apiFetch("/api/v1/invoices/completed-jobs", {

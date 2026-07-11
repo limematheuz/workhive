@@ -40,7 +40,6 @@ test-results/
 .agents/
 skills-lock.json
 .cursorrules
-AGENTS.md
 
 # OS
 .DS_Store

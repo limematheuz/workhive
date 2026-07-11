@@ -193,6 +193,84 @@ def test_superadmin_can_revoke_subscription_access_and_sessions(client, db):
     assert new_login.status_code == 402
 
 
+def test_only_superadmin_can_list_all_company_members(client, db):
+    superadmin = User(
+        email="superadmin-members@workhive.com",
+        hashed_password=get_password_hash(TEST_SUPER),
+        full_name="Platform Admin",
+        role_id=4,
+        company_id=None,
+        is_active=True,
+    )
+    db.add(superadmin)
+    db.commit()
+    super_login = client.post(
+        "/api/v1/auth/login",
+        data=login_form(superadmin.email, TEST_SUPER),
+    )
+    super_headers = {"Authorization": f"Bearer {super_login.json()['access_token']}"}
+    provision = client.post(
+        "/api/v1/companies/provision",
+        headers=super_headers,
+        json=with_owner_credential(
+            {
+                "name": "Members Company",
+                "tax_id": "B12340111",
+                "address": "Calle Equipo 1",
+                "phone": "600000111",
+                "email": "company-members@example.com",
+                "owner_full_name": "Company Admin",
+                "owner_email": "company-admin@example.com",
+            }
+        ),
+    )
+    company_id = provision.json()["id"]
+    db.add_all(
+        [
+            User(
+                email="manager-members@example.com",
+                hashed_password=get_password_hash(TEST_TEMP),
+                full_name="Manager Member",
+                role_id=2,
+                company_id=company_id,
+                is_active=True,
+            ),
+            User(
+                email="worker-members@example.com",
+                hashed_password=get_password_hash(TEST_TEMP),
+                full_name="Inactive Worker",
+                role_id=3,
+                company_id=company_id,
+                is_active=False,
+            ),
+        ]
+    )
+    db.commit()
+
+    response = client.get(
+        f"/api/v1/companies/{company_id}/members",
+        headers=super_headers,
+    )
+
+    assert response.status_code == 200
+    assert {(member["role"], member["is_active"]) for member in response.json()} == {
+        ("admin", True),
+        ("manager", True),
+        ("viewer", False),
+    }
+    assert all("hashed_password" not in member for member in response.json())
+
+    owner_login = client.post(
+        "/api/v1/auth/login",
+        data=login_form("company-admin@example.com", TEST_TEMP),
+    )
+    forbidden = client.get(
+        f"/api/v1/companies/{company_id}/members",
+        headers={"Authorization": f"Bearer {owner_login.json()['access_token']}"},
+    )
+    assert forbidden.status_code == 403
+
+
 def test_superadmin_can_permanently_delete_empty_trial_company_and_owner_email(
     client, db
 ):

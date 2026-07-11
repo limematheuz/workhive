@@ -52,6 +52,7 @@ class Invoice(Base):
     custom_recipient_info = Column(Text, nullable=True)
     signature_url = Column(Text, nullable=True)
     issued_at = Column(DateTime(timezone=True), nullable=True)
+    paid_at = Column(DateTime(timezone=True), nullable=True)
     issuer_snapshot = Column(JSON, nullable=True)
     recipient_snapshot = Column(JSON, nullable=True)
     rectification_reason = Column(Text, nullable=True)

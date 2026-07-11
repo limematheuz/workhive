@@ -1,5 +1,6 @@
 import { apiFetch } from "@/lib/api";
 import { Company, CompanyExpense } from "@/types/company";
+import type { CompanyMember } from "@/components/companies/company-members";
 
 export type { Company };
 
@@ -36,6 +37,17 @@ export const CompanyService = {
         });
         if (!response.ok) {
             throw new Error("Error fetching company");
+        }
+        return await response.json();
+    },
+
+    getCompanyMembers: async (id: number): Promise<CompanyMember[]> => {
+        const response = await apiFetch(`/api/v1/companies/${id}/members`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        if (!response.ok) {
+            throw new Error("Error fetching company members");
         }
         return await response.json();
     },
