@@ -1,5 +1,6 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api";
 import type { Expense, ExpensePayload } from "@/types/expense";
+import { collectPaginated } from "@/lib/pagination";
 
 export interface ExpenseFilters {
     category?: string;
@@ -31,6 +32,10 @@ export const ExpenseService = {
         }
         return await response.json();
     },
+
+    getAllExpenses: async (): Promise<Expense[]> => collectPaginated(
+        (skip, limit) => ExpenseService.getExpenses({ skip, limit }),
+    ),
 
     createExpense: async (data: ExpensePayload): Promise<Expense> => {
         const response = await apiFetch("/api/v1/expenses/", {

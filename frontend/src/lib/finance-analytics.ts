@@ -146,13 +146,14 @@ function summarizeRange(
     invoices.forEach((invoice) => {
         const issueDate = parseDate(invoice.issue_date);
         const paymentDate = parseDate(invoice.paid_at || invoice.issue_date);
+        const overdueDate = parseDate(invoice.due_date || invoice.issue_date);
         if (invoice.status === "paid" && isInRange(paymentDate, start, end)) {
             summary.paid += invoice.total_amount;
         }
         if (invoice.status === "issued" && isInRange(issueDate, start, end)) {
             summary.pending += invoice.total_amount;
         }
-        if (invoice.status === "overdue" && isInRange(issueDate, start, end)) {
+        if (invoice.status === "overdue" && isInRange(overdueDate, start, end)) {
             summary.overdue += invoice.total_amount;
         }
         if (isRevenueInvoice(invoice) && isInRange(issueDate, start, end)) {
@@ -267,9 +268,18 @@ export function summarizeFinancePeriod(
     };
 }
 
-export function groupExpensesByCategory(expenses: Expense[]) {
+export function groupExpensesByCategory(
+    expenses: Expense[],
+    period?: FinancePeriod,
+    now = new Date(),
+) {
     const totals = new Map<string, number>();
     expenses.forEach((expense) => {
+        if (period) {
+            const start = startOfPeriod(now, period);
+            const end = addPeriod(start, period, 1);
+            if (!isInRange(parseDate(expense.expense_date), start, end)) return;
+        }
         totals.set(expense.category, (totals.get(expense.category) || 0) + expense.total_amount);
     });
     return Array.from(totals.entries())

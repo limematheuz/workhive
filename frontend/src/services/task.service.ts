@@ -2,6 +2,7 @@ import { apiFetch, extractErrorMessage } from "@/lib/api"
 import { TaskItem } from "@/types/user"
 import { WorkStartLocation } from "@/lib/work-start-location"
 import type { TaskPriority, TaskStatus } from "@/types/task"
+import { collectPaginated } from "@/lib/pagination"
 
 export type { TaskItem };
 
@@ -79,6 +80,10 @@ export const TaskService = {
         }
         return await response.json()
     },
+
+    getAllTaskItems: async (): Promise<TaskItem[]> => collectPaginated(
+        (skip, limit) => TaskService.getTaskItems({ skip, limit }),
+    ),
 
     getTaskItem: async (id: number): Promise<TaskItem> => {
         const response = await apiFetch(`/api/v1/task-items/${id}`, {
