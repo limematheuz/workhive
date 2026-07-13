@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
@@ -106,3 +108,52 @@ def mark_all_read(db: Session, user: User) -> None:
         synchronize_session=False,
     )
     db.commit()
+
+
+async def list_notifications_async(
+    db: AsyncSession,
+    user: User,
+    *,
+    unread_only: bool,
+    limit: int,
+) -> list[Notification]:
+    statement = select(Notification).where(Notification.user_id == user.id)
+    if unread_only:
+        statement = statement.where(Notification.read_at.is_(None))
+    statement = statement.order_by(
+        Notification.created_at.desc(),
+        Notification.id.desc(),
+    ).limit(limit)
+    result = await db.scalars(statement)
+    return list(result.all())
+
+
+async def mark_read_async(
+    db: AsyncSession,
+    user: User,
+    notification_id: int,
+) -> Notification | None:
+    statement = select(Notification).where(
+        Notification.id == notification_id,
+        Notification.user_id == user.id,
+    )
+    notification = await db.scalar(statement)
+    if not notification:
+        return None
+    notification.read_at = notification.read_at or datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(notification)
+    return notification
+
+
+async def mark_all_read_async(db: AsyncSession, user: User) -> None:
+    statement = (
+        update(Notification)
+        .where(
+            Notification.user_id == user.id,
+            Notification.read_at.is_(None),
+        )
+        .values(read_at=datetime.now(timezone.utc))
+    )
+    await db.execute(statement)
+    await db.commit()

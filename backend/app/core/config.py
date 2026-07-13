@@ -226,7 +226,21 @@ class Settings(BaseSettings):
 
     @property
     def migration_database_url(self) -> str:
-        return self.MIGRATION_DATABASE_URL or self.DATABASE_URL
+        from app.core.database_url import to_sync_database_url
+
+        return to_sync_database_url(self.MIGRATION_DATABASE_URL or self.DATABASE_URL)
+
+    @property
+    def sync_database_url(self) -> str:
+        from app.core.database_url import to_sync_database_url
+
+        return to_sync_database_url(self.DATABASE_URL)
+
+    @property
+    def async_database_url(self) -> str:
+        from app.core.database_url import to_async_database_url
+
+        return to_async_database_url(self.DATABASE_URL)
 
     @property
     def use_null_pool(self) -> bool:

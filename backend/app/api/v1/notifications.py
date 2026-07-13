@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ActiveUser, get_db
+from app.api.deps import AsyncActiveUser, get_async_db
 from app.models.user import User
 from app.schemas.notification import NotificationResponse
 from app.services import notification_service
@@ -11,24 +11,26 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[NotificationResponse])
-def read_notifications(
+async def read_notifications(
     unread_only: bool = True,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return notification_service.list_notifications(
+    return await notification_service.list_notifications_async(
         db, current_user, unread_only=unread_only, limit=min(max(limit, 1), 200)
     )
 
 
 @router.patch("/{notification_id}/read", response_model=NotificationResponse)
-def mark_notification_read(
+async def mark_notification_read(
     notification_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    notification = notification_service.mark_read(db, current_user, notification_id)
+    notification = await notification_service.mark_read_async(
+        db, current_user, notification_id
+    )
     if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -38,8 +40,8 @@ def mark_notification_read(
 
 
 @router.patch("/read-all", status_code=status.HTTP_204_NO_CONTENT)
-def mark_all_notifications_read(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def mark_all_notifications_read(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    notification_service.mark_all_read(db, current_user)
+    await notification_service.mark_all_read_async(db, current_user)
