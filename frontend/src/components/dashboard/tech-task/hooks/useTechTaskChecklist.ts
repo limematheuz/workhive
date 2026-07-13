@@ -8,6 +8,7 @@ import { UploadService } from "@/services/upload.service";
 import { UserService } from "@/services/user.service";
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import { parseTaskChecklistItems } from "@/lib/format";
+import { filterVisibleChecklistItems } from "@/lib/task-checklist-view";
 import { toast } from "@/lib/toast";
 import type { Dictionary } from "@/lib/dictionary-context";
 
@@ -193,10 +194,6 @@ export function useTechTaskChecklist({
         });
     }, [checklistSourceKey, resolveChecklist]);
 
-    const categoryItems = useMemo(() => {
-        return checklist.filter(item => getCategoryForItem(item.question) === activeCategory);
-    }, [checklist, activeCategory]);
-
     const completedCount = useMemo(() => checklist.filter(item => item.answer !== null).length, [checklist]);
     const totalCount = checklist.length;
 
@@ -219,11 +216,12 @@ export function useTechTaskChecklist({
     const visibleTotalCount = ownTotalCount > 0 ? ownTotalCount : totalCount;
 
     const filteredItems = useMemo(() => {
-        return checklist.filter(item => {
-            if (hideCompleted && item.answer !== null) return false;
-            return true;
-        });
+        return [...filterVisibleChecklistItems(checklist, hideCompleted)];
     }, [checklist, hideCompleted]);
+
+    const categoryItems = useMemo(() => {
+        return filteredItems.filter(item => getCategoryForItem(item.question) === activeCategory);
+    }, [filteredItems, activeCategory]);
 
     // --- Handlers ---
 
