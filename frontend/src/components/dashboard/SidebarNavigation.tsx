@@ -4,7 +4,8 @@ import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
-    SIDEBAR_ALERT_ICON_BADGE_CLASS,
+    SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_ALERT_PULSE_CLASS,
     SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
     formatSidebarAlertCount,
     shouldShowTaskAlertsOnHref,
@@ -43,62 +44,58 @@ export function SidebarNavigation({
     const showTaskAlerts = (href: string) =>
         shouldShowTaskAlertsOnHref(href) && taskAlertsCount > 0;
 
-    const renderNavLink = (link: NavLink, nested = false) => (
-        <Link
-            key={link.href}
-            href={link.href}
-            className={`group flex items-center gap-2 rounded-lg font-medium transition-all ${
-                nested ? "px-2 py-1.5 text-[13px]" : "px-2 py-1.5"
-            } ${
-                isActive(link.href, link.exact)
-                    ? ""
-                    : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
-            }`}
-            style={
-                isActive(link.href, link.exact)
-                    ? {
-                          backgroundColor: "var(--sidebar-active-bg)",
-                          color: "var(--sidebar-active-text)",
-                          border: "1px solid var(--sidebar-active-border)",
-                      }
-                    : {}
-            }
-        >
-            {!nested && (
-                <span className="relative flex-shrink-0">
-                    {link.icon}
-                    {showReservationAlerts(link.href) && (
-                        <span className={SIDEBAR_ALERT_ICON_BADGE_CLASS}>
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
-                            <span className="relative">
-                                {formatSidebarAlertCount(pendingRequestsCount)}
-                            </span>
-                        </span>
-                    )}
-                    {showTaskAlerts(link.href) && (
-                        <span className={SIDEBAR_ALERT_ICON_BADGE_CLASS}>
-                            {formatSidebarAlertCount(taskAlertsCount)}
-                        </span>
-                    )}
-                </span>
-            )}
-            {isOpen && (
-                <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                    <span className="truncate">{link.label}</span>
-                    {showReservationAlerts(link.href) && (
-                        <span className={SIDEBAR_ALERT_TRAILING_BADGE_CLASS}>
-                            {formatSidebarAlertCount(pendingRequestsCount)}
-                        </span>
-                    )}
-                    {showTaskAlerts(link.href) && (
-                        <span className={SIDEBAR_ALERT_TRAILING_BADGE_CLASS}>
-                            {formatSidebarAlertCount(taskAlertsCount)}
-                        </span>
-                    )}
-                </span>
-            )}
-        </Link>
+    const renderAlertBadge = (count: number, className: string) => (
+        <span className={className}>
+            <span className={SIDEBAR_ALERT_PULSE_CLASS} />
+            <span className="relative">{formatSidebarAlertCount(count)}</span>
+        </span>
     );
+
+    const renderNavLink = (link: NavLink, nested = false) => {
+        const reservationAlerts = showReservationAlerts(link.href);
+        const taskAlerts = showTaskAlerts(link.href);
+        const alertCount = reservationAlerts
+            ? pendingRequestsCount
+            : taskAlerts
+                ? taskAlertsCount
+                : 0;
+
+        return (
+            <Link
+                key={link.href}
+                href={link.href}
+                className={`group relative flex items-center gap-2 rounded-lg font-medium transition-all ${
+                    nested ? "px-2 py-1.5 text-[13px]" : "px-2 py-1.5"
+                } ${
+                    isActive(link.href, link.exact)
+                        ? ""
+                        : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
+                }`}
+                style={
+                    isActive(link.href, link.exact)
+                        ? {
+                              backgroundColor: "var(--sidebar-active-bg)",
+                              color: "var(--sidebar-active-text)",
+                              border: "1px solid var(--sidebar-active-border)",
+                          }
+                        : {}
+                }
+            >
+                {!nested && <span className="flex-shrink-0">{link.icon}</span>}
+                {isOpen && (
+                    <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                        <span className="truncate">{link.label}</span>
+                        {alertCount > 0 &&
+                            renderAlertBadge(alertCount, SIDEBAR_ALERT_TRAILING_BADGE_CLASS)}
+                    </span>
+                )}
+                {!isOpen &&
+                    !nested &&
+                    alertCount > 0 &&
+                    renderAlertBadge(alertCount, SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS)}
+            </Link>
+        );
+    };
 
     const renderNavGroup = (group: NavGroup) => {
         const groupActive = group.children.some(link => isActive(link.href, link.exact));

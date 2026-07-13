@@ -17,6 +17,7 @@ import {
 } from "./notification-utils";
 import {
     HEADER_ALERT_BADGE_CLASS,
+    SIDEBAR_ALERT_PULSE_CLASS,
     formatSidebarAlertCount,
 } from "@/lib/sidebar-alerts";
 
@@ -93,7 +94,7 @@ export function NotificationPanel() {
             >
                 {totalNotificationCount > 0 && (
                     <span className={HEADER_ALERT_BADGE_CLASS}>
-                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+                        <span className={SIDEBAR_ALERT_PULSE_CLASS} />
                         <span className="relative">{formatSidebarAlertCount(totalNotificationCount)}</span>
                     </span>
                 )}

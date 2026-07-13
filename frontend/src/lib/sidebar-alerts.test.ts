@@ -3,7 +3,8 @@ import test from "node:test";
 
 import {
     HEADER_ALERT_BADGE_CLASS,
-    SIDEBAR_ALERT_ICON_BADGE_CLASS,
+    SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_ALERT_PULSE_CLASS,
     SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
     formatSidebarAlertCount,
     shouldShowTaskAlertsOnHref,
@@ -26,10 +27,10 @@ test("task alerts appear on Resumen and Tareas only", () => {
     assert.equal(shouldShowTaskAlertsOnHref("/dashboard/profile"), false);
 });
 
-test("sidebar alert badges are fully round and have no white outer ring", () => {
+test("sidebar and header alert badges are fully round and have no white outer ring", () => {
     for (const className of [
-        SIDEBAR_ALERT_ICON_BADGE_CLASS,
         SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
+        SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
         HEADER_ALERT_BADGE_CLASS,
     ]) {
         assert.match(className, /\brounded-full\b/);
@@ -43,13 +44,21 @@ test("sidebar alert badges are fully round and have no white outer ring", () => 
     }
 });
 
-test("icon badge stays absolutely anchored on the nav icon", () => {
-    assert.match(SIDEBAR_ALERT_ICON_BADGE_CLASS, /\babsolute\b/);
-    assert.match(SIDEBAR_ALERT_ICON_BADGE_CLASS, /-right-/);
-    assert.match(SIDEBAR_ALERT_ICON_BADGE_CLASS, /-top-/);
-});
-
-test("trailing badge sits at the end of the open nav row", () => {
+test("open sidebar keeps alerts only on the trailing right badge", () => {
     assert.match(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /\bml-auto\b/);
     assert.match(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /\bshrink-0\b/);
+    assert.match(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /\brelative\b/);
+    assert.doesNotMatch(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /\babsolute\b/);
+});
+
+test("sidebar alert pulse matches the notification panel ping style", () => {
+    assert.match(SIDEBAR_ALERT_PULSE_CLASS, /\banimate-ping\b/);
+    assert.match(SIDEBAR_ALERT_PULSE_CLASS, /\brounded-full\b/);
+    assert.match(SIDEBAR_ALERT_PULSE_CLASS, /\babsolute\b/);
+});
+
+test("collapsed sidebar badge stays on the link corner without overlapping a label", () => {
+    assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /\babsolute\b/);
+    assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /-right-/);
+    assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /-top-/);
 });
