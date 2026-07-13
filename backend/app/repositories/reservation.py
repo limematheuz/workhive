@@ -1,10 +1,27 @@
 from datetime import datetime
 
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
+from app.models.location import Location
 from app.models.reservation import Reservation
+from app.models.task_item import TaskItem
+from app.models.work_session import WorkSession
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
+
+
+def _load_options():
+    return (
+        selectinload(Reservation.location).selectinload(Location.client),
+        selectinload(Reservation.location).selectinload(Location.company_access),
+        selectinload(Reservation.owner_company),
+        selectinload(Reservation.assigned_company),
+        selectinload(Reservation.created_by),
+        selectinload(Reservation.checkout_tasks).selectinload(TaskItem.company),
+        selectinload(Reservation.checkout_tasks)
+        .selectinload(TaskItem.work_sessions)
+        .selectinload(WorkSession.user),
+    )
 
 
 def list_reservations(
@@ -17,7 +34,11 @@ def list_reservations(
 ) -> list[Reservation]:
     if not location_ids:
         return []
-    query = db.query(Reservation).filter(Reservation.location_id.in_(location_ids))
+    query = (
+        db.query(Reservation)
+        .options(*_load_options())
+        .filter(Reservation.location_id.in_(location_ids))
+    )
     if company_id is not None:
         query = query.filter(
             or_(
@@ -35,7 +56,12 @@ def list_reservations(
 
 
 def get_reservation(db: Session, reservation_id: int) -> Reservation | None:
-    return db.query(Reservation).filter(Reservation.id == reservation_id).first()
+    return (
+        db.query(Reservation)
+        .options(*_load_options())
+        .filter(Reservation.id == reservation_id)
+        .first()
+    )
 
 
 def find_overlaps(

@@ -1,6 +1,12 @@
 from fastapi import Depends, APIRouter, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db, ActiveUser, ActiveManagerOrAdmin
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.deps import (
+    ActiveManagerOrAdmin,
+    AsyncActiveUser,
+    get_async_db,
+    get_db,
+)
 from app.services import location_template_service
 from app.services import location_service
 from app.schemas.location_template import (
@@ -24,18 +30,18 @@ def _get_location_owner_company_id(location) -> int | None:
 
 
 @router.get("/{location_id}/templates", response_model=list[LocationTemplateResponse])
-def read_locations_template(
+async def read_locations_template(
     location_id: int,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     company_id = scoped_company_id(current_user)
-    location = location_service.get_location(db, location_id, company_id)
-    owner_company_id = _get_location_owner_company_id(location)
-    return location_template_service.get_templates_by_location(
-        db, location_id, owner_company_id, skip, limit
+    return await db.run_sync(
+        lambda sync_db: _read_location_templates(
+            sync_db, location_id, company_id, skip, limit
+        )
     )
 
 
@@ -43,13 +49,40 @@ def read_locations_template(
     "/{location_id}/templates/{template_task_id}",
     response_model=LocationTemplateResponse,
 )
-def read_location_template(
+async def read_location_template(
     location_id: int,
     template_task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     company_id = scoped_company_id(current_user)
+    return await db.run_sync(
+        lambda sync_db: _read_location_template(
+            sync_db, location_id, template_task_id, company_id
+        )
+    )
+
+
+def _read_location_templates(
+    db: Session,
+    location_id: int,
+    company_id: int | None,
+    skip: int,
+    limit: int,
+):
+    location = location_service.get_location(db, location_id, company_id)
+    owner_company_id = _get_location_owner_company_id(location)
+    return location_template_service.get_templates_by_location(
+        db, location_id, owner_company_id, skip, limit
+    )
+
+
+def _read_location_template(
+    db: Session,
+    location_id: int,
+    template_task_id: int,
+    company_id: int | None,
+):
     location = location_service.get_location(db, location_id, company_id)
     owner_company_id = _get_location_owner_company_id(location)
     return location_template_service.get_location_template(

@@ -1,5 +1,5 @@
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.location import Location
 from app.models.client import Client
 from app.models.location_company_access import LocationCompanyAccess
@@ -9,7 +9,10 @@ from app.schemas.location import LocationCreate, LocationUpdate
 def get_location_by_id(
     db: Session, location_id: int, company_id: int | None
 ) -> Location | None:
-    query = db.query(Location)
+    query = db.query(Location).options(
+        selectinload(Location.client),
+        selectinload(Location.company_access),
+    )
     if company_id is not None:
         query = query.outerjoin(Client).filter(
             or_(
@@ -31,7 +34,10 @@ def get_locations_by_client(
     skip: int = 0,
     limit: int = 100,
 ) -> list[Location]:
-    query = db.query(Location)
+    query = db.query(Location).options(
+        selectinload(Location.client),
+        selectinload(Location.company_access),
+    )
     if company_id is not None:
         query = query.outerjoin(Client).filter(
             or_(

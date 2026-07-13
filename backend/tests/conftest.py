@@ -46,6 +46,9 @@ class AsyncSessionAdapter:
     async def refresh(self, instance):
         self.session.refresh(instance)
 
+    async def run_sync(self, operation, *args, **kwargs):
+        return operation(self.session, *args, **kwargs)
+
 
 @pytest.fixture(autouse=True)
 def isolated_invoice_pdf_storage(tmp_path, monkeypatch):

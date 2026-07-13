@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db, ActiveUser, ActiveManagerOrAdmin
+from app.api.deps import (
+    ActiveManagerOrAdmin,
+    AsyncActiveUser,
+    get_async_db,
+    get_db,
+)
 from app.models.user import User
 from app.schemas.collaboration import CollaborationResponse, CollaborationRequestCreate
 from app.schemas.company import CompanyPartnerResponse
@@ -12,57 +18,82 @@ router = APIRouter()
 
 
 @router.get("/code", response_model=dict[str, str])
-def read_partner_code(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def read_partner_code(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     if current_user.company_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A platform superadmin does not have a company partner code",
         )
-    code = collaboration_service.get_or_generate_partner_code(db, current_user.company_id)
+    code = await db.run_sync(
+        lambda sync_db: collaboration_service.get_or_generate_partner_code(
+            sync_db,
+            current_user.company_id,
+        )
+    )
     return {"partner_code": code}
 
 
 @router.get("/", response_model=list[CollaborationResponse])
-def read_collaborations(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def read_collaborations(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     if current_user.company_id is None:
         return []
-    return collab_repo.list_collaborations(db, current_user.company_id)
+    return await db.run_sync(
+        lambda sync_db: collab_repo.list_collaborations(
+            sync_db,
+            current_user.company_id,
+        )
+    )
 
 
 @router.get("/service-providers", response_model=list[CompanyPartnerResponse])
-def read_service_providers(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def read_service_providers(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     if current_user.company_id is None:
         return []
-    return collab_repo.list_partner_companies(db, current_user.company_id)
+    return await db.run_sync(
+        lambda sync_db: collab_repo.list_partner_companies(
+            sync_db,
+            current_user.company_id,
+        )
+    )
 
 
 @router.get("/requests/pending", response_model=list[CollaborationResponse])
-def read_pending_requests(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def read_pending_requests(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     if current_user.company_id is None:
         return []
-    return collab_repo.list_pending_requests(db, current_user.company_id)
+    return await db.run_sync(
+        lambda sync_db: collab_repo.list_pending_requests(
+            sync_db,
+            current_user.company_id,
+        )
+    )
 
 
 @router.get("/requests/sent", response_model=list[CollaborationResponse])
-def read_sent_requests(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def read_sent_requests(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     if current_user.company_id is None:
         return []
-    return collab_repo.list_sent_requests(db, current_user.company_id)
+    return await db.run_sync(
+        lambda sync_db: collab_repo.list_sent_requests(
+            sync_db,
+            current_user.company_id,
+        )
+    )
 
 
 @router.post("/requests", response_model=CollaborationResponse, status_code=status.HTTP_201_CREATED)

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, status
-from app.api.deps import get_db, ActiveAdmin
+from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.models.user import User
 from app.schemas.quote import QuoteCreate, QuoteUpdate, QuoteResponse
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate, QuoteItemResponse
@@ -12,28 +13,41 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[QuoteResponse])
-def read_quotes(
+async def read_quotes(
     client_id: int | None = None,
     quote_status: str | None = None,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
     if is_platform_superadmin(current_user):
         return []
-    return quote_service.get_quotes(
-        db, current_user.company_id, client_id, quote_status, skip, limit
+    return await db.run_sync(
+        lambda sync_db: quote_service.get_quotes(
+            sync_db,
+            current_user.company_id,
+            client_id,
+            quote_status,
+            skip,
+            limit,
+        )
     )
 
 
 @router.get("/{quote_id}", response_model=QuoteResponse)
-def read_quote(
+async def read_quote(
     quote_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return quote_service.get_quote(db, current_user.company_id, quote_id)
+    return await db.run_sync(
+        lambda sync_db: quote_service.get_quote(
+            sync_db,
+            current_user.company_id,
+            quote_id,
+        )
+    )
 
 
 @router.post("/", response_model=QuoteResponse, status_code=status.HTTP_201_CREATED)
@@ -69,12 +83,18 @@ def delete_quote(
 # ---- Items ----
 
 @router.get("/{quote_id}/items", response_model=list[QuoteItemResponse])
-def read_quote_items(
+async def read_quote_items(
     quote_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return quote_service.get_quote_items(db, current_user.company_id, quote_id)
+    return await db.run_sync(
+        lambda sync_db: quote_service.get_quote_items(
+            sync_db,
+            current_user.company_id,
+            quote_id,
+        )
+    )
 
 
 @router.post(

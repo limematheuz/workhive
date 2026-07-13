@@ -24,13 +24,11 @@ from app.services import (
     collaboration_service,
     location_access_service,
     location_service,
+    location_template_service,
     reservation_service,
     task_item_service,
     template_task_service,
 )
-from app.api.v1.locations import read_location_service_providers
-from app.api.v1.location_templates import read_locations_template
-from app.api.v1.task_items import accept_task_item
 
 
 def _company(db, name: str, tax_id: str) -> Company:
@@ -350,23 +348,23 @@ def test_consecutive_external_reservations_create_independent_requests(db):
     assert first_request.scheduled_start_at == first_reservation.check_out_at
 
     with pytest.raises(HTTPException) as planning_error:
-        accept_task_item(
+        task_item_service.accept_task_item(
+            db,
+            receiver_admin,
             first_request.id,
             TaskAcceptRequest(
                 scheduled_start_at=datetime(2026, 6, 10, 12, 0)
             ),
-            db,
-            receiver_admin,
         )
     assert planning_error.value.status_code == 400
 
-    accepted_request = accept_task_item(
+    accepted_request = task_item_service.accept_task_item(
+        db,
+        receiver_admin,
         first_request.id,
         TaskAcceptRequest(
             scheduled_start_at=datetime(2026, 6, 9, 12, 0)
         ),
-        db,
-        receiver_admin,
     )
     assert accepted_request.status == "accepted"
     assert accepted_request.scheduled_start_at == datetime(2026, 6, 9, 12, 0)
@@ -442,10 +440,10 @@ def test_service_provider_selector_excludes_current_company(db):
     )
     db.commit()
 
-    providers = read_location_service_providers(
-        location_id=location.id,
-        db=db,
-        current_user=issuer_admin,
+    providers = location_service.get_location_service_providers(
+        db,
+        issuer_admin,
+        location.id,
     )
 
     assert [provider.id for provider in providers] == [receiver.id]
@@ -583,11 +581,11 @@ def test_create_reservation_with_assigned_task(db):
     live_snapshot = reservation_service.get_live_external_task_snapshot(db, task_ext)
     assert "Limpiar garaje" in live_snapshot["description"]
 
-    accepted = accept_task_item(
-        task_ext.id,
-        TaskAcceptRequest(),
+    accepted = task_item_service.accept_task_item(
         db,
         other_admin,
+        task_ext.id,
+        TaskAcceptRequest(),
     )
     assert accepted.status == "accepted"
     assert accepted.accepted_by_user_id == other_admin.id
@@ -851,10 +849,15 @@ def test_receiver_can_read_owner_location_templates_without_mixing_catalogs(db):
     )
     db.commit()
 
-    visible_templates = read_locations_template(
-        location_id=location.id,
-        db=db,
-        current_user=receiver_admin,
+    visible_location = location_service.get_location(
+        db, location.id, receiver_admin.company_id
+    )
+    visible_templates = location_template_service.get_templates_by_location(
+        db,
+        location.id,
+        visible_location.owner_company_id,
+        0,
+        100,
     )
 
     assert [item.template_task_id for item in visible_templates] == [owner_template.id]

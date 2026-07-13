@@ -2,10 +2,11 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
+from app.models.work_session import WorkSession
 from app.models.user import User
 from app.repositories import location as location_repo
 from app.repositories import reservation as reservation_repo
@@ -93,8 +94,9 @@ def build_reservation_response(
             "cleaning_start_locations": cleaning_start_locations,
         }
     )
-    if location_access_service.can_view_sensitive(
-        db, current_user, reservation.location_id
+    if location_access_service.can_view_sensitive_loaded(
+        current_user,
+        reservation.location,
     ):
         return response
     return response.model_copy(update={"notes": None, "external_reference": None})
@@ -140,6 +142,14 @@ def list_upcoming_arrivals(
     until = now + timedelta(days=max(1, min(days, 3)))
     query = (
         db.query(Reservation)
+        .options(
+            selectinload(Reservation.owner_company),
+            selectinload(Reservation.created_by),
+            selectinload(Reservation.checkout_tasks).selectinload(TaskItem.company),
+            selectinload(Reservation.checkout_tasks)
+            .selectinload(TaskItem.work_sessions)
+            .selectinload(WorkSession.user),
+        )
         .filter(
             Reservation.status != "cancelled",
             Reservation.check_in_at >= now,

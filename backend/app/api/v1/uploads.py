@@ -15,7 +15,7 @@ ALLOWED_FOLDERS = {"company", "signature", "profile", "general", "location"}
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
-async def upload_file(
+def upload_file(
     folder: str = "general",
     file: UploadFile = File(...),
     current_user: User = ActiveUser,
@@ -31,7 +31,7 @@ async def upload_file(
             status_code=status.HTTP_409_CONFLICT,
             detail="A company is required to store media",
         )
-    contents = await file.read(MAX_IMAGE_BYTES + 1)
+    contents = file.file.read(MAX_IMAGE_BYTES + 1)
     return {
         "url": store_image(
             contents,

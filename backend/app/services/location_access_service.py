@@ -78,6 +78,24 @@ def has_location_capability(
     return True
 
 
+def has_location_capability_loaded(
+    current_user: User,
+    location: Location,
+    capability: str,
+) -> bool:
+    if is_platform_superadmin(current_user):
+        return True
+    if not can_manage_company(current_user):
+        return False
+    if _is_direct_company_location(location, current_user.company_id):
+        return True
+    return any(
+        access.company_id == current_user.company_id
+        and bool(getattr(access, capability, False))
+        for access in location.company_access
+    )
+
+
 def require_location_owner(db: Session, current_user: User, location_id: int) -> Location:
     location = require_accessible_location(db, current_user, location_id)
     if is_platform_superadmin(current_user):

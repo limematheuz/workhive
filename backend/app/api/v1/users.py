@@ -8,8 +8,15 @@ from fastapi import (
     status,
 )
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ActiveManagerOrAdmin, ActiveUser, get_db
+from app.api.deps import (
+    ActiveUser,
+    AsyncActiveManagerOrAdmin,
+    AsyncActiveUser,
+    get_async_db,
+    get_db,
+)
 from app.models.user import User
 from app.schemas.user import UserResponse, UserStatsResponse, UserUpdate
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
@@ -20,27 +27,36 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-def read_current_user(current_user: User = ActiveUser):
+async def read_current_user(current_user: User = AsyncActiveUser):
     return current_user
 
 
 @router.get("/", response_model=list[UserResponse])
-def read_all_users(
+async def read_all_users(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
 ):
-    return user_service.get_users(db, current_user.company_id, skip, limit)
+    return await db.run_sync(
+        lambda sync_db: user_service.get_users(
+            sync_db,
+            current_user.company_id,
+            skip,
+            limit,
+        )
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-def read_user(
+async def read_user(
     user_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
 ):
-    return user_service.get_user(db, user_id, current_user)
+    return await db.run_sync(
+        lambda sync_db: user_service.get_user(sync_db, user_id, current_user)
+    )
 
 
 @router.patch("/{user_id}", response_model=UserResponse)
@@ -73,7 +89,7 @@ def update_user(
 
 
 @router.post("/{user_id}/photo", response_model=UserResponse)
-async def upload_user_photo(
+def upload_user_photo(
     user_id: int,
     request: Request,
     file: UploadFile = File(...),
@@ -88,7 +104,7 @@ async def upload_user_photo(
             detail="Not enough permissions to update this user's photo",
         )
 
-    contents = await file.read(MAX_IMAGE_BYTES + 1)
+    contents = file.file.read(MAX_IMAGE_BYTES + 1)
     if len(contents) > MAX_IMAGE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -120,13 +136,20 @@ async def upload_user_photo(
 
 
 @router.get("/{user_id}/stats", response_model=UserStatsResponse)
-def read_user_stats(
+async def read_user_stats(
     user_id: int,
     time_range: str | None = None,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return user_service.get_user_stats(db, user_id, current_user, time_range)
+    return await db.run_sync(
+        lambda sync_db: user_service.get_user_stats(
+            sync_db,
+            user_id,
+            current_user,
+            time_range,
+        )
+    )
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

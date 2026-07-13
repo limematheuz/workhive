@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from app.api.v1.task_items import accept_task_item
 from app.models.client import Client
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.location_template import LocationTemplate
@@ -69,7 +68,12 @@ def _external_completed_task_setup(db):
     assert task is not None
     assert task.status == "requested"
 
-    accept_task_item(task.id, TaskAcceptRequest(), db, receiver_admin)
+    task_item_service.accept_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskAcceptRequest(),
+    )
     db.refresh(task)
     assert task.status == "accepted"
 
@@ -197,7 +201,12 @@ def test_viewer_sees_accepted_external_task_in_company_pool(db):
     task = db.query(TaskItem).filter(TaskItem.status == "requested").first()
     assert task is not None
 
-    accept_task_item(task.id, TaskAcceptRequest(), db, receiver_admin)
+    task_item_service.accept_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskAcceptRequest(),
+    )
     db.refresh(task)
     assert task.status == "accepted"
 

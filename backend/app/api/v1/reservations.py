@@ -1,9 +1,16 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveUser, ActiveManagerOrAdmin, get_db
+from app.api.deps import (
+    ActiveUser,
+    AsyncActiveManagerOrAdmin,
+    AsyncActiveUser,
+    get_async_db,
+    get_db,
+)
 from app.models.user import User
 from app.schemas.reservation import (
     ReservationCreate,
@@ -18,39 +25,67 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[ReservationResponse])
-def read_reservations(
+async def read_reservations(
     location_id: int | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
 ):
-    reservations = reservation_service.list_reservations(
-        db, current_user, location_id, date_from, date_to
-    )
-    return [
-        reservation_service.build_reservation_response(db, reservation, current_user)
-        for reservation in reservations
-    ]
+    def operation(sync_db: Session):
+        reservations = reservation_service.list_reservations(
+            sync_db,
+            current_user,
+            location_id,
+            date_from,
+            date_to,
+        )
+        return [
+            reservation_service.build_reservation_response(
+                sync_db,
+                reservation,
+                current_user,
+            )
+            for reservation in reservations
+        ]
+
+    return await db.run_sync(operation)
 
 
 @router.get("/upcoming/arrivals", response_model=list[ReservationOperationalResponse])
-def read_upcoming_arrivals(
+async def read_upcoming_arrivals(
     days: int = 3,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
 ):
-    return reservation_service.list_upcoming_arrivals(db, current_user, days)
+    return await db.run_sync(
+        lambda sync_db: reservation_service.list_upcoming_arrivals(
+            sync_db,
+            current_user,
+            days,
+        )
+    )
 
 
 @router.get("/{reservation_id}", response_model=ReservationResponse)
-def read_reservation(
+async def read_reservation(
     reservation_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    reservation = reservation_service.get_reservation(db, current_user, reservation_id)
-    return reservation_service.build_reservation_response(db, reservation, current_user)
+    def operation(sync_db: Session):
+        reservation = reservation_service.get_reservation(
+            sync_db,
+            current_user,
+            reservation_id,
+        )
+        return reservation_service.build_reservation_response(
+            sync_db,
+            reservation,
+            current_user,
+        )
+
+    return await db.run_sync(operation)
 
 
 @router.post(

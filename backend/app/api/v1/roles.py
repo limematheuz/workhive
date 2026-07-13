@@ -1,6 +1,7 @@
 from fastapi import Depends, APIRouter, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db, ActiveUser, require_role
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.deps import AsyncActiveUser, get_async_db, get_db, require_role
 from app.schemas.role import RoleCreate, RoleUpdate, RoleResponse
 from app.services import role_service
 from app.models.user import User
@@ -9,22 +10,22 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[RoleResponse])
-def read_roles(
+async def read_roles(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return role_service.get_roles(db, skip, limit)
+    return await db.run_sync(lambda sync_db: role_service.get_roles(sync_db, skip, limit))
 
 
 @router.get("/{role_id}", response_model=RoleResponse)
-def read_role(
+async def read_role(
     role_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return role_service.get_role(db, role_id)
+    return await db.run_sync(lambda sync_db: role_service.get_role(sync_db, role_id))
 
 
 @router.post("/", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)

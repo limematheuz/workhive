@@ -3,11 +3,13 @@ from sqlalchemy.orm import Session
 from app.models.location import Location
 from app.models.company_collaboration import CompanyCollaboration
 from app.models.location_company_access import LocationCompanyAccess
+from app.models.user import User
 from app.schemas.location import LocationCreate, LocationUpdate
 from app.repositories import location as location_repo
 from app.repositories import client as client_repo
 from app.repositories import company as company_repo
 from fastapi import HTTPException, status
+from app.services import location_access_service
 
 
 def _validate_default_service_provider(
@@ -109,6 +111,67 @@ def get_location(db: Session, location_id: int, company_id: int | None) -> Locat
             detail="Location not found",
         )
     return location
+
+
+def get_location_service_providers(
+    db: Session,
+    current_user: User,
+    location_id: int,
+):
+    location_access_service.require_accessible_location(
+        db,
+        current_user,
+        location_id,
+    )
+    accesses = (
+        db.query(LocationCompanyAccess)
+        .filter(
+            LocationCompanyAccess.location_id == location_id,
+            LocationCompanyAccess.relationship_type.in_(
+                ("service_provider", "default_service_provider")
+            ),
+            LocationCompanyAccess.company_id != current_user.company_id,
+        )
+        .all()
+    )
+    providers = [
+        access.company
+        for access in accesses
+        if access.company and access.company.is_active
+    ]
+    provider_ids = {company.id for company in providers}
+    collaborations = (
+        db.query(CompanyCollaboration)
+        .filter(
+            (
+                (CompanyCollaboration.initiator_company_id == current_user.company_id)
+                | (CompanyCollaboration.partner_company_id == current_user.company_id)
+            )
+            & (CompanyCollaboration.status == "accepted")
+        )
+        .all()
+    )
+    for collaboration in collaborations:
+        provider = None
+        if (
+            collaboration.initiator_company_id == current_user.company_id
+            and collaboration.role_type == "service_provider"
+        ):
+            provider = collaboration.partner
+        elif (
+            collaboration.partner_company_id == current_user.company_id
+            and collaboration.role_type == "property_manager"
+        ):
+            provider = collaboration.initiator
+        if (
+            provider
+            and provider.is_active
+            and provider.id != current_user.company_id
+            and provider.id not in provider_ids
+        ):
+            providers.append(provider)
+            provider_ids.add(provider.id)
+    return providers
 
 
 def create_location(

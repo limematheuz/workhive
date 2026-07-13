@@ -137,6 +137,22 @@ def require_role(*allowed_roles: str):
     return role_checker
 
 
+def require_role_async(*allowed_roles: str):
+    async def role_checker(
+        current_user: User = Depends(get_current_user_async),
+    ) -> User:
+        if is_superadmin(current_user):
+            return current_user
+        if not current_user.role or current_user.role.name not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation not permitted for role: {current_user.role.name if current_user.role else 'None'}",
+            )
+        return current_user
+
+    return role_checker
+
+
 def require_authenticated_role(*allowed_roles: str):
     def role_checker(
         current_user: User = Depends(get_authenticated_user),
@@ -153,10 +169,30 @@ def require_authenticated_role(*allowed_roles: str):
     return role_checker
 
 
+def require_authenticated_role_async(*allowed_roles: str):
+    async def role_checker(
+        current_user: User = Depends(get_authenticated_user_async),
+    ) -> User:
+        if is_superadmin(current_user):
+            return current_user
+        if not current_user.role or current_user.role.name not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Operation not permitted for role: {current_user.role.name if current_user.role else 'None'}",
+            )
+        return current_user
+
+    return role_checker
+
+
 ActiveAdmin = Depends(require_role("admin"))
 ActiveManagerOrAdmin = Depends(require_role("admin", "manager"))
 ActiveViewer = Depends(require_role("admin", "manager", "viewer"))
 ActiveUser = Depends(get_current_user)
 AsyncActiveUser = Depends(get_current_user_async)
+AsyncActiveAdmin = Depends(require_role_async("admin"))
+AsyncActiveManagerOrAdmin = Depends(require_role_async("admin", "manager"))
+AsyncAuthenticatedUser = Depends(get_authenticated_user_async)
+AsyncAuthenticatedAdmin = Depends(require_authenticated_role_async("admin"))
 AuthenticatedUser = Depends(get_authenticated_user)
 AuthenticatedAdmin = Depends(require_authenticated_role("admin"))

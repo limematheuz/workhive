@@ -1,6 +1,14 @@
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db, ActiveUser, ActiveManagerOrAdmin, ActiveAdmin
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.api.deps import (
+    ActiveAdmin,
+    ActiveUser,
+    AsyncActiveManagerOrAdmin,
+    AsyncActiveUser,
+    get_async_db,
+    get_db,
+)
 from app.services import company_service
 from app.schemas.company import (
     CompanyCreate,
@@ -17,13 +25,17 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[CompanyResponse])
-def read_companies(
+async def read_companies(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return company_service.get_companies(db, current_user, skip, limit)
+    return await db.run_sync(
+        lambda sync_db: company_service.get_companies(
+            sync_db, current_user, skip, limit
+        )
+    )
 
 
 @router.post(
@@ -54,36 +66,46 @@ def provision_company(
 
 
 @router.get("/{company_id}", response_model=CompanyResponse)
-def read_company(
+async def read_company(
     company_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return company_service.get_company(db, company_id, current_user)
+    return await db.run_sync(
+        lambda sync_db: company_service.get_company(sync_db, company_id, current_user)
+    )
 
 
 @router.get(
     "/{company_id}/members",
     response_model=list[CompanyMemberResponse],
 )
-def read_company_members(
+async def read_company_members(
     company_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return company_service.get_company_members(db, company_id, current_user)
+    return await db.run_sync(
+        lambda sync_db: company_service.get_company_members(
+            sync_db, company_id, current_user
+        )
+    )
 
 
 @router.get(
     "/{company_id}/expenses",
     response_model=list[CompanyExpenseResponse],
 )
-def read_company_expenses(
+async def read_company_expenses(
     company_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
 ):
-    return company_service.get_company_expenses(db, company_id, current_user)
+    return await db.run_sync(
+        lambda sync_db: company_service.get_company_expenses(
+            sync_db, company_id, current_user
+        )
+    )
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=CompanyResponse)

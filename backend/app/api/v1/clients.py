@@ -1,6 +1,7 @@
 from fastapi import Depends, APIRouter, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
-from app.api.deps import get_db, ActiveUser, ActiveAdmin
+from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
 from app.services import client_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
@@ -10,28 +11,36 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[ClientResponse])
-def read_clients(
+async def read_clients(
     is_active: bool | None = True,
     include_inactive: bool = False,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     company_id = scoped_company_id(current_user)
-    return client_service.get_clients(
-        db, company_id, skip, limit, None if include_inactive else is_active
+    return await db.run_sync(
+        lambda sync_db: client_service.get_clients(
+            sync_db,
+            company_id,
+            skip,
+            limit,
+            None if include_inactive else is_active,
+        )
     )
 
 
 @router.get("/{client_id}", response_model=ClientResponse)
-def read_client(
+async def read_client(
     client_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
     company_id = scoped_company_id(current_user)
-    return client_service.get_client(db, company_id, client_id)
+    return await db.run_sync(
+        lambda sync_db: client_service.get_client(sync_db, company_id, client_id)
+    )
 
 
 @router.post("/", response_model=ClientResponse, status_code=status.HTTP_201_CREATED)

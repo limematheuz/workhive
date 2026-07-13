@@ -1,9 +1,7 @@
 from app.api.deps import (
-    ActiveManagerOrAdmin,
-    ActiveUser,
+    AsyncActiveManagerOrAdmin,
     AsyncActiveUser,
     get_async_db,
-    get_db,
 )
 from fastapi import Depends, status, APIRouter, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,133 +82,185 @@ async def read_task_item(
 
 
 @router.post("/", response_model=TaskItemResponse, status_code=status.HTTP_201_CREATED)
-def create_task_item(
+async def create_task_item(
     task_item_data: TaskItemCreate,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
     background_tasks: BackgroundTasks = None,
 ):
-    task = task_item_service.create_task_item(db, current_user, task_item_data)
+    def operation(sync_db: Session):
+        task = task_item_service.create_task_item(
+            sync_db,
+            current_user,
+            task_item_data,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
-    return task_item_service.build_task_response(db, task, current_user)
+    return response
 
 
 @router.patch("/{task_item_id}", response_model=TaskItemResponse, status_code=status.HTTP_200_OK)
-def update_task_item(
+async def update_task_item(
     task_item_data: TaskItemUpdate,
     task_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
-    task = task_item_service.update_task_item(db, current_user, task_item_id, task_item_data)
+    def operation(sync_db: Session):
+        task = task_item_service.update_task_item(
+            sync_db,
+            current_user,
+            task_item_id,
+            task_item_data,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
-    return task_item_service.build_task_response(db, task, current_user)
+    return response
 
 
 @router.patch(
     "/{task_item_id}/checklist-items/{checklist_item_id}",
     response_model=TaskItemResponse,
 )
-def update_task_checklist_item(
+async def update_task_checklist_item(
     task_item_id: int,
     checklist_item_id: int,
     item_data: TaskChecklistItemUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
-    task = task_item_service.update_task_checklist_item(
-        db,
-        current_user,
-        task_item_id,
-        checklist_item_id,
-        item_data,
-    )
+    def operation(sync_db: Session):
+        task = task_item_service.update_task_checklist_item(
+            sync_db,
+            current_user,
+            task_item_id,
+            checklist_item_id,
+            item_data,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(
             sync_user_calendar,
             current_user.company_id,
             current_user.id,
         )
-    return task_item_service.build_task_response(db, task, current_user)
+    return response
 
 
 @router.post("/{task_item_id}/start-work", response_model=TaskItemResponse)
-def start_task_work(
+async def start_task_work(
     task_item_id: int,
     start_data: TaskWorkStartRequest,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
-    task = task_item_service.start_task_work(
-        db,
-        current_user,
-        task_item_id,
-        start_data.notes,
-        start_data.start_latitude,
-        start_data.start_longitude,
-        start_data.start_accuracy_meters,
-    )
+    def operation(sync_db: Session):
+        task = task_item_service.start_task_work(
+            sync_db,
+            current_user,
+            task_item_id,
+            start_data.notes,
+            start_data.start_latitude,
+            start_data.start_longitude,
+            start_data.start_accuracy_meters,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
-    return task_item_service.build_task_response(db, task, current_user)
+    return response
 
 
 @router.post("/{task_item_id}/finish-work", response_model=TaskItemResponse)
-def finish_task_work(
+async def finish_task_work(
     task_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
-    task = task_item_service.finish_task_work(
-        db, current_user, task_item_id
-    )
+    def operation(sync_db: Session):
+        task = task_item_service.finish_task_work(
+            sync_db,
+            current_user,
+            task_item_id,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
-    return task_item_service.build_task_response(db, task, current_user)
+    return response
 
 
 @router.delete("/{task_item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_task_item(
+async def delete_task_item(
     task_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
     background_tasks: BackgroundTasks = None,
 ):
-    task_item_service.delete_task_item(db, current_user, task_item_id)
+    await db.run_sync(
+        lambda sync_db: task_item_service.delete_task_item(
+            sync_db,
+            current_user,
+            task_item_id,
+        )
+    )
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
 
 
 @router.post("/{task_item_id}/accept", response_model=TaskItemResponse)
-def accept_task_item(
+async def accept_task_item(
     task_item_id: int,
     accept_data: TaskAcceptRequest = TaskAcceptRequest(),
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
-    updated_task = task_item_service.accept_task_item(
-        db, current_user, task_item_id, accept_data
-    )
+    def operation(sync_db: Session):
+        task = task_item_service.accept_task_item(
+            sync_db,
+            current_user,
+            task_item_id,
+            accept_data,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
-    return task_item_service.build_task_response(db, updated_task, current_user)
+    return response
 
 
 @router.post("/{task_item_id}/reject", response_model=TaskItemResponse)
-def reject_task_item(
+async def reject_task_item(
     task_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
-    updated_task = task_item_service.reject_task_item(db, current_user, task_item_id)
+    def operation(sync_db: Session):
+        task = task_item_service.reject_task_item(
+            sync_db,
+            current_user,
+            task_item_id,
+        )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
-    return task_item_service.build_task_response(db, updated_task, current_user)
+    return response

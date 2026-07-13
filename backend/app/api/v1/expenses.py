@@ -1,9 +1,10 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveAdmin, get_db
+from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.models.user import User
 from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
 from app.services import expense_service
@@ -22,35 +23,43 @@ def _require_company_admin(current_user: User) -> None:
 
 
 @router.get("/", response_model=list[ExpenseResponse])
-def read_expenses(
+async def read_expenses(
     category: str | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
     _require_company_admin(current_user)
-    return expense_service.get_expenses(
-        db,
-        current_user.company_id,
-        category=category,
-        date_from=date_from,
-        date_to=date_to,
-        skip=skip,
-        limit=limit,
+    return await db.run_sync(
+        lambda sync_db: expense_service.get_expenses(
+            sync_db,
+            current_user.company_id,
+            category=category,
+            date_from=date_from,
+            date_to=date_to,
+            skip=skip,
+            limit=limit,
+        )
     )
 
 
 @router.get("/{expense_id}", response_model=ExpenseResponse)
-def read_expense(
+async def read_expense(
     expense_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
     _require_company_admin(current_user)
-    return expense_service.get_expense(db, current_user.company_id, expense_id)
+    return await db.run_sync(
+        lambda sync_db: expense_service.get_expense(
+            sync_db,
+            current_user.company_id,
+            expense_id,
+        )
+    )
 
 
 @router.post("/", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
