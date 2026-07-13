@@ -4,10 +4,9 @@ import { useCallback, useMemo } from "react";
 
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import {
-    getOverviewDateRange,
-    getTaskScheduleDate,
-    isDateInRange,
+    getTasksForOverviewTab,
     isTaskOverdue,
+    sortTasksByOperationalPriority,
     type OverviewTab,
 } from "@/domain/tasks/task-schedule";
 import {
@@ -68,18 +67,21 @@ export function useTechDashboardTasks({
         ),
         [getEffectiveStatus, operationalTasks],
     );
-    const visibleTasks = useMemo(() => {
-        if (activeTab === "todo") return activeTasks;
-        const range = getOverviewDateRange(activeTab);
-        return activeTasks.filter(
-            (task) => isDateInRange(getTaskScheduleDate(task), range),
-        );
-    }, [activeTab, activeTasks]);
+    const tasksByTab = useMemo(() => {
+        const now = new Date();
+        return {
+            hoy: getTasksForOverviewTab(activeTasks, "hoy", now),
+            manana: getTasksForOverviewTab(activeTasks, "manana", now),
+            semana: getTasksForOverviewTab(activeTasks, "semana", now),
+            todo: getTasksForOverviewTab(activeTasks, "todo", now),
+        } satisfies Record<OverviewTab, TaskItem[]>;
+    }, [activeTasks]);
+    const visibleTasks = tasksByTab[activeTab];
 
     const { overdueTasks, standardTasks } = useMemo(() => {
         const overdue: TaskItem[] = [];
         const standard: TaskItem[] = [];
-        visibleTasks.forEach((task) => {
+        sortTasksByOperationalPriority(visibleTasks).forEach((task) => {
             if (isTaskOverdue(task)) overdue.push(task);
             else standard.push(task);
         });
@@ -110,14 +112,8 @@ export function useTechDashboardTasks({
     }, [locationMap, overdueTasks, standardTasks]);
 
     const countPendingForTab = useCallback(
-        (tab: OverviewTab) => {
-            if (tab === "todo") return activeTasks.length;
-            const range = getOverviewDateRange(tab);
-            return activeTasks.filter(
-                (task) => isDateInRange(getTaskScheduleDate(task), range),
-            ).length;
-        },
-        [activeTasks],
+        (tab: OverviewTab) => tasksByTab[tab].length,
+        [tasksByTab],
     );
 
     const activeLocationIds = useMemo(

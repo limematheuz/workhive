@@ -4,16 +4,11 @@ import { useState, useMemo } from "react";
 import { toast } from "@/lib/toast";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { UploadService } from "@/services/upload.service";
+import { TaskService } from "@/services/task.service";
+import { appendReportedIssue } from "@/lib/task-reporting";
+import type { ReportedIssue, TaskItem } from "@/types/user";
 
-export interface ReportedIssue {
-    id: string;
-    type: "mantenimiento" | "limpieza" | "inspeccion";
-    element: string;
-    title: string;
-    description: string;
-    photoUrl?: string;
-    createdAt: string;
-}
+export type { ReportedIssue } from "@/types/user";
 
 interface IssueElement {
     value: string;
@@ -21,8 +16,9 @@ interface IssueElement {
 }
 
 interface UseTechTaskIssuesParams {
-    locationId: number;
+    task: TaskItem;
     dict: Dictionary;
+    onStatusUpdate: () => void;
 }
 
 interface UseTechTaskIssuesReturn {
@@ -40,26 +36,15 @@ interface UseTechTaskIssuesReturn {
     newIssuePhoto: string;
     setNewIssuePhoto: React.Dispatch<React.SetStateAction<string>>;
     issueElements: IssueElement[];
-    handleAddIssue: (e: React.FormEvent) => void;
-    handleDeleteIssue: (issueId: string) => void;
+    handleAddIssue: (e: React.FormEvent) => Promise<void>;
+    handleDeleteIssue: (issueId: string) => Promise<void>;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }
 
-function readStoredIssues(storageKey: string): ReportedIssue[] {
-    if (typeof window === "undefined") return [];
-    const saved = window.localStorage.getItem(storageKey);
-    if (!saved) return [];
-
-    try {
-        return JSON.parse(saved) as ReportedIssue[];
-    } catch {
-        return [];
-    }
-}
-
 export function useTechTaskIssues({
-    locationId,
+    task,
     dict,
+    onStatusUpdate,
 }: UseTechTaskIssuesParams): UseTechTaskIssuesReturn {
     const [showNewIssueForm, setShowNewIssueForm] = useState(false);
     const [newIssueType, setNewIssueType] = useState<"mantenimiento" | "limpieza" | "inspeccion">("mantenimiento");
@@ -68,19 +53,7 @@ export function useTechTaskIssues({
     const [newIssueDescription, setNewIssueDescription] = useState("");
     const [newIssuePhoto, setNewIssuePhoto] = useState("");
 
-    const storageKey = `workhive_issues_location_${locationId}`;
-    const [issueStore, setIssueStore] = useState(() => ({
-        storageKey,
-        items: readStoredIssues(storageKey),
-    }));
-    const reportedIssues = issueStore.storageKey === storageKey
-        ? issueStore.items
-        : readStoredIssues(storageKey);
-
-    const saveIssues = (updated: ReportedIssue[]) => {
-        setIssueStore({ storageKey, items: updated });
-        window.localStorage.setItem(storageKey, JSON.stringify(updated));
-    };
+    const reportedIssues = task.reported_issues || [];
 
     const issueElements: IssueElement[] = useMemo(() => [
         { value: "lavabo", label: dict?.tech?.issue_element_lavabo || "Washbasin" },
@@ -95,7 +68,7 @@ export function useTechTaskIssues({
         { value: "alarma_humo", label: dict?.tech?.issue_element_alarma_humo || "Smoke alarm" },
     ], [dict]);
 
-    const handleAddIssue = (e: React.FormEvent) => {
+    const handleAddIssue = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!newIssueTitle.trim()) {
             toast.error(dict?.tech?.toast_issue_title_required || "Please enter a title");
@@ -112,9 +85,14 @@ export function useTechTaskIssues({
             createdAt: new Date().toISOString(),
         };
 
-        const updated = [newIssue, ...reportedIssues];
-        saveIssues(updated);
-        toast.success(dict?.tech?.toast_issue_reported || "Issue reported successfully");
+        try {
+            await TaskService.updateTaskItem(task.id, appendReportedIssue(reportedIssues, newIssue));
+            onStatusUpdate();
+            toast.success(dict?.tech?.toast_issue_reported || "Issue reported successfully");
+        } catch {
+            toast.error("Could not report issue");
+            return;
+        }
 
         // Reset form
         setNewIssueTitle("");
@@ -123,10 +101,16 @@ export function useTechTaskIssues({
         setShowNewIssueForm(false);
     };
 
-    const handleDeleteIssue = (issueId: string) => {
-        const updated = reportedIssues.filter(i => i.id !== issueId);
-        saveIssues(updated);
-        toast.success(dict?.tech?.toast_issue_deleted || "Issue deleted");
+    const handleDeleteIssue = async (issueId: string) => {
+        try {
+            await TaskService.updateTaskItem(task.id, {
+                reported_issues: reportedIssues.filter(i => i.id !== issueId),
+            });
+            onStatusUpdate();
+            toast.success(dict?.tech?.toast_issue_deleted || "Issue deleted");
+        } catch {
+            toast.error("Could not delete issue");
+        }
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

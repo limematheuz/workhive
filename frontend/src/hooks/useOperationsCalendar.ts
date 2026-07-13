@@ -16,7 +16,11 @@ import {
     taskToEditValues,
     type TaskEditValues,
 } from "@/domain/tasks/task-edit";
-import { getScheduleViolation } from "@/domain/tasks/task-schedule";
+import {
+    getScheduleViolation,
+    isTaskPlanningDateBeforeToday,
+    sortTasksByOperationalPriority,
+} from "@/domain/tasks/task-schedule";
 import {
     completionDateForStatus,
     toKanbanStatus,
@@ -102,7 +106,11 @@ export function useOperationsCalendar({
             else pending.push(task);
         });
 
-        return { pending, progress, completed };
+        return {
+            pending: sortTasksByOperationalPriority(pending),
+            progress: sortTasksByOperationalPriority(progress),
+            completed: sortTasksByOperationalPriority(completed),
+        };
     }, [filteredTasks]);
 
     // Helpers
@@ -258,6 +266,10 @@ export function useOperationsCalendar({
             planningDate: editCreatedAt,
             planningTime: editPlanningTime,
         };
+        if (isTaskPlanningDateBeforeToday(values.planningDate)) {
+            toast.error("La fecha de planificación no puede ser anterior a hoy");
+            return;
+        }
         const violation = getScheduleViolation(
             selectedTask,
             buildScheduledStartAt(values),

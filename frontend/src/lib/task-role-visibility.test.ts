@@ -12,8 +12,18 @@ import {
     ALL_WORKERS_VALUE,
     buildChecklistDescription,
 } from "../domain/tasks/task-create.ts";
-import { buildTaskListFilters } from "../domain/tasks/task-list.ts";
+import { buildTaskListFilters, parseTaskPageTab } from "../domain/tasks/task-list.ts";
 import { canMoveTaskOnKanban } from "../domain/tasks/task-permissions.ts";
+import {
+    getTasksForOverviewTab,
+} from "../domain/tasks/task-schedule.ts";
+import {
+    canStartTaskWork,
+    isTaskWorkInProgress,
+    isOperationalStatus,
+    toKanbanStatus,
+} from "../domain/tasks/task-status.ts";
+import { getTaskCalendarRange } from "./company-calendar.ts";
 import {
     getUserChecklistItems,
     getUserTaskStatus,
@@ -148,6 +158,13 @@ test("task list filters prevent viewers from querying another user", () => {
     );
 });
 
+test("tasks page no longer exposes or restores the removed calendar tab", () => {
+    assert.equal(parseTaskPageTab("kanban"), "kanban");
+    assert.equal(parseTaskPageTab("list"), "list");
+    assert.equal(parseTaskPageTab("templates"), "templates");
+    assert.equal(parseTaskPageTab("calendar"), null);
+});
+
 test("admin-created all-worker task reaches admin, manager and viewers", () => {
     const description = buildChecklistDescription({
         description: "- [ ] Cocina\n- [ ] Baño",
@@ -194,6 +211,45 @@ test("line-level assignments only reach their target user", () => {
     assert.equal(isTaskAssignedToUser(createdTask, manager.id), true);
     assert.equal(isTaskAssignedToUser(createdTask, viewer.id), true);
     assert.equal(isTaskAssignedToUser(createdTask, secondViewer.id), false);
+});
+
+test("pending line assignment remains available to viewer dashboard kanban and calendar", () => {
+    const victoriaTask = task({
+        id: 101,
+        description: "- [ ] Terraza (@3:Viewer User)",
+        status: "pending",
+        scheduled_start_at: "2026-07-13T12:00:00Z",
+    });
+
+    assert.equal(isTaskAssignedToUser(victoriaTask, viewer.id), true);
+    assert.equal(getUserTaskStatus(victoriaTask, viewer.id), "pending");
+    assert.equal(isOperationalStatus(victoriaTask.status), true);
+    assert.equal(toKanbanStatus(victoriaTask.status), "pending");
+    assert.deepEqual(
+        getTasksForOverviewTab([victoriaTask], "todo").map(({ id }) => id),
+        [101],
+    );
+    assert.equal(getTaskCalendarRange(victoriaTask)?.start.getDate(), 13);
+});
+
+test("work can start only after global approval and for the assigned worker", () => {
+    assert.equal(canStartTaskWork("pending", "pending", true), false);
+    assert.equal(canStartTaskWork("requested", "pending", true), false);
+    assert.equal(canStartTaskWork("rejected", "pending", true), false);
+    assert.equal(canStartTaskWork("accepted", "pending", true), true);
+    assert.equal(canStartTaskWork("progress", "accepted", true), true);
+    assert.equal(canStartTaskWork("review", "progress", true), true);
+    assert.equal(canStartTaskWork("accepted", "completed", true), false);
+    assert.equal(canStartTaskWork("accepted", "pending", false), false);
+});
+
+test("only active work states receive the in-progress visual treatment", () => {
+    assert.equal(isTaskWorkInProgress("progress"), true);
+    assert.equal(isTaskWorkInProgress("review"), true);
+    assert.equal(isTaskWorkInProgress("in_progress"), true);
+    assert.equal(isTaskWorkInProgress("pending"), false);
+    assert.equal(isTaskWorkInProgress("accepted"), false);
+    assert.equal(isTaskWorkInProgress("completed"), false);
 });
 
 test("direct task owner gets unassigned checklist work without stealing explicit assignments", () => {

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { useDictionary } from "@/lib/dictionary-context";
 import { getUserTaskStatus, isTaskAssignedToUser } from "@/lib/format";
+import { canStartTaskWork } from "@/domain/tasks/task-status";
 import type { Location } from "@/types/location";
 import type { TaskItem, User } from "@/types/user";
 
@@ -72,8 +73,9 @@ export function useTechTaskDetailsController({
     });
 
     const issueState = useTechTaskIssues({
-        locationId: task.location_id,
+        task,
         dict,
+        onStatusUpdate,
     });
 
     const attachmentsComments = useTechTaskAttachmentsComments({
@@ -102,11 +104,10 @@ export function useTechTaskDetailsController({
         () => isTaskAssignedToUser(task, currentUser.id),
         [currentUser.id, task]
     );
-    const canStartWork = useMemo(() => {
-        return ["accepted", "progress", "review"].includes(task.status)
-            && isAssignedToCurrentUser
-            && ["pending", "accepted", "progress"].includes(userStatus);
-    }, [isAssignedToCurrentUser, task.status, userStatus]);
+    const canStartWork = useMemo(
+        () => canStartTaskWork(task.status, userStatus, isAssignedToCurrentUser),
+        [isAssignedToCurrentUser, task.status, userStatus],
+    );
 
     const workMode: TechTaskWorkMode = workSession.isCurrentTaskSessionActive ? "finish"
         : workSession.hasAnotherActiveSession ? "blocked-other-session"

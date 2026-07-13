@@ -29,10 +29,91 @@ export function parseDate(value: string | null | undefined): Date | null {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function getUtcMidnightDateParts(value: string): [number, number, number] | null {
+    const match = /^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.000)?Z$/.exec(value);
+    if (!match) return null;
+    const [, year, month, day] = match;
+    return [Number(year), Number(month) - 1, Number(day)];
+}
+
+function padDatePart(value: number): string {
+    return String(value).padStart(2, "0");
+}
+
+function parseTaskPlanningDate(value: string): Date | null {
+    const parts = getUtcMidnightDateParts(value);
+    if (!parts) return parseDate(value);
+    return new Date(parts[0], parts[1], parts[2], 23, 59, 59, 999);
+}
+
+export function parseTaskCalendarDate(value: string): Date | null {
+    const parts = getUtcMidnightDateParts(value);
+    if (!parts) return parseDate(value);
+    return new Date(parts[0], parts[1], parts[2], 12, 0, 0, 0);
+}
+
+export function toTaskPlanningDateInput(value: string | null | undefined): string {
+    if (!value) return "";
+    const parts = getUtcMidnightDateParts(value);
+    const date = parts ? new Date(parts[0], parts[1], parts[2], 12) : parseDate(value);
+    if (!date) return "";
+    return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
+}
+
+export function toTaskPlanningTimeInput(
+    value: string | null | undefined,
+    fallback = "12:00",
+): string {
+    if (!value || getUtcMidnightDateParts(value)) return fallback;
+    const date = parseDate(value);
+    if (!date) return fallback;
+    return `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;
+}
+
+export function isTaskPlanningDateBeforeToday(
+    value: string | Date | null | undefined,
+    now = new Date(),
+): boolean {
+    if (!value) return false;
+    let date: Date | null;
+    if (value instanceof Date) {
+        date = Number.isNaN(value.getTime()) ? null : value;
+    } else if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split("-").map(Number);
+        date = new Date(year, month - 1, day, 12);
+        if (
+            date.getFullYear() !== year
+            || date.getMonth() !== month - 1
+            || date.getDate() !== day
+        ) date = null;
+    } else {
+        date = parseTaskCalendarDate(value);
+    }
+    return Boolean(date && startOfLocalDay(date) < startOfLocalDay(now));
+}
+
 export function getTaskScheduleDate(task: TaskItem): Date | null {
-    return parseDate(
-        task.scheduled_start_at || task.due_at || task.created_at,
-    );
+    const scheduled = task.scheduled_start_at || task.due_at || task.created_at;
+    return scheduled ? parseTaskPlanningDate(scheduled) : null;
+}
+
+const PRIORITY_ORDER = {
+    high: 0,
+    medium: 1,
+    low: 2,
+} as const;
+
+export function sortTasksByOperationalPriority(tasks: TaskItem[]): TaskItem[] {
+    return [...tasks].sort((left, right) => {
+        const leftPriority = PRIORITY_ORDER[left.priority || "medium"];
+        const rightPriority = PRIORITY_ORDER[right.priority || "medium"];
+        if (leftPriority !== rightPriority) return leftPriority - rightPriority;
+
+        const leftTime = getTaskScheduleDate(left)?.getTime() ?? Number.POSITIVE_INFINITY;
+        const rightTime = getTaskScheduleDate(right)?.getTime() ?? Number.POSITIVE_INFINITY;
+        if (leftTime !== rightTime) return leftTime - rightTime;
+        return right.id - left.id;
+    });
 }
 
 export function isDateInRange(
@@ -57,11 +138,21 @@ export function getOverviewDateRange(
     return { start: today, end: addDays(today, 7) };
 }
 
+export function getTasksForOverviewTab(
+    tasks: TaskItem[],
+    tab: OverviewTab,
+    now = new Date(),
+): TaskItem[] {
+    if (tab === "todo") return [...tasks];
+    const range = getOverviewDateRange(tab, now);
+    return tasks.filter((task) => isDateInRange(getTaskScheduleDate(task), range));
+}
+
 export function getOverviewTabForDate(
     value: string | null | undefined,
     now = new Date(),
 ): OverviewTab {
-    const date = parseDate(value);
+    const date = value ? parseTaskPlanningDate(value) : null;
     if (!date) return "hoy";
     for (const tab of ["hoy", "manana", "semana"] as const) {
         if (isDateInRange(date, getOverviewDateRange(tab, now))) return tab;

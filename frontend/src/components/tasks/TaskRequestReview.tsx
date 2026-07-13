@@ -14,6 +14,8 @@ import { InstructionList } from "@/components/ui/instruction-list";
 import { buildLocalDateTimeIso } from "@/lib/format";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
+import { getDefaultTaskDate } from "@/domain/tasks/task-create";
+import { toTaskPlanningDateInput } from "@/domain/tasks/task-schedule";
 
 interface TaskRequestReviewProps {
     task: TaskItem;
@@ -66,6 +68,11 @@ export function TaskRequestReview({
     onReject,
     onClose,
 }: TaskRequestReviewProps) {
+    const today = getDefaultTaskDate();
+    const checkoutDate = toTaskPlanningDateInput(
+        task.checkout_reservation?.check_out_at,
+    );
+    const minPlanningDate = checkoutDate > today ? checkoutDate : today;
     const priorityLabel =
         task.priority === "high"
             ? "Alta"
@@ -128,9 +135,7 @@ export function TaskRequestReview({
                                     id="request-planning-date"
                                     type="date"
                                     value={planningDate}
-                                    min={task.checkout_reservation?.check_out_at?.split(
-                                        "T"
-                                    )[0]}
+                                    min={minPlanningDate}
                                     max={maxPlanningDate}
                                     onChange={(event) =>
                                         onPlanningDateChange(event.target.value)

@@ -208,18 +208,8 @@ def test_viewer_sees_accepted_external_task_in_company_pool(db):
         if item.status in task_assignment_service.OPERATIONAL_VIEWER_STATUSES
         and task_assignment_service.can_viewer_access_task(item, receiver_worker.id)
     ]
-    assert worker_visible == []
-
-    task.description = (
-        f"[ ] Limpiar cocina (@{receiver_worker.id}:Worker:pending)"
-    )
-    db.add(task)
-    db.commit()
-    db.refresh(task)
-
-    assert task_assignment_service.can_viewer_access_task(
-        task, receiver_worker.id
-    )
+    assert [item.id for item in worker_visible] == [task.id]
+    assert task_assignment_service.can_viewer_access_task(task, receiver_worker.id)
 
 
 def test_marking_invoice_paid_records_collection_time(db):

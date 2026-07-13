@@ -33,6 +33,7 @@ import { CalendarToolbar } from "./CalendarToolbar";
 import { CalendarUnscheduledSection } from "./CalendarUnscheduledSection";
 import { CalendarBoard } from "./CalendarBoard";
 import { buildCalendarEvents, resolveTaskWorkerNames } from "./buildCalendarEvents";
+import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
 
 interface CompanyCalendarProps {
     tasks: TaskItem[];
@@ -152,6 +153,11 @@ export function CompanyCalendar({
         const start = event.start;
         if (!taskId || !start) {
             revert();
+            return;
+        }
+        if (isTaskPlanningDateBeforeToday(start)) {
+            revert();
+            toast.error("La fecha de planificación no puede ser anterior a hoy");
             return;
         }
         const end = event.end || new Date(start.getTime() + 60 * 60 * 1000);

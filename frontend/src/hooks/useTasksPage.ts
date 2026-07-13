@@ -25,6 +25,7 @@ import {
     isSuperadmin,
 } from "@/domain/access/roles";
 import { buildTaskListFilters } from "@/domain/tasks/task-list";
+import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
 
 export type {
     LocationTemplateSummary as HouseTemplate,
@@ -77,7 +78,7 @@ export function useTasksPage() {
                 selectedUserId: overrides?.selectedUserId ?? selectedUserId,
             });
 
-            const data = await TaskService.getTaskItems(filters);
+            const data = await TaskService.getAllTaskItems(filters);
             setTasks(data);
         } catch (error) {
             console.error("Error loading tasks list", error);
@@ -218,6 +219,10 @@ export function useTasksPage() {
     const requestedTasks = tasks.filter(t => t.status === "requested");
 
     const handleAcceptTask = async (taskId: number, scheduledStartAt?: string) => {
+        if (scheduledStartAt && isTaskPlanningDateBeforeToday(scheduledStartAt)) {
+            toast.error("La fecha de planificación no puede ser anterior a hoy");
+            return;
+        }
         try {
             await TaskService.acceptTaskItem(taskId, scheduledStartAt);
             toast.success("Solicitud aceptada con éxito");

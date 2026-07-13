@@ -171,7 +171,7 @@ def sync_checkout_task(
     )
 
     is_external = target_company_id != reservation.owner_company_id
-    request_status = "requested" if is_external else "pending"
+    request_status = "requested" if is_external else "accepted"
     description, price, template_task_id, unit = _build_service_snapshot(
         db,
         location.id,

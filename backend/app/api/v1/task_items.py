@@ -30,7 +30,9 @@ def read_task_items(
 ):
     if is_platform_superadmin(current_user):
         return []
-    effective_user_id = user_id if current_user.role.name != "viewer" else None
+    effective_user_id = (
+        current_user.id if current_user.role.name == "viewer" else user_id
+    )
     include_requested = can_manage_company(current_user)
     tasks = task_item_service.get_task_items(
         db,

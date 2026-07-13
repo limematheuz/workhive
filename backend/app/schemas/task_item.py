@@ -1,7 +1,23 @@
+import json
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from app.schemas.reservation import ReservationOperationalResponse
+
+
+MAX_REPORT_COLLECTION_ITEMS = 200
+MAX_REPORT_PAYLOAD_BYTES = 256 * 1024
+
+
+def _validate_report_payload(value: Any) -> Any:
+    if value is None:
+        return value
+    if isinstance(value, (list, dict)) and len(value) > MAX_REPORT_COLLECTION_ITEMS:
+        raise ValueError("Task report collections cannot exceed 200 items")
+    encoded = json.dumps(value, ensure_ascii=False, separators=(",", ":")).encode()
+    if len(encoded) > MAX_REPORT_PAYLOAD_BYTES:
+        raise ValueError("Task report data cannot exceed 256 KiB")
+    return value
 
 
 class TaskItemBase(BaseModel):
@@ -11,6 +27,7 @@ class TaskItemBase(BaseModel):
     operational_notes: list[dict[str, Any]] = Field(default_factory=list)
     attachments: list[dict[str, Any]] = Field(default_factory=list)
     checklist_evidence: dict[str, Any] = Field(default_factory=dict)
+    reported_issues: list[dict[str, Any]] = Field(default_factory=list)
     price: float | None = None
     quantity: float | None = None
     unit: str
@@ -26,9 +43,16 @@ class TaskItemBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    _limit_report_payload = field_validator(
+        "operational_notes",
+        "attachments",
+        "checklist_evidence",
+        "reported_issues",
+    )(_validate_report_payload)
+
 
 class TaskItemCreate(TaskItemBase):
-    status: str = "pending"
+    status: str = "accepted"
     created_at: datetime | None = None
 
 
@@ -39,6 +63,7 @@ class TaskItemUpdate(BaseModel):
     operational_notes: list[dict[str, Any]] | None = None
     attachments: list[dict[str, Any]] | None = None
     checklist_evidence: dict[str, Any] | None = None
+    reported_issues: list[dict[str, Any]] | None = None
     price: float | None = None
     quantity: float | None = None
     unit: str | None = None
@@ -54,6 +79,13 @@ class TaskItemUpdate(BaseModel):
     service_context: str | None = None
     checkout_reservation_id: int | None = None
     next_reservation_id: int | None = None
+
+    _limit_report_payload = field_validator(
+        "operational_notes",
+        "attachments",
+        "checklist_evidence",
+        "reported_issues",
+    )(_validate_report_payload)
 
 
 class TaskAcceptRequest(BaseModel):

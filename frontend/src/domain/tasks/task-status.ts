@@ -28,6 +28,24 @@ export function isOperationalStatus(status: string | null | undefined): boolean 
     return normalized !== "requested" && normalized !== "rejected";
 }
 
+export function canStartTaskWork(
+    taskStatus: string | null | undefined,
+    userStatus: string | null | undefined,
+    isAssigned: boolean,
+): boolean {
+    const globalStatus = normalizeTaskStatus(taskStatus);
+    const assignmentStatus = normalizeTaskStatus(userStatus);
+    return isAssigned
+        && ["accepted", "progress", "review"].includes(globalStatus)
+        && ["pending", "accepted", "progress"].includes(assignmentStatus);
+}
+
+export function isTaskWorkInProgress(
+    status: string | null | undefined,
+): boolean {
+    return ["progress", "review"].includes(normalizeTaskStatus(status));
+}
+
 export function toKanbanStatus(status: string | null | undefined): KanbanStatus {
     const normalized = normalizeTaskStatus(status);
     if (normalized === "completed") return "completed";

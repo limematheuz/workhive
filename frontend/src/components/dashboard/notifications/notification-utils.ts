@@ -1,9 +1,9 @@
 "use client";
 
-import { TaskItem } from "@/types/user";
-import { CompanyCollaboration } from "@/types/collaboration";
-import { Reservation } from "@/types/reservation";
-import { PrivacyRequest } from "@/services/privacy.service";
+import type { TaskItem } from "@/types/user";
+import type { CompanyCollaboration } from "@/types/collaboration";
+import type { Reservation } from "@/types/reservation";
+import type { PrivacyRequest } from "@/services/privacy.service";
 
 export type NotificationTab = "primary" | "secondary";
 

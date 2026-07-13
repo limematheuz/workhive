@@ -13,6 +13,7 @@ export interface TaskItemCreate {
     operational_notes?: TaskItem["operational_notes"];
     attachments?: TaskItem["attachments"];
     checklist_evidence?: TaskItem["checklist_evidence"];
+    reported_issues?: TaskItem["reported_issues"];
     price?: number | null;
     quantity?: number | null;
     unit: string;
@@ -35,6 +36,7 @@ export interface TaskItemUpdate {
     operational_notes?: TaskItem["operational_notes"];
     attachments?: TaskItem["attachments"];
     checklist_evidence?: TaskItem["checklist_evidence"];
+    reported_issues?: TaskItem["reported_issues"];
     price?: number | null;
     quantity?: number | null;
     unit?: string | null;
@@ -81,8 +83,10 @@ export const TaskService = {
         return await response.json()
     },
 
-    getAllTaskItems: async (): Promise<TaskItem[]> => collectPaginated(
-        (skip, limit) => TaskService.getTaskItems({ skip, limit }),
+    getAllTaskItems: async (
+        filters: Omit<TaskItemFilters, "skip" | "limit"> = {},
+    ): Promise<TaskItem[]> => collectPaginated(
+        (skip, limit) => TaskService.getTaskItems({ ...filters, skip, limit }),
     ),
 
     getTaskItem: async (id: number): Promise<TaskItem> => {

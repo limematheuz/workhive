@@ -15,7 +15,7 @@ from app.services import location_access_service
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.repositories import work_session as work_session_repo
-from app.services import calendar_sync_service, task_assignment_service
+from app.services import calendar_sync_service, notification_service, task_assignment_service
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 
 
@@ -145,6 +145,63 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
         setattr(task, field, value)
 
 
+def _notify_task_report(
+    db: Session,
+    task: TaskItem,
+    changed_fields: set[str],
+) -> None:
+    company_ids = {task.company_id}
+    emitter_user: User | None = None
+    if task.checkout_reservation:
+        company_ids.add(task.checkout_reservation.owner_company_id)
+        if task.checkout_reservation.created_by_user_id:
+            emitter_user = db.get(User, task.checkout_reservation.created_by_user_id)
+    recipients = db.query(User).filter(
+        User.company_id.in_(company_ids),
+        User.is_active.is_(True),
+        User.role.has(name="admin"),
+    ).all()
+    if emitter_user:
+        recipients.append(emitter_user)
+    notification_service.notify_users(
+        db,
+        users=recipients,
+        event_type="task.reported",
+        title="Nuevo reporte en una tarea",
+        message=task.title,
+        entity_type="task_item",
+        entity_id=task.id,
+        href=f"/dashboard?taskId={task.id}",
+        metadata={"changed_fields": sorted(changed_fields)},
+    )
+
+
+def _notify_new_task_assignees(
+    db: Session,
+    task: TaskItem,
+    user_ids: set[int],
+) -> None:
+    if not user_ids or task.status in {"requested", "rejected", "completed"}:
+        return
+    recipients = db.query(User).filter(
+        User.id.in_(user_ids),
+        User.company_id == task.company_id,
+        User.is_active.is_(True),
+    ).all()
+    if not recipients:
+        return
+    notification_service.notify_users(
+        db,
+        users=recipients,
+        event_type="task.assigned",
+        title="Nueva tarea asignada",
+        message=task.title,
+        entity_type="task_item",
+        entity_id=task.id,
+        href=f"/dashboard?taskId={task.id}",
+    )
+
+
 def create_task_item(
     db: Session, current_user: User, task_item_data: TaskItemCreate
 ) -> TaskItem:
@@ -164,10 +221,18 @@ def create_task_item(
         task_item_data.checkout_reservation_id,
         task_item_data.next_reservation_id,
     )
+    # Internal work is approved by the admin/manager creating it. External
+    # company requests are created by the reservation flow and remain requested.
+    task_item_data = task_item_data.model_copy(update={"status": "accepted"})
     task = task_item_repo.create_task_item(
         db,
         current_user.company_id,
         task_item_data,
+    )
+    _notify_new_task_assignees(
+        db,
+        task,
+        task_assignment_service.assigned_user_ids(task),
     )
     calendar_sync_service.enqueue_task_sync(db, task)
     return task
@@ -181,6 +246,22 @@ def update_task_item(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
         )
+    if db_task_item.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
+        )
+    previous_assignee_ids = task_assignment_service.assigned_user_ids(db_task_item)
+    report_fields = {
+        "operational_notes",
+        "attachments",
+        "checklist_evidence",
+        "reported_issues",
+    }
+    changed_report_fields = {
+        field
+        for field in task_data.model_fields_set & report_fields
+        if getattr(task_data, field) != getattr(db_task_item, field)
+    }
     is_external_reservation_task = bool(
         db_task_item.checkout_reservation
         and db_task_item.checkout_reservation.owner_company_id
@@ -193,6 +274,7 @@ def update_task_item(
             "operational_notes",
             "attachments",
             "checklist_evidence",
+            "reported_issues",
             "price",
             "quantity",
             "unit",
@@ -212,6 +294,7 @@ def update_task_item(
             "operational_notes",
             "attachments",
             "checklist_evidence",
+            "reported_issues",
         }
         if not task_data.model_fields_set.issubset(allowed_fields):
             raise HTTPException(
@@ -273,6 +356,14 @@ def update_task_item(
         _freeze_live_external_snapshot(db, db_task_item)
 
     updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
+    _notify_new_task_assignees(
+        db,
+        updated_task,
+        task_assignment_service.assigned_user_ids(updated_task)
+        - previous_assignee_ids,
+    )
+    if changed_report_fields:
+        _notify_task_report(db, updated_task, changed_report_fields)
     calendar_sync_service.enqueue_task_sync(db, updated_task)
     if _complete_task_when_checklist_is_done(db, updated_task):
         db.add(updated_task)
@@ -416,6 +507,15 @@ def accept_task_item(
         preferred_user_id=current_user.id,
     )
     task.accepted_by_user_id = current_user.id
+    receiver_users = db.query(User).filter(
+        User.company_id == task.company_id,
+        User.is_active.is_(True),
+    ).all()
+    assigned_description = task_assignment_service.assign_to_users(
+        live_snapshot.get("description", task.description),
+        {user.id for user in receiver_users},
+    )
+    live_snapshot["description"] = assigned_description
     updated_task = task_item_repo.update_task_item(
         db,
         task,
@@ -427,6 +527,16 @@ def accept_task_item(
         ),
     )
     calendar_sync_service.enqueue_task_sync(db, updated_task)
+    notification_service.notify_users(
+        db,
+        users=receiver_users,
+        event_type="task.assigned",
+        title="Nueva tarea asignada",
+        message=updated_task.title,
+        entity_type="task_item",
+        entity_id=updated_task.id,
+        href=f"/dashboard?taskId={updated_task.id}",
+    )
     return updated_task
 
 
@@ -530,6 +640,10 @@ def finish_task_work(
 def delete_task_item(db: Session, current_user: User, task_item_id: int) -> None:
     db_task_item = task_item_repo.get_task_item(db, current_user.company_id, task_item_id)
     if not db_task_item:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
+        )
+    if db_task_item.company_id != current_user.company_id:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
         )

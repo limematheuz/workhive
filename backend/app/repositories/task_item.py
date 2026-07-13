@@ -45,11 +45,8 @@ def get_task_items(
                     TaskItem.checkout_reservation_id.is_(None),
                     TaskItem.company_id == company_id,
                 ),
-                and_(
-                    TaskItem.status == "rejected",
-                    TaskItem.checkout_reservation.has(
-                        Reservation.owner_company_id == company_id
-                    ),
+                TaskItem.checkout_reservation.has(
+                    Reservation.owner_company_id == company_id
                 ),
             )
         )
@@ -69,7 +66,7 @@ def get_task_items(
         )
     if status:
         query = query.filter(TaskItem.status == status)
-    return query.offset(skip).limit(limit).all()
+    return query.order_by(TaskItem.id.asc()).offset(skip).limit(limit).all()
 
 
 def get_task_item(db: Session, company_id: int, task_item_id: int) -> TaskItem | None:
@@ -88,11 +85,8 @@ def get_task_item(db: Session, company_id: int, task_item_id: int) -> TaskItem |
                     TaskItem.checkout_reservation_id.is_(None),
                     TaskItem.company_id == company_id,
                 ),
-                and_(
-                    TaskItem.status == "rejected",
-                    TaskItem.checkout_reservation.has(
-                        Reservation.owner_company_id == company_id
-                    ),
+                TaskItem.checkout_reservation.has(
+                    Reservation.owner_company_id == company_id
                 ),
             )
         )

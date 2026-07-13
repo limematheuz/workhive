@@ -26,6 +26,7 @@ from app.api.v1.calendar import router as calendar_router
 from app.api.v1.privacy import router as privacy_router
 from app.api.v1.traffic import router as traffic_router
 from app.api.v1.user_invitations import router as user_invitations_router
+from app.api.v1.notifications import router as notifications_router
 
 api_router = APIRouter()
 
@@ -56,6 +57,7 @@ api_router.include_router(
     work_sessions_router, prefix="/work-sessions", tags=["work-session"]
 )
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])
+api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(invoices_router, prefix="/invoices", tags=["invoices"])
 api_router.include_router(
     invoice_email_contacts_router,

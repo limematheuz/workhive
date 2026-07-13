@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Plus, Columns3, ListTodo, Library, Loader2, CalendarDays } from "lucide-react";
+import { Plus, Columns3, ListTodo, Library, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTasksPage } from "@/hooks/useTasksPage";
 import { TasksKanban } from "@/components/tasks/TasksKanban";
@@ -10,7 +10,6 @@ import { TasksTemplates } from "@/components/tasks/TasksTemplates";
 import { TaskFormModals } from "@/components/tasks/TaskFormModals";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
-import { CompanyCalendar } from "@/components/calendar/CompanyCalendar";
 
 function TasksPageContent() {
     const state = useTasksPage();
@@ -56,7 +55,6 @@ function TasksPageContent() {
             <PremiumTabs
                 tabs={[
                     { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Operaciones", icon: Columns3 },
-                    { id: "calendar" as const, label: state.dict.tasks?.tab_calendar || "Calendario", icon: CalendarDays },
                     ...(state.isAdminOrManager
                         ? [
                             { id: "list" as const, label: state.dict.tasks?.tab_list || "Todas las tareas", icon: ListTodo },
@@ -108,16 +106,6 @@ function TasksPageContent() {
                             handleToggleStatus={state.handleToggleStatus}
                             getLocationName={state.getLocationName}
                             getAssigneeName={state.getAssigneeName}
-                        />
-                    )}
-
-                    {state.activeTab === "calendar" && (
-                        <CompanyCalendar
-                            tasks={state.tasks}
-                            locations={state.locations}
-                            users={state.users}
-                            currentUser={state.currentUser}
-                            onTasksChanged={state.loadTasks}
                         />
                     )}
 

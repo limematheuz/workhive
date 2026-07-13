@@ -26,6 +26,7 @@ export function NotificationPanel() {
 
     const {
         loadNotifications,
+        persistentNotifications,
         primaryTaskNotifications,
         secondaryTaskNotifications,
         primaryCollaborationNotifications,
@@ -45,6 +46,7 @@ export function NotificationPanel() {
         handlePrivacyRequestClick,
         handleReservationNotificationClick,
         handleUpcomingArrivalClick,
+        handlePersistentNotificationClick,
         upcomingArrivals,
     } = useNotifications({
         enabled,
@@ -152,6 +154,18 @@ export function NotificationPanel() {
                             <div className="space-y-2">
                                 {activeNotificationTab === "primary" && (
                                     <>
+                                        {persistentNotifications.map((notification) => (
+                                            <NotificationItem
+                                                key={`persistent:${notification.id}`}
+                                                type="persistent"
+                                                data={notification}
+                                                notificationKey={`persistent:${notification.id}`}
+                                                openingNotificationKey={openingNotificationKey}
+                                                onClick={() => void handlePersistentNotificationClick(notification)}
+                                                dict={dict}
+                                                locale={locale}
+                                            />
+                                        ))}
                                         {primaryCollaborationNotifications.map((collab) => {
                                             const notificationKey = getCollaborationNotificationKey(collab);
                                             return (

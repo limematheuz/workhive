@@ -76,7 +76,9 @@ export function TaskCreateHouseChecklistSection({
                             onClick={() => setShowQuickAddFixed(!showQuickAddFixed)}
                             className="text-2xs font-bold uppercase text-accent hover:underline cursor-pointer"
                         >
-                            {showQuickAddFixed ? (dict.tasks?.create_dialog?.cancel_link || "Cancel") : ("+ Link Default Task")}
+                            {showQuickAddFixed
+                                ? (dict.tasks?.create_dialog?.cancel_link || "Cancel")
+                                : `+ ${dict.tasks?.create_dialog?.link_default_task || "Link Default Task"}`}
                         </button>
                     )}
                     {visibleHouseTemplates.length > 0 && (

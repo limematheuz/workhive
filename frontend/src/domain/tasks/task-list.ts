@@ -1,7 +1,20 @@
 import { canManageCompanyTasks } from "../access/roles.ts";
 import type { User } from "../../types/user.ts";
 
-export type TaskPageTab = "kanban" | "list" | "calendar" | "templates" | "requests";
+export type TaskPageTab = "kanban" | "list" | "templates" | "requests";
+
+const TASK_PAGE_TABS = new Set<TaskPageTab>([
+    "requests",
+    "kanban",
+    "list",
+    "templates",
+]);
+
+export function parseTaskPageTab(value: string | null): TaskPageTab | null {
+    return value && TASK_PAGE_TABS.has(value as TaskPageTab)
+        ? value as TaskPageTab
+        : null;
+}
 
 export interface TaskListFilters {
     locationId?: number;

@@ -47,7 +47,7 @@ function DashboardOverviewContent() {
 
             const [fetchedLocs, fetchedTasks] = await Promise.all([
                 LocationService.getLocations().catch(() => [] as Location[]),
-                TaskService.getTaskItems().catch(() => [] as TaskItem[]),
+                TaskService.getAllTaskItems().catch(() => [] as TaskItem[]),
             ]);
 
             const knownLocationIds = new Set(fetchedLocs.map((location) => location.id));

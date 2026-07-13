@@ -98,9 +98,13 @@ export function TechTaskWorkControls({
 
     return (
         <div className="pt-2">
-            <div className="bg-[var(--bg-primary)] border border-[var(--border-soft)] text-[var(--text-muted)] text-xs font-black uppercase text-center py-4 rounded-2xl">
+            <Button
+                disabled
+                className="w-full bg-[var(--bg-primary)] border border-[var(--border-soft)] text-[var(--text-muted)] text-xs font-black uppercase text-center py-4 rounded-2xl cursor-not-allowed flex items-center justify-center gap-2"
+            >
+                <Play className="w-4 h-4" />
                 {dict.tech.msg_accept_first}
-            </div>
+            </Button>
         </div>
     );
 }
