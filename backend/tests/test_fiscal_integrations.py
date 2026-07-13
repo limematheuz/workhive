@@ -1,5 +1,4 @@
 from datetime import datetime, timezone
-from decimal import Decimal
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization

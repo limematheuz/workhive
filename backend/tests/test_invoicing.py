@@ -8,7 +8,6 @@ from app.models.location_template import LocationTemplate
 from app.models.invoice import Invoice
 from app.models.task_item import TaskItem
 from app.models.template_task import TemplateTask
-from app.schemas.reservation import ReservationCreate
 from app.schemas.invoice import InvoiceDraftCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate
 from app.schemas.task_item import TaskAcceptRequest, TaskItemUpdate
@@ -28,7 +27,7 @@ def _external_completed_task_setup(db):
     location = _location(db, issuer)
     issuer_admin = _user(db, issuer, role_id=1, email="admin@portblanc.test")
     receiver_admin = _user(db, receiver, role_id=1, email="admin@ownet.test")
-    receiver_worker = _user(db, receiver, role_id=3, email="worker@ownet.test")
+    _user(db, receiver, role_id=3, email="worker@ownet.test")
 
     db.add(
         LocationCompanyAccess(

@@ -1,4 +1,5 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { buildPrivacyResolutionPayload } from "@/lib/privacy-request";
 
 export type PrivacyRequestType =
     | "access"
@@ -94,10 +95,9 @@ export const PrivacyService = {
             `/api/v1/privacy/requests/${requestId}/resolve`,
             {
                 method: "POST",
-                body: JSON.stringify({
-                    decision,
-                    resolution_notes: resolutionNotes,
-                }),
+                body: JSON.stringify(
+                    buildPrivacyResolutionPayload(decision, resolutionNotes),
+                ),
             },
         );
         if (!response.ok) {

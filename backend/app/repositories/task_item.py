@@ -3,7 +3,6 @@ from sqlalchemy import and_, or_
 from app.models.task_item import TaskItem
 from app.models.location import Location
 from app.models.client import Client
-from app.models.location_company_access import LocationCompanyAccess
 from app.models.reservation import Reservation
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
 from datetime import datetime

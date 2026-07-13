@@ -1,3 +1,5 @@
+# Import all models so Alembic registers their metadata before generating migrations.
+# ruff: noqa: F401
 from app.db.session import Base
 from app.models.user import User
 from app.models.client import Client

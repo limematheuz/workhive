@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db, ActiveUser, ActiveAdmin, ActiveManagerOrAdmin
+from app.api.deps import get_db, ActiveUser, ActiveManagerOrAdmin
 from app.services import location_template_service
 from app.services import location_service
 from app.schemas.location_template import (

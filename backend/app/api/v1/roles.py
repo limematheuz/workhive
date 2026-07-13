@@ -1,6 +1,6 @@
 from fastapi import Depends, APIRouter, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_db, ActiveUser, ActiveAdmin, require_role
+from app.api.deps import get_db, ActiveUser, require_role
 from app.schemas.role import RoleCreate, RoleUpdate, RoleResponse
 from app.services import role_service
 from app.models.user import User

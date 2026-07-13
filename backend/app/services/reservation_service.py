@@ -15,7 +15,7 @@ from app.schemas.work_session import WorkSessionStartLocationResponse
 from app.services import location_access_service
 from app.services.reservation_tasks import (
     ensure_location_access,
-    get_live_external_task_snapshot,
+    get_live_external_task_snapshot,  # noqa: F401 - compatibility re-export
     sync_checkout_task,
     sync_location_reservation_chain,
 )

@@ -3,7 +3,7 @@ import secrets
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 from app.api.deps import ActiveUser, get_db
-from app.schemas.user import UserCreate, UserResponse, UserRegister, PasswordResetRequest, PasswordResetConfirm
+from app.schemas.user import UserResponse, UserRegister, PasswordResetRequest, PasswordResetConfirm
 from app.services import audit_service, auth_service
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import create_access_token

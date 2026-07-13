@@ -25,7 +25,7 @@ def get_quotes(
 ) -> list[Quote]:
     query = db.query(Quote).filter(
         Quote.company_id == company_id,
-        Quote.is_active == True,
+        Quote.is_active.is_(True),
     )
     if client_id:
         query = query.filter(Quote.client_id == client_id)
@@ -40,7 +40,7 @@ def get_quote(db: Session, company_id: int, quote_id: int) -> Quote | None:
         .filter(
             Quote.id == quote_id,
             Quote.company_id == company_id,
-            Quote.is_active == True,
+            Quote.is_active.is_(True),
         )
         .first()
     )

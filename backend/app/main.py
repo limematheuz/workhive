@@ -1,20 +1,25 @@
 from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware as _TrustedHostMiddleware
+from starlette.types import Receive, Scope, Send
+
+import asyncio
 import logging
 import secrets
 import time
 import uuid
-import asyncio
 from contextlib import asynccontextmanager
-from app.db import base as _models
+
 from app.api.deps import get_db
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging
+from app.db import base as _models  # noqa: F401 - registers SQLAlchemy models
 from app.services.health_service import readiness_checks
 from app.services.calendar_background_service import periodic_calendar_sync
 from sqlalchemy.orm import Session
-from fastapi.middleware.cors import CORSMiddleware
 
 
 configure_logging()
@@ -46,11 +51,6 @@ app = FastAPI(
     openapi_url=None if settings.is_production else "/openapi.json",
     lifespan=lifespan,
 )
-
-from starlette.middleware.trustedhost import TrustedHostMiddleware as _TrustedHostMiddleware
-from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
-from starlette.types import ASGIApp, Receive, Scope, Send
-
 
 HEALTH_PROBE_PATHS = {"/health", "/health/ready"}
 

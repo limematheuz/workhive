@@ -92,6 +92,7 @@ class Settings(BaseSettings):
     PRIVACY_POLICY_VERSION: str = "2026-06-15"
     AUDIT_IP_RETENTION_DAYS: int = 90
     DATA_SUBJECT_REQUEST_RETENTION_DAYS: int = 1095
+    PRIVACY_REQUEST_RESPONSE_DAYS: int = 30
 
     @field_validator("ALGORITHM")
     @classmethod

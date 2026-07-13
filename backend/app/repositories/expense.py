@@ -16,7 +16,7 @@ def get_expenses(
 ) -> list[Expense]:
     query = db.query(Expense).filter(
         Expense.company_id == company_id,
-        Expense.is_active == True,
+        Expense.is_active.is_(True),
     )
     if category:
         query = query.filter(Expense.category == category)
@@ -33,7 +33,7 @@ def get_expense(db: Session, company_id: int, expense_id: int) -> Expense | None
         .filter(
             Expense.id == expense_id,
             Expense.company_id == company_id,
-            Expense.is_active == True,
+            Expense.is_active.is_(True),
         )
         .first()
     )

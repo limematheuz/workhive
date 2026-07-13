@@ -1,4 +1,6 @@
+import logging
 import secrets
+import smtplib
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, Request, status
@@ -15,7 +17,11 @@ from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.schemas.privacy import PrivacyRequestCreate, PrivacyRequestResolve
+from app.services import email_service
 from app.services.user_scope import is_company_admin, is_superadmin
+
+
+logger = logging.getLogger(__name__)
 
 
 def record_registration_acknowledgements(
@@ -93,7 +99,29 @@ def create_request(
     db.add(privacy_request)
     db.commit()
     db.refresh(privacy_request)
+    if privacy_request.request_type == "erasure":
+        _notify_erasure_request_received(user)
     return privacy_request
+
+
+def _notify_erasure_request_received(user: User) -> None:
+    due_at = datetime.now(timezone.utc) + timedelta(
+        days=settings.PRIVACY_REQUEST_RESPONSE_DAYS
+    )
+    try:
+        sent = email_service.send_erasure_request_received_email(
+            recipient_email=user.email,
+            recipient_name=user.full_name or "",
+            response_due_at=due_at,
+        )
+    except (OSError, TimeoutError, ConnectionError, smtplib.SMTPException) as error:
+        logger.warning(
+            "Erasure request acknowledgement email failed (%s)",
+            type(error).__name__,
+        )
+        return
+    if not sent:
+        logger.warning("Erasure request acknowledgement email was not sent")
 
 
 def list_user_requests(db: Session, user: User) -> list[DataSubjectRequest]:
@@ -245,6 +273,14 @@ def resolve_request(
             detail="Privacy request is already resolved",
         )
 
+    requester = (
+        db.get(User, privacy_request.requested_by_user_id)
+        if privacy_request.requested_by_user_id is not None
+        else None
+    )
+    requester_email = requester.email if requester else None
+    requester_name = requester.full_name if requester else ""
+
     if data.decision == "complete" and privacy_request.request_type == "erasure":
         _anonymize_user(db, privacy_request.requested_by_user_id)
 
@@ -257,7 +293,38 @@ def resolve_request(
     db.add(privacy_request)
     db.commit()
     db.refresh(privacy_request)
+    if privacy_request.request_type == "erasure" and requester_email:
+        _notify_erasure_request_resolved(
+            recipient_email=requester_email,
+            recipient_name=requester_name or "",
+            decision=data.decision,
+            resolution_notes=data.resolution_notes,
+        )
     return privacy_request
+
+
+def _notify_erasure_request_resolved(
+    *,
+    recipient_email: str,
+    recipient_name: str,
+    decision: str,
+    resolution_notes: str,
+) -> None:
+    try:
+        sent = email_service.send_erasure_request_resolved_email(
+            recipient_email=recipient_email,
+            recipient_name=recipient_name,
+            approved=decision == "complete",
+            resolution_notes=resolution_notes,
+        )
+    except (OSError, TimeoutError, ConnectionError, smtplib.SMTPException) as error:
+        logger.warning(
+            "Erasure request resolution email failed (%s)",
+            type(error).__name__,
+        )
+        return
+    if not sent:
+        logger.warning("Erasure request resolution email was not sent")
 
 
 def _anonymize_user(db: Session, user_id: int | None) -> None:
@@ -292,7 +359,6 @@ def _anonymize_user(db: Session, user_id: int | None) -> None:
                     synchronize_session=False,
                 )
             )
-            return
     user.email = f"deleted+{user.id}@invalid.workhive.local"
     user.full_name = "Deleted user"
     user.photo_url = None

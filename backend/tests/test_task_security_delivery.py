@@ -330,7 +330,7 @@ def test_external_company_can_create_tasks_only_when_location_grants_task_permis
 
 def test_task_listing_performance_stays_linear_for_company_scope(client, db):
     company = _company(db, "PerfTasks")
-    admin = _user(db, company, "admin@perf.test", 1)
+    _user(db, company, "admin@perf.test", 1)
     viewer = _user(db, company, "viewer@perf.test", 3)
     location = _location(db, company, "Casa Rendimiento")
     db.add_all(

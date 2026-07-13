@@ -1,4 +1,4 @@
-from credentials import TEST_NEW, TEST_OLD, TEST_SECRET, login_form, with_credential, with_new_credential, CREDENTIAL_FIELD
+from credentials import TEST_SECRET, login_form, CREDENTIAL_FIELD
 
 
 def test_quotes_crud(client):

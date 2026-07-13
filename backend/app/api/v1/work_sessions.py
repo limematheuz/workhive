@@ -5,7 +5,6 @@ from app.services import work_session_service
 from app.models.user import User
 from app.schemas.work_session import (
     WorkSessionCreate,
-    WorkSessionUpdate,
     WorkSessionResponse,
     ActiveCompanySessionResponse,
     TaskWorkSummaryResponse,

@@ -274,11 +274,11 @@ export function PrivacyControls({
                         <DialogDescription className="text-[var(--text-muted)]">
                             {resolveDecision === "complete" && resolveTarget?.request_type === "erasure"
                                 ? (isSpanish
-                                    ? "Se anonimizará la cuenta y se revocarán sus sesiones. Los registros legales o fiscales obligatorios se conservarán."
-                                    : "The account will be anonymized and sessions revoked. Legally required fiscal records will be retained.")
+                                    ? "Se anonimizará la cuenta y se revocarán sus sesiones. Los registros legales o fiscales obligatorios se conservarán. El mensaje se enviará por email a la persona."
+                                    : "The account will be anonymized and sessions revoked. Legally required fiscal records will be retained. The message will be emailed to the person.")
                                 : (isSpanish
-                                    ? "Añade una nota interna con la verificación realizada."
-                                    : "Add an internal note with the verification performed.")}
+                                    ? "Este mensaje se enviará por email a la persona que hizo la solicitud. No incluyas notas internas."
+                                    : "This message will be emailed to the person who made the request. Do not include internal notes.")}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
@@ -286,14 +286,14 @@ export function PrivacyControls({
                             htmlFor="privacy-resolution-notes"
                             className="text-xs font-black uppercase tracking-[0.14em] text-[var(--text-muted)]"
                         >
-                            {isSpanish ? "Nota de resolución" : "Resolution note"}
+                            {isSpanish ? "Mensaje para la persona" : "Message for the person"}
                         </label>
                         <textarea
                             id="privacy-resolution-notes"
                             value={resolutionNotes}
                             onChange={(event) => setResolutionNotes(event.target.value)}
                             className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm outline-none transition-all focus:border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-soft)]"
-                            placeholder={isSpanish ? "Ej.: Identidad verificada por email y registros fiscales conservados." : "E.g. Identity verified by email and fiscal records retained."}
+                            placeholder={isSpanish ? "Ej.: Hemos verificado tu solicitud. Conservaremos únicamente los registros fiscales exigidos por ley." : "E.g. We verified your request. We will retain only legally required fiscal records."}
                         />
                     </div>
                     <DialogFooter className="gap-2">

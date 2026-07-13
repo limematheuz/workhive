@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
 from credentials import (
-    TEST_SECRET,
     TEST_SUPER,
     TEST_TEMP,
     login_form,
