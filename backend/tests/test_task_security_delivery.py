@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 import pytest
+from sqlalchemy import event
 
 from app.core.security import create_access_token
 from app.models.company import Company
@@ -393,3 +394,53 @@ def test_task_listing_performance_stays_linear_for_company_scope(client, db):
     assert response.status_code == 200, response.text
     assert len(response.json()) == 350
     assert elapsed < 1.5
+
+
+def test_task_listing_uses_a_bounded_number_of_queries(client, db):
+    company = _company(db, "BoundedQueries")
+    admin = _user(db, company, "admin@bounded-queries.test", 1)
+    viewer = _user(db, company, "viewer@bounded-queries.test", 3)
+    location = _location(db, company, "Casa Consultas")
+    tasks = [
+        TaskItem(
+            title=f"Bounded task {index}",
+            description=f"- [ ] Línea {index} (@{viewer.id}:Viewer:accepted)",
+            unit="servicio",
+            company_id=company.id,
+            location_id=location.id,
+            status="accepted",
+        )
+        for index in range(30)
+    ]
+    db.add_all(tasks)
+    db.flush()
+    db.add_all(
+        TaskAssignment(
+            task_id=task.id,
+            user_id=viewer.id,
+            status="accepted",
+            source="checklist",
+        )
+        for task in tasks
+    )
+    db.commit()
+
+    statements: list[str] = []
+
+    def record_statement(*args):
+        statements.append(args[2])
+
+    event.listen(db.bind, "before_cursor_execute", record_statement)
+    try:
+        response = client.get(
+            "/api/v1/task-items/?limit=100",
+            headers=_headers(admin),
+        )
+    finally:
+        event.remove(db.bind, "before_cursor_execute", record_statement)
+
+    assert response.status_code == 200, response.text
+    assert len(response.json()) == 30
+    assert len(statements) <= 20, (
+        f"Task listing executed {len(statements)} SQL statements; expected a bounded query plan"
+    )

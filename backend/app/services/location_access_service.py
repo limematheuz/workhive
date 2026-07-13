@@ -111,6 +111,20 @@ def can_view_sensitive(db: Session, current_user: User, location_id: int) -> boo
     return bool(access and access.can_view_sensitive)
 
 
+def can_view_sensitive_loaded(current_user: User, location: Location) -> bool:
+    """Evaluate visibility from eagerly loaded location relationships."""
+    if is_platform_superadmin(current_user):
+        return True
+    if not can_manage_company(current_user):
+        return False
+    if _is_direct_company_location(location, current_user.company_id):
+        return True
+    return any(
+        access.company_id == current_user.company_id and access.can_view_sensitive
+        for access in location.company_access
+    )
+
+
 def list_location_access(db: Session, current_user: User, location_id: int):
     location = require_accessible_location(db, current_user, location_id)
     if is_platform_superadmin(current_user):

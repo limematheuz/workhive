@@ -71,7 +71,8 @@ export const TaskService = {
         if (filters.skip) queryParams.set("skip", filters.skip.toString())
         if (filters.limit) queryParams.set("limit", filters.limit.toString())
 
-        const response = await apiFetch(`/api/v1/task-items/?${queryParams.toString()}`, {
+        const path = `/api/v1/task-items/?${queryParams.toString()}`
+        const response = await apiFetch(path, {
             method: "GET",
             cache: "no-store"
         })

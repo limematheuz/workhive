@@ -148,6 +148,29 @@ test("apiFetch attaches JSON defaults and cookie csrf for mutations", async () =
     restoreBrowser();
 });
 
+test("apiFetch shares concurrent identical GET requests and returns readable clones", async () => {
+    let calls = 0;
+    let release!: (response: Response) => void;
+    const pending = new Promise<Response>((resolve) => {
+        release = resolve;
+    });
+    globalThis.fetch = async () => {
+        calls += 1;
+        return pending;
+    };
+
+    const first = apiFetch("/api/v1/task-items/?user_id=2");
+    const second = apiFetch("/api/v1/task-items/?user_id=2");
+    assert.equal(calls, 1);
+
+    release(jsonResponse([{ id: 1 }]));
+    const [firstResponse, secondResponse] = await Promise.all([first, second]);
+    assert.deepEqual(await firstResponse.json(), [{ id: 1 }]);
+    assert.deepEqual(await secondResponse.json(), [{ id: 1 }]);
+    assert.equal(calls, 1);
+    restoreBrowser();
+});
+
 test("apiFetch refreshes csrf once when backend rejects stale token", async () => {
     installBrowser();
     const calls: Array<{ url: string; csrfToken: string | null }> = [];
