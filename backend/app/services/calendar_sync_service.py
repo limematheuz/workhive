@@ -523,6 +523,14 @@ def _import_event(
             task.description = event.get("description") or ""
             task.scheduled_start_at = start
             task.due_at = due
+            from app.services import task_structure_service
+
+            task_structure_service.sync_from_description(
+                db,
+                task,
+                strict=False,
+                include_embedded_assignments=False,
+            )
             db.add(task)
             _save_mapping(db, task, connection.owner_user_id, event)
             return True
@@ -541,6 +549,14 @@ def _import_event(
             )
             db.add(task)
             db.flush()
+            from app.services import task_structure_service
+
+            task_structure_service.sync_from_description(
+                db,
+                task,
+                strict=False,
+                include_embedded_assignments=False,
+            )
             _save_mapping(db, task, connection.owner_user_id, event)
 
             # Patch Google Calendar event to link it

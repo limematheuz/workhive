@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
-from typing import Any
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing import Any, Literal
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.schemas.reservation import ReservationOperationalResponse
 
 
@@ -99,6 +99,39 @@ class TaskWorkStartRequest(BaseModel):
     start_accuracy_meters: float | None = Field(default=None, ge=0)
 
 
+class TaskChecklistItemUpdate(BaseModel):
+    completed: bool
+    answer: Literal["yes", "no"] | None = None
+
+    @model_validator(mode="after")
+    def validate_answer_state(self):
+        if not self.completed and self.answer is not None:
+            raise ValueError("An unanswered checklist item cannot have an answer")
+        return self
+
+
+class TaskChecklistAssignmentResponse(BaseModel):
+    user_id: int
+    user_name: str
+    status: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TaskChecklistItemResponse(BaseModel):
+    id: int
+    position: int
+    text: str
+    completed: bool
+    assignments: list[TaskChecklistAssignmentResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TaskAssignmentResponse(TaskChecklistAssignmentResponse):
+    source: str
+
+
 class TaskItemResponse(TaskItemBase):
     id: int
     status: str
@@ -111,6 +144,8 @@ class TaskItemResponse(TaskItemBase):
     user_company_id: int | None = None
     accepted_by_user_id: int | None = None
     accepted_by_name: str | None = None
+    checklist_items: list[TaskChecklistItemResponse] = Field(default_factory=list)
+    assignments: list[TaskAssignmentResponse] = Field(default_factory=list)
 
 
 class InvoiceableTaskResponse(TaskItemResponse):

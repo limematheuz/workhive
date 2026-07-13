@@ -4,19 +4,15 @@ from app.models.task_item import TaskItem
 from app.models.location import Location
 from app.models.client import Client
 from app.models.reservation import Reservation
+from app.models.task_structure import TaskAssignment
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
 from datetime import datetime
 
 
 def _user_assignment_conditions(user_id: int):
     return [
+        TaskItem.assignments.any(TaskAssignment.user_id == user_id),
         TaskItem.user_id == user_id,
-        TaskItem.description.like(f"%(@{user_id}:%"),
-        TaskItem.description.like(f"%(@{user_id})%"),
-        TaskItem.description.like(f"%workhive_assignees:{user_id} -->%"),
-        TaskItem.description.like(f"%workhive_assignees:{user_id},%"),
-        TaskItem.description.like(f"%,{user_id},%"),
-        TaskItem.description.like(f"%,{user_id} -->%"),
     ]
 
 

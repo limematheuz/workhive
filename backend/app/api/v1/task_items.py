@@ -8,6 +8,7 @@ from app.schemas.task_item import (
     TaskItemCreate,
     TaskItemUpdate,
     TaskItemResponse,
+    TaskChecklistItemUpdate,
 )
 from app.services import task_item_service
 from app.services import task_assignment_service
@@ -96,6 +97,34 @@ def update_task_item(
     task = task_item_service.update_task_item(db, current_user, task_item_id, task_item_data)
     if background_tasks:
         background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+    return task_item_service.build_task_response(db, task, current_user)
+
+
+@router.patch(
+    "/{task_item_id}/checklist-items/{checklist_item_id}",
+    response_model=TaskItemResponse,
+)
+def update_task_checklist_item(
+    task_item_id: int,
+    checklist_item_id: int,
+    item_data: TaskChecklistItemUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+    background_tasks: BackgroundTasks = None,
+):
+    task = task_item_service.update_task_checklist_item(
+        db,
+        current_user,
+        task_item_id,
+        checklist_item_id,
+        item_data,
+    )
+    if background_tasks:
+        background_tasks.add_task(
+            sync_user_calendar,
+            current_user.company_id,
+            current_user.id,
+        )
     return task_item_service.build_task_response(db, task, current_user)
 
 

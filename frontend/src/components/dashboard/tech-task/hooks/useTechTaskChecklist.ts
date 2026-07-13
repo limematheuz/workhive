@@ -7,7 +7,7 @@ import { TaskService } from "@/services/task.service";
 import { UploadService } from "@/services/upload.service";
 import { UserService } from "@/services/user.service";
 import { canManageCompanyTasks } from "@/domain/access/roles";
-import { parseChecklistItems } from "@/lib/format";
+import { parseTaskChecklistItems } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import type { Dictionary } from "@/lib/dictionary-context";
 
@@ -96,12 +96,14 @@ function getChecklistSourceKey(task: TaskItem) {
         id: task.id,
         description: task.description ?? "",
         evidence: task.checklist_evidence ?? {},
+        checklist: task.checklist_items ?? null,
     });
 }
 
 function mergeParsedChecklist(parsed: ChecklistItem[], previous: ChecklistItem[]) {
     return parsed.map(parsedItem => {
-        const existing = previous.find(prevItem => prevItem.question === parsedItem.question);
+        const existing = previous.find(prevItem => prevItem.id === parsedItem.id)
+            || previous.find(prevItem => prevItem.question === parsedItem.question);
         if (!existing) return parsedItem;
 
         return {
@@ -140,29 +142,32 @@ export function useTechTaskChecklist({
             .catch(() => setTeamAssignees([currentUser]));
     }, [canAssignTeam, currentUser]);
 
-    const parseDescriptionChecklist = useCallback((desc: string | null | undefined): ChecklistItem[] | null => {
-        const items = parseChecklistItems(desc).map((item, index) => ({
-            id: `parsed_${index + 1}`,
-            category: "General" as const,
-            question: item.text,
-            answer: task.checklist_evidence?.[`parsed_${index + 1}`]?.answer ?? (item.checked ? "yes" as const : null),
-            note: task.checklist_evidence?.[`parsed_${index + 1}`]?.note || "",
-            photoAttached: Boolean(task.checklist_evidence?.[`parsed_${index + 1}`]?.photoUrl),
-            assignedUserId: item.assignedUserId,
-            assignedUserName: item.assignedUserName,
-        }));
+    const parseDescriptionChecklist = useCallback((): ChecklistItem[] | null => {
+        const items = parseTaskChecklistItems(task).map((item, index) => {
+            const itemId = item.structuredId ? `item_${item.structuredId}` : `parsed_${index + 1}`;
+            return {
+                id: itemId,
+                category: "General" as const,
+                question: item.text,
+                answer: task.checklist_evidence?.[itemId]?.answer ?? (item.checked ? "yes" as const : null),
+                note: task.checklist_evidence?.[itemId]?.note || "",
+                photoAttached: Boolean(task.checklist_evidence?.[itemId]?.photoUrl),
+                assignedUserId: item.assignedUserId,
+                assignedUserName: item.assignedUserName,
+            };
+        });
         return items.length > 0 ? items : null;
-    }, [task.checklist_evidence]);
+    }, [task]);
 
     const isParsedChecklist = useMemo(() => {
-        return !!parseDescriptionChecklist(task.description);
-    }, [task.description, parseDescriptionChecklist]);
+        return !!parseDescriptionChecklist();
+    }, [parseDescriptionChecklist]);
 
     const resolveChecklist = useCallback((previous: ChecklistItem[] = []) => {
-        const parsed = parseDescriptionChecklist(task.description);
+        const parsed = parseDescriptionChecklist();
         if (parsed) return mergeParsedChecklist(parsed, previous);
         return readStoredChecklist(task.id);
-    }, [task.id, task.description, parseDescriptionChecklist]);
+    }, [task.id, parseDescriptionChecklist]);
 
     const checklistSourceKey = useMemo(() => getChecklistSourceKey(task), [task]);
     const [checklistStore, setChecklistStore] = useState<ChecklistStore>(() => ({
@@ -238,6 +243,22 @@ export function useTechTaskChecklist({
             item.id === itemId ? { ...item, answer } : item
         );
         setChecklist(updated);
+
+        const isStructured = itemId.startsWith("item_");
+        if (isStructured) {
+            try {
+                await TaskService.updateChecklistItem(
+                    task.id,
+                    Number(itemId.slice("item_".length)),
+                    { completed: true, answer },
+                );
+                onStatusUpdate();
+            } catch (error) {
+                console.error("Error updating structured checklist answer", error);
+                onStatusUpdate();
+            }
+            return;
+        }
 
         const isParsed = itemId.startsWith("parsed_");
         if (isParsed && task.description) {
@@ -338,6 +359,23 @@ export function useTechTaskChecklist({
     };
 
     const handleResetChecklist = async () => {
+        const structuredItems = checklist.filter(item => item.id.startsWith("item_"));
+        if (structuredItems.length > 0) {
+            try {
+                for (const item of structuredItems) {
+                    await TaskService.updateChecklistItem(
+                        task.id,
+                        Number(item.id.slice("item_".length)),
+                        { completed: false, answer: null },
+                    );
+                }
+                toast.success(dict.tech.toast_checklist_reset || "Checklist reiniciado");
+                onStatusUpdate();
+            } catch (error) {
+                console.error("Error resetting structured checklist", error);
+            }
+            return;
+        }
         if (isParsedChecklist && task.description) {
             try {
                 const lines = task.description.split("\n");

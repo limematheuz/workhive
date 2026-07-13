@@ -425,11 +425,24 @@ def test_new_line_assignment_notifies_only_new_same_company_viewer_once(client, 
         headers=_headers(admin),
         json={"description": assigned_description},
     )
+    assert assigned.status_code == 400, assigned.text
+    assert db.query(Notification).filter(
+        Notification.entity_type == "task_item",
+        Notification.entity_id == task.id,
+        Notification.event_type == "task.assigned",
+    ).count() == 0
+
+    valid_description = f"- [ ] Limpiar cocina (@{victoria.id}:Victoria)"
+    assigned = client.patch(
+        f"/api/v1/task-items/{task.id}",
+        headers=_headers(admin),
+        json={"description": valid_description},
+    )
     assert assigned.status_code == 200, assigned.text
     repeated = client.patch(
         f"/api/v1/task-items/{task.id}",
         headers=_headers(admin),
-        json={"description": assigned_description},
+        json={"description": valid_description},
     )
     assert repeated.status_code == 200, repeated.text
 

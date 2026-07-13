@@ -73,6 +73,18 @@ class TaskItem(Base):
 
     invoice_items = relationship("InvoiceItem", back_populates="task_item")
     work_sessions = relationship("WorkSession", back_populates="task_item")
+    assignments = relationship(
+        "TaskAssignment",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="TaskAssignment.id",
+    )
+    checklist_items = relationship(
+        "TaskChecklistItem",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="TaskChecklistItem.position",
+    )
 
     @property
     def user_company_id(self) -> int | None:

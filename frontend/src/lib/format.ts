@@ -141,6 +141,7 @@ export function parseInstructionContent(desc: string | null | undefined): Instru
 export type UserTaskStatus = TaskStatus;
 
 export interface ParsedChecklistItem {
+    structuredId?: number;
     text: string;
     checked: boolean;
     assignedUserId?: number;
@@ -153,6 +154,23 @@ interface FormattableTask {
     description?: string | null;
     user_id?: number | null;
     status?: string | null;
+    checklist_items?: Array<{
+        id: number;
+        position: number;
+        text: string;
+        completed: boolean;
+        assignments: Array<{
+            user_id: number;
+            user_name: string;
+            status: string;
+        }>;
+    }>;
+    assignments?: Array<{
+        user_id: number;
+        user_name: string;
+        status: string;
+        source: string;
+    }>;
 }
 
 function parseAssigneeMeta(meta: string | undefined): { name?: string; status?: UserTaskStatus } {
@@ -199,9 +217,58 @@ export function parseChecklistItems(desc: string | null | undefined): ParsedChec
     return items;
 }
 
+export function parseTaskChecklistItems(
+    task: FormattableTask | null | undefined,
+): ParsedChecklistItem[] {
+    if (task?.checklist_items !== undefined) {
+        return [...task.checklist_items]
+            .sort((left, right) => left.position - right.position)
+            .map(item => {
+                const assignment = item.assignments[0];
+                return {
+                    structuredId: item.id,
+                    text: item.text,
+                    checked: item.completed,
+                    assignedUserId: assignment?.user_id,
+                    assignedUserName: assignment?.user_name,
+                    assignedStatus: assignment
+                        ? normalizeTaskStatus(assignment.status)
+                        : undefined,
+                    lineIndex: item.position,
+                };
+            });
+    }
+    return parseChecklistItems(task?.description);
+}
+
 export function getUserChecklistItems(task: FormattableTask | null | undefined, userId: number): ParsedChecklistItem[] {
-    const checklist = parseChecklistItems(task?.description);
+    const checklist = parseTaskChecklistItems(task);
     if (checklist.length === 0) return [];
+
+    if (task?.checklist_items !== undefined) {
+        const directItems = task.checklist_items.filter(item =>
+            item.assignments.some(assignment => assignment.user_id === userId)
+        );
+        if (directItems.length > 0) {
+            const directIds = new Set(directItems.map(item => item.id));
+            return checklist.filter(item => (
+                item.structuredId !== undefined && directIds.has(item.structuredId)
+            ));
+        }
+        const assignment = task.assignments?.find(item => item.user_id === userId);
+        if (assignment?.source === "all") return checklist;
+        if (assignment?.source === "direct") {
+            const unassignedIds = new Set(
+                task.checklist_items
+                    .filter(item => item.assignments.length === 0)
+                    .map(item => item.id)
+            );
+            return checklist.filter(item => (
+                item.structuredId !== undefined && unassignedIds.has(item.structuredId)
+            ));
+        }
+        return [];
+    }
 
     const assignedToUser = checklist.filter(item => item.assignedUserId === userId);
     if (assignedToUser.length > 0) return assignedToUser;
@@ -221,6 +288,9 @@ export function getUserChecklistItems(task: FormattableTask | null | undefined, 
 }
 
 export function isTaskAssignedToUser(task: FormattableTask | null | undefined, userId: number): boolean {
+    if (task?.assignments !== undefined) {
+        return task.assignments.some(assignment => assignment.user_id === userId);
+    }
     if (task?.user_id === userId) return true;
     if (parseTaskAssigneeIds(task?.description).includes(userId)) return true;
     return parseChecklistItems(task?.description).some(item => item.assignedUserId === userId);
@@ -229,6 +299,11 @@ export function isTaskAssignedToUser(task: FormattableTask | null | undefined, u
 export function getUserTaskStatus(task: FormattableTask | null | undefined, userId: number): UserTaskStatus {
     const taskStatus = normalizeTaskStatus(task?.status);
     if (taskStatus === "completed") return "completed";
+
+    if (task?.assignments !== undefined) {
+        const assignment = task.assignments.find(item => item.user_id === userId);
+        return assignment ? normalizeTaskStatus(assignment.status) : "pending";
+    }
 
     const directlyAssignedItems = parseChecklistItems(task?.description)
         .filter(item => item.assignedUserId === userId);

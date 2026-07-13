@@ -14,6 +14,7 @@ from app.schemas.work_session import (
     WorkerTimeSummary,
 )
 from app.services import task_assignment_service
+from app.services import task_structure_service
 from app.services import task_item_service
 
 
@@ -107,6 +108,7 @@ def end_work_session(db: Session, user_id: int) -> WorkSession:
                 task.description = updated_description
             elif task.user_id == user_id and task.status == "progress":
                 task.status = fallback_status
+            task_structure_service.set_user_status(task, user_id, fallback_status)
 
         sessions = work_session_repo.get_sessions_by_task(db, task.id)
         has_other_active_worker = any(

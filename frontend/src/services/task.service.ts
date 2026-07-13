@@ -124,6 +124,26 @@ export const TaskService = {
         return await response.json()
     },
 
+    updateChecklistItem: async (
+        taskId: number,
+        checklistItemId: number,
+        data: { completed: boolean; answer?: "yes" | "no" | null },
+    ): Promise<TaskItem> => {
+        const response = await apiFetch(
+            `/api/v1/task-items/${taskId}/checklist-items/${checklistItemId}`,
+            {
+                method: "PATCH",
+                body: JSON.stringify(data),
+            },
+        )
+        if (!response.ok) {
+            throw new Error(
+                await extractErrorMessage(response, "Error updating checklist item")
+            )
+        }
+        return await response.json()
+    },
+
     deleteTaskItem: async (id: number): Promise<void> => {
         const response = await apiFetch(`/api/v1/task-items/${id}`, {
             method: "DELETE"

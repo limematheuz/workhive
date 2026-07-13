@@ -11,6 +11,7 @@ from app.models.company import Company
 from app.models.location import Location
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.task_item import TaskItem
+from app.models.task_structure import TaskAssignment
 from app.models.user import User
 from app.repositories import task_item as task_item_repo
 from app.services import task_assignment_service
@@ -358,9 +359,8 @@ def test_task_listing_performance_stays_linear_for_company_scope(client, db):
     _user(db, company, "admin@perf.test", 1)
     viewer = _user(db, company, "viewer@perf.test", 3)
     location = _location(db, company, "Casa Rendimiento")
-    db.add_all(
-        [
-            TaskItem(
+    tasks = [
+        TaskItem(
                 title=f"Task {index}",
                 description=f"- [ ] Línea {index} (@{viewer.id}:Viewer:accepted)",
                 unit="servicio",
@@ -368,8 +368,18 @@ def test_task_listing_performance_stays_linear_for_company_scope(client, db):
                 location_id=location.id,
                 status="accepted",
             )
-            for index in range(350)
-        ]
+        for index in range(350)
+    ]
+    db.add_all(tasks)
+    db.flush()
+    db.add_all(
+        TaskAssignment(
+            task_id=task.id,
+            user_id=viewer.id,
+            status="accepted",
+            source="checklist",
+        )
+        for task in tasks
     )
     db.commit()
 
