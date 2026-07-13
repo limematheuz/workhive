@@ -92,7 +92,7 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
         <aside
             id="tour-sidebar"
             className={`fixed lg:relative z-40 h-full flex flex-col transition-all duration-300 ease-in-out ${
-                isOpen ? "translate-x-0 w-60" : "-translate-x-full w-60 lg:translate-x-0 lg:w-20"
+                isOpen ? "translate-x-0 w-60 max-lg:z-[60]" : "-translate-x-full w-60 lg:translate-x-0 lg:w-20"
             } sidebar-mobile-bg`}
         >
             <SidebarLogo isOpen={isOpen} />
