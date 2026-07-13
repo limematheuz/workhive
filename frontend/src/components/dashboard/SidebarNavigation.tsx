@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+    SIDEBAR_ALERT_ICON_BADGE_CLASS,
+    SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
+    formatSidebarAlertCount,
+    shouldShowTaskAlertsOnHref,
+} from "@/lib/sidebar-alerts";
 import type { NavGroup, NavLink } from "./sidebar-nav-config";
 
 type SidebarNavigationProps = {
@@ -31,6 +37,12 @@ export function SidebarNavigation({
     const isActive = (href: string, exact: boolean) =>
         exact ? pathname === href : pathname.includes(href);
 
+    const showReservationAlerts = (href: string) =>
+        href === "/dashboard/reservations" && pendingRequestsCount > 0;
+
+    const showTaskAlerts = (href: string) =>
+        shouldShowTaskAlertsOnHref(href) && taskAlertsCount > 0;
+
     const renderNavLink = (link: NavLink, nested = false) => (
         <Link
             key={link.href}
@@ -55,15 +67,17 @@ export function SidebarNavigation({
             {!nested && (
                 <span className="relative flex-shrink-0">
                     {link.icon}
-                    {link.href === "/dashboard/reservations" && pendingRequestsCount > 0 && (
-                        <span className="absolute -right-2.5 -top-2.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-[var(--bg-card)]">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60"></span>
-                            <span className="relative">{pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}</span>
+                    {showReservationAlerts(link.href) && (
+                        <span className={SIDEBAR_ALERT_ICON_BADGE_CLASS}>
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+                            <span className="relative">
+                                {formatSidebarAlertCount(pendingRequestsCount)}
+                            </span>
                         </span>
                     )}
-                    {link.href === "/dashboard/tasks" && taskAlertsCount > 0 && (
-                        <span className="absolute -right-2.5 -top-2.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-[var(--bg-card)]">
-                            {taskAlertsCount > 9 ? "9+" : taskAlertsCount}
+                    {showTaskAlerts(link.href) && (
+                        <span className={SIDEBAR_ALERT_ICON_BADGE_CLASS}>
+                            {formatSidebarAlertCount(taskAlertsCount)}
                         </span>
                     )}
                 </span>
@@ -71,14 +85,14 @@ export function SidebarNavigation({
             {isOpen && (
                 <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
                     <span className="truncate">{link.label}</span>
-                    {link.href === "/dashboard/reservations" && pendingRequestsCount > 0 && (
-                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">
-                            {pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}
+                    {showReservationAlerts(link.href) && (
+                        <span className={SIDEBAR_ALERT_TRAILING_BADGE_CLASS}>
+                            {formatSidebarAlertCount(pendingRequestsCount)}
                         </span>
                     )}
-                    {link.href === "/dashboard/tasks" && taskAlertsCount > 0 && (
-                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">
-                            {taskAlertsCount > 9 ? "9+" : taskAlertsCount}
+                    {showTaskAlerts(link.href) && (
+                        <span className={SIDEBAR_ALERT_TRAILING_BADGE_CLASS}>
+                            {formatSidebarAlertCount(taskAlertsCount)}
                         </span>
                     )}
                 </span>

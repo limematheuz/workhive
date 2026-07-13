@@ -15,6 +15,10 @@ import {
     getTaskNotificationKey,
     getUpcomingArrivalNotificationKey,
 } from "./notification-utils";
+import {
+    HEADER_ALERT_BADGE_CLASS,
+    formatSidebarAlertCount,
+} from "@/lib/sidebar-alerts";
 
 export function NotificationPanel() {
     const { dict, locale } = useDictionary();
@@ -88,9 +92,9 @@ export function NotificationPanel() {
                 aria-label="Notifications"
             >
                 {totalNotificationCount > 0 && (
-                    <span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black leading-none text-white shadow-lg shadow-red-500/30 ring-2 ring-[var(--bg-card)]">
+                    <span className={HEADER_ALERT_BADGE_CLASS}>
                         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
-                        <span className="relative">{totalNotificationCount > 9 ? "9+" : totalNotificationCount}</span>
+                        <span className="relative">{formatSidebarAlertCount(totalNotificationCount)}</span>
                     </span>
                 )}
                 <Bell className="w-6 h-6" />

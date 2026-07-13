@@ -38,6 +38,17 @@ test("sidebar task badge counts only unread task notifications", () => {
     ]), 1);
 });
 
+test("overview and tasks share the same unread task alert count source", () => {
+    const notifications = [
+        { entity_type: "task_item", read_at: null },
+        { entity_type: "task_item", read_at: null },
+        { entity_type: "reservation", read_at: null },
+    ];
+    const sharedCount = countUnreadTaskNotifications(notifications);
+    assert.equal(sharedCount, 2);
+    assert.equal(countUnreadTaskNotifications(notifications), sharedCount);
+});
+
 test("persistent assignment notifications de-duplicate legacy task alerts", () => {
     assert.deepEqual(
         [...getPersistentTaskNotificationIds([
