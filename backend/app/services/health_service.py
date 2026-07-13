@@ -2,11 +2,25 @@ import os
 import tempfile
 from pathlib import Path
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.services.storage_service import get_object_storage
+
+
+REQUIRED_SCHEMA_TABLES = frozenset(
+    {
+        "task_assignments",
+        "task_checklist_items",
+        "task_checklist_assignments",
+    }
+)
+
+
+def required_schema_is_ready(db: Session) -> bool:
+    inspector = inspect(db.get_bind())
+    return all(inspector.has_table(table) for table in REQUIRED_SCHEMA_TABLES)
 
 
 def readiness_checks(db: Session) -> dict[str, dict[str, str]]:
@@ -16,6 +30,13 @@ def readiness_checks(db: Session) -> dict[str, dict[str, str]]:
         checks["database"] = {"status": "ok"}
     except Exception:
         checks["database"] = {"status": "error"}
+
+    try:
+        checks["schema"] = {
+            "status": "ok" if required_schema_is_ready(db) else "error"
+        }
+    except Exception:
+        checks["schema"] = {"status": "error"}
 
     descriptor = None
     temporary_name = None

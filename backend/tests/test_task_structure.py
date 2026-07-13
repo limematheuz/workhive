@@ -151,6 +151,43 @@ def test_viewer_query_uses_relational_assignment_not_markdown(client, db):
     assert [item["id"] for item in response.json()] == [task.id]
 
 
+def test_task_list_consumers_serialize_structured_data_for_admin_and_viewer(client, db):
+    company = _company(db, "ConsumerStructure")
+    admin = _user(db, company, "admin@consumer-structure.test", 1)
+    viewer = _user(db, company, "viewer@consumer-structure.test", 3)
+    location = _location(db, company)
+    created = client.post(
+        "/api/v1/task-items/",
+        headers=_headers(admin),
+        json={
+            "title": "Calendar and profile task",
+            "description": f"- [ ] Cocina (@{viewer.id}:Viewer:accepted)",
+            "unit": "servicio",
+            "location_id": location.id,
+        },
+    ).json()
+
+    admin_calendar = client.get(
+        "/api/v1/task-items/?limit=500",
+        headers=_headers(admin),
+    )
+    admin_profile = client.get(
+        f"/api/v1/task-items/?user_id={viewer.id}&limit=100",
+        headers=_headers(admin),
+    )
+    viewer_dashboard = client.get(
+        "/api/v1/task-items/?limit=100",
+        headers=_headers(viewer),
+    )
+
+    for response in (admin_calendar, admin_profile, viewer_dashboard):
+        assert response.status_code == 200, response.text
+        payload = response.json()
+        assert [task["id"] for task in payload] == [created["id"]]
+        assert payload[0]["checklist_items"][0]["text"] == "Cocina"
+        assert payload[0]["assignments"][0]["user_id"] == viewer.id
+
+
 def test_description_update_preserves_matching_item_ids_and_removes_stale_rows(client, db):
     company = _company(db, "UpdateStructure")
     admin = _user(db, company, "admin@update-structure.test", 1)

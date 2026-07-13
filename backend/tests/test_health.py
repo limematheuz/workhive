@@ -1,5 +1,10 @@
 import uuid
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from app.services.health_service import required_schema_is_ready
+
 
 def test_health_and_readiness_include_request_id(client):
     health = client.get("/health", headers={"X-Request-ID": "health-check-1"})
@@ -13,11 +18,21 @@ def test_health_and_readiness_include_request_id(client):
         "status": "ok",
         "checks": {
                 "database": {"status": "ok"},
+                "schema": {"status": "ok"},
                 "invoice_storage": {"status": "ok"},
                 "media_storage": {"status": "ok"},
             },
         }
     uuid.UUID(readiness.headers["X-Request-ID"])
+
+
+def test_readiness_detects_database_without_required_migrations():
+    engine = create_engine("sqlite://")
+    try:
+        with Session(engine) as session:
+            assert required_schema_is_ready(session) is False
+    finally:
+        engine.dispose()
 
 
 def test_unsafe_request_id_is_replaced(client):
