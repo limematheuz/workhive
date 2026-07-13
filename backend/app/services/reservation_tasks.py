@@ -72,6 +72,13 @@ def _build_service_snapshot(
         .all()
     )
 
+    return _build_service_snapshot_from_assignments(assignments, guest_count)
+
+
+def _build_service_snapshot_from_assignments(
+    assignments: list[LocationTemplate],
+    guest_count: int,
+) -> tuple[str, float | None, int | None, str]:
     intro = f"Servicio solicitado para la salida de una reserva de {guest_count} huéspedes."
     checklist_lines: list[str] = []
     prices: list[float] = []
@@ -141,6 +148,47 @@ def get_live_external_task_snapshot(
         db,
         task.location_id,
         reservation.owner_company_id,
+        reservation.guest_count,
+    )
+    description = task_assignment_service.merge_checklist_assignments(
+        task.description,
+        description,
+    )
+    return {
+        "description": description,
+        "price": price,
+        "quantity": 1.0 if price is not None else None,
+        "unit": unit,
+    }
+
+
+def get_live_external_task_snapshot_loaded(
+    task: TaskItem,
+) -> dict[str, object | None]:
+    """Build the live snapshot without issuing SQL from a response loop."""
+    if (
+        task.status not in {"requested", "pending", "accepted"}
+        or not task.checkout_reservation
+        or task.is_invoiced
+        or task.work_sessions
+    ):
+        return {}
+
+    reservation = task.checkout_reservation
+    if task.company_id == reservation.owner_company_id:
+        return {}
+
+    assignments = sorted(
+        (
+            assignment
+            for assignment in task.location.templates
+            if assignment.template.company_id == reservation.owner_company_id
+            and assignment.template.is_active
+        ),
+        key=lambda assignment: assignment.template.id,
+    )
+    description, price, _, unit = _build_service_snapshot_from_assignments(
+        assignments,
         reservation.guest_count,
     )
     description = task_assignment_service.merge_checklist_assignments(

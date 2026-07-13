@@ -7,6 +7,14 @@ from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 
+from app.core.database_url import to_sync_database_url
+
+
+def _migration_engine():
+    return create_engine(
+        to_sync_database_url(os.environ["MIGRATION_TEST_DATABASE_URL"])
+    )
+
 
 def test_alembic_has_exactly_one_head():
     script = ScriptDirectory.from_config(Config("alembic.ini"))
@@ -19,7 +27,7 @@ def test_alembic_has_exactly_one_head():
     reason="PostgreSQL migration contract runs in CI",
 )
 def test_postgresql_schema_matches_invoice_model_contract():
-    engine = create_engine(os.environ["MIGRATION_TEST_DATABASE_URL"])
+    engine = _migration_engine()
     try:
         inspector = inspect(engine)
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
@@ -65,7 +73,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
 )
 def test_task_structure_migration_backfills_valid_assignments_only():
     config = Config("alembic.ini")
-    engine = create_engine(os.environ["MIGRATION_TEST_DATABASE_URL"])
+    engine = _migration_engine()
     suffix = uuid4().hex[:10]
     try:
         command.downgrade(config, "f8a9b0c1d2e3")

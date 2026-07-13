@@ -1,8 +1,16 @@
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import AuthenticatedAdmin, AuthenticatedUser, get_db
+from app.api.deps import (
+    AsyncAuthenticatedAdmin,
+    AsyncAuthenticatedUser,
+    AuthenticatedAdmin,
+    AuthenticatedUser,
+    get_async_db,
+    get_db,
+)
 from app.models.user import User
 from app.schemas.privacy import (
     PrivacyConsentResponse,
@@ -17,11 +25,13 @@ router = APIRouter()
 
 
 @router.get("/export")
-def export_personal_data(
-    db: Session = Depends(get_db),
-    current_user: User = AuthenticatedUser,
+async def export_personal_data(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncAuthenticatedUser,
 ):
-    payload = privacy_service.export_user_data(db, current_user)
+    payload = await db.run_sync(
+        lambda sync_db: privacy_service.export_user_data(sync_db, current_user)
+    )
     return JSONResponse(
         content=payload,
         headers={
@@ -33,11 +43,13 @@ def export_personal_data(
 
 
 @router.get("/consents", response_model=list[PrivacyConsentResponse])
-def read_consents(
-    db: Session = Depends(get_db),
-    current_user: User = AuthenticatedUser,
+async def read_consents(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncAuthenticatedUser,
 ):
-    return privacy_service.list_consents(db, current_user)
+    return await db.run_sync(
+        lambda sync_db: privacy_service.list_consents(sync_db, current_user)
+    )
 
 
 @router.post(
@@ -66,19 +78,23 @@ def create_privacy_request(
 
 
 @router.get("/requests/me", response_model=list[PrivacyRequestResponse])
-def read_my_privacy_requests(
-    db: Session = Depends(get_db),
-    current_user: User = AuthenticatedUser,
+async def read_my_privacy_requests(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncAuthenticatedUser,
 ):
-    return privacy_service.list_user_requests(db, current_user)
+    return await db.run_sync(
+        lambda sync_db: privacy_service.list_user_requests(sync_db, current_user)
+    )
 
 
 @router.get("/requests", response_model=list[PrivacyRequestResponse])
-def read_company_privacy_requests(
-    db: Session = Depends(get_db),
-    current_user: User = AuthenticatedAdmin,
+async def read_company_privacy_requests(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncAuthenticatedAdmin,
 ):
-    return privacy_service.list_company_requests(db, current_user)
+    return await db.run_sync(
+        lambda sync_db: privacy_service.list_company_requests(sync_db, current_user)
+    )
 
 
 @router.post(

@@ -1,7 +1,13 @@
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import AuthenticatedAdmin, AuthenticatedUser, get_db
+from app.api.deps import (
+    AuthenticatedAdmin,
+    AsyncAuthenticatedUser,
+    get_async_db,
+    get_db,
+)
 from app.models.company import Company
 from app.models.user import User
 from app.schemas.billing import CheckoutSessionCreate, HostedBillingUrl, SubscriptionSummary
@@ -28,10 +34,16 @@ def _current_company(db: Session, current_user: User) -> Company:
 
 
 @router.get("/subscription", response_model=SubscriptionSummary)
-def subscription_summary(
-    db: Session = Depends(get_db),
-    current_user: User = AuthenticatedUser,
+async def subscription_summary(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncAuthenticatedUser,
 ):
+    return await db.run_sync(
+        lambda sync_db: _subscription_summary(sync_db, current_user)
+    )
+
+
+def _subscription_summary(db: Session, current_user: User) -> SubscriptionSummary:
     company = _current_company(db, current_user)
     access = evaluate_company_access(company)
     active_users = (
@@ -78,11 +90,14 @@ def create_portal(
 async def stripe_webhook(
     request: Request,
     stripe_signature: str = Header(alias="Stripe-Signature"),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
-    event_type = billing_service.process_webhook(
-        db,
-        await request.body(),
-        stripe_signature,
+    payload = await request.body()
+    event_type = await db.run_sync(
+        lambda sync_db: billing_service.process_webhook(
+            sync_db,
+            payload,
+            stripe_signature,
+        )
     )
     return {"received": True, "type": event_type}

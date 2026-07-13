@@ -15,6 +15,6 @@ else:
         }
     )
 
-engine = create_engine(settings.DATABASE_URL, **engine_options)
+engine = create_engine(settings.sync_database_url, **engine_options)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()

@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ActiveAdmin, get_db
+from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.models.user import User
 from app.schemas.fiscal_settings import (
     CompanyFiscalSettingsResponse,
@@ -14,17 +15,25 @@ router = APIRouter()
 
 
 @router.get("/", response_model=CompanyFiscalSettingsResponse)
-def read_company_fiscal_settings(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+async def read_company_fiscal_settings(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
+    return await db.run_sync(
+        lambda sync_db: _read_company_fiscal_settings(
+            sync_db, current_user.company_id
+        )
+    )
+
+
+def _read_company_fiscal_settings(db: Session, company_id: int):
     company_fiscal_settings_service.get_or_create_settings(
         db,
-        current_user.company_id,
+        company_id,
     )
     return company_fiscal_settings_service.get_readiness(
         db,
-        current_user.company_id,
+        company_id,
     )
 
 
@@ -50,13 +59,13 @@ def update_company_fiscal_settings(
     response_model=CompanyFiscalSettingsResponse,
     status_code=status.HTTP_201_CREATED,
 )
-async def upload_company_fiscal_certificate(
+def upload_company_fiscal_certificate(
     file: UploadFile = File(...),
     password: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    contents = await file.read(
+    contents = file.file.read(
         company_fiscal_settings_service.MAX_CERTIFICATE_BYTES + 1
     )
     company_fiscal_settings_service.store_certificate(

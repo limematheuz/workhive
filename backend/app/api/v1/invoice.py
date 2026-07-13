@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import FileResponse
-from app.api.deps import get_db, ActiveAdmin
+from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.models.user import User
 from app.schemas.invoice import (
     FacturaeGenerateRequest,
@@ -33,45 +34,62 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[InvoiceResponse])
-def read_invoices(
+async def read_invoices(
     client_id: int | None = None,
     invoice_status: str | None = None,
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return invoice_service.get_invoices(
-        db, current_user.company_id, client_id, invoice_status, skip, limit
+    return await db.run_sync(
+        lambda sync_db: invoice_service.get_invoices(
+            sync_db,
+            current_user.company_id,
+            client_id,
+            invoice_status,
+            skip,
+            limit,
+        )
     )
 
 
 @router.get("/completed-jobs", response_model=list[InvoiceableTaskResponse])
-def read_completed_jobs_for_invoicing(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+async def read_completed_jobs_for_invoicing(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return invoice_service.get_invoiceable_completed_tasks(db, current_user.company_id)
+    return await db.run_sync(
+        lambda sync_db: invoice_service.get_invoiceable_completed_tasks(
+            sync_db, current_user.company_id
+        )
+    )
 
 
 @router.get("/fiscal/readiness")
-def read_fiscal_readiness(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+async def read_fiscal_readiness(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return company_fiscal_settings_service.get_readiness(
-        db,
-        current_user.company_id,
+    return await db.run_sync(
+        lambda sync_db: company_fiscal_settings_service.get_readiness(
+            sync_db,
+            current_user.company_id,
+        )
     )
 
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)
-def read_invoice(
+async def read_invoice(
     invoice_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return invoice_service.get_invoice(db, current_user.company_id, invoice_id)
+    return await db.run_sync(
+        lambda sync_db: invoice_service.get_invoice(
+            sync_db, current_user.company_id, invoice_id
+        )
+    )
 
 
 @router.post("/", response_model=InvoiceResponse, status_code=status.HTTP_201_CREATED)
@@ -215,13 +233,15 @@ def send_invoice_email(
     "/{invoice_id}/fiscal-record",
     response_model=FiscalInvoiceRecordResponse,
 )
-def read_invoice_fiscal_record(
+async def read_invoice_fiscal_record(
     invoice_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return invoice_service.get_fiscal_record(
-        db, current_user.company_id, invoice_id
+    return await db.run_sync(
+        lambda sync_db: invoice_service.get_fiscal_record(
+            sync_db, current_user.company_id, invoice_id
+        )
     )
 
 
@@ -323,17 +343,20 @@ def cancel_invoice_fiscal_record(
 
 
 @router.get("/{invoice_id}/facturae/readiness")
-def read_facturae_readiness(
+async def read_facturae_readiness(
     invoice_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    invoice = invoice_service.get_invoice(
-        db,
-        current_user.company_id,
-        invoice_id,
+    return await db.run_sync(
+        lambda sync_db: facturae_service.facturae_readiness(
+            invoice_service.get_invoice(
+                sync_db,
+                current_user.company_id,
+                invoice_id,
+            )
+        )
     )
-    return facturae_service.facturae_readiness(invoice)
 
 
 @router.post("/{invoice_id}/facturae")
@@ -394,12 +417,16 @@ def download_invoice_facturae(
 
 
 @router.get("/{invoice_id}/items", response_model=list[InvoiceItemResponse])
-def read_invoice_items(
+async def read_invoice_items(
     invoice_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveAdmin,
 ):
-    return invoice_item_service.get_invoice_items(db, current_user.company_id, invoice_id)
+    return await db.run_sync(
+        lambda sync_db: invoice_item_service.get_invoice_items(
+            sync_db, current_user.company_id, invoice_id
+        )
+    )
 
 
 @router.post(

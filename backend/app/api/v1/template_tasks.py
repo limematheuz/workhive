@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, status
-from app.api.deps import get_db, ActiveUser, ActiveAdmin
+from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
 from app.services import template_task_service
 from app.schemas.template_task import (
     TemplateTaskCreate,
@@ -13,25 +14,29 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[TemplateTaskResponse])
-def read_template_tasks(
+async def read_template_tasks(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return template_task_service.get_template_tasks(
-        db, current_user.company_id, skip, limit
+    return await db.run_sync(
+        lambda sync_db: template_task_service.get_template_tasks(
+            sync_db, current_user.company_id, skip, limit
+        )
     )
 
 
 @router.get("/{template_task_id}", response_model=TemplateTaskResponse)
-def read_template_task(
+async def read_template_task(
     template_task_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return template_task_service.get_template_task(
-        db, template_task_id, current_user.company_id
+    return await db.run_sync(
+        lambda sync_db: template_task_service.get_template_task(
+            sync_db, template_task_id, current_user.company_id
+        )
     )
 
 

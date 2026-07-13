@@ -17,6 +17,7 @@ from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.db import base as _models  # noqa: F401 - registers SQLAlchemy models
+from app.db.async_session import async_engine
 from app.services.health_service import readiness_checks
 from app.services.calendar_background_service import periodic_calendar_sync
 from sqlalchemy.orm import Session
@@ -33,13 +34,16 @@ async def lifespan(app: FastAPI):
         if settings.RUN_CALENDAR_BACKGROUND_SYNC
         else None
     )
-    yield
-    if task is not None:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    try:
+        yield
+    finally:
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+        await async_engine.dispose()
 
 
 app = FastAPI(

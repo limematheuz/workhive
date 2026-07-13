@@ -1,6 +1,13 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, status, APIRouter
-from app.api.deps import get_db, ActiveUser, ActiveManagerOrAdmin
+from app.api.deps import (
+    ActiveUser,
+    AsyncActiveManagerOrAdmin,
+    AsyncActiveUser,
+    get_async_db,
+    get_db,
+)
 from app.services import work_session_service
 from app.models.user import User
 from app.schemas.work_session import (
@@ -15,39 +22,60 @@ router = APIRouter()
 
 
 @router.get("/", response_model=list[WorkSessionResponse])
-def read_work_sessions(
+async def read_work_sessions(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return work_session_service.get_work_sessions(db, current_user.id, skip, limit)
+    return await db.run_sync(
+        lambda sync_db: work_session_service.get_work_sessions(
+            sync_db,
+            current_user.id,
+            skip,
+            limit,
+        )
+    )
 
 
 @router.get("/active", response_model=WorkSessionResponse | None)
-def active_work_session(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+async def active_work_session(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return work_session_service.get_active_session(db, current_user.id)
+    return await db.run_sync(
+        lambda sync_db: work_session_service.get_active_session(
+            sync_db,
+            current_user.id,
+        )
+    )
 
 
 @router.get("/company/active", response_model=list[ActiveCompanySessionResponse])
-def active_company_sessions(
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+async def active_company_sessions(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
 ):
-    return work_session_service.get_active_company_sessions(db, current_user)
+    return await db.run_sync(
+        lambda sync_db: work_session_service.get_active_company_sessions(
+            sync_db,
+            current_user,
+        )
+    )
 
 
 @router.get("/task/{task_item_id}/summary", response_model=TaskWorkSummaryResponse)
-def task_work_summary(
+async def task_work_summary(
     task_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return work_session_service.get_task_work_summary(
-        db, current_user, task_item_id
+    return await db.run_sync(
+        lambda sync_db: work_session_service.get_task_work_summary(
+            sync_db,
+            current_user,
+            task_item_id,
+        )
     )
 
 
@@ -55,23 +83,33 @@ def task_work_summary(
     "/task/{task_item_id}/detailed-summary",
     response_model=TaskWorkDetailedSummaryResponse,
 )
-def task_work_detailed_summary(
+async def task_work_detailed_summary(
     task_item_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return work_session_service.get_task_work_detailed_summary(
-        db, current_user, task_item_id
+    return await db.run_sync(
+        lambda sync_db: work_session_service.get_task_work_detailed_summary(
+            sync_db,
+            current_user,
+            task_item_id,
+        )
     )
 
 
 @router.get("/{session_id}", response_model=WorkSessionResponse)
-def read_work_session(
+async def read_work_session(
     session_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
 ):
-    return work_session_service.get_work_session(db, session_id, current_user.id)
+    return await db.run_sync(
+        lambda sync_db: work_session_service.get_work_session(
+            sync_db,
+            session_id,
+            current_user.id,
+        )
+    )
 
 
 @router.post(

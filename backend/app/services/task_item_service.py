@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import status, HTTPException
 from app.models.task_item import TaskItem
 from app.schemas.task_item import (
@@ -10,6 +11,7 @@ from app.schemas.task_item import (
     TaskChecklistItemUpdate,
 )
 from app.repositories import task_item as task_item_repo
+from app.repositories import async_task_item as async_task_item_repo
 from app.repositories import user as user_repo
 from app.repositories import reservation as reservation_repo
 from app.services import location_access_service
@@ -83,6 +85,72 @@ def get_task_items(
     return tasks
 
 
+def _complete_loaded_task_when_checklist_is_done(task: TaskItem) -> bool:
+    if task.status in {"requested", "rejected", "completed"}:
+        return False
+    if not task_assignment_service.all_task_checklist_items_are_complete(task):
+        return False
+
+    completed_at = datetime.now(timezone.utc)
+    task.status = "completed"
+    task.date_done = completed_at
+    active_sessions = sorted(
+        (session for session in task.work_sessions if session.end_time is None),
+        key=lambda session: session.id,
+        reverse=True,
+    )
+    seen_users: set[int] = set()
+    for session in active_sessions:
+        session.end_time = (
+            completed_at if session.user_id not in seen_users else session.start_time
+        )
+        seen_users.add(session.user_id)
+    return True
+
+
+async def get_task_items_async(
+    db: AsyncSession,
+    company_id: int,
+    user_id: int | None = None,
+    location_id: int | None = None,
+    task_status: str | None = None,
+    skip: int = 0,
+    limit: int = 100,
+    include_requested: bool = False,
+) -> list[TaskItem]:
+    tasks = await async_task_item_repo.get_task_items(
+        db,
+        company_id,
+        user_id,
+        location_id,
+        task_status,
+        skip,
+        limit,
+        include_requested,
+    )
+    if any(_complete_loaded_task_when_checklist_is_done(task) for task in tasks):
+        await db.commit()
+    return tasks
+
+
+async def get_task_item_async(
+    db: AsyncSession,
+    current_user: User,
+    task_item_id: int,
+) -> TaskItem:
+    existing = await async_task_item_repo.get_task_item(
+        db,
+        current_user.company_id,
+        task_item_id,
+    )
+    if not existing:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task Item not found",
+        )
+    return existing
+
+
 def get_task_item(db: Session, current_user: User, task_item_id: int) -> TaskItem:
     existing = task_item_repo.get_task_item(db, current_user.company_id, task_item_id)
     if not existing:
@@ -107,6 +175,24 @@ def build_task_response(
         db,
         current_user,
         task.location_id,
+    ):
+        return response.model_copy(update={"price": None})
+    return response
+
+
+def build_loaded_task_response(
+    task: TaskItem,
+    current_user: User,
+) -> TaskItemResponse:
+    from app.services.reservation_tasks import get_live_external_task_snapshot_loaded
+
+    response = TaskItemResponse.model_validate(task)
+    live_snapshot = get_live_external_task_snapshot_loaded(task)
+    if live_snapshot:
+        response = response.model_copy(update=live_snapshot)
+    if not location_access_service.can_view_sensitive_loaded(
+        current_user,
+        task.location,
     ):
         return response.model_copy(update={"price": None})
     return response

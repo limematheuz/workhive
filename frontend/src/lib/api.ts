@@ -1,6 +1,8 @@
 import { clearSessionCache, getCsrfToken, setCsrfToken } from "./auth.ts";
+import { createInflightRequestDeduper } from "./inflight-request.ts";
 
 let activeMutationsCount = 0;
+const dedupeRead = createInflightRequestDeduper();
 
 export function hasActiveMutations(): boolean {
     return activeMutationsCount > 0;
@@ -61,11 +63,18 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
             }
         }
 
-        let response = await fetch(url, {
+        const execute = () => fetch(url, {
             ...options,
             headers,
             credentials: "include",
         });
+        const headerKey = Array.from(headers.entries())
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([name, value]) => `${name}:${value}`)
+            .join("|");
+        let response = method === "GET"
+            ? (await dedupeRead(`${method}:${url}:${headerKey}`, execute)).clone()
+            : await execute();
 
         if (isMutation && response.status === 403) {
             const clonedResponse = response.clone();

@@ -5,7 +5,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from app.main import app
 from app.db.base import Base
-from app.api.deps import get_db
+from app.api.deps import get_async_db, get_db
 from app.models.role import Role
 from app.core.config import settings
 
@@ -20,6 +20,34 @@ engine = create_engine(
 )
 
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
+class AsyncSessionAdapter:
+    """Async test boundary backed by the same isolated sync SQLite transaction."""
+
+    def __init__(self, session):
+        self.session = session
+
+    async def execute(self, statement, *args, **kwargs):
+        return self.session.execute(statement, *args, **kwargs)
+
+    async def scalar(self, statement, *args, **kwargs):
+        return self.session.scalar(statement, *args, **kwargs)
+
+    async def scalars(self, statement, *args, **kwargs):
+        return self.session.scalars(statement, *args, **kwargs)
+
+    async def commit(self):
+        self.session.commit()
+
+    async def rollback(self):
+        self.session.rollback()
+
+    async def refresh(self, instance):
+        self.session.refresh(instance)
+
+    async def run_sync(self, operation, *args, **kwargs):
+        return operation(self.session, *args, **kwargs)
 
 
 @pytest.fixture(autouse=True)
@@ -81,7 +109,11 @@ def client(db):
     def override_get_db():
         yield db
 
+    async def override_get_async_db():
+        yield AsyncSessionAdapter(db)
+
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_async_db] = override_get_async_db
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()

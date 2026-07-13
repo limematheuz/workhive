@@ -25,7 +25,10 @@ import {
     NotificationTab,
 } from "./notification-utils";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { isCompanyTaskManagerRole } from "@/domain/access/roles";
+import {
+    isCompanyAdminRole,
+    isCompanyTaskManagerRole,
+} from "@/domain/access/roles";
 import { NotificationService, PersistentNotification } from "@/services/notification.service";
 import {
     getPersistentNotificationHref,
@@ -68,7 +71,7 @@ export function useNotifications({
         if (!enabled || !userId) return;
 
         const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
-        const isSuperadmin = roleName === "superadmin";
+        const canReadCompanyPrivacy = isCompanyAdminRole(roleName);
 
         const [tasks, requestedTasks, rejectedTasks, locations, collabs, reservations, arrivals, privacy, persistent] = await Promise.all([
             TaskService.getTaskItems({ userId }).catch(() => [] as TaskItem[]),
@@ -88,7 +91,7 @@ export function useNotifications({
             isManagerOrAdmin
                 ? ReservationService.getUpcomingArrivals(3).catch(() => [] as Reservation[])
                 : Promise.resolve([] as Reservation[]),
-            isManagerOrAdmin || isSuperadmin
+            canReadCompanyPrivacy
                 ? PrivacyService.listCompanyRequests().catch(() => [] as PrivacyRequest[])
                 : Promise.resolve([] as PrivacyRequest[]),
             NotificationService.listUnread().catch(() => [] as PersistentNotification[]),
