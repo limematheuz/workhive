@@ -9,7 +9,11 @@ type SidebarLogoProps = {
 
 export function SidebarLogo({ isOpen }: SidebarLogoProps) {
     return (
-        <div className={`h-16 flex items-center transition-all duration-300 ${isOpen ? "px-4" : "justify-center"}`}>
+        <div
+            className={`relative z-10 flex shrink-0 items-center overflow-hidden transition-all duration-300 h-16 max-lg:h-[4.75rem] lg:h-[4.25rem] ${
+                isOpen ? "px-4 pb-1 max-lg:pb-2" : "justify-center"
+            }`}
+        >
             {isOpen ? (
                 <Image
                     src="/logo/black-logo.avif"
