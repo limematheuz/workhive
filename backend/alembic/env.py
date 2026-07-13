@@ -21,7 +21,7 @@ config = context.config
 config.set_main_option("sqlalchemy.url", settings.migration_database_url)
 
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+    fileConfig(config.config_file_name, disable_existing_loggers=False)
 
 # Aquí le pasamos el "molde" con todos los Modelos para que Alembic sepa qué crear
 target_metadata = Base.metadata

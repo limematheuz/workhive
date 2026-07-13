@@ -207,13 +207,19 @@ def sync_checkout_task(
                     "template_task_id": operational_template_id,
                 }
             )
-        return task_item_repo.update_task_item(
+        task = task_item_repo.update_task_item(
             db,
             checkout_task,
             TaskItemUpdate(**update_fields),
         )
+        from app.services import task_structure_service
 
-    return task_item_repo.create_task_item(
+        task_structure_service.sync_from_description(db, task, strict=False)
+        db.commit()
+        db.refresh(task)
+        return task
+
+    task = task_item_repo.create_task_item(
         db,
         target_company_id,
         TaskItemCreate(
@@ -233,6 +239,12 @@ def sync_checkout_task(
             priority="medium",
         ),
     )
+    from app.services import task_structure_service
+
+    task_structure_service.sync_from_description(db, task, strict=False)
+    db.commit()
+    db.refresh(task)
+    return task
 
 
 def sync_location_reservation_chain(db: Session, location_id: int) -> None:

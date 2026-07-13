@@ -28,6 +28,7 @@ import {
     getUserChecklistItems,
     getUserTaskStatus,
     isTaskAssignedToUser,
+    parseTaskChecklistItems,
     setChecklistAssigneeStatus,
 } from "./format.ts";
 import type { RoleName } from "../types/role.ts";
@@ -312,4 +313,82 @@ test("frontend task visibility matches shared backend contract", () => {
             );
         }
     }
+});
+
+test("structured checklist wins over stale markdown metadata", () => {
+    const structuredTask = task({
+        description: "- [ ] Texto viejo (@999:Intruso:progress)",
+        checklist_items: [
+            {
+                id: 501,
+                position: 0,
+                text: "Cocina estructurada",
+                completed: false,
+                assignments: [{ user_id: viewer.id, user_name: viewer.full_name || viewer.email, status: "accepted" }],
+            },
+        ],
+        assignments: [
+            { user_id: viewer.id, user_name: viewer.full_name || viewer.email, status: "accepted", source: "checklist" },
+        ],
+    });
+
+    assert.deepEqual(parseTaskChecklistItems(structuredTask).map(item => item.text), ["Cocina estructurada"]);
+    assert.equal(isTaskAssignedToUser(structuredTask, viewer.id), true);
+    assert.equal(isTaskAssignedToUser(structuredTask, 999), false);
+    assert.equal(getUserTaskStatus(structuredTask, viewer.id), "accepted");
+});
+
+test("legacy markdown remains readable during structured migration", () => {
+    const legacyTask = task({
+        description: `- [ ] Cocina (@${viewer.id}:Viewer User:pending)`,
+    });
+
+    assert.deepEqual(parseTaskChecklistItems(legacyTask).map(item => item.text), ["Cocina"]);
+    assert.equal(isTaskAssignedToUser(legacyTask, viewer.id), true);
+});
+
+test("structured all-worker and direct assignments preserve checklist scope", () => {
+    const checklistItems: NonNullable<TaskItem["checklist_items"]> = [
+        { id: 601, position: 0, text: "General", completed: false, assignments: [] },
+        {
+            id: 602,
+            position: 1,
+            text: "Victoria",
+            completed: false,
+            assignments: [{
+                user_id: viewer.id,
+                user_name: viewer.full_name || viewer.email,
+                status: "pending",
+            }],
+        },
+    ];
+    const structuredTask = task({
+        description: "metadatos obsoletos",
+        checklist_items: checklistItems,
+        assignments: [
+            {
+                user_id: admin.id,
+                user_name: admin.full_name || admin.email,
+                status: "accepted",
+                source: "all",
+            },
+            {
+                user_id: manager.id,
+                user_name: manager.full_name || manager.email,
+                status: "accepted",
+                source: "direct",
+            },
+            {
+                user_id: viewer.id,
+                user_name: viewer.full_name || viewer.email,
+                status: "pending",
+                source: "checklist",
+            },
+        ],
+    });
+
+    assert.deepEqual(getUserChecklistItems(structuredTask, admin.id).map(item => item.text), ["General", "Victoria"]);
+    assert.deepEqual(getUserChecklistItems(structuredTask, manager.id).map(item => item.text), ["General"]);
+    assert.deepEqual(getUserChecklistItems(structuredTask, viewer.id).map(item => item.text), ["Victoria"]);
+    assert.equal(isTaskAssignedToUser(structuredTask, secondViewer.id), false);
 });

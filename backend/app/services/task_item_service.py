@@ -7,6 +7,7 @@ from app.schemas.task_item import (
     TaskItemCreate,
     TaskItemResponse,
     TaskItemUpdate,
+    TaskChecklistItemUpdate,
 )
 from app.repositories import task_item as task_item_repo
 from app.repositories import user as user_repo
@@ -15,7 +16,13 @@ from app.services import location_access_service
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.repositories import work_session as work_session_repo
-from app.services import calendar_sync_service, notification_service, task_assignment_service
+from app.services import (
+    calendar_sync_service,
+    notification_service,
+    task_assignment_service,
+    task_structure_service,
+)
+from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 
 
@@ -221,6 +228,11 @@ def create_task_item(
         task_item_data.checkout_reservation_id,
         task_item_data.next_reservation_id,
     )
+    task_structure_service.validate_description_assignees(
+        db,
+        current_user.company_id,
+        task_item_data.description,
+    )
     # Internal work is approved by the admin/manager creating it. External
     # company requests are created by the reservation flow and remain requested.
     task_item_data = task_item_data.model_copy(update={"status": "accepted"})
@@ -229,6 +241,9 @@ def create_task_item(
         current_user.company_id,
         task_item_data,
     )
+    task_structure_service.sync_from_description(db, task)
+    db.commit()
+    db.refresh(task)
     _notify_new_task_assignees(
         db,
         task,
@@ -347,6 +362,12 @@ def update_task_item(
         if "next_reservation_id" in task_data.model_fields_set
         else db_task_item.next_reservation_id,
     )
+    if "description" in task_data.model_fields_set:
+        task_structure_service.validate_description_assignees(
+            db,
+            db_task_item.company_id,
+            task_data.description,
+        )
 
     if (
         is_external_reservation_task
@@ -356,6 +377,10 @@ def update_task_item(
         _freeze_live_external_snapshot(db, db_task_item)
 
     updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
+    if "description" in task_data.model_fields_set or "user_id" in task_data.model_fields_set:
+        task_structure_service.sync_from_description(db, updated_task)
+        db.commit()
+        db.refresh(updated_task)
     _notify_new_task_assignees(
         db,
         updated_task,
@@ -420,6 +445,7 @@ def start_task_work(
             )
             if updated_count:
                 task.description = updated_description
+            task_structure_service.set_user_status(task, current_user.id, "progress")
             task.status = "progress"
             task.date_done = None
             db.add(task)
@@ -440,6 +466,7 @@ def start_task_work(
     )
     if updated_count:
         task.description = updated_description
+    task_structure_service.set_user_status(task, current_user.id, "progress")
     task.status = "progress"
     task.date_done = None
 
@@ -468,6 +495,11 @@ def accept_task_item(
     accept_data: TaskAcceptRequest,
 ) -> TaskItem:
     task = get_task_item(db, current_user, task_item_id)
+    if task.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task Item not found",
+        )
     if current_user.role.name not in {"admin", "manager"}:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -526,6 +558,9 @@ def accept_task_item(
             **live_snapshot,
         ),
     )
+    task_structure_service.sync_from_description(db, updated_task)
+    db.commit()
+    db.refresh(updated_task)
     calendar_sync_service.enqueue_task_sync(db, updated_task)
     notification_service.notify_users(
         db,
@@ -613,6 +648,7 @@ def finish_task_work(
     )
     if updated_count:
         task.description = updated_description
+    task_structure_service.set_user_status(task, current_user.id, "completed")
 
     if task_assignment_service.all_task_checklist_items_are_complete(task):
         task.status = "completed"
@@ -635,6 +671,44 @@ def finish_task_work(
     db.refresh(task)
     calendar_sync_service.enqueue_task_sync(db, task)
     return task
+
+
+def update_task_checklist_item(
+    db: Session,
+    current_user: User,
+    task_item_id: int,
+    checklist_item_id: int,
+    item_data: TaskChecklistItemUpdate,
+) -> TaskItem:
+    task = get_task_item(db, current_user, task_item_id)
+    if task.company_id != current_user.company_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task Item not found",
+        )
+    item = db.get(TaskChecklistItem, checklist_item_id)
+    if item is None or item.task_id != task.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Checklist item not found",
+        )
+    if current_user.role.name != "viewer":
+        location_access_service.require_location_capability(
+            db, current_user, task.location_id, "can_manage_tasks"
+        )
+    updated = task_structure_service.update_checklist_item(
+        db,
+        task,
+        item,
+        current_user,
+        item_data.completed,
+        item_data.answer,
+    )
+    if _complete_task_when_checklist_is_done(db, updated):
+        db.commit()
+        db.refresh(updated)
+    calendar_sync_service.enqueue_task_sync(db, updated)
+    return updated
 
 
 def delete_task_item(db: Session, current_user: User, task_item_id: int) -> None:

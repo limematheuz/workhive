@@ -65,6 +65,7 @@ def update_template_task(
     if template_update.description is not None:
         import re
         from app.models.task_item import TaskItem
+        from app.services import task_assignment_service, task_structure_service
 
         active_tasks = db.query(TaskItem).filter(
             TaskItem.template_task_id == template_id,
@@ -81,8 +82,10 @@ def update_template_task(
                 new_questions.append(match.group(1).strip())
 
         for task in active_tasks:
+            previous_description = task.description
             if not task.description:
                 task.description = new_desc
+                task_structure_service.sync_from_description(db, task, strict=False)
                 continue
 
             # Find which elements were already marked as completed
@@ -99,7 +102,16 @@ def update_template_task(
                 box = "x" if q in checked_questions else " "
                 updated_lines.append(f"- [{box}] {q}")
 
-            task.description = "\n".join(updated_lines)
+            rebuilt_description = "\n".join(updated_lines)
+            rebuilt_description = task_assignment_service.merge_checklist_assignments(
+                previous_description,
+                rebuilt_description,
+            )
+            task.description = task_assignment_service.assign_to_users(
+                rebuilt_description,
+                task_assignment_service.hidden_assignee_ids(previous_description),
+            )
+            task_structure_service.sync_from_description(db, task, strict=False)
 
         db.commit()
 

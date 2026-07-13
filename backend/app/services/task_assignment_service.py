@@ -150,6 +150,8 @@ def has_explicit_assignments(description: str | None) -> bool:
 
 
 def is_user_assigned(task: TaskItem, user_id: int) -> bool:
+    if task.assignments:
+        return any(assignment.user_id == user_id for assignment in task.assignments)
     if task.user_id == user_id:
         return True
     if user_id in hidden_assignee_ids(task.description):
@@ -161,6 +163,8 @@ def is_user_assigned(task: TaskItem, user_id: int) -> bool:
 
 
 def assigned_user_ids(task: TaskItem) -> set[int]:
+    if task.assignments:
+        return {assignment.user_id for assignment in task.assignments}
     assigned = hidden_assignee_ids(task.description)
     assigned.update(
         item.assigned_user_id
@@ -179,6 +183,13 @@ def can_viewer_access_task(task: TaskItem, user_id: int) -> bool:
 def get_user_assignment_status(task: TaskItem, user_id: int) -> str:
     if task.status == "completed":
         return "completed"
+
+    structured = next(
+        (assignment for assignment in task.assignments if assignment.user_id == user_id),
+        None,
+    )
+    if structured is not None:
+        return structured.status
 
     assigned = [
         (index, item)
@@ -225,6 +236,13 @@ def set_user_assignment_status(
 
 
 def user_checklist_is_complete(task: TaskItem, user_id: int) -> bool:
+    structured_items = [
+        item
+        for item in task.checklist_items
+        if any(assignment.user_id == user_id for assignment in item.assignments)
+    ]
+    if structured_items:
+        return all(item.completed for item in structured_items)
     checklist = parse_checklist(task.description)
     explicitly_assigned = [
         (index, item)
@@ -251,6 +269,8 @@ def user_checklist_is_complete(task: TaskItem, user_id: int) -> bool:
 
 
 def all_task_checklist_items_are_complete(task: TaskItem) -> bool:
+    if task.checklist_items:
+        return all(item.completed for item in task.checklist_items)
     checklist = parse_checklist(task.description)
     return bool(checklist) and all(
         _is_answered(task, index, item)

@@ -101,6 +101,26 @@ export interface TaskItem {
     user_company_id?: number | null;
     accepted_by_user_id?: number | null;
     accepted_by_name?: string | null;
+    checklist_items?: TaskChecklistItem[];
+    assignments?: TaskAssignment[];
+}
+
+export interface TaskChecklistAssignment {
+    user_id: number;
+    user_name: string;
+    status: TaskStatusValue;
+}
+
+export interface TaskChecklistItem {
+    id: number;
+    position: number;
+    text: string;
+    completed: boolean;
+    assignments: TaskChecklistAssignment[];
+}
+
+export interface TaskAssignment extends TaskChecklistAssignment {
+    source: "checklist" | "all" | "direct" | string;
 }
 
 export interface ReportedIssue {
