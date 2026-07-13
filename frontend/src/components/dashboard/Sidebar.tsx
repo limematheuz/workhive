@@ -17,6 +17,8 @@ import { buildSidebarNavLinks } from "./sidebar-nav-config";
 import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
+import { NotificationService } from "@/services/notification.service";
+import { countUnreadTaskNotifications } from "@/lib/task-reporting";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -31,6 +33,7 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
     const { user } = useUser();
 
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+    const [taskAlertsCount, setTaskAlertsCount] = useState(0);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         sales: true,
         finance: true,
@@ -50,6 +53,16 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
         }
     }, []);
 
+    const fetchTaskAlerts = useCallback(async () => {
+        if (!user) return;
+        try {
+            const notifications = await NotificationService.listUnread();
+            setTaskAlertsCount(countUnreadTaskNotifications(notifications));
+        } catch {
+            // Keep navigation available during transient API failures.
+        }
+    }, [user]);
+
     useEffect(() => {
         if (!isAdminOrManager || userIsPlatformSuperadmin) return;
         startTransition(() => {
@@ -57,10 +70,16 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
         });
     }, [fetchPendingRequests, isAdminOrManager, userIsPlatformSuperadmin]);
 
+    useEffect(() => {
+        startTransition(() => { void fetchTaskAlerts(); });
+    }, [fetchTaskAlerts]);
+
     useBackgroundPolling(async () => {
         if (!isAdminOrManager || userIsPlatformSuperadmin) return;
         await fetchPendingRequests();
     }, POLL_INTERVALS.sidebar);
+
+    useBackgroundPolling(fetchTaskAlerts, POLL_INTERVALS.sidebar);
 
     const { visibleNavLinks, navGroups, plainLinks } = buildSidebarNavLinks(dict, {
         isAdminOrManager,
@@ -85,6 +104,7 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
                 navGroups={navGroups}
                 visibleNavLinks={visibleNavLinks}
                 pendingRequestsCount={pendingRequestsCount}
+                taskAlertsCount={taskAlertsCount}
                 openGroups={openGroups}
                 onOpenGroupChange={(groupId, open) =>
                     setOpenGroups(current => ({ ...current, [groupId]: open }))

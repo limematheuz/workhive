@@ -58,6 +58,21 @@ test("task calendar range defaults to one hour when due date is missing", () => 
     );
 });
 
+test("legacy UTC-midnight task stays on its selected local calendar day", () => {
+    const task = {
+        scheduled_start_at: "2026-07-11T00:00:00Z",
+        due_at: null,
+    } as TaskItem;
+
+    const calendarDate = getTaskCalendarDate(task);
+
+    assert.ok(calendarDate);
+    assert.deepEqual(
+        [calendarDate.getFullYear(), calendarDate.getMonth(), calendarDate.getDate()],
+        [2026, 6, 11],
+    );
+});
+
 test("start of local day clears time fields", () => {
     const value = startOfLocalDay(new Date(2026, 5, 15, 18, 45, 20));
 

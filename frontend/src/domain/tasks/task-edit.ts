@@ -1,7 +1,5 @@
 import {
     buildLocalDateTimeIso,
-    toLocalDateInput,
-    toLocalTimeInput,
 } from "@/lib/format";
 import { isExternalTaskForCompany } from "@/lib/task-display";
 import { buildExternalTaskOperationalUpdate } from "@/lib/external-task-update";
@@ -9,6 +7,10 @@ import type { TaskItemUpdate } from "@/services/task.service";
 import type { TaskItem } from "@/types/user";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import { completionDateForStatus, normalizeTaskStatus } from "./task-status";
+import {
+    toTaskPlanningDateInput,
+    toTaskPlanningTimeInput,
+} from "./task-schedule";
 
 export interface TaskEditValues {
     title: string;
@@ -48,8 +50,8 @@ export function taskToEditValues(task: TaskItem): TaskEditValues {
             ? "pending"
             : normalizeTaskStatus(task.status),
         priority: task.priority || "medium",
-        planningDate: toLocalDateInput(planningValue),
-        planningTime: toLocalTimeInput(planningValue),
+        planningDate: toTaskPlanningDateInput(planningValue),
+        planningTime: toTaskPlanningTimeInput(planningValue),
     };
 }
 

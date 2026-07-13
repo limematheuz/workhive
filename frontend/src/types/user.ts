@@ -78,6 +78,7 @@ export interface TaskItem {
         photoUrl?: string;
         photoName?: string;
     }>;
+    reported_issues?: ReportedIssue[];
     price?: number | null;
     quantity?: number | null;
     unit: string;
@@ -100,6 +101,16 @@ export interface TaskItem {
     user_company_id?: number | null;
     accepted_by_user_id?: number | null;
     accepted_by_name?: string | null;
+}
+
+export interface ReportedIssue {
+    id: string;
+    type: "mantenimiento" | "limpieza" | "inspeccion";
+    element: string;
+    title: string;
+    description: string;
+    photoUrl?: string;
+    createdAt: string;
 }
 
 export interface WorkerTimeSummary {

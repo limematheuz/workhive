@@ -26,6 +26,12 @@ import {
 } from "./notification-utils";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { isCompanyTaskManagerRole } from "@/domain/access/roles";
+import { NotificationService, PersistentNotification } from "@/services/notification.service";
+import {
+    getPersistentNotificationHref,
+    getPersistentTaskNotificationIds,
+} from "@/lib/task-reporting";
+import { getTaskScheduleDate } from "@/domain/tasks/task-schedule";
 
 const ACTIVE_PRIVACY_REQUEST_STATUSES = new Set(["pending", "processing"]);
 
@@ -56,6 +62,7 @@ export function useNotifications({
     const [notificationReferenceTime, setNotificationReferenceTime] = useState(0);
     const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<string[]>([]);
     const [openingNotificationKey, setOpeningNotificationKey] = useState<string | null>(null);
+    const [persistentNotifications, setPersistentNotifications] = useState<PersistentNotification[]>([]);
 
     const loadNotifications = useCallback(async () => {
         if (!enabled || !userId) return;
@@ -63,7 +70,7 @@ export function useNotifications({
         const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
         const isSuperadmin = roleName === "superadmin";
 
-        const [tasks, requestedTasks, rejectedTasks, locations, collabs, reservations, arrivals, privacy] = await Promise.all([
+        const [tasks, requestedTasks, rejectedTasks, locations, collabs, reservations, arrivals, privacy, persistent] = await Promise.all([
             TaskService.getTaskItems({ userId }).catch(() => [] as TaskItem[]),
             isManagerOrAdmin
                 ? TaskService.getTaskItems({ status: "requested" }).catch(() => [] as TaskItem[])
@@ -84,6 +91,7 @@ export function useNotifications({
             isManagerOrAdmin || isSuperadmin
                 ? PrivacyService.listCompanyRequests().catch(() => [] as PrivacyRequest[])
                 : Promise.resolve([] as PrivacyRequest[]),
+            NotificationService.listUnread().catch(() => [] as PersistentNotification[]),
         ]);
 
         const mergedTasksMap = new Map<number, TaskItem>();
@@ -109,6 +117,7 @@ export function useNotifications({
         );
         setUpcomingArrivals(arrivals);
         setPrivacyRequests(privacy);
+        setPersistentNotifications(persistent);
         setNotificationReferenceTime(Date.now());
     }, [enabled, userId, roleName]);
 
@@ -144,10 +153,15 @@ export function useNotifications({
         () => new Set(dismissedNotificationKeys),
         [dismissedNotificationKeys]
     );
+    const persistentTaskNotificationIds = useMemo(
+        () => getPersistentTaskNotificationIds(persistentNotifications),
+        [persistentNotifications],
+    );
 
     const taskNotifications = useMemo(() => {
         if (!userId) return [];
         return notificationTasks.filter(task => {
+            if (persistentTaskNotificationIds.has(task.id)) return false;
             const status = getUserTaskStatus(task, userId);
             if (task.status === "rejected" && companyId) {
                 const ownerCompanyId = task.checkout_reservation?.owner_company_id;
@@ -164,7 +178,13 @@ export function useNotifications({
                 || status === "requested"
             ) && !dismissedNotificationKeySet.has(getTaskNotificationKey(task));
         });
-    }, [notificationTasks, userId, companyId, dismissedNotificationKeySet]);
+    }, [
+        notificationTasks,
+        userId,
+        companyId,
+        dismissedNotificationKeySet,
+        persistentTaskNotificationIds,
+    ]);
 
     const primaryTaskNotifications = useMemo(() => taskNotifications.filter(task => task.status !== "rejected"), [taskNotifications]);
     const secondaryTaskNotifications = useMemo(() => taskNotifications.filter(task => task.status === "rejected"), [taskNotifications]);
@@ -199,7 +219,8 @@ export function useNotifications({
         && !dismissedNotificationKeySet.has(getPrivacyRequestNotificationKey(request))
     )), [privacyRequests, dismissedNotificationKeySet]);
 
-    const primaryNotificationCount = primaryTaskNotifications.length
+    const primaryNotificationCount = persistentNotifications.length
+        + primaryTaskNotifications.length
         + primaryCollaborationNotifications.length
         + upcomingArrivalNotifications.length
         + privacyRequestNotifications.length;
@@ -255,6 +276,9 @@ export function useNotifications({
             ];
 
         dismissNotifications(keys);
+        if (activeNotificationTab === "primary" && persistentNotifications.length) {
+            void NotificationService.markAllRead().then(() => setPersistentNotifications([]));
+        }
     }, [
         primaryTaskNotifications,
         upcomingArrivals,
@@ -264,7 +288,21 @@ export function useNotifications({
         secondaryTaskNotifications,
         secondaryReservationNotifications,
         dismissNotifications,
+        persistentNotifications,
     ]);
+
+    const handlePersistentNotificationClick = useCallback(async (notification: PersistentNotification) => {
+        const key = `persistent:${notification.id}`;
+        setOpeningNotificationKey(key);
+        try {
+            await NotificationService.markRead(notification.id);
+            setPersistentNotifications((items) => items.filter((item) => item.id !== notification.id));
+            setIsNotificationsOpen(false);
+            router.push(getPersistentNotificationHref(notification));
+        } finally {
+            setOpeningNotificationKey(null);
+        }
+    }, [router, setIsNotificationsOpen]);
 
     const getNotificationHref = useCallback((task: TaskItem) => {
         if (task.status === "requested") {
@@ -275,7 +313,7 @@ export function useNotifications({
         }
         const params = new URLSearchParams({
             taskId: task.id.toString(),
-            taskDate: task.created_at,
+            taskDate: (getTaskScheduleDate(task) || new Date(task.created_at)).toISOString(),
         });
         return `/dashboard?${params.toString()}`;
     }, []);
@@ -359,6 +397,7 @@ export function useNotifications({
 
     return {
         loadNotifications,
+        persistentNotifications,
         primaryTaskNotifications,
         secondaryTaskNotifications,
         primaryCollaborationNotifications,
@@ -378,6 +417,7 @@ export function useNotifications({
         handleReservationNotificationClick,
         handleUpcomingArrivalClick,
         handlePrivacyRequestClick,
+        handlePersistentNotificationClick,
         upcomingArrivals,
     };
 }

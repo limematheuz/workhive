@@ -4,10 +4,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TaskItem, User, TaskWorkDetailedSummary } from "@/types/user";
 import { useDictionary } from "@/lib/dictionary-context";
-import { getUserTaskStatus } from "@/lib/format";
+import { getUserTaskStatus, isTaskAssignedToUser } from "@/lib/format";
 import { WorkSessionService } from "@/services/work-session.service";
 import { formatHoursShort } from "@/lib/format-hours";
 import { canManageCompanyTasks } from "@/domain/access/roles";
+import { getTaskScheduleDate } from "@/domain/tasks/task-schedule";
+import { canStartTaskWork, isTaskWorkInProgress } from "@/domain/tasks/task-status";
 
 interface TechTaskCardProps {
     task: TaskItem;
@@ -50,29 +52,37 @@ export function TechTaskCard({
     const displayStatus = canAcceptAssignments ? task.status : userStatus;
 
     const isCompleted = displayStatus === "completed";
-    const isProgress = displayStatus === "progress" || displayStatus === "review";
+    const isProgress = isTaskWorkInProgress(displayStatus);
     const isAccepted = displayStatus === "accepted";
     const isRejected = displayStatus === "rejected";
     const isPending = displayStatus === "pending";
+    const canStartWork = currentUser
+        ? canStartTaskWork(
+            task.status,
+            userStatus,
+            isTaskAssignedToUser(task, currentUser.id),
+        )
+        : false;
+    const isAwaitingApproval = isPending && !canAcceptAssignments && !canStartWork;
 
-    const planningDate = task.scheduled_start_at || task.due_at || task.created_at;
+    const planningDate = React.useMemo(
+        () => getTaskScheduleDate(task) || new Date(task.created_at),
+        [task],
+    );
 
     // Check if task is overdue (due/planning date passed and not completed)
     const isOverdue = React.useMemo(() => {
         if (isCompleted) return false;
-        const taskDate = new Date(planningDate);
         const now = new Date();
-        return taskDate.getTime() < now.getTime();
+        return planningDate.getTime() < now.getTime();
     }, [planningDate, isCompleted]);
 
     const formattedDate = React.useMemo(() => {
         try {
-            const date = new Date(planningDate);
-            return date.toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
+            return planningDate.toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
-                timeZone: "UTC",
             });
         } catch {
             return "";
@@ -129,11 +139,13 @@ export function TechTaskCard({
                 }
             }}
             className={cn(
-                "group relative rounded-3xl border p-5 transition-all duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer shadow-sm hover:shadow-lg bg-[var(--bg-card)]",
+                "group relative isolate overflow-hidden rounded-3xl border p-5 transition-all duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer shadow-sm hover:shadow-lg bg-[var(--bg-card)]",
                 isOverdue
                     ? "border-red-500/30 bg-red-500/[0.02] hover:border-red-500/50"
                     : isCompleted
                     ? "border-[var(--border-soft)] bg-zinc-500/5 opacity-60 grayscale-[0.2]"
+                    : isProgress
+                    ? "border-accent/40 shadow-[0_12px_32px_color-mix(in_srgb,var(--accent)_14%,transparent)]"
                     : "border-[var(--border-soft)] hover:border-accent/30"
             )}
         >
@@ -159,11 +171,14 @@ export function TechTaskCard({
                             : isCompleted
                             ? "bg-zinc-500/10 border-zinc-500/20 text-zinc-500"
                             : isProgress
-                            ? "bg-accent/10 border-accent/20 text-accent animate-pulse"
+                            ? "relative isolate overflow-visible bg-accent border-accent text-white shadow-lg shadow-accent/30 ring-2 ring-[var(--bg-card)]"
                             : "bg-accent/10 border-accent/20 text-accent dark:text-accent"
                     )}
                 >
-                    {statusLabel}
+                    {isProgress && (
+                        <span className="absolute inset-0 rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
+                    )}
+                    <span className="relative z-10">{statusLabel}</span>
                 </span>
             </div>
 
@@ -247,6 +262,15 @@ export function TechTaskCard({
                                 {dict.tech.btn_accept}
                             </Button>
                         </>
+                    ) : isAwaitingApproval ? (
+                        <Button
+                            size="sm"
+                            disabled
+                            className="bg-[var(--bg-primary)] text-[var(--text-muted)] text-[9px] font-black uppercase px-4 h-8 rounded-xl border border-[var(--border-soft)] cursor-not-allowed flex items-center gap-1"
+                        >
+                            <Clock className="w-3.5 h-3.5" />
+                            {dict.tech.msg_accept_first}
+                        </Button>
                     ) : isPending ? (
                         <Button
                             size="sm"

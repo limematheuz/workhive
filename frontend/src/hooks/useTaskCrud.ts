@@ -20,13 +20,17 @@ import {
     taskToEditValues,
     type TaskEditValues,
 } from "@/domain/tasks/task-edit";
-import { getScheduleViolation } from "@/domain/tasks/task-schedule";
+import {
+    getScheduleViolation,
+    isTaskPlanningDateBeforeToday,
+} from "@/domain/tasks/task-schedule";
 import { completionDateForStatus } from "@/domain/tasks/task-status";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
 import {
     ALL_WORKERS_VALUE,
     buildChecklistDescription,
+    buildTaskPlanningDate,
     getDefaultTaskDate,
     getTaskAssigneeId,
     getTaskCreationSchedule,
@@ -219,6 +223,11 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
             return;
         }
 
+        if (isTaskPlanningDateBeforeToday(newCreatedAt)) {
+            toast.error("La fecha de planificación no puede ser anterior a hoy");
+            return;
+        }
+
         try {
             setIsSaving(true);
             const promises: Promise<TaskItem>[] = [];
@@ -264,8 +273,8 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
                         template_task_id: tmplId,
                         location_id: parseInt(newLocationId, 10),
                         user_id: taskAssigneeId,
-                        created_at: newCreatedAt ? new Date(newCreatedAt).toISOString() : undefined,
-                        scheduled_start_at: checkoutReservation?.check_out_at || undefined,
+                        scheduled_start_at: checkoutReservation?.check_out_at
+                            || buildTaskPlanningDate(newCreatedAt),
                         due_at: nextReservation?.check_in_at || undefined,
                         service_context: serviceContext,
                         checkout_reservation_id: checkoutReservation?.id || null,
@@ -333,6 +342,10 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
             planningDate: editCreatedAt,
             planningTime: editPlanningTime,
         };
+        if (isTaskPlanningDateBeforeToday(values.planningDate)) {
+            toast.error("La fecha de planificación no puede ser anterior a hoy");
+            return;
+        }
         const violation = getScheduleViolation(
             selectedTask,
             buildScheduledStartAt(values),

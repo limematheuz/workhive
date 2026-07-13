@@ -12,6 +12,7 @@ from app.models.location import Location
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.task_item import TaskItem
 from app.models.user import User
+from app.repositories import task_item as task_item_repo
 from app.services import task_assignment_service
 
 CONTRACT_PATH = Path(__file__).resolve().parents[2] / "test_contracts" / "task_visibility.json"
@@ -171,6 +172,30 @@ def test_backend_task_visibility_matches_shared_frontend_contract(db):
                 for item in parsed
                 if item.assigned_user_id == int(user_id)
             ] == expected_items
+
+
+def test_task_pagination_keeps_a_stable_complete_order(db):
+    company = _company(db, "StablePagination")
+    location = _location(db, company, "Casa Paginada")
+    tasks = [
+        TaskItem(
+            title=f"Trabajo {index}",
+            description="- [ ] Revisar",
+            unit="servicio",
+            company_id=company.id,
+            location_id=location.id,
+            status="accepted",
+        )
+        for index in range(105)
+    ]
+    db.add_all(tasks)
+    db.commit()
+
+    first_page = task_item_repo.get_task_items(db, company.id, limit=100)
+    second_page = task_item_repo.get_task_items(db, company.id, skip=100, limit=100)
+    expected_ids = [task.id for task in tasks]
+
+    assert [task.id for task in first_page + second_page] == expected_ids
 
 
 def test_viewer_can_progress_only_own_checklist_until_all_assignees_finish(client, db):

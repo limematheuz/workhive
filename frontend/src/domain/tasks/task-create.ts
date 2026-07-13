@@ -11,8 +11,35 @@ export interface TaskCreationSchedule {
     priority: TaskPriority;
 }
 
-export function getDefaultTaskDate(): string {
-    return new Date().toISOString().split("T")[0];
+export function getDefaultTaskDate(now = new Date()): string {
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
+export function buildTaskPlanningDate(value: string): string | undefined {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return undefined;
+    const [, year, month, day] = match;
+    const localNoon = new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        23,
+        59,
+        59,
+        999,
+    );
+    if (
+        Number.isNaN(localNoon.getTime())
+        || localNoon.getFullYear() !== Number(year)
+        || localNoon.getMonth() !== Number(month) - 1
+        || localNoon.getDate() !== Number(day)
+    ) {
+        return undefined;
+    }
+    return localNoon.toISOString();
 }
 
 export function getTaskAssigneeId(userId: string): number | null {

@@ -500,7 +500,7 @@ def test_create_reservation_with_assigned_task(db):
     other_admin = _user(db, other_company, role_id=1, email="admin@other.test")
     other_worker = _user(db, other_company, role_id=3, email="worker@other.test")
 
-    # 1. Internal reservation: should create a task with status "pending"
+    # 1. Internal work is already approved by the company that created it.
     data = _reservation_data(location.id)
     reservation = reservation_service.create_reservation(db, admin, data)
     assert reservation.id is not None
@@ -511,7 +511,7 @@ def test_create_reservation_with_assigned_task(db):
     assert task is not None
     assert task.user_id == admin.id
     assert task.company_id == company.id
-    assert task.status == "pending"
+    assert task.status == "accepted"
     assert task.service_context == "checkout"
 
     # 2. External reservation: should create an unassigned request for the provider
@@ -682,7 +682,7 @@ def test_reservation_exceeds_location_capacity(db):
     assert reservation.guest_count == 3
 
 
-def test_emisor_does_not_see_requested_task_in_solicitudes(db):
+def test_emitter_sees_operational_task_but_not_receiver_request(db):
     company = _company(db, "Ownet", "OWNET")
     other_company = _company(db, "Other", "OTHER")
     location = _location(db, company)
@@ -736,7 +736,7 @@ def test_emisor_does_not_see_requested_task_in_solicitudes(db):
         db,
         company_id=other_company.id,
     )
-    assert operational_for_issuer == []
+    assert [task.id for task in operational_for_issuer] == [tasks_other[0].id]
     assert [task.id for task in operational_for_receiver] == [tasks_other[0].id]
 
     receiver_reservations = reservation_service.list_reservations(

@@ -12,6 +12,7 @@ type SidebarNavigationProps = {
     navGroups: NavGroup[];
     visibleNavLinks: NavLink[];
     pendingRequestsCount: number;
+    taskAlertsCount: number;
     openGroups: Record<string, boolean>;
     onOpenGroupChange: (groupId: string, open: boolean) => void;
 };
@@ -23,6 +24,7 @@ export function SidebarNavigation({
     navGroups,
     visibleNavLinks,
     pendingRequestsCount,
+    taskAlertsCount,
     openGroups,
     onOpenGroupChange,
 }: SidebarNavigationProps) {
@@ -59,6 +61,11 @@ export function SidebarNavigation({
                             <span className="relative">{pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}</span>
                         </span>
                     )}
+                    {link.href === "/dashboard/tasks" && taskAlertsCount > 0 && (
+                        <span className="absolute -right-2.5 -top-2.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-[var(--bg-card)]">
+                            {taskAlertsCount > 9 ? "9+" : taskAlertsCount}
+                        </span>
+                    )}
                 </span>
             )}
             {isOpen && (
@@ -67,6 +74,11 @@ export function SidebarNavigation({
                     {link.href === "/dashboard/reservations" && pendingRequestsCount > 0 && (
                         <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">
                             {pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}
+                        </span>
+                    )}
+                    {link.href === "/dashboard/tasks" && taskAlertsCount > 0 && (
+                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">
+                            {taskAlertsCount > 9 ? "9+" : taskAlertsCount}
                         </span>
                     )}
                 </span>

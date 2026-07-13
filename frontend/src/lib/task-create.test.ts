@@ -3,11 +3,17 @@ import test from "node:test";
 
 import {
     ALL_WORKERS_VALUE,
+    buildTaskPlanningDate,
     buildChecklistDescription,
     getDefaultAssignmentIds,
+    getDefaultTaskDate,
     getTaskAssigneeId,
     getTaskCreationSchedule,
 } from "../domain/tasks/task-create.ts";
+import {
+    getOverviewTabForDate,
+    isTaskPlanningDateBeforeToday,
+} from "../domain/tasks/task-schedule.ts";
 import type { Reservation } from "../types/reservation.ts";
 import type { User } from "../types/user.ts";
 
@@ -45,6 +51,29 @@ test("turnover on same day becomes high priority", () => {
     );
     assert.equal(schedule.serviceContext, "turnover");
     assert.equal(schedule.priority, "high");
+});
+
+test("planned local date stays in today across negative UTC offsets", () => {
+    const localMorning = new Date(2026, 6, 13, 9, 0, 0);
+    const plannedAt = buildTaskPlanningDate("2026-07-13");
+
+    assert.equal(getDefaultTaskDate(localMorning), "2026-07-13");
+    assert.equal(new Date(plannedAt || "").getHours(), 23);
+    assert.equal(getOverviewTabForDate(plannedAt, localMorning), "hoy");
+    assert.equal(
+        getOverviewTabForDate("2026-07-13T00:00:00.000Z", localMorning),
+        "hoy",
+    );
+    assert.equal(buildTaskPlanningDate("2026-02-31"), undefined);
+});
+
+test("task planning rejects previous days but allows today and future days", () => {
+    const now = new Date(2026, 6, 13, 10, 5, 0);
+
+    assert.equal(isTaskPlanningDateBeforeToday("2026-07-11", now), true);
+    assert.equal(isTaskPlanningDateBeforeToday("2026-07-13", now), false);
+    assert.equal(isTaskPlanningDateBeforeToday("2026-07-14", now), false);
+    assert.equal(isTaskPlanningDateBeforeToday("", now), false);
 });
 
 test("checklist description keeps hidden all-worker metadata", () => {

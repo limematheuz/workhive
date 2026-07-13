@@ -15,7 +15,7 @@ WORKER_STATUSES = {
 }
 
 OPERATIONAL_VIEWER_STATUSES = frozenset(
-    {"accepted", "progress", "review", "completed"}
+    {"pending", "accepted", "progress", "review", "completed"}
 )
 
 CHECKLIST_PATTERN = re.compile(
@@ -84,6 +84,15 @@ def hidden_assignee_ids(description: str | None) -> set[int]:
     return ids
 
 
+def assign_to_users(description: str | None, user_ids: set[int]) -> str:
+    all_ids = hidden_assignee_ids(description) | user_ids
+    body = HIDDEN_ASSIGNEES_PATTERN.sub("", description or "").lstrip("\n")
+    if not all_ids:
+        return body
+    metadata = ",".join(str(user_id) for user_id in sorted(all_ids))
+    return f"<!-- workhive_assignees:{metadata} -->\n{body}".rstrip()
+
+
 def merge_checklist_assignments(
     current_description: str | None,
     incoming_description: str | None,
@@ -149,6 +158,18 @@ def is_user_assigned(task: TaskItem, user_id: int) -> bool:
         item.assigned_user_id == user_id
         for item in parse_checklist(task.description)
     )
+
+
+def assigned_user_ids(task: TaskItem) -> set[int]:
+    assigned = hidden_assignee_ids(task.description)
+    assigned.update(
+        item.assigned_user_id
+        for item in parse_checklist(task.description)
+        if item.assigned_user_id is not None
+    )
+    if task.user_id is not None:
+        assigned.add(task.user_id)
+    return assigned
 
 
 def can_viewer_access_task(task: TaskItem, user_id: int) -> bool:

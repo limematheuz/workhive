@@ -1,4 +1,5 @@
 import type { TaskItem } from "../types/user";
+import { parseTaskCalendarDate } from "../domain/tasks/task-schedule.ts";
 
 export interface TaskCalendarRange {
     start: Date;
@@ -14,8 +15,9 @@ export function getTaskCalendarRange(task: TaskItem): TaskCalendarRange | null {
     const value = task.scheduled_start_at || task.due_at;
     if (!value) return null;
 
-    const start = new Date(value);
-    const due = task.due_at ? new Date(task.due_at) : null;
+    const start = parseTaskCalendarDate(value);
+    if (!start) return null;
+    const due = task.due_at ? parseTaskCalendarDate(task.due_at) : null;
     const end = due && due.getTime() > start.getTime()
         ? due
         : new Date(start.getTime() + 60 * 60 * 1000);

@@ -13,6 +13,7 @@ import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/user";
 import { TaskChecklistEditor } from "./TaskChecklistEditor";
 import { TASK_EDIT_UNIT_OPTIONS } from "./taskEditFormOptions";
+import { getDefaultTaskDate } from "@/domain/tasks/task-create";
 
 type TaskEditFormFieldsProps = {
     dict: Dictionary;
@@ -186,6 +187,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         id="task-edit-date"
                         type="date"
                         value={editCreatedAt}
+                        min={getDefaultTaskDate()}
                         onChange={(event) => setEditCreatedAt(event.target.value)}
                         aria-label={dict.tasks?.dialog?.date_label || "Planning Date"}
                         disabled={!managerEditable}

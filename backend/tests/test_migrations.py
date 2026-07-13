@@ -24,6 +24,10 @@ def test_postgresql_schema_matches_invoice_model_contract():
         invitation_columns = {
             column["name"] for column in inspector.get_columns("user_invitations")
         }
+        task_columns = {column["name"] for column in inspector.get_columns("task_items")}
+        notification_columns = {
+            column["name"] for column in inspector.get_columns("notifications")
+        }
         with engine.connect() as connection:
             applied_revisions = {
                 row[0]
@@ -36,3 +40,5 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert applied_revisions == set(script.get_heads())
     assert "paid_at" in invoice_columns
     assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns
+    assert "reported_issues" in task_columns
+    assert {"user_id", "company_id", "event_type", "read_at", "href"} <= notification_columns

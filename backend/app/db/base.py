@@ -31,3 +31,4 @@ from app.models.data_subject_request import DataSubjectRequest
 from app.models.trial_request import TrialRequest
 from app.models.consumed_security_token import ConsumedSecurityToken
 from app.models.user_invitation import UserInvitation
+from app.models.notification import Notification

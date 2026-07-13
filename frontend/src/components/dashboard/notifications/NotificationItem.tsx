@@ -7,10 +7,11 @@ import { CompanyCollaboration } from "@/types/collaboration";
 import { Reservation } from "@/types/reservation";
 import { PrivacyRequest } from "@/services/privacy.service";
 import type { Dictionary } from "@/lib/dictionary-context";
+import type { PersistentNotification } from "@/services/notification.service";
 
 interface NotificationItemProps {
-    type: "collaboration" | "arrival" | "task" | "task-rejected" | "reservation-cancelled" | "privacy-request";
-    data: TaskItem | CompanyCollaboration | Reservation | PrivacyRequest;
+    type: "persistent" | "collaboration" | "arrival" | "task" | "task-rejected" | "reservation-cancelled" | "privacy-request";
+    data: PersistentNotification | TaskItem | CompanyCollaboration | Reservation | PrivacyRequest;
     notificationKey: string;
     openingNotificationKey: string | null;
     onClick: () => void;
@@ -39,6 +40,19 @@ export function NotificationItem({
     timeLabel,
 }: NotificationItemProps) {
     const disabled = openingNotificationKey === notificationKey;
+
+    if (type === "persistent") {
+        const notification = data as PersistentNotification;
+        return (
+            <button type="button" disabled={disabled} onClick={onClick} className="block w-full rounded-2xl border border-accent/20 bg-accent/[0.06] p-3 text-left transition-colors hover:bg-accent/10 disabled:opacity-60">
+                <p className="text-sm font-black text-[var(--text-main)]">{notification.title}</p>
+                <p className="mt-1.5 text-xs font-semibold text-[var(--text-muted)]">{notification.message}</p>
+                <p className="mt-2 text-[10px] font-bold uppercase text-accent">
+                    {notification.event_type === "task.reported" ? "Reporte de tarea" : "Tarea"}
+                </p>
+            </button>
+        );
+    }
 
     if (type === "collaboration") {
         const collab = data as CompanyCollaboration;

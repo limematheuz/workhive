@@ -3,6 +3,7 @@
 import { Lock } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/services/location.service";
+import { getDefaultTaskDate } from "@/domain/tasks/task-create";
 
 type TaskCreateMainFieldsProps = {
     dict: Dictionary;
@@ -66,6 +67,7 @@ export function TaskCreateMainFields({
                         id="task-create-date"
                         type="date"
                         value={newCreatedAt}
+                        min={getDefaultTaskDate()}
                         onChange={(e) => setNewCreatedAt(e.target.value)}
                         aria-label={dict.tasks?.create_dialog?.date || "Planning Date"}
                         className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all cursor-pointer h-10 shadow-xs"
