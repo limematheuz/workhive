@@ -53,6 +53,37 @@ def list_notifications(
     )
 
 
+def list_unread_task_notifications(
+    db: Session,
+    user: User,
+    *,
+    limit: int = 200,
+) -> list[Notification]:
+    return (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == user.id,
+            Notification.entity_type == "task_item",
+            Notification.read_at.is_(None),
+        )
+        .order_by(Notification.created_at.desc(), Notification.id.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+def count_unread_task_notifications(db: Session, user: User) -> int:
+    return (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == user.id,
+            Notification.entity_type == "task_item",
+            Notification.read_at.is_(None),
+        )
+        .count()
+    )
+
+
 def mark_read(db: Session, user: User, notification_id: int) -> Notification | None:
     notification = db.query(Notification).filter(
         Notification.id == notification_id,

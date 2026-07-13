@@ -3,6 +3,15 @@
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+    SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_ALERT_LINK_ACTIVE_CLASS,
+    SIDEBAR_ALERT_LINK_CLASS,
+    SIDEBAR_ALERT_PULSE_CLASS,
+    SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
+    formatSidebarAlertCount,
+    shouldShowTaskAlertsOnHref,
+} from "@/lib/sidebar-alerts";
 import type { NavGroup, NavLink } from "./sidebar-nav-config";
 
 type SidebarNavigationProps = {
@@ -31,60 +40,67 @@ export function SidebarNavigation({
     const isActive = (href: string, exact: boolean) =>
         exact ? pathname === href : pathname.includes(href);
 
-    const renderNavLink = (link: NavLink, nested = false) => (
-        <Link
-            key={link.href}
-            href={link.href}
-            className={`group flex items-center gap-2 rounded-lg font-medium transition-all ${
-                nested ? "px-2 py-1.5 text-[13px]" : "px-2 py-1.5"
-            } ${
-                isActive(link.href, link.exact)
-                    ? ""
-                    : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
-            }`}
-            style={
-                isActive(link.href, link.exact)
-                    ? {
-                          backgroundColor: "var(--sidebar-active-bg)",
-                          color: "var(--sidebar-active-text)",
-                          border: "1px solid var(--sidebar-active-border)",
-                      }
-                    : {}
-            }
-        >
-            {!nested && (
-                <span className="relative flex-shrink-0">
-                    {link.icon}
-                    {link.href === "/dashboard/reservations" && pendingRequestsCount > 0 && (
-                        <span className="absolute -right-2.5 -top-2.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-[var(--bg-card)]">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60"></span>
-                            <span className="relative">{pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}</span>
-                        </span>
-                    )}
-                    {link.href === "/dashboard/tasks" && taskAlertsCount > 0 && (
-                        <span className="absolute -right-2.5 -top-2.5 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-black leading-none text-white ring-2 ring-[var(--bg-card)]">
-                            {taskAlertsCount > 9 ? "9+" : taskAlertsCount}
-                        </span>
-                    )}
-                </span>
-            )}
-            {isOpen && (
-                <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                    <span className="truncate">{link.label}</span>
-                    {link.href === "/dashboard/reservations" && pendingRequestsCount > 0 && (
-                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">
-                            {pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}
-                        </span>
-                    )}
-                    {link.href === "/dashboard/tasks" && taskAlertsCount > 0 && (
-                        <span className="ml-auto shrink-0 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white">
-                            {taskAlertsCount > 9 ? "9+" : taskAlertsCount}
-                        </span>
-                    )}
-                </span>
-            )}
-        </Link>
+    const showReservationAlerts = (href: string) =>
+        href === "/dashboard/reservations" && pendingRequestsCount > 0;
+
+    const showTaskAlerts = (href: string) =>
+        shouldShowTaskAlertsOnHref(href) && taskAlertsCount > 0;
+
+    const renderAlertBadge = (count: number, className: string) => (
+        <span className={className}>
+            <span className={SIDEBAR_ALERT_PULSE_CLASS} aria-hidden="true" />
+            <span className="relative z-10">{formatSidebarAlertCount(count)}</span>
+        </span>
     );
+
+    const renderNavLink = (link: NavLink, nested = false) => {
+        const reservationAlerts = showReservationAlerts(link.href);
+        const taskAlerts = showTaskAlerts(link.href);
+        const alertCount = reservationAlerts
+            ? pendingRequestsCount
+            : taskAlerts
+                ? taskAlertsCount
+                : 0;
+        const linkStackClass = alertCount > 0
+            ? SIDEBAR_ALERT_LINK_ACTIVE_CLASS
+            : SIDEBAR_ALERT_LINK_CLASS;
+
+        return (
+            <Link
+                key={link.href}
+                href={link.href}
+                className={`group flex items-center gap-2 rounded-lg font-medium transition-all ${linkStackClass} ${
+                    nested ? "px-2 py-1.5 text-[13px]" : "px-2 py-1.5"
+                } ${
+                    isActive(link.href, link.exact)
+                        ? ""
+                        : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
+                }`}
+                style={
+                    isActive(link.href, link.exact)
+                        ? {
+                              backgroundColor: "var(--sidebar-active-bg)",
+                              color: "var(--sidebar-active-text)",
+                              border: "1px solid var(--sidebar-active-border)",
+                          }
+                        : {}
+                }
+            >
+                {!nested && <span className="relative z-0 flex-shrink-0">{link.icon}</span>}
+                {isOpen && (
+                    <span className="relative z-0 flex min-w-0 flex-1 items-center gap-2 overflow-visible">
+                        <span className="min-w-0 truncate">{link.label}</span>
+                        {alertCount > 0 &&
+                            renderAlertBadge(alertCount, SIDEBAR_ALERT_TRAILING_BADGE_CLASS)}
+                    </span>
+                )}
+                {!isOpen &&
+                    !nested &&
+                    alertCount > 0 &&
+                    renderAlertBadge(alertCount, SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS)}
+            </Link>
+        );
+    };
 
     const renderNavGroup = (group: NavGroup) => {
         const groupActive = group.children.some(link => isActive(link.href, link.exact));
