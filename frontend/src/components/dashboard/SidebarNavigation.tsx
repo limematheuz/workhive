@@ -5,6 +5,8 @@ import { ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
     SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_ALERT_LINK_ACTIVE_CLASS,
+    SIDEBAR_ALERT_LINK_CLASS,
     SIDEBAR_ALERT_PULSE_CLASS,
     SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
     formatSidebarAlertCount,
@@ -46,8 +48,8 @@ export function SidebarNavigation({
 
     const renderAlertBadge = (count: number, className: string) => (
         <span className={className}>
-            <span className={SIDEBAR_ALERT_PULSE_CLASS} />
-            <span className="relative">{formatSidebarAlertCount(count)}</span>
+            <span className={SIDEBAR_ALERT_PULSE_CLASS} aria-hidden="true" />
+            <span className="relative z-10">{formatSidebarAlertCount(count)}</span>
         </span>
     );
 
@@ -59,12 +61,15 @@ export function SidebarNavigation({
             : taskAlerts
                 ? taskAlertsCount
                 : 0;
+        const linkStackClass = alertCount > 0
+            ? SIDEBAR_ALERT_LINK_ACTIVE_CLASS
+            : SIDEBAR_ALERT_LINK_CLASS;
 
         return (
             <Link
                 key={link.href}
                 href={link.href}
-                className={`group relative flex items-center gap-2 rounded-lg font-medium transition-all ${
+                className={`group flex items-center gap-2 rounded-lg font-medium transition-all ${linkStackClass} ${
                     nested ? "px-2 py-1.5 text-[13px]" : "px-2 py-1.5"
                 } ${
                     isActive(link.href, link.exact)
@@ -81,10 +86,10 @@ export function SidebarNavigation({
                         : {}
                 }
             >
-                {!nested && <span className="flex-shrink-0">{link.icon}</span>}
+                {!nested && <span className="relative z-0 flex-shrink-0">{link.icon}</span>}
                 {isOpen && (
-                    <span className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                        <span className="truncate">{link.label}</span>
+                    <span className="relative z-0 flex min-w-0 flex-1 items-center gap-2 overflow-visible">
+                        <span className="min-w-0 truncate">{link.label}</span>
                         {alertCount > 0 &&
                             renderAlertBadge(alertCount, SIDEBAR_ALERT_TRAILING_BADGE_CLASS)}
                     </span>

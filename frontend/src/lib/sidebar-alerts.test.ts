@@ -4,6 +4,8 @@ import test from "node:test";
 import {
     HEADER_ALERT_BADGE_CLASS,
     SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_ALERT_LINK_ACTIVE_CLASS,
+    SIDEBAR_ALERT_LINK_CLASS,
     SIDEBAR_ALERT_PULSE_CLASS,
     SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
     formatSidebarAlertCount,
@@ -61,4 +63,13 @@ test("collapsed sidebar badge stays on the link corner without overlapping a lab
     assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /\babsolute\b/);
     assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /-right-/);
     assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /-top-/);
+});
+
+test("alert badge and alert link stack above the nav link container", () => {
+    assert.match(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /\bz-20\b/);
+    assert.match(SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS, /\bz-20\b/);
+    assert.match(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /\boverflow-visible\b/);
+    assert.match(SIDEBAR_ALERT_LINK_CLASS, /\bz-0\b/);
+    assert.match(SIDEBAR_ALERT_LINK_ACTIVE_CLASS, /\bz-10\b/);
+    assert.match(SIDEBAR_ALERT_LINK_ACTIVE_CLASS, /\boverflow-visible\b/);
 });
