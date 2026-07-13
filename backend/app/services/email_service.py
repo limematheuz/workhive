@@ -440,6 +440,65 @@ def send_trial_approved_email(
     return _send_email(message)
 
 
+def send_worker_invitation_email(
+    *,
+    recipient_email: str,
+    recipient_name: str,
+    company_name: str,
+    invitation_url: str,
+    verification_code: str,
+    expires_at: datetime,
+) -> bool:
+    b = _BRAND
+    safe_name = escape(recipient_name) or ""
+    safe_company = escape(company_name)
+    safe_url = escape(invitation_url, quote=True)
+    safe_code = escape(verification_code)
+    expires_text = expires_at.astimezone().strftime("%d/%m/%Y %H:%M")
+    greeting = f"Hola <strong style=\"color:{b['text']};\">{safe_name}</strong>," if safe_name else "Hola,"
+    html_body = _base_layout(
+        f"""
+<h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:{b['text']};text-align:center;">
+  Te han invitado a WorkHive
+</h1>
+<p style="margin:0 0 18px;font-size:14px;color:{b['muted']};text-align:center;line-height:22px;">
+  {greeting} te han invitado a unirte al equipo de <strong style="color:{b['text']};">{safe_company}</strong>.
+</p>
+<p style="margin:0 0 12px;font-size:13px;color:{b['muted']};text-align:center;line-height:20px;">
+  Abre el enlace y usa este código de verificación:
+</p>
+<p style="margin:0 0 22px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b['text']};text-align:center;">
+  {safe_code}
+</p>
+{_button(invitation_url, "Crear mi acceso")}
+<p style="margin:0;font-size:12px;color:{b['muted']};text-align:center;line-height:18px;">
+  La invitación caduca el {escape(expires_text)}. No compartas el código con nadie.
+</p>
+<p style="margin:18px 0 0;font-size:11px;color:{b['muted']};word-break:break-all;text-align:center;">
+  {safe_url}
+</p>
+""",
+        preview_text=f"Invitación para unirte a {company_name} en WorkHive",
+    )
+    plain_text = "\n".join([
+        f"Hola {recipient_name}," if recipient_name else "Hola,",
+        "",
+        f"Te han invitado a unirte al equipo de {company_name} en WorkHive.",
+        f"Código de verificación: {verification_code}",
+        f"Crea tu acceso aquí: {invitation_url}",
+        f"La invitación caduca el {expires_text}.",
+        "",
+        "No compartas este código con nadie.",
+    ])
+    message = EmailMessage()
+    message["Subject"] = f"Invitación para unirte a {company_name} en WorkHive"
+    message["From"] = _from_address("Acceso")
+    message["To"] = recipient_email
+    message.set_content(plain_text)
+    message.add_alternative(html_body, subtype="html")
+    return _send_email(message)
+
+
 def send_invoice_email(
     *,
     recipient_email: str | Sequence[str],

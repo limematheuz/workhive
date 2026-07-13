@@ -1,7 +1,7 @@
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.services import user_service
-from credentials import TEST_NEW, TEST_OLD, TEST_SECRET, login_form, with_credential, with_new_credential, CREDENTIAL_FIELD
+from credentials import TEST_SECRET, login_form, CREDENTIAL_FIELD
 
 
 
@@ -41,19 +41,22 @@ def _register_company(client, suffix: str) -> tuple[dict[str, str], int]:
     return headers, company.json()["id"]
 
 
-def test_manager_cannot_create_privileged_users(client):
-    admin_headers, _ = _register_company(client, "roles")
-    manager = client.post(
-        "/api/v1/users/",
-        headers=admin_headers,
-        json={
-            "email": "manager@workhive.com",
-            CREDENTIAL_FIELD: TEST_SECRET,
-            "full_name": "Manager",
-            "role_id": 2,
-        },
+def test_manager_cannot_invite_privileged_users(client, db, monkeypatch):
+    admin_headers, company_id = _register_company(client, "roles")
+    manager = User(
+        email="manager@workhive.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Manager",
+        role_id=2,
+        company_id=company_id,
+        is_active=True,
     )
-    assert manager.status_code == 201, manager.text
+    db.add(manager)
+    db.commit()
+    monkeypatch.setattr(
+        "app.services.email_service.send_worker_invitation_email",
+        lambda **_kwargs: True,
+    )
 
     login = client.post(
         "/api/v1/auth/login",
@@ -65,27 +68,24 @@ def test_manager_cannot_create_privileged_users(client):
 
     for role_id in (1, 2, 4):
         response = client.post(
-            "/api/v1/users/",
+            "/api/v1/user-invitations/",
             headers=manager_headers,
             json={
                 "email": f"privileged-{role_id}@workhive.com",
-                CREDENTIAL_FIELD: TEST_SECRET,
                 "role_id": role_id,
             },
         )
         assert response.status_code == 403, response.text
 
     worker = client.post(
-        "/api/v1/users/",
+        "/api/v1/user-invitations/",
         headers=manager_headers,
         json={
             "email": "worker@workhive.com",
-            CREDENTIAL_FIELD: TEST_SECRET,
             "role_id": 3,
         },
     )
-    assert worker.status_code == 201, worker.text
-    assert worker.json()["role"]["name"] == "viewer"
+    assert worker.status_code == 202, worker.text
 
 
 def test_platform_superadmin_stats_are_empty_without_company(db):

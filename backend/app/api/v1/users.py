@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveManagerOrAdmin, ActiveUser, get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserResponse, UserStatsResponse, UserUpdate
+from app.schemas.user import UserResponse, UserStatsResponse, UserUpdate
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
 from app.services import user_service
 from app.services import audit_service
@@ -127,30 +127,6 @@ def read_user_stats(
     current_user: User = ActiveUser
 ):
     return user_service.get_user_stats(db, user_id, current_user, time_range)
-
-
-@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-def create_worker(
-    worker_data: UserCreate,
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
-):
-    worker = user_service.create_worker(db, worker_data, current_user)
-    audit_service.record_event(
-        db,
-        actor=current_user,
-        company_id=worker.company_id,
-        action="user.created",
-        entity_type="user",
-        entity_id=worker.id,
-        request=request,
-        details={
-            "role_id": worker.role_id,
-            "is_active": worker.is_active,
-        },
-    )
-    return worker
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

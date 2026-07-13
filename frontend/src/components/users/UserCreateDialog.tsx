@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,8 +32,6 @@ type UserCreateDialogProps = {
         full_name_placeholder: string;
         email: string;
         email_placeholder: string;
-        accessLabel: string;
-        accessPlaceholder: string;
         role: string;
         cancel: string;
         submitting: string;
@@ -51,8 +49,6 @@ type UserCreateDialogProps = {
 type CreateFormState = {
     fullName: string;
     email: string;
-    secret: string;
-    revealSecret: boolean;
     roleId: string;
     submitting: boolean;
 };
@@ -60,8 +56,6 @@ type CreateFormState = {
 const EMPTY_CREATE_FORM: CreateFormState = {
     fullName: "",
     email: "",
-    secret: "",
-    revealSecret: false,
     roleId: "",
     submitting: false,
 };
@@ -99,16 +93,14 @@ export function UserCreateDialog({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.email || !form.secret || !form.roleId) return;
+        if (!form.email || !form.roleId) return;
 
         try {
             setForm((current) => ({ ...current, submitting: true }));
-            await UserService.createUser({
+            await UserService.inviteUser({
                 email: form.email,
-                access_code: form.secret,
                 full_name: form.fullName || undefined,
                 role_id: parseInt(form.roleId, 10),
-                is_active: true,
             });
             toast.success(labels.success_create);
             setForm({
@@ -118,10 +110,9 @@ export function UserCreateDialog({
             onOpenChange(false);
             onCreated();
         } catch (error: unknown) {
-            console.error("Error registering worker", error);
             toast.error(getErrorMessage(error, labels.error_create));
         } finally {
-            setForm((current) => ({ ...current, submitting: false, secret: "" }));
+            setForm((current) => ({ ...current, submitting: false }));
         }
     };
 
@@ -159,30 +150,6 @@ export function UserCreateDialog({
                                 placeholder={labels.email_placeholder}
                                 className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] placeholder-[var(--text-muted)] rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--border-color)] transition-colors"
                             />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="cSecret" className="text-[var(--text-main)]">{labels.accessLabel}</Label>
-                            <div className="relative">
-                                <input
-                                    id="cSecret"
-                                    type={form.revealSecret ? "text" : "password"}
-                                    value={form.secret}
-                                    required
-                                    minLength={6}
-                                    autoComplete="new-password"
-                                    onChange={(e) => setForm((current) => ({ ...current, secret: e.target.value }))}
-                                    placeholder={labels.accessPlaceholder}
-                                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] placeholder-[var(--text-muted)] rounded-md pl-3 pr-10 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--border-color)] transition-colors"
-                                />
-                                <button
-                                    type="button"
-                                    aria-label={form.revealSecret ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                    onClick={() => setForm((current) => ({ ...current, revealSecret: !current.revealSecret }))}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-0.5 flex items-center justify-center"
-                                >
-                                    {form.revealSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </button>
-                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="cRoleId" className="text-[var(--text-main)]">{labels.role}</Label>

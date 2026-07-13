@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models.user import User
-from app.schemas.user import UserUpdate, UserStatsResponse, UserCreate
+from app.schemas.user import UserUpdate, UserStatsResponse
 from app.repositories import user as user_repo
 from app.repositories import work_session as work_session_repo
 from app.repositories import task_item as task_item_repo
@@ -200,57 +200,6 @@ def get_user_stats(
         active_session_id=active_session_id,
         locations_worked_count=locations_worked_count,
     )
-
-
-def create_worker(
-    db: Session, worker_data: UserCreate, current_user: User
-) -> User:
-    existing = user_repo.get_user_by_email(db, worker_data.email)
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
-        )
-
-    if not is_superadmin(current_user):
-        worker_data.company_id = current_user.company_id
-        company = current_user.company
-        if worker_data.is_active and company is not None:
-            require_active_user_capacity(db, company)
-
-    if worker_data.role_id is None:
-        default_role = role_repo.get_role_by_name(db, "viewer")
-        if not default_role:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Default role 'viewer' not found",
-            )
-        worker_data.role_id = default_role.id
-    else:
-        target_role = role_repo.get_role(db, worker_data.role_id)
-        if not target_role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Role not found",
-            )
-        if (
-            current_user.role.name == "manager"
-            and target_role.name != "viewer"
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Managers can only create field workers",
-            )
-        if (
-            not is_superadmin(current_user)
-            and target_role.name == "superadmin"
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only superadmins can create users with the superadmin role",
-            )
-
-    return user_repo.create_user(db, worker_data)
 
 
 def delete_user_permanently(db: Session, user_id: int, current_user: User) -> None:

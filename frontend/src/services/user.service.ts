@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/api";
+import { buildWorkerInvitationPayload } from "@/lib/user-invitation";
 import { UserStatsResponse, WorkSession, TaskItem, User } from "@/types/user";
 
 export const UserService = {
@@ -59,30 +60,20 @@ export const UserService = {
         return await response.json();
     },
 
-    /**
-     * Registers a new worker in the company (Flow A).
-     */
-    createUser: async (data: {
+    /** Sends a verified invitation to a future worker. */
+    inviteUser: async (data: {
         email: string;
-        access_code?: string;
         full_name?: string;
         role_id: number;
-        is_active?: boolean;
-    }): Promise<User> => {
-        const { access_code, ...rest } = data;
-        const credentialField = "pass" + "word";
-        const response = await apiFetch(`/api/v1/users/`, {
+    }): Promise<void> => {
+        const response = await apiFetch(`/api/v1/user-invitations/`, {
             method: "POST",
-            body: JSON.stringify({
-                ...rest,
-                ...(access_code ? { [credentialField]: access_code } : {}),
-            }),
+            body: JSON.stringify(buildWorkerInvitationPayload(data)),
         });
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || "Error creating user");
+            throw new Error(errData.detail || "Error sending invitation");
         }
-        return await response.json();
     },
 
     /**

@@ -181,8 +181,6 @@ export default function TeamPage() {
                     full_name_placeholder: dict.users.full_name_placeholder,
                     email: dict.users.email,
                     email_placeholder: dict.users.email_placeholder,
-                    accessLabel: dict.users.password,
-                    accessPlaceholder: dict.users.password_placeholder,
                     role: dict.users.role,
                     cancel: dict.clients.form.cancel,
                     submitting: dict.users.submitting,

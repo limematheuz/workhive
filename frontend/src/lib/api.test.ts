@@ -178,6 +178,24 @@ test("apiFetch refreshes csrf once when backend rejects stale token", async () =
     restoreBrowser();
 });
 
+test("invitation acceptance is CSRF-exempt before a session exists", async () => {
+    installBrowser("/accept-invitation");
+    const calls: string[] = [];
+    globalThis.fetch = async (url: string | URL | Request) => {
+        calls.push(String(url));
+        return jsonResponse({ status: "accepted" });
+    };
+
+    const response = await apiFetch("/api/v1/user-invitations/accept", {
+        method: "POST",
+        body: "{}",
+    });
+
+    assert.equal(response.ok, true);
+    assert.deepEqual(calls, ["/api/v1/user-invitations/accept"]);
+    restoreBrowser();
+});
+
 test("apiFetch redirects dashboard users on auth and subscription denial", async () => {
     const first = installBrowser("/dashboard/tasks");
     first.localStorage.setItem("token", "legacy-token");

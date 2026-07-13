@@ -1,6 +1,7 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api";
 import { setCsrfToken } from "@/lib/auth";
 import { getVisitorId } from "@/lib/visitor-id";
+import { buildInvitationAcceptancePayload } from "@/lib/user-invitation";
 import { User } from "@/types/user";
 
 export const authService = {
@@ -93,6 +94,21 @@ export const authService = {
 
         if (!response.ok) {
             const errorMsg = await extractErrorMessage(response, "No se pudo restablecer la contraseña");
+            throw new Error(errorMsg);
+        }
+    },
+
+    acceptWorkerInvitation: async (
+        token: string,
+        code: string,
+        password: string,
+    ): Promise<void> => {
+        const response = await apiFetch("/api/v1/user-invitations/accept", {
+            method: "POST",
+            body: JSON.stringify(buildInvitationAcceptancePayload(token, code, password)),
+        });
+        if (!response.ok) {
+            const errorMsg = await extractErrorMessage(response, "No se pudo activar tu acceso");
             throw new Error(errorMsg);
         }
     },

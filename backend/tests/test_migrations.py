@@ -21,6 +21,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
     try:
         inspector = inspect(engine)
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
+        invitation_columns = {
+            column["name"] for column in inspector.get_columns("user_invitations")
+        }
         with engine.connect() as connection:
             applied_revisions = {
                 row[0]
@@ -32,3 +35,4 @@ def test_postgresql_schema_matches_invoice_model_contract():
     script = ScriptDirectory.from_config(Config("alembic.ini"))
     assert applied_revisions == set(script.get_heads())
     assert "paid_at" in invoice_columns
+    assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns

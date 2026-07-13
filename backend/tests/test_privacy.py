@@ -1,3 +1,5 @@
+from app.core.security import get_password_hash
+from app.models.user import User
 from credentials import TEST_NEW, TEST_OLD, TEST_SECRET, login_form, with_credential, with_new_credential, CREDENTIAL_FIELD
 
 
@@ -52,7 +54,7 @@ def test_registration_requires_explicit_legal_acknowledgements(client):
     assert response.status_code == 422
 
 
-def test_consent_export_and_erasure_workflow(client):
+def test_consent_export_and_erasure_workflow(client, db):
     admin_headers = _register(client, "privacy-admin@workhive.com")
     company_id = _create_company(client, admin_headers)
 
@@ -67,18 +69,18 @@ def test_consent_export_and_erasure_workflow(client):
         ("marketing", False),
     }
 
-    worker = client.post(
-        "/api/v1/users/",
-        headers=admin_headers,
-        json={
-            "email": "privacy-worker@workhive.com",
-            CREDENTIAL_FIELD: TEST_SECRET,
-            "full_name": "Privacy Worker",
-            "role_id": 3,
-        },
+    worker = User(
+        email="privacy-worker@workhive.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Privacy Worker",
+        role_id=3,
+        company_id=company_id,
+        is_active=True,
     )
-    assert worker.status_code == 201, worker.text
-    worker_id = worker.json()["id"]
+    db.add(worker)
+    db.commit()
+    db.refresh(worker)
+    worker_id = worker.id
     worker_login = client.post(
         "/api/v1/auth/login",
         data=login_form("privacy-worker@workhive.com", TEST_SECRET),
