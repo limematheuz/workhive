@@ -1,0 +1,60 @@
+"""Transactional email helpers.
+
+Public send_* functions are re-exported here so existing imports keep working:
+`from app.services import email_service`.
+"""
+
+from app.core.config import settings
+from app.services.email_service.access_emails import (
+    send_trial_approved_email,
+    send_trial_verification_email,
+    send_worker_invitation_email,
+)
+from app.services.email_service.auth_emails import send_password_reset_email
+from app.services.email_service.billing_emails import send_invoice_email
+from app.services.email_service.contact_emails import send_contact_email
+from app.services.email_service.layout import (
+    _BRAND,
+    add_logo_to_message,
+    base_layout,
+    button,
+    get_logo_header,
+)
+from app.services.email_service.privacy_emails import (
+    send_erasure_request_received_email,
+    send_erasure_request_resolved_email,
+)
+from app.services.email_service.transport import from_address, send_email
+
+# Backward-compatible private aliases used by older tests and call sites.
+_add_logo_to_message = add_logo_to_message
+_base_layout = base_layout
+_button = button
+_from_address = from_address
+_get_logo_header = get_logo_header
+_send_email = send_email
+
+__all__ = [
+    "settings",
+    "send_password_reset_email",
+    "send_contact_email",
+    "send_trial_verification_email",
+    "send_trial_approved_email",
+    "send_worker_invitation_email",
+    "send_erasure_request_received_email",
+    "send_erasure_request_resolved_email",
+    "send_invoice_email",
+    "_BRAND",
+    "_add_logo_to_message",
+    "_base_layout",
+    "_button",
+    "_from_address",
+    "_get_logo_header",
+    "_send_email",
+    "add_logo_to_message",
+    "base_layout",
+    "button",
+    "from_address",
+    "get_logo_header",
+    "send_email",
+]
