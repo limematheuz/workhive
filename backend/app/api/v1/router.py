@@ -25,11 +25,17 @@ from app.api.v1.audit_logs import router as audit_logs_router
 from app.api.v1.calendar import router as calendar_router
 from app.api.v1.privacy import router as privacy_router
 from app.api.v1.traffic import router as traffic_router
+from app.api.v1.user_invitations import router as user_invitations_router
 
 api_router = APIRouter()
 
 api_router.include_router(auth_router, prefix="/auth", tags=["auth"])
 api_router.include_router(users_router, prefix="/users", tags=["users"])
+api_router.include_router(
+    user_invitations_router,
+    prefix="/user-invitations",
+    tags=["user-invitations"],
+)
 api_router.include_router(clients_router, prefix="/clients", tags=["clients"])
 api_router.include_router(locations_router, prefix="/locations", tags=["locations"])
 api_router.include_router(

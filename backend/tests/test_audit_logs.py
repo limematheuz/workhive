@@ -1,11 +1,6 @@
 import json
 
-from credentials import (
-    TEST_AUDIT_WORKER,
-    TEST_SECRET,
-    login_form,
-    with_credential,
-)
+from credentials import TEST_SECRET, login_form, with_credential
 
 
 def _register_company(client, suffix: str) -> tuple[dict[str, str], int]:
@@ -43,21 +38,22 @@ def _register_company(client, suffix: str) -> tuple[dict[str, str], int]:
     return headers, company.json()["id"]
 
 
-def test_audit_logs_capture_admin_changes_and_are_company_scoped(client):
+def test_audit_logs_capture_admin_changes_and_are_company_scoped(client, monkeypatch):
     first_headers, first_company_id = _register_company(client, "first")
-    worker = client.post(
-        "/api/v1/users/",
-        headers={**first_headers, "X-Request-ID": "worker-created"},
-        json=with_credential(
-            {
-                "email": "audited-worker@workhive.com",
-                "full_name": "Audited Worker",
-                "role_id": 3,
-            },
-            TEST_AUDIT_WORKER,
-        ),
+    monkeypatch.setattr(
+        "app.services.email_service.send_worker_invitation_email",
+        lambda **_kwargs: True,
     )
-    assert worker.status_code == 201, worker.text
+    worker = client.post(
+        "/api/v1/user-invitations/",
+        headers={**first_headers, "X-Request-ID": "worker-created"},
+        json={
+            "email": "audited-worker@workhive.com",
+            "full_name": "Audited Worker",
+            "role_id": 3,
+        },
+    )
+    assert worker.status_code == 202, worker.text
 
     _, second_company_id = _register_company(client, "second")
     assert second_company_id != first_company_id
@@ -70,12 +66,11 @@ def test_audit_logs_capture_admin_changes_and_are_company_scoped(client):
     events = response.json()
     assert {event["action"] for event in events} >= {
         "company.created",
-        "user.created",
+        "user.invited",
     }
     assert {event["company_id"] for event in events} == {first_company_id}
     assert {event["request_id"] for event in events} >= {
         "company-first",
         "worker-created",
     }
-    assert TEST_AUDIT_WORKER not in json.dumps(events)
     assert TEST_SECRET not in json.dumps(events)

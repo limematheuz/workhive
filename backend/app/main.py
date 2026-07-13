@@ -109,6 +109,7 @@ async def enforce_csrf_for_cookie_sessions(request, call_next):
         f"{settings.API_V1_STR}/auth/register",
         f"{settings.API_V1_STR}/auth/forgot-password",
         f"{settings.API_V1_STR}/auth/reset-password",
+        f"{settings.API_V1_STR}/user-invitations/accept",
         f"{settings.API_V1_STR}/contact/",
         f"{settings.API_V1_STR}/trial-requests/",
         f"{settings.API_V1_STR}/trial-requests/verify",
@@ -181,14 +182,17 @@ async def log_requests(request: Request, call_next):
         raise
     duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
     response.headers["X-Request-ID"] = request_id
-    logger.info(
-        "Request completed",
-        extra={
-            **log_fields,
-            "status_code": response.status_code,
-            "duration_ms": duration_ms,
-        },
-    )
+    response_fields = {
+        **log_fields,
+        "status_code": response.status_code,
+        "duration_ms": duration_ms,
+    }
+    if response.status_code >= 500:
+        logger.error("Request completed", extra=response_fields)
+    elif response.status_code >= 400:
+        logger.warning("Request completed", extra=response_fields)
+    else:
+        logger.debug("Request completed", extra=response_fields)
     return response
 
 
