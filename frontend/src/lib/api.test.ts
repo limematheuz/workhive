@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     apiFetch,
+    assertApiResponseOk,
     extractErrorMessage,
     hasActiveMutations,
     resolveApiMediaUrl,
@@ -106,6 +107,35 @@ test("extractErrorMessage reads object message and raw text fallback", async () 
     assert.equal(
         await extractErrorMessage(new Response("Plain error", { status: 500 }), "Default"),
         "Plain error",
+    );
+});
+
+test("assertApiResponseOk keeps server internals out of 5xx errors", async () => {
+    const internalDiagnostic = "INTERNAL_DATABASE_DIAGNOSTIC_SHOULD_NOT_LEAK";
+    await assert.rejects(
+        assertApiResponseOk(
+            jsonResponse(
+                { detail: internalDiagnostic },
+                { status: 500 },
+            ),
+            "No se pudieron cargar los datos",
+        ),
+        (error: unknown) => {
+            assert.ok(error instanceof Error);
+            assert.equal(error.message, "No se pudieron cargar los datos");
+            assert.doesNotMatch(error.message, new RegExp(internalDiagnostic));
+            return true;
+        },
+    );
+});
+
+test("assertApiResponseOk preserves safe actionable 4xx details", async () => {
+    await assert.rejects(
+        assertApiResponseOk(
+            jsonResponse({ detail: "Not enough permissions" }, { status: 403 }),
+            "No se pudieron cargar los datos",
+        ),
+        /Not enough permissions/,
     );
 });
 

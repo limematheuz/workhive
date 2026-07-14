@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { Company, CompanyExpense } from "@/types/company";
 import type { CompanyMember } from "@/components/companies/company-members";
 
@@ -24,9 +24,7 @@ export const CompanyService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("Error fetching companies");
-        }
+        await assertApiResponseOk(response, "Error fetching companies");
         return await response.json();
     },
 
@@ -35,9 +33,7 @@ export const CompanyService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("Error fetching company");
-        }
+        await assertApiResponseOk(response, "Error fetching company");
         return await response.json();
     },
 
@@ -46,9 +42,7 @@ export const CompanyService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("Error fetching company members");
-        }
+        await assertApiResponseOk(response, "Error fetching company members");
         return await response.json();
     },
 
@@ -57,9 +51,7 @@ export const CompanyService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("Error fetching company expenses");
-        }
+        await assertApiResponseOk(response, "Error fetching company expenses");
         return await response.json();
     },
 

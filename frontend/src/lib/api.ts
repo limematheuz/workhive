@@ -193,3 +193,14 @@ export async function extractErrorMessage(response: Response, defaultMessage: st
         return text.trim() || defaultMessage;
     }
 }
+
+export async function assertApiResponseOk(
+    response: Response,
+    defaultMessage: string,
+): Promise<void> {
+    if (response.ok) return;
+    if (response.status >= 500) {
+        throw new Error(defaultMessage);
+    }
+    throw new Error(await extractErrorMessage(response, defaultMessage));
+}

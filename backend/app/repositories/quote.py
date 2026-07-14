@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.quote import Quote
 
@@ -23,7 +23,7 @@ def get_quotes(
     skip: int = 0,
     limit: int = 100,
 ) -> list[Quote]:
-    query = db.query(Quote).filter(
+    query = db.query(Quote).options(selectinload(Quote.items)).filter(
         Quote.company_id == company_id,
         Quote.is_active.is_(True),
     )
@@ -37,6 +37,7 @@ def get_quotes(
 def get_quote(db: Session, company_id: int, quote_id: int) -> Quote | None:
     return (
         db.query(Quote)
+        .options(selectinload(Quote.items))
         .filter(
             Quote.id == quote_id,
             Quote.company_id == company_id,

@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { Company } from "@/types/company";
 
@@ -8,9 +8,7 @@ export const CollaborationService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("No se pudo obtener el código de partner");
-        }
+        await assertApiResponseOk(response, "No se pudo obtener el código de partner");
         const data = await response.json();
         return data.partner_code;
     },
@@ -20,9 +18,7 @@ export const CollaborationService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("No se pudieron cargar las colaboraciones");
-        }
+        await assertApiResponseOk(response, "No se pudieron cargar las colaboraciones");
         return await response.json();
     },
 
@@ -31,9 +27,7 @@ export const CollaborationService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("No se pudieron cargar las empresas colaboradoras");
-        }
+        await assertApiResponseOk(response, "No se pudieron cargar las empresas colaboradoras");
         return await response.json();
     },
 
@@ -42,9 +36,7 @@ export const CollaborationService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("No se pudieron cargar las solicitudes pendientes");
-        }
+        await assertApiResponseOk(response, "No se pudieron cargar las solicitudes pendientes");
         return await response.json();
     },
 
@@ -53,9 +45,7 @@ export const CollaborationService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("No se pudieron cargar las solicitudes enviadas");
-        }
+        await assertApiResponseOk(response, "No se pudieron cargar las solicitudes enviadas");
         return await response.json();
     },
 

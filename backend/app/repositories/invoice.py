@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.invoice import Invoice
 from app.schemas.invoice import InvoiceCreate, InvoiceUpdate
@@ -60,7 +60,11 @@ def get_invoices(
     skip: int = 0,
     limit: int = 100,
 ) -> list[Invoice]:
-    query = db.query(Invoice).filter(Invoice.company_id == company_id)
+    query = (
+        db.query(Invoice)
+        .options(selectinload(Invoice.items))
+        .filter(Invoice.company_id == company_id)
+    )
 
     if client_id:
         query = query.filter(Invoice.client_id == client_id)
@@ -77,6 +81,7 @@ def get_invoices(
 def get_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice | None:
     return (
         db.query(Invoice)
+        .options(selectinload(Invoice.items))
         .filter(Invoice.company_id == company_id, Invoice.id == invoice_id)
         .first()
     )
