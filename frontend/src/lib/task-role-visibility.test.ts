@@ -13,7 +13,7 @@ import {
     buildChecklistDescription,
 } from "../domain/tasks/task-create.ts";
 import { buildTaskListFilters, parseTaskPageTab } from "../domain/tasks/task-list.ts";
-import { canMoveTaskOnKanban } from "../domain/tasks/task-permissions.ts";
+import { canMoveTaskOnKanban, canDuplicateTask } from "../domain/tasks/task-permissions.ts";
 import {
     getTasksForOverviewTab,
 } from "../domain/tasks/task-schedule.ts";
@@ -122,6 +122,18 @@ test("kanban movement is limited to managers/admins and mutable tasks", () => {
     assert.equal(canMoveTaskOnKanban(viewer, movableTask), false);
     assert.equal(canMoveTaskOnKanban(admin, invoicedTask), false);
     assert.equal(canMoveTaskOnKanban(null, movableTask), false);
+});
+
+test("duplicating a task is blocked for invoiced tasks and viewers", () => {
+    const movableTask = task({ is_invoiced: false });
+    const invoicedTask = task({ is_invoiced: true });
+
+    assert.equal(canDuplicateTask(admin, movableTask), true);
+    assert.equal(canDuplicateTask(manager, movableTask), true);
+    assert.equal(canDuplicateTask(viewer, movableTask), false);
+    assert.equal(canDuplicateTask(admin, invoicedTask), false);
+    assert.equal(canDuplicateTask(manager, invoicedTask), false);
+    assert.equal(canDuplicateTask(null, movableTask), false);
 });
 
 test("task list filters prevent viewers from querying another user", () => {

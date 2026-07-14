@@ -19,9 +19,14 @@ interface TasksListFiltersProps {
     users: User[];
     selectedStatus: string;
     onSelectedStatusChange: (value: string) => void;
+    selectedPriority: string;
+    onSelectedPriorityChange: (value: string) => void;
     dateScope: string;
     onDateScopeChange: (value: string) => void;
 }
+
+const controlClass =
+    "h-9 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent";
 
 export function TasksListFilters({
     dict,
@@ -37,35 +42,41 @@ export function TasksListFilters({
     users,
     selectedStatus,
     onSelectedStatusChange,
+    selectedPriority,
+    onSelectedPriorityChange,
     dateScope,
     onDateScopeChange,
 }: TasksListFiltersProps) {
     return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-5 mb-6 space-y-4">
+        <div className="mb-4 space-y-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2.5 shadow-sm sm:p-3">
             <div className="flex items-center justify-between gap-3 text-[var(--text-muted)]">
                 <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-accent" />
-                <span className="text-xs font-semibold uppercase tracking-wider">{dict.tasks?.filters || "Filters"}</span>
+                    <Filter className="h-3.5 w-3.5 text-accent" />
+                    <span className="text-[10px] font-black uppercase tracking-wider">
+                        {dict.tasks?.filters || "Filters"}
+                    </span>
                 </div>
-                <span className="text-xs font-semibold">{totalItems} tareas</span>
+                <span className="text-[10px] font-black uppercase tracking-wider tabular-nums">
+                    {totalItems} {dict.tasks?.pagination_tasks || "tareas"}
+                </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 w-full">
-                <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                <div className="relative sm:col-span-2 xl:col-span-1 2xl:col-span-1">
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                     <input
                         type="search"
                         value={searchQuery}
                         onChange={(event) => onSearchQueryChange(event.target.value)}
-                        placeholder="Buscar tarea"
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl pl-10 pr-3 py-2 text-xs outline-none focus:border-accent transition-colors"
+                        placeholder={dict.tasks?.list_search || "Buscar tarea"}
+                        className={`${controlClass} pl-9`}
                     />
                 </div>
                 <select
                     value={selectedLocationId}
                     onChange={(e) => onSelectedLocationIdChange(e.target.value)}
                     aria-label="Filtrar por ubicación"
-                    className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
+                    className={controlClass}
                 >
                     <option value="">{dict.tasks?.filter_all_locations || "All locations"}</option>
                     {locations.map(l => (
@@ -78,7 +89,7 @@ export function TasksListFilters({
                         value={selectedUserId}
                         onChange={(e) => onSelectedUserIdChange(e.target.value)}
                         aria-label="Filtrar por operario"
-                        className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
+                        className={controlClass}
                     >
                         <option value="">{dict.tasks?.filter_all_operators || "All operators"}</option>
                         {users.map(u => (
@@ -86,7 +97,7 @@ export function TasksListFilters({
                         ))}
                     </select>
                 ) : (
-                    <div className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-3 py-2 text-xs text-[var(--text-muted)] flex items-center font-medium">
+                    <div className="flex h-9 items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 text-xs font-medium text-[var(--text-muted)]">
                         {dict.tasks?.filter_assigned_to_me || "Assigned to me"}
                     </div>
                 )}
@@ -95,7 +106,7 @@ export function TasksListFilters({
                     value={selectedStatus}
                     onChange={(e) => onSelectedStatusChange(e.target.value)}
                     aria-label="Filtrar por estado"
-                    className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
+                    className={controlClass}
                 >
                     <option value="">{dict.tasks?.filter_all_statuses || "All statuses"}</option>
                     <option value="pending">{dict.profile?.tables?.status_pending || "Pending"}</option>
@@ -105,14 +116,26 @@ export function TasksListFilters({
                 </select>
 
                 <select
+                    value={selectedPriority}
+                    onChange={(e) => onSelectedPriorityChange(e.target.value)}
+                    aria-label="Filtrar por prioridad"
+                    className={controlClass}
+                >
+                    <option value="">{dict.tasks?.filter_all_priorities || "Todas las prioridades"}</option>
+                    <option value="high">{dict.tasks?.priority_high || "High"}</option>
+                    <option value="medium">{dict.tasks?.priority_medium || "Medium"}</option>
+                    <option value="low">{dict.tasks?.priority_low || "Low"}</option>
+                </select>
+
+                <select
                     value={dateScope}
                     onChange={(event) => onDateScopeChange(event.target.value)}
                     aria-label="Filtrar por fecha"
-                    className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
+                    className={controlClass}
                 >
-                    <option value="ALL">Todas las fechas</option>
-                    <option value="UPCOMING">Próximas</option>
-                    <option value="PAST">Fechas pasadas</option>
+                    <option value="ALL">{dict.tasks?.filter_all_dates || "Todas las fechas"}</option>
+                    <option value="UPCOMING">{dict.tasks?.filter_upcoming || "Próximas"}</option>
+                    <option value="PAST">{dict.tasks?.filter_past || "Fechas pasadas"}</option>
                 </select>
             </div>
         </div>

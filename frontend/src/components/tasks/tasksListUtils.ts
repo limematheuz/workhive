@@ -1,12 +1,111 @@
-import { TaskItem } from "@/services/task.service";
+type TaskListStatusFields = {
+    id: number;
+    status: string;
+    is_invoiced?: boolean | null;
+};
 
-export const getStatusWeight = (t: TaskItem) => {
+export const getStatusWeight = (t: TaskListStatusFields) => {
     if (t.is_invoiced) return 5;
     if (t.status === "completed") return 4;
     if (t.status === "review" || t.status === "in_review") return 3;
     if (t.status === "progress" || t.status === "in_progress") return 2;
     return 1; // pending
 };
+
+export function isTaskFinished(task: Pick<TaskListStatusFields, "status" | "is_invoiced">): boolean {
+    return task.status === "completed" || Boolean(task.is_invoiced);
+}
+
+export function sortTasksForGeneralList<T extends TaskListStatusFields>(tasks: readonly T[]): T[] {
+    return [...tasks].sort((left, right) => {
+        const weightDiff = getStatusWeight(left) - getStatusWeight(right);
+        if (weightDiff !== 0) return weightDiff;
+        return right.id - left.id;
+    });
+}
+
+export function partitionTasksForGeneralList<T extends TaskListStatusFields>(
+    tasks: readonly T[],
+): { active: T[]; completed: T[] } {
+    const active: T[] = [];
+    const completed: T[] = [];
+    for (const task of tasks) {
+        if (isTaskFinished(task)) completed.push(task);
+        else active.push(task);
+    }
+    return {
+        active: sortTasksForGeneralList(active),
+        completed: sortTasksForGeneralList(completed),
+    };
+}
+
+export const TASK_LIST_PAGE_SIZE = 20;
+
+export type TaskListDateScope = "ALL" | "UPCOMING" | "PAST";
+
+export type TaskListSearchable = TaskListStatusFields & {
+    title?: string | null;
+    description?: string | null;
+    due_at?: string | null;
+    scheduled_start_at?: string | null;
+    created_at: string;
+    location_id: number;
+    user_id: number | null;
+    priority?: string | null;
+};
+
+export function filterTasksForGeneralList<T extends TaskListSearchable>(
+    tasks: readonly T[],
+    options: {
+        query: string;
+        dateScope: TaskListDateScope;
+        priority?: string;
+        getLocationName: (locationId: number) => string;
+        getAssigneeName: (userId: number | null) => string;
+        now?: Date;
+    },
+): T[] {
+    const query = options.query.trim().toLocaleLowerCase("es");
+    const today = new Date(options.now ?? Date.now());
+    today.setHours(0, 0, 0, 0);
+    const priority = options.priority?.trim() || "";
+
+    return tasks.filter((task) => {
+        if (priority && task.priority !== priority) return false;
+
+        const planningDate = new Date(task.due_at || task.scheduled_start_at || task.created_at);
+        const matchesDate =
+            options.dateScope === "ALL"
+            || (options.dateScope === "UPCOMING" && planningDate >= today)
+            || (options.dateScope === "PAST" && planningDate < today);
+        if (!matchesDate) return false;
+        if (!query) return true;
+
+        return [
+            task.title,
+            task.description,
+            options.getLocationName(task.location_id),
+            options.getAssigneeName(task.user_id),
+        ]
+            .filter(Boolean)
+            .some((value) => String(value).toLocaleLowerCase("es").includes(query));
+    });
+}
+
+export function paginateTaskListPage<T>(
+    items: readonly T[],
+    page: number,
+    pageSize = TASK_LIST_PAGE_SIZE,
+): { pageItems: T[]; totalPages: number; safePage: number } {
+    const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const start = (safePage - 1) * pageSize;
+    return {
+        pageItems: items.slice(start, start + pageSize),
+        totalPages,
+        safePage,
+    };
+}
 
 export type ChecklistItem = {
     text: string;

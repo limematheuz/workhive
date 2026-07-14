@@ -25,7 +25,7 @@ import {
     completionDateForStatus,
     toKanbanStatus,
 } from "@/domain/tasks/task-status";
-import { canMoveTaskOnKanban } from "@/domain/tasks/task-permissions";
+import { canDuplicateTask, canMoveTaskOnKanban } from "@/domain/tasks/task-permissions";
 import type { KanbanStatus, TaskPriority, TaskStatus } from "@/types/task";
 
 export type { KanbanStatus };
@@ -339,7 +339,10 @@ export function useOperationsCalendar({
     };
 
     const handleDuplicateTask = async (task: TaskItem) => {
-        if (!isAdminOrManager) return;
+        if (!canDuplicateTask(currentUser, task)) {
+            toast.error(dict.tasks?.duplicate_invoiced_blocked || "No se puede duplicar una tarea facturada.");
+            return;
+        }
         try {
             setIsSavingTask(true);
             await TaskService.createTaskItem({

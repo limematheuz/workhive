@@ -7,3 +7,10 @@ export function canMoveTaskOnKanban(
 ): boolean {
     return canManageCompanyTasks(user) && Boolean(task) && !task?.is_invoiced;
 }
+
+export function canDuplicateTask(
+    user: User | null | undefined,
+    task: Pick<TaskItem, "is_invoiced"> | null | undefined,
+): boolean {
+    return canManageCompanyTasks(user) && Boolean(task) && !task?.is_invoiced;
+}
