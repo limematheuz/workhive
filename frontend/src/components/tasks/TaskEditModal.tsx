@@ -131,20 +131,20 @@ export function TaskEditModal({
         <Dialog open={!!selectedTask} onOpenChange={(open) => { if (!open) setSelectedTask(null); }}>
             <DialogContent
                 className={cn(
-                    "w-[95vw] sm:max-w-2xl md:max-w-3xl p-0 overflow-hidden max-h-[90vh] flex flex-col bg-[var(--bg-card-solid)] border-[var(--border-soft)]",
+                    "flex max-h-[min(90vh,820px)] w-[95vw] flex-col gap-0 overflow-hidden border-[var(--border-soft)] bg-[var(--bg-card)] p-0 sm:max-w-2xl md:max-w-3xl [scrollbar-width:none]",
                     selectedTask?.status === "requested" && "border-t-[3px] border-t-accent"
                 )}
             >
-                <DialogHeader className="p-6 border-b border-[var(--border-soft)] bg-[var(--bg-card-solid)] flex-shrink-0 text-left sm:text-left">
+                <DialogHeader className="shrink-0 space-y-1 border-b border-[var(--border-soft)] px-5 py-4 pr-16 text-left sm:px-6">
                     <span className={cn(
-                        "text-xs uppercase font-black tracking-wider block",
+                        "block text-[10px] font-black uppercase tracking-wider",
                         selectedTask?.status === "requested" ? "text-accent" : "text-[var(--text-muted)]"
                     )}>
                         {selectedTask?.status === "requested"
                             ? "Solicitud externa"
                             : (dict.tasks?.dialog?.details_title_simple || "Task Details")}
                     </span>
-                    <DialogTitle className="text-xl font-black leading-tight text-[var(--text-main)] mt-1">
+                    <DialogTitle className="text-lg font-black leading-snug text-[var(--text-main)] sm:text-xl">
                         {displayTitle}
                     </DialogTitle>
                     <DialogDescription className="sr-only">
@@ -196,7 +196,6 @@ export function TaskEditModal({
                             saving={saving}
                             locations={locations}
                             maxPlanningDate={maxPlanningDate}
-                            onClose={() => setSelectedTask(null)}
                             selectedTask={selectedTask}
                             setEditCreatedAt={setEditCreatedAt}
                             setEditDescription={setEditDescription}

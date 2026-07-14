@@ -7,7 +7,13 @@ import { TaskItem } from "@/services/task.service";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { partitionTasksForGeneralList } from "./tasksListUtils";
+import {
+    filterTasksForGeneralList,
+    paginateTaskListPage,
+    partitionTasksForGeneralList,
+    TASK_LIST_PAGE_SIZE,
+    type TaskListDateScope,
+} from "./tasksListUtils";
 import { TasksListFilters } from "./TasksListFilters";
 import { TaskListCard } from "./TaskListCard";
 import { TasksListPagination } from "./TasksListPagination";
@@ -32,8 +38,6 @@ interface TasksListProps {
     getAssigneeName: (userId: number | null) => string;
 }
 
-const ITEMS_PER_PAGE = 20;
-
 export function TasksList({
     dict,
     tasks,
@@ -54,8 +58,9 @@ export function TasksList({
     getAssigneeName,
 }: TasksListProps) {
     const [searchQuery, setSearchQuery] = React.useState("");
-    const [dateScope, setDateScope] = React.useState("ALL");
-    const pageContextKey = `${selectedLocationId}|${selectedUserId}|${selectedStatus}|${searchQuery}|${dateScope}`;
+    const [dateScope, setDateScope] = React.useState<TaskListDateScope>("ALL");
+    const [selectedPriority, setSelectedPriority] = React.useState("");
+    const pageContextKey = `${selectedLocationId}|${selectedUserId}|${selectedStatus}|${selectedPriority}|${searchQuery}|${dateScope}`;
     const [pageState, setPageState] = React.useState({ contextKey: pageContextKey, page: 1 });
     const currentPage = pageState.contextKey === pageContextKey ? pageState.page : 1;
     const setCurrentPage = React.useCallback((nextPage: React.SetStateAction<number>) => {
@@ -68,30 +73,22 @@ export function TasksList({
         });
     }, [pageContextKey]);
 
-    const visibleTasks = React.useMemo(() => {
-        const query = searchQuery.trim().toLocaleLowerCase("es");
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        return tasks.filter((task) => {
-            const planningDate = new Date(task.due_at || task.scheduled_start_at || task.created_at);
-            const matchesDate =
-                dateScope === "ALL"
-                || (dateScope === "UPCOMING" && planningDate >= today)
-                || (dateScope === "PAST" && planningDate < today);
-            if (!matchesDate) return false;
-            if (!query) return true;
-
-            return [
-                task.title,
-                cleanChecklistDescription(task.description || ""),
-                getLocationName(task.location_id),
-                getAssigneeName(task.user_id),
-            ]
-                .filter(Boolean)
-                .some((value) => value.toLocaleLowerCase("es").includes(query));
-        });
-    }, [dateScope, getAssigneeName, getLocationName, searchQuery, tasks]);
+    const visibleTasks = React.useMemo(
+        () => filterTasksForGeneralList(
+            tasks.map(task => ({
+                ...task,
+                description: cleanChecklistDescription(task.description || ""),
+            })),
+            {
+                query: searchQuery,
+                dateScope,
+                priority: selectedPriority,
+                getLocationName,
+                getAssigneeName,
+            },
+        ),
+        [dateScope, getAssigneeName, getLocationName, searchQuery, selectedPriority, tasks],
+    );
 
     const { active, completed } = React.useMemo(
         () => partitionTasksForGeneralList(visibleTasks),
@@ -101,13 +98,12 @@ export function TasksList({
     const showOnlyCompleted = selectedStatus === "completed";
     const showCompletedSection = !showOnlyCompleted && selectedStatus === "" && completed.length > 0;
     const primaryTasks = showOnlyCompleted ? completed : active;
-    const totalItems = visibleTasks.length;
-    const totalPages = Math.ceil(primaryTasks.length / ITEMS_PER_PAGE);
-    const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
-    const paginatedPrimary = primaryTasks.slice(
-        (safeCurrentPage - 1) * ITEMS_PER_PAGE,
-        safeCurrentPage * ITEMS_PER_PAGE,
+    const { pageItems: paginatedPrimary, totalPages, safePage: safeCurrentPage } = paginateTaskListPage(
+        primaryTasks,
+        currentPage,
+        TASK_LIST_PAGE_SIZE,
     );
+    const totalItems = visibleTasks.length;
 
     const getPageNumbers = () => {
         const pages: (number | string)[] = [];
@@ -160,8 +156,10 @@ export function TasksList({
                 users={users}
                 selectedStatus={selectedStatus}
                 onSelectedStatusChange={setSelectedStatus}
+                selectedPriority={selectedPriority}
+                onSelectedPriorityChange={setSelectedPriority}
                 dateScope={dateScope}
-                onDateScopeChange={setDateScope}
+                onDateScopeChange={(value) => setDateScope(value as TaskListDateScope)}
             />
 
             {loadingTasks ? (
@@ -205,11 +203,11 @@ export function TasksList({
                                 {dict.tasks?.section_completed || "Completadas"}
                                 <span className="ml-2 tabular-nums">{completed.length}</span>
                             </h2>
-                            {renderCards(completed.slice(0, ITEMS_PER_PAGE), true)}
-                            {completed.length > ITEMS_PER_PAGE && (
+                            {renderCards(completed.slice(0, TASK_LIST_PAGE_SIZE), true)}
+                            {completed.length > TASK_LIST_PAGE_SIZE && (
                                 <p className="text-[11px] font-medium text-[var(--text-muted)]">
                                     {(dict.tasks?.completed_preview || "Mostrando {count} de {total}. Filtra por Completadas para ver el resto.")
-                                        .replace("{count}", String(ITEMS_PER_PAGE))
+                                        .replace("{count}", String(TASK_LIST_PAGE_SIZE))
                                         .replace("{total}", String(completed.length))}
                                 </p>
                             )}
@@ -218,7 +216,7 @@ export function TasksList({
 
                     <TasksListPagination
                         dict={dict}
-                        itemsPerPage={ITEMS_PER_PAGE}
+                        itemsPerPage={TASK_LIST_PAGE_SIZE}
                         safeCurrentPage={safeCurrentPage}
                         currentPage={currentPage}
                         totalItems={primaryTasks.length}

@@ -13,8 +13,10 @@ test("general task list uses compact rows without decorative top borders", () =>
     assert.doesNotMatch(card, /min-h-\[180px\]/);
     assert.match(card, /rounded-xl/);
     assert.match(card, /px-3 py-2\.5|py-2\.5/);
-    assert.match(list, /partitionTasksForGeneralList/);
+    assert.match(list, /filterTasksForGeneralList/);
+    assert.match(list, /paginateTaskListPage|TASK_LIST_PAGE_SIZE/);
     assert.match(list, /section_active|section_completed|Completadas/);
     assert.doesNotMatch(list, /lg:grid-cols-3/);
     assert.match(filters, /p-2\.5|p-3/);
+    assert.match(filters, /selectedPriority|filter_all_priorities/);
 });

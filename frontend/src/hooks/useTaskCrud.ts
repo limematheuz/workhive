@@ -35,6 +35,7 @@ import {
     getTaskAssigneeId,
     getTaskCreationSchedule,
 } from "@/domain/tasks/task-create";
+import { canDuplicateTask } from "@/domain/tasks/task-permissions";
 
 interface UseTaskCrudParams {
     dict: Dictionary;
@@ -443,6 +444,10 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
     };
 
     const handleDuplicateTask = async (task: TaskItem) => {
+        if (!canDuplicateTask(currentUser, task)) {
+            toast.error(dict.tasks?.duplicate_invoiced_blocked || "No se puede duplicar una tarea facturada.");
+            return;
+        }
         try {
             setIsSaving(true);
             await TaskService.createTaskItem({

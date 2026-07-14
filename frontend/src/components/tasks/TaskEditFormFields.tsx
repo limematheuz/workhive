@@ -103,10 +103,12 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         );
     };
 
+    const labelClass = "text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]";
+
     return (
         <>
             <div className="space-y-1">
-                <span className="text-2xs font-bold uppercase text-[var(--text-muted)]">
+                <span className={labelClass}>
                     {dict.tasks?.dialog?.title_label || "Title"}
                 </span>
                 <div className="min-h-10 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm font-semibold text-[var(--text-main)]">

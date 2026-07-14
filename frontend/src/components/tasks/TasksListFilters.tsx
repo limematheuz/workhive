@@ -19,6 +19,8 @@ interface TasksListFiltersProps {
     users: User[];
     selectedStatus: string;
     onSelectedStatusChange: (value: string) => void;
+    selectedPriority: string;
+    onSelectedPriorityChange: (value: string) => void;
     dateScope: string;
     onDateScopeChange: (value: string) => void;
 }
@@ -40,6 +42,8 @@ export function TasksListFilters({
     users,
     selectedStatus,
     onSelectedStatusChange,
+    selectedPriority,
+    onSelectedPriorityChange,
     dateScope,
     onDateScopeChange,
 }: TasksListFiltersProps) {
@@ -57,8 +61,8 @@ export function TasksListFilters({
                 </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
-                <div className="relative">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                <div className="relative sm:col-span-2 xl:col-span-1 2xl:col-span-1">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                     <input
                         type="search"
@@ -109,6 +113,18 @@ export function TasksListFilters({
                     <option value="progress">{dict.tasks?.filter_in_progress || "In progress"}</option>
                     <option value="review">{dict.tasks?.filter_in_review || "In review"}</option>
                     <option value="completed">{dict.profile?.tables?.status_completed || "Completed"}</option>
+                </select>
+
+                <select
+                    value={selectedPriority}
+                    onChange={(e) => onSelectedPriorityChange(e.target.value)}
+                    aria-label="Filtrar por prioridad"
+                    className={controlClass}
+                >
+                    <option value="">{dict.tasks?.filter_all_priorities || "Todas las prioridades"}</option>
+                    <option value="high">{dict.tasks?.priority_high || "High"}</option>
+                    <option value="medium">{dict.tasks?.priority_medium || "Medium"}</option>
+                    <option value="low">{dict.tasks?.priority_low || "Low"}</option>
                 </select>
 
                 <select

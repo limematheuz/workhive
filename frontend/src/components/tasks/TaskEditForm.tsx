@@ -35,7 +35,6 @@ interface TaskEditFormProps {
     saving: boolean;
     locations: Location[];
     maxPlanningDate?: string;
-    onClose: () => void;
     selectedTask: TaskItem;
     setEditCreatedAt: (value: string) => void;
     setEditDescription: (value: string) => void;
@@ -53,6 +52,7 @@ interface TaskEditFormProps {
 
 export function TaskEditForm({
     calendarAssigneeName,
+    currentUser,
     dict,
     displayTitle,
     editCreatedAt,
@@ -75,7 +75,6 @@ export function TaskEditForm({
     saving,
     locations,
     maxPlanningDate,
-    onClose,
     selectedTask,
     setEditCreatedAt,
     setEditDescription,
@@ -94,7 +93,7 @@ export function TaskEditForm({
     return (
         <form
             onSubmit={managerEditable ? handleSaveTaskDetails : event => event.preventDefault()}
-            className="flex-1 space-y-4 overflow-y-auto p-6 font-sans"
+            className="flex-1 space-y-3 overflow-y-auto p-5 font-sans [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:p-6"
         >
             <TaskEditFormAlerts
                 dict={dict}
@@ -138,6 +137,7 @@ export function TaskEditForm({
 
             <TaskEditFormActions
                 dict={dict}
+                currentUser={currentUser}
                 selectedTask={selectedTask}
                 immutable={immutable}
                 managerEditable={managerEditable}
@@ -145,7 +145,6 @@ export function TaskEditForm({
                 receiverCompany={receiverCompany}
                 deletingTask={deletingTask}
                 saving={saving}
-                onClose={onClose}
                 handleDeleteTask={handleDeleteTask}
                 handleDuplicateTask={handleDuplicateTask}
             />
