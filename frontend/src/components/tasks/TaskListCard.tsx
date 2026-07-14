@@ -24,6 +24,10 @@ interface TaskListCardProps {
 const chipBase =
     "shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide";
 
+/** High-contrast solid chip: near-black on light, near-white on dark. */
+const solidContrastChip =
+    "shrink-0 inline-flex items-center gap-1 rounded-full border-transparent bg-[var(--text-main)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-[var(--bg-card-solid)]";
+
 function TaskStatusCheckbox({
     isCompleted,
     isProgress,
@@ -171,7 +175,7 @@ export function TaskListCard({
                                 {statusLabel}
                             </span>
                             {isExternal && (
-                                <span className={`${chipBase} inline-flex items-center gap-1 border-accent/20 bg-accent/10 text-accent`}>
+                                <span className={solidContrastChip}>
                                     <Building2 className="h-2.5 w-2.5" />
                                     Externo
                                 </span>

@@ -15,8 +15,8 @@ test("general task list uses compact rows without decorative top borders", () =>
     assert.match(card, /min-h-\[72px\]/);
     assert.match(card, /h-full/);
     assert.match(card, /rounded-full/);
-    assert.match(card, /isExternal/);
-    assert.match(card, /color-green-500|color-green-600/);
+    assert.match(card, /solidContrastChip|bg-\[var\(--text-main\)\].*text-\[var\(--bg-card-solid\)\]|bg-\[var\(--text-main\)\]/);
+    assert.match(card, /text-\[var\(--bg-card-solid\)\]/);
     assert.doesNotMatch(card, /indigo-700|border-indigo|text-indigo-700|border-black|text-black/);
     assert.match(card, /TaskStatusCheckbox|aria-pressed/);
     assert.match(card, /overflow-hidden/);
