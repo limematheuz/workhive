@@ -2,25 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-    appendReportedIssue,
+    countUnreadTaskReportNotifications,
     countUnreadTaskNotifications,
     getPersistentNotificationHref,
     getPersistentTaskNotificationIds,
 } from "./task-reporting.ts";
 
-
-test("reported task issue is appended to backend payload without local storage metadata", () => {
-    const issue = {
-        id: "issue-1",
-        type: "mantenimiento" as const,
-        element: "lavabo",
-        title: "Fuga",
-        description: "Pierde agua",
-        createdAt: "2026-07-13T00:00:00.000Z",
-    };
-
-    assert.deepEqual(appendReportedIssue([], issue), { reported_issues: [issue] });
-});
 
 test("persistent task notification opens linked task tab", () => {
     assert.equal(getPersistentNotificationHref({ href: "/dashboard?taskId=42" }), "/dashboard?taskId=42");
@@ -32,8 +19,18 @@ test("persistent task notification opens linked task tab", () => {
 test("sidebar task badge counts only unread task notifications", () => {
     assert.equal(countUnreadTaskNotifications([
         { entity_type: "task_item", read_at: null },
+        { entity_type: "task_report", read_at: null },
         { entity_type: "task_item", read_at: "2026-07-13T01:00:00Z" },
         { entity_type: "reservation", read_at: null },
+        { entity_type: null, read_at: null },
+    ]), 1);
+});
+
+test("report badge counts only unread task report notifications", () => {
+    assert.equal(countUnreadTaskReportNotifications([
+        { entity_type: "task_report", read_at: null },
+        { entity_type: "task_report", read_at: "2026-07-14T10:00:00Z" },
+        { entity_type: "task_item", read_at: null },
         { entity_type: null, read_at: null },
     ]), 1);
 });
@@ -54,6 +51,7 @@ test("persistent assignment notifications de-duplicate legacy task alerts", () =
         [...getPersistentTaskNotificationIds([
             { entity_type: "task_item", entity_id: 42 },
             { entity_type: "task_item", entity_id: 42 },
+            { entity_type: "task_report", entity_id: 42 },
             { entity_type: "reservation", entity_id: 42 },
             { entity_type: "task_item", entity_id: null },
         ])],

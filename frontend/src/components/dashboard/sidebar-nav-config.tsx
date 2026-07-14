@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { FileText, LineChart } from "lucide-react";
+import { FileText, LineChart, ShieldAlert } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = {
@@ -24,6 +24,7 @@ export const ORDERED_PLAIN_HREFS = [
     "/dashboard",
     "/dashboard/calendar",
     "/dashboard/tasks",
+    "/dashboard/task-reports",
     "/dashboard/live-work",
     "/dashboard/reservations",
     "/dashboard/locations",
@@ -103,6 +104,12 @@ function buildNavLinks(
             : []),
         ...(isAdminOrManager
             ? [
+                  {
+                      href: "/dashboard/task-reports",
+                      label: dict.task_reports.nav_label,
+                      exact: false,
+                      icon: <ShieldAlert className="h-5 w-5 flex-shrink-0" />,
+                  },
                   {
                       href: "/dashboard/users",
                       label: dict.users.title,

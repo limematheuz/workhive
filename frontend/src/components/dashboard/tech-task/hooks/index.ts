@@ -5,4 +5,3 @@ export { useTechTaskAttachmentsComments } from "./useTechTaskAttachmentsComments
 export { useTechTaskPropertyFeatures } from "./useTechTaskPropertyFeatures";
 
 export type { ChecklistItem } from "./useTechTaskChecklist";
-export type { ReportedIssue } from "./useTechTaskIssues";

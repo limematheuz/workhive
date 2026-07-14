@@ -238,37 +238,6 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
         setattr(task, field, value)
 
 
-def _notify_task_report(
-    db: Session,
-    task: TaskItem,
-    changed_fields: set[str],
-) -> None:
-    company_ids = {task.company_id}
-    emitter_user: User | None = None
-    if task.checkout_reservation:
-        company_ids.add(task.checkout_reservation.owner_company_id)
-        if task.checkout_reservation.created_by_user_id:
-            emitter_user = db.get(User, task.checkout_reservation.created_by_user_id)
-    recipients = db.query(User).filter(
-        User.company_id.in_(company_ids),
-        User.is_active.is_(True),
-        User.role.has(name="admin"),
-    ).all()
-    if emitter_user:
-        recipients.append(emitter_user)
-    notification_service.notify_users(
-        db,
-        users=recipients,
-        event_type="task.reported",
-        title="Nuevo reporte en una tarea",
-        message=task.title,
-        entity_type="task_item",
-        entity_id=task.id,
-        href=f"/dashboard?taskId={task.id}",
-        metadata={"changed_fields": sorted(changed_fields)},
-    )
-
-
 def _notify_new_task_assignees(
     db: Session,
     task: TaskItem,
@@ -321,7 +290,12 @@ def create_task_item(
     )
     # Internal work is approved by the admin/manager creating it. External
     # company requests are created by the reservation flow and remain requested.
-    task_item_data = task_item_data.model_copy(update={"status": "accepted"})
+    task_item_data = task_item_data.model_copy(update={
+        "status": "accepted",
+        "operational_notes": [],
+        "attachments": [],
+        "reported_issues": [],
+    })
     task = task_item_repo.create_task_item(
         db,
         current_user.company_id,
@@ -352,17 +326,16 @@ def update_task_item(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
         )
     previous_assignee_ids = task_assignment_service.assigned_user_ids(db_task_item)
-    report_fields = {
+    immutable_report_fields = {
         "operational_notes",
         "attachments",
-        "checklist_evidence",
         "reported_issues",
     }
-    changed_report_fields = {
-        field
-        for field in task_data.model_fields_set & report_fields
-        if getattr(task_data, field) != getattr(db_task_item, field)
-    }
+    if task_data.model_fields_set & immutable_report_fields:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Task report history can only be appended through task reports",
+        )
     is_external_reservation_task = bool(
         db_task_item.checkout_reservation
         and db_task_item.checkout_reservation.owner_company_id
@@ -372,10 +345,7 @@ def update_task_item(
     if is_external_reservation_task and current_user.role.name != "viewer":
         allowed_external_fields = {
             "description",
-            "operational_notes",
-            "attachments",
             "checklist_evidence",
-            "reported_issues",
             "price",
             "quantity",
             "unit",
@@ -392,10 +362,7 @@ def update_task_item(
     if current_user.role.name == "viewer":
         allowed_fields = {
             "description",
-            "operational_notes",
-            "attachments",
             "checklist_evidence",
-            "reported_issues",
         }
         if not task_data.model_fields_set.issubset(allowed_fields):
             raise HTTPException(
@@ -473,8 +440,6 @@ def update_task_item(
         task_assignment_service.assigned_user_ids(updated_task)
         - previous_assignee_ids,
     )
-    if changed_report_fields:
-        _notify_task_report(db, updated_task, changed_report_fields)
     calendar_sync_service.enqueue_task_sync(db, updated_task)
     if _complete_task_when_checklist_is_done(db, updated_task):
         db.add(updated_task)

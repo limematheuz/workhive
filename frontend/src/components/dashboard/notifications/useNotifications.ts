@@ -142,15 +142,19 @@ export function useNotifications({
         const syncDismissedNotifications = () => {
             setDismissedNotificationKeys(getDismissedNotificationKeys(userId));
         };
+        const refreshNotifications = () => {
+            syncDismissedNotifications();
+            void loadNotifications();
+        };
 
         syncDismissedNotifications();
         window.addEventListener("storage", syncDismissedNotifications);
-        window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, syncDismissedNotifications);
+        window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refreshNotifications);
         return () => {
             window.removeEventListener("storage", syncDismissedNotifications);
-            window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, syncDismissedNotifications);
+            window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refreshNotifications);
         };
-    }, [userId]);
+    }, [loadNotifications, userId]);
 
     const dismissedNotificationKeySet = useMemo(
         () => new Set(dismissedNotificationKeys),
