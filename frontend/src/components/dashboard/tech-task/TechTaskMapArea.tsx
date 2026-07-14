@@ -6,6 +6,7 @@ import { ArrowLeft, Camera, Compass } from "lucide-react";
 import { Location } from "@/types/location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { resolveApiMediaUrl } from "@/lib/api";
+import { buildGoogleMapsEmbedUrl } from "@/lib/google-maps-embed";
 
 interface TechTaskMapAreaProps {
     location: Location | null;
@@ -31,7 +32,7 @@ export function TechTaskMapArea({
         }
         return `${location.address || ""}, ${location.city || ""}`.trim() || location.name;
     }, [location, locationName]);
-    const mapEmbedUrl = `https://maps.google.com/maps?f=q&source=s_q&hl=es&q=${encodeURIComponent(addressQuery)}&z=15&output=embed`;
+    const mapEmbedUrl = buildGoogleMapsEmbedUrl(addressQuery);
 
     return (
         <div className="h-64 w-full relative border-b border-[var(--border-soft)] bg-zinc-100 dark:bg-zinc-950">
@@ -42,7 +43,6 @@ export function TechTaskMapArea({
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
-                    sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
                     title={locationName}
                 />
             ) : location?.photo_url ? (
