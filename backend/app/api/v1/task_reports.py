@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AsyncActiveManagerOrAdmin, AsyncActiveUser, get_async_db
 from app.models.user import User
-from app.schemas.task_report import TaskReportCreate, TaskReportResponse
+from app.schemas.task_report import (
+    TaskReportBulkDelete,
+    TaskReportCreate,
+    TaskReportResponse,
+    TaskReportUpdate,
+)
 from app.services import task_report_service
 
 
@@ -47,6 +52,16 @@ async def mark_task_report_notifications_read(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
+@router.post("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+async def bulk_delete_task_reports(
+    payload: TaskReportBulkDelete,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
+):
+    await task_report_service.bulk_delete_reports(db, current_user, payload)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/{report_id}", response_model=TaskReportResponse)
 async def read_task_report(
     report_id: int,
@@ -54,6 +69,26 @@ async def read_task_report(
     current_user: User = AsyncActiveManagerOrAdmin,
 ):
     return await task_report_service.get_report_response(db, current_user, report_id)
+
+
+@router.patch("/{report_id}", response_model=TaskReportResponse)
+async def update_task_report(
+    report_id: int,
+    payload: TaskReportUpdate,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
+):
+    return await task_report_service.update_report(db, current_user, report_id, payload)
+
+
+@router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_task_report(
+    report_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveManagerOrAdmin,
+):
+    await task_report_service.delete_report(db, current_user, report_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{report_id}/media")

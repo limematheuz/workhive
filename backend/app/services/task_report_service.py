@@ -1,7 +1,8 @@
 import asyncio
+import logging
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +12,12 @@ from app.models.task_report import TaskReport
 from app.models.user import User
 from app.repositories import async_task_item as async_task_item_repo
 from app.repositories import async_task_report as task_report_repo
-from app.schemas.task_report import TaskReportCreate, TaskReportResponse
+from app.schemas.task_report import (
+    TaskReportBulkDelete,
+    TaskReportCreate,
+    TaskReportResponse,
+    TaskReportUpdate,
+)
 from app.services import notification_service, task_assignment_service
 from app.services.storage_service import (
     ObjectNotFoundError,
@@ -21,8 +27,15 @@ from app.services.storage_service import (
 from app.services.user_scope import require_company_context, role_name
 
 
+logger = logging.getLogger(__name__)
+
 REPORT_EVENT_TYPE = "task.reported"
 REPORT_HREF = "/dashboard/task-reports?reportId={report_id}"
+EDITABLE_FIELDS_BY_TYPE = {
+    "issue": {"title", "description", "issue_type", "element"},
+    "note": {"description"},
+    "checklist_note": {"description"},
+}
 
 
 def _response(report: TaskReport) -> TaskReportResponse:
@@ -101,6 +114,102 @@ def _apply_checklist_evidence(task, payload: TaskReportCreate, checklist_item) -
         item_evidence["photoName"] = payload.file_name
     evidence[key] = item_evidence
     task.checklist_evidence = evidence
+
+
+def _sync_checklist_note_evidence(report: TaskReport) -> None:
+    if report.report_type != "checklist_note" or report.checklist_item_id is None:
+        return
+    task = report.task_item
+    evidence = dict(task.checklist_evidence or {})
+    key = f"item_{report.checklist_item_id}"
+    item_evidence = dict(evidence.get(key) or {})
+    item_evidence["note"] = report.description
+    evidence[key] = item_evidence
+    task.checklist_evidence = evidence
+
+
+def _clear_checklist_evidence(report: TaskReport) -> None:
+    if report.checklist_item_id is None:
+        return
+    task = report.task_item
+    evidence = dict(task.checklist_evidence or {})
+    key = f"item_{report.checklist_item_id}"
+    item_evidence = dict(evidence.get(key) or {})
+    if report.report_type == "checklist_note":
+        item_evidence.pop("note", None)
+    elif report.report_type == "checklist_photo":
+        item_evidence.pop("photoUrl", None)
+        item_evidence.pop("photoName", None)
+    else:
+        return
+    if item_evidence:
+        evidence[key] = item_evidence
+    else:
+        evidence.pop(key, None)
+    task.checklist_evidence = evidence
+
+
+def _apply_update(report: TaskReport, payload: TaskReportUpdate) -> None:
+    allowed = EDITABLE_FIELDS_BY_TYPE.get(report.report_type)
+    if allowed is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Photo reports cannot be edited",
+        )
+    requested = set(payload.model_fields_set)
+    unsupported = requested - allowed
+    if unsupported:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unsupported fields for {report.report_type}: {', '.join(sorted(unsupported))}",
+        )
+
+    values = payload.model_dump(exclude_unset=True)
+    if report.report_type == "issue":
+        if "title" in values:
+            title = values["title"]
+            if not title:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                    detail="Issue reports require a title",
+                )
+            report.title = title
+        if "description" in values:
+            report.description = values["description"] or None
+        if "issue_type" in values:
+            report.issue_type = values["issue_type"] or None
+        if "element" in values:
+            report.element = values["element"] or None
+        return
+
+    description = values.get("description")
+    if not description:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Note reports require a description",
+        )
+    report.description = description
+    _sync_checklist_note_evidence(report)
+
+
+async def _delete_report_notifications(db: AsyncSession, report_ids: list[int]) -> None:
+    if not report_ids:
+        return
+    await db.execute(
+        delete(Notification).where(
+            Notification.entity_type == "task_report",
+            Notification.entity_id.in_(report_ids),
+        )
+    )
+
+
+def _delete_media_keys(media_keys: list[str]) -> None:
+    storage = get_object_storage()
+    for key in media_keys:
+        try:
+            storage.delete(key)
+        except Exception:  # pragma: no cover - best-effort cleanup
+            logger.exception("Failed to delete task report media %s", key)
 
 
 async def _notification_recipients(db: AsyncSession, task) -> list[User]:
@@ -285,3 +394,65 @@ async def mark_report_notifications_read(
         current_user,
         event_type=REPORT_EVENT_TYPE,
     )
+
+
+async def update_report(
+    db: AsyncSession,
+    current_user: User,
+    report_id: int,
+    payload: TaskReportUpdate,
+) -> TaskReportResponse:
+    report = await get_report(db, current_user, report_id)
+    _apply_update(report, payload)
+    await db.commit()
+    loaded = await task_report_repo.get_for_company(
+        db,
+        require_company_context(current_user),
+        report_id,
+    )
+    if loaded is None:  # pragma: no cover - transaction invariant
+        raise RuntimeError("Updated task report could not be reloaded")
+    return _response(loaded)
+
+
+async def delete_report(
+    db: AsyncSession,
+    current_user: User,
+    report_id: int,
+) -> None:
+    report = await get_report(db, current_user, report_id)
+    media_key = report.media_key
+    _clear_checklist_evidence(report)
+    await _delete_report_notifications(db, [report_id])
+    await db.run_sync(lambda sync_db: sync_db.delete(report))
+    await db.commit()
+    if media_key:
+        await asyncio.to_thread(_delete_media_keys, [media_key])
+
+
+async def bulk_delete_reports(
+    db: AsyncSession,
+    current_user: User,
+    payload: TaskReportBulkDelete,
+) -> None:
+    company_id = require_company_context(current_user)
+    reports = await task_report_repo.list_by_ids_for_company(
+        db,
+        company_id,
+        payload.ids,
+    )
+    if len(reports) != len(payload.ids):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="One or more task reports were not found",
+        )
+
+    media_keys = [report.media_key for report in reports if report.media_key]
+    report_ids = [report.id for report in reports]
+    for report in reports:
+        _clear_checklist_evidence(report)
+        await db.run_sync(lambda sync_db, item=report: sync_db.delete(item))
+    await _delete_report_notifications(db, report_ids)
+    await db.commit()
+    if media_keys:
+        await asyncio.to_thread(_delete_media_keys, media_keys)

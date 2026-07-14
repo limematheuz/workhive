@@ -32,10 +32,15 @@ test("report center reuses the application visual system and keeps details in a 
     const page = read("../app/dashboard/task-reports/page.tsx");
     const reportCard = read("../features/task-reports/TaskReportCard.tsx");
     const reportDialog = read("../features/task-reports/TaskReportDetailDialog.tsx");
+    const premiumTabs = read("../components/ui/premium-tabs.tsx");
 
     assert.match(page, /PremiumTabs/);
+    assert.match(page, /layout="fit"/);
+    assert.match(page, /paginateItems|TASK_REPORT_PAGE_SIZE/);
     assert.match(page, /components\/ui\/input/);
     assert.match(page, /scrollbar-width:none/);
+    assert.match(premiumTabs, /layout\?:\s*"scroll"\s*\|\s*"fit"/);
+    assert.match(premiumTabs, /overflow-hidden/);
     assert.match(reportCard, /components\/ui\/badge/);
     assert.match(reportDialog, /components\/ui\/dialog/);
     assert.match(reportDialog, /h-36/);

@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 
 
 export type TaskReportType = "issue" | "note" | "photo" | "checklist_note" | "checklist_photo";
@@ -25,6 +25,13 @@ export interface TaskReport {
     media_url: string | null;
     created_at: string;
 }
+
+export type TaskReportUpdate = {
+    title?: string | null;
+    description?: string | null;
+    issue_type?: string | null;
+    element?: string | null;
+};
 
 type CreateTaskReport = {
     task_item_id: number;
@@ -71,6 +78,32 @@ export const TaskReportService = {
             body: JSON.stringify({ ...payload, client_event_id: crypto.randomUUID() }),
         });
         return parseReportResponse(response);
+    },
+
+    update: async (reportId: number, payload: TaskReportUpdate): Promise<TaskReport> => {
+        const response = await apiFetch(`/api/v1/task-reports/${reportId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+        await assertApiResponseOk(response, "No se pudo actualizar el reporte");
+        return await response.json();
+    },
+
+    delete: async (reportId: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/task-reports/${reportId}`, {
+            method: "DELETE",
+        });
+        await assertApiResponseOk(response, "No se pudo eliminar el reporte");
+    },
+
+    bulkDelete: async (ids: number[]): Promise<void> => {
+        const response = await apiFetch("/api/v1/task-reports/bulk-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids }),
+        });
+        await assertApiResponseOk(response, "No se pudieron eliminar los reportes");
     },
 
     createChecklistNote: async (

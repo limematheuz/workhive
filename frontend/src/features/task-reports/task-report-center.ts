@@ -60,3 +60,24 @@ export function getTaskReportMediaHref(mediaUrl: string | null): string | null {
     if (!mediaUrl || !/^\/api\/v1\/task-reports\/\d+\/media$/.test(mediaUrl)) return null;
     return mediaUrl;
 }
+
+export const TASK_REPORT_PAGE_SIZE = 12;
+
+export function totalPagesForCount(count: number, pageSize = TASK_REPORT_PAGE_SIZE): number {
+    return Math.max(1, Math.ceil(Math.max(count, 0) / pageSize));
+}
+
+export function clampPage(page: number, totalPages: number): number {
+    return Math.min(Math.max(page, 1), Math.max(totalPages, 1));
+}
+
+export function paginateItems<T>(
+    items: readonly T[],
+    page: number,
+    pageSize = TASK_REPORT_PAGE_SIZE,
+): T[] {
+    const totalPages = totalPagesForCount(items.length, pageSize);
+    const safePage = clampPage(page, totalPages);
+    const start = (safePage - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+}

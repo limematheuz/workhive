@@ -72,3 +72,25 @@ async def get_for_company(
         )
     )
     return await db.scalar(statement)
+
+
+async def list_by_ids_for_company(
+    db: AsyncSession,
+    company_id: int,
+    report_ids: list[int],
+) -> list[TaskReport]:
+    if not report_ids:
+        return []
+    statement = (
+        select(TaskReport)
+        .options(*_load_options())
+        .where(
+            TaskReport.id.in_(report_ids),
+            or_(
+                TaskReport.reporter_company_id == company_id,
+                TaskReport.requesting_company_id == company_id,
+            ),
+        )
+    )
+    result = await db.scalars(statement)
+    return list(result.all())
