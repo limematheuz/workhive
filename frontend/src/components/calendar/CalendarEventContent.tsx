@@ -7,6 +7,7 @@ export interface CalendarEventProps {
     userName: string;
     status: TaskStatus;
     isExternal: boolean;
+    isPast?: boolean;
 }
 
 export function CalendarEventContent({
@@ -22,18 +23,18 @@ export function CalendarEventContent({
             : TriangleAlert;
 
     return (
-        <div className={`min-w-0 space-y-0.5 px-2.5 py-2 text-[10px] leading-tight sm:px-3 sm:text-[11px] ${props.isExternal ? "border-l-2 border-white/80 pl-1.5" : ""}`}>
+        <div className="workhive-calendar-event-body min-w-0 space-y-0.5 px-2.5 py-2 text-[10px] leading-tight sm:px-3 sm:text-[11px]">
             <div className="flex min-w-0 items-center gap-1 truncate font-black">
-                <StatusIcon className="h-3 w-3 shrink-0" />
+                <StatusIcon className="h-3 w-3 shrink-0 opacity-90" />
                 <span className="truncate">{eventInfo.event.title}</span>
             </div>
-            <div className="truncate font-semibold opacity-90">
+            <div className="truncate font-semibold opacity-80">
                 {eventInfo.timeText}
             </div>
-            <div className="hidden truncate opacity-80 sm:block">
+            <div className="hidden truncate opacity-75 sm:block">
                 {props.locationName}
             </div>
-            <div className="hidden truncate opacity-80 md:block">
+            <div className="hidden truncate opacity-70 md:block">
                 {props.userName}
             </div>
         </div>

@@ -6,7 +6,9 @@ import { isExternalTaskForCompany, taskLocationTitle } from "@/lib/task-display"
 import { normalizeTaskStatus } from "@/domain/tasks/task-status";
 import type { TaskItem } from "@/types/user";
 import type { CalendarEventProps } from "./CalendarEventContent";
-import { getCalendarStatusColor } from "./calendar-constants";
+import {
+    isCalendarEventPast,
+} from "@/lib/calendar-event-styling";
 
 export function resolveTaskWorkerNames(
     task: TaskItem,
@@ -33,31 +35,34 @@ export function buildCalendarEvents(
     companyId: number | null | undefined,
     locationName: (id: number) => string,
     taskWorkerNames: (task: TaskItem) => string,
+    now: Date = new Date(),
 ): EventInput[] {
     return tasks.flatMap((task) => {
         const range = getTaskCalendarRange(task);
         if (!range) return [];
         const normalizedStatus = normalizeTaskStatus(task.status);
-        const color = getCalendarStatusColor(task.status);
         const isExternal = isExternalTaskForCompany(task, companyId);
+        const isPast = isCalendarEventPast(range.end, now);
         return [{
             id: String(task.id),
             title: taskLocationTitle(task, locationName(task.location_id)),
             start: range.start.toISOString(),
             end: range.end.toISOString(),
-            backgroundColor: color,
-            borderColor: color,
-            textColor: "#ffffff",
+            backgroundColor: "transparent",
+            borderColor: "transparent",
+            textColor: "inherit",
             classNames: [
                 "workhive-calendar-event",
                 `workhive-calendar-event-${normalizedStatus}`,
                 ...(isExternal ? ["workhive-calendar-event-external"] : []),
+                ...(isPast ? ["workhive-calendar-event-past"] : []),
             ],
             extendedProps: {
                 locationName: locationName(task.location_id),
                 userName: taskWorkerNames(task),
                 status: normalizedStatus,
                 isExternal,
+                isPast,
             } satisfies CalendarEventProps,
         }];
     });

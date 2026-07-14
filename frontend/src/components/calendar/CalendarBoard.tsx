@@ -68,6 +68,13 @@ export function CalendarBoard({
                 events={events}
                 datesSet={onDatesSet}
                 eventContent={(eventInfo) => <CalendarEventContent eventInfo={eventInfo} />}
+                eventClassNames={(arg) => {
+                    const end = arg.event.end ?? arg.event.start;
+                    if (end && end.getTime() < Date.now()) {
+                        return ["workhive-calendar-event-past"];
+                    }
+                    return [];
+                }}
                 eventClick={onEventClick}
                 eventDrop={onEventDrop}
                 eventResize={onEventResize}
