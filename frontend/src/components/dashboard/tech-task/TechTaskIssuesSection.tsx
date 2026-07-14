@@ -2,12 +2,10 @@
 
 import React from "react";
 import Image from "next/image";
-import { ShieldAlert, ChevronUp, ChevronDown, Plus, X, Camera, Trash2 } from "lucide-react";
+import { ShieldAlert, ChevronUp, ChevronDown, Plus, X, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ReportedIssue } from "./hooks/useTechTaskIssues";
 import { useDictionary } from "@/lib/dictionary-context";
-import { resolveApiMediaUrl } from "@/lib/api";
 
 interface IssueElement {
     value: string;
@@ -17,7 +15,6 @@ interface IssueElement {
 interface TechTaskIssuesSectionProps {
     expanded: boolean;
     onToggle: () => void;
-    reportedIssues: ReportedIssue[];
     showNewIssueForm: boolean;
     setShowNewIssueForm: (show: boolean) => void;
     newIssueType: "mantenimiento" | "limpieza" | "inspeccion";
@@ -32,14 +29,12 @@ interface TechTaskIssuesSectionProps {
     setNewIssuePhoto: (photo: string) => void;
     issueElements: IssueElement[];
     onAddIssue: (e: React.FormEvent) => void;
-    onDeleteIssue: (issueId: string) => void;
     onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }
 
 export function TechTaskIssuesSection({
     expanded,
     onToggle,
-    reportedIssues,
     showNewIssueForm,
     setShowNewIssueForm,
     newIssueType,
@@ -54,7 +49,6 @@ export function TechTaskIssuesSection({
     setNewIssuePhoto,
     issueElements,
     onAddIssue,
-    onDeleteIssue,
     onFileChange,
 }: TechTaskIssuesSectionProps) {
     const { dict } = useDictionary();
@@ -78,8 +72,8 @@ export function TechTaskIssuesSection({
                     {/* Action Header */}
                     {!showNewIssueForm ? (
                         <div className="flex justify-between items-center">
-                            <span className="text-[10px] font-extrabold uppercase text-[var(--text-muted)] tracking-wider">
-                                {dict.tech.issues_count.replace("{count}", String(reportedIssues.length))}
+                            <span className="max-w-[65%] text-[10px] font-semibold text-[var(--text-muted)]">
+                                {dict.task_reports.worker_hint}
                             </span>
                             <Button
                                 size="sm"
@@ -251,68 +245,6 @@ export function TechTaskIssuesSection({
                         </form>
                     )}
 
-                    {/* Issues List */}
-                    <div className="space-y-3">
-                        {reportedIssues.length === 0 ? (
-                            <div className="text-center py-6 text-[var(--text-muted)] text-xs font-semibold">
-                                {dict.tech.issues_empty}
-                            </div>
-                        ) : (
-                            reportedIssues.map((issue) => (
-                                <div key={issue.id} className="p-3.5 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] flex flex-col gap-2.5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div>
-                                            <div className="flex flex-wrap items-center gap-1.5">
-                                                <span className={cn(
-                                                    "text-[8px] font-black uppercase px-2 py-0.5 rounded-md border",
-                                                    issue.type === "mantenimiento"
-                                                        ? "bg-red-500/10 border-red-500/20 text-red-500"
-                                                        : issue.type === "limpieza"
-                                                        ? "bg-accent/10 border-accent/20 text-accent"
-                                                        : "bg-purple-500/10 border-purple-500/20 text-purple-500"
-                                                )}>
-                                                    {issue.type === "mantenimiento"
-                                                        ? (dict.tech?.issue_type_maintenance || "Maintenance")
-                                                        : issue.type === "limpieza"
-                                                        ? (dict.tech?.issue_type_cleaning || "Cleaning")
-                                                        : (dict.tech?.issue_type_inspection || "Inspection")
-                                                    }
-                                                </span>
-                                                <span className="text-[9px] bg-zinc-100 dark:bg-zinc-800 text-[var(--text-muted)] border border-[var(--border-soft)] px-2 py-0.5 rounded-md font-bold uppercase tracking-wide">
-                                                    {issueElements.find(el => el.value === issue.element)?.label || issue.element}
-                                                </span>
-                                            </div>
-                                            <h4 className="text-xs font-bold text-[var(--text-main)] mt-1.5">{issue.title}</h4>
-                                            {issue.description && (
-                                                <p className="text-2xs text-[var(--text-muted)] mt-1 leading-relaxed">{issue.description}</p>
-                                            )}
-                                        </div>
-                                        <button type="button"
-                                            onClick={() => onDeleteIssue(issue.id)}
-                                            className="text-red-500 hover:text-red-600 p-1 hover:bg-red-500/10 rounded-lg transition-colors bg-transparent border-none cursor-pointer flex items-center justify-center"
-                                            title={dict.tech.btn_delete}
-                                            aria-label={dict.tech.btn_delete}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-
-                                    {issue.photoUrl && (
-                                        <div className="relative rounded-lg border border-[var(--border-soft)] overflow-hidden h-24 max-w-[120px] bg-black/5 cursor-pointer">
-                                            <Image
-                                                src={resolveApiMediaUrl(issue.photoUrl) || ""}
-                                                alt=""
-                                                fill
-                                                sizes="120px"
-                                                className="object-cover"
-                                                unoptimized
-                                            />
-                                        </div>
-                                    )}
-                                </div>
-                            ))
-                        )}
-                    </div>
                 </div>
             )}
         </div>

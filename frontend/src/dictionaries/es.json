@@ -1785,6 +1785,28 @@
         "error": "Error al cancelar la reserva"
       }
     },
+    "task_reports": {
+      "nav_label": "Reportes de campo",
+      "eyebrow": "Operaciones",
+      "title": "Reportes de campo",
+      "subtitle": "Historial inmutable de incidencias, notas y fotos enviadas durante el trabajo.",
+      "search": "Buscar por tarea, ubicación, empresa o persona",
+      "all": "Todos",
+      "issue": "Incidencias",
+      "note": "Notas",
+      "photo": "Fotos",
+      "empty": "No hay reportes con estos filtros.",
+      "loading": "Cargando reportes...",
+      "error": "No se pudo cargar el historial de reportes.",
+      "reported_by": "Reportado por",
+      "task": "Tarea",
+      "collaboration": "Colaboración",
+      "view_photo": "Ver foto",
+      "close_photo": "Cerrar foto",
+      "worker_hint": "El historial se guarda en Reportes de campo y no puede editarse ni borrarse.",
+      "checklist_note": "Notas de requisito",
+      "checklist_photo": "Fotos de requisito"
+    },
     "notifications": {
       "title": "Notificaciones",
       "pending_alerts": "{count} avisos pendientes de atender",

@@ -48,6 +48,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("task_checklist_assignments")
         }
+        task_report_columns = {
+            column["name"] for column in inspector.get_columns("task_reports")
+        }
         with engine.connect() as connection:
             applied_revisions = {
                 row[0]
@@ -65,6 +68,16 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert {"task_id", "user_id", "status", "source"} <= assignment_columns
     assert {"task_id", "position", "text", "completed"} <= checklist_columns
     assert {"checklist_item_id", "user_id", "status"} <= checklist_assignment_columns
+    assert {
+        "task_item_id",
+        "reporter_user_id",
+        "reporter_company_id",
+        "requesting_company_id",
+        "client_event_id",
+        "report_type",
+        "media_key",
+        "created_at",
+    } <= task_report_columns
 
 
 @pytest.mark.skipif(
@@ -219,6 +232,16 @@ def test_task_structure_migration_backfills_valid_assignments_only():
                 ),
                 {"task_id": task_id},
             ).scalar_one()
+            migrated_report = connection.execute(
+                text(
+                    """
+                    SELECT report_type, description, checklist_item_id
+                    FROM task_reports
+                    WHERE task_item_id = :task_id
+                    """
+                ),
+                {"task_id": task_id},
+            ).mappings().one()
 
         assert checklist_count == 2
         assert task_users == [user_id]
@@ -226,6 +249,11 @@ def test_task_structure_migration_backfills_valid_assignments_only():
         assert migrated_evidence[f"item_{first_item_id}"] == {
             "answer": "no",
             "note": "legacy",
+        }
+        assert dict(migrated_report) == {
+            "report_type": "checklist_note",
+            "description": "legacy",
+            "checklist_item_id": first_item_id,
         }
     finally:
         command.upgrade(config, "head")

@@ -173,7 +173,7 @@ def test_external_task_reaches_emitter_and_every_active_receiver_role(client, db
     ).status_code == 404
 
 
-def test_worker_reports_are_persisted_and_notify_receiver_admins_and_emitter(client, db):
+def test_worker_cannot_rewrite_legacy_report_arrays(client, db):
     users = _external_task(db)
     task = users["task"]
     assert client.post(
@@ -200,22 +200,14 @@ def test_worker_reports_are_persisted_and_notify_receiver_admins_and_emitter(cli
             "operational_notes": [{"author": "worker", "text": "Revisar fuga", "date": report["createdAt"]}],
         },
     )
-    assert update.status_code == 200, update.text
-    assert update.json()["reported_issues"] == [report]
-
-    expected_recipients = {
-        users["owner_admin"].id,
-        users["owner_emitter"].id,
-        users["receiver_admin"].id,
-        users["second_receiver_admin"].id,
-    }
-    notifications = db.query(Notification).filter(
+    assert update.status_code == 403, update.text
+    db.refresh(task)
+    assert task.reported_issues == []
+    assert task.attachments == []
+    assert task.operational_notes == []
+    assert db.query(Notification).filter(
         Notification.event_type == "task.reported"
-    ).all()
-    assert {item.user_id for item in notifications} == expected_recipients
-    assert {item.event_type for item in notifications} == {"task.reported"}
-    assert all(item.entity_id == task.id for item in notifications)
-    assert "Fuga de agua" not in str([item.metadata_json for item in notifications])
+    ).count() == 0
 
 
 def test_notification_api_is_user_scoped_and_marks_only_owned_notification(client, db):

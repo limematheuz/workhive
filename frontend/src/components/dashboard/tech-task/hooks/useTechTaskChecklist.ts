@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import React from "react";
 import { TaskItem, User } from "@/types/user";
 import { TaskService } from "@/services/task.service";
+import { TaskReportService } from "@/services/task-report.service";
 import { UploadService } from "@/services/upload.service";
 import { UserService } from "@/services/user.service";
 import { canManageCompanyTasks } from "@/domain/access/roles";
@@ -306,15 +307,13 @@ export function useTechTaskChecklist({
     };
 
     const persistChecklistNote = async (itemId: string, note: string) => {
-        const evidence = {
-            ...(task.checklist_evidence || {}),
-            [itemId]: {
-                ...(task.checklist_evidence?.[itemId] || {}),
-                note,
-            },
-        };
+        if (!itemId.startsWith("item_") || !note.trim()) return;
         try {
-            await TaskService.updateTaskItem(task.id, { checklist_evidence: evidence });
+            await TaskReportService.createChecklistNote(
+                task.id,
+                Number(itemId.slice("item_".length)),
+                note.trim(),
+            );
             onStatusUpdate();
         } catch {
             toast.error("No se pudo guardar la nota");
@@ -334,15 +333,15 @@ export function useTechTaskChecklist({
         setUploadingChecklistItem(itemId);
         try {
             const uploaded = await UploadService.uploadFile(file, "location");
-            const evidence = {
-                ...(task.checklist_evidence || {}),
-                [itemId]: {
-                    ...(task.checklist_evidence?.[itemId] || {}),
-                    photoUrl: uploaded.url,
-                    photoName: file.name,
-                },
-            };
-            await TaskService.updateTaskItem(task.id, { checklist_evidence: evidence });
+            if (!itemId.startsWith("item_")) {
+                throw new Error("Checklist item is not synchronized");
+            }
+            await TaskReportService.createChecklistPhoto(
+                task.id,
+                Number(itemId.slice("item_".length)),
+                uploaded.url,
+                file.name,
+            );
             setChecklist(current => current.map(item => (
                 item.id === itemId ? { ...item, photoAttached: true } : item
             )));

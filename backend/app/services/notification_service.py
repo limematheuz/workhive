@@ -157,3 +157,22 @@ async def mark_all_read_async(db: AsyncSession, user: User) -> None:
     )
     await db.execute(statement)
     await db.commit()
+
+
+async def mark_event_read_async(
+    db: AsyncSession,
+    user: User,
+    *,
+    event_type: str,
+) -> None:
+    statement = (
+        update(Notification)
+        .where(
+            Notification.user_id == user.id,
+            Notification.event_type == event_type,
+            Notification.read_at.is_(None),
+        )
+        .values(read_at=datetime.now(timezone.utc))
+    )
+    await db.execute(statement)
+    await db.commit()

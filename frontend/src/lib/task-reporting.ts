@@ -1,13 +1,3 @@
-import type { ReportedIssue } from "@/types/user";
-
-export function appendReportedIssue(
-    current: ReportedIssue[],
-    issue: ReportedIssue,
-) {
-    return { reported_issues: [issue, ...current] };
-}
-
-
 export function getPersistentNotificationHref(notification: { href: string }): string {
     return notification.href.startsWith("/")
         && !notification.href.startsWith("//")
@@ -23,6 +13,15 @@ export function countUnreadTaskNotifications(
 ): number {
     return notifications.filter(
         (notification) => notification.entity_type === "task_item" && notification.read_at === null,
+    ).length;
+}
+
+
+export function countUnreadTaskReportNotifications(
+    notifications: Array<{ entity_type: string | null; read_at: string | null }>,
+): number {
+    return notifications.filter(
+        (notification) => notification.entity_type === "task_report" && notification.read_at === null,
     ).length;
 }
 
