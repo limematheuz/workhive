@@ -16,9 +16,11 @@ from app.models.company import Company
 from app.models.company_collaboration import CompanyCollaboration
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
+from app.models.location import Location
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
 from app.models.role import Role
+from app.models.task_item import TaskItem
 from app.models.user import User
 
 
@@ -52,7 +54,16 @@ async def async_business_factory():
             subscription_plan="pro",
             subscription_status="active",
         )
-        session.add_all([role, owner, partner])
+        outsider = Company(
+            name="Outsider Company",
+            tax_id="ASYNC-BUSINESS-OUTSIDER",
+            address="Outsider Street 1",
+            phone="600000003",
+            email="outsider-company@example.com",
+            subscription_plan="pro",
+            subscription_status="active",
+        )
+        session.add_all([role, owner, partner, outsider])
         await session.flush()
 
         user = User(
@@ -69,6 +80,13 @@ async def async_business_factory():
             role_id=role.id,
             company_id=partner.id,
         )
+        outsider_user = User(
+            email="async-outsider-admin@example.com",
+            hashed_password="unused",
+            full_name="Async Outsider Admin",
+            role_id=role.id,
+            company_id=outsider.id,
+        )
         client = Client(
             name="Async Client",
             client_type="company",
@@ -79,13 +97,22 @@ async def async_business_factory():
             country="España",
             company_id=owner.id,
         )
+        location = Location(
+            name="Async Location",
+            address="Location Street 1",
+            city="Madrid",
+            owner_company_id=owner.id,
+            managing_company_id=owner.id,
+        )
         collaboration = CompanyCollaboration(
             initiator_company_id=owner.id,
             partner_company_id=partner.id,
             status="accepted",
             role_type="service_provider",
         )
-        session.add_all([user, partner_user, client, collaboration])
+        session.add_all(
+            [user, partner_user, outsider_user, client, location, collaboration]
+        )
         await session.flush()
 
         now = datetime.now(timezone.utc)
@@ -110,7 +137,16 @@ async def async_business_factory():
             company_id=owner.id,
             client_id=client.id,
         )
-        session.add_all([invoice, quote])
+        rejected_task = TaskItem(
+            title="Rejected Async Task",
+            status="rejected",
+            priority="medium",
+            unit="service",
+            company_id=owner.id,
+            location_id=location.id,
+            user_id=user.id,
+        )
+        session.add_all([invoice, quote, rejected_task])
         await session.flush()
         session.add_all(
             [
@@ -137,8 +173,10 @@ async def async_business_factory():
             "company_id": owner.id,
             "email": user.email,
             "partner_email": partner_user.email,
+            "outsider_email": outsider_user.email,
             "invoice_id": invoice.id,
             "quote_id": quote.id,
+            "rejected_task_id": rejected_task.id,
         }
 
     try:
@@ -168,11 +206,13 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
         "/api/v1/collaborations/requests/pending",
         "/api/v1/collaborations/requests/sent",
         "/api/v1/invoices/",
+        "/api/v1/invoices/?limit=500",
         f"/api/v1/invoices/{seed['invoice_id']}",
         f"/api/v1/invoices/{seed['invoice_id']}/items",
         "/api/v1/quotes/",
         f"/api/v1/quotes/{seed['quote_id']}",
         f"/api/v1/quotes/{seed['quote_id']}/items",
+        "/api/v1/task-items/?task_status=rejected",
     )
     try:
         async with AsyncClient(
@@ -186,7 +226,7 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
         app.dependency_overrides.pop(get_async_db, None)
 
     failures = {
-        path: response.text
+        path: f"{response.status_code}:{response.text}"
         for path, response in responses.items()
         if response.status_code != 200
     }
@@ -194,6 +234,10 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
     assert responses["/api/v1/companies/"].json()[0]["contact_email"] == seed["email"]
     assert (
         responses["/api/v1/invoices/"].json()[0]["items"][0]["description"]
+        == "Invoice line"
+    )
+    assert (
+        responses["/api/v1/invoices/?limit=500"].json()[0]["items"][0]["description"]
         == "Invoice line"
     )
     assert (
@@ -230,6 +274,37 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
         responses["/api/v1/collaborations/service-providers"].json()[0]["contact_email"]
         == "async-partner-admin@example.com"
     )
+    rejected = responses["/api/v1/task-items/?task_status=rejected"].json()
+    assert any(item["id"] == seed["rejected_task_id"] for item in rejected)
+    assert all(item["status"] == "rejected" for item in rejected)
+
+
+@pytest.mark.asyncio
+async def test_async_business_endpoints_require_authentication(async_business_factory):
+    factory, seed = async_business_factory
+
+    async def override_get_async_db():
+        async with factory() as session:
+            yield session
+
+    app.dependency_overrides[get_async_db] = override_get_async_db
+    paths = (
+        f"/api/v1/companies/{seed['company_id']}",
+        "/api/v1/invoices/?limit=500",
+        "/api/v1/quotes/",
+        "/api/v1/collaborations/",
+        "/api/v1/task-items/?task_status=rejected",
+    )
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://testserver",
+        ) as client:
+            responses = {path: await client.get(path) for path in paths}
+    finally:
+        app.dependency_overrides.pop(get_async_db, None)
+
+    assert all(response.status_code in {401, 403} for response in responses.values())
 
 
 @pytest.mark.asyncio
@@ -253,13 +328,16 @@ async def test_async_business_endpoints_keep_company_data_tenant_isolated(
             company = await client.get(
                 f"/api/v1/companies/{seed['company_id']}", headers=headers
             )
-            invoices = await client.get("/api/v1/invoices/", headers=headers)
+            invoices = await client.get("/api/v1/invoices/?limit=500", headers=headers)
             invoice = await client.get(
                 f"/api/v1/invoices/{seed['invoice_id']}", headers=headers
             )
             quotes = await client.get("/api/v1/quotes/", headers=headers)
             quote = await client.get(
                 f"/api/v1/quotes/{seed['quote_id']}", headers=headers
+            )
+            rejected = await client.get(
+                "/api/v1/task-items/?task_status=rejected", headers=headers
             )
     finally:
         app.dependency_overrides.pop(get_async_db, None)
@@ -269,3 +347,34 @@ async def test_async_business_endpoints_keep_company_data_tenant_isolated(
     assert invoice.status_code == 404
     assert quotes.status_code == 200 and quotes.json() == []
     assert quote.status_code == 404
+    assert rejected.status_code == 200
+    assert all(item["id"] != seed["rejected_task_id"] for item in rejected.json())
+
+
+@pytest.mark.asyncio
+async def test_async_outsider_cannot_read_collaboration_graph(async_business_factory):
+    factory, seed = async_business_factory
+
+    async def override_get_async_db():
+        async with factory() as session:
+            yield session
+
+    app.dependency_overrides[get_async_db] = override_get_async_db
+    token = create_access_token({"sub": seed["outsider_email"], "ver": 0})
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=app, raise_app_exceptions=False),
+            base_url="http://testserver",
+        ) as client:
+            collaborations = await client.get("/api/v1/collaborations/", headers=headers)
+            providers = await client.get(
+                "/api/v1/collaborations/service-providers", headers=headers
+            )
+    finally:
+        app.dependency_overrides.pop(get_async_db, None)
+
+    assert collaborations.status_code == 200
+    assert collaborations.json() == []
+    assert providers.status_code == 200
+    assert providers.json() == []
