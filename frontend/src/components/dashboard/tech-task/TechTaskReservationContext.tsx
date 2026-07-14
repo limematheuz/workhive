@@ -78,20 +78,20 @@ export function TechTaskReservationContext({
                     )}
                 </div>
             ) : (
-                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-4 text-xs font-semibold text-[var(--text-muted)]">
+                <div className="rounded-xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)]/50 px-3 py-2.5 text-xs font-semibold text-[var(--text-muted)]">
                     {dict.tech?.not_linked_checkout || "This task is not linked to a check-out."}
                 </div>
             )}
 
             {task.next_reservation ? (
-                <div className="overflow-hidden rounded-2xl border border-[var(--border-soft)]">
+                <div className="overflow-hidden rounded-xl border border-[var(--border-soft)]">
                     <button
                         type="button"
                         onClick={() => setExpandedReservation(value => value === "next" ? null : "next")}
-                        className="flex w-full items-center justify-between bg-[var(--bg-card)] p-3.5 text-left transition-colors hover:bg-[var(--bg-primary)]/10"
+                        className="flex w-full items-center justify-between bg-[var(--bg-card)] p-3 text-left transition-colors hover:bg-[var(--bg-secondary)]/60"
                     >
                         <div className="flex items-center gap-3">
-                            <Calendar className="h-5 w-5 text-[var(--text-muted)]" />
+                            <Calendar className="h-4 w-4 text-[var(--text-muted)]" />
                             <div>
                                 <p className="text-xs font-bold text-[var(--text-main)]">
                                     {dict.tech?.next_checkin || "Next check-in"} · {nextCheckInDate}
@@ -107,7 +107,7 @@ export function TechTaskReservationContext({
                             : <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />}
                     </button>
                     {expandedReservation === "next" && (
-                        <div className="space-y-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-4 text-xs">
+                        <div className="space-y-2 border-t border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 p-3 text-xs">
                             <div className="flex justify-between gap-4">
                                 <span className="text-[var(--text-muted)]">{dict.tech?.stay_label || "Stay"}</span>
                                 <span className="font-bold text-[var(--text-main)]">
@@ -124,8 +124,8 @@ export function TechTaskReservationContext({
                     )}
                 </div>
             ) : (
-                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-4">
-                    <Calendar className="h-5 w-5 text-[var(--text-muted)]" />
+                <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)]/50 px-3 py-2.5">
+                    <Calendar className="h-4 w-4 shrink-0 text-[var(--text-muted)]" />
                     <p className="text-xs font-semibold text-[var(--text-muted)]">
                         {dict.tech?.no_linked_next_checkin || "There is no linked next check-in."}
                     </p>

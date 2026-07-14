@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useState, useMemo } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckSquare, Calendar, MapPin, Loader2 } from "lucide-react";
 import { User, TaskItem } from "@/types/user";
@@ -31,6 +31,8 @@ interface TechDashboardProps {
     onTaskUpdate: () => void;
 }
 
+const DETAIL_HISTORY_KEY = "techTaskDetail";
+
 function TechDashboardInner({
     currentUser,
     tasks,
@@ -48,6 +50,7 @@ function TechDashboardInner({
     const [manualTabSelection, setManualTabSelection] = useState<{ tab: OverviewTab; notificationKey: string } | null>(null);
     const activeTab = manualTabSelection?.notificationKey === notificationKey ? manualTabSelection.tab : notificationTab;
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
+    const detailHistoryOpenRef = useRef(false);
     const dashboardTasks = useTechDashboardTasks({
         activeTab,
         currentUser,
@@ -66,6 +69,38 @@ function TechDashboardInner({
         return locations.find(loc => loc.id === selectedTask.location_id) || null;
     }, [selectedTask, locations]);
 
+    const openTaskDetail = useCallback((taskId: number) => {
+        setSelectedTaskId(taskId);
+        if (!detailHistoryOpenRef.current) {
+            window.history.pushState({ [DETAIL_HISTORY_KEY]: taskId }, "");
+            detailHistoryOpenRef.current = true;
+        }
+    }, []);
+
+    const closeTaskDetail = useCallback(() => {
+        setSelectedTaskId(null);
+        if (
+            detailHistoryOpenRef.current
+            && window.history.state
+            && typeof window.history.state === "object"
+            && DETAIL_HISTORY_KEY in window.history.state
+        ) {
+            detailHistoryOpenRef.current = false;
+            window.history.back();
+            return;
+        }
+        detailHistoryOpenRef.current = false;
+    }, []);
+
+    useEffect(() => {
+        const onPopState = () => {
+            detailHistoryOpenRef.current = false;
+            setSelectedTaskId(null);
+        };
+        window.addEventListener("popstate", onPopState);
+        return () => window.removeEventListener("popstate", onPopState);
+    }, []);
+
     const getTasksCountLabel = (count: number) => {
         const template = (dict.tech as typeof dict.tech & { tasks_count?: string }).tasks_count;
         return template ? template.replace("{count}", count.toString()) : `${count} tareas`;
@@ -81,8 +116,6 @@ function TechDashboardInner({
             .filter(item => item.assignedUserId === currentUser.id);
 
         if (ownAssignedItems.length > 0) {
-            // Update the @userId tag with the new status (rejected, accepted, etc.).
-            // The tag is kept so the task remains visible and traceable in the dashboard.
             const updated = setChecklistAssigneeStatus(task.description, currentUser.id, nextStatus);
             if (updated.updatedCount > 0) {
                 await TaskService.updateTaskItem(task.id, { description: updated.description });
@@ -134,144 +167,129 @@ function TechDashboardInner({
         onTaskUpdate();
     };
 
-    if (selectedTask) {
-        return (
-            <div className="py-4">
+    return (
+        <>
+            <div className="mx-auto flex max-w-7xl animate-fade-in flex-col gap-8 p-4 pb-24 text-[var(--text-main)] sm:p-6 md:pb-6">
+                <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--border-soft)] pb-5 sm:flex-row sm:items-center">
+                    <div className="space-y-1">
+                        <h1 className="flex items-center gap-2 text-2xl font-black tracking-tight text-[var(--text-main)]">
+                            {dict.tech.portal_title}
+                        </h1>
+                        <p className="text-xs font-medium text-[var(--text-muted)]">
+                            {dict.tech.portal_subtitle}
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                        <span>{dict.tech.pending}: {dashboardTasks.pendingCount}</span>
+                        <span>•</span>
+                        <span className="text-accent">{dict.tech.resolved}: {dashboardTasks.resolvedCount}</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
+                    <div className="space-y-6 lg:col-span-2">
+                        <PremiumTabs
+                            tabs={[
+                                { id: "hoy", label: dict.tech.tab_today, badge: dashboardTasks.countPendingForTab("hoy") },
+                                { id: "manana", label: dict.tech.tab_tomorrow, badge: dashboardTasks.countPendingForTab("manana") },
+                                { id: "semana", label: dict.tech.tab_week, badge: dashboardTasks.countPendingForTab("semana") },
+                                { id: "todo", label: dict.tech.tab_all, badge: dashboardTasks.countPendingForTab("todo") },
+                            ]}
+                            activeTab={activeTab}
+                            onChange={(tabId) => setManualTabSelection({ tab: tabId, notificationKey })}
+                        />
+
+                        {dashboardTasks.standardTasks.length === 0 && dashboardTasks.overdueTasks.length === 0 ? (
+                            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)]/30 py-20 text-center">
+                                <CheckSquare className="mx-auto mb-3 h-10 w-10 text-[var(--text-main)] opacity-20" />
+                                <p className="text-sm font-semibold text-[var(--text-muted)]">
+                                    {dict.tech.no_scheduled_tasks}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                {dashboardTasks.tasksByLocation.map(item => (
+                                    <div key={item.location.id} className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-sm transition-all hover:shadow-md">
+                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10 text-[var(--text-main)]">
+                                                    <MapPin className="h-4 w-4 text-[var(--text-main)]" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="text-sm font-black text-[var(--text-main)]">
+                                                        {item.location.name}
+                                                    </h3>
+                                                    {item.location.address && (
+                                                        <p className="mt-0.5 text-3xs font-medium text-[var(--text-muted)]">
+                                                            {item.location.address}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-0.5 text-3xs font-bold text-[var(--text-muted)]">
+                                                {getTasksCountLabel(item.overdue.length + item.standard.length)}
+                                            </span>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {item.overdue.map(task => (
+                                                <TechTaskCard
+                                                    key={task.id}
+                                                    task={task}
+                                                    locationName={item.location.name}
+                                                    locationAddress={item.location.address || item.location.city}
+                                                    currentUser={currentUser}
+                                                    onAccept={handleAccept}
+                                                    onReject={handleReject}
+                                                    onViewDetails={(task) => openTaskDetail(task.id)}
+                                                    hideLocationName={true}
+                                                />
+                                            ))}
+
+                                            {item.standard.map(task => (
+                                                <TechTaskCard
+                                                    key={task.id}
+                                                    task={task}
+                                                    locationName={item.location.name}
+                                                    locationAddress={item.location.address || item.location.city}
+                                                    currentUser={currentUser}
+                                                    onAccept={handleAccept}
+                                                    onReject={handleReject}
+                                                    onViewDetails={(task) => openTaskDetail(task.id)}
+                                                    hideLocationName={true}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-sm">
+                            <div className="flex items-center gap-2.5 border-b border-[var(--border-soft)] pb-2">
+                                <Calendar className="h-4.5 w-4.5 text-[var(--text-main)]" />
+                                <h3 className="text-sm font-bold text-[var(--text-main)]">{dict.tech.shift_clock}</h3>
+                            </div>
+                            <WorkSessionWidget allowedLocations={dashboardTasks.activeLocations} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {selectedTask && (
                 <TechTaskDetails
                     task={selectedTask}
                     location={selectedTaskLocation}
                     locationName={dashboardTasks.getLocationName(selectedTask.location_id)}
                     currentUser={currentUser}
-                    onBack={() => setSelectedTaskId(null)}
+                    onBack={closeTaskDetail}
                     onStatusUpdate={handleStatusUpdate}
                 />
-            </div>
-        );
-    }
-
-    return (
-        <div className="max-w-7xl mx-auto flex flex-col gap-8 text-[var(--text-main)] p-4 sm:p-6 pb-24 md:pb-6 animate-fade-in">
-            {/* Header section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-[var(--border-soft)] pb-5">
-                <div className="space-y-1">
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        {dict.tech.portal_title}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium">
-                        {dict.tech.portal_subtitle}
-                    </p>
-                </div>
-
-                {/* Task Totals badges */}
-                <div className="flex items-center gap-2 bg-[var(--bg-primary)]/40 px-3 py-1.5 border border-[var(--border-soft)] rounded-xl text-2xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    <span>{dict.tech.pending}: {dashboardTasks.pendingCount}</span>
-                    <span>•</span>
-                    <span className="text-accent">{dict.tech.resolved}: {dashboardTasks.resolvedCount}</span>
-                </div>
-            </div>
-
-            {/* Main view grid split: task list and work session tracker sidebar */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                
-                {/* 2/3 column: Date Switcher and Tasks List */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Premium Date Tab Switcher */}
-                    <PremiumTabs
-                        tabs={[
-                            { id: "hoy", label: dict.tech.tab_today, badge: dashboardTasks.countPendingForTab("hoy") },
-                            { id: "manana", label: dict.tech.tab_tomorrow, badge: dashboardTasks.countPendingForTab("manana") },
-                            { id: "semana", label: dict.tech.tab_week, badge: dashboardTasks.countPendingForTab("semana") },
-                            { id: "todo", label: dict.tech.tab_all, badge: dashboardTasks.countPendingForTab("todo") }
-                        ]}
-                        activeTab={activeTab}
-                        onChange={(tabId) => setManualTabSelection({ tab: tabId, notificationKey })}
-                    />
-
-                    {/* PROPERTIES FEED */}
-                    {dashboardTasks.standardTasks.length === 0 && dashboardTasks.overdueTasks.length === 0 ? (
-                        <div className="text-center py-20 bg-[var(--bg-card)]/30 border border-dashed border-[var(--border-soft)] rounded-2xl">
-                            <CheckSquare className="w-10 h-10 text-[var(--text-main)] opacity-20 mx-auto mb-3" />
-                            <p className="text-sm font-semibold text-[var(--text-muted)]">
-                                {dict.tech.no_scheduled_tasks}
-                            </p>
-                        </div>
-                    ) : (
-                        <div className="space-y-6">
-                            {dashboardTasks.tasksByLocation.map(item => (
-                                <div key={item.location.id} className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-sm hover:shadow-md transition-all space-y-4">
-                                    {/* Property header */}
-                                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border-soft)] flex-wrap gap-2">
-                                        <div className="flex items-center gap-2.5">
-                                            <div className="w-9 h-9 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-[var(--text-main)] shrink-0">
-                                                <MapPin className="w-4 h-4 text-[var(--text-main)]" />
-                                            </div>
-                                            <div>
-                                                <h3 className="text-sm font-black text-[var(--text-main)]">
-                                                    {item.location.name}
-                                                </h3>
-                                                {item.location.address && (
-                                                    <p className="text-3xs text-[var(--text-muted)] font-medium mt-0.5">
-                                                        {item.location.address}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <span className="text-3xs bg-[var(--bg-primary)] px-2 py-0.5 rounded-md font-bold text-[var(--text-muted)] border border-[var(--border-soft)]">
-                                            {getTasksCountLabel(item.overdue.length + item.standard.length)}
-                                        </span>
-                                    </div>
-
-                                    {/* Property task checklist */}
-                                    <div className="space-y-3">
-                                        {/* Overdue property tasks */}
-                                        {item.overdue.map(task => (
-                                            <TechTaskCard
-                                                key={task.id}
-                                                task={task}
-                                                locationName={item.location.name}
-                                                locationAddress={item.location.address || item.location.city}
-                                                currentUser={currentUser}
-                                                onAccept={handleAccept}
-                                                onReject={handleReject}
-                                                onViewDetails={(task) => setSelectedTaskId(task.id)}
-                                                hideLocationName={true}
-                                            />
-                                        ))}
-
-                                        {/* Standard property tasks */}
-                                        {item.standard.map(task => (
-                                            <TechTaskCard
-                                                key={task.id}
-                                                task={task}
-                                                locationName={item.location.name}
-                                                locationAddress={item.location.address || item.location.city}
-                                                currentUser={currentUser}
-                                                onAccept={handleAccept}
-                                                onReject={handleReject}
-                                                onViewDetails={(task) => setSelectedTaskId(task.id)}
-                                                hideLocationName={true}
-                                            />
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* 1/3 column: Work Session widget sidebar */}
-                <div className="space-y-6">
-                    <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-sm space-y-4">
-                        <div className="flex items-center gap-2.5 pb-2 border-b border-[var(--border-soft)]">
-                            <Calendar className="w-4.5 h-4.5 text-[var(--text-main)]" />
-                            <h3 className="text-sm font-bold text-[var(--text-main)]">{dict.tech.shift_clock}</h3>
-                        </div>
-                        <WorkSessionWidget allowedLocations={dashboardTasks.activeLocations} />
-                    </div>
-                </div>
-
-            </div>
-        </div>
+            )}
+        </>
     );
 }
 
@@ -279,8 +297,8 @@ export function TechDashboard(props: TechDashboardProps) {
     return (
         <Suspense
             fallback={
-                <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-accent" />
                 </div>
             }
         >

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clock, MapPin, Check, X, MessageSquare, Download, Calendar, Flag, AlertCircle, Timer } from "lucide-react";
+import { Clock, MapPin, Check, X, Calendar, Flag, AlertCircle, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TaskItem, User, TaskWorkDetailedSummary } from "@/types/user";
@@ -219,93 +219,81 @@ export function TechTaskCard({
             </div>
 
             {/* Bottom Actions and Navigation Details */}
-            <div className="mt-4 pt-3.5 border-t border-[var(--border-soft)] flex items-center justify-between gap-4 flex-wrap">
-                <div className="flex items-center gap-2">
-                    {/* Direction/Route Indicator Icon */}
-                    <div className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center text-white shadow-sm shrink-0",
-                        isOverdue ? "bg-orange-500" : isCompleted ? "bg-zinc-400" : "bg-accent"
-                    )}>
-                        <MapPin className="w-4 h-4" />
-                    </div>
-
-                    {/* Check-out Hours Badge */}
-                    {!isCompleted && (
-                        <div className="bg-[var(--btn-secondary-bg)] px-3 py-1.5 rounded-xl border border-[var(--btn-secondary-border)] flex items-center gap-1.5 text-[9px] font-extrabold uppercase text-[var(--btn-secondary-text)] tracking-wider">
-                            <span>
-                                {reservationSummary}
-                            </span>
-                            <Flag className="w-3.5 h-3.5 text-[var(--btn-secondary-text)]/70 ml-0.5" />
-                        </div>
-                    )}
+            <div className="mt-4 flex items-center gap-2 border-t border-[var(--border-soft)] pt-3">
+                <div className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
+                    isOverdue ? "bg-orange-500" : isCompleted ? "bg-zinc-400" : "bg-accent"
+                )}>
+                    <MapPin className="h-4 w-4" />
                 </div>
 
-                {/* Status-specific triggers / icons */}
-                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    {isPending && canAcceptAssignments ? (
-                        <>
-                            <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => onReject(task.id)}
-                                className="bg-transparent border-[var(--border-soft)] text-[9px] font-black uppercase hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)] px-3.5 h-8 rounded-xl transition-all flex items-center gap-1 border-none cursor-pointer"
-                            >
-                                <X className="w-3.5 h-3.5 text-red-500" />
-                                {dict.tech.btn_reject}
-                            </Button>
-                            <Button
-                                size="sm"
-                                onClick={() => onAccept(task.id)}
-                                className="bg-accent hover:bg-accent-light text-white text-[9px] font-black uppercase px-4 h-8 rounded-xl transition-all shadow-sm border-none cursor-pointer flex items-center gap-1"
-                            >
-                                <Check className="w-3.5 h-3.5" />
-                                {dict.tech.btn_accept}
-                            </Button>
-                        </>
-                    ) : isAwaitingApproval ? (
+                {!isCompleted && (
+                    <div className="min-w-0 flex-1 truncate rounded-xl border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-wider text-[var(--btn-secondary-text)]">
+                        <span className="inline-flex max-w-full items-center gap-1.5">
+                            <span className="truncate">{reservationSummary}</span>
+                            <Flag className="h-3.5 w-3.5 shrink-0 text-[var(--btn-secondary-text)]/70" />
+                        </span>
+                    </div>
+                )}
+
+                {isCompleted ? (
+                    <div className="ml-auto flex h-7 w-7 items-center justify-center rounded-full border border-accent/20 bg-accent/10 text-accent">
+                        <Check className="h-4 w-4 stroke-[3px]" />
+                    </div>
+                ) : isPending && canAcceptAssignments ? (
+                    <div className="ml-auto flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                             size="sm"
-                            disabled
-                            className="bg-[var(--bg-primary)] text-[var(--text-muted)] text-[9px] font-black uppercase px-4 h-8 rounded-xl border border-[var(--border-soft)] cursor-not-allowed flex items-center gap-1"
+                            variant="outline"
+                            onClick={() => onReject(task.id)}
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-transparent px-3.5 text-[9px] font-black uppercase transition-all hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)]"
                         >
-                            <Clock className="w-3.5 h-3.5" />
-                            {dict.tech.msg_accept_first}
+                            <X className="h-3.5 w-3.5 text-red-500" />
+                            {dict.tech.btn_reject}
                         </Button>
-                    ) : isPending ? (
-                        <Button
-                            size="sm"
-                            onClick={() => onViewDetails(task)}
-                            className="bg-accent hover:bg-accent-light text-white text-[9px] font-black uppercase px-4 h-8 rounded-xl transition-all shadow-sm border-none cursor-pointer flex items-center gap-1"
-                        >
-                            <Clock className="w-3.5 h-3.5" />
-                            {dict.tech?.card_btn_start || "Start"}
-                        </Button>
-                    ) : isRejected && canAcceptAssignments ? (
                         <Button
                             size="sm"
                             onClick={() => onAccept(task.id)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white text-[9px] font-black uppercase px-4 h-8 rounded-xl transition-all shadow-sm border-none cursor-pointer flex items-center gap-1"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-accent px-4 text-[9px] font-black uppercase text-white shadow-sm transition-all hover:bg-accent-light"
                         >
-                            <Check className="w-3.5 h-3.5" />
+                            <Check className="h-3.5 w-3.5" />
+                            {dict.tech.btn_accept}
+                        </Button>
+                    </div>
+                ) : isAwaitingApproval ? (
+                    <div className="ml-auto shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            size="sm"
+                            disabled
+                            className="flex h-8 cursor-not-allowed items-center gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 text-[9px] font-black uppercase text-[var(--text-muted)]"
+                        >
+                            <Clock className="h-3.5 w-3.5" />
+                            {dict.tech.msg_accept_first}
+                        </Button>
+                    </div>
+                ) : isPending ? (
+                    <div className="ml-auto shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            size="sm"
+                            onClick={() => onViewDetails(task)}
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-accent px-4 text-[9px] font-black uppercase text-white shadow-sm transition-all hover:bg-accent-light"
+                        >
+                            <Clock className="h-3.5 w-3.5" />
+                            {dict.tech?.card_btn_start || "Start"}
+                        </Button>
+                    </div>
+                ) : isRejected && canAcceptAssignments ? (
+                    <div className="ml-auto shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <Button
+                            size="sm"
+                            onClick={() => onAccept(task.id)}
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-orange-500 px-4 text-[9px] font-black uppercase text-white shadow-sm transition-all hover:bg-orange-600"
+                        >
+                            <Check className="h-3.5 w-3.5" />
                             {dict.tech.btn_reaccept ?? "Re-accept"}
                         </Button>
-                    ) : (
-                        <div className="flex items-center gap-3 text-[var(--text-muted)]">
-                            <button type="button" aria-label={dict.tech.comments_title} className="p-1.5 hover:text-accent transition-colors bg-transparent border-none cursor-pointer">
-                                <MessageSquare className="w-4.5 h-4.5" />
-                            </button>
-                            {isCompleted ? (
-                                <div className="w-7 h-7 rounded-full bg-accent/10 border border-accent/20 text-accent flex items-center justify-center">
-                                    <Check className="w-4 h-4 stroke-[3px]" />
-                                </div>
-                            ) : (
-                                <button type="button" aria-label="Descargar" className="p-1.5 hover:text-accent transition-colors bg-transparent border-none cursor-pointer">
-                                    <Download className="w-4.5 h-4.5" />
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                    </div>
+                ) : null}
             </div>
         </div>
     );

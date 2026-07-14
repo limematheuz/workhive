@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Calendar } from "lucide-react";
+import { Calendar, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TaskItem } from "@/types/user";
 import { Location } from "@/types/location";
@@ -55,18 +55,18 @@ export function TechTaskHeaderInfo({
 }: TechTaskHeaderInfoProps) {
     return (
         <>
-            <div className="bg-[var(--bg-primary)]/45 p-4 border border-[var(--border-soft)] rounded-2xl flex flex-col justify-center">
-                <span className="text-[9px] font-black uppercase text-accent tracking-wider">
+            <div className="rounded-xl bg-[var(--bg-secondary)]/80 px-3.5 py-3">
+                <span className="text-[9px] font-black uppercase tracking-wider text-accent">
                     {locationTypeLabel}
                 </span>
-                <h2 className="text-base font-black text-[var(--text-main)] tracking-tight mt-0.5">{locationName}</h2>
+                <h2 className="mt-0.5 text-base font-black tracking-tight text-[var(--text-main)]">{locationName}</h2>
                 {location?.address && (
-                    <span className="text-[10px] text-[var(--text-muted)] font-medium mt-0.5">{location.address}, {location.city}</span>
+                    <span className="mt-0.5 text-[10px] font-medium text-[var(--text-muted)]">{location.address}, {location.city}</span>
                 )}
             </div>
 
-            <div className="bg-[var(--bg-primary)]/15 px-4 py-2.5 border border-[var(--border-soft)] rounded-xl flex items-center gap-2 text-2xs font-extrabold uppercase text-[var(--text-muted)] tracking-wider">
-                <Calendar className="w-3.5 h-3.5 text-accent" />
+            <div className="flex items-center gap-2 px-0.5 text-[10px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+                <Calendar className="h-3.5 w-3.5 text-accent" />
                 <span>
                     {checkoutDate
                         ? `${locale === "es" ? "Huéspedes · salida" : "Guests · check-out"} ${checkoutDate}`
@@ -75,15 +75,15 @@ export function TechTaskHeaderInfo({
             </div>
 
             <div className="space-y-2">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                    <h1 className="text-lg font-black text-[var(--text-main)]">{task.title}</h1>
-                    <span className={cn("text-[9px] font-black tracking-wider uppercase px-3 py-1 rounded-full", priorityBadge.className)}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h1 className="text-lg font-black leading-snug text-[var(--text-main)]">{task.title}</h1>
+                    <span className={cn("rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider", priorityBadge.className)}>
                         {priorityBadge.text}
                     </span>
                 </div>
 
                 <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-muted)]">
-                    <Calendar className="w-3.5 h-3.5 text-accent" />
+                    <Calendar className="h-3.5 w-3.5 shrink-0 text-accent" />
                     <span>
                         {locale === "es" ? "Planificada:" : "Scheduled:"}{" "}
                         <span className="text-[var(--text-main)]">
@@ -99,7 +99,7 @@ export function TechTaskHeaderInfo({
                 </div>
 
                 <div className="flex items-center gap-2 text-xs font-bold text-[var(--text-muted)]">
-                    <Calendar className="w-3.5 h-3.5 text-accent" />
+                    <Timer className="h-3.5 w-3.5 shrink-0 text-accent" />
                     <span>
                         {locale === "es" ? "Tiempo total del equipo:" : "Team total time:"}{" "}
                         <span className="text-[var(--text-main)]">{formatWorkedTime(taskWorkSeconds)}</span>
