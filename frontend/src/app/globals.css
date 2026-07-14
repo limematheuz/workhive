@@ -487,21 +487,67 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 .workhive-fullcalendar .fc-timegrid-event {
-  border-radius: 0.5rem !important;
+  border-radius: 0.55rem !important;
+  border: none !important;
+  border-left: 4px solid var(--workhive-event-accent, var(--accent-color)) !important;
   box-shadow: none !important;
   cursor: grab;
   overflow: hidden;
   position: relative;
   inset: 0px !important;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-requested,
+.workhive-fullcalendar .workhive-calendar-event-rejected {
+  --workhive-event-accent: #e11d48;
+  background-color: color-mix(in srgb, #e11d48 14%, var(--bg-card)) !important;
+  color: var(--text-main) !important;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-pending {
+  --workhive-event-accent: #d97706;
+  background-color: color-mix(in srgb, #d97706 14%, var(--bg-card)) !important;
+  color: var(--text-main) !important;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-accepted,
+.workhive-fullcalendar .workhive-calendar-event-progress {
+  --workhive-event-accent: #1d4ed8;
+  background-color: color-mix(in srgb, #1d4ed8 14%, var(--bg-card)) !important;
+  color: var(--text-main) !important;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-review {
+  --workhive-event-accent: #7c3aed;
+  background-color: color-mix(in srgb, #7c3aed 14%, var(--bg-card)) !important;
+  color: var(--text-main) !important;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-completed {
+  --workhive-event-accent: #0f766e;
+  background-color: color-mix(in srgb, #0f766e 14%, var(--bg-card)) !important;
+  color: var(--text-main) !important;
+}
+
+.workhive-fullcalendar .workhive-calendar-event-past {
+  opacity: 0.46;
+  filter: grayscale(0.4) saturate(0.55);
+}
+
+.workhive-fullcalendar .workhive-calendar-event-past:hover {
+  opacity: 0.72;
+  filter: grayscale(0.15) saturate(0.8);
 }
 
 .workhive-fullcalendar .workhive-calendar-event-external {
-  border-left: 4px solid #8b5cf6 !important;
+  --workhive-event-accent: #6366f1;
+  background-color: color-mix(in srgb, #6366f1 16%, var(--bg-card)) !important;
+  color: var(--text-main) !important;
   background-image:
-    linear-gradient(135deg, rgba(139, 92, 246, 0.28), rgba(255, 255, 255, 0) 42%),
-    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.14) 0 1px, transparent 1px 7px);
-  outline: 1px solid rgba(139, 92, 246, 0.35);
+    linear-gradient(135deg, color-mix(in srgb, #6366f1 18%, transparent), transparent 48%),
+    repeating-linear-gradient(-45deg, color-mix(in srgb, #6366f1 10%, transparent) 0 1px, transparent 1px 7px);
+  outline: 1px solid color-mix(in srgb, #6366f1 28%, transparent);
   outline-offset: -1px;
 }
 
@@ -511,8 +557,8 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
   right: 0.35rem;
   bottom: 0.25rem;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 8px rgba(15, 23, 42, 0.12);
   color: #312e81;
   padding: 0.08rem 0.42rem;
   font-size: 0.48rem;
@@ -521,7 +567,7 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 .workhive-fullcalendar .fc-timegrid-event:hover {
-  box-shadow: 0 12px 28px var(--shadow-color);
+  box-shadow: 0 10px 24px var(--shadow-color);
   transform: translateY(-1px);
 }
 
@@ -530,7 +576,13 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 .workhive-fullcalendar .fc-event-main {
-  color: #ffffff;
+  color: inherit;
+}
+
+.workhive-fullcalendar .fc-daygrid-event {
+  border: none !important;
+  border-left: 3px solid var(--workhive-event-accent, var(--accent-color)) !important;
+  border-radius: 0.4rem !important;
 }
 
 .workhive-fullcalendar .fc-timegrid-now-indicator-line {
