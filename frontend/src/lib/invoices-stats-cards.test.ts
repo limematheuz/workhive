@@ -12,7 +12,9 @@ test("invoice stats cards use a 2x2 grid on mobile", () => {
     assert.doesNotMatch(source, /md:grid-cols-2/);
 });
 
-test("invoice stats cards use a left accent instead of a decorative top bar", () => {
-    assert.match(source, /border-l-4/);
-    assert.doesNotMatch(source, /h-1\.5 w-20 rounded-full/);
+test("invoice stats cards use a full-width solid color bar with card padding", () => {
+    assert.match(source, /h-1\.5 w-full rounded-full/);
+    assert.match(source, /barClassName: "bg-accent"/);
+    assert.doesNotMatch(source, /border-l-4/);
+    assert.doesNotMatch(source, /w-20/);
 });
