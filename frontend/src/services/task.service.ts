@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api"
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import { TaskItem } from "@/types/user"
 import { WorkStartLocation } from "@/lib/work-start-location"
 import type { TaskPriority, TaskStatus } from "@/types/task"
@@ -76,11 +76,7 @@ export const TaskService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error(
-                await extractErrorMessage(response, "Error fetching task items")
-            )
-        }
+        await assertApiResponseOk(response, "Error fetching task items")
         return await response.json()
     },
 
@@ -95,9 +91,7 @@ export const TaskService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching task details")
-        }
+        await assertApiResponseOk(response, "Error fetching task details")
         return await response.json()
     },
 
