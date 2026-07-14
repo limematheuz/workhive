@@ -60,12 +60,18 @@ def get_company(db: Session, company_id: int, current_user: User) -> Company:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Company not found"
         )
-    
+
     # Ensure partner_code is generated if not present
     if not existing_company.partner_code:
         from app.services import collaboration_service
         collaboration_service.get_or_generate_partner_code(db, existing_company.id)
-        
+        existing_company = company_repo.get_company_by_id(db, company_id)
+        if not existing_company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Company not found",
+            )
+
     return existing_company
 
 

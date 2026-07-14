@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api"
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import { Invoice, InvoiceItem } from "@/types/invoice"
 import { TaskItem } from "@/types/user"
 import { collectPaginated } from "@/lib/pagination"
@@ -131,9 +131,7 @@ export const InvoiceService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching invoices")
-        }
+        await assertApiResponseOk(response, "Error fetching invoices")
         return await response.json()
     },
 
@@ -146,9 +144,7 @@ export const InvoiceService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching completed jobs")
-        }
+        await assertApiResponseOk(response, "Error fetching completed jobs")
         return await response.json()
     },
 
@@ -157,9 +153,7 @@ export const InvoiceService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching invoice details")
-        }
+        await assertApiResponseOk(response, "Error fetching invoice details")
         return await response.json()
     },
 
@@ -325,9 +319,7 @@ export const InvoiceService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching invoice items")
-        }
+        await assertApiResponseOk(response, "Error fetching invoice items")
         return await response.json()
     },
 
