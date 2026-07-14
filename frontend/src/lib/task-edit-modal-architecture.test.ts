@@ -21,9 +21,13 @@ test("task edit actions hide close and block duplicate when invoiced", () => {
 test("task edit modal keeps a denser report-like chrome without footer close", () => {
     const modal = read("../components/tasks/TaskEditModal.tsx");
     const actions = read("../components/tasks/TaskEditFormActions.tsx");
+    const form = read("../components/tasks/TaskEditForm.tsx");
+    const chrome = read("../components/tasks/taskDialogChrome.ts");
 
-    assert.match(modal, /rounded-2xl|rounded-\[28px\]|DialogContent/);
-    assert.match(modal, /scrollbar-width:none|overflow-y-auto/);
-    assert.match(actions, /reportPrimaryBtn|btn-primary|bg-accent/);
+    assert.match(modal, /taskDialogContentClass|dialog-glass/);
+    assert.match(modal, /DialogContent/);
+    assert.match(form, /overflow-y-auto/);
+    assert.match(chrome, /dialog-glass|taskDialogPrimaryBtnClass/);
+    assert.match(actions, /taskDialogPrimaryBtnClass|btn-primary/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
 });

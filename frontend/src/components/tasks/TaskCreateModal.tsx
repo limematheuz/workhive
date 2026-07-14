@@ -2,7 +2,6 @@
 
 import React from "react";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
 import { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
@@ -18,6 +17,15 @@ import {
 import { TaskCreateMainFields } from "./TaskCreateMainFields";
 import { TaskCreateReservationSection } from "./TaskCreateReservationSection";
 import { TaskCreateHouseChecklistSection } from "./TaskCreateHouseChecklistSection";
+import {
+    taskDialogBodyClass,
+    taskDialogContentClass,
+    taskDialogDangerBtnClass,
+    taskDialogFooterClass,
+    taskDialogHeaderClass,
+    taskDialogOverlayClass,
+    taskDialogPrimaryBtnClass,
+} from "./taskDialogChrome";
 
 interface TaskCreateModalProps {
     dict: Dictionary;
@@ -113,81 +121,85 @@ export function TaskCreateModal({
 
     return (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogContent className="w-[95vw] sm:max-w-2xl md:max-w-3xl p-0 overflow-hidden max-h-[95vh] sm:max-h-[90vh] flex flex-col">
-                <DialogHeader className="p-6 pr-20 border-b border-[var(--border-color)] bg-[var(--dialog-bg)] flex-shrink-0 text-left sm:text-left">
-                    <DialogTitle className="text-xl font-black text-[var(--text-main)] flex items-center gap-2">
+            <DialogContent
+                overlayClassName={taskDialogOverlayClass}
+                className={`${taskDialogContentClass} max-h-[min(95vh,860px)] sm:max-w-2xl md:max-w-3xl`}
+            >
+                <DialogHeader className={taskDialogHeaderClass}>
+                    <DialogTitle className="text-xl font-bold tracking-tight text-[var(--text-main)]">
                         {dict.tasks?.create_dialog?.title || "Create Checklist / Register Work"}
                     </DialogTitle>
-                    <DialogDescription className="text-sm text-[var(--text-muted)] mt-1 font-medium">
+                    <DialogDescription className="mt-1 text-sm font-medium text-[var(--text-muted)]">
                         {dict.tasks?.create_dialog?.subtitle || "Select the location, assign workers, and define default checklist tasks."}
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleCreateTask} className="p-6 overflow-y-auto space-y-5 flex-1 font-sans bg-[var(--dialog-bg)]">
-                    <TaskCreateMainFields
-                        dict={dict}
-                        ownLocations={ownLocations}
-                        calendarOwnerName={calendarOwnerName}
-                        newLocationId={newLocationId}
-                        setNewLocationId={setNewLocationId}
-                        newCreatedAt={newCreatedAt}
-                        setNewCreatedAt={setNewCreatedAt}
-                    />
-
-                    {newLocationId && (
-                        <TaskCreateReservationSection
-                            loadingReservations={loadingReservations}
-                            availableReservations={availableReservations}
-                            newCheckoutReservationId={newCheckoutReservationId}
-                            setNewCheckoutReservationId={setNewCheckoutReservationId}
-                            newNextReservationId={newNextReservationId}
-                            setNewNextReservationId={setNewNextReservationId}
-                        />
-                    )}
-
-                    {newLocationId && (
-                        <TaskCreateHouseChecklistSection
+                <form onSubmit={handleCreateTask} className="flex min-h-0 flex-1 flex-col font-sans">
+                    <div className={taskDialogBodyClass}>
+                        <TaskCreateMainFields
                             dict={dict}
-                            isAdminOrManager={adminOrManager}
-                            users={users}
-                            templates={templates}
-                            houseTemplates={houseTemplates}
-                            visibleHouseTemplates={visibleHouseTemplates}
-                            loadingHouseTemplates={loadingHouseTemplates}
-                            selectedHouseTemplateIds={selectedHouseTemplateIds}
-                            useHouseChecklist={useHouseChecklist}
-                            setUseHouseChecklist={setUseHouseChecklist}
-                            toggleHouseTemplateSelection={toggleHouseTemplateSelection}
-                            availableTemplates={availableTemplates}
-                            handleLinkHouseTemplate={handleLinkHouseTemplate}
-                            fixedChecklistAssignments={fixedChecklistAssignments}
-                            setFixedChecklistAssignments={setFixedChecklistAssignments}
+                            ownLocations={ownLocations}
+                            calendarOwnerName={calendarOwnerName}
+                            newLocationId={newLocationId}
+                            setNewLocationId={setNewLocationId}
+                            newCreatedAt={newCreatedAt}
+                            setNewCreatedAt={setNewCreatedAt}
                         />
-                    )}
 
-                    <div className="flex justify-end gap-3 pt-6 border-t border-[var(--border-soft)]">
-                        <Button
+                        {newLocationId && (
+                            <TaskCreateReservationSection
+                                loadingReservations={loadingReservations}
+                                availableReservations={availableReservations}
+                                newCheckoutReservationId={newCheckoutReservationId}
+                                setNewCheckoutReservationId={setNewCheckoutReservationId}
+                                newNextReservationId={newNextReservationId}
+                                setNewNextReservationId={setNewNextReservationId}
+                            />
+                        )}
+
+                        {newLocationId && (
+                            <TaskCreateHouseChecklistSection
+                                dict={dict}
+                                isAdminOrManager={adminOrManager}
+                                users={users}
+                                templates={templates}
+                                houseTemplates={houseTemplates}
+                                visibleHouseTemplates={visibleHouseTemplates}
+                                loadingHouseTemplates={loadingHouseTemplates}
+                                selectedHouseTemplateIds={selectedHouseTemplateIds}
+                                useHouseChecklist={useHouseChecklist}
+                                setUseHouseChecklist={setUseHouseChecklist}
+                                toggleHouseTemplateSelection={toggleHouseTemplateSelection}
+                                availableTemplates={availableTemplates}
+                                handleLinkHouseTemplate={handleLinkHouseTemplate}
+                                fixedChecklistAssignments={fixedChecklistAssignments}
+                                setFixedChecklistAssignments={setFixedChecklistAssignments}
+                            />
+                        )}
+                    </div>
+
+                    <div className={`${taskDialogFooterClass} justify-end`}>
+                        <button
                             type="button"
-                            variant="outline"
                             onClick={() => setCreateOpen(false)}
-                            className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-4 py-2.5 cursor-pointer transition-all"
+                            className={taskDialogDangerBtnClass}
                         >
                             {dict.tasks?.create_dialog?.cancel || "Cancel"}
-                        </Button>
-                        <Button
+                        </button>
+                        <button
                             type="submit"
                             disabled={saving}
-                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center gap-1.5 cursor-pointer transition-all"
+                            className={taskDialogPrimaryBtnClass}
                         >
                             {saving ? (
                                 <>
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                     {dict.tasks?.create_dialog?.creating || "Creating..."}
                                 </>
                             ) : (
                                 dict.tasks?.create_dialog?.register_jobs || "Register Work"
                             )}
-                        </Button>
+                        </button>
                     </div>
                 </form>
             </DialogContent>

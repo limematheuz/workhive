@@ -3,7 +3,6 @@
 import type { Dictionary } from "@/lib/dictionary-context";
 import {
     assignTaskChecklistItem,
-    parseTaskChecklist,
     toggleTaskChecklistItem,
 } from "@/lib/task-checklist";
 import { localizeTaskDescription } from "@/lib/task-display";
@@ -14,6 +13,7 @@ import type { User } from "@/types/user";
 import { TaskChecklistEditor } from "./TaskChecklistEditor";
 import { TASK_EDIT_UNIT_OPTIONS } from "./taskEditFormOptions";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
+import { resolveTaskEditChecklist } from "@/lib/resolve-task-edit-checklist";
 
 type TaskEditFormFieldsProps = {
     dict: Dictionary;
@@ -85,7 +85,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
     } = props;
 
     const localizedDescription = localizeTaskDescription(editDescription) || "";
-    const checklist = parseTaskChecklist(localizedDescription);
+    const checklist = resolveTaskEditChecklist(localizedDescription, selectedTask);
 
     const toggleChecklistItem = (itemIndex: number) => {
         setEditDescription(toggleTaskChecklistItem(editDescription, itemIndex));

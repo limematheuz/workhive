@@ -93,47 +93,49 @@ export function TaskEditForm({
     return (
         <form
             onSubmit={managerEditable ? handleSaveTaskDetails : event => event.preventDefault()}
-            className="flex-1 space-y-3 overflow-y-auto p-5 font-sans [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:p-6"
+            className="flex min-h-0 flex-1 flex-col font-sans"
         >
-            <TaskEditFormAlerts
-                dict={dict}
-                immutable={immutable}
-                isAdminOrManager={adminOrManager}
-            />
+            <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:p-6">
+                <TaskEditFormAlerts
+                    dict={dict}
+                    immutable={immutable}
+                    isAdminOrManager={adminOrManager}
+                />
 
-            <TaskEditFormFields
-                dict={dict}
-                calendarAssigneeName={calendarAssigneeName}
-                displayTitle={displayTitle}
-                editCreatedAt={editCreatedAt}
-                editDescription={editDescription}
-                editLocationId={editLocationId}
-                editNotes={editNotes}
-                editPlanningTime={editPlanningTime}
-                editPrice={editPrice}
-                editPriority={editPriority}
-                editQuantity={editQuantity}
-                editStatus={editStatus}
-                editTitle={editTitle}
-                editUnit={editUnit}
-                isReceiverCompany={receiverCompany}
-                managerEditable={managerEditable}
-                locations={locations}
-                maxPlanningDate={maxPlanningDate}
-                selectedTask={selectedTask}
-                setEditCreatedAt={setEditCreatedAt}
-                setEditDescription={setEditDescription}
-                setEditNotes={setEditNotes}
-                setEditPlanningTime={setEditPlanningTime}
-                setEditPrice={setEditPrice}
-                setEditPriority={setEditPriority}
-                setEditQuantity={setEditQuantity}
-                setEditStatus={setEditStatus}
-                setEditUnit={setEditUnit}
-                users={users}
-                isAdminOrManager={adminOrManager}
-                immutable={immutable}
-            />
+                <TaskEditFormFields
+                    dict={dict}
+                    calendarAssigneeName={calendarAssigneeName}
+                    displayTitle={displayTitle}
+                    editCreatedAt={editCreatedAt}
+                    editDescription={editDescription}
+                    editLocationId={editLocationId}
+                    editNotes={editNotes}
+                    editPlanningTime={editPlanningTime}
+                    editPrice={editPrice}
+                    editPriority={editPriority}
+                    editQuantity={editQuantity}
+                    editStatus={editStatus}
+                    editTitle={editTitle}
+                    editUnit={editUnit}
+                    isReceiverCompany={receiverCompany}
+                    managerEditable={managerEditable}
+                    locations={locations}
+                    maxPlanningDate={maxPlanningDate}
+                    selectedTask={selectedTask}
+                    setEditCreatedAt={setEditCreatedAt}
+                    setEditDescription={setEditDescription}
+                    setEditNotes={setEditNotes}
+                    setEditPlanningTime={setEditPlanningTime}
+                    setEditPrice={setEditPrice}
+                    setEditPriority={setEditPriority}
+                    setEditQuantity={setEditQuantity}
+                    setEditStatus={setEditStatus}
+                    setEditUnit={setEditUnit}
+                    users={users}
+                    isAdminOrManager={adminOrManager}
+                    immutable={immutable}
+                />
+            </div>
 
             <TaskEditFormActions
                 dict={dict}
