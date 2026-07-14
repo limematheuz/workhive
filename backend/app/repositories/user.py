@@ -1,8 +1,18 @@
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload, with_loader_criteria
 from app.models.user import User
+from app.models.work_session import WorkSession
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import get_password_hash
+
+
+def user_response_load_options():
+    return (
+        selectinload(User.role),
+        selectinload(User.company),
+        selectinload(User.work_sessions).selectinload(WorkSession.location),
+        with_loader_criteria(WorkSession, WorkSession.end_time.is_(None)),
+    )
 
 
 def get_all_users(
@@ -10,6 +20,7 @@ def get_all_users(
 ) -> list[User]:
     return (
         db.query(User)
+        .options(*user_response_load_options())
         .filter(User.company_id == company_id)
         .filter(User.is_active.is_(True))
         .offset(skip)
@@ -21,6 +32,7 @@ def get_all_users(
 def get_company_members(db: Session, company_id: int) -> list[User]:
     return (
         db.query(User)
+        .options(*user_response_load_options())
         .filter(User.company_id == company_id)
         .join(User.role)
         .order_by(User.is_active.desc(), User.full_name.asc(), User.id.asc())
@@ -31,13 +43,19 @@ def get_company_members(db: Session, company_id: int) -> list[User]:
 def get_user_by_email(db: Session, email: str) -> User | None:
     return (
         db.query(User)
+        .options(*user_response_load_options())
         .filter(func.lower(User.email) == email.strip().lower())
         .first()
     )
 
 
 def get_user_by_id(db: Session, user_id: int) -> User | None:
-    return db.query(User).filter(User.id == user_id).first()
+    return (
+        db.query(User)
+        .options(*user_response_load_options())
+        .filter(User.id == user_id)
+        .first()
+    )
 
 
 def create_user(db: Session, user_data: UserCreate) -> User:

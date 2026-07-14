@@ -45,7 +45,11 @@ export default function CalendarPage() {
 
     useEffect(() => {
         const initialLoad = window.setTimeout(() => {
-            void loadData().finally(() => setLoading(false));
+            void loadData()
+                .catch((error) => {
+                    console.error("Error loading calendar data", error);
+                })
+                .finally(() => setLoading(false));
         }, 0);
         return () => window.clearTimeout(initialLoad);
     }, [loadData]);
