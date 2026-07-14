@@ -1,7 +1,19 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import and_, or_
 from app.models.company import Company
 from app.models.company_collaboration import CompanyCollaboration
+from app.models.user import User
+
+
+def collaboration_response_load_options():
+    return (
+        selectinload(CompanyCollaboration.initiator)
+        .selectinload(Company.users)
+        .selectinload(User.role),
+        selectinload(CompanyCollaboration.partner)
+        .selectinload(Company.users)
+        .selectinload(User.role),
+    )
 
 
 def get_collaboration_by_id(db: Session, collab_id: int) -> CompanyCollaboration | None:
@@ -26,6 +38,7 @@ def get_collaboration(db: Session, company_a_id: int, company_b_id: int) -> Comp
 def list_collaborations(db: Session, company_id: int, status: str = "accepted") -> list[CompanyCollaboration]:
     return (
         db.query(CompanyCollaboration)
+        .options(*collaboration_response_load_options())
         .filter(
             CompanyCollaboration.status == status,
             or_(
@@ -61,6 +74,7 @@ def list_pending_requests(db: Session, company_id: int) -> list[CompanyCollabora
     # Pending requests RECEIVED by this company (so we are the partner_company_id)
     return (
         db.query(CompanyCollaboration)
+        .options(*collaboration_response_load_options())
         .filter(
             CompanyCollaboration.partner_company_id == company_id,
             CompanyCollaboration.status == "pending",
@@ -74,6 +88,7 @@ def list_sent_requests(db: Session, company_id: int) -> list[CompanyCollaboratio
     # Pending requests SENT by this company (so we are the initiator_company_id)
     return (
         db.query(CompanyCollaboration)
+        .options(*collaboration_response_load_options())
         .filter(
             CompanyCollaboration.initiator_company_id == company_id,
             CompanyCollaboration.status == "pending",

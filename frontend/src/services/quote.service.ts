@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api"
+import { apiFetch, assertApiResponseOk } from "@/lib/api"
 import { Quote, QuoteItem } from "@/types/quote"
 
 export interface QuoteCreate {
@@ -63,7 +63,7 @@ export const QuoteService = {
             method: "GET",
             cache: "no-store",
         })
-        if (!response.ok) throw new Error("Error fetching quotes")
+        await assertApiResponseOk(response, "Error fetching quotes")
         return await response.json()
     },
 
@@ -72,7 +72,7 @@ export const QuoteService = {
             method: "GET",
             cache: "no-store",
         })
-        if (!response.ok) throw new Error("Error fetching quote")
+        await assertApiResponseOk(response, "Error fetching quote")
         return await response.json()
     },
 

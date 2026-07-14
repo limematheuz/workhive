@@ -1,10 +1,20 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.company import Company
+from app.models.user import User
 from app.schemas.company import CompanyCreate, CompanyUpdate
 
 
+def company_response_load_options():
+    return (selectinload(Company.users).selectinload(User.role),)
+
+
 def get_company_by_id(db: Session, company_id: int) -> Company | None:
-    return db.query(Company).filter(Company.id == company_id).first()
+    return (
+        db.query(Company)
+        .options(*company_response_load_options())
+        .filter(Company.id == company_id)
+        .first()
+    )
 
 
 def get_company_by_tax_id(db: Session, tax_id: str) -> Company | None:
@@ -14,6 +24,7 @@ def get_company_by_tax_id(db: Session, tax_id: str) -> Company | None:
 def get_all_companies(db: Session, skip: int = 0, limit: int = 100) -> list[Company]:
     return (
         db.query(Company)
+        .options(*company_response_load_options())
         .order_by(Company.is_active.desc(), Company.name.asc())
         .offset(skip)
         .limit(limit)
