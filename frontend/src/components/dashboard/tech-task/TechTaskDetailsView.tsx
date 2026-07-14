@@ -19,7 +19,6 @@ type TechTaskDetailsViewProps = {
     locationName: string;
     viewMode: "map" | "photo";
     setViewMode: (mode: "map" | "photo") => void;
-    onBack: () => void;
     dict: Dictionary;
     headerInfoProps: ComponentProps<typeof TechTaskHeaderInfo>;
     countersProps: ComponentProps<typeof TechTaskModalCounters>;
@@ -29,12 +28,14 @@ type TechTaskDetailsViewProps = {
     dialogsProps: ComponentProps<typeof TechTaskDialogs>;
 };
 
+const scrollHide =
+    "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
+
 export function TechTaskDetailsView({
     location,
     locationName,
     viewMode,
     setViewMode,
-    onBack,
     dict,
     headerInfoProps,
     countersProps,
@@ -44,20 +45,19 @@ export function TechTaskDetailsView({
     dialogsProps,
 }: TechTaskDetailsViewProps) {
     return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl shadow-2xl flex flex-col max-w-2xl mx-auto animate-fade-in relative overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[var(--dialog-bg)]">
             <TechTaskMapArea
                 location={location}
                 locationName={locationName}
                 viewMode={viewMode}
                 setViewMode={setViewMode}
-                onBack={onBack}
                 dict={dict}
             />
 
-            <div className="p-6 flex flex-col space-y-5">
+            <div className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 ${scrollHide}`}>
                 <TechTaskHeaderInfo {...headerInfoProps} />
                 <TechTaskModalCounters {...countersProps} />
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <TechTaskReservationContext {...reservationProps} />
                     <TechTaskPropertyPanels {...propertyPanelsProps} />
                 </div>
@@ -69,5 +69,4 @@ export function TechTaskDetailsView({
     );
 }
 
-// Keep TaskItem import available for consumers typing task props if needed.
 export type { TaskItem };

@@ -54,16 +54,20 @@ test("next pending action selects first unanswered item and handles completion",
 test("mobile checklist owns one vertical scroll and keeps its translucent footer visible", () => {
     assert.equal(dialogSource.match(/overflow-y-auto/g)?.length, 1);
     assert.match(dialogSource, /h-\[100dvh\]/);
-    assert.match(dialogSource, /sticky bottom-0/);
+    assert.match(dialogSource, /scrollbar-width:none/);
     assert.match(dialogSource, /backdrop-blur-xl/);
+    assert.match(dialogSource, /shrink-0/);
 });
 
 test("requirement cards keep compact pill controls in a single action row", () => {
-    assert.match(dialogSource, /fieldset className="mt-3 flex items-center justify-between/);
+    assert.match(dialogSource, /fieldset className="mt-2\.5 flex items-center justify-between/);
     assert.match(dialogSource, /dict\.tech\.yes_label/);
     assert.match(dialogSource, /dict\.tech\.no_label/);
     assert.doesNotMatch(dialogSource, /\{dict\.tech\.btn_yes\}/);
     assert.match(dialogSource, /items-start justify-between/);
+    assert.match(dialogSource, /Pencil/);
+    assert.match(dialogSource, /Camera/);
+    assert.doesNotMatch(dialogSource, /hover:border-red-500/);
 });
 
 test("checklist categories use the shared app tabs", () => {

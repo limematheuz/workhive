@@ -15,7 +15,6 @@ import { useDictionary } from "@/lib/dictionary-context";
 interface TechTaskCommentsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    isCurrentTaskSessionActive: boolean;
     newCommentText: string;
     setNewCommentText: (text: string) => void;
     onAddComment: (e: React.FormEvent) => Promise<void>;
@@ -24,7 +23,6 @@ interface TechTaskCommentsDialogProps {
 export function TechTaskCommentsDialog({
     open,
     onOpenChange,
-    isCurrentTaskSessionActive,
     newCommentText,
     setNewCommentText,
     onAddComment,
@@ -33,10 +31,10 @@ export function TechTaskCommentsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md bg-[var(--bg-card)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-3xl p-6 flex flex-col max-h-[80vh] overflow-hidden">
+            <DialogContent className="flex max-h-[80vh] max-w-md flex-col overflow-hidden rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 text-[var(--text-main)]">
                 <DialogHeader className="border-b border-[var(--border-soft)] pb-4">
-                    <DialogTitle className="text-base font-bold flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-accent" />
+                    <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                        <MessageSquare className="h-5 w-5 text-accent" />
                         {dict.tech.comments_title}
                     </DialogTitle>
                     <DialogDescription className="text-2xs text-[var(--text-muted)]">
@@ -44,29 +42,26 @@ export function TechTaskCommentsDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <p className="py-4 text-center text-xs text-[var(--text-muted)]">
+                <form onSubmit={onAddComment} className="mt-4 flex flex-col gap-3">
+                    <textarea
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        placeholder={dict.tech.comments_placeholder}
+                        required
+                        rows={3}
+                        className="w-full resize-none rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
+                    />
+                    <Button
+                        type="submit"
+                        className="flex h-10 cursor-pointer items-center justify-center self-end rounded-2xl border-none bg-accent px-4 text-xs font-black text-white hover:bg-accent-light"
+                    >
+                        {dict.tech.comments_submit}
+                    </Button>
+                </form>
+
+                <p className="mt-3 text-center text-xs text-[var(--text-muted)]">
                     {dict.task_reports.worker_hint}
                 </p>
-
-                {/* Comment input form */}
-                {isCurrentTaskSessionActive && (
-                    <form onSubmit={onAddComment} className="border-t border-[var(--border-soft)] pt-4 mt-2 flex gap-2">
-                        <textarea
-                            value={newCommentText}
-                            onChange={(e) => setNewCommentText(e.target.value)}
-                            placeholder={dict.tech.comments_placeholder}
-                            required
-                            rows={2}
-                            className="flex-1 bg-[var(--bg-secondary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-2xl px-3 py-2 text-xs outline-none focus:border-accent resize-none font-medium"
-                        />
-                        <Button
-                            type="submit"
-                            className="bg-accent hover:bg-accent-light text-white font-black text-xs px-4 rounded-2xl border-none cursor-pointer flex items-center justify-center self-end h-10"
-                        >
-                            {dict.tech.comments_submit}
-                        </Button>
-                    </form>
-                )}
             </DialogContent>
         </Dialog>
     );

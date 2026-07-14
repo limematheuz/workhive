@@ -71,7 +71,6 @@ export function TechTaskDialogs(props: TechTaskDialogsProps) {
             <TechTaskAttachmentsDialog
                 open={props.adjuntosOpen}
                 onOpenChange={props.setAdjuntosOpen}
-                isCurrentTaskSessionActive={props.currentTaskSessionActive}
                 uploadingAttachment={props.uploadingAttachment}
                 onUploadAttachment={props.onUploadAttachment}
             />
@@ -79,7 +78,6 @@ export function TechTaskDialogs(props: TechTaskDialogsProps) {
             <TechTaskCommentsDialog
                 open={props.comentariosOpen}
                 onOpenChange={props.setComentariosOpen}
-                isCurrentTaskSessionActive={props.currentTaskSessionActive}
                 newCommentText={props.newCommentText}
                 setNewCommentText={props.setNewCommentText}
                 onAddComment={props.onAddComment}

@@ -120,7 +120,6 @@ export function useTechTaskDetailsController({
         locationName,
         viewMode,
         setViewMode,
-        onBack,
         dict,
         headerInfoProps: {
             task,

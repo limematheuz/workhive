@@ -21,15 +21,15 @@ export function TechTaskModalCounters({
     onOpenComentarios,
 }: TechTaskModalCountersProps) {
     return (
-        <div className="grid grid-cols-3 gap-3 my-2">
+        <div className="grid grid-cols-3 gap-2">
             <button
                 type="button"
                 onClick={onOpenRequisitos}
-                className="flex flex-col items-center justify-center p-3 bg-[var(--bg-card)] border border-[var(--border-soft)] hover:border-accent/30 hover:bg-[var(--bg-primary)]/5 rounded-2xl text-center shadow-2xs cursor-pointer transition-all duration-200"
+                className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-2 py-2.5 text-center transition hover:border-accent/35 hover:bg-[var(--bg-secondary)] cursor-pointer"
             >
-                <CheckCircle2 className="w-5 h-5 text-accent" />
-                <span className="text-xs font-black text-[var(--text-main)] mt-1.5">{completedCount}/{totalCount}</span>
-                <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)] tracking-wider mt-0.5">
+                <CheckCircle2 className="h-4 w-4 text-accent" />
+                <span className="mt-1 text-xs font-black text-[var(--text-main)]">{completedCount}/{totalCount}</span>
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
                     {locale === "es" ? "Requisitos" : "Requirements"}
                 </span>
             </button>
@@ -37,11 +37,11 @@ export function TechTaskModalCounters({
             <button
                 type="button"
                 onClick={onOpenAdjuntos}
-                className="flex flex-col items-center justify-center p-3 bg-[var(--bg-card)] border border-[var(--border-soft)] hover:border-accent/30 hover:bg-[var(--bg-primary)]/5 rounded-2xl text-center shadow-2xs cursor-pointer transition-all duration-200"
+                className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-2 py-2.5 text-center transition hover:border-accent/35 hover:bg-[var(--bg-secondary)] cursor-pointer"
             >
-                <Paperclip className="w-5 h-5 text-accent" />
-                <span className="text-xs font-black text-[var(--text-main)] mt-1.5">+</span>
-                <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)] tracking-wider mt-0.5">
+                <Paperclip className="h-4 w-4 text-accent" />
+                <span className="mt-1 text-xs font-black text-[var(--text-main)]">+</span>
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
                     {locale === "es" ? "Enviar foto" : "Send photo"}
                 </span>
             </button>
@@ -49,11 +49,11 @@ export function TechTaskModalCounters({
             <button
                 type="button"
                 onClick={onOpenComentarios}
-                className="flex flex-col items-center justify-center p-3 bg-[var(--bg-card)] border border-[var(--border-soft)] hover:border-accent/30 hover:bg-[var(--bg-primary)]/5 rounded-2xl text-center shadow-2xs cursor-pointer transition-all duration-200"
+                className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-2 py-2.5 text-center transition hover:border-accent/35 hover:bg-[var(--bg-secondary)] cursor-pointer"
             >
-                <MessageSquare className="w-5 h-5 text-accent" />
-                <span className="text-xs font-black text-[var(--text-main)] mt-1.5">+</span>
-                <span className="text-[9px] font-extrabold uppercase text-[var(--text-muted)] tracking-wider mt-0.5">
+                <MessageSquare className="h-4 w-4 text-accent" />
+                <span className="mt-1 text-xs font-black text-[var(--text-main)]">+</span>
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
                     {locale === "es" ? "Enviar nota" : "Send note"}
                 </span>
             </button>
