@@ -69,7 +69,7 @@ export function TaskChecklistEditor({
                                         onAssign(item.index, event.target.value)
                                     }
                                     aria-label={`Asignar trabajador: ${item.text}`}
-                                    className="max-w-[140px] cursor-pointer appearance-none truncate rounded-full border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 py-1 text-center text-[10px] font-bold text-[var(--text-main)] outline-none transition-all hover:bg-[var(--bg-secondary)]"
+                                    className="dialog-compact-control max-w-[140px] cursor-pointer appearance-none truncate rounded-full border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 py-1 text-center text-[10px] font-bold text-[var(--text-main)] outline-none transition-all hover:bg-[var(--bg-secondary)]"
                                 >
                                     <option value="unassigned">-- Unassigned --</option>
                                     {users.map((user) => (

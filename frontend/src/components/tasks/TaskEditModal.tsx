@@ -21,6 +21,11 @@ import {
     taskLocationTitle,
 } from "@/lib/task-display";
 import type { TaskPriority, TaskStatus } from "@/types/task";
+import {
+    taskDialogContentClass,
+    taskDialogHeaderClass,
+    taskDialogOverlayClass,
+} from "./taskDialogChrome";
 
 interface TaskEditModalProps {
     dict: Dictionary;
@@ -130,21 +135,24 @@ export function TaskEditModal({
     return (
         <Dialog open={!!selectedTask} onOpenChange={(open) => { if (!open) setSelectedTask(null); }}>
             <DialogContent
+                overlayClassName={taskDialogOverlayClass}
                 className={cn(
-                    "flex max-h-[min(90vh,820px)] w-[95vw] flex-col gap-0 overflow-hidden border-[var(--border-soft)] bg-[var(--bg-card)] p-0 sm:max-w-2xl md:max-w-3xl [scrollbar-width:none]",
-                    selectedTask?.status === "requested" && "border-t-[3px] border-t-accent"
+                    taskDialogContentClass,
+                    "max-h-[min(90vh,820px)] sm:max-w-2xl md:max-w-3xl",
+                    selectedTask?.status === "requested" &&
+                        "!border-t-[3px] !border-t-[var(--accent-color)]"
                 )}
             >
-                <DialogHeader className="shrink-0 space-y-1 border-b border-[var(--border-soft)] px-5 py-4 pr-16 text-left sm:px-6">
+                <DialogHeader className={taskDialogHeaderClass}>
                     <span className={cn(
-                        "block text-[10px] font-black uppercase tracking-wider",
+                        "block text-[10px] font-bold uppercase tracking-[0.14em]",
                         selectedTask?.status === "requested" ? "text-accent" : "text-[var(--text-muted)]"
                     )}>
                         {selectedTask?.status === "requested"
                             ? "Solicitud externa"
                             : (dict.tasks?.dialog?.details_title_simple || "Task Details")}
                     </span>
-                    <DialogTitle className="text-lg font-black leading-snug text-[var(--text-main)] sm:text-xl">
+                    <DialogTitle className="text-lg font-bold leading-snug tracking-tight text-[var(--text-main)] sm:text-xl">
                         {displayTitle}
                     </DialogTitle>
                     <DialogDescription className="sr-only">

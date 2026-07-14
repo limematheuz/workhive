@@ -9,13 +9,17 @@ import {
     X,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { InstructionList } from "@/components/ui/instruction-list";
 import { buildLocalDateTimeIso } from "@/lib/format";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
 import { toTaskPlanningDateInput } from "@/domain/tasks/task-schedule";
+import {
+    taskDialogDangerBtnClass,
+    taskDialogFooterClass,
+    taskDialogPrimaryBtnClass,
+} from "./taskDialogChrome";
 
 interface TaskRequestReviewProps {
     task: TaskItem;
@@ -279,8 +283,8 @@ export function TaskRequestReview({
             </div>
 
             {isAdminOrManager && (
-                <div className="flex justify-end gap-2.5 border-t border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-6 py-4">
-                    <Button
+                <div className={`${taskDialogFooterClass} justify-end`}>
+                    <button
                         type="button"
                         disabled={isSaving}
                         onClick={async () => {
@@ -289,12 +293,12 @@ export function TaskRequestReview({
                                 onClose();
                             }
                         }}
-                        className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-5 py-2.5 text-sm font-bold text-[var(--btn-cancel-text)] transition-all hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] active:scale-[0.98] sm:flex-none"
+                        className={`${taskDialogDangerBtnClass} flex-1 sm:flex-none`}
                     >
                         <X className="h-4 w-4" />
                         Rechazar
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                         type="button"
                         disabled={isSaving}
                         onClick={async () => {
@@ -309,7 +313,7 @@ export function TaskRequestReview({
                                 onClose();
                             }
                         }}
-                        className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] px-5 py-2.5 text-sm font-bold text-[var(--btn-primary-text)] transition-all hover:bg-[var(--btn-primary-hover-bg)] active:scale-[0.98] sm:flex-none"
+                        className={`${taskDialogPrimaryBtnClass} flex-1 sm:flex-none`}
                     >
                         {isSaving ? (
                             <>
@@ -322,7 +326,7 @@ export function TaskRequestReview({
                                 Aceptar
                             </>
                         )}
-                    </Button>
+                    </button>
                 </div>
             )}
         </div>

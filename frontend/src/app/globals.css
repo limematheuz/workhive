@@ -279,6 +279,33 @@
   }
 }
 
+/* Frosted sheet surface (macOS / iOS) — unlayered so it beats solid --dialog-bg overrides */
+[data-slot="dialog-content"].dialog-glass {
+  background-color: color-mix(in srgb, var(--bg-card-solid) 52%, transparent) !important;
+  backdrop-filter: blur(40px) saturate(1.65);
+  -webkit-backdrop-filter: blur(40px) saturate(1.65);
+  border-color: color-mix(in srgb, var(--border-soft) 88%, transparent) !important;
+  box-shadow:
+    0 28px 90px color-mix(in srgb, var(--shadow-color) 88%, transparent),
+    0 0 0 0.5px color-mix(in srgb, var(--border-color) 55%, transparent),
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+}
+
+.light-mode [data-slot="dialog-content"].dialog-glass {
+  background-color: color-mix(in srgb, var(--bg-card-solid) 46%, transparent) !important;
+  border-color: rgba(255, 255, 255, 0.62) !important;
+  box-shadow:
+    0 28px 90px color-mix(in srgb, var(--shadow-color) 70%, transparent),
+    0 0 0 0.5px rgba(82, 101, 119, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.dialog-glass-chrome {
+  background-color: color-mix(in srgb, var(--bg-card-solid) 55%, transparent);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+}
+
 /* Custom utility classes for the Glassmorphism/Bento design */
 @layer components {
   .glass-card {
@@ -617,12 +644,12 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 /* Unified premium styling for form fields inside modals/sheets to match iOS styling */
-[data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
-[data-slot="dialog-content"] select,
-[data-slot="dialog-content"] textarea,
-[data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
-[data-slot="sheet-content"] select,
-[data-slot="sheet-content"] textarea {
+[data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
+[data-slot="dialog-content"] select:not(.dialog-compact-control),
+[data-slot="dialog-content"] textarea:not(.dialog-compact-control),
+[data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
+[data-slot="sheet-content"] select:not(.dialog-compact-control),
+[data-slot="sheet-content"] textarea:not(.dialog-compact-control) {
   background-color: var(--bg-tertiary) !important;
   border: 1px solid var(--border-soft) !important;
   border-radius: 0.875rem !important; /* rounded-xl (14px) */
@@ -642,12 +669,12 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
   border-color: rgba(255, 255, 255, 0.78) !important;
 }
 
-.light-mode [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
-.light-mode [data-slot="dialog-content"] select,
-.light-mode [data-slot="dialog-content"] textarea,
-.light-mode [data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]),
-.light-mode [data-slot="sheet-content"] select,
-.light-mode [data-slot="sheet-content"] textarea {
+.light-mode [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
+.light-mode [data-slot="dialog-content"] select:not(.dialog-compact-control),
+.light-mode [data-slot="dialog-content"] textarea:not(.dialog-compact-control),
+.light-mode [data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
+.light-mode [data-slot="sheet-content"] select:not(.dialog-compact-control),
+.light-mode [data-slot="sheet-content"] textarea:not(.dialog-compact-control) {
   background-color: var(--dialog-control-bg) !important;
   border-color: var(--dialog-control-border) !important;
   box-shadow:
@@ -663,12 +690,12 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 /* Form fields focus state */
-[data-slot="dialog-content"] input:focus,
-[data-slot="dialog-content"] select:focus,
-[data-slot="dialog-content"] textarea:focus,
-[data-slot="sheet-content"] input:focus,
-[data-slot="sheet-content"] select:focus,
-[data-slot="sheet-content"] textarea:focus {
+[data-slot="dialog-content"] input:not(.dialog-compact-control):focus,
+[data-slot="dialog-content"] select:not(.dialog-compact-control):focus,
+[data-slot="dialog-content"] textarea:not(.dialog-compact-control):focus,
+[data-slot="sheet-content"] input:not(.dialog-compact-control):focus,
+[data-slot="sheet-content"] select:not(.dialog-compact-control):focus,
+[data-slot="sheet-content"] textarea:not(.dialog-compact-control):focus {
   border-color: var(--accent-color) !important;
   box-shadow: 0 0 0 1px var(--accent-color) !important;
   background-color: var(--dialog-control-bg) !important;

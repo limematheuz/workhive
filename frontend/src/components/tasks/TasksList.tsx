@@ -120,7 +120,7 @@ export function TasksList({
 
     function renderCards(items: TaskItem[], dimmed = false) {
         return (
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div className="grid grid-cols-1 items-stretch gap-2 md:grid-cols-2">
                 {items.map(task => (
                     <TaskListCard
                         key={task.id}
