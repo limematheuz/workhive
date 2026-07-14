@@ -35,9 +35,13 @@ test("report center reuses the application visual system and keeps details in a 
 
     assert.match(page, /PremiumTabs/);
     assert.match(page, /components\/ui\/input/);
+    assert.match(page, /scrollbar-width:none/);
     assert.match(reportCard, /components\/ui\/badge/);
     assert.match(reportDialog, /components\/ui\/dialog/);
+    assert.match(reportDialog, /h-36/);
+    assert.match(reportDialog, /scrollbar-width:none/);
     assert.doesNotMatch(page, /aspect-\[16\/10\]|xl:grid-cols-3/);
+    assert.doesNotMatch(reportDialog, /aspect-\[16\/9\]/);
 });
 
 test("report center has role-scoped navigation and its own alert count", () => {

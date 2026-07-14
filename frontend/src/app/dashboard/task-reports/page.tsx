@@ -14,6 +14,9 @@ import { TaskReportService, type TaskReport } from "@/services/task-report.servi
 
 type ReportFilter = TaskReportCategory | "all";
 
+const scrollHide =
+    "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
+
 export default function TaskReportsPage() {
     const { dict, locale } = useDictionary();
     const copy = dict.task_reports;
@@ -50,24 +53,26 @@ export default function TaskReportsPage() {
     const labels = { issue: copy.issue, note: copy.note, photo: copy.photo };
 
     return (
-        <div className="h-full overflow-y-auto px-[3%] py-6 md:p-8">
-            <div className="mx-auto w-full max-w-7xl space-y-5">
+        <div className={`h-full overflow-y-auto px-[3%] py-5 md:px-7 md:py-6 ${scrollHide}`}>
+            <div className="mx-auto w-full max-w-6xl space-y-4">
                 <header>
-                    <h1 className="flex items-center gap-2 text-2xl font-black tracking-tight text-[var(--text-main)]">
-                        <ShieldAlert className="h-6 w-6 text-accent" />
+                    <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-[var(--text-main)] md:text-2xl">
+                        <ShieldAlert className="h-5 w-5 text-accent md:h-6 md:w-6" />
                         {copy.title}
                     </h1>
-                    <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">{copy.subtitle}</p>
+                    <p className="mt-1 max-w-2xl text-xs font-medium leading-relaxed text-[var(--text-muted)]">
+                        {copy.subtitle}
+                    </p>
                 </header>
 
-                <section className="space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 shadow-sm">
+                <section className="space-y-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2.5 shadow-sm sm:p-3">
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                         <Input
                             value={query}
                             onChange={event => setQuery(event.target.value)}
                             placeholder={copy.search}
-                            className="h-10 rounded-xl border-[var(--border-soft)] bg-[var(--bg-secondary)] pl-9 text-sm"
+                            className="h-9 rounded-xl border-[var(--border-soft)] bg-[var(--bg-secondary)] pl-9 text-sm"
                         />
                     </div>
                     <PremiumTabs<ReportFilter>
@@ -82,15 +87,19 @@ export default function TaskReportsPage() {
                     />
                 </section>
 
-                {loading && <p className="py-16 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>}
+                {loading && <p className="py-14 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>}
                 {!loading && error && (
-                    <div className="rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-4 text-sm text-[var(--btn-cancel-text)]">{copy.error}</div>
+                    <div className="rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-4 text-sm text-[var(--btn-cancel-text)]">
+                        {copy.error}
+                    </div>
                 )}
                 {!loading && !error && visible.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] p-10 text-center text-sm text-[var(--text-muted)]">{copy.empty}</div>
+                    <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center text-sm text-[var(--text-muted)]">
+                        {copy.empty}
+                    </div>
                 )}
 
-                <section className="grid items-start gap-3 md:grid-cols-2">
+                <section className="grid items-start gap-2 md:grid-cols-2">
                     {visible.map(report => (
                         <TaskReportCard key={report.id} report={report} locale={locale} labels={labels} onOpen={setSelectedReport} />
                     ))}
