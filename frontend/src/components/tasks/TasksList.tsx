@@ -7,7 +7,7 @@ import { TaskItem } from "@/services/task.service";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { getStatusWeight } from "./tasksListUtils";
+import { partitionTasksForGeneralList } from "./tasksListUtils";
 import { TasksListFilters } from "./TasksListFilters";
 import { TaskListCard } from "./TaskListCard";
 import { TasksListPagination } from "./TasksListPagination";
@@ -32,6 +32,8 @@ interface TasksListProps {
     getAssigneeName: (userId: number | null) => string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export function TasksList({
     dict,
     tasks,
@@ -53,7 +55,6 @@ export function TasksList({
 }: TasksListProps) {
     const [searchQuery, setSearchQuery] = React.useState("");
     const [dateScope, setDateScope] = React.useState("ALL");
-    const itemsPerPage = 12;
     const pageContextKey = `${selectedLocationId}|${selectedUserId}|${selectedStatus}|${searchQuery}|${dateScope}`;
     const [pageState, setPageState] = React.useState({ contextKey: pageContextKey, page: 1 });
     const currentPage = pageState.contextKey === pageContextKey ? pageState.page : 1;
@@ -92,19 +93,21 @@ export function TasksList({
         });
     }, [dateScope, getAssigneeName, getLocationName, searchQuery, tasks]);
 
-    const sortedTasks = [...visibleTasks].sort((a, b) => {
-        const weightA = getStatusWeight(a);
-        const weightB = getStatusWeight(b);
-        if (weightA !== weightB) {
-            return weightA - weightB;
-        }
-        return b.id - a.id; // Newer first
-    });
+    const { active, completed } = React.useMemo(
+        () => partitionTasksForGeneralList(visibleTasks),
+        [visibleTasks],
+    );
 
-    const totalItems = sortedTasks.length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const showOnlyCompleted = selectedStatus === "completed";
+    const showCompletedSection = !showOnlyCompleted && selectedStatus === "" && completed.length > 0;
+    const primaryTasks = showOnlyCompleted ? completed : active;
+    const totalItems = visibleTasks.length;
+    const totalPages = Math.ceil(primaryTasks.length / ITEMS_PER_PAGE);
     const safeCurrentPage = Math.min(currentPage, Math.max(totalPages, 1));
-    const paginatedTasks = sortedTasks.slice((safeCurrentPage - 1) * itemsPerPage, safeCurrentPage * itemsPerPage);
+    const paginatedPrimary = primaryTasks.slice(
+        (safeCurrentPage - 1) * ITEMS_PER_PAGE,
+        safeCurrentPage * ITEMS_PER_PAGE,
+    );
 
     const getPageNumbers = () => {
         const pages: (number | string)[] = [];
@@ -118,6 +121,28 @@ export function TasksList({
         return pages;
     };
     const pageNumbers = getPageNumbers();
+
+    function renderCards(items: TaskItem[], dimmed = false) {
+        return (
+            <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                {items.map(task => (
+                    <TaskListCard
+                        key={task.id}
+                        dict={dict}
+                        task={task}
+                        locations={locations}
+                        currentUser={currentUser}
+                        isAdminOrManager={isAdminOrManager}
+                        handleOpenDetail={handleOpenDetail}
+                        handleToggleStatus={handleToggleStatus}
+                        getAssigneeName={getAssigneeName}
+                        getLocationName={getLocationName}
+                        dimmed={dimmed}
+                    />
+                ))}
+            </div>
+        );
+    }
 
     return (
         <div>
@@ -140,42 +165,71 @@ export function TasksList({
             />
 
             {loadingTasks ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                <div className="flex flex-col items-center justify-center gap-3 py-20">
+                    <Loader2 className="h-8 w-8 animate-spin text-accent" />
                     <span className="text-xs text-[var(--text-muted)]">{dict.dashboard?.tasks_loading || "Loading tasks..."}</span>
                 </div>
             ) : totalItems > 0 ? (
-                <div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {paginatedTasks.map(task => (
-                            <TaskListCard
-                                key={task.id}
-                                dict={dict}
-                                task={task}
-                                locations={locations}
-                                currentUser={currentUser}
-                                isAdminOrManager={isAdminOrManager}
-                                handleOpenDetail={handleOpenDetail}
-                                handleToggleStatus={handleToggleStatus}
-                                getAssigneeName={getAssigneeName}
-                            />
-                        ))}
-                    </div>
+                <div className="space-y-5">
+                    {!showOnlyCompleted && (
+                        <section className="space-y-2.5">
+                            {selectedStatus === "" && (
+                                <h2 className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                                    {dict.tasks?.section_active || "Activas"}
+                                    <span className="ml-2 tabular-nums text-accent">{active.length}</span>
+                                </h2>
+                            )}
+                            {paginatedPrimary.length > 0 ? (
+                                renderCards(paginatedPrimary)
+                            ) : (
+                                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+                                    {dict.tasks?.no_active_tasks || "No hay tareas activas con estos filtros."}
+                                </div>
+                            )}
+                        </section>
+                    )}
+
+                    {showOnlyCompleted && (
+                        <section className="space-y-2.5">
+                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                                {dict.tasks?.section_completed || "Completadas"}
+                                <span className="ml-2 tabular-nums text-accent">{completed.length}</span>
+                            </h2>
+                            {renderCards(paginatedPrimary, true)}
+                        </section>
+                    )}
+
+                    {showCompletedSection && (
+                        <section className="space-y-2.5 border-t border-[var(--border-soft)] pt-4">
+                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                                {dict.tasks?.section_completed || "Completadas"}
+                                <span className="ml-2 tabular-nums">{completed.length}</span>
+                            </h2>
+                            {renderCards(completed.slice(0, ITEMS_PER_PAGE), true)}
+                            {completed.length > ITEMS_PER_PAGE && (
+                                <p className="text-[11px] font-medium text-[var(--text-muted)]">
+                                    {(dict.tasks?.completed_preview || "Mostrando {count} de {total}. Filtra por Completadas para ver el resto.")
+                                        .replace("{count}", String(ITEMS_PER_PAGE))
+                                        .replace("{total}", String(completed.length))}
+                                </p>
+                            )}
+                        </section>
+                    )}
 
                     <TasksListPagination
                         dict={dict}
-                        itemsPerPage={itemsPerPage}
+                        itemsPerPage={ITEMS_PER_PAGE}
                         safeCurrentPage={safeCurrentPage}
                         currentPage={currentPage}
-                        totalItems={totalItems}
+                        totalItems={primaryTasks.length}
                         totalPages={totalPages}
                         pageNumbers={pageNumbers}
                         setCurrentPage={setCurrentPage}
                     />
                 </div>
             ) : (
-                <div className="text-center py-20 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-soft)]">
-                    <p className="text-sm text-[var(--text-muted)] font-medium">
+                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] py-20 text-center">
+                    <p className="text-sm font-medium text-[var(--text-muted)]">
                         {dict.tasks?.no_tasks_found || "No tasks found in the general list."}
                     </p>
                 </div>

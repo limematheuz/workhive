@@ -1,12 +1,43 @@
-import { TaskItem } from "@/services/task.service";
+type TaskListStatusFields = {
+    id: number;
+    status: string;
+    is_invoiced?: boolean | null;
+};
 
-export const getStatusWeight = (t: TaskItem) => {
+export const getStatusWeight = (t: TaskListStatusFields) => {
     if (t.is_invoiced) return 5;
     if (t.status === "completed") return 4;
     if (t.status === "review" || t.status === "in_review") return 3;
     if (t.status === "progress" || t.status === "in_progress") return 2;
     return 1; // pending
 };
+
+export function isTaskFinished(task: Pick<TaskListStatusFields, "status" | "is_invoiced">): boolean {
+    return task.status === "completed" || Boolean(task.is_invoiced);
+}
+
+export function sortTasksForGeneralList<T extends TaskListStatusFields>(tasks: readonly T[]): T[] {
+    return [...tasks].sort((left, right) => {
+        const weightDiff = getStatusWeight(left) - getStatusWeight(right);
+        if (weightDiff !== 0) return weightDiff;
+        return right.id - left.id;
+    });
+}
+
+export function partitionTasksForGeneralList<T extends TaskListStatusFields>(
+    tasks: readonly T[],
+): { active: T[]; completed: T[] } {
+    const active: T[] = [];
+    const completed: T[] = [];
+    for (const task of tasks) {
+        if (isTaskFinished(task)) completed.push(task);
+        else active.push(task);
+    }
+    return {
+        active: sortTasksForGeneralList(active),
+        completed: sortTasksForGeneralList(completed),
+    };
+}
 
 export type ChecklistItem = {
     text: string;
