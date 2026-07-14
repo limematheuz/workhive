@@ -63,7 +63,7 @@ export function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
                                     : dict.dashboard.overview;
 
     return (
-        <header className="relative z-50 h-20 flex items-center justify-between px-[3%] md:px-8 border-b border-[var(--border-soft)] bg-transparent transition-colors duration-300">
+        <header className="relative z-10 flex h-20 items-center justify-between border-b border-[var(--border-soft)] bg-transparent px-[3%] transition-colors duration-300 md:px-8">
             <div className="flex items-center gap-4">
                 <button
                     type="button"

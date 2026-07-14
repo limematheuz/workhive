@@ -112,7 +112,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <button
                     type="button"
                     aria-label="Close sidebar"
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden transition-opacity"
+                    className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
