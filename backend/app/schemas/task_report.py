@@ -49,6 +49,43 @@ class TaskReportCreate(BaseModel):
         return self
 
 
+class TaskReportUpdate(BaseModel):
+    title: str | None = Field(default=None, max_length=160)
+    description: str | None = Field(default=None, max_length=4000)
+    issue_type: str | None = Field(default=None, max_length=80)
+    element: str | None = Field(default=None, max_length=80)
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def normalize_optional_text(self):
+        if not self.model_fields_set:
+            raise ValueError("At least one editable field is required")
+        if "title" in self.model_fields_set and isinstance(self.title, str):
+            self.title = self.title.strip()
+        if "description" in self.model_fields_set and isinstance(self.description, str):
+            self.description = self.description.strip()
+        if "issue_type" in self.model_fields_set and isinstance(self.issue_type, str):
+            self.issue_type = self.issue_type.strip()
+        if "element" in self.model_fields_set and isinstance(self.element, str):
+            self.element = self.element.strip()
+        return self
+
+
+class TaskReportBulkDelete(BaseModel):
+    ids: list[int] = Field(min_length=1, max_length=200)
+
+    model_config = ConfigDict(extra="forbid")
+
+    @model_validator(mode="after")
+    def validate_ids(self):
+        cleaned = sorted({report_id for report_id in self.ids if report_id > 0})
+        if not cleaned:
+            raise ValueError("At least one valid report id is required")
+        self.ids = cleaned
+        return self
+
+
 class TaskReportResponse(BaseModel):
     id: int
     task_item_id: int
