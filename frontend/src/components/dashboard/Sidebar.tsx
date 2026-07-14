@@ -18,7 +18,11 @@ import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
 import { NotificationService } from "@/services/notification.service";
-import { countUnreadTaskNotifications } from "@/lib/task-reporting";
+import {
+    countUnreadTaskNotifications,
+    countUnreadTaskReportNotifications,
+} from "@/lib/task-reporting";
+import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -34,6 +38,7 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
 
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
     const [taskAlertsCount, setTaskAlertsCount] = useState(0);
+    const [reportAlertsCount, setReportAlertsCount] = useState(0);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         sales: true,
         finance: true,
@@ -58,6 +63,7 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
         try {
             const notifications = await NotificationService.listUnread();
             setTaskAlertsCount(countUnreadTaskNotifications(notifications));
+            setReportAlertsCount(countUnreadTaskReportNotifications(notifications));
         } catch {
             // Keep navigation available during transient API failures.
         }
@@ -72,6 +78,12 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
 
     useEffect(() => {
         startTransition(() => { void fetchTaskAlerts(); });
+    }, [fetchTaskAlerts]);
+
+    useEffect(() => {
+        const refresh = () => { void fetchTaskAlerts(); };
+        window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh);
+        return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh);
     }, [fetchTaskAlerts]);
 
     useBackgroundPolling(async () => {
@@ -105,6 +117,7 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
                 visibleNavLinks={visibleNavLinks}
                 pendingRequestsCount={pendingRequestsCount}
                 taskAlertsCount={taskAlertsCount}
+                reportAlertsCount={reportAlertsCount}
                 openGroups={openGroups}
                 onOpenGroupChange={(groupId, open) =>
                     setOpenGroups(current => ({ ...current, [groupId]: open }))

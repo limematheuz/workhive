@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import type { TaskItem } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { TechTaskChecklistDialog } from "./TechTaskChecklistDialog";
 import { TechTaskAttachmentsDialog } from "./TechTaskAttachmentsDialog";
@@ -35,16 +34,11 @@ type TechTaskDialogsProps = {
     onChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     onResetChecklist: () => Promise<void>;
     onAddChecklistItem: (e: React.FormEvent) => Promise<void>;
-    attachments: NonNullable<TaskItem["attachments"]>;
     uploadingAttachment: boolean;
     onUploadAttachment: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
-    onDeleteAttachment: (url: string) => Promise<void>;
-    comments: NonNullable<TaskItem["operational_notes"]>;
-    locale: string;
     newCommentText: string;
     setNewCommentText: (text: string) => void;
     onAddComment: (e: React.FormEvent) => Promise<void>;
-    onDeleteComment: (date: string) => Promise<void>;
 };
 
 export function TechTaskDialogs(props: TechTaskDialogsProps) {
@@ -77,23 +71,18 @@ export function TechTaskDialogs(props: TechTaskDialogsProps) {
             <TechTaskAttachmentsDialog
                 open={props.adjuntosOpen}
                 onOpenChange={props.setAdjuntosOpen}
-                attachments={props.attachments}
                 isCurrentTaskSessionActive={props.currentTaskSessionActive}
                 uploadingAttachment={props.uploadingAttachment}
                 onUploadAttachment={props.onUploadAttachment}
-                onDeleteAttachment={props.onDeleteAttachment}
             />
 
             <TechTaskCommentsDialog
                 open={props.comentariosOpen}
                 onOpenChange={props.setComentariosOpen}
-                comments={props.comments}
                 isCurrentTaskSessionActive={props.currentTaskSessionActive}
-                locale={props.locale}
                 newCommentText={props.newCommentText}
                 setNewCommentText={props.setNewCommentText}
                 onAddComment={props.onAddComment}
-                onDeleteComment={props.onDeleteComment}
             />
         </>
     );

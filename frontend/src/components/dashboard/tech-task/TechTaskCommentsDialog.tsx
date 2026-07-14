@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { MessageSquare, Trash2 } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -12,34 +12,22 @@ import {
 } from "@/components/ui/dialog";
 import { useDictionary } from "@/lib/dictionary-context";
 
-interface Comment {
-    author: string;
-    text: string;
-    date: string;
-}
-
 interface TechTaskCommentsDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    comments: Comment[];
     isCurrentTaskSessionActive: boolean;
-    locale: string;
     newCommentText: string;
     setNewCommentText: (text: string) => void;
     onAddComment: (e: React.FormEvent) => Promise<void>;
-    onDeleteComment: (date: string) => Promise<void>;
 }
 
 export function TechTaskCommentsDialog({
     open,
     onOpenChange,
-    comments,
     isCurrentTaskSessionActive,
-    locale,
     newCommentText,
     setNewCommentText,
     onAddComment,
-    onDeleteComment,
 }: TechTaskCommentsDialogProps) {
     const { dict } = useDictionary();
 
@@ -56,56 +44,9 @@ export function TechTaskCommentsDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                {/* Comments feed */}
-                <div className="flex-1 overflow-y-auto py-4 space-y-3.5 pr-1 mt-2">
-                    {comments.length === 0 ? (
-                        <div className="text-center py-12 text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">
-                            {dict.tech.comments_empty}
-                        </div>
-                    ) : (
-                        comments.map((c) => {
-                            const formattedDate = (() => {
-                                try {
-                                    return new Date(c.date).toLocaleTimeString(locale === "en" ? "en-US" : "es-ES", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        timeZone: "UTC",
-                                    }) + " - " + new Date(c.date).toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
-                                        month: "short",
-                                        day: "numeric",
-                                        timeZone: "UTC",
-                                    });
-                                } catch {
-                                    return "";
-                                }
-                            })();
-
-                            return (
-                                <div key={`${c.author}-${c.date}-${c.text}`} className="flex flex-col gap-1 p-3 bg-[var(--bg-secondary)]/50 rounded-2xl border border-[var(--border-soft)]/60 relative group">
-                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wide text-accent">
-                                        <span>{c.author}</span>
-                                        <span className="text-[9px] text-[var(--text-muted)] font-bold lowercase">{formattedDate}</span>
-                                    </div>
-                                    <p className="text-xs font-semibold text-[var(--text-main)] leading-relaxed whitespace-pre-wrap mt-0.5 pr-6">
-                                        {c.text}
-                                    </p>
-
-                                    {isCurrentTaskSessionActive && (
-                                        <button
-                                            type="button"
-                                            onClick={() => onDeleteComment(c.date)}
-                                            className="absolute top-2 right-2 p-1 text-[var(--text-muted)] hover:text-red-500 bg-transparent border-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                                            title={dict.tech.comments_delete}
-                                            aria-label={dict.tech.comments_delete}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })
-                    )}
-                </div>
+                <p className="py-4 text-center text-xs text-[var(--text-muted)]">
+                    {dict.task_reports.worker_hint}
+                </p>
 
                 {/* Comment input form */}
                 {isCurrentTaskSessionActive && (

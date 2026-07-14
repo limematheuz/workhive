@@ -22,6 +22,7 @@ type SidebarNavigationProps = {
     visibleNavLinks: NavLink[];
     pendingRequestsCount: number;
     taskAlertsCount: number;
+    reportAlertsCount: number;
     openGroups: Record<string, boolean>;
     onOpenGroupChange: (groupId: string, open: boolean) => void;
 };
@@ -34,6 +35,7 @@ export function SidebarNavigation({
     visibleNavLinks,
     pendingRequestsCount,
     taskAlertsCount,
+    reportAlertsCount,
     openGroups,
     onOpenGroupChange,
 }: SidebarNavigationProps) {
@@ -46,6 +48,9 @@ export function SidebarNavigation({
     const showTaskAlerts = (href: string) =>
         shouldShowTaskAlertsOnHref(href) && taskAlertsCount > 0;
 
+    const showReportAlerts = (href: string) =>
+        href === "/dashboard/task-reports" && reportAlertsCount > 0;
+
     const renderAlertBadge = (count: number, className: string) => (
         <span className={className}>
             <span className={SIDEBAR_ALERT_PULSE_CLASS} aria-hidden="true" />
@@ -56,10 +61,13 @@ export function SidebarNavigation({
     const renderNavLink = (link: NavLink, nested = false) => {
         const reservationAlerts = showReservationAlerts(link.href);
         const taskAlerts = showTaskAlerts(link.href);
+        const reportAlerts = showReportAlerts(link.href);
         const alertCount = reservationAlerts
             ? pendingRequestsCount
             : taskAlerts
                 ? taskAlertsCount
+                : reportAlerts
+                    ? reportAlertsCount
                 : 0;
         const linkStackClass = alertCount > 0
             ? SIDEBAR_ALERT_LINK_ACTIVE_CLASS

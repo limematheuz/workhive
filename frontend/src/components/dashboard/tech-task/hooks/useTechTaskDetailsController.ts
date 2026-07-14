@@ -80,7 +80,6 @@ export function useTechTaskDetailsController({
 
     const attachmentsComments = useTechTaskAttachmentsComments({
         task,
-        currentUser,
         onStatusUpdate,
     });
 
@@ -145,8 +144,6 @@ export function useTechTaskDetailsController({
             locale,
             completedCount: checklistState.completedCount,
             totalCount: checklistState.totalCount,
-            attachmentsCount: attachmentsComments.attachments.length,
-            commentsCount: attachmentsComments.comments.length,
             onOpenRequisitos: () => setRequisitosOpen(true),
             onOpenAdjuntos: () => setAdjuntosOpen(true),
             onOpenComentarios: () => setComentariosOpen(true),
@@ -164,7 +161,6 @@ export function useTechTaskDetailsController({
             issuesProps: {
                 expanded: expandedPanels.problemas,
                 onToggle: () => setExpandedPanels((panels) => ({ ...panels, problemas: !panels.problemas })),
-                reportedIssues: issueState.reportedIssues,
                 showNewIssueForm: issueState.showNewIssueForm,
                 setShowNewIssueForm: issueState.setShowNewIssueForm,
                 newIssueType: issueState.newIssueType,
@@ -179,7 +175,6 @@ export function useTechTaskDetailsController({
                 setNewIssuePhoto: issueState.setNewIssuePhoto,
                 issueElements: issueState.issueElements,
                 onAddIssue: issueState.handleAddIssue,
-                onDeleteIssue: issueState.handleDeleteIssue,
                 onFileChange: issueState.handleFileChange,
             },
             propertyProps: {
@@ -232,16 +227,11 @@ export function useTechTaskDetailsController({
             onChecklistPhoto: checklistState.handleChecklistPhoto,
             onResetChecklist: checklistState.handleResetChecklist,
             onAddChecklistItem: checklistState.handleAddChecklistItem,
-            attachments: attachmentsComments.attachments,
             uploadingAttachment: attachmentsComments.uploadingAttachment,
             onUploadAttachment: attachmentsComments.handleUploadAttachment,
-            onDeleteAttachment: attachmentsComments.handleDeleteAttachment,
-            comments: attachmentsComments.comments,
-            locale,
             newCommentText: attachmentsComments.newCommentText,
             setNewCommentText: attachmentsComments.setNewCommentText,
             onAddComment: attachmentsComments.handleAddComment,
-            onDeleteComment: attachmentsComments.handleDeleteComment,
         },
     };
 }

@@ -4,11 +4,8 @@ import { useState, useMemo } from "react";
 import { toast } from "@/lib/toast";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { UploadService } from "@/services/upload.service";
-import { TaskService } from "@/services/task.service";
-import { appendReportedIssue } from "@/lib/task-reporting";
-import type { ReportedIssue, TaskItem } from "@/types/user";
-
-export type { ReportedIssue } from "@/types/user";
+import { TaskReportService } from "@/services/task-report.service";
+import type { TaskItem } from "@/types/user";
 
 interface IssueElement {
     value: string;
@@ -22,7 +19,6 @@ interface UseTechTaskIssuesParams {
 }
 
 interface UseTechTaskIssuesReturn {
-    reportedIssues: ReportedIssue[];
     showNewIssueForm: boolean;
     setShowNewIssueForm: React.Dispatch<React.SetStateAction<boolean>>;
     newIssueType: "mantenimiento" | "limpieza" | "inspeccion";
@@ -37,7 +33,6 @@ interface UseTechTaskIssuesReturn {
     setNewIssuePhoto: React.Dispatch<React.SetStateAction<string>>;
     issueElements: IssueElement[];
     handleAddIssue: (e: React.FormEvent) => Promise<void>;
-    handleDeleteIssue: (issueId: string) => Promise<void>;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }
 
@@ -52,8 +47,6 @@ export function useTechTaskIssues({
     const [newIssueTitle, setNewIssueTitle] = useState("");
     const [newIssueDescription, setNewIssueDescription] = useState("");
     const [newIssuePhoto, setNewIssuePhoto] = useState("");
-
-    const reportedIssues = task.reported_issues || [];
 
     const issueElements: IssueElement[] = useMemo(() => [
         { value: "lavabo", label: dict?.tech?.issue_element_lavabo || "Washbasin" },
@@ -75,18 +68,16 @@ export function useTechTaskIssues({
             return;
         }
 
-        const newIssue: ReportedIssue = {
-            id: `issue_${Date.now()}`,
-            type: newIssueType,
-            element: newIssueElement,
-            title: newIssueTitle.trim(),
-            description: newIssueDescription.trim(),
-            photoUrl: newIssuePhoto || undefined,
-            createdAt: new Date().toISOString(),
-        };
-
         try {
-            await TaskService.updateTaskItem(task.id, appendReportedIssue(reportedIssues, newIssue));
+            await TaskReportService.create({
+                task_item_id: task.id,
+                report_type: "issue",
+                issue_type: newIssueType,
+                element: newIssueElement,
+                title: newIssueTitle.trim(),
+                description: newIssueDescription.trim() || undefined,
+                media_url: newIssuePhoto || undefined,
+            });
             onStatusUpdate();
             toast.success(dict?.tech?.toast_issue_reported || "Issue reported successfully");
         } catch {
@@ -99,18 +90,6 @@ export function useTechTaskIssues({
         setNewIssueDescription("");
         setNewIssuePhoto("");
         setShowNewIssueForm(false);
-    };
-
-    const handleDeleteIssue = async (issueId: string) => {
-        try {
-            await TaskService.updateTaskItem(task.id, {
-                reported_issues: reportedIssues.filter(i => i.id !== issueId),
-            });
-            onStatusUpdate();
-            toast.success(dict?.tech?.toast_issue_deleted || "Issue deleted");
-        } catch {
-            toast.error("Could not delete issue");
-        }
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,7 +107,6 @@ export function useTechTaskIssues({
     };
 
     return {
-        reportedIssues,
         showNewIssueForm,
         setShowNewIssueForm,
         newIssueType,
@@ -143,7 +121,6 @@ export function useTechTaskIssues({
         setNewIssuePhoto,
         issueElements,
         handleAddIssue,
-        handleDeleteIssue,
         handleFileChange,
     };
 }
