@@ -28,6 +28,18 @@ test("report center marks report notifications read only after loading history",
     assert.match(page, /await TaskReportService\.list[\s\S]+await TaskReportService\.markNotificationsRead/);
 });
 
+test("report center reuses the application visual system and keeps details in a dialog", () => {
+    const page = read("../app/dashboard/task-reports/page.tsx");
+    const reportCard = read("../features/task-reports/TaskReportCard.tsx");
+    const reportDialog = read("../features/task-reports/TaskReportDetailDialog.tsx");
+
+    assert.match(page, /PremiumTabs/);
+    assert.match(page, /components\/ui\/input/);
+    assert.match(reportCard, /components\/ui\/badge/);
+    assert.match(reportDialog, /components\/ui\/dialog/);
+    assert.doesNotMatch(page, /aspect-\[16\/10\]|xl:grid-cols-3/);
+});
+
 test("report center has role-scoped navigation and its own alert count", () => {
     const sidebar = read("../components/dashboard/Sidebar.tsx");
     const navigation = read("../components/dashboard/SidebarNavigation.tsx");

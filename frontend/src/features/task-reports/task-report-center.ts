@@ -1,4 +1,4 @@
-import type { TaskReport, TaskReportType } from "@/services/task-report.service";
+import type { TaskReport } from "@/services/task-report.service";
 
 
 export type TaskReportSummary = Pick<
@@ -17,9 +17,17 @@ export type TaskReportSummary = Pick<
 >;
 
 type TaskReportFilters = {
-    type: TaskReportType | "all";
+    type: TaskReportCategory | "all";
     query: string;
 };
+
+export type TaskReportCategory = "issue" | "note" | "photo";
+
+export function getTaskReportCategory(reportType: TaskReport["report_type"]): TaskReportCategory {
+    if (reportType === "checklist_note") return "note";
+    if (reportType === "checklist_photo") return "photo";
+    return reportType;
+}
 
 export function sortTaskReportsNewestFirst<T extends TaskReportSummary>(reports: readonly T[]): T[] {
     return [...reports].sort((left, right) => {
@@ -34,7 +42,7 @@ export function filterTaskReports<T extends TaskReportSummary>(
 ): T[] {
     const terms = filters.query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
     return sortTaskReportsNewestFirst(reports).filter(report => {
-        if (filters.type !== "all" && report.report_type !== filters.type) return false;
+        if (filters.type !== "all" && getTaskReportCategory(report.report_type) !== filters.type) return false;
         const searchable = [
             report.title,
             report.description,

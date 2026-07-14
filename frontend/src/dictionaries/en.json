@@ -1803,6 +1803,7 @@
       "collaboration": "Collaboration",
       "view_photo": "View photo",
       "close_photo": "Close photo",
+      "detail_subtitle": "Full report details",
       "worker_hint": "History is stored in Field reports and cannot be edited or deleted.",
       "checklist_note": "Requirement notes",
       "checklist_photo": "Requirement photos"

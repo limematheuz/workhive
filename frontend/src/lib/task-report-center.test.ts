@@ -35,18 +35,31 @@ const reports: TaskReportSummary[] = [
         media_url: "/api/v1/task-reports/2/media",
         created_at: "2026-07-14T09:00:00Z",
     },
+    {
+        id: 3,
+        report_type: "checklist_photo",
+        title: null,
+        description: null,
+        reporter_name: "Victoria",
+        reporter_company_name: "Limpiezas Uno",
+        requesting_company_name: null,
+        task_title: "Limpieza completa",
+        location_name: "Casa Javier",
+        media_url: "/api/v1/task-reports/3/media",
+        created_at: "2026-07-14T10:00:00Z",
+    },
 ];
 
 test("report center sorts newest first without mutating API data", () => {
     const sorted = sortTaskReportsNewestFirst(reports);
-    assert.deepEqual(sorted.map(report => report.id), [2, 1]);
-    assert.deepEqual(reports.map(report => report.id), [1, 2]);
+    assert.deepEqual(sorted.map(report => report.id), [3, 2, 1]);
+    assert.deepEqual(reports.map(report => report.id), [1, 2, 3]);
 });
 
 test("report center filters by type and all visible operational fields", () => {
-    assert.deepEqual(filterTaskReports(reports, { type: "photo", query: "" }).map(item => item.id), [2]);
+    assert.deepEqual(filterTaskReports(reports, { type: "photo", query: "" }).map(item => item.id), [3, 2]);
     assert.deepEqual(filterTaskReports(reports, { type: "all", query: "victoria cristal" }).map(item => item.id), [1]);
-    assert.deepEqual(filterTaskReports(reports, { type: "all", query: "casa javier" }).map(item => item.id), [1]);
+    assert.deepEqual(filterTaskReports(reports, { type: "all", query: "casa javier" }).map(item => item.id), [3, 1]);
     assert.deepEqual(filterTaskReports(reports, { type: "all", query: "inmobiliaria norte" }).map(item => item.id), [1]);
 });
 

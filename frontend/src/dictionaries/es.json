@@ -1803,6 +1803,7 @@
       "collaboration": "Colaboración",
       "view_photo": "Ver foto",
       "close_photo": "Cerrar foto",
+      "detail_subtitle": "Información completa del reporte",
       "worker_hint": "El historial se guarda en Reportes de campo y no puede editarse ni borrarse.",
       "checklist_note": "Notas de requisito",
       "checklist_photo": "Fotos de requisito"
