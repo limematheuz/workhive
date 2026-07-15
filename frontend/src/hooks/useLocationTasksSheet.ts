@@ -17,6 +17,7 @@ import type {
     TemplateTask,
 } from "@/types/template";
 import { getErrorMessage } from "@/lib/errors";
+import { loadLocationTemplatesBundle } from "@/lib/load-location-templates-bundle";
 import {
     canManageCompanyTasks,
     isSuperadmin,
@@ -141,19 +142,29 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
         }
     };
 
-    // Load house and global templates
+    // Load house and global templates (soft-fail so a 500 does not break the sheet)
     const loadHouseTemplates = async () => {
         if (!location) return;
         try {
             setLoadingHouseTemplates(true);
-            const [locationTemplates, globalTemplates] = await Promise.all([
-                LocationTemplateService.getTemplates(location.id),
-                TemplateTaskService.getTemplates(),
-            ]);
-            setHouseTemplates(locationTemplates);
-            setGlobalTemplates(globalTemplates);
+            const bundle = await loadLocationTemplatesBundle(location.id, {
+                getHouseTemplates: LocationTemplateService.getTemplates,
+                getGlobalTemplates: TemplateTaskService.getTemplates,
+            });
+            setHouseTemplates(bundle.houseTemplates);
+            setGlobalTemplates(bundle.globalTemplates);
+            if (bundle.houseTemplatesError || bundle.globalTemplatesError) {
+                toast.error(
+                    bundle.houseTemplatesError ||
+                        bundle.globalTemplatesError ||
+                        dict.tasks.error_update,
+                );
+            }
         } catch (error) {
             console.error("Error loading location templates", error);
+            setHouseTemplates([]);
+            setGlobalTemplates([]);
+            toast.error(getErrorMessage(error, dict.tasks.error_update));
         } finally {
             setLoadingHouseTemplates(false);
         }

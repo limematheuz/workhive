@@ -1,7 +1,6 @@
 /** Shared macOS/iOS-style chrome for task dialogs in the general list. */
 
-export const taskDialogOverlayClass =
-    "bg-black/25 backdrop-blur-[12px] dark:bg-black/50";
+export const taskDialogOverlayClass = "dialog-glass-overlay";
 
 export const taskDialogContentClass =
     "dialog-glass flex w-[95vw] flex-col gap-0 overflow-hidden rounded-[28px] border border-[var(--border-soft)] !border-t border-t-[var(--border-soft)] p-0 shadow-[0_28px_90px_var(--shadow-color)] [scrollbar-width:none]";

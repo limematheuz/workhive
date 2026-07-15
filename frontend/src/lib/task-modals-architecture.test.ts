@@ -22,6 +22,7 @@ test("task dialogs share glass chrome and keep compact checklist controls", () =
 
     assert.match(chrome, /taskDialogContentClass/);
     assert.match(chrome, /dialog-glass/);
+    assert.match(chrome, /dialog-glass-overlay/);
     assert.match(editModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(createModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(templateModal, /taskDialogContentClass|taskDialogChrome/);
@@ -29,7 +30,8 @@ test("task dialogs share glass chrome and keep compact checklist controls", () =
     assert.match(checklistEditor, /dialog-compact-control/);
     assert.match(globals, /dialog-compact-control/);
     assert.match(globals, /dialog-glass/);
-    assert.match(globals, /46%|52%/);
+    assert.match(globals, /\[data-slot="dialog-close"\]/);
+    assert.match(globals, /0\.55|rgba\(34,\s*34,\s*34,\s*0\.55\)/);
 });
 
 test("resolveTaskEditChecklist keeps interactive markdown and structured fallbacks", () => {

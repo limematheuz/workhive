@@ -281,30 +281,117 @@
 
 /* Frosted sheet surface (macOS / iOS) — unlayered so it beats solid --dialog-bg overrides */
 [data-slot="dialog-content"].dialog-glass {
-  background-color: color-mix(in srgb, var(--bg-card-solid) 52%, transparent) !important;
-  backdrop-filter: blur(40px) saturate(1.65);
-  -webkit-backdrop-filter: blur(40px) saturate(1.65);
-  border-color: color-mix(in srgb, var(--border-soft) 88%, transparent) !important;
+  background-color: rgba(34, 34, 34, 0.55) !important;
+  backdrop-filter: blur(48px) saturate(1.75) !important;
+  -webkit-backdrop-filter: blur(48px) saturate(1.75) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
   box-shadow:
-    0 28px 90px color-mix(in srgb, var(--shadow-color) 88%, transparent),
-    0 0 0 0.5px color-mix(in srgb, var(--border-color) 55%, transparent),
-    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent);
+    0 28px 90px rgba(0, 0, 0, 0.55),
+    0 0 0 0.5px rgba(255, 255, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
 }
 
 .light-mode [data-slot="dialog-content"].dialog-glass {
-  background-color: color-mix(in srgb, var(--bg-card-solid) 46%, transparent) !important;
-  border-color: rgba(255, 255, 255, 0.62) !important;
+  background-color: rgba(244, 248, 251, 0.58) !important;
+  border-color: rgba(255, 255, 255, 0.72) !important;
   box-shadow:
-    0 28px 90px color-mix(in srgb, var(--shadow-color) 70%, transparent),
-    0 0 0 0.5px rgba(82, 101, 119, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+    0 28px 90px rgba(52, 74, 94, 0.22),
+    0 0 0 0.5px rgba(82, 101, 119, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
 }
 
 .dialog-glass-chrome {
-  background-color: color-mix(in srgb, var(--bg-card-solid) 55%, transparent);
-  backdrop-filter: blur(24px) saturate(1.4);
-  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  background-color: rgba(34, 34, 34, 0.42);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  border-color: rgba(255, 255, 255, 0.1);
 }
+
+.light-mode .dialog-glass-chrome {
+  background-color: rgba(244, 248, 251, 0.55);
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+/* Nested frosted panels inside glass dialogs/cards */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.light-mode .glass-panel {
+  background-color: rgba(255, 255, 255, 0.55) !important;
+  border: 1px solid rgba(82, 101, 119, 0.16) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(52, 74, 94, 0.05);
+}
+
+/* Dimmed overlay that still lets page color through glass */
+.dialog-glass-overlay {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(14px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
+}
+
+.light-mode .dialog-glass-overlay {
+  background-color: rgba(15, 23, 42, 0.28) !important;
+}
+
+/* High-contrast dialog close control (default theme = dark) */
+[data-slot="dialog-close"] {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+  border: 1px solid rgba(255, 255, 255, 0.38) !important;
+  color: #ffffff !important;
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+}
+
+[data-slot="dialog-close"]:hover {
+  background-color: rgba(255, 255, 255, 0.28) !important;
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  color: #ffffff !important;
+}
+
+.light-mode [data-slot="dialog-close"] {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  color: #111827 !important;
+  box-shadow:
+    0 4px 14px rgba(52, 74, 94, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+.light-mode [data-slot="dialog-close"]:hover {
+  background-color: #ffffff !important;
+  border-color: rgba(37, 99, 235, 0.35) !important;
+  color: #1d4ed8 !important;
+}
+
+/* List/location frosted cards */
+.surface-glass-card {
+  background-color: rgba(34, 34, 34, 0.58) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.light-mode .surface-glass-card {
+  background-color: rgba(248, 252, 252, 0.72) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow:
+    0 12px 32px rgba(52, 74, 94, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
 
 /* Custom utility classes for the Glassmorphism/Bento design */
 @layer components {
