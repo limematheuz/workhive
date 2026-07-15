@@ -26,7 +26,7 @@ interface TasksListFiltersProps {
 }
 
 const controlClass =
-    "h-9 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent";
+    "h-9 w-full rounded-xl border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--bg-secondary)_80%,transparent)] px-3 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent";
 
 export function TasksListFilters({
     dict,
@@ -48,7 +48,7 @@ export function TasksListFilters({
     onDateScopeChange,
 }: TasksListFiltersProps) {
     return (
-        <div className="mb-4 space-y-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2.5 shadow-sm sm:p-3">
+        <div className="surface-glass-card mb-4 space-y-2.5 rounded-2xl p-2.5 sm:p-3">
             <div className="flex items-center justify-between gap-3 text-[var(--text-muted)]">
                 <div className="flex items-center gap-2">
                     <Filter className="h-3.5 w-3.5 text-accent" />

@@ -60,9 +60,9 @@ export function CompaniesListSection({
 }: CompaniesListSectionProps) {
     if (companies.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-12 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-soft)] text-center shadow-sm">
-                <Building2 className="h-12 w-12 text-[var(--text-muted)] mb-4" />
-                <p className="text-[var(--text-muted)] text-sm">{emptyLabel}</p>
+            <div className="surface-glass-card flex flex-col items-center justify-center rounded-2xl p-12 text-center">
+                <Building2 className="mb-4 h-12 w-12 text-[var(--text-muted)]" />
+                <p className="text-sm text-[var(--text-muted)]">{emptyLabel}</p>
             </div>
         );
     }
@@ -73,7 +73,7 @@ export function CompaniesListSection({
                 {companies.map((company) => (
                     <div
                         key={company.id}
-                        className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-4 space-y-3 shadow-sm"
+                        className="surface-glass-card space-y-3 rounded-2xl p-4"
                     >
                         <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
@@ -156,7 +156,7 @@ export function CompaniesListSection({
                 ))}
             </div>
 
-            <div className="hidden lg:block bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm w-full">
+            <div className="surface-glass-card hidden w-full overflow-hidden rounded-2xl lg:block">
                 <Table>
                     <TableHeader>
                         <TableRow>
