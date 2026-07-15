@@ -61,7 +61,7 @@ export function InvoicesStatsCards({ stats, statusCounts, labels }: InvoicesStat
             {cards.map((stat) => (
                 <div
                     key={stat.label}
-                    className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 shadow-sm sm:p-4"
+                    className="surface-glass-card rounded-3xl p-3 sm:p-4"
                 >
                     <div className={`mb-3 h-1.5 w-full rounded-full sm:mb-4 ${stat.barClassName}`} />
                     <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] sm:text-[11px]">

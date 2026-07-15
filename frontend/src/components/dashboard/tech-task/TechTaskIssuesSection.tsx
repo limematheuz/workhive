@@ -97,7 +97,7 @@ export function TechTaskIssuesSection({
                                     type="button"
                                     onClick={() => setShowNewIssueForm(false)}
                                     aria-label={dict.tech.btn_cancel}
-                                    className="p-1 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 hover:text-zinc-950 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 dark:hover:text-white border border-zinc-200 dark:border-zinc-700/80 cursor-pointer flex items-center justify-center transition-all"
+                                    className="surface-control-btn p-1 rounded-full cursor-pointer flex items-center justify-center transition-all"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -192,7 +192,7 @@ export function TechTaskIssuesSection({
                                     {dict.tech.issues_photo_label}
                                 </span>
                                 <div className="flex items-center gap-3">
-                                    <label className="flex items-center gap-2 px-3 py-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl cursor-pointer border border-zinc-200 dark:border-zinc-700 transition-colors text-xs font-semibold">
+                                    <label className="surface-control-btn flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors text-xs font-semibold">
                                         <Camera className="w-4 h-4 text-accent" />
                                         <span>{dict.tech?.issues_photo_btn || "Take photo / Attach"}</span>
                                         <input

@@ -86,7 +86,7 @@ export function TeamListSection({
                 {team.map((worker) => (
                     <div
                         key={worker.id}
-                        className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-4 space-y-3 shadow-sm"
+                        className="surface-glass-card rounded-2xl p-4 space-y-3"
                     >
                         <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
@@ -126,7 +126,7 @@ export function TeamListSection({
                 ))}
             </div>
 
-            <div className="hidden lg:block bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
+            <div className="hidden lg:block surface-glass-card rounded-2xl overflow-hidden">
                 <Table>
                     <TableHeader>
                         <TableRow>

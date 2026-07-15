@@ -112,7 +112,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 <button
                     type="button"
                     aria-label="Close sidebar"
-                    className="fixed inset-0 z-30 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
+                    className="fixed inset-0 z-[var(--z-sidebar-overlay)] bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                 />
             )}
@@ -132,7 +132,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                     />
 
-                    <main className="relative z-10 flex-1 overflow-auto p-0 min-h-0">
+                    <main className="relative z-[var(--z-dashboard-content)] flex-1 overflow-auto p-0 min-h-0">
                         {children}
                     </main>
                 </div>

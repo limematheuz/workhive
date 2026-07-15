@@ -29,7 +29,7 @@ export function PremiumTabs<T extends string>({
 
     return (
         <div
-            className={`flex w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
+            className={`flex w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--dialog-control-bg)] p-1 ${
                 fit
                     ? "overflow-hidden"
                     : "snap-x overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"

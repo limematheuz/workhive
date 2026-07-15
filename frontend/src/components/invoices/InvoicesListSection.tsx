@@ -56,7 +56,7 @@ export function InvoicesListSection({
 
     if (invoices.length === 0) {
         return (
-            <div className="text-center py-20 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-soft)]">
+            <div className="text-center py-20 surface-glass-card rounded-2xl">
                 <p className="text-sm text-[var(--text-muted)]">{emptyLabel}</p>
             </div>
         );
@@ -78,7 +78,7 @@ export function InvoicesListSection({
                                 onOpenInvoice(invoice.id);
                             }
                         }}
-                        className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-4 space-y-3 cursor-pointer hover:border-[var(--border-color)] transition-colors shadow-sm active:scale-[0.99]"
+                        className="surface-glass-card rounded-2xl p-4 space-y-3 cursor-pointer hover:border-[var(--border-color)] transition-colors active:scale-[0.99]"
                     >
                         <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0 flex-1">
@@ -126,7 +126,7 @@ export function InvoicesListSection({
                 ))}
             </div>
 
-            <div className="hidden lg:block bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm">
+            <div className="hidden lg:block surface-glass-card rounded-2xl overflow-hidden">
                 <Table>
                     <TableHeader>
                         <TableRow>

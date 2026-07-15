@@ -117,10 +117,8 @@ export function TaskListCard({
                         handleOpenDetail(task);
                     }
                 }}
-                className={`group flex h-full min-h-[72px] w-full items-center gap-2 rounded-2xl border border-[var(--border-soft)] px-3 py-2.5 text-left shadow-[0_1px_2px_rgba(15,23,42,0.03)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 cursor-pointer ${
-                    isExternal
-                        ? "bg-[color-mix(in_srgb,var(--accent-color)_5%,var(--bg-card))] hover:border-accent/30 hover:bg-[color-mix(in_srgb,var(--accent-color)_8%,var(--bg-card))]"
-                        : "bg-[var(--bg-card)] hover:border-accent/30 hover:bg-[var(--bg-secondary)]/55"
+                className={`surface-glass-card group flex h-full min-h-[72px] w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)] cursor-pointer hover:border-accent/35 ${
+                    isExternal ? "surface-glass-card-accent" : ""
                 }`}
             >
                 <span

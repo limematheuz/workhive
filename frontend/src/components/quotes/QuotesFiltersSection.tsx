@@ -22,7 +22,7 @@ export function QuotesFiltersSection({
     statusLabels,
 }: QuotesFiltersSectionProps) {
     return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-5 mb-6 flex flex-col md:flex-row gap-4 items-center">
+        <div className="surface-glass-card rounded-2xl p-5 mb-6 flex flex-col md:flex-row gap-4 items-center">
             <div className="flex items-center gap-2 text-[var(--text-muted)] self-start md:self-center">
                 <Filter className="w-4 h-4" />
                 <span className="text-xs font-semibold uppercase tracking-wider">Filtros</span>

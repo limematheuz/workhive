@@ -60,7 +60,7 @@ export function TechTaskPropertySection({
                                     type="button"
                                     onClick={() => setIsEditingFeatures(false)}
                                     aria-label={dict.tech.btn_cancel}
-                                    className="p-1 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 hover:text-zinc-950 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200 dark:hover:text-white border border-zinc-200 dark:border-zinc-700/80 cursor-pointer flex items-center justify-center transition-all"
+                                    className="surface-control-btn p-1 rounded-full cursor-pointer flex items-center justify-center transition-all"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>

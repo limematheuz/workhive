@@ -3,40 +3,101 @@
 :root {
   --brand-blue: #2563eb;
   --brand-blue-hover: #1d4ed8;
-  --brand-blue-soft: rgba(37, 99, 235, 0.1);
-  --brand-blue-border: rgba(37, 99, 235, 0.24);
+  --brand-blue-mid: #3b82f6;
+  --brand-blue-bright: #60a5fa;
+  --brand-blue-sky: #93c5fd;
+  --brand-blue-sky-deep: #7dd3fc;
+  --brand-blue-mist: #bfdbfe;
+  --brand-blue-soft: rgba(37, 99, 235, 0.14);
+  --brand-blue-border: rgba(37, 99, 235, 0.32);
+  --brand-blue-glow: rgba(37, 99, 235, 0.22);
+  --brand-ring: rgba(37, 99, 235, 0.4);
   --accent-color: var(--brand-blue);
   --accent-light-color: var(--brand-blue-hover);
-  --accent-toast-color: rgba(37, 99, 235, 0.25);
+  --accent-toast-color: rgba(37, 99, 235, 0.28);
 
-  /* Theme Variables - Default (Dark) */
+  /* Theme Variables - Default (Dark) — elevated charcoal for readability */
   --bg-primary: #191919;
-  --bg-card-solid: #222222;            /* Opaque card for popovers / dialogs / selects */
-  --dialog-bg: #222222;
-  --dialog-control-bg: #2b2b2b;
-  --dialog-control-border: rgba(255, 255, 255, 0.12);
-  --bg-secondary: rgba(25, 25, 25, 0.6);
-  --bg-tertiary: rgba(255, 255, 255, 0.08);
-  --bg-card: rgba(34, 34, 34, 0.65);
+  --bg-card-solid: #2c2c30;            /* Opaque for selects / solid cards */
+  --dialog-control-bg: #36363b;
+  --dialog-control-border: rgba(255, 255, 255, 0.16);
+  --bg-secondary: rgba(28, 28, 32, 0.78);
+  --bg-tertiary: rgba(255, 255, 255, 0.11);
+  --bg-card: rgba(44, 44, 48, 0.88);
   --sidebar-bg: var(--bg-primary);
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-soft: rgba(255, 255, 255, 0.05);
-  --text-main: #e3e3e3;
-  --text-muted: #8c8c8c;
+  --border-color: rgba(255, 255, 255, 0.14);
+  --border-soft: rgba(255, 255, 255, 0.10);
+  --text-main: #f2f2f3;
+  --text-muted: #a8a8ae;
   --text-inverse: #191919;
   --logo-filter: brightness(0) invert(0.9);
-  --shadow-color: rgba(0, 0, 0, 0.4);
+  --shadow-color: rgba(0, 0, 0, 0.45);
+
+  /*
+   * Glass / translucent surfaces (dark default).
+   * Less blur + stronger fill/border than classic glassmorphism —
+   * inspired by macOS/iOS dark sheets, tuned to WorkHive brand blue.
+   * Do not change .dashboard-shell-backlight when editing these.
+   */
+  --glass-blur: 32px;
+  --glass-blur-strong: 140px;
+  --glass-saturate: 1.9;
+  /*
+   * Modal sheet: 85% opaque fill + heavy blur.
+   * Readable bleed-through is a bug — keep alpha high.
+   */
+  --glass-sheet-bg: rgba(28, 28, 32, 0.85);
+  --glass-sheet-border: rgba(255, 255, 255, 0.16);
+  --glass-sheet-highlight: rgba(255, 255, 255, 0.2);
+  --glass-sheet-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
+  --glass-chrome-bg: rgba(24, 24, 28, 0.88);
+  --glass-panel-bg: rgba(255, 255, 255, 0.08);
+  --glass-panel-border: rgba(255, 255, 255, 0.12);
+  /* Overlay dims + frosts the page behind the sheet */
+  --glass-overlay-bg: rgba(4, 6, 12, 0.55);
+  --glass-overlay-blur: 140px;
+  --glass-close-bg: rgba(255, 255, 255, 0.16);
+  --glass-close-border: rgba(255, 255, 255, 0.28);
+  --glass-close-hover-bg: rgba(255, 255, 255, 0.28);
+  --surface-card-bg: rgba(44, 44, 48, 0.88);
+  --surface-card-border: var(--glass-sheet-border);
+  --surface-card-shadow: 0 12px 36px rgba(0, 0, 0, 0.42);
+
+  /*
+   * Header popovers (profile / notifications): frosted rim, opaque fill.
+   * Must block readable bleed-through from the dashboard behind.
+   */
+  --popover-surface-bg: #323238;
+  --popover-surface-border: rgba(255, 255, 255, 0.18);
+  --popover-surface-blur: 20px;
+  --popover-surface-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+
+  /* Default modal panel = frosted sheet at 85% opacity */
+  --dialog-bg: rgba(28, 28, 32, 0.85);
+  --dialog-surface-blur: 140px;
+
+  /*
+   * Dashboard stacking (mobile/tablet):
+   * main content < header (+ its popovers) < sidebar overlay < sidebar (open).
+   * Header must beat main (same former z-10 trapped popovers under the panel).
+   * Do not raise header above --z-sidebar-overlay.
+   */
+  --z-dashboard-content: 10;
+  --z-header: 20;
+  --z-header-popover: 25;
+  --z-sidebar-overlay: 30;
+  --z-sidebar: 40;
+  --z-sidebar-mobile-open: 60;
   
   /* Pill Switch Variables */
-  --pill-bg: #202020;
-  --pill-active: #303030;
+  --pill-bg: #242428;
+  --pill-active: #3a3a40;
   --pill-active-text: #ffffff;
 
   /* Sidebar Active Link */
-  --sidebar-active-bg: rgba(59, 130, 246, 0.12);
+  --sidebar-active-bg: var(--brand-blue-soft);
   --sidebar-active-text: var(--brand-blue);
-  --sidebar-active-border: rgba(59, 130, 246, 0.22);
-  --sidebar-active-shadow: none;
+  --sidebar-active-border: var(--brand-blue-border);
 
   /* Onboarding / Guided Tour Popovers - Default (Dark Mode): White background, dark text */
   --popover-tour-bg: #ffffff;
@@ -123,8 +184,8 @@
   --color-accent-light: var(--accent-light-color);
   --color-accent-toast: var(--accent-toast-color);
 
-  --color-surface-dark: #1C1C1C;
-  --color-bg-dark: #121212;
+  --color-surface-dark: var(--bg-card-solid);
+  --color-bg-dark: var(--bg-primary);
   
   --color-surface-light: #FFFFFF;
   --color-bg-light: #FAFAFA;
@@ -145,8 +206,15 @@
 .light-mode {
   --brand-blue: #2563eb;
   --brand-blue-hover: #1d4ed8;
+  --brand-blue-mid: #3b82f6;
+  --brand-blue-bright: #60a5fa;
+  --brand-blue-sky: #93c5fd;
+  --brand-blue-sky-deep: #7dd3fc;
+  --brand-blue-mist: #bfdbfe;
   --brand-blue-soft: rgba(37, 99, 235, 0.09);
   --brand-blue-border: rgba(37, 99, 235, 0.22);
+  --brand-blue-glow: rgba(37, 99, 235, 0.14);
+  --brand-ring: rgba(37, 99, 235, 0.35);
   --accent-color: var(--brand-blue); /* High-contrast dark blue */
   --accent-light-color: var(--brand-blue-hover);
   --accent-toast-color: rgba(37, 99, 235, 0.15);
@@ -176,8 +244,7 @@
   --color-orange-800: var(--color-amber-500);
 
   --bg-primary: #cbd4db;
-  --bg-card-solid: #f4f8fb;            /* Opaque card for popovers / dialogs / selects (light) */
-  --dialog-bg: #e3eaf0;
+  --bg-card-solid: #f4f8fb;            /* Opaque for selects / solid cards (light) */
   --dialog-control-bg: #f8fbfd;
   --dialog-control-border: rgba(82, 101, 119, 0.34);
   --bg-secondary: rgba(213, 224, 231, 0.78);
@@ -191,6 +258,42 @@
   --text-inverse: #ffffff;
   --logo-filter: brightness(0); /* Black */
   --shadow-color: rgba(52, 74, 94, 0.22);
+
+  /* Glass / translucent surfaces (light) — keep translucency, moderate blur */
+  --glass-blur: 32px;
+  --glass-blur-strong: 140px;
+  --glass-saturate: 1.8;
+  --glass-sheet-bg: rgba(248, 252, 252, 0.85);
+  --glass-sheet-border: rgba(255, 255, 255, 0.72);
+  --glass-sheet-highlight: rgba(255, 255, 255, 0.9);
+  --glass-sheet-shadow: 0 40px 120px rgba(52, 74, 94, 0.28);
+  --glass-chrome-bg: rgba(244, 248, 251, 0.9);
+  --glass-panel-bg: rgba(255, 255, 255, 0.55);
+  --glass-panel-border: rgba(82, 101, 119, 0.16);
+  --glass-overlay-bg: rgba(15, 23, 42, 0.4);
+  --glass-overlay-blur: 140px;
+  --glass-close-bg: rgba(255, 255, 255, 0.92);
+  --glass-close-border: rgba(15, 23, 42, 0.12);
+  --glass-close-hover-bg: #ffffff;
+  --surface-card-bg: rgba(248, 252, 252, 0.82);
+  --surface-card-border: var(--glass-sheet-border);
+  --surface-card-shadow: 0 12px 32px rgba(52, 74, 94, 0.12);
+
+  /* Floating menus (light) — opaque fill, frosted rim */
+  --popover-surface-bg: #f4f8fb;
+  --popover-surface-border: rgba(255, 255, 255, 0.85);
+  --popover-surface-blur: 18px;
+  --popover-surface-shadow: 0 18px 48px rgba(52, 74, 94, 0.22);
+
+  --dialog-bg: rgba(248, 252, 252, 0.85);
+  --dialog-surface-blur: 140px;
+
+  --z-dashboard-content: 10;
+  --z-header: 20;
+  --z-header-popover: 25;
+  --z-sidebar-overlay: 30;
+  --z-sidebar: 40;
+  --z-sidebar-mobile-open: 60;
 
   /* Map shadcn tokens for light mode */
   --color-background: var(--bg-card-solid);
@@ -206,7 +309,6 @@
   --sidebar-active-bg: rgba(255, 255, 255, 0.66);
   --sidebar-active-text: #111827;
   --sidebar-active-border: rgba(255, 255, 255, 0.72);
-  --sidebar-active-shadow: none;
 
   /* Onboarding / Guided Tour Popovers - Light Mode: Black background, white text */
   --popover-tour-bg: #09090b;         /* zinc-950 */
@@ -228,7 +330,7 @@
 
   /* Secondary Button (blue/action) - Light mode */
   --btn-secondary-bg: rgba(37, 99, 235, 0.08);
-  --btn-secondary-text: #1d4ed8;
+  --btn-secondary-text: var(--brand-blue-hover);
   --btn-secondary-border: rgba(37, 99, 235, 0.18);
   --btn-secondary-hover-bg: rgba(37, 99, 235, 0.16);
 
@@ -253,7 +355,7 @@
   --priority-medium-border: rgba(231, 138, 8, 0.3);
 
   --priority-low-bg: rgba(37, 99, 235, 0.09);
-  --priority-low-text: #1d4ed8;
+  --priority-low-text: var(--brand-blue-hover);
   --priority-low-border: rgba(37, 99, 235, 0.25);
 
   --badge-collaborator-bg: rgba(124, 58, 237, 0.1);
@@ -279,130 +381,140 @@
   }
 }
 
-/* Frosted sheet surface (macOS / iOS) — unlayered so it beats solid --dialog-bg overrides */
+/* Frosted sheet — 85% fill + blur 140 (no transform) */
+[data-slot="dialog-content"],
 [data-slot="dialog-content"].dialog-glass {
-  background-color: rgba(34, 34, 34, 0.55) !important;
-  backdrop-filter: blur(48px) saturate(1.75) !important;
-  -webkit-backdrop-filter: blur(48px) saturate(1.75) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
+  background-color: var(--glass-sheet-bg) !important;
+  backdrop-filter: blur(140px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(140px) saturate(1.9) !important;
+  border: 1px solid var(--glass-sheet-border) !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
   box-shadow:
-    0 28px 90px rgba(0, 0, 0, 0.55),
-    0 0 0 0.5px rgba(255, 255, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
-}
-
-.light-mode [data-slot="dialog-content"].dialog-glass {
-  background-color: rgba(244, 248, 251, 0.58) !important;
-  border-color: rgba(255, 255, 255, 0.72) !important;
-  box-shadow:
-    0 28px 90px rgba(52, 74, 94, 0.22),
-    0 0 0 0.5px rgba(82, 101, 119, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+    var(--glass-sheet-shadow),
+    inset 0 1px 0 var(--glass-sheet-highlight) !important;
 }
 
 .dialog-glass-chrome {
-  background-color: rgba(34, 34, 34, 0.42);
-  backdrop-filter: blur(28px) saturate(1.5);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.light-mode .dialog-glass-chrome {
-  background-color: rgba(244, 248, 251, 0.55);
-  border-color: rgba(255, 255, 255, 0.65);
+  background-color: var(--glass-chrome-bg);
+  backdrop-filter: blur(40px) saturate(1.6);
+  -webkit-backdrop-filter: blur(40px) saturate(1.6);
+  border-color: var(--glass-sheet-border);
 }
 
 /* Nested frosted panels inside glass dialogs/cards */
 .glass-panel {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  backdrop-filter: blur(18px) saturate(1.35);
-  -webkit-backdrop-filter: blur(18px) saturate(1.35);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background-color: var(--glass-panel-bg) !important;
+  border: 1px solid var(--glass-panel-border) !important;
+  backdrop-filter: blur(40px) saturate(1.5);
+  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  box-shadow: inset 0 1px 0 var(--glass-sheet-highlight);
 }
 
 .light-mode .glass-panel {
-  background-color: rgba(255, 255, 255, 0.55) !important;
-  border: 1px solid rgba(82, 101, 119, 0.16) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 1px 0 var(--glass-sheet-highlight),
     0 1px 2px rgba(52, 74, 94, 0.05);
 }
 
-/* Dimmed overlay that still lets page color through glass */
-.dialog-glass-overlay {
-  background-color: rgba(0, 0, 0, 0.45) !important;
-  backdrop-filter: blur(14px) saturate(1.15) !important;
-  -webkit-backdrop-filter: blur(14px) saturate(1.15) !important;
-}
-
-.light-mode .dialog-glass-overlay {
-  background-color: rgba(15, 23, 42, 0.28) !important;
+/*
+ * Dimmed frosted world behind modals (main iOS/macOS effect).
+ * CRITICAL: no transform / opacity < 1 or backdrop-filter dies.
+ */
+.dialog-glass-overlay,
+[data-slot="dialog-overlay"] {
+  background-color: var(--glass-overlay-bg) !important;
+  backdrop-filter: blur(140px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(140px) saturate(1.9) !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
 }
 
 /* High-contrast dialog close control (default theme = dark) */
 [data-slot="dialog-close"] {
-  background-color: rgba(255, 255, 255, 0.16) !important;
-  border: 1px solid rgba(255, 255, 255, 0.38) !important;
-  color: #ffffff !important;
+  background-color: var(--glass-close-bg) !important;
+  border: 1px solid var(--glass-close-border) !important;
+  color: var(--text-main) !important;
   box-shadow:
-    0 4px 14px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
-  backdrop-filter: blur(16px) saturate(1.4);
-  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    0 4px 14px var(--shadow-color),
+    inset 0 1px 0 var(--glass-sheet-highlight) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 [data-slot="dialog-close"]:hover {
-  background-color: rgba(255, 255, 255, 0.28) !important;
-  border-color: rgba(255, 255, 255, 0.55) !important;
-  color: #ffffff !important;
+  background-color: var(--glass-close-hover-bg) !important;
+  border-color: var(--brand-blue-border) !important;
+  color: var(--brand-blue) !important;
 }
 
 .light-mode [data-slot="dialog-close"] {
-  background-color: rgba(255, 255, 255, 0.92) !important;
-  border: 1px solid rgba(15, 23, 42, 0.12) !important;
   color: #111827 !important;
-  box-shadow:
-    0 4px 14px rgba(52, 74, 94, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
 }
 
 .light-mode [data-slot="dialog-close"]:hover {
-  background-color: #ffffff !important;
-  border-color: rgba(37, 99, 235, 0.35) !important;
-  color: #1d4ed8 !important;
+  border-color: var(--brand-blue-border) !important;
+  color: var(--brand-blue-hover) !important;
 }
 
-/* List/location frosted cards */
+/* List/location frosted cards — translucent but readable */
 .surface-glass-card {
-  background-color: rgba(34, 34, 34, 0.58) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(22px) saturate(1.4);
-  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  background-color: var(--surface-card-bg);
+  border: 1px solid var(--surface-card-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   box-shadow:
-    0 12px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    var(--surface-card-shadow),
+    inset 0 1px 0 var(--glass-sheet-highlight);
 }
 
-.light-mode .surface-glass-card {
-  background-color: rgba(248, 252, 252, 0.72) !important;
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+.surface-glass-card-accent {
+  background-color: color-mix(in srgb, var(--accent-color) 10%, var(--surface-card-bg));
+  border-color: var(--brand-blue-border);
+}
+
+/* Compact icon/control chips — replaces scattered zinc light/dark pairs */
+.surface-control-btn {
+  background-color: var(--dialog-control-bg);
+  border: 1px solid var(--dialog-control-border);
+  color: var(--text-main);
+}
+
+.surface-control-btn:hover {
+  background-color: var(--bg-tertiary);
+  color: var(--text-main);
+}
+
+/* Header / radix floating menus — opaque fill in dark (blocks bleed-through) */
+.surface-popover {
+  background: var(--popover-surface-bg) !important;
+  background-color: var(--popover-surface-bg) !important;
+  border: 1px solid var(--popover-surface-border) !important;
   box-shadow:
-    0 12px 32px rgba(52, 74, 94, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    var(--popover-surface-shadow),
+    inset 0 1px 0 var(--glass-sheet-highlight);
+  isolation: isolate;
+  opacity: 1 !important;
+  color: var(--text-main);
+}
+
+.light-mode .surface-popover {
+  backdrop-filter: blur(var(--popover-surface-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--popover-surface-blur)) saturate(var(--glass-saturate));
+}
+
+/* Default modal panels inherit sheet frost tokens above */
+
+/* Profile + notifications: above main panel, below mobile sidebar overlay */
+.header-popover-layer {
+  z-index: var(--z-header-popover);
 }
 
 
 /* Custom utility classes for the Glassmorphism/Bento design */
 @layer components {
-  .glass-card {
-    @apply bg-surface-dark/80 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl;
-  }
-  
-  .input-field {
-    @apply w-full bg-black/50 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors;
-  }
-  
   .btn-primary {
     @apply w-full bg-accent hover:bg-accent-light text-black font-semibold rounded-lg px-4 py-3 transition-transform active:scale-[0.98];
   }
@@ -498,25 +610,25 @@ a#tv-attr-logo {
   line-height: 0.75rem !important;
 }
 
-/* Automatically apply Glassmorphism to layout and card containers */
+/* Soft translucency on layout/card containers (less blur than classic glass) */
 .bg-\[var\(--bg-secondary\)\] {
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 .bg-\[var\(--bg-card\)\] {
-  backdrop-filter: blur(22px) saturate(135%);
-  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.58),
-    0 18px 45px var(--shadow-color);
+    inset 0 1px 0 var(--glass-sheet-highlight),
+    0 14px 36px var(--shadow-color);
 }
 
 .light-mode .bg-\[var\(--bg-primary\)\],
 .light-mode .bg-\[var\(--bg-secondary\)\],
 .light-mode .bg-\[var\(--bg-tertiary\)\] {
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
 .light-mode input,
@@ -627,8 +739,8 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 
 .workhive-fullcalendar .workhive-calendar-event-accepted,
 .workhive-fullcalendar .workhive-calendar-event-progress {
-  --workhive-event-accent: #1d4ed8;
-  background-color: color-mix(in srgb, #1d4ed8 14%, var(--bg-card)) !important;
+  --workhive-event-accent: var(--brand-blue-hover);
+  background-color: color-mix(in srgb, var(--brand-blue-hover) 14%, var(--bg-card)) !important;
   color: var(--text-main) !important;
 }
 
@@ -751,9 +863,15 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 .light-mode [data-slot="dialog-content"],
+.light-mode [data-slot="dialog-content"].dialog-glass,
 .light-mode [data-slot="sheet-content"] {
-  background-color: var(--dialog-bg) !important;
-  border-color: rgba(255, 255, 255, 0.78) !important;
+  background-color: var(--glass-sheet-bg) !important;
+  border-color: var(--glass-sheet-border) !important;
+  backdrop-filter: blur(140px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(140px) saturate(1.8) !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
 }
 
 .light-mode [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),

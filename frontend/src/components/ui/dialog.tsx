@@ -39,7 +39,8 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-[10000] bg-black/40 backdrop-blur-xs dark:bg-black/75 dark:backdrop-blur-[10px] data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0",
+        // No opacity/transform animations: both break backdrop-filter frost.
+        "fixed inset-0 z-[10000] dialog-glass-overlay",
         className
       )}
       {...props}
@@ -64,7 +65,8 @@ function DialogContent({
         data-slot="dialog-content"
         aria-describedby={undefined}
         className={cn(
-          "fixed top-[50%] left-[50%] z-[10001] grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-[28px] border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] !bg-[var(--dialog-bg)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          // Center with inset + margin (NOT transform): transform kills backdrop-filter.
+          "fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-[28px] border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none sm:max-w-lg",
           className
         )}
         {...props}

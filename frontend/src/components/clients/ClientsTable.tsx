@@ -113,7 +113,7 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
                                 onDetails(client);
                             }
                         }}
-                        className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-4 space-y-3 cursor-pointer hover:border-[var(--border-color)] transition-colors shadow-sm active:scale-[0.99]"
+                        className="surface-glass-card rounded-2xl p-4 space-y-3 cursor-pointer hover:border-[var(--border-color)] transition-colors active:scale-[0.99]"
                     >
                         {/* Header: Name + Status + Menu */}
                         <div className="flex items-start justify-between gap-2">
@@ -150,7 +150,7 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
             </div>
 
             {/* ── Desktop: Table ── */}
-            <div className="hidden lg:block bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm w-full">
+            <div className="hidden lg:block surface-glass-card rounded-2xl overflow-hidden w-full">
                 <Table>
                     <TableHeader>
                         <TableRow>

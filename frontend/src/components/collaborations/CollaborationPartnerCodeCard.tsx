@@ -15,7 +15,7 @@ export function CollaborationPartnerCodeCard({
     onCopy,
 }: CollaborationPartnerCodeCardProps) {
     return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+        <div className="surface-glass-card rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full filter blur-2xl pointer-events-none -mr-10 -mt-10" />
 
             <div className="space-y-4 relative z-10">

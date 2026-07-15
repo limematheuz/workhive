@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
+
+test("dark visibility tokens live in globals and drive glass surfaces", () => {
+    const globals = read("../app/globals.css");
+    const locationCard = read("../components/locations/LocationCard.tsx");
+    const taskCard = read("../components/tasks/TaskListCard.tsx");
+    const companies = read("../components/companies/CompaniesListSection.tsx");
+    const header = read("../components/dashboard/DashboardHeader.tsx");
+    const notifications = read("../components/dashboard/notifications/NotificationPanel.tsx");
+    const dialog = read("../components/ui/dialog.tsx");
+    const popover = read("../components/ui/popover.tsx");
+
+    assert.match(globals, /--glass-sheet-bg:/);
+    assert.match(globals, /--glass-blur:/);
+    assert.match(globals, /--surface-card-bg:/);
+    assert.match(globals, /--brand-blue-glow:/);
+    assert.match(globals, /--brand-blue-sky:/);
+    assert.match(globals, /--popover-surface-bg:\s*#323238/);
+    assert.match(globals, /--z-header:\s*20/);
+    assert.match(globals, /--dialog-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.85\)/);
+    assert.match(globals, /--glass-blur-strong:\s*140px/);
+    assert.match(globals, /--glass-overlay-blur:\s*140px/);
+    assert.match(globals, /--glass-sheet-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.85\)/);
+    assert.match(globals, /--glass-overlay-bg:\s*rgba\(4,\s*6,\s*12,\s*0\.55\)/);
+    assert.match(globals, /\[data-slot="dialog-overlay"\]/);
+    assert.match(globals, /blur\(140px\)/);
+    assert.match(globals, /\[data-slot="dialog-content"\][\s\S]*transform:\s*none/);
+    assert.match(globals, /\[data-slot="dialog-overlay"\][\s\S]*transform:\s*none/);
+    assert.match(globals, /\.surface-glass-card\s*\{/);
+    assert.match(globals, /\.surface-control-btn\s*\{/);
+    assert.match(globals, /\.surface-popover[\s\S]*opacity:\s*1/);
+    assert.match(globals, /\.glass-panel[\s\S]*var\(--glass-panel-bg\)/);
+
+    // Backlight ambient glow must remain untouched by this work.
+    const backlightBlock = globals.match(/\.dashboard-shell-backlight\s*\{[^}]+\}/)?.[0] ?? "";
+    assert.match(backlightBlock, /opacity:\s*0\.34/);
+    assert.doesNotMatch(backlightBlock, /--glass-/);
+
+    // Dead legacy utilities should stay removed.
+    assert.doesNotMatch(globals, /\.glass-card\s*\{/);
+    assert.doesNotMatch(globals, /\.input-field\s*\{/);
+    assert.doesNotMatch(globals, /--sidebar-active-shadow/);
+
+    assert.match(locationCard, /surface-glass-card/);
+    assert.match(taskCard, /surface-glass-card/);
+    assert.match(companies, /surface-glass-card/);
+    assert.match(header, /surface-popover/);
+    assert.match(header, /header-popover-layer/);
+    assert.match(notifications, /surface-popover/);
+    assert.match(notifications, /header-popover-layer/);
+    assert.match(popover, /surface-popover/);
+    assert.match(dialog, /dialog-glass-overlay/);
+    assert.match(dialog, /inset-0/);
+    assert.match(dialog, /m-auto/);
+    assert.doesNotMatch(dialog, /translate-x-\[-50%\]/);
+    assert.doesNotMatch(dialog, /zoom-in-95/);
+});

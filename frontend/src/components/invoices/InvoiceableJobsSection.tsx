@@ -88,7 +88,7 @@ export function InvoiceableJobsSection({
 
     return (
         <div className="space-y-5">
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-5 space-y-4">
+            <div className="surface-glass-card rounded-2xl p-5 space-y-4">
                 <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                     <div>
                         <h2 className="text-lg font-black text-[var(--text-main)] flex items-center gap-2">
@@ -171,7 +171,7 @@ export function InvoiceableJobsSection({
                 </div>
             </div>
 
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl w-full shadow-sm">
+            <div className="surface-glass-card rounded-2xl w-full">
                 {loading ? (
                     <div className="flex items-center justify-center py-20 gap-3">
                         <Loader2 className="w-6 h-6 text-accent animate-spin" />

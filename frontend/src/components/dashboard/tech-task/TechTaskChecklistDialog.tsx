@@ -106,7 +106,7 @@ export function TechTaskChecklistDialog({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                overlayClassName="bg-black/25 backdrop-blur-[8px] dark:bg-black/50 dark:backdrop-blur-[12px]"
+                overlayClassName="dialog-glass-overlay"
                 className={`flex h-[100dvh] w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-x-0 border-b-0 p-0 left-0 top-0 sm:left-1/2 sm:top-1/2 sm:h-auto sm:max-h-[min(88dvh,760px)] sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:border-x sm:border-b ${scrollHide}`}
             >
                 <DialogHeader className="shrink-0 space-y-1 border-b border-[var(--border-soft)] px-4 py-3 pr-14 text-left sm:px-5 sm:pr-16">

@@ -46,7 +46,7 @@ export function ActionPopover({
                     </button>
                 )}
             </PopoverTrigger>
-            <PopoverContent align={align} className="w-40 p-1 bg-[var(--bg-card-solid)] border-[var(--border-soft)]">
+            <PopoverContent align={align} className="w-40 p-1">
                 <div className="flex flex-col gap-0.5">
                     {options.map((opt) => {
                         const Icon = opt.icon;

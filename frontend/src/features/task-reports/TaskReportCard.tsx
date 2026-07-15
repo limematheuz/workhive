@@ -32,10 +32,8 @@ export function TaskReportCard({
     return (
         <article className="min-w-0">
             <div
-                className={`group flex w-full items-center gap-2.5 rounded-xl border bg-[var(--bg-card)] px-3 py-2.5 text-left transition ${
-                    selected
-                        ? "border-accent/50 bg-accent/5"
-                        : "border-[var(--border-soft)] hover:border-accent/35 hover:bg-[var(--bg-secondary)]/60"
+                className={`surface-glass-card group flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition hover:border-accent/35 ${
+                    selected ? "surface-glass-card-accent border-accent/50" : ""
                 }`}
             >
                 {selectionMode && (
@@ -45,7 +43,7 @@ export function TaskReportCard({
                         onChange={() => onToggleSelect(report.id)}
                         onClick={event => event.stopPropagation()}
                         aria-label={heading}
-                        className="h-4 w-4 shrink-0 accent-[var(--color-accent,#2563eb)]"
+                        className="h-4 w-4 shrink-0 accent-[var(--brand-blue)]"
                     />
                 )}
                 <button
