@@ -7,7 +7,6 @@ import { MoreHorizontal, MapPin, Building2, Pencil, Trash2, ListChecks } from "l
 import { Button } from "@/components/ui/button"
 import { useDictionary } from "@/lib/dictionary-context"
 import { ActionPopover } from "@/components/ui/action-popover"
-import * as React from "react"
 import { resolveApiMediaUrl } from "@/lib/api"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
 
@@ -48,6 +47,8 @@ export function LocationCard({
         exterior: dict.locations?.type_exterior,
         other: dict.locations?.type_other,
     })
+    const tasksLabel = dict.locations?.sheet?.tab_templates || "Fixed services"
+
     return (
         <div
             role="button"
@@ -55,43 +56,39 @@ export function LocationCard({
             aria-label={location.name}
             onClick={onCardClick}
             onKeyDown={(event) => {
-                // Only handle keys on the card itself, not on nested interactive elements
-                if (event.target !== event.currentTarget) return;
+                if (event.target !== event.currentTarget) return
                 if (event.key === "Enter" || event.key === " ") {
-                    if (event.key === " ") event.preventDefault();
-                    onCardClick();
+                    if (event.key === " ") event.preventDefault()
+                    onCardClick()
                 }
             }}
-            className="group relative rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
-            style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}
+            className="surface-glass-card group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/35"
         >
-            {/* Header: image or gradient */}
             {location.photo_url ? (
-                <div className="relative h-40 w-full overflow-hidden bg-[var(--bg-tertiary)] border-b border-[var(--border-soft)]">
+                <div className="relative h-32 w-full overflow-hidden border-b border-[var(--border-soft)] bg-[var(--bg-tertiary)] sm:h-36">
                     <Image
                         src={resolveApiMediaUrl(location.photo_url) || ""}
                         alt={location.name}
                         fill
-                        sizes="(max-width: 768px) 100vw, 33vw"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         unoptimized
                     />
-                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors" />
-
-                    <div className="absolute top-3 left-3 flex gap-1.5">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="absolute left-2.5 top-2.5 flex max-w-[78%] flex-wrap gap-1">
                         <Badge
                             variant={location.is_active ? "default" : "secondary"}
                             className={
                                 location.is_active
-                                    ? "bg-emerald-500/90 text-white border-0 shadow-sm text-xs"
-                                    : "bg-black/40 text-white/80 border-0 shadow-sm text-xs backdrop-blur-sm"
+                                    ? "border-0 bg-emerald-500/90 px-1.5 py-0 text-[10px] text-white"
+                                    : "border-0 bg-black/40 px-1.5 py-0 text-[10px] text-white/85 backdrop-blur-sm"
                             }
                         >
                             {location.is_active ? activeLabel : inactiveLabel}
                         </Badge>
                         <Badge
                             variant="secondary"
-                            className="bg-black/40 text-white/95 border-0 shadow-sm text-xs backdrop-blur-sm"
+                            className="border-0 bg-black/40 px-1.5 py-0 text-[10px] text-white/95 backdrop-blur-sm"
                         >
                             {locationTypeLabel}
                         </Badge>
@@ -99,30 +96,29 @@ export function LocationCard({
                 </div>
             ) : (
                 <div
-                    className="relative h-40 w-full overflow-hidden"
+                    className="relative h-32 w-full overflow-hidden sm:h-36"
                     style={{ background: gradient }}
                 >
-                    <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="text-center">
-                            <MapPin className="w-10 h-10 mx-auto mb-1 opacity-60" style={{ color: "white" }} />
-                            <span className="text-xs font-medium text-white/70">{location.city}</span>
-                        </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3">
+                        <MapPin className="h-8 w-8 text-white drop-shadow-sm" />
+                        <span className="max-w-full truncate text-xs font-semibold text-white/95 drop-shadow-sm">
+                            {location.city}
+                        </span>
                     </div>
-
-                    <div className="absolute top-3 left-3 flex gap-1.5">
+                    <div className="absolute left-2.5 top-2.5 flex max-w-[78%] flex-wrap gap-1">
                         <Badge
                             variant={location.is_active ? "default" : "secondary"}
                             className={
                                 location.is_active
-                                    ? "bg-emerald-500/90 text-white border-0 shadow-sm text-xs"
-                                    : "bg-black/40 text-white/80 border-0 shadow-sm text-xs backdrop-blur-sm"
+                                    ? "border-0 bg-emerald-500/90 px-1.5 py-0 text-[10px] text-white"
+                                    : "border-0 bg-black/35 px-1.5 py-0 text-[10px] text-white/85 backdrop-blur-sm"
                             }
                         >
                             {location.is_active ? activeLabel : inactiveLabel}
                         </Badge>
                         <Badge
                             variant="secondary"
-                            className="bg-black/40 text-white/95 border-0 shadow-sm text-xs backdrop-blur-sm"
+                            className="border-0 bg-black/35 px-1.5 py-0 text-[10px] text-white/95 backdrop-blur-sm"
                         >
                             {locationTypeLabel}
                         </Badge>
@@ -130,9 +126,8 @@ export function LocationCard({
                 </div>
             )}
 
-            {/* Actions button */}
-            <div 
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            <div
+                className="absolute right-1.5 top-1.5 z-10"
                 onClick={(e) => e.stopPropagation()}
             >
                 <ActionPopover
@@ -141,14 +136,14 @@ export function LocationCard({
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 rounded-xl bg-black/30 backdrop-blur-sm text-white hover:bg-black/50 hover:text-white"
+                            className="h-7 w-7 rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm hover:bg-black/50 hover:text-white"
                         >
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-3.5 w-3.5" />
                         </Button>
                     }
                     options={[
                         {
-                            label: dict.locations?.sheet?.tab_templates || "Configure services",
+                            label: tasksLabel,
                             icon: ListChecks,
                             onClick: onTasks,
                         },
@@ -172,35 +167,42 @@ export function LocationCard({
                 />
             </div>
 
-            {/* Content */}
-            <div className="p-4">
-                <h3 className="font-semibold text-[var(--text-main)] text-base truncate mb-1">
-                    {location.name}
-                </h3>
-                <p className="text-xs text-[var(--text-muted)] truncate mb-3">{location.address}</p>
- 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-[var(--border-soft)]">
-                    <div className="flex items-center gap-1.5 min-w-0 flex-1 mr-2">
-                        <Building2 className="w-3.5 h-3.5 text-[var(--text-muted)] flex-shrink-0" />
-                        <span className="text-2xs text-[var(--text-muted)] truncate">{clientName}</span>
+            <div className="flex flex-1 flex-col gap-2.5 p-3.5 sm:p-4">
+                <div className="min-w-0">
+                    <h3 className="truncate text-[15px] font-bold leading-snug text-[var(--text-main)]">
+                        {location.name}
+                    </h3>
+                    <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
+                        {location.address}
+                    </p>
+                </div>
+
+                <div className="mt-auto flex items-center justify-between gap-1.5 border-t border-[var(--border-soft)] pt-2.5">
+                    <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
+                        <span className="truncate text-[11px] font-medium text-[var(--text-muted)]">
+                            {clientName}
+                        </span>
                     </div>
                     {(pendingTasksCount !== undefined || completedTasksCount !== undefined) && (
-                        <div className="flex gap-1.5 shrink-0 text-[9px] font-black uppercase tracking-wide">
+                        <div className="flex shrink-0 gap-1.5 text-[9px] font-black uppercase tracking-wide">
                             <span className="text-orange-500">{(pendingTasksCount || 0)} P</span>
-                            <span className="text-emerald-500">{(completedTasksCount || 0)} C</span>
+                            <span className="text-[var(--color-green-500)]">{(completedTasksCount || 0)} C</span>
                         </div>
                     )}
                 </div>
+
                 <button
                     type="button"
                     onClick={(event) => {
                         event.stopPropagation()
                         onTasks()
                     }}
-                    className="mt-3 flex h-10 w-full items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] text-sm font-semibold text-[var(--text-main)] transition-colors hover:border-accent/40 hover:text-accent"
+                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] px-2.5 text-[11px] font-bold text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
+                    title={tasksLabel}
                 >
-                    <ListChecks className="h-4 w-4 text-accent" />
-                    {dict.locations?.sheet?.tab_templates || "Fixed services"}
+                    <ListChecks className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{tasksLabel}</span>
                 </button>
             </div>
         </div>
