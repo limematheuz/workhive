@@ -79,8 +79,8 @@ def send_invoice_email(
   {copy["lead"].format(text=b["text"], recipient=safe_recipient_name)}
 </p>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border:1px solid {b['divider']};border-radius:12px;overflow:hidden;background-color:#ffffff;table-layout:fixed;">
-<tr style="background-color:#f9fafb;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border:1px solid {b['divider']};border-radius:12px;overflow:hidden;background-color:{b['card']};table-layout:fixed;">
+<tr style="background-color:{b['inset_bg']};">
   <td colspan="2" class="email-section-title" style="padding:14px 20px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:{b['muted']};border-bottom:1px solid {b['divider']};">
     {copy["billing_details"]}
   </td>
@@ -104,13 +104,13 @@ def send_invoice_email(
 </tr>
 </table>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;border:1px solid {b['divider']};border-radius:12px;background-color:#ffffff;table-layout:fixed;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;border:1px solid {b['divider']};border-radius:12px;background-color:{b['card']};table-layout:fixed;">
 <tr>
 <td class="email-file-cell" style="padding:18px 20px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
   <tr>
     <td width="56" style="vertical-align:top;">
-      <span style="display:inline-block;width:46px;height:46px;border-radius:12px;background-color:#fee2e2;color:#dc2626;font-size:11px;line-height:46px;text-align:center;font-weight:900;">PDF</span>
+      <span style="display:inline-block;width:46px;height:46px;border-radius:12px;background-color:{b['accent_soft']};color:{b['accent']};font-size:11px;line-height:46px;text-align:center;font-weight:900;border:1px solid {b['accent_border']};">PDF</span>
     </td>
     <td style="vertical-align:middle;">
       <p class="email-file-name email-text-break" style="margin:0 0 4px;font-size:15px;font-weight:800;color:{b['text']};overflow-wrap:anywhere;word-break:break-word;">{safe_invoice_number}.pdf</p>

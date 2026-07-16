@@ -3,7 +3,15 @@ from email.message import EmailMessage
 from html import escape
 
 from app.services.email_service import transport
-from app.services.email_service.layout import _BRAND, base_layout, button
+from app.services.email_service.layout import (
+    _BRAND,
+    base_layout,
+    button,
+    fallback_link,
+    heading,
+    lead,
+    muted_note,
+)
 
 
 def send_trial_verification_email(
@@ -16,22 +24,13 @@ def send_trial_verification_email(
     b = _BRAND
     safe_name = escape(recipient_name)
     safe_company = escape(company_name)
-    safe_url = escape(verification_url, quote=True)
     html_body = base_layout(
         f"""
-<h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:{b['text']};text-align:center;">
-  Verifica tu solicitud
-</h1>
-<p style="margin:0 0 18px;font-size:14px;color:{b['muted']};text-align:center;line-height:22px;">
-  Hola <strong style="color:{b['text']};">{safe_name}</strong>, confirma que este correo pertenece a la persona que solicita acceso para <strong style="color:{b['text']};">{safe_company}</strong>.
-</p>
+{heading("Verifica tu solicitud")}
+{lead(f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>, confirma que este correo pertenece a la persona que solicita acceso para <strong style="color:{b["text"]};">{safe_company}</strong>.')}
 {button(verification_url, "Verificar solicitud")}
-<p style="margin:0;font-size:12px;color:{b['muted']};text-align:center;line-height:18px;">
-  Después de verificarlo, un superadmin de WorkHive revisará la solicitud manualmente.
-</p>
-<p style="margin:18px 0 0;font-size:11px;color:{b['muted']};word-break:break-all;text-align:center;">
-  {safe_url}
-</p>
+{muted_note("Después de verificarlo, un superadmin de WorkHive revisará la solicitud manualmente.")}
+{fallback_link(verification_url)}
 """,
         preview_text="Verifica tu solicitud de acceso a WorkHive",
     )
@@ -64,7 +63,6 @@ def send_trial_approved_email(
     b = _BRAND
     safe_name = escape(recipient_name)
     safe_company = escape(company_name)
-    safe_url = escape(setup_url, quote=True)
     if access_mode == "trial" and trial_ends_at:
         access_text = f"Tu prueba estará activa hasta el {trial_ends_at.date().isoformat()}."
     else:
@@ -72,19 +70,11 @@ def send_trial_approved_email(
 
     html_body = base_layout(
         f"""
-<h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:{b['text']};text-align:center;">
-  Acceso aprobado
-</h1>
-<p style="margin:0 0 18px;font-size:14px;color:{b['muted']};text-align:center;line-height:22px;">
-  Hola <strong style="color:{b['text']};">{safe_name}</strong>, tu acceso a WorkHive para <strong style="color:{b['text']};">{safe_company}</strong> ha sido aprobado.
-</p>
-<p style="margin:0 0 18px;font-size:13px;color:{b['muted']};text-align:center;line-height:20px;">
-  {escape(access_text)}
-</p>
+{heading("Acceso aprobado")}
+{lead(f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>, tu acceso a WorkHive para <strong style="color:{b["text"]};">{safe_company}</strong> ha sido aprobado.')}
+{muted_note(escape(access_text))}
 {button(setup_url, "Crear contraseña")}
-<p style="margin:0;font-size:11px;color:{b['muted']};word-break:break-all;text-align:center;">
-  {safe_url}
-</p>
+{fallback_link(setup_url)}
 """,
         preview_text="Tu acceso a WorkHive ha sido aprobado",
     )
@@ -116,31 +106,24 @@ def send_worker_invitation_email(
     b = _BRAND
     safe_name = escape(recipient_name) or ""
     safe_company = escape(company_name)
-    safe_url = escape(invitation_url, quote=True)
     safe_code = escape(verification_code)
     expires_text = expires_at.astimezone().strftime("%d/%m/%Y %H:%M")
-    greeting = f"Hola <strong style=\"color:{b['text']};\">{safe_name}</strong>," if safe_name else "Hola,"
+    greeting = (
+        f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>,'
+        if safe_name
+        else "Hola,"
+    )
     html_body = base_layout(
         f"""
-<h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:{b['text']};text-align:center;">
-  Te han invitado a WorkHive
-</h1>
-<p style="margin:0 0 18px;font-size:14px;color:{b['muted']};text-align:center;line-height:22px;">
-  {greeting} te han invitado a unirte al equipo de <strong style="color:{b['text']};">{safe_company}</strong>.
-</p>
-<p style="margin:0 0 12px;font-size:13px;color:{b['muted']};text-align:center;line-height:20px;">
-  Abre el enlace y usa este código de verificación:
-</p>
-<p style="margin:0 0 22px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b['text']};text-align:center;">
+{heading("Te han invitado a WorkHive")}
+{lead(f'{greeting} te han invitado a unirte al equipo de <strong style="color:{b["text"]};">{safe_company}</strong>.')}
+{muted_note("Abre el enlace y usa este código de verificación:")}
+<p style="margin:12px 0 8px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b['text']};text-align:center;">
   {safe_code}
 </p>
 {button(invitation_url, "Crear mi acceso")}
-<p style="margin:0;font-size:12px;color:{b['muted']};text-align:center;line-height:18px;">
-  La invitación caduca el {escape(expires_text)}. No compartas el código con nadie.
-</p>
-<p style="margin:18px 0 0;font-size:11px;color:{b['muted']};word-break:break-all;text-align:center;">
-  {safe_url}
-</p>
+{muted_note(f"La invitación caduca el {escape(expires_text)}. No compartas el código con nadie.")}
+{fallback_link(invitation_url)}
 """,
         preview_text=f"Invitación para unirte a {company_name} en WorkHive",
     )
