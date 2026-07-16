@@ -1,5 +1,10 @@
 import type { Company } from "@/services/company.service";
 
+export function getCompanyContactEmail(company: Company): string | null {
+    const contactEmail = company.contact_email?.trim();
+    return contactEmail || null;
+}
+
 export function isCompanyAccessEnabled(company: Company): boolean {
     if (!company.is_active) return false;
     if (company.subscription_plan === "none") return false;

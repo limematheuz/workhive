@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
+import { isPlatformSuperadmin } from "@/domain/access/roles";
 import {
     TrialRequest,
     TrialRequestApprove,
@@ -76,16 +77,16 @@ export function TrialRequestsPanel() {
     }, []);
 
     useEffect(() => {
-        if (user?.role?.name !== "superadmin") {
+        if (!isPlatformSuperadmin(user)) {
             startTransition(() => setLoading(false));
             return;
         }
         startTransition(() => {
             void loadRequests();
         });
-    }, [loadRequests, user?.role?.name]);
+    }, [loadRequests, user]);
 
-    if (user?.role?.name !== "superadmin") {
+    if (!isPlatformSuperadmin(user)) {
         return null;
     }
 

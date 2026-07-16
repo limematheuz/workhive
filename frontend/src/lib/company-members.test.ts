@@ -8,6 +8,7 @@ test("company members separate admins from the complete worker team", () => {
         { id: 1, full_name: "Admin", email: "admin@example.com", role: "admin", is_active: true },
         { id: 2, full_name: "Manager", email: "manager@example.com", role: "manager", is_active: true },
         { id: 3, full_name: "Worker", email: "worker@example.com", role: "viewer", is_active: false },
+        { id: 4, full_name: "Platform", email: "platform@example.com", role: "superadmin", is_active: true },
     ]);
 
     assert.deepEqual(grouped.admins.map((member) => member.id), [1]);

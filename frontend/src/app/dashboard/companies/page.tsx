@@ -19,6 +19,7 @@ import type { PopoverOption } from "@/components/ui/action-popover";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
+import { isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyService, type Company } from "@/services/company.service";
 
 const EMPTY_FORM: CompanyEditFormData = {
@@ -77,14 +78,14 @@ export default function CompaniesAdminPage() {
     }, [dict.companies.toast_error_load]);
 
     useEffect(() => {
-        if (userLoading || !user || user.role?.name !== "superadmin") return;
+        if (userLoading || !isPlatformSuperadmin(user)) return;
         const timer = window.setTimeout(() => {
             void fetchCompanies();
         }, 0);
         return () => window.clearTimeout(timer);
     }, [fetchCompanies, user, userLoading]);
 
-    if (!userLoading && (!user || user.role?.name !== "superadmin")) {
+    if (!userLoading && !isPlatformSuperadmin(user)) {
         redirect("/dashboard");
     }
 
@@ -248,7 +249,7 @@ export default function CompaniesAdminPage() {
         );
     }
 
-    if (!user || user.role?.name !== "superadmin") {
+    if (!isPlatformSuperadmin(user)) {
         return null;
     }
 

@@ -21,7 +21,7 @@ from app.schemas.trial_request import (
     TrialRequestReject,
 )
 from app.services import email_service
-from app.services.user_scope import require_superadmin
+from app.services.user_scope import require_platform_superadmin
 
 
 TERMINAL_REQUEST_STATUSES = {"approved", "rejected", "expired"}
@@ -43,7 +43,8 @@ def _generate_partner_code(db: Session, company_name: str) -> str:
     return code
 
 
-def list_trial_requests(db: Session) -> list[TrialRequest]:
+def list_trial_requests(db: Session, current_user: User) -> list[TrialRequest]:
+    require_platform_superadmin(current_user)
     return (
         db.query(TrialRequest)
         .order_by(TrialRequest.created_at.desc(), TrialRequest.id.desc())
@@ -156,7 +157,7 @@ def approve_trial_request(
     approval: TrialRequestApprove,
     approver: User,
 ) -> TrialRequest:
-    require_superadmin(approver)
+    require_platform_superadmin(approver)
 
     request = db.get(TrialRequest, request_id)
     if not request:
@@ -252,7 +253,7 @@ def reject_trial_request(
     rejection: TrialRequestReject,
     rejector: User,
 ) -> TrialRequest:
-    require_superadmin(rejector)
+    require_platform_superadmin(rejector)
 
     request = db.get(TrialRequest, request_id)
     if not request:

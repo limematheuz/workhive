@@ -10,7 +10,7 @@ import { authService } from "@/services/auth.service";
 import { AuditLogService } from "@/services/audit-log.service";
 import { AuditLog } from "@/types/audit-log";
 import { User } from "@/types/user";
-import { isSuperadmin } from "@/domain/access/roles";
+import { isPlatformSuperadmin } from "@/domain/access/roles";
 import type { TrafficMapPoint } from "@/lib/traffic-map";
 import {
     fallbackTraffic,
@@ -38,7 +38,7 @@ export default function TrafficPage() {
                 const me = await authService.getMe();
                 if (!mounted) return;
                 setCurrentUser(me);
-                if (!isSuperadmin(me)) return;
+                if (!isPlatformSuperadmin(me)) return;
                 const auditEvents = await AuditLogService.getAuditLogs(500);
                 if (!mounted) return;
                 setEvents(auditEvents.filter((event) => event.action === "auth.login" || event.action === "public.page_view"));
@@ -210,7 +210,7 @@ export default function TrafficPage() {
         );
     }
 
-    if (!isSuperadmin(currentUser)) {
+    if (!isPlatformSuperadmin(currentUser)) {
         return (
             <div className="p-8">
                 <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center">

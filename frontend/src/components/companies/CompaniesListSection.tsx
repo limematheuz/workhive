@@ -18,6 +18,7 @@ import type { CompanyMember } from "./company-members";
 import { CompanyMembersPanel } from "./CompanyMembersPanel";
 
 import {
+    getCompanyContactEmail,
     getCompanyAccessBadgeClass,
     getCompanyAccessLabel,
 } from "./company-utils";
@@ -105,10 +106,10 @@ export function CompaniesListSection({
                         </div>
 
                         <div className="space-y-1.5 pt-2 border-t border-[var(--border-soft)]/50 text-xs text-[var(--text-muted)]">
-                            {company.email && (
+                            {getCompanyContactEmail(company) && (
                                 <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[var(--text-main)]">Email:</span>
-                                    <span className="truncate">{company.email}</span>
+                                    <span className="font-semibold text-[var(--text-main)]">{labels.email}:</span>
+                                    <span className="truncate">{getCompanyContactEmail(company)}</span>
                                 </div>
                             )}
                             {company.phone && (
@@ -190,7 +191,7 @@ export function CompaniesListSection({
                                     </button>
                                 </TableCell>
                                 <TableCell className="font-mono text-xs">{company.tax_id || company.cif || "—"}</TableCell>
-                                <TableCell className="hidden md:table-cell text-[var(--text-muted)]">{company.email || "—"}</TableCell>
+                                <TableCell className="hidden md:table-cell text-[var(--text-muted)]">{getCompanyContactEmail(company) || "—"}</TableCell>
                                 <TableCell className="hidden md:table-cell text-[var(--text-muted)]">{company.phone || "—"}</TableCell>
                                 <TableCell>
                                     <Badge className={getCompanyAccessBadgeClass(company)}>
