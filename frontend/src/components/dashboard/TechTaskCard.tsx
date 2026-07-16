@@ -139,14 +139,14 @@ export function TechTaskCard({
                 }
             }}
             className={cn(
-                "group relative isolate overflow-hidden rounded-3xl border p-5 transition-all duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer shadow-sm hover:shadow-lg bg-[var(--bg-card)]",
+                "surface-glass-card group relative isolate overflow-hidden rounded-3xl p-5 transition-all duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer hover:shadow-lg",
                 isOverdue
-                    ? "border-red-500/30 bg-red-500/[0.02] hover:border-red-500/50"
+                    ? "border-red-500/30 [background-color:color-mix(in_srgb,rgb(239_68_68)_6%,var(--surface-card-bg))] hover:border-red-500/50"
                     : isCompleted
-                    ? "border-[var(--border-soft)] bg-zinc-500/5 opacity-60 grayscale-[0.2]"
+                    ? "opacity-60 grayscale-[0.2]"
                     : isProgress
                     ? "border-accent/40 shadow-[0_12px_32px_color-mix(in_srgb,var(--accent)_14%,transparent)]"
-                    : "border-[var(--border-soft)] hover:border-accent/30"
+                    : "hover:border-accent/30"
             )}
         >
             {/* Top Bar info */}
@@ -169,10 +169,10 @@ export function TechTaskCard({
                         isOverdue
                             ? "bg-red-500/10 border-red-500/20 text-red-500"
                             : isCompleted
-                            ? "bg-zinc-500/10 border-zinc-500/20 text-zinc-500"
+                            ? "bg-[var(--bg-tertiary)] border-[var(--border-color)] text-[var(--text-muted)]"
                             : isProgress
                             ? "relative isolate overflow-visible bg-accent border-accent text-white shadow-lg shadow-accent/30 ring-2 ring-[var(--bg-card)]"
-                            : "bg-accent/10 border-accent/20 text-accent dark:text-accent"
+                            : "bg-accent/10 border-accent/20 text-accent"
                     )}
                 >
                     {isProgress && (
@@ -222,7 +222,7 @@ export function TechTaskCard({
             <div className="mt-4 flex items-center gap-2 border-t border-[var(--border-soft)] pt-3">
                 <div className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
-                    isOverdue ? "bg-orange-500" : isCompleted ? "bg-zinc-400" : "bg-accent"
+                    isOverdue ? "bg-orange-500" : isCompleted ? "bg-[var(--text-muted)]" : "bg-accent"
                 )}>
                     <MapPin className="h-4 w-4" />
                 </div>

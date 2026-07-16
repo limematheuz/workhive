@@ -47,7 +47,7 @@ export function ExpensesListSection({
     ];
 
     return (
-        <section className="rounded-[24px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/88 p-5 backdrop-blur-xl">
+        <section className="surface-glass-card rounded-[24px] p-5">
             <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                     <h2 className="text-lg font-black text-[var(--text-main)]">{text.list_title}</h2>

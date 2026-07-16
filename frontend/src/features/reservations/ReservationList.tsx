@@ -22,7 +22,7 @@ const statusColors: Record<string, string> = {
         "bg-accent/10 text-accent dark:text-accent border-accent/20",
     tentative:
         "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/25",
-    cancelled: "bg-zinc-500/10 text-zinc-500 border-zinc-500/20",
+    cancelled: "bg-[var(--bg-tertiary)] text-[var(--text-muted)] border-[var(--border-color)]",
 };
 
 interface ReservationListProps {
@@ -112,7 +112,7 @@ function ReservationCard({
 
     return (
         <article
-            className={`group relative border border-[var(--border-soft)] bg-[var(--bg-card)] rounded-3xl p-5 hover:border-accent/30 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300 flex flex-col justify-between ${
+            className={`surface-glass-card group relative rounded-3xl p-5 hover:border-accent/35 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300 flex flex-col justify-between ${
                 reservation.status === "cancelled" ? "opacity-60" : ""
             }`}
         >

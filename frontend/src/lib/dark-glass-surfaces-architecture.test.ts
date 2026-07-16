@@ -14,7 +14,7 @@ test("companies admin surfaces use frosted glass without changing dashboard back
     assert.match(members, /glass-panel/);
     assert.match(trials, /surface-glass-card/);
     assert.match(globals, /\.surface-glass-card/);
-    assert.match(globals, /rgba\(52,\s*52,\s*56,\s*0\.74\)/);
+    assert.match(globals, /--surface-card-bg:\s*rgba\(44,\s*44,\s*48,\s*0\.88\)/);
 
     // Ambient shell glow must remain untouched.
     assert.match(globals, /\.dashboard-shell-backlight\s*\{[\s\S]*?opacity:\s*0\.34/);

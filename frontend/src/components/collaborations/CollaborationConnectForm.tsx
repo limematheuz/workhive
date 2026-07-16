@@ -24,7 +24,7 @@ export function CollaborationConnectForm({
     onSubmit,
 }: CollaborationConnectFormProps) {
     return (
-        <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-6 shadow-sm">
+        <div className="surface-glass-card rounded-3xl p-6">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3 flex items-center gap-2">
                 <Plus className="h-4.5 w-4.5 text-accent" />
                 Vincular nueva empresa

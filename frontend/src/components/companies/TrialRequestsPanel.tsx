@@ -29,7 +29,7 @@ const STATUS_STYLES: Record<string, string> = {
     email_verified: "bg-accent/10 text-accent border border-accent/20",
     approved: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20",
     rejected: "bg-red-500/10 text-red-600 border border-red-500/20",
-    expired: "bg-zinc-500/10 text-zinc-600 border border-zinc-500/20",
+    expired: "bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-color)]",
 };
 
 type ApprovalForm = TrialRequestApprove;

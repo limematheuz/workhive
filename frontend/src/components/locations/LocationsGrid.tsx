@@ -19,13 +19,13 @@ interface LocationsGridProps {
     onTasks: (location: Location) => void
 }
 
-// Soft brand-blue headers (readable in light + dark).
+// Soft brand-blue headers (readable in light + dark) — tokens from globals.css.
 function getGradient(name: string): string {
     const gradients = [
-        "linear-gradient(160deg, #93c5fd 0%, #3b82f6 100%)",
-        "linear-gradient(160deg, #7dd3fc 0%, #2563eb 100%)",
-        "linear-gradient(160deg, #bfdbfe 0%, #60a5fa 100%)",
-        "linear-gradient(160deg, #93c5fd 0%, #2563eb 100%)",
+        "linear-gradient(160deg, var(--brand-blue-sky) 0%, var(--brand-blue-mid) 100%)",
+        "linear-gradient(160deg, var(--brand-blue-sky-deep) 0%, var(--brand-blue) 100%)",
+        "linear-gradient(160deg, var(--brand-blue-mist) 0%, var(--brand-blue-bright) 100%)",
+        "linear-gradient(160deg, var(--brand-blue-sky) 0%, var(--brand-blue) 100%)",
     ]
     const index = name.charCodeAt(0) % gradients.length
     return gradients[index]

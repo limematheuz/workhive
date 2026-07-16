@@ -35,8 +35,8 @@ function SummaryCard({
     icon: ReactNode;
 }) {
     return (
-        <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4">
-            <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent">
+        <div className="rounded-2xl surface-glass-card p-4">
+            <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--dialog-control-bg)] text-accent">
                 {icon}
             </div>
             <p className="text-[11px] font-black uppercase tracking-wide text-[var(--text-muted)]">{label}</p>

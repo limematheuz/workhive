@@ -36,7 +36,7 @@ export function TechTaskMapArea({
         || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
 
     return (
-        <div className="relative h-56 w-full shrink-0 border-b border-[var(--border-soft)] bg-zinc-100 dark:bg-zinc-950 sm:h-60">
+        <div className="relative h-56 w-full shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-secondary)] sm:h-60">
             {viewMode === "map" ? (
                 <iframe
                     src={mapEmbedUrl}
@@ -76,7 +76,7 @@ export function TechTaskMapArea({
             </a>
 
             {location?.photo_url && (
-                <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 rounded-xl border border-[var(--border-soft)] bg-white/95 p-1 shadow-md dark:bg-zinc-900/95">
+                <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 rounded-xl border border-[var(--border-soft)] bg-[var(--glass-chrome-bg)] p-1 shadow-md backdrop-blur-[var(--glass-blur)]">
                     <button
                         type="button"
                         onClick={() => setViewMode("map")}

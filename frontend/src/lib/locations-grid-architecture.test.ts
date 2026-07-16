@@ -13,8 +13,9 @@ test("location grid prefers two compact cards per row without dropping content",
 
     assert.match(grid, /grid-cols-2/);
     assert.match(grid, /lg:grid-cols-3|xl:grid-cols-4/);
-    assert.match(grid, /#93c5fd|#60a5fa|#7dd3fc|#bfdbfe/);
-    assert.doesNotMatch(grid, /#1e3a8a|#1e40af|#14b8a6/);
+    assert.match(grid, /--brand-blue-sky|--brand-blue-mist|--brand-blue-sky-deep|--brand-blue-bright/);
+    assert.match(grid, /var\(--brand-blue\)/);
+    assert.doesNotMatch(grid, /#1e3a8a|#1e40af|#14b8a6|#2563eb/);
     assert.match(card, /surface-glass-card/);
     assert.match(card, /h-32|h-36/);
     assert.doesNotMatch(card, /max-w-\[300px\]/);

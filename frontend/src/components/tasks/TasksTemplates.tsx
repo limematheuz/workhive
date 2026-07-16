@@ -81,7 +81,7 @@ export function TasksTemplates({
 
     return (
         <>
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-6 shadow-sm">
+            <div className="surface-glass-card rounded-3xl p-6">
                 <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h3 className="text-base font-black text-[var(--text-main)] flex items-center gap-2">

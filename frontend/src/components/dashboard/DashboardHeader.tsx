@@ -63,7 +63,7 @@ export function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
                                     : dict.dashboard.overview;
 
     return (
-        <header className="relative z-10 flex h-20 items-center justify-between border-b border-[var(--border-soft)] bg-transparent px-[3%] transition-colors duration-300 md:px-8">
+        <header className="relative z-[var(--z-header)] flex h-20 items-center justify-between border-b border-[var(--border-soft)] bg-transparent px-[3%] transition-colors duration-300 md:px-8">
             <div className="flex items-center gap-4">
                 <button
                     type="button"
@@ -98,7 +98,7 @@ export function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
                         />
                     </button>
                     {isProfileOpen && user && (
-                        <div className="absolute right-0 mt-2 w-56 rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] shadow-2xl p-6 z-[10050] flex flex-col gap-2 transition-all">
+                        <div className="surface-popover header-popover-layer fixed top-20 right-[3%] md:right-8 mt-2 w-56 rounded-3xl p-6 flex flex-col gap-2 transition-all">
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-sm font-semibold text-[var(--text-main)] truncate">
                                     {user.full_name || dict.dashboard.default_user_name || "Usuario"}

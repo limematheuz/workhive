@@ -119,7 +119,7 @@ export function TaskListCard({
                 }}
                 className={`group surface-glass-card flex h-full min-h-[72px] w-full cursor-pointer items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 ${
                     isExternal
-                        ? "hover:border-accent/40"
+                        ? "surface-glass-card-accent hover:border-accent/40"
                         : "hover:border-accent/35"
                 }`}
             >

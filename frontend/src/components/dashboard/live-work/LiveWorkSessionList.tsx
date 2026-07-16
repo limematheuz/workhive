@@ -40,7 +40,7 @@ export function LiveWorkSessionList({
 
     if (visibleCount === 0) {
         return (
-            <div className="rounded-3xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] px-6 py-16 text-center">
+            <div className="surface-glass-card rounded-3xl border-dashed px-6 py-16 text-center">
                 <Users className="mx-auto h-9 w-9 text-[var(--text-muted)]" />
                 <h2 className="mt-4 text-lg font-black text-[var(--text-main)]">
                     {query
@@ -92,7 +92,7 @@ export function LiveWorkSessionList({
                             return (
                                 <article
                                     key={session.id}
-                                    className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 shadow-sm"
+                                    className="surface-glass-card rounded-3xl p-5"
                                 >
                                     <div className="flex items-start justify-between gap-4">
                                         <div className="min-w-0">

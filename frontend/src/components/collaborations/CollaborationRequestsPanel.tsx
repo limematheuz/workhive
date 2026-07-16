@@ -30,7 +30,7 @@ export function CollaborationRequestsPanel({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pendingRequests.length > 0 && (
-                    <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-5 space-y-4">
+                    <div className="surface-glass-card rounded-3xl p-5 space-y-4">
                         <h3 className="text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Solicitudes Recibidas</h3>
                         <div className="space-y-3">
                             {pendingRequests.map((req) => {
@@ -65,7 +65,7 @@ export function CollaborationRequestsPanel({
                 )}
 
                 {sentRequests.length > 0 && (
-                    <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-5 space-y-4">
+                    <div className="surface-glass-card rounded-3xl p-5 space-y-4">
                         <h3 className="text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Solicitudes Enviadas</h3>
                         <div className="space-y-3">
                             {sentRequests.map((req) => {

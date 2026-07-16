@@ -102,7 +102,7 @@ export function NotificationPanel() {
             </button>
 
             {isNotificationsOpen && user && (
-                <div className="fixed left-3 right-3 top-20 max-w-[calc(100vw-1.5rem)] rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] shadow-2xl p-4 z-[10050] transition-all sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-3 sm:w-[min(25rem,calc(100vw-2rem))]">
+                <div className="surface-popover header-popover-layer fixed left-3 right-3 top-20 max-w-[calc(100vw-1.5rem)] rounded-3xl p-4 transition-all sm:left-auto sm:right-8 sm:w-[min(25rem,calc(100vw-2rem))]">
                     <div className="flex items-start justify-between gap-4 pb-3">
                         <div>
                             <p className="text-sm font-black text-[var(--text-main)]">
@@ -148,8 +148,8 @@ export function NotificationPanel() {
                     <div className="max-h-[360px] overflow-y-auto py-2">
                         {activeNotificationCount === 0 ? (
                             <div className="py-8 text-center">
-                                <CheckSquare className="mx-auto mb-2 h-5 w-5 text-[var(--text-muted)]" />
-                                <p className="text-sm font-semibold text-[var(--text-muted)]">
+                                <CheckSquare className="mx-auto mb-2 h-5 w-5 text-[var(--text-main)] opacity-70" />
+                                <p className="text-sm font-semibold text-[var(--text-main)]">
                                     {activeNotificationTab === "primary"
                                         ? (dict.notifications?.empty_primary || "No hay avisos principales.")
                                         : (dict.notifications?.empty_secondary || "No hay avisos secundarios.")}
