@@ -1394,7 +1394,7 @@
     "empty": "No companies registered in the system.",
     "name": "Name",
     "cif": "Tax ID / CIF",
-    "email": "Email",
+    "email": "Primary contact",
     "phone": "Phone",
     "status": "Status",
     "actions": "Actions",

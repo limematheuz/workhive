@@ -1394,7 +1394,7 @@
     "empty": "No hay empresas registradas en el sistema.",
     "name": "Nombre",
     "cif": "CIF / NIF",
-    "email": "Email",
+    "email": "Contacto principal",
     "phone": "Teléfono",
     "status": "Estado",
     "actions": "Acciones",

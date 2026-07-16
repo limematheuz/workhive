@@ -36,7 +36,7 @@ def require_company_context(user: User) -> int:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is not assigned to a company",
-    )
+        )
     return user.company_id
 
 
@@ -45,4 +45,12 @@ def require_superadmin(user: User) -> None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
+        )
+
+
+def require_platform_superadmin(user: User) -> None:
+    if not is_platform_superadmin(user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform superadmin access required",
         )

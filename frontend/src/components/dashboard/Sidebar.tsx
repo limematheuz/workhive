@@ -11,7 +11,6 @@ import {
     canAdministerCompany,
     canManageCompanyTasks,
     isPlatformSuperadmin,
-    isSuperadmin,
 } from "@/domain/access/roles";
 import { buildSidebarNavLinks } from "./sidebar-nav-config";
 import { SidebarLogo } from "./SidebarLogo";
@@ -46,7 +45,6 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
 
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
-    const userIsSuperadmin = isSuperadmin(user);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
 
     const fetchPendingRequests = useCallback(async () => {
@@ -96,7 +94,6 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
     const { visibleNavLinks, navGroups, plainLinks } = buildSidebarNavLinks(dict, {
         isAdminOrManager,
         isCompanyAdmin,
-        userIsSuperadmin,
         userIsPlatformSuperadmin,
     });
 

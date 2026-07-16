@@ -46,7 +46,6 @@ const PLATFORM_SUPERADMIN_HREFS = new Set([
 export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
     isCompanyAdmin: boolean;
-    userIsSuperadmin: boolean;
     userIsPlatformSuperadmin: boolean;
 };
 
@@ -54,7 +53,7 @@ function buildNavLinks(
     dict: Dictionary,
     isAdminOrManager: boolean,
     isCompanyAdmin: boolean,
-    userIsSuperadmin: boolean,
+    userIsPlatformSuperadmin: boolean,
 ): NavLink[] {
     return [
         {
@@ -67,7 +66,7 @@ function buildNavLinks(
                 </svg>
             ),
         },
-        ...(userIsSuperadmin
+        ...(userIsPlatformSuperadmin
             ? [
                   {
                       href: "/dashboard/companies",
@@ -264,7 +263,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         dict,
         flags.isAdminOrManager,
         flags.isCompanyAdmin,
-        flags.userIsSuperadmin,
+        flags.userIsPlatformSuperadmin,
     );
 
     const visibleNavLinks = flags.userIsPlatformSuperadmin

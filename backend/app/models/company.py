@@ -65,9 +65,8 @@ class Company(Base):
     def contact_email(self) -> str | None:
         """Primary operational contact for collaboration-facing views.
 
-        Company.email is the fiscal/business email. For collaboration cards and
-        auto-created clients we prefer the active company admin account email,
-        because that is the account other companies actually interact with.
+        Company.email remains the fiscal/business email. Operational views only
+        expose an active company member and never fall back to platform data.
         """
         active_users = sorted(
             (user for user in self.users if user.is_active and user.email),
@@ -85,4 +84,4 @@ class Company(Base):
             if users:
                 return users[0].email
 
-        return self.email
+        return None

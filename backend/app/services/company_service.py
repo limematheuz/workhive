@@ -37,11 +37,14 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.schemas.company import CompanyExpenseResponse
-from app.services.user_scope import is_superadmin, require_superadmin
+from app.services.user_scope import (
+    is_platform_superadmin,
+    require_platform_superadmin,
+)
 
 
 def get_companies(db: Session, current_user: User, skip: int = 0, limit: int = 100) -> list[Company]:
-    if is_superadmin(current_user):
+    if is_platform_superadmin(current_user):
         return company_repo.get_all_companies(db, skip, limit)
     if not current_user.company_id:
         return []
@@ -50,7 +53,10 @@ def get_companies(db: Session, current_user: User, skip: int = 0, limit: int = 1
 
 
 def get_company(db: Session, company_id: int, current_user: User) -> Company:
-    if not is_superadmin(current_user) and current_user.company_id != company_id:
+    if (
+        not is_platform_superadmin(current_user)
+        and current_user.company_id != company_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to access this company",
@@ -80,7 +86,7 @@ def get_company_members(
     company_id: int,
     current_user: User,
 ) -> list[CompanyMemberResponse]:
-    require_superadmin(current_user)
+    require_platform_superadmin(current_user)
     if not company_repo.get_company_by_id(db, company_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -152,7 +158,7 @@ def provision_company(
     provision_data: CompanyProvisionCreate,
     current_user: User,
 ) -> Company:
-    require_superadmin(current_user)
+    require_platform_superadmin(current_user)
     if company_repo.get_company_by_tax_id(db, provision_data.tax_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -220,7 +226,10 @@ def provision_company(
 def update_company(
     db: Session, company_id: int, company_update: CompanyUpdate, current_user: User
 ) -> Company:
-    if not is_superadmin(current_user) and current_user.company_id != company_id:
+    if (
+        not is_platform_superadmin(current_user)
+        and current_user.company_id != company_id
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to update this company",
@@ -230,9 +239,8 @@ def update_company(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Company not found"
         )
-    if (
-        "is_active" in company_update.model_fields_set
-        and not is_superadmin(current_user)
+    if "is_active" in company_update.model_fields_set and not is_platform_superadmin(
+        current_user
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -244,7 +252,9 @@ def update_company(
         "trial_started_at",
         "trial_ends_at",
     }
-    if company_update.model_fields_set & access_fields and not is_superadmin(current_user):
+    if company_update.model_fields_set & access_fields and not is_platform_superadmin(
+        current_user
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only a WorkHive superadmin can change company access",
@@ -260,7 +270,7 @@ def update_company(
             )
 
     update_payload = company_update.model_dump(exclude_unset=True)
-    if is_superadmin(current_user) and "subscription_plan" in update_payload:
+    if is_platform_superadmin(current_user) and "subscription_plan" in update_payload:
         plan = update_payload["subscription_plan"]
         if plan == "trial":
             update_payload.setdefault("subscription_status", "trialing")
@@ -300,7 +310,7 @@ def delete_company_permanently(
     company_id: int,
     current_user: User,
 ) -> None:
-    require_superadmin(current_user)
+    require_platform_superadmin(current_user)
     db_company = company_repo.get_company_by_id(db, company_id)
     if not db_company:
         raise HTTPException(

@@ -1,5 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload, with_loader_criteria
+from app.models.role import Role
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.schemas.user import UserCreate, UserUpdate
@@ -35,6 +36,7 @@ def get_company_members(db: Session, company_id: int) -> list[User]:
         .options(*user_response_load_options())
         .filter(User.company_id == company_id)
         .join(User.role)
+        .filter(Role.name != "superadmin")
         .order_by(User.is_active.desc(), User.full_name.asc(), User.id.asc())
         .all()
     )

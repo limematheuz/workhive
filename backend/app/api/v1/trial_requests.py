@@ -15,7 +15,6 @@ from app.schemas.trial_request import (
     TrialRequestVerifyResponse,
 )
 from app.services import audit_service, trial_request_service
-from app.services.user_scope import require_superadmin
 
 
 router = APIRouter()
@@ -57,8 +56,7 @@ def list_trial_requests(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ) -> list:
-    require_superadmin(current_user)
-    return trial_request_service.list_trial_requests(db)
+    return trial_request_service.list_trial_requests(db, current_user)
 
 
 @router.post("/{request_id}/approve", response_model=TrialRequestResponse)

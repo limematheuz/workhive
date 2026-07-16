@@ -93,7 +93,7 @@ export function CompanyProvisionDialog({
                                 <ProvisionField label="Nombre comercial" value={provisionData.name} onChange={(value) => setProvisionData({ ...provisionData, name: value })} wide />
                                 <ProvisionField label="NIF / CIF" value={provisionData.tax_id} onChange={(value) => setProvisionData({ ...provisionData, tax_id: value })} />
                                 <ProvisionField label="Teléfono" value={provisionData.phone} onChange={(value) => setProvisionData({ ...provisionData, phone: value })} />
-                                <ProvisionField label="Email de empresa" type="email" value={provisionData.email} onChange={(value) => setProvisionData({ ...provisionData, email: value })} wide />
+                                <ProvisionField label="Email fiscal de la empresa" type="email" value={provisionData.email} onChange={(value) => setProvisionData({ ...provisionData, email: value })} wide />
                                 <ProvisionField label="Dirección fiscal" value={provisionData.address} onChange={(value) => setProvisionData({ ...provisionData, address: value })} wide />
                             </div>
                         </section>
@@ -129,7 +129,7 @@ export function CompanyProvisionDialog({
                             </h3>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <ProvisionField label="Nombre completo" value={provisionData.owner_full_name} onChange={(value) => setProvisionData({ ...provisionData, owner_full_name: value })} wide />
-                                <ProvisionField label="Email de acceso" type="email" value={provisionData.owner_email} onChange={(value) => setProvisionData({ ...provisionData, owner_email: value })} />
+                                <ProvisionField label="Email del administrador" type="email" value={provisionData.owner_email} onChange={(value) => setProvisionData({ ...provisionData, owner_email: value })} />
                                 <ProvisionField
                                     label="Contraseña temporal"
                                     type="password"

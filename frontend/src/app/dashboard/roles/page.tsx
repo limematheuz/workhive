@@ -19,6 +19,7 @@ import { Pencil, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/errors";
 import { RoleFormDialogs } from "@/components/roles/RoleFormDialogs";
+import { isPlatformSuperadmin } from "@/domain/access/roles";
 
 export default function RolesAdminPage() {
     const { dict } = useDictionary();
@@ -49,13 +50,13 @@ export default function RolesAdminPage() {
     }, [dict.roles.toast_error_load]);
 
     useEffect(() => {
-        if (userLoading || !user || user.role?.name !== "superadmin") return;
+        if (userLoading || !isPlatformSuperadmin(user)) return;
         startTransition(() => {
             void fetchRoles();
         });
     }, [fetchRoles, user, userLoading]);
 
-    if (!userLoading && (!user || user.role?.name !== "superadmin")) {
+    if (!userLoading && !isPlatformSuperadmin(user)) {
         redirect("/dashboard");
     }
 
@@ -117,7 +118,7 @@ export default function RolesAdminPage() {
         );
     }
 
-    if (!user || user.role?.name !== "superadmin") {
+    if (!isPlatformSuperadmin(user)) {
         return null; // The useEffect hook handles the redirect.
     }
 

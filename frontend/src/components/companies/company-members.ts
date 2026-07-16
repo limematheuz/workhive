@@ -7,8 +7,9 @@ export interface CompanyMember {
 }
 
 export function groupCompanyMembers(members: CompanyMember[]) {
+    const companyMembers = members.filter((member) => member.role !== "superadmin");
     return {
-        admins: members.filter((member) => member.role === "admin"),
-        workers: members.filter((member) => member.role !== "admin"),
+        admins: companyMembers.filter((member) => member.role === "admin"),
+        workers: companyMembers.filter((member) => member.role !== "admin"),
     };
 }
