@@ -17,7 +17,7 @@ export function CompanyMembersPanel({ members, labels }: CompanyMembersPanelProp
     const { admins, workers } = groupCompanyMembers(members);
 
     return (
-        <div className="grid gap-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4 md:grid-cols-2">
+        <div className="glass-panel grid gap-4 rounded-xl p-4 md:grid-cols-2">
             <MemberGroup
                 title={labels.admins}
                 members={admins}

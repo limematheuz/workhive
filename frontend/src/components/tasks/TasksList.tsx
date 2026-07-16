@@ -172,7 +172,7 @@ export function TasksList({
                     {!showOnlyCompleted && (
                         <section className="space-y-2.5">
                             {selectedStatus === "" && (
-                                <h2 className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                                <h2 className="text-[10px] font-black uppercase tracking-wider text-[color-mix(in_srgb,var(--text-muted)_45%,var(--text-main))]">
                                     {dict.tasks?.section_active || "Activas"}
                                     <span className="ml-2 tabular-nums text-accent">{active.length}</span>
                                 </h2>
@@ -180,7 +180,7 @@ export function TasksList({
                             {paginatedPrimary.length > 0 ? (
                                 renderCards(paginatedPrimary)
                             ) : (
-                                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+                                <div className="surface-glass-card rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-[var(--text-muted)]">
                                     {dict.tasks?.no_active_tasks || "No hay tareas activas con estos filtros."}
                                 </div>
                             )}
@@ -189,7 +189,7 @@ export function TasksList({
 
                     {showOnlyCompleted && (
                         <section className="space-y-2.5">
-                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[color-mix(in_srgb,var(--text-muted)_45%,var(--text-main))]">
                                 {dict.tasks?.section_completed || "Completadas"}
                                 <span className="ml-2 tabular-nums text-accent">{completed.length}</span>
                             </h2>
@@ -199,7 +199,7 @@ export function TasksList({
 
                     {showCompletedSection && (
                         <section className="space-y-2.5 border-t border-[var(--border-soft)] pt-4">
-                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]">
+                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[color-mix(in_srgb,var(--text-muted)_45%,var(--text-main))]">
                                 {dict.tasks?.section_completed || "Completadas"}
                                 <span className="ml-2 tabular-nums">{completed.length}</span>
                             </h2>
@@ -226,7 +226,7 @@ export function TasksList({
                     />
                 </div>
             ) : (
-                <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] py-20 text-center">
+                <div className="surface-glass-card rounded-2xl py-20 text-center">
                     <p className="text-sm font-medium text-[var(--text-muted)]">
                         {dict.tasks?.no_tasks_found || "No tasks found in the general list."}
                     </p>
