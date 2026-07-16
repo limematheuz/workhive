@@ -33,6 +33,7 @@ def test_base_layout_includes_preview_and_locale():
     html = layout.base_layout("<p>Body</p>", preview_text="Preview <x>", locale="en")
     assert 'lang="en"' in html
     assert "Smart business management" in html
+    assert "Contact support" in html
     assert "Preview &lt;x&gt;" in html
     assert "<p>Body</p>" in html
 
@@ -41,6 +42,26 @@ def test_base_layout_defaults_to_spanish_footer():
     html = layout.base_layout("<p>Body</p>")
     assert 'lang="es"' in html
     assert "Gestión empresarial inteligente" in html
+    assert "Contactar con soporte" in html
+    assert 'href="http://localhost:3000/contact"' in html
+
+
+def test_support_helpers_use_configured_frontend_and_escape_content(monkeypatch):
+    monkeypatch.setattr(layout.settings, "FRONTEND_URL", 'https://app.example/"bad')
+
+    html = layout.support_link("Ayuda <urgente>")
+    plain = layout.plain_body(["Mensaje"])
+
+    assert 'href="https://app.example/&quot;bad/contact"' in html
+    assert "Ayuda &lt;urgente&gt;" in html
+    assert 'rel="noopener noreferrer"' in html
+    assert plain == 'Mensaje\n\nSoporte: https://app.example/"bad/contact'
+
+
+def test_plain_body_localizes_support_label():
+    assert "\nSupport: http://localhost:3000/contact" in layout.plain_body(
+        ["Message"], locale="en"
+    )
 
 
 def test_base_layout_uses_light_brand_shell_with_visible_card():
@@ -51,7 +72,7 @@ def test_base_layout_uses_light_brand_shell_with_visible_card():
     assert brand["card"] == "#ffffff"
     assert brand["bg"] == "#dbe7fb"
     assert brand["bg"] in html
-    assert f'background-color:{brand["card"]}' in html
+    assert f"background-color:{brand['card']}" in html
     assert 'name="color-scheme" content="light"' in html
     # Footer sits outside the white card.
     card_close = html.rfind("<!-- /Card -->")
@@ -74,7 +95,9 @@ def test_add_logo_to_message_is_safe_without_html_part(tmp_path, monkeypatch):
     message = EmailMessage()
     message.set_content("plain only")
     layout.add_logo_to_message(message)
-    assert not any(part.get("Content-ID") in {"logo", "<logo>"} for part in message.walk())
+    assert not any(
+        part.get("Content-ID") in {"logo", "<logo>"} for part in message.walk()
+    )
 
 
 def test_add_logo_embeds_when_file_exists(tmp_path, monkeypatch):
@@ -104,7 +127,9 @@ def test_get_logo_header_uses_cid_when_logo_exists(tmp_path, monkeypatch):
 
 
 def test_all_transactional_email_builders_use_shared_base_layout():
-    email_modules = Path(__file__).resolve().parents[2] / "app" / "services" / "email_service"
+    email_modules = (
+        Path(__file__).resolve().parents[2] / "app" / "services" / "email_service"
+    )
     builders = [
         send_password_reset_email,
         send_email_change_verification_email,
@@ -125,6 +150,7 @@ def test_all_transactional_email_builders_use_shared_base_layout():
 
     for source in sources.values():
         assert "base_layout(" in source
+        assert "plain_body(" in source
         assert "from app.services.email_service.layout import" in source
 
     # Keep the public builder list intentional so new emails stay on the shared shell.

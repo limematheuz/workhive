@@ -1,7 +1,10 @@
 import logging
+from collections.abc import Iterable
 from email.message import EmailMessage
 from html import escape
 from pathlib import Path
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +82,7 @@ def base_layout(content: str, *, preview_text: str = "", locale: str = "es") -> 
         if html_lang == "en"
         else "Gestión empresarial inteligente"
     )
+    support_label = "Contact support" if html_lang == "en" else "Contactar con soporte"
     return f"""\
 <!DOCTYPE html>
 <html lang="{html_lang}">
@@ -122,24 +126,24 @@ def base_layout(content: str, *, preview_text: str = "", locale: str = "es") -> 
 <style>table,td {{font-family:Arial,sans-serif;}}</style>
 <![endif]-->
 </head>
-<body style="margin:0;padding:0;background-color:{b['bg']};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-{f'<div style="display:none;max-height:0;overflow:hidden;">{escape(preview_text)}</div>' if preview_text else ''}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:{b['bg']};background-image:linear-gradient(180deg,{b['bg']} 0%,{b['bg_accent']} 100%);">
+<body style="margin:0;padding:0;background-color:{b["bg"]};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+{f'<div style="display:none;max-height:0;overflow:hidden;">{escape(preview_text)}</div>' if preview_text else ""}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:{b["bg"]};background-image:linear-gradient(180deg,{b["bg"]} 0%,{b["bg_accent"]} 100%);">
 <tr><td align="center" class="email-outer" style="padding:40px 16px 28px;">
 
 <!-- Card -->
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-card" style="max-width:560px;background-color:{b['card']};border:1px solid {b['card_border']};border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(37,99,235,0.14),0 4px 14px rgba(15,23,42,0.06);table-layout:fixed;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="email-card" style="max-width:560px;background-color:{b["card"]};border:1px solid {b["card_border"]};border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(37,99,235,0.14),0 4px 14px rgba(15,23,42,0.06);table-layout:fixed;">
 
 <!-- Header -->
 <tr>
-<td class="email-header email-logo" style="padding:36px 40px 28px;text-align:center;border-bottom:1px solid {b['divider']};background-color:{b['card']};">
+<td class="email-header email-logo" style="padding:36px 40px 28px;text-align:center;border-bottom:1px solid {b["divider"]};background-color:{b["card"]};">
   {header_html}
 </td>
 </tr>
 
 <!-- Body -->
 <tr>
-<td class="email-body" style="padding:36px 40px 40px;background-color:{b['card']};">
+<td class="email-body" style="padding:36px 40px 40px;background-color:{b["card"]};">
 {content}
 </td>
 </tr>
@@ -151,8 +155,11 @@ def base_layout(content: str, *, preview_text: str = "", locale: str = "es") -> 
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
 <tr>
 <td class="email-footer-outer" style="padding:22px 16px 8px;text-align:center;">
-  <p style="margin:0;font-size:12px;line-height:18px;color:{b['muted']};">
+  <p style="margin:0;font-size:12px;line-height:18px;color:{b["muted"]};">
     &copy; 2026 WorkHive&nbsp;&nbsp;&middot;&nbsp;&nbsp;{footer_text}
+  </p>
+  <p style="margin:6px 0 0;font-size:12px;line-height:18px;color:{b["muted"]};">
+    {support_link(support_label)}
   </p>
 </td>
 </tr>
@@ -164,18 +171,40 @@ def base_layout(content: str, *, preview_text: str = "", locale: str = "es") -> 
 </html>"""
 
 
+def get_support_url() -> str:
+    """Return the public support page for the current frontend environment."""
+    return f"{settings.FRONTEND_URL.rstrip('/')}/contact"
+
+
+def support_link(label: str = "Contacta con soporte") -> str:
+    """Render a safe inline link to WorkHive support."""
+    safe_url = escape(get_support_url(), quote=True)
+    safe_label = escape(label)
+    return (
+        f'<a href="{safe_url}" target="_blank" rel="noopener noreferrer" '
+        f'style="color:{_BRAND["accent"]};text-decoration:underline;'
+        f'font-weight:600;">{safe_label}</a>'
+    )
+
+
+def plain_body(lines: Iterable[str], *, locale: str = "es") -> str:
+    """Compose a plain-text email body with the shared support footer."""
+    support_label = "Support" if locale == "en" else "Soporte"
+    return "\n".join([*lines, "", f"{support_label}: {get_support_url()}"])
+
+
 def button(url: str, label: str) -> str:
     b = _BRAND
     safe_url = escape(url, quote=True)
     safe_label = escape(label)
     return (
         f'<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px auto 24px;">'
-        f"<tr><td style=\"background-color:{b['accent']};border-radius:10px;"
-        f"box-shadow:0 8px 20px rgba(37,99,235,0.28);\">"
+        f'<tr><td style="background-color:{b["accent"]};border-radius:10px;'
+        f'box-shadow:0 8px 20px rgba(37,99,235,0.28);">'
         f'<a href="{safe_url}" target="_blank" '
-        f"style=\"display:inline-block;padding:13px 28px;font-size:14px;font-weight:700;"
+        f'style="display:inline-block;padding:13px 28px;font-size:14px;font-weight:700;'
         f"color:#ffffff;text-decoration:none;border-radius:10px;"
-        f"background-color:{b['accent']};\">{safe_label}</a>"
+        f'background-color:{b["accent"]};">{safe_label}</a>'
         f"</td></tr></table>"
     )
 
@@ -185,7 +214,7 @@ def heading(text: str) -> str:
     b = _BRAND
     return (
         f'<h1 class="email-h1" style="margin:0 0 14px;font-size:26px;line-height:32px;'
-        f"font-weight:800;color:{b['text']};text-align:center;\">{escape(text)}</h1>"
+        f'font-weight:800;color:{b["text"]};text-align:center;">{escape(text)}</h1>'
     )
 
 

@@ -10,6 +10,8 @@ from app.services.email_service.layout import (
     heading,
     lead,
     muted_note,
+    plain_body,
+    support_link,
     warning_box,
 )
 
@@ -33,16 +35,18 @@ def send_password_reset_email(
         preview_text="Restablece tu contraseña de WorkHive",
     )
 
-    plain_text = "\n".join([
-        f"Hola {recipient_name},",
-        "",
-        "Hemos recibido una solicitud para restablecer tu contraseña.",
-        f"Abre este enlace durante los próximos 15 minutos: {reset_url}",
-        "",
-        "Si no has solicitado este cambio, ignora este mensaje.",
-        "",
-        "Equipo WorkHive",
-    ])
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name},",
+            "",
+            "Hemos recibido una solicitud para restablecer tu contraseña.",
+            f"Abre este enlace durante los próximos 15 minutos: {reset_url}",
+            "",
+            "Si no has solicitado este cambio, ignora este mensaje.",
+            "",
+            "Equipo WorkHive",
+        ]
+    )
 
     message = EmailMessage()
     message["Subject"] = "Restablece tu contraseña de WorkHive"
@@ -71,7 +75,7 @@ def send_email_change_verification_email(
 """,
         preview_text="Confirma tu nuevo correo de acceso a WorkHive",
     )
-    plain_text = "\n".join(
+    plain_text = plain_body(
         [
             f"Hola {recipient_name},",
             "",
@@ -104,11 +108,11 @@ def send_email_changed_notice(
         f"""
 {heading("Correo de acceso actualizado")}
 {lead(f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>, tu correo de acceso a WorkHive ahora es <strong style="color:{b["text"]};">{safe_new_email}</strong>.')}
-{muted_note("Todas las sesiones anteriores se han cerrado. Si no realizaste este cambio, contacta con soporte.")}
+{muted_note(f"Todas las sesiones anteriores se han cerrado. Si no realizaste este cambio, {support_link("contacta con soporte")}.")}
 """,
         preview_text="Tu correo de acceso a WorkHive ha cambiado",
     )
-    plain_text = "\n".join(
+    plain_text = plain_body(
         [
             f"Hola {recipient_name},",
             "",

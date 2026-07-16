@@ -11,6 +11,7 @@ from app.services.email_service.layout import (
     heading,
     lead,
     muted_note,
+    plain_body,
 )
 
 
@@ -34,14 +35,16 @@ def send_trial_verification_email(
 """,
         preview_text="Verifica tu solicitud de acceso a WorkHive",
     )
-    plain_text = "\n".join([
-        f"Hola {recipient_name},",
-        "",
-        f"Verifica tu solicitud para {company_name}:",
-        verification_url,
-        "",
-        "Después de verificarla, WorkHive revisará tu acceso manualmente.",
-    ])
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name},",
+            "",
+            f"Verifica tu solicitud para {company_name}:",
+            verification_url,
+            "",
+            "Después de verificarla, WorkHive revisará tu acceso manualmente.",
+        ]
+    )
     message = EmailMessage()
     message["Subject"] = "Verifica tu solicitud de acceso a WorkHive"
     message["From"] = transport.from_address("Acceso")
@@ -64,7 +67,9 @@ def send_trial_approved_email(
     safe_name = escape(recipient_name)
     safe_company = escape(company_name)
     if access_mode == "trial" and trial_ends_at:
-        access_text = f"Tu prueba estará activa hasta el {trial_ends_at.date().isoformat()}."
+        access_text = (
+            f"Tu prueba estará activa hasta el {trial_ends_at.date().isoformat()}."
+        )
     else:
         access_text = "Tu acceso Pro ya está activo."
 
@@ -78,13 +83,15 @@ def send_trial_approved_email(
 """,
         preview_text="Tu acceso a WorkHive ha sido aprobado",
     )
-    plain_text = "\n".join([
-        f"Hola {recipient_name},",
-        "",
-        f"Tu acceso a WorkHive para {company_name} ha sido aprobado.",
-        access_text,
-        f"Crea tu contraseña aquí: {setup_url}",
-    ])
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name},",
+            "",
+            f"Tu acceso a WorkHive para {company_name} ha sido aprobado.",
+            access_text,
+            f"Crea tu contraseña aquí: {setup_url}",
+        ]
+    )
     message = EmailMessage()
     message["Subject"] = "Tu acceso a WorkHive ha sido aprobado"
     message["From"] = transport.from_address("Acceso")
@@ -118,7 +125,7 @@ def send_worker_invitation_email(
 {heading("Te han invitado a WorkHive")}
 {lead(f'{greeting} te han invitado a unirte al equipo de <strong style="color:{b["text"]};">{safe_company}</strong>.')}
 {muted_note("Abre el enlace y usa este código de verificación:")}
-<p style="margin:12px 0 8px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b['text']};text-align:center;">
+<p style="margin:12px 0 8px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b["text"]};text-align:center;">
   {safe_code}
 </p>
 {button(invitation_url, "Crear mi acceso")}
@@ -127,16 +134,18 @@ def send_worker_invitation_email(
 """,
         preview_text=f"Invitación para unirte a {company_name} en WorkHive",
     )
-    plain_text = "\n".join([
-        f"Hola {recipient_name}," if recipient_name else "Hola,",
-        "",
-        f"Te han invitado a unirte al equipo de {company_name} en WorkHive.",
-        f"Código de verificación: {verification_code}",
-        f"Crea tu acceso aquí: {invitation_url}",
-        f"La invitación caduca el {expires_text}.",
-        "",
-        "No compartas este código con nadie.",
-    ])
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name}," if recipient_name else "Hola,",
+            "",
+            f"Te han invitado a unirte al equipo de {company_name} en WorkHive.",
+            f"Código de verificación: {verification_code}",
+            f"Crea tu acceso aquí: {invitation_url}",
+            f"La invitación caduca el {expires_text}.",
+            "",
+            "No compartas este código con nadie.",
+        ]
+    )
     message = EmailMessage()
     message["Subject"] = f"Invitación para unirte a {company_name} en WorkHive"
     message["From"] = transport.from_address("Acceso")

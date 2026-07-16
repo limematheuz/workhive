@@ -10,6 +10,7 @@ from app.services.email_service.layout import (
     heading,
     lead,
     muted_note,
+    plain_body,
 )
 
 
@@ -37,14 +38,16 @@ def send_erasure_request_received_email(
 """,
         preview_text="Hemos recibido tu solicitud de supresión de datos",
     )
-    plain_text = "\n".join([
-        f"Hola {recipient_name}," if recipient_name else "Hola,",
-        "",
-        "Hemos registrado tu solicitud de supresión de datos y cuenta.",
-        "Este correo es un acuse de recibo, no una decisión sobre la solicitud.",
-        f"Te informaremos del resultado como máximo el {due_date}.",
-        "Si se aprueba, tu cuenta quedará sin acceso y tus datos personales se anonimizarán o suprimirán sin demora, salvo los datos que debamos conservar por una obligación legal.",
-    ])
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name}," if recipient_name else "Hola,",
+            "",
+            "Hemos registrado tu solicitud de supresión de datos y cuenta.",
+            "Este correo es un acuse de recibo, no una decisión sobre la solicitud.",
+            f"Te informaremos del resultado como máximo el {due_date}.",
+            "Si se aprueba, tu cuenta quedará sin acceso y tus datos personales se anonimizarán o suprimirán sin demora, salvo los datos que debamos conservar por una obligación legal.",
+        ]
+    )
     message = EmailMessage()
     message["Subject"] = "Hemos recibido tu solicitud de supresión - WorkHive"
     message["From"] = transport.from_address("Privacidad")
@@ -86,25 +89,27 @@ def send_erasure_request_resolved_email(
         f"""
 {heading(title)}
 {lead(f"{greeting} {escape(result)}")}
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid {b['divider']};border-radius:10px;background-color:{b['card']};overflow:hidden;">
-<tr><td style="padding:14px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:{b['muted']};border-bottom:1px solid {b['divider']};background-color:{b['inset_bg']};">Mensaje del administrador</td></tr>
-<tr><td style="padding:16px;font-size:14px;line-height:22px;color:{b['text']};">{safe_notes}</td></tr>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:20px 0;border:1px solid {b["divider"]};border-radius:10px;background-color:{b["card"]};overflow:hidden;">
+<tr><td style="padding:14px 16px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:{b["muted"]};border-bottom:1px solid {b["divider"]};background-color:{b["inset_bg"]};">Mensaje del administrador</td></tr>
+<tr><td style="padding:16px;font-size:14px;line-height:22px;color:{b["text"]};">{safe_notes}</td></tr>
 </table>
 {muted_note("Si no estás conforme con esta respuesta, puedes ejercer tus derechos ante el responsable del tratamiento o reclamar ante la autoridad de protección de datos competente.")}
 """,
         preview_text=title,
     )
-    plain_text = "\n".join([
-        f"Hola {recipient_name}," if recipient_name else "Hola,",
-        "",
-        title,
-        result,
-        "",
-        "Mensaje del administrador:",
-        resolution_notes,
-        "",
-        "Si no estás conforme con esta respuesta, puedes ejercer tus derechos ante el responsable del tratamiento o reclamar ante la autoridad de protección de datos competente.",
-    ])
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name}," if recipient_name else "Hola,",
+            "",
+            title,
+            result,
+            "",
+            "Mensaje del administrador:",
+            resolution_notes,
+            "",
+            "Si no estás conforme con esta respuesta, puedes ejercer tus derechos ante el responsable del tratamiento o reclamar ante la autoridad de protección de datos competente.",
+        ]
+    )
     message = EmailMessage()
     message["Subject"] = f"{title} - WorkHive"
     message["From"] = transport.from_address("Privacidad")
