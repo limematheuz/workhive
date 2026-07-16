@@ -5,6 +5,7 @@ import { User } from "@/types/user";
 import { User as UserIcon, Lock, Building2 } from "lucide-react";
 import { ProfileDetailsForm } from "./ProfileDetailsForm";
 import { PasswordChangeForm } from "./PasswordChangeForm";
+import { EmailChangeForm } from "./EmailChangeForm";
 import { CompanyDetailsForm } from "./CompanyDetailsForm";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -81,12 +82,17 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
                     onSuccess={onSuccess}
                 />
             ) : (
-                <PasswordChangeForm
-                    user={user}
-                    dict={dict}
-                    onCancel={onCancel}
-                    onSuccess={onSuccess}
-                />
+                <div className="space-y-8">
+                    <EmailChangeForm user={user} dict={dict} />
+                    <div className="border-t border-[var(--border-soft)] pt-8">
+                        <PasswordChangeForm
+                            user={user}
+                            dict={dict}
+                            onCancel={onCancel}
+                            onSuccess={onSuccess}
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

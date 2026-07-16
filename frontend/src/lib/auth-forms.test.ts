@@ -7,6 +7,7 @@ import {
     prepareLoginCredentials,
     preparePasswordResetRequest,
     preparePasswordResetEmail,
+    prepareEmailChangeRequest,
     validateAuthEmail,
 } from "./auth-forms.ts";
 
@@ -43,6 +44,42 @@ test("password reset request returns normalized email and validation error", () 
             email: "owner",
             error: "Correo inválido",
         },
+    );
+});
+
+test("email change normalizes the new address and requires identity confirmation", () => {
+    assert.deepEqual(
+        prepareEmailChangeRequest(
+            "  MATHEUS@WORKHIVE.ES ",
+            "owner@workhive.es",
+            "CurrentPass1!",
+            messages,
+        ),
+        {
+            request: {
+                newEmail: "matheus@workhive.es",
+                currentPassword: "CurrentPass1!",
+            },
+            error: null,
+        },
+    );
+    assert.equal(
+        prepareEmailChangeRequest(
+            "OWNER@WORKHIVE.ES",
+            "owner@workhive.es",
+            "CurrentPass1!",
+            messages,
+        ).request,
+        null,
+    );
+    assert.equal(
+        prepareEmailChangeRequest(
+            "new@workhive.es",
+            "owner@workhive.es",
+            "",
+            messages,
+        ).request,
+        null,
     );
 });
 

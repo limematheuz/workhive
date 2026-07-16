@@ -3,8 +3,15 @@ import secrets
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 from app.api.deps import ActiveUser, get_db
-from app.schemas.user import UserResponse, UserRegister, PasswordResetRequest, PasswordResetConfirm
-from app.services import audit_service, auth_service
+from app.schemas.user import (
+    EmailChangeConfirm,
+    EmailChangeRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    UserRegister,
+    UserResponse,
+)
+from app.services import audit_service, auth_service, email_change_service
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import create_access_token
 from app.core.config import settings
@@ -172,3 +179,75 @@ def reset_password(
     )
     auth_service.verify_and_reset_password(db, reset_confirm)
     return {"status": "success", "message": "Password reset successfully"}
+
+
+@router.post("/request-email-change", status_code=status.HTTP_202_ACCEPTED)
+def request_email_change(
+    change_request: EmailChangeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+) -> dict[str, str]:
+    rate_limiter.enforce(
+        rate_limit_key(
+            request,
+            "request-email-change",
+            f"{current_user.id}:{change_request.new_email}",
+        ),
+        settings.PASSWORD_RESET_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    new_email = email_change_service.request_email_change(
+        db,
+        current_user=current_user,
+        change_request=change_request,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="auth.email_change_requested",
+        entity_type="user",
+        entity_id=current_user.id,
+        request=request,
+        details={"new_email": new_email},
+    )
+    return {
+        "status": "accepted",
+        "message": "A verification link was sent to the new email address",
+    }
+
+
+@router.post("/confirm-email-change")
+def confirm_email_change(
+    confirmation: EmailChangeConfirm,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    rate_limiter.enforce(
+        rate_limit_key(request, "confirm-email-change"),
+        settings.PASSWORD_RESET_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    result = email_change_service.confirm_email_change(db, confirmation)
+    audit_service.record_event(
+        db,
+        actor=result.user,
+        company_id=result.user.company_id,
+        action="auth.email_changed",
+        entity_type="user",
+        entity_id=result.user.id,
+        request=request,
+        details={
+            "previous_email": result.previous_email,
+            "new_email": result.new_email,
+        },
+    )
+    delete_options = _delete_cookie_options()
+    response.delete_cookie(settings.SESSION_COOKIE_NAME, **delete_options)
+    response.delete_cookie(settings.CSRF_COOKIE_NAME, **delete_options)
+    return {
+        "status": "success",
+        "message": "Email changed successfully. Sign in with the new address.",
+    }

@@ -10,7 +10,11 @@ from app.services.email_service.access_emails import (
     send_trial_verification_email,
     send_worker_invitation_email,
 )
-from app.services.email_service.auth_emails import send_password_reset_email
+from app.services.email_service.auth_emails import (
+    send_email_change_verification_email,
+    send_email_changed_notice,
+    send_password_reset_email,
+)
 from app.services.email_service.billing_emails import send_invoice_email
 from app.services.email_service.contact_emails import send_contact_email
 from app.services.email_service.layout import (
@@ -37,6 +41,8 @@ _send_email = send_email
 __all__ = [
     "settings",
     "send_password_reset_email",
+    "send_email_change_verification_email",
+    "send_email_changed_notice",
     "send_contact_email",
     "send_trial_verification_email",
     "send_trial_approved_email",
