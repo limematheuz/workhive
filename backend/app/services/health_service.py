@@ -16,11 +16,25 @@ REQUIRED_SCHEMA_TABLES = frozenset(
         "task_checklist_assignments",
     }
 )
+REQUIRED_SCHEMA_COLUMNS = {
+    "companies": frozenset({"operating_model"}),
+}
 
 
 def required_schema_is_ready(db: Session) -> bool:
     inspector = inspect(db.get_bind())
-    return all(inspector.has_table(table) for table in REQUIRED_SCHEMA_TABLES)
+    if not all(inspector.has_table(table) for table in REQUIRED_SCHEMA_TABLES):
+        return False
+
+    for table, required_columns in REQUIRED_SCHEMA_COLUMNS.items():
+        if not inspector.has_table(table):
+            return False
+        actual_columns = {
+            column["name"] for column in inspector.get_columns(table)
+        }
+        if not required_columns <= actual_columns:
+            return False
+    return True
 
 
 def readiness_checks(db: Session) -> dict[str, dict[str, str]]:

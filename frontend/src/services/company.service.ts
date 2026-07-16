@@ -1,6 +1,7 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { Company, CompanyExpense } from "@/types/company";
 import type { CompanyMember } from "@/components/companies/company-members";
+import type { CompanyOnboardingInput } from "@/domain/onboarding/cleaning-onboarding";
 
 export type { Company };
 
@@ -16,6 +17,16 @@ export interface CompanyProvisionData {
     owner_access_code: string;
     subscription_plan?: "trial" | "pro";
     trial_days?: number | null;
+}
+
+export interface CompanyOnboardingResult {
+    onboarding_completed: boolean;
+    operating_model: string;
+    created: boolean;
+    location_id: number | null;
+    location_name: string | null;
+    template_task_id: number | null;
+    template_name: string | null;
 }
 
 export const CompanyService = {
@@ -95,6 +106,18 @@ export const CompanyService = {
             throw new Error(errData.detail || "Error updating company");
         }
         return await response.json();
+    },
+
+    completeOnboarding: async (
+        id: number,
+        data: CompanyOnboardingInput,
+    ): Promise<CompanyOnboardingResult> => {
+        const response = await apiFetch(`/api/v1/companies/${id}/onboarding/complete`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "Error completing company onboarding");
+        return response.json();
     },
 
     deleteCompany: async (id: number): Promise<void> => {
