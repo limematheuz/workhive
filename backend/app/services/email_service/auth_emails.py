@@ -70,3 +70,92 @@ def send_password_reset_email(
     message.set_content(plain_text)
     message.add_alternative(html_body, subtype="html")
     return transport.send_email(message)
+
+
+def send_email_change_verification_email(
+    *,
+    recipient_email: str,
+    recipient_name: str,
+    confirmation_url: str,
+) -> bool:
+    b = _BRAND
+    safe_name = escape(recipient_name)
+    safe_url = escape(confirmation_url, quote=True)
+    html_body = base_layout(
+        f"""
+<h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:{b['text']};text-align:center;">
+  Confirma tu nuevo correo
+</h1>
+<p style="margin:0 0 24px;font-size:14px;color:{b['muted']};text-align:center;line-height:22px;">
+  Hola <strong style="color:{b['text']};">{safe_name}</strong>, confirma esta dirección para usarla como acceso a WorkHive.
+</p>
+{button(confirmation_url, "Confirmar nuevo correo")}
+<p style="margin:20px 0 0;font-size:12px;color:{b['muted']};text-align:center;line-height:18px;">
+  El enlace caduca en 15 minutos. Si no solicitaste el cambio, ignora este mensaje.
+</p>
+<p style="margin:18px 0 0;font-size:11px;color:{b['muted']};word-break:break-all;text-align:center;">
+  {safe_url}
+</p>
+""",
+        preview_text="Confirma tu nuevo correo de acceso a WorkHive",
+    )
+    plain_text = "\n".join(
+        [
+            f"Hola {recipient_name},",
+            "",
+            "Confirma esta dirección para usarla como acceso a WorkHive:",
+            confirmation_url,
+            "",
+            "El enlace caduca en 15 minutos.",
+            "Si no solicitaste este cambio, ignora este mensaje.",
+        ]
+    )
+    message = EmailMessage()
+    message["Subject"] = "Confirma tu nuevo correo de WorkHive"
+    message["From"] = transport.from_address("Seguridad")
+    message["To"] = recipient_email
+    message.set_content(plain_text)
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)
+
+
+def send_email_changed_notice(
+    *,
+    recipient_email: str,
+    recipient_name: str,
+    new_email: str,
+) -> bool:
+    b = _BRAND
+    safe_name = escape(recipient_name)
+    safe_new_email = escape(new_email)
+    html_body = base_layout(
+        f"""
+<h1 style="margin:0 0 12px;font-size:22px;font-weight:700;color:{b['text']};text-align:center;">
+  Correo de acceso actualizado
+</h1>
+<p style="margin:0 0 16px;font-size:14px;color:{b['muted']};text-align:center;line-height:22px;">
+  Hola <strong style="color:{b['text']};">{safe_name}</strong>, tu correo de acceso a WorkHive ahora es
+  <strong style="color:{b['text']};">{safe_new_email}</strong>.
+</p>
+<p style="margin:0;font-size:12px;color:{b['muted']};text-align:center;line-height:18px;">
+  Todas las sesiones anteriores se han cerrado. Si no realizaste este cambio, contacta con soporte.
+</p>
+""",
+        preview_text="Tu correo de acceso a WorkHive ha cambiado",
+    )
+    plain_text = "\n".join(
+        [
+            f"Hola {recipient_name},",
+            "",
+            f"Tu correo de acceso a WorkHive ahora es {new_email}.",
+            "Todas las sesiones anteriores se han cerrado.",
+            "Si no realizaste este cambio, contacta con soporte.",
+        ]
+    )
+    message = EmailMessage()
+    message["Subject"] = "Tu correo de acceso a WorkHive ha cambiado"
+    message["From"] = transport.from_address("Seguridad")
+    message["To"] = recipient_email
+    message.set_content(plain_text)
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)

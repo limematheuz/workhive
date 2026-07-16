@@ -11,6 +11,8 @@ from app.services import email_service
 
 def test_package_reexports_public_senders():
     assert callable(email_service.send_password_reset_email)
+    assert callable(email_service.send_email_change_verification_email)
+    assert callable(email_service.send_email_changed_notice)
     assert callable(email_service.send_contact_email)
     assert callable(email_service.send_trial_verification_email)
     assert callable(email_service.send_trial_approved_email)

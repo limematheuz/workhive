@@ -126,7 +126,7 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
                         <label htmlFor="profile-email" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex justify-between">
                             <span>{dict.profile.email}</span>
                             <span className="text-2xs text-amber-600 dark:text-amber-500 font-semibold lowercase bg-amber-500/10 dark:bg-amber-500/5 px-2 py-0.5 rounded-md border border-amber-500/20">
-                                {dict.profile.form.email_uneditable}
+                                {dict.profile.form.email_change_security}
                             </span>
                         </label>
                         <div className="relative">

@@ -14,6 +14,11 @@ export interface PreparedLoginCredentials {
     password: string;
 }
 
+export interface PreparedEmailChange {
+    newEmail: string;
+    currentPassword: string;
+}
+
 export type AuthFormLocale = "en" | "es";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -73,6 +78,38 @@ export function preparePasswordResetEmail(
     return {
         email: normalizedEmail,
         error: validateAuthEmail(normalizedEmail, messages),
+    };
+}
+
+export function prepareEmailChangeRequest(
+    newEmail: string,
+    currentEmail: string,
+    currentPassword: string,
+    messages: Pick<AuthFormMessages, "emailRequired" | "invalidEmail" | "passwordRequired"> = defaultAuthFormMessages,
+): { request: PreparedEmailChange | null; error: string | null } {
+    const normalizedEmail = normalizeAuthEmail(newEmail);
+    const emailError = validateAuthEmail(normalizedEmail, messages);
+    if (emailError !== null) {
+        return { request: null, error: emailError };
+    }
+    if (normalizedEmail === normalizeAuthEmail(currentEmail)) {
+        return {
+            request: null,
+            error: "The new email must be different from the current email.",
+        };
+    }
+    if (currentPassword === "") {
+        return {
+            request: null,
+            error: messages.passwordRequired ?? "Password is required.",
+        };
+    }
+    return {
+        request: {
+            newEmail: normalizedEmail,
+            currentPassword,
+        },
+        error: null,
     };
 }
 

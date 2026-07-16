@@ -1,5 +1,5 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api";
-import { setCsrfToken } from "@/lib/auth";
+import { clearSessionCache, setCsrfToken } from "@/lib/auth";
 import { getVisitorId } from "@/lib/visitor-id";
 import { buildInvitationAcceptancePayload } from "@/lib/user-invitation";
 import { User } from "@/types/user";
@@ -96,6 +96,41 @@ export const authService = {
             const errorMsg = await extractErrorMessage(response, "No se pudo restablecer la contraseña");
             throw new Error(errorMsg);
         }
+    },
+
+    requestEmailChange: async (
+        newEmail: string,
+        currentPassword: string,
+    ): Promise<void> => {
+        const response = await apiFetch("/api/v1/auth/request-email-change", {
+            method: "POST",
+            body: JSON.stringify({
+                new_email: newEmail,
+                current_password: currentPassword,
+            }),
+        });
+        if (!response.ok) {
+            const message = await extractErrorMessage(
+                response,
+                "No se pudo solicitar el cambio de correo",
+            );
+            throw new Error(message);
+        }
+    },
+
+    confirmEmailChange: async (token: string): Promise<void> => {
+        const response = await apiFetch("/api/v1/auth/confirm-email-change", {
+            method: "POST",
+            body: JSON.stringify({ token }),
+        });
+        if (!response.ok) {
+            const message = await extractErrorMessage(
+                response,
+                "No se pudo confirmar el cambio de correo",
+            );
+            throw new Error(message);
+        }
+        clearSessionCache();
     },
 
     acceptWorkerInvitation: async (

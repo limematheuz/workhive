@@ -13,6 +13,7 @@ const CSRF_EXEMPT_PATHS = new Set([
     "/api/v1/auth/register",
     "/api/v1/auth/forgot-password",
     "/api/v1/auth/reset-password",
+    "/api/v1/auth/confirm-email-change",
     "/api/v1/user-invitations/accept",
     "/api/v1/contact/",
     "/api/v1/traffic/page-view",

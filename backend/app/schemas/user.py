@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict, field_validator, model_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator, model_validator
 from datetime import datetime
 import re
 from app.schemas.role import RoleResponse
@@ -95,6 +95,20 @@ class PasswordResetConfirm(BaseModel):
     @classmethod
     def validate_password(cls, value: str) -> str:
         return validate_user_password(value)
+
+
+class EmailChangeRequest(BaseModel):
+    new_email: EmailStr
+    current_password: str = Field(min_length=1, max_length=128)
+
+    @field_validator("new_email")
+    @classmethod
+    def normalize_email(cls, value: EmailStr) -> str:
+        return str(value).strip().lower()
+
+
+class EmailChangeConfirm(BaseModel):
+    token: str = Field(min_length=1, max_length=4096)
 
 
 def validate_user_password(value: str) -> str:
