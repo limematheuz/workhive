@@ -117,8 +117,10 @@ export function TaskListCard({
                         handleOpenDetail(task);
                     }
                 }}
-                className={`surface-glass-card group flex h-full min-h-[72px] w-full items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)] cursor-pointer hover:border-accent/35 ${
-                    isExternal ? "surface-glass-card-accent" : ""
+                className={`group surface-glass-card flex h-full min-h-[72px] w-full cursor-pointer items-center gap-2 rounded-2xl px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 ${
+                    isExternal
+                        ? "surface-glass-card-accent hover:border-accent/40"
+                        : "hover:border-accent/35"
                 }`}
             >
                 <span
@@ -126,7 +128,7 @@ export function TaskListCard({
                     className={`h-9 w-1 shrink-0 rounded-full ${
                         isExternal
                             ? "bg-[color-mix(in_srgb,var(--accent-color)_55%,#a78bfa)]"
-                            : "bg-[color-mix(in_srgb,var(--accent-color)_35%,transparent)]"
+                            : "bg-[color-mix(in_srgb,var(--accent-color)_45%,transparent)]"
                     }`}
                 />
 
@@ -187,23 +189,23 @@ export function TaskListCard({
                         </div>
                     </div>
 
-                    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] leading-none text-[var(--text-muted)]">
+                    <div className="flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] leading-none text-[color-mix(in_srgb,var(--text-muted)_55%,var(--text-main))]">
                         <span className="inline-flex min-w-0 max-w-[42%] items-center gap-1 truncate">
                             <MapPin className="h-3 w-3 shrink-0 text-accent" />
                             <span className="truncate">{getLocationName(task.location_id)}</span>
                         </span>
                         {isAdminOrManager && (
                             <>
-                                <span aria-hidden="true" className="text-[var(--border-soft)]">·</span>
+                                <span aria-hidden="true" className="text-[var(--border-color)]">·</span>
                                 <span className="inline-flex min-w-0 max-w-[28%] items-center gap-1 truncate">
-                                    <UserRound className="h-3 w-3 shrink-0" />
+                                    <UserRound className="h-3 w-3 shrink-0 opacity-80" />
                                     <span className="truncate">{getAssigneeName(task.user_id)}</span>
                                 </span>
                             </>
                         )}
                         {checklist.length > 0 && (
                             <>
-                                <span aria-hidden="true" className="text-[var(--border-soft)]">·</span>
+                                <span aria-hidden="true" className="text-[var(--border-color)]">·</span>
                                 <span className="shrink-0 font-semibold tabular-nums">
                                     {checkedCount}/{checklist.length}
                                 </span>
@@ -211,7 +213,7 @@ export function TaskListCard({
                         )}
                         {task.price !== null && (
                             <>
-                                <span aria-hidden="true" className="text-[var(--border-soft)]">·</span>
+                                <span aria-hidden="true" className="text-[var(--border-color)]">·</span>
                                 <span className="shrink-0 font-semibold tabular-nums text-accent">
                                     {task.price} €{task.quantity ? ` × ${task.quantity}` : ""}
                                 </span>
@@ -220,7 +222,7 @@ export function TaskListCard({
                     </div>
                 </div>
 
-                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] transition group-hover:translate-x-0.5 group-hover:text-accent" />
+                <ChevronRight className="h-3.5 w-3.5 shrink-0 text-[color-mix(in_srgb,var(--text-muted)_40%,var(--text-main))] transition group-hover:translate-x-0.5 group-hover:text-accent" />
             </div>
         </article>
     );

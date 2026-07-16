@@ -127,7 +127,7 @@ export function TrialRequestsPanel() {
     };
 
     return (
-        <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 shadow-sm">
+        <section className="surface-glass-card rounded-2xl p-5">
             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 className="flex items-center gap-2 text-lg font-black">
