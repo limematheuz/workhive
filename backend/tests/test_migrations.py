@@ -22,6 +22,14 @@ def test_alembic_has_exactly_one_head():
     assert len(script.get_heads()) == 1
 
 
+def test_container_start_applies_migrations_before_serving_requests():
+    start_script = (os.path.dirname(__file__) + "/../start.sh")
+    with open(start_script, encoding="utf-8") as script_file:
+        script = script_file.read()
+
+    assert script.index("alembic upgrade head") < script.index("exec uvicorn")
+
+
 @pytest.mark.skipif(
     not os.getenv("MIGRATION_TEST_DATABASE_URL"),
     reason="PostgreSQL migration contract runs in CI",
@@ -30,6 +38,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
     engine = _migration_engine()
     try:
         inspector = inspect(engine)
+        company_columns = {
+            column["name"] for column in inspector.get_columns("companies")
+        }
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
         invitation_columns = {
             column["name"] for column in inspector.get_columns("user_invitations")
@@ -61,6 +72,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
 
     script = ScriptDirectory.from_config(Config("alembic.ini"))
     assert applied_revisions == set(script.get_heads())
+    assert "operating_model" in company_columns
     assert "paid_at" in invoice_columns
     assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns
     assert "reported_issues" in task_columns

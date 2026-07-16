@@ -5,6 +5,9 @@ from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 from app.schemas.user import validate_user_password
 
 
+OperatingModel = Literal["service_provider", "property_manager", "hybrid"]
+
+
 class CompanyBase(BaseModel):
     name: str
     tax_id: str
@@ -69,10 +72,44 @@ class CompanyUpdate(BaseModel):
     trial_ends_at: datetime | None = None
 
 
+class CompanyOnboardingLocationCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    address: str = Field(min_length=1, max_length=255)
+    city: str = Field(min_length=1, max_length=100)
+    postal_code: str = Field(min_length=1, max_length=10)
+    location_type: Literal[
+        "private",
+        "real_estate",
+        "business",
+        "exterior",
+        "other",
+    ]
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class CompanyOnboardingComplete(BaseModel):
+    operating_model: OperatingModel
+    location: CompanyOnboardingLocationCreate | None = None
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class CompanyOnboardingResponse(BaseModel):
+    onboarding_completed: bool
+    operating_model: OperatingModel
+    created: bool = False
+    location_id: int | None = None
+    location_name: str | None = None
+    template_task_id: int | None = None
+    template_name: str | None = None
+
+
 class CompanyResponse(CompanyBase):
     id: int
     contact_email: EmailStr | None = None
     onboarding_completed: bool
+    operating_model: str | None = None
     partner_code: str | None = None
     subscription_plan: str = "none"
     subscription_status: str = "inactive"

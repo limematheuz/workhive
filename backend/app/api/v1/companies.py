@@ -10,8 +10,11 @@ from app.api.deps import (
     get_db,
 )
 from app.services import company_service
+from app.services import company_onboarding_service
 from app.schemas.company import (
     CompanyCreate,
+    CompanyOnboardingComplete,
+    CompanyOnboardingResponse,
     CompanyProvisionCreate,
     CompanyUpdate,
     CompanyResponse,
@@ -126,6 +129,39 @@ def create_company(
         request=request,
     )
     return company
+
+
+@router.post(
+    "/{company_id}/onboarding/complete",
+    response_model=CompanyOnboardingResponse,
+)
+def complete_company_onboarding(
+    company_id: int,
+    onboarding_data: CompanyOnboardingComplete,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    result = company_onboarding_service.complete_company_onboarding(
+        db,
+        company_id,
+        onboarding_data,
+        current_user,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=company_id,
+        action="company.onboarding_completed",
+        entity_type="company",
+        entity_id=company_id,
+        request=request,
+        details={
+            "operating_model": result.operating_model,
+            "location_created": result.created,
+        },
+    )
+    return result
 
 
 @router.patch("/{company_id}", response_model=CompanyResponse)

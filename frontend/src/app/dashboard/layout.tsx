@@ -11,6 +11,7 @@ import { UserProvider, useUser } from "@/lib/user-context";
 import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
+import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
     return (
@@ -53,7 +54,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         if (!user || loading) return;
 
         // Accounts and admin permissions are provisioned by WorkHive.
-        if (!user.company_id || user.role?.name !== "admin") {
+        if (!shouldShowCompanyOnboarding(user)) {
             return;
         }
 

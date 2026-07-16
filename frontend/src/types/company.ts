@@ -22,6 +22,7 @@ export interface Company {
     trial_ends_at?: string | null;
     is_active: boolean;
     onboarding_completed?: boolean;
+    operating_model?: "service_provider" | "property_manager" | "hybrid" | null;
 }
 
 export interface CompanyExpense {

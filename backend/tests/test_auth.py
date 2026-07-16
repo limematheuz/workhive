@@ -3,6 +3,9 @@ from datetime import datetime, timezone
 from jose import jwt
 
 from app.core.config import settings
+from app.core.security import get_password_hash
+from app.models.company import Company
+from app.models.user import User
 from credentials import TEST_NEW, TEST_OLD, TEST_SECRET, login_form, CREDENTIAL_FIELD, NEW_CREDENTIAL_FIELD
 
 
@@ -50,6 +53,59 @@ def test_login_user(client):
     assert response.cookies.get("auth_token")
     assert response.cookies.get("csrf_token")
     assert "HttpOnly" in response.headers["set-cookie"]
+
+
+def test_every_active_role_can_login_and_read_its_session(client, db):
+    company = Company(
+        name="Role Access Company",
+        tax_id="ROLE-ACCESS",
+        address="Calle Roles 1",
+        phone="600000000",
+        email="roles@example.com",
+        subscription_plan="pro",
+        subscription_status="active",
+        onboarding_completed=False,
+    )
+    db.add(company)
+    db.flush()
+
+    users = [
+        User(
+            email=f"role-access-{role_name}@example.com",
+            hashed_password=get_password_hash(TEST_SECRET),
+            full_name=role_name.title(),
+            role_id=role_id,
+            company_id=company.id,
+            is_active=True,
+        )
+        for role_id, role_name in ((1, "admin"), (2, "manager"), (3, "viewer"))
+    ]
+    users.append(
+        User(
+            email="role-access-superadmin@example.com",
+            hashed_password=get_password_hash(TEST_SECRET),
+            full_name="Superadmin",
+            role_id=4,
+            company_id=None,
+            is_active=True,
+        )
+    )
+    db.add_all(users)
+    db.commit()
+
+    for user in users:
+        login = client.post(
+            "/api/v1/auth/login",
+            data=login_form(user.email, TEST_SECRET),
+        )
+        assert login.status_code == 200, f"{user.role.name}: {login.text}"
+
+        session = client.get(
+            "/api/v1/users/me",
+            headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        )
+        assert session.status_code == 200, f"{user.role.name}: {session.text}"
+        assert session.json()["role"]["name"] == user.role.name
 
 
 def test_login_session_uses_configured_seven_day_lifetime(client, monkeypatch):
