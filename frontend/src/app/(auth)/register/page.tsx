@@ -7,7 +7,6 @@ import { AuthTopControls } from "@/components/auth/AuthTopControls";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { useRouter } from "next/navigation";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
-import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import { ArrowLeft, User, Building2 } from "lucide-react";
 
 function RegisterPageContent() {
@@ -49,7 +48,9 @@ function RegisterPageContent() {
                 
                 <div className="space-y-4 border-t border-[var(--border-soft)] pt-6">
                     <div className="flex min-w-0 gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] p-4 sm:gap-4">
-                        <BrandIconWell icon={User} size="md" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                            <User className="h-5 w-5" />
+                        </div>
                         <div className="min-w-0 space-y-1">
                             <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--text-main)]">
                                 {locale === "es" ? "Soy trabajador u operario" : "I am an employee or technician"}
@@ -63,7 +64,9 @@ function RegisterPageContent() {
                     </div>
 
                     <div className="flex min-w-0 gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] p-4 sm:gap-4">
-                        <BrandIconWell icon={Building2} size="md" />
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-500/10 text-purple-500">
+                            <Building2 className="h-5 w-5" />
+                        </div>
                         <div className="min-w-0 space-y-1">
                             <h3 className="font-bold text-xs uppercase tracking-wider text-[var(--text-main)]">
                                 {locale === "es" ? "Quiero registrar mi empresa" : "I want to register my company"}

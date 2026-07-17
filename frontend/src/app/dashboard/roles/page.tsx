@@ -19,6 +19,7 @@ import { Pencil, Plus, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/errors";
 import { RoleFormDialogs } from "@/components/roles/RoleFormDialogs";
+import { PageHeader } from "@/components/ui/page-header";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
 
 export default function RolesAdminPage() {
@@ -124,24 +125,22 @@ export default function RolesAdminPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 text-[var(--text-main)] px-[3%] py-6 md:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        <ShieldCheck className="w-6 h-6 text-accent" />
-                        {dict.roles.title}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                        {dict.roles.subtitle}
-                    </p>
-                </div>
-                <button type="button"
-                    onClick={handleCreateClick}
-                    className="bg-black text-white hover:bg-neutral-800 font-semibold rounded-xl px-4 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border-none cursor-pointer self-start sm:self-center"
-                >
-                    <Plus className="h-4 w-4" />
-                    {dict.roles.new_role}
-                </button>
-            </div>
+            <PageHeader
+                icon={ShieldCheck}
+                title={dict.roles.title}
+                subtitle={dict.roles.subtitle}
+                className="mb-0"
+                actions={(
+                    <button
+                        type="button"
+                        onClick={handleCreateClick}
+                        className="bg-black text-white hover:bg-neutral-800 font-semibold rounded-xl px-4 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border-none cursor-pointer"
+                    >
+                        <Plus className="h-4 w-4" />
+                        {dict.roles.new_role}
+                    </button>
+                )}
+            />
 
             {roles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center p-12 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-soft)]">

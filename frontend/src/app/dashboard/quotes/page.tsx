@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { FileText, Loader2, Plus } from "lucide-react";
 
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import { QuoteCreateSheet } from "@/components/quotes/QuoteCreateSheet";
 import { QuoteDetailSheet } from "@/components/quotes/QuoteDetailSheet";
 import { QuotesFiltersSection } from "@/components/quotes/QuotesFiltersSection";
@@ -146,25 +147,22 @@ export default function QuotesPage() {
 
     return (
         <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        <FileText className="w-6 h-6 text-accent" />
-                        {dict.quotes?.list_title ?? "Presupuestos"}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                        {dict.quotes?.list_subtitle ?? "Crea y gestiona presupuestos para tus clientes."}
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => setIsCreateOpen(true)}
-                    className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer self-start sm:self-center"
-                >
-                    <Plus className="w-4 h-4" />
-                    {dict.quotes?.new_quote ?? "Nuevo Presupuesto"}
-                </button>
-            </div>
+            <PageHeader
+                icon={FileText}
+                title={dict.quotes?.list_title ?? "Presupuestos"}
+                subtitle={dict.quotes?.list_subtitle ?? "Crea y gestiona presupuestos para tus clientes."}
+                className="mb-8"
+                actions={(
+                    <button
+                        type="button"
+                        onClick={() => setIsCreateOpen(true)}
+                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {dict.quotes?.new_quote ?? "Nuevo Presupuesto"}
+                    </button>
+                )}
+            />
 
             <QuotesFiltersSection
                 clients={clients}

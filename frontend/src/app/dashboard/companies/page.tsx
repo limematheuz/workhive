@@ -15,6 +15,7 @@ import { TrialRequestsPanel } from "@/components/companies/TrialRequestsPanel";
 import { formatDateForInput, isCompanyAccessEnabled } from "@/components/companies/company-utils";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import type { PopoverOption } from "@/components/ui/action-popover";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
@@ -255,24 +256,21 @@ export default function CompaniesAdminPage() {
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 text-[var(--text-main)] px-[3%] py-6 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Building2 className="w-6 h-6 text-[var(--text-main)]" />
-                        {dict.companies.title}
-                    </h2>
-                    <p className="text-[var(--text-muted)] text-sm mt-1">
-                        {dict.companies.subtitle}
-                    </p>
-                </div>
-                <Button
-                    onClick={() => setIsProvisionOpen(true)}
-                    className="h-11 gap-2 rounded-xl bg-[var(--btn-primary-bg)] px-5 text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]"
-                >
-                    <Plus className="h-4 w-4" />
-                    Nueva empresa
-                </Button>
-            </div>
+            <PageHeader
+                icon={Building2}
+                title={dict.companies.title}
+                subtitle={dict.companies.subtitle}
+                titleAs="h2"
+                actions={(
+                    <Button
+                        onClick={() => setIsProvisionOpen(true)}
+                        className="h-11 gap-2 rounded-xl bg-[var(--btn-primary-bg)] px-5 text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]"
+                    >
+                        <Plus className="h-4 w-4" />
+                        Nueva empresa
+                    </Button>
+                )}
+            />
 
             <TrialRequestsPanel />
 

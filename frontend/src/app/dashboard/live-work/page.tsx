@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, Loader2, Search, Users } from "lucide-react";
+import { Activity, Building2, Loader2, Search, Users } from "lucide-react";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { WorkSessionService } from "@/services/work-session.service";
 import type { ActiveCompanySession } from "@/types/user";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
+import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { LiveWorkStatsCards } from "@/components/dashboard/live-work/LiveWorkStatsCards";
 import { LiveWorkSessionList } from "@/components/dashboard/live-work/LiveWorkSessionList";
@@ -139,31 +140,25 @@ export default function LiveWorkPage() {
 
     return (
         <div className="space-y-6 p-[3%]">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-                <div>
-                    <div className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-accent">
-                        <span className="h-2 w-2 animate-pulse rounded-full bg-accent" />
-                        {dict.work_sessions?.live_status || "Actualización en vivo"}
+            <PageHeader
+                icon={Activity}
+                title={dict.work_sessions?.live_title || "Fichajes en vivo"}
+                subtitle={
+                    dict.work_sessions?.live_description
+                    || "Consulta quién está trabajando, en qué tarea y desde qué ubicación inició su jornada."
+                }
+                actions={(
+                    <div className="relative w-full xl:w-80">
+                        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                        <input
+                            value={query}
+                            onChange={event => setQuery(event.target.value)}
+                            placeholder={dict.work_sessions?.live_search || "Buscar trabajador, tarea o ubicación..."}
+                            className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] py-3 pl-11 pr-4 text-sm font-medium text-[var(--text-main)] outline-none transition focus:border-accent"
+                        />
                     </div>
-                    <h1 className="text-3xl font-black tracking-tight text-[var(--text-main)]">
-                        {dict.work_sessions?.live_title || "Fichajes en vivo"}
-                    </h1>
-                    <p className="mt-2 max-w-2xl text-sm font-medium text-[var(--text-muted)]">
-                        {dict.work_sessions?.live_description
-                        || "Consulta quién está trabajando, en qué tarea y desde qué ubicación inició su jornada."}
-                    </p>
-                </div>
-
-                <div className="relative w-full xl:w-80">
-                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input
-                        value={query}
-                        onChange={event => setQuery(event.target.value)}
-                        placeholder={dict.work_sessions?.live_search || "Buscar trabajador, tarea o ubicación..."}
-                        className="w-full rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] py-3 pl-11 pr-4 text-sm font-medium text-[var(--text-main)] outline-none transition focus:border-accent"
-                    />
-                </div>
-            </div>
+                )}
+            />
 
             <LiveWorkStatsCards
                 workerCount={scopedSessions.length}

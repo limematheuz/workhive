@@ -31,7 +31,8 @@ playwright-report/
 test-results/
 
 # Editors and local agents
-.vscode/
+.vscode/*
+!.vscode/settings.json
 .idea/
 .cursor/
 .continue/

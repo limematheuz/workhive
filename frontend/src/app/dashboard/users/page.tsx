@@ -7,6 +7,7 @@ import { TeamListSection } from "@/components/users/TeamListSection";
 import { UserCreateDialog } from "@/components/users/UserCreateDialog";
 import { UserEditDialog } from "@/components/users/UserEditDialog";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
@@ -125,25 +126,22 @@ export default function TeamPage() {
 
     return (
         <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        <Users className="w-6 h-6 text-accent" />
-                        {dict.users.list_title}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                        {dict.users.subtitle || "Agrega trabajadores a tu empresa, edita sus permisos y suspende accesos."}
-                    </p>
-                </div>
-                <button
-                    type="button"
-                    onClick={() => setCreateOpen(true)}
-                    className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer self-start sm:self-center"
-                >
-                    <UserPlus className="w-4 h-4" />
-                    {dict.users.new_worker}
-                </button>
-            </div>
+            <PageHeader
+                icon={Users}
+                title={dict.users.list_title}
+                subtitle={dict.users.subtitle || "Agrega trabajadores a tu empresa, edita sus permisos y suspende accesos."}
+                className="mb-8"
+                actions={(
+                    <button
+                        type="button"
+                        onClick={() => setCreateOpen(true)}
+                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        {dict.users.new_worker}
+                    </button>
+                )}
+            />
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
