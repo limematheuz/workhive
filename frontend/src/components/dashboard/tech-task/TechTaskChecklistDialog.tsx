@@ -11,7 +11,6 @@ import {
     RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { User } from "@/types/user";
 import {
@@ -112,7 +111,9 @@ export function TechTaskChecklistDialog({
             >
                 <DialogHeader className="shrink-0 space-y-1 border-b border-[var(--border-soft)] px-4 py-3 pr-14 text-left sm:px-5 sm:pr-16">
                     <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-                        <BrandIconWell icon={ClipboardCheck} size="sm" />
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                            <ClipboardCheck className="h-4 w-4" />
+                        </span>
                         {dict.tech.requirements_title}
                     </DialogTitle>
                     <DialogDescription className="text-[11px] sm:text-xs">

@@ -15,6 +15,7 @@ import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
 import { MapPin, Home, Share2 } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -174,18 +175,13 @@ export default function LocationsPage() {
 
     return (
         <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        <MapPin className="w-6 h-6 text-accent" />
-                        {dict.locations.title}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                        {dict.locations.subtitle || "Gestiona los locales, sedes e instalaciones donde presta servicio tu equipo."}
-                    </p>
-                </div>
-                {!isReadOnly && <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} />}
-            </div>
+            <PageHeader
+                icon={MapPin}
+                title={dict.locations.title}
+                subtitle={dict.locations.subtitle || "Gestiona los locales, sedes e instalaciones donde presta servicio tu equipo."}
+                className="mb-8"
+                actions={!isReadOnly ? <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} /> : undefined}
+            />
 
             {/* Owned and shared property tabs */}
             <PremiumTabs

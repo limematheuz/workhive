@@ -1,10 +1,11 @@
 "use client";
 
 import React, { startTransition, useCallback, useEffect, useState, Suspense } from "react";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Building2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { TechDashboard } from "@/components/dashboard/TechDashboard";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
+import { PageHeader } from "@/components/ui/page-header";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { LocationService, Location } from "@/services/location.service";
@@ -138,9 +139,13 @@ function DashboardOverviewContent() {
 
     if (userIsPlatformSuperadmin) {
         return (
-            <div className="mx-auto max-w-5xl p-8">
-                <h1 className="text-2xl font-black text-[var(--text-main)]">Administración de WorkHive</h1>
-                <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="mx-auto max-w-5xl space-y-6 p-8">
+                <PageHeader
+                    icon={Building2}
+                    title="Administración de WorkHive"
+                    subtitle={dict.dashboard.companies}
+                />
+                <div className="grid gap-4 md:grid-cols-3">
                     {[
                         ["/dashboard/companies", dict.dashboard.companies],
                         ["/dashboard/users", dict.users.title],

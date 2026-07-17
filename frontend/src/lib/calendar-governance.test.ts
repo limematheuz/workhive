@@ -12,19 +12,15 @@ test("platform calendar panel is superadmin-scoped and never reads secrets", () 
     const page = source("../app/dashboard/integrations/page.tsx");
     const overview = source("../components/integrations/PlatformCalendarOverview.tsx");
     const service = source("../services/calendar.service.ts");
-    const iconWell = source("../components/ui/brand-icon-well.tsx");
-    const globals = source("../app/globals.css");
 
     assert.match(page, /isPlatformSuperadmin\(user\)/);
     assert.match(page, /CalendarService\.getPlatformStatus\(\)/);
     assert.match(service, /\/api\/v1\/calendar\/platform\/status/);
     assert.match(overview, /surface-glass-card/);
-    assert.match(overview, /BrandIconWell/);
-    assert.match(overview, /rounded-full/);
-    assert.match(overview, /border-\[var\(--border-soft\)\]/);
-    assert.match(iconWell, /icon-well/);
-    assert.match(globals, /\.icon-well\s*\{/);
-    assert.match(globals, /border-radius:\s*6px/);
+    assert.match(overview, /rounded-md/);
+    assert.match(overview, /border-\[var\(--brand-blue-border\)\]/);
+    assert.match(overview, /border-\[var\(--border-color\)\]/);
+    assert.doesNotMatch(overview, /BrandIconWell|icon-well/);
     assert.doesNotMatch(overview, /emerald-|amber-/);
     assert.match(overview, /<Button/);
     assert.match(overview, /<Badge/);

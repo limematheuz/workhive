@@ -2,7 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckSquare, Calendar, MapPin, Loader2 } from "lucide-react";
+import { CheckSquare, Calendar, MapPin, Loader2, LayoutDashboard } from "lucide-react";
 import { User, TaskItem } from "@/types/user";
 import { Location } from "@/services/location.service";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -11,6 +11,7 @@ import { TechTaskDetails } from "./TechTaskDetails";
 import { WorkSessionWidget } from "./WorkSessionWidget";
 import { TaskService } from "@/services/task.service";
 import { toast } from "@/lib/toast";
+import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
     getUserChecklistItems,
@@ -170,22 +171,18 @@ function TechDashboardInner({
     return (
         <>
             <div className="mx-auto flex max-w-7xl animate-fade-in flex-col gap-8 p-4 pb-24 text-[var(--text-main)] sm:p-6 md:pb-6">
-                <div className="flex flex-col items-start justify-between gap-4 border-b border-[var(--border-soft)] pb-5 sm:flex-row sm:items-center">
-                    <div className="space-y-1">
-                        <h1 className="flex items-center gap-2 text-2xl font-black tracking-tight text-[var(--text-main)]">
-                            {dict.tech.portal_title}
-                        </h1>
-                        <p className="text-xs font-medium text-[var(--text-muted)]">
-                            {dict.tech.portal_subtitle}
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                        <span>{dict.tech.pending}: {dashboardTasks.pendingCount}</span>
-                        <span>•</span>
-                        <span className="text-accent">{dict.tech.resolved}: {dashboardTasks.resolvedCount}</span>
-                    </div>
-                </div>
+                <PageHeader
+                    icon={LayoutDashboard}
+                    title={dict.tech.portal_title}
+                    subtitle={dict.tech.portal_subtitle}
+                    actions={(
+                        <div className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                            <span>{dict.tech.pending}: {dashboardTasks.pendingCount}</span>
+                            <span>•</span>
+                            <span className="text-accent">{dict.tech.resolved}: {dashboardTasks.resolvedCount}</span>
+                        </div>
+                    )}
+                />
 
                 <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
                     <div className="space-y-6 lg:col-span-2">

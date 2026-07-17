@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Briefcase, Building2, Clock3, MapPin, Users } from "lucide-react";
 
-import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import { WorkStartLocationLink } from "@/components/work-sessions/WorkStartLocationLink";
 import { useDictionary } from "@/lib/dictionary-context";
 import type { ActiveCompanySession } from "@/types/user";
@@ -66,7 +65,9 @@ export function LiveWorkSessionList({
                 <section key={companyId} className="space-y-3">
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex min-w-0 items-center gap-3">
-                            <BrandIconWell icon={Building2} size="sm" />
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                                <Building2 className="h-4 w-4" />
+                            </div>
                             <h2 className="truncate text-lg font-black text-[var(--text-main)]">
                                 {companyGroup.companyName}
                             </h2>

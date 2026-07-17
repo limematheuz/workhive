@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 
 import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
+import { PageHeader } from "@/components/ui/page-header";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
     buildFinanceSeries,
     groupExpensesByCategory,
@@ -36,7 +38,6 @@ import { formatCurrency } from "@/lib/format";
 import { useUser } from "@/lib/user-context";
 import { useProfile, type TaskChartStats } from "@/hooks/useProfile";
 import { InteractiveLineChart } from "@/components/dashboard/InteractiveLineChart";
-import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { ExpenseService } from "@/services/expense.service";
 import { InvoiceService } from "@/services/invoice.service";
 import type { Expense } from "@/types/expense";
@@ -126,12 +127,11 @@ export default function FinanceAnalyticsPage() {
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
             <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-4">
-                <header className="px-1 py-1">
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                        <div>
-                            <p className="text-[11px] font-black uppercase tracking-wide text-accent">{text.eyebrow}</p>
-                            <h1 className="mt-1 text-xl font-black text-[var(--text-main)] sm:text-2xl">{text.title}</h1>
-                        </div>
+                <PageHeader
+                    icon={BarChart3}
+                    title={text.title}
+                    subtitle={text.eyebrow}
+                    actions={(
                         <PremiumTabs<AnalyticsTab>
                             tabs={[
                                 { id: "finance", label: text.tab_finance },
@@ -141,8 +141,8 @@ export default function FinanceAnalyticsPage() {
                             onChange={setActiveTab}
                             className="w-full sm:w-auto sm:min-w-72"
                         />
-                    </div>
-                </header>
+                    )}
+                />
 
                 {activeTab === "finance" ? (
                     <FinanceDashboard

@@ -16,8 +16,8 @@ import { Location } from "@/types/location";
 import { useOperationsCalendar } from "@/hooks/useOperationsCalendar";
 import { CalendarKanbanCard } from "./CalendarKanbanCard";
 import { TaskEditModal } from "@/components/tasks/TaskEditModal";
-import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import { isExternalTaskForCompany } from "@/lib/task-display";
 
 interface OperationsCalendarProps {
@@ -80,32 +80,23 @@ export function OperationsCalendar({
 
     return (
         <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-4 md:p-6 shadow-xl flex flex-col space-y-5 overflow-hidden">
-            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5">
-                <div className="flex items-center gap-3">
-                    <BrandIconWell icon={ClipboardList} size="lg" />
-                    <div>
-                        <h2 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-main)]">
-                            {state.dict.tasks.kanban?.title || "Tablero Operativo"}
-                        </h2>
-                        <p className="text-xs md:text-sm text-[var(--text-muted)] font-semibold mt-1 max-w-2xl">
-                            {state.dict.tasks.kanban?.subtitle || "Planifica, asigna y mueve el trabajo por estados con una vista visual de operaciones."}
-                        </p>
-                    </div>
-                </div>
-
-                {state.isAdminOrManager && onCreateTask && (
-                    <div className="flex items-center gap-2 self-stretch xl:self-auto overflow-x-auto">
-                        <button
-                            type="button"
-                            onClick={onCreateTask}
-                            className="h-10 px-4 rounded-xl bg-[var(--text-main)] text-[var(--text-inverse)] text-xs font-bold flex items-center gap-2 shrink-0 cursor-pointer"
-                        >
-                            <Plus className="w-4 h-4" />
-                            {state.dict.tasks?.new_task || "Nueva Tarea"}
-                        </button>
-                    </div>
-                )}
-            </div>
+            <PageHeader
+                icon={ClipboardList}
+                title={state.dict.tasks.kanban?.title || "Tablero Operativo"}
+                subtitle={state.dict.tasks.kanban?.subtitle || "Planifica, asigna y mueve el trabajo por estados con una vista visual de operaciones."}
+                titleAs="h2"
+                className="border-[var(--border-soft)]"
+                actions={state.isAdminOrManager && onCreateTask ? (
+                    <button
+                        type="button"
+                        onClick={onCreateTask}
+                        className="h-10 px-4 rounded-xl bg-[var(--text-main)] text-[var(--text-inverse)] text-xs font-bold flex items-center gap-2 shrink-0 cursor-pointer"
+                    >
+                        <Plus className="w-4 h-4" />
+                        {state.dict.tasks?.new_task || "Nueva Tarea"}
+                    </button>
+                ) : undefined}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr_0.8fr] gap-3 bg-[var(--bg-secondary)] border border-[var(--border-soft)] rounded-2xl p-3">
                 <div className="relative">

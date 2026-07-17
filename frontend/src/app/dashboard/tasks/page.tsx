@@ -3,6 +3,7 @@
 import React, { Suspense } from "react";
 import { Plus, Columns3, ListTodo, Library, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/ui/page-header";
 import { useTasksPage } from "@/hooks/useTasksPage";
 import { TasksKanban } from "@/components/tasks/TasksKanban";
 import { TasksList } from "@/components/tasks/TasksList";
@@ -16,28 +17,22 @@ function TasksPageContent() {
 
     return (
         <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto overflow-x-hidden max-w-full">
-            {/* Page header */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        <ListTodo className="w-6 h-6 text-accent" />
-                        {state.dict.tasks?.page_title || "Tareas y Operaciones"}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                        {state.dict.tasks?.page_subtitle || "Planifica el trabajo, sigue su avance y estandariza los servicios."}
-                    </p>
-                </div>
-                <div className="flex items-center gap-3">
-                    {/* Template creation button shown on the templates tab */}
-                    {state.activeTab === "templates" && state.isAdminOrManager && (
-                        <Button
-                            onClick={() => state.handleOpenTemplateModal(null)}
-                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
-                        >
-                            <Plus className="w-4 h-4" />
-                            {state.dict.tasks?.create_template || "Nuevo servicio"}
-                        </Button>
-                    )}
+            <PageHeader
+                icon={ListTodo}
+                title={state.dict.tasks?.page_title || "Tareas y Operaciones"}
+                subtitle={state.dict.tasks?.page_subtitle || "Planifica el trabajo, sigue su avance y estandariza los servicios."}
+                className="mb-8"
+                actions={(
+                    <>
+                        {state.activeTab === "templates" && state.isAdminOrManager && (
+                            <Button
+                                onClick={() => state.handleOpenTemplateModal(null)}
+                                className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                            >
+                                <Plus className="w-4 h-4" />
+                                {state.dict.tasks?.create_template || "Nuevo servicio"}
+                            </Button>
+                        )}
 
                     {state.activeTab !== "templates" && state.isAdminOrManager && (
                         <Button
@@ -48,8 +43,9 @@ function TasksPageContent() {
                             {state.dict.tasks?.new_task || "Nueva Tarea"}
                         </Button>
                     )}
-                </div>
-            </div>
+                    </>
+                )}
+            />
 
             {/* Tab selector (Premium Navigation) */}
             <PremiumTabs

@@ -3,7 +3,6 @@
 import { Cloud, CloudOff, Loader2, RefreshCw, ShieldQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { CalendarConnectionStatus } from "@/services/calendar.service";
 
@@ -77,7 +76,7 @@ export function CalendarGoogleControls({
     return (
         <>
             <span className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--dialog-control-bg)] px-3 py-2 text-xs font-bold text-[var(--text-main)]">
-                <BrandIconWell icon={Cloud} size="sm" />
+                <Cloud className="h-4 w-4" />
                 {status.google_account_email || status.calendar_name}
             </span>
             {status.can_sync && (

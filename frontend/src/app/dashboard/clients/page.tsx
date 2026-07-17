@@ -15,6 +15,7 @@ import { Location } from "@/services/location.service";
 import { TaskItem } from "@/services/task.service";
 import { Building2, Search, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
 import {
@@ -124,18 +125,13 @@ export default function ClientsPage() {
 
     return (
         <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                        <Building2 className="h-6 w-6 text-accent" />
-                        {dict.clients.title}
-                    </h1>
-                    <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                        {dict.clients.subtitle || "Gestiona los clientes de tu empresa y su información de facturación y contacto."}
-                    </p>
-                </div>
-                {!isReadOnly && <CreateClientSheet onClientCreated={loadClients} />}
-            </div>
+            <PageHeader
+                icon={Building2}
+                title={dict.clients.title}
+                subtitle={dict.clients.subtitle || "Gestiona los clientes de tu empresa y su información de facturación y contacto."}
+                className="mb-8"
+                actions={!isReadOnly ? <CreateClientSheet onClientCreated={loadClients} /> : undefined}
+            />
 
             <div className="flex flex-col md:flex-row gap-3 items-stretch mb-6 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3">
                 <div className="relative flex-1">

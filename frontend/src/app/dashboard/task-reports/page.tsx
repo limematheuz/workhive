@@ -6,6 +6,7 @@ import { Camera, CheckSquare, FileText, Search, ShieldAlert, Trash2 } from "luci
 import { NOTIFICATIONS_UPDATED_EVENT } from "@/components/dashboard/notifications/notification-utils";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { TaskReportCard } from "@/features/task-reports/TaskReportCard";
 import { TaskReportDetailDialog } from "@/features/task-reports/TaskReportDetailDialog";
@@ -149,18 +150,12 @@ export default function TaskReportsPage() {
     return (
         <div className={`h-full overflow-y-auto px-[3%] py-5 md:px-7 md:py-6 ${scrollHide}`}>
             <div className="mx-auto w-full max-w-6xl space-y-4">
-                <header className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h1 className="flex items-center gap-2 text-xl font-black tracking-tight text-[var(--text-main)] md:text-2xl">
-                            <ShieldAlert className="h-5 w-5 text-accent md:h-6 md:w-6" />
-                            {copy.title}
-                        </h1>
-                        <p className="mt-1 max-w-2xl text-xs font-medium leading-relaxed text-[var(--text-muted)]">
-                            {copy.subtitle}
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 self-center">
-                        {selectionMode ? (
+                <PageHeader
+                    icon={ShieldAlert}
+                    title={copy.title}
+                    subtitle={copy.subtitle}
+                    actions={(
+                        selectionMode ? (
                             <div className={reportActionCluster}>
                                 <button
                                     type="button"
@@ -196,9 +191,9 @@ export default function TaskReportsPage() {
                                 <CheckSquare className="h-3.5 w-3.5" />
                                 {copy.select}
                             </button>
-                        )}
-                    </div>
-                </header>
+                        )
+                    )}
+                />
 
                 {selectionMode && selectedIds.size > 0 && (
                     <p className="text-xs font-semibold text-[var(--text-muted)]">

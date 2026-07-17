@@ -7,6 +7,7 @@ import { useUser } from "@/lib/user-context";
 import { CollaborationService } from "@/services/collaboration.service";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { CollaborationPartnerCodeCard } from "@/components/collaborations/CollaborationPartnerCodeCard";
@@ -140,16 +141,11 @@ export default function CollaborationsPage() {
     return (
         <div className="max-w-7xl mx-auto px-[3%] md:px-8 py-6 space-y-8 animate-fade-in text-[var(--text-main)]">
 
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-black tracking-tight text-[var(--text-main)] flex items-center gap-2">
-                    <Users className="h-6 w-6 text-accent" />
-                    Colaboradores y Partners
-                </h1>
-                <p className="text-xs text-[var(--text-muted)] font-medium mt-1">
-                    Vincúlate con otras empresas para compartir lugares de trabajo y coordinar servicios.
-                </p>
-            </div>
+            <PageHeader
+                icon={Users}
+                title="Colaboradores y Partners"
+                subtitle="Vincúlate con otras empresas para compartir lugares de trabajo y coordinar servicios."
+            />
 
             {/* Top Grid: Partner Code & Connect Form */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -2,7 +2,7 @@
 
 import { CalendarDays } from "lucide-react";
 
-import { BrandIconWell } from "@/components/ui/brand-icon-well";
+import { PageHeader } from "@/components/ui/page-header";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { CalendarConnectionStatus } from "@/services/calendar.service";
 import { CalendarGoogleControls } from "./CalendarGoogleControls";
@@ -45,17 +45,12 @@ export function CalendarHeader({
     onReviewOwnership,
 }: CalendarHeaderProps) {
     return (
-        <section className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm md:p-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex items-center gap-3">
-                    <BrandIconWell icon={CalendarDays} size="lg" iconClassName="h-6 w-6" />
-                    <div>
-                        <h1 className="text-xl font-black tracking-tight text-[var(--text-main)]">{calendarDict.title}</h1>
-                        <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">{calendarDict.subtitle}</p>
-                    </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
+        <section className="space-y-4">
+            <PageHeader
+                icon={CalendarDays}
+                title={calendarDict.title}
+                subtitle={calendarDict.subtitle}
+                actions={(
                     <CalendarGoogleControls
                         status={status}
                         loading={loading}
@@ -69,10 +64,10 @@ export function CalendarHeader({
                         onDisconnectRequest={onDisconnectRequest}
                         onRequestOwnership={onRequestOwnership}
                     />
-                </div>
-            </div>
+                )}
+            />
             {lastError && (
-                <p className="mt-3 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{lastError}</p>
+                <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{lastError}</p>
             )}
             {status?.is_owner && (
                 <CalendarOwnershipRequests

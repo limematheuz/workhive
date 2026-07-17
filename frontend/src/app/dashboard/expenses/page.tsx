@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useEffectEvent, useMemo, useState, type FormEvent } from "react";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2, Plus, Wallet } from "lucide-react";
 
 import { ExpenseFormDialog } from "@/components/expenses/ExpenseFormDialog";
 import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
+import { PageHeader } from "@/components/ui/page-header";
 import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
@@ -155,24 +156,22 @@ export default function ExpensesPage() {
     return (
         <div className="min-h-full px-3 py-4 sm:px-5 lg:px-7">
             <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-5">
-                <header className="rounded-[24px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/88 p-5 backdrop-blur-xl">
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div>
-                            <p className="text-[11px] font-black uppercase tracking-wide text-accent">{text.eyebrow}</p>
-                            <h1 className="mt-2 text-3xl font-black text-[var(--text-main)]">{text.title}</h1>
-                            <p className="mt-2 max-w-2xl text-sm text-[var(--text-muted)]">{text.subtitle}</p>
-                        </div>
+                <PageHeader
+                    icon={Wallet}
+                    title={text.title}
+                    subtitle={text.subtitle}
+                    actions={(
                         <button
                             type="button"
                             onClick={openCreateForm}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] px-4 text-sm font-black text-[var(--btn-primary-text)] transition hover:bg-[var(--btn-primary-hover-bg)]"
+                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] px-4 text-sm font-semibold text-[var(--btn-primary-text)] transition hover:bg-[var(--btn-primary-hover-bg)]"
                         >
                             <Plus className="h-4 w-4" />
                             {text.add_expense}
                         </button>
-                    </div>
-                    <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={expenses.length} />
-                </header>
+                    )}
+                />
+                <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={expenses.length} />
 
                 <ExpensesListSection
                     expenses={filteredExpenses}
