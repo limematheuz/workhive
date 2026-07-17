@@ -55,6 +55,9 @@ jobs:
       - name: Download repository
         uses: actions/checkout@v4
 
+      - name: Test backup automation
+        run: bash ../ops/backup/test_backup_to_s3.sh
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
