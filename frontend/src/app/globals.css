@@ -491,6 +491,41 @@
   color: var(--text-main);
 }
 
+/*
+ * Brand icon wells — squarish tile with light corner radius (macOS/iOS settings).
+ * Prefer this over rounded-full / rounded-2xl for decorative icons.
+ */
+.icon-well {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--brand-blue-border);
+  background-color: var(--brand-blue-soft);
+  color: var(--accent-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.icon-well-sm {
+  width: 2rem;
+  height: 2rem;
+}
+
+.icon-well-md {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.icon-well-lg {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.light-mode .icon-well {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
 /* Header / radix floating menus — opaque fill in dark (blocks bleed-through) */
 .surface-popover {
   background: var(--popover-surface-bg) !important;

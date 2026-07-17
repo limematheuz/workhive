@@ -4,6 +4,11 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.models.audit_log import AuditLog
+from app.models.calendar_governance import (
+    CalendarOwnershipRequest,
+    CompanyCalendarSettings,
+    PlatformCalendarConfig,
+)
 from app.models.calendar_sync_job import CalendarSyncJob
 from app.models.client import Client
 from app.models.company import Company
@@ -372,6 +377,27 @@ def delete_company_permanently(
 
     try:
         if company_user_ids:
+            db.query(PlatformCalendarConfig).filter(
+                PlatformCalendarConfig.updated_by_user_id.in_(company_user_ids)
+            ).update(
+                {PlatformCalendarConfig.updated_by_user_id: None},
+                synchronize_session=False,
+            )
+            db.query(CalendarOwnershipRequest).filter(
+                (
+                    CalendarOwnershipRequest.requester_user_id.in_(
+                        company_user_ids
+                    )
+                )
+                | (
+                    CalendarOwnershipRequest.reviewed_by_user_id.in_(
+                        company_user_ids
+                    )
+                )
+            ).delete(synchronize_session=False)
+            db.query(CompanyCalendarSettings).filter(
+                CompanyCalendarSettings.owner_user_id.in_(company_user_ids)
+            ).delete(synchronize_session=False)
             db.query(TrialRequest).filter(
                 TrialRequest.approved_by_user_id.in_(company_user_ids)
             ).update({TrialRequest.approved_by_user_id: None}, synchronize_session=False)
@@ -428,6 +454,12 @@ def delete_company_permanently(
         ).delete(synchronize_session=False)
         db.query(GoogleCalendarConnection).filter(
             GoogleCalendarConnection.company_id == company_id
+        ).delete(synchronize_session=False)
+        db.query(CalendarOwnershipRequest).filter(
+            CalendarOwnershipRequest.company_id == company_id
+        ).delete(synchronize_session=False)
+        db.query(CompanyCalendarSettings).filter(
+            CompanyCalendarSettings.company_id == company_id
         ).delete(synchronize_session=False)
 
         template_ids = [

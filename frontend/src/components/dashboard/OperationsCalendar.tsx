@@ -16,6 +16,7 @@ import { Location } from "@/types/location";
 import { useOperationsCalendar } from "@/hooks/useOperationsCalendar";
 import { CalendarKanbanCard } from "./CalendarKanbanCard";
 import { TaskEditModal } from "@/components/tasks/TaskEditModal";
+import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { isExternalTaskForCompany } from "@/lib/task-display";
 
@@ -81,9 +82,7 @@ export function OperationsCalendar({
         <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-4 md:p-6 shadow-xl flex flex-col space-y-5 overflow-hidden">
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5">
                 <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-white/45 border border-white/70 flex items-center justify-center text-[var(--text-main)] shadow-sm">
-                        <ClipboardList className="w-5 h-5" />
-                    </div>
+                    <BrandIconWell icon={ClipboardList} size="lg" />
                     <div>
                         <h2 className="text-xl md:text-2xl font-black tracking-tight text-[var(--text-main)]">
                             {state.dict.tasks.kanban?.title || "Tablero Operativo"}

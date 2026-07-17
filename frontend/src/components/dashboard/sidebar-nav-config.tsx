@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { FileText, LineChart, ShieldAlert } from "lucide-react";
+import { CloudCog, FileText, LineChart, ShieldAlert } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = {
@@ -31,6 +31,7 @@ export const ORDERED_PLAIN_HREFS = [
     "/dashboard/users",
     "/dashboard/collaborations",
     "/dashboard/companies",
+    "/dashboard/integrations",
     "/dashboard/roles",
     "/dashboard/traffic",
 ];
@@ -41,6 +42,7 @@ const PLATFORM_SUPERADMIN_HREFS = new Set([
     "/dashboard/roles",
     "/dashboard/traffic",
     "/dashboard/users",
+    "/dashboard/integrations",
 ]);
 
 export type SidebarNavUserFlags = {
@@ -77,6 +79,12 @@ function buildNavLinks(
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                           </svg>
                       ),
+                  },
+                  {
+                      href: "/dashboard/integrations",
+                      label: dict.dashboard.integrations,
+                      exact: false,
+                      icon: <CloudCog className="h-5 w-5 flex-shrink-0" />,
                   },
                   {
                       href: "/dashboard/roles",

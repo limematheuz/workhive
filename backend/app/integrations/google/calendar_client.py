@@ -3,7 +3,8 @@ from urllib.parse import quote, urlencode
 from uuid import uuid4
 
 import httpx
-from jose import jwt
+import jwt
+from cryptography.fernet import InvalidToken
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -12,7 +13,7 @@ from app.models.google_calendar_connection import GoogleCalendarConnection
 
 
 AUTHORIZATION_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
-TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
+TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"  # nosec B105
 USERINFO_ENDPOINT = "https://openidconnect.googleapis.com/v1/userinfo"
 CALENDAR_API = "https://www.googleapis.com/calendar/v3"
 SCOPES = [
@@ -55,16 +56,20 @@ def decode_oauth_state(state: str) -> dict:
 def authorization_url(*, company_id: int, user_id: int) -> str:
     if not settings.GOOGLE_CALENDAR_CLIENT_ID:
         raise ValueError("Google Calendar OAuth client is not configured")
-    return f"{AUTHORIZATION_ENDPOINT}?{urlencode({
-        'client_id': settings.GOOGLE_CALENDAR_CLIENT_ID,
-        'redirect_uri': settings.GOOGLE_CALENDAR_REDIRECT_URI,
-        'response_type': 'code',
-        'scope': ' '.join(SCOPES),
-        'access_type': 'offline',
-        'prompt': 'consent',
-        'include_granted_scopes': 'true',
-        'state': create_oauth_state(company_id=company_id, user_id=user_id),
-    })}"
+    return f"{AUTHORIZATION_ENDPOINT}?{
+        urlencode(
+            {
+                'client_id': settings.GOOGLE_CALENDAR_CLIENT_ID,
+                'redirect_uri': settings.GOOGLE_CALENDAR_REDIRECT_URI,
+                'response_type': 'code',
+                'scope': ' '.join(SCOPES),
+                'access_type': 'offline',
+                'prompt': 'consent',
+                'include_granted_scopes': 'true',
+                'state': create_oauth_state(company_id=company_id, user_id=user_id),
+            }
+        )
+    }"
 
 
 def exchange_authorization_code(code: str) -> dict:
@@ -115,12 +120,23 @@ def _access_token(
     if expires_at and expires_at.tzinfo is None:
         expires_at = expires_at.replace(tzinfo=timezone.utc)
     if expires_at and expires_at > now + timedelta(minutes=2):
-        return decrypt_token(connection.access_token_encrypted)
+        try:
+            return decrypt_token(connection.access_token_encrypted)
+        except InvalidToken as exc:
+            raise GoogleCalendarError(
+                "Google Calendar authorization must be reconnected",
+                401,
+            ) from exc
     if not connection.refresh_token_encrypted:
         raise GoogleCalendarError("Google refresh token is unavailable")
-    refreshed = refresh_access_token(
-        decrypt_token(connection.refresh_token_encrypted)
-    )
+    try:
+        refresh_token = decrypt_token(connection.refresh_token_encrypted)
+    except InvalidToken as exc:
+        raise GoogleCalendarError(
+            "Google Calendar authorization must be reconnected",
+            401,
+        ) from exc
+    refreshed = refresh_access_token(refresh_token)
     access_token = refreshed["access_token"]
     connection.access_token_encrypted = encrypt_token(access_token)
     connection.token_expires_at = now + timedelta(

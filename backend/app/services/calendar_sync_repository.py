@@ -8,13 +8,11 @@ from app.models.task_calendar_event import TaskCalendarEvent
 def connection(
     db: Session,
     company_id: int,
-    user_id: int,
 ) -> GoogleCalendarConnection | None:
     return (
         db.query(GoogleCalendarConnection)
         .filter(
             GoogleCalendarConnection.company_id == company_id,
-            GoogleCalendarConnection.owner_user_id == user_id,
         )
         .first()
     )

@@ -152,47 +152,76 @@ export function resolveApiMediaUrl(url?: string | null): string | null {
     return url;
 }
 
-export async function extractErrorMessage(response: Response, defaultMessage: string): Promise<string> {
+type ParsedApiError = {
+    message: string;
+    code?: string;
+};
+
+export class ApiResponseError extends Error {
+    readonly status: number;
+    readonly code?: string;
+
+    constructor(message: string, status: number, code?: string) {
+        super(message);
+        this.name = "ApiResponseError";
+        this.status = status;
+        this.code = code;
+    }
+}
+
+async function parseApiError(response: Response, defaultMessage: string): Promise<ParsedApiError> {
     const responseForText = response.clone();
     try {
         const error: unknown = await response.json();
         if (!error || typeof error !== "object") {
-            return defaultMessage;
+            return { message: defaultMessage };
         }
         const errorRecord = error as Record<string, unknown>;
         if (errorRecord.detail) {
             if (typeof errorRecord.detail === "string") {
-                return errorRecord.detail;
+                return { message: errorRecord.detail };
             }
             if (Array.isArray(errorRecord.detail)) {
-                return errorRecord.detail.map((entry: unknown) => {
-                    if (entry && typeof entry === "object") {
-                        const issue = entry as Record<string, unknown>;
-                        if (typeof issue.msg === "string") {
-                            const location = Array.isArray(issue.loc)
-                                ? issue.loc.at(-1)
-                                : null;
-                            return location ? `${String(location)}: ${issue.msg}` : issue.msg;
+                return {
+                    message: errorRecord.detail.map((entry: unknown) => {
+                        if (entry && typeof entry === "object") {
+                            const issue = entry as Record<string, unknown>;
+                            if (typeof issue.msg === "string") {
+                                const location = Array.isArray(issue.loc)
+                                    ? issue.loc.at(-1)
+                                    : null;
+                                return location ? `${String(location)}: ${issue.msg}` : issue.msg;
+                            }
+                            return JSON.stringify(issue);
                         }
-                        return JSON.stringify(issue);
-                    }
-                    return String(entry);
-                }).join(", ");
+                        return String(entry);
+                    }).join(", "),
+                };
             }
             if (typeof errorRecord.detail === "object") {
                 const detail = errorRecord.detail as Record<string, unknown>;
-                return typeof detail.message === "string"
-                    ? detail.message
-                    : JSON.stringify(detail);
+                return {
+                    message: typeof detail.message === "string"
+                        ? detail.message
+                        : defaultMessage,
+                    code: typeof detail.code === "string" ? detail.code : undefined,
+                };
             }
         }
-        return typeof errorRecord.message === "string"
-            ? errorRecord.message
-            : defaultMessage;
+        return {
+            message: typeof errorRecord.message === "string"
+                ? errorRecord.message
+                : defaultMessage,
+            code: typeof errorRecord.code === "string" ? errorRecord.code : undefined,
+        };
     } catch {
         const text = await responseForText.text().catch(() => "");
-        return text.trim() || defaultMessage;
+        return { message: text.trim() || defaultMessage };
     }
+}
+
+export async function extractErrorMessage(response: Response, defaultMessage: string): Promise<string> {
+    return (await parseApiError(response, defaultMessage)).message;
 }
 
 export async function assertApiResponseOk(
@@ -201,7 +230,8 @@ export async function assertApiResponseOk(
 ): Promise<void> {
     if (response.ok) return;
     if (response.status >= 500) {
-        throw new Error(defaultMessage);
+        throw new ApiResponseError(defaultMessage, response.status);
     }
-    throw new Error(await extractErrorMessage(response, defaultMessage));
+    const error = await parseApiError(response, defaultMessage);
+    throw new ApiResponseError(error.message, response.status, error.code);
 }

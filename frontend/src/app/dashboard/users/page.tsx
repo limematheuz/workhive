@@ -9,11 +9,11 @@ import { UserEditDialog } from "@/components/users/UserEditDialog";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
-import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { RoleService, Role } from "@/services/role.service";
 import { UserService } from "@/services/user.service";
 import { User } from "@/types/user";
+import { getUserDeletionErrorMessage } from "@/lib/user-deletion";
 
 type EditDialogState = {
     open: boolean;
@@ -99,9 +99,12 @@ export default function TeamPage() {
             await UserService.deleteUser(deleteState.target.id);
             setTeam((prev) => prev.filter((member) => member.id !== deleteState.target!.id));
             setDeleteState({ target: null, submitting: false });
-            toast.success("Usuario eliminado definitivamente");
+            toast.success(dict.users.delete_success);
         } catch (error: unknown) {
-            toast.error(getErrorMessage(error, "No se pudo eliminar el usuario"));
+            toast.error(getUserDeletionErrorMessage(error, {
+                blocked: dict.users.delete_blocked,
+                fallback: dict.users.delete_error,
+            }));
             setDeleteState((current) => ({ ...current, submitting: false }));
         }
     };
@@ -220,8 +223,11 @@ export default function TeamPage() {
             <DeleteConfirmDialog
                 open={deleteState.target !== null}
                 onOpenChange={(open) => !open && setDeleteState({ target: null, submitting: false })}
-                title="¿Eliminar usuario para siempre?"
-                description={`Esta acción es irreversible. Se borrará ${deleteState.target?.email || "este usuario"} solo si no tiene tareas ni fichajes asociados.`}
+                title={dict.users.delete_confirm_title}
+                description={dict.users.delete_confirm_description.replace(
+                    "{email}",
+                    deleteState.target?.email || dict.users.delete_target_fallback,
+                )}
                 onConfirm={handleDeleteWorker}
                 isDeleting={deleteState.submitting}
                 confirmText="Eliminar definitivamente"

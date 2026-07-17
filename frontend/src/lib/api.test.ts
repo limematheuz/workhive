@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+    ApiResponseError,
     apiFetch,
     assertApiResponseOk,
     extractErrorMessage,
@@ -136,6 +137,30 @@ test("assertApiResponseOk preserves safe actionable 4xx details", async () => {
             "No se pudieron cargar los datos",
         ),
         /Not enough permissions/,
+    );
+});
+
+test("assertApiResponseOk preserves structured business error codes", async () => {
+    await assert.rejects(
+        assertApiResponseOk(
+            jsonResponse(
+                {
+                    detail: {
+                        code: "USER_HAS_RELATED_DATA",
+                        message: "Safe business message",
+                    },
+                },
+                { status: 409 },
+            ),
+            "Default",
+        ),
+        (error: unknown) => {
+            assert.ok(error instanceof ApiResponseError);
+            assert.equal(error.status, 409);
+            assert.equal(error.code, "USER_HAS_RELATED_DATA");
+            assert.equal(error.message, "Safe business message");
+            return true;
+        },
     );
 });
 

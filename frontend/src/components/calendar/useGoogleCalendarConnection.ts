@@ -16,16 +16,20 @@ interface ConnectionMessages {
     syncError: string;
     syncSuccess: string;
     unconfigured: string;
+    ownershipRequested: string;
+    ownershipRequestError: string;
+    ownershipApproved: string;
+    ownershipRejected: string;
 }
 
 interface ConnectionOptions {
-    canManage: boolean;
+    canLoadStatus: boolean;
     messages: ConnectionMessages;
     onTasksChanged: () => Promise<void> | void;
 }
 
 export function useGoogleCalendarConnection({
-    canManage,
+    canLoadStatus,
     messages,
     onTasksChanged,
 }: ConnectionOptions) {
@@ -34,9 +38,11 @@ export function useGoogleCalendarConnection({
     const [syncing, setSyncing] = useState(false);
     const [connecting, setConnecting] = useState(false);
     const [disconnecting, setDisconnecting] = useState(false);
+    const [requestingOwnership, setRequestingOwnership] = useState(false);
+    const [reviewingRequestId, setReviewingRequestId] = useState<number | null>(null);
 
     const loadStatus = useCallback(async () => {
-        if (!canManage) {
+        if (!canLoadStatus) {
             setLoading(false);
             return;
         }
@@ -47,7 +53,7 @@ export function useGoogleCalendarConnection({
         } finally {
             setLoading(false);
         }
-    }, [canManage]);
+    }, [canLoadStatus]);
 
     useEffect(() => {
         startTransition(() => {
@@ -71,7 +77,7 @@ export function useGoogleCalendarConnection({
     }, [loadStatus, messages.connectedSuccess, messages.connectionError]);
 
     const connect = async () => {
-        if (!canManage) return;
+        if (!status?.can_connect) return;
         if (status && (!status.enabled || !status.configured)) {
             toast.error(messages.unconfigured);
             return;
@@ -88,7 +94,7 @@ export function useGoogleCalendarConnection({
     };
 
     const sync = async () => {
-        if (!canManage) return;
+        if (!status?.can_sync) return;
         setSyncing(true);
         try {
             const result = await CalendarService.sync();
@@ -107,7 +113,7 @@ export function useGoogleCalendarConnection({
     };
 
     const disconnect = async () => {
-        if (!canManage) return;
+        if (!status?.can_disconnect) return;
         setDisconnecting(true);
         try {
             await CalendarService.disconnectGoogle();
@@ -122,6 +128,49 @@ export function useGoogleCalendarConnection({
         }
     };
 
+    const requestOwnership = async () => {
+        if (!status?.can_request_ownership) return;
+        setRequestingOwnership(true);
+        try {
+            await CalendarService.requestOwnership();
+            toast.success(messages.ownershipRequested);
+            await loadStatus();
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : messages.ownershipRequestError,
+            );
+        } finally {
+            setRequestingOwnership(false);
+        }
+    };
+
+    const reviewOwnership = async (
+        requestId: number,
+        decision: "approve" | "reject",
+    ) => {
+        if (!status?.is_owner) return;
+        setReviewingRequestId(requestId);
+        try {
+            await CalendarService.reviewOwnership(requestId, decision);
+            toast.success(
+                decision === "approve"
+                    ? messages.ownershipApproved
+                    : messages.ownershipRejected,
+            );
+            await loadStatus();
+        } catch (error) {
+            toast.error(
+                error instanceof Error
+                    ? error.message
+                    : messages.ownershipRequestError,
+            );
+        } finally {
+            setReviewingRequestId(null);
+        }
+    };
+
     return {
         connect,
         connecting,
@@ -129,6 +178,10 @@ export function useGoogleCalendarConnection({
         disconnecting,
         loadStatus,
         loading,
+        requestOwnership,
+        requestingOwnership,
+        reviewOwnership,
+        reviewingRequestId,
         status,
         sync,
         syncing,

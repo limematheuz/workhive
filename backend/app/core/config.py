@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     WORKER_INVITATION_EXPIRE_HOURS: int = 72
     CONTACT_RATE_LIMIT: int = 5
     INVOICE_EMAIL_RATE_LIMIT: int = 10
+    CALENDAR_OAUTH_RATE_LIMIT: int = 10
+    CALENDAR_OWNERSHIP_REQUEST_RATE_LIMIT: int = 5
     ALLOW_PUBLIC_REGISTRATION: bool = False
     ENVIRONMENT: str = "development"
     FRONTEND_URL: str = "http://localhost:3000"
