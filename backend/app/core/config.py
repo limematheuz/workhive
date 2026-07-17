@@ -1,9 +1,12 @@
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.build_info import GIT_SHA_PATTERN, SEMVER_PATTERN
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "WorkHive Enterprise"
-    VERSION: str = "1.1.0"
+    APP_VERSION: str = "1.1.0"
+    GIT_SHA: str = "unknown"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str
     MIGRATION_DATABASE_URL: str | None = None
@@ -102,6 +105,22 @@ class Settings(BaseSettings):
         if value != "HS256":
             raise ValueError("Only HS256 is supported")
         return value
+
+    @field_validator("APP_VERSION")
+    @classmethod
+    def validate_app_version(cls, value: str) -> str:
+        normalized = value.strip()
+        if not SEMVER_PATTERN.fullmatch(normalized):
+            raise ValueError("APP_VERSION must use semantic versioning")
+        return normalized
+
+    @field_validator("GIT_SHA")
+    @classmethod
+    def validate_git_sha(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized != "unknown" and not GIT_SHA_PATTERN.fullmatch(normalized):
+            raise ValueError("GIT_SHA must be unknown or a 7-40 character hexadecimal SHA")
+        return normalized
 
     @field_validator("SESSION_COOKIE_SAMESITE")
     @classmethod

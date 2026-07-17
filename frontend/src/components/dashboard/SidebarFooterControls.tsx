@@ -1,5 +1,7 @@
 "use client";
 
+import { publicBuildInfo } from "@/lib/build-info";
+
 type SidebarFooterControlsProps = {
     isOpen: boolean;
     theme: "dark" | "light";
@@ -83,6 +85,15 @@ export function SidebarFooterControls({
                         </button>
                     </div>
                 </div>
+            )}
+
+            {isOpen && (
+                <p
+                    className="px-2 text-[10px] font-medium tracking-wide text-[var(--text-muted)]/70"
+                    title={`WorkHive ${publicBuildInfo.label}`}
+                >
+                    {publicBuildInfo.label}
+                </p>
             )}
 
             <button

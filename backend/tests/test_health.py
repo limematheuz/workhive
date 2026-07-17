@@ -11,6 +11,10 @@ def test_health_and_readiness_include_request_id(client):
     assert health.status_code == 200
     assert health.headers["X-Request-ID"] == "health-check-1"
     assert health.json()["status"] == "ok"
+    assert health.json()["build"] == {
+        "version": "1.1.0",
+        "revision": "unknown",
+    }
 
     readiness = client.get("/health/ready")
     assert readiness.status_code == 200
