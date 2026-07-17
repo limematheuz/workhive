@@ -1,0 +1,12 @@
+[Unit]
+Description=Run the WorkHive production backup every Sunday
+
+[Timer]
+OnCalendar=Sun *-*-* 02:30:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+AccuracySec=1m
+Unit=workhive-backup.service
+
+[Install]
+WantedBy=timers.target
