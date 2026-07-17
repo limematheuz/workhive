@@ -4,7 +4,7 @@ from html import escape
 from pathlib import Path
 
 from app.services.email_service import transport
-from app.services.email_service.layout import _BRAND, base_layout
+from app.services.email_service.layout import _BRAND, base_layout, plain_body
 
 
 def send_invoice_email(
@@ -24,7 +24,9 @@ def send_invoice_email(
     b = _BRAND
     is_english = locale == "en"
     copy = {
-        "billing_details": "Billing details" if is_english else "Detalles de facturación",
+        "billing_details": "Billing details"
+        if is_english
+        else "Detalles de facturación",
         "document_number": "Document No." if is_english else "Nº de documento",
         "issuer": "Issuer" if is_english else "Emisor",
         "message": "Message" if is_english else "Mensaje",
@@ -39,9 +41,9 @@ def send_invoice_email(
             else f"Adjuntamos {document_label.lower()} {invoice_number} emitida por {issuer_name}."
         ),
         "lead": (
-            "Hi <strong style=\"color:{text};\">{recipient}</strong>, we are sending the attached PDF document."
+            'Hi <strong style="color:{text};">{recipient}</strong>, we are sending the attached PDF document.'
             if is_english
-            else "Hola <strong style=\"color:{text};\">{recipient}</strong>, te enviamos el documento adjunto en PDF."
+            else 'Hola <strong style="color:{text};">{recipient}</strong>, te enviamos el documento adjunto en PDF.'
         ),
         "plain_greeting": "Hi" if is_english else "Hola",
         "plain_footer": (
@@ -72,49 +74,49 @@ def send_invoice_email(
 
     html_body = base_layout(
         f"""
-<h1 class="email-h1 email-text-break" style="margin:0 0 12px;font-size:30px;line-height:36px;font-weight:800;color:{b['text']};text-align:center;overflow-wrap:anywhere;word-break:break-word;">
+<h1 class="email-h1 email-text-break" style="margin:0 0 12px;font-size:30px;line-height:36px;font-weight:800;color:{b["text"]};text-align:center;overflow-wrap:anywhere;word-break:break-word;">
   {safe_document_label} {safe_invoice_number}
 </h1>
-<p class="email-lead email-text-break" style="margin:0 0 30px;font-size:16px;color:{b['muted']};text-align:center;line-height:25px;overflow-wrap:anywhere;word-break:break-word;">
+<p class="email-lead email-text-break" style="margin:0 0 30px;font-size:16px;color:{b["muted"]};text-align:center;line-height:25px;overflow-wrap:anywhere;word-break:break-word;">
   {copy["lead"].format(text=b["text"], recipient=safe_recipient_name)}
 </p>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border:1px solid {b['divider']};border-radius:12px;overflow:hidden;background-color:#ffffff;table-layout:fixed;">
-<tr style="background-color:#f9fafb;">
-  <td colspan="2" class="email-section-title" style="padding:14px 20px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:{b['muted']};border-bottom:1px solid {b['divider']};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border:1px solid {b["divider"]};border-radius:12px;overflow:hidden;background-color:{b["card"]};table-layout:fixed;">
+<tr style="background-color:{b["inset_bg"]};">
+  <td colspan="2" class="email-section-title" style="padding:14px 20px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.07em;color:{b["muted"]};border-bottom:1px solid {b["divider"]};">
     {copy["billing_details"]}
   </td>
 </tr>
 <tr>
-  <td class="email-detail-label" style="padding:16px 20px;font-size:14px;font-weight:700;color:{b['muted']};width:150px;vertical-align:top;border-bottom:1px solid {b['divider']};">{copy["document_number"]}:</td>
-  <td class="email-detail-value email-text-break" style="padding:16px 20px;font-size:16px;color:{b['text']};border-bottom:1px solid {b['divider']};font-weight:800;overflow-wrap:anywhere;word-break:break-word;">{safe_invoice_number}</td>
+  <td class="email-detail-label" style="padding:16px 20px;font-size:14px;font-weight:700;color:{b["muted"]};width:150px;vertical-align:top;border-bottom:1px solid {b["divider"]};">{copy["document_number"]}:</td>
+  <td class="email-detail-value email-text-break" style="padding:16px 20px;font-size:16px;color:{b["text"]};border-bottom:1px solid {b["divider"]};font-weight:800;overflow-wrap:anywhere;word-break:break-word;">{safe_invoice_number}</td>
 </tr>
 <tr>
-  <td class="email-detail-label" style="padding:16px 20px;font-size:14px;font-weight:700;color:{b['muted']};width:150px;vertical-align:top;">{copy["issuer"]}:</td>
-  <td class="email-detail-value email-text-break" style="padding:16px 20px;font-size:16px;color:{b['text']};font-weight:700;overflow-wrap:anywhere;word-break:break-word;">{safe_issuer_name}</td>
+  <td class="email-detail-label" style="padding:16px 20px;font-size:14px;font-weight:700;color:{b["muted"]};width:150px;vertical-align:top;">{copy["issuer"]}:</td>
+  <td class="email-detail-value email-text-break" style="padding:16px 20px;font-size:16px;color:{b["text"]};font-weight:700;overflow-wrap:anywhere;word-break:break-word;">{safe_issuer_name}</td>
 </tr>
 </table>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border:1px solid {b['accent_border']};border-radius:12px;background-color:{b['accent_soft']};table-layout:fixed;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:26px;border:1px solid {b["accent_border"]};border-radius:12px;background-color:{b["accent_soft"]};table-layout:fixed;">
 <tr>
 <td class="email-message-cell" style="padding:24px 26px;text-align:left;">
-  <p style="margin:0 0 14px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:{b['accent']};">{copy["message"]}:</p>
-  <p class="email-message-body email-text-break" style="margin:0;font-size:16px;color:{b['text']};line-height:26px;overflow-wrap:anywhere;word-break:break-word;">{safe_body_html}</p>
+  <p style="margin:0 0 14px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:{b["accent"]};">{copy["message"]}:</p>
+  <p class="email-message-body email-text-break" style="margin:0;font-size:16px;color:{b["text"]};line-height:26px;overflow-wrap:anywhere;word-break:break-word;">{safe_body_html}</p>
 </td>
 </tr>
 </table>
 
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;border:1px solid {b['divider']};border-radius:12px;background-color:#ffffff;table-layout:fixed;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;border:1px solid {b["divider"]};border-radius:12px;background-color:{b["card"]};table-layout:fixed;">
 <tr>
 <td class="email-file-cell" style="padding:18px 20px;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
   <tr>
     <td width="56" style="vertical-align:top;">
-      <span style="display:inline-block;width:46px;height:46px;border-radius:12px;background-color:#fee2e2;color:#dc2626;font-size:11px;line-height:46px;text-align:center;font-weight:900;">PDF</span>
+      <span style="display:inline-block;width:46px;height:46px;border-radius:12px;background-color:{b["accent_soft"]};color:{b["accent"]};font-size:11px;line-height:46px;text-align:center;font-weight:900;border:1px solid {b["accent_border"]};">PDF</span>
     </td>
     <td style="vertical-align:middle;">
-      <p class="email-file-name email-text-break" style="margin:0 0 4px;font-size:15px;font-weight:800;color:{b['text']};overflow-wrap:anywhere;word-break:break-word;">{safe_invoice_number}.pdf</p>
-      <p style="margin:0;font-size:13px;line-height:20px;color:{b['muted']};">
+      <p class="email-file-name email-text-break" style="margin:0 0 4px;font-size:15px;font-weight:800;color:{b["text"]};overflow-wrap:anywhere;word-break:break-word;">{safe_invoice_number}.pdf</p>
+      <p style="margin:0;font-size:13px;line-height:20px;color:{b["muted"]};">
         {copy["attachment"]}
       </p>
     </td>
@@ -128,16 +130,21 @@ def send_invoice_email(
         locale=locale,
     )
 
-    plain_text = "\n".join([
-        f"{copy['plain_greeting']} {recipient_name},",
-        "",
-        body_text,
-        "",
-        copy["plain_footer"],
-    ])
+    plain_text = plain_body(
+        [
+            f"{copy['plain_greeting']} {recipient_name},",
+            "",
+            body_text,
+            "",
+            copy["plain_footer"],
+        ],
+        locale=locale,
+    )
 
     message = EmailMessage()
-    message["Subject"] = subject or f"{document_label_text} {invoice_number} - {issuer_name}"
+    message["Subject"] = (
+        subject or f"{document_label_text} {invoice_number} - {issuer_name}"
+    )
     message["From"] = transport.from_address(copy["from_concept"])
     message["To"] = ", ".join(recipients)
     cc_recipients = list(copy_emails or [])

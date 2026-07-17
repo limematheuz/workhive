@@ -1,4 +1,4 @@
-from tests.email_service.helpers import capture_send, html_body
+from tests.email_service.helpers import capture_send, html_body, plain_body
 
 from app.services.email_service import auth_emails
 
@@ -51,7 +51,11 @@ def test_email_changed_notice_escapes_dynamic_values(monkeypatch):
         new_email="new+<tag>@example.com",
     )
 
-    html = html_body(delivered["message"])
+    message = delivered["message"]
+    html = html_body(message)
     assert "&lt;User&gt;" in html
     assert "new+&lt;tag&gt;@example.com" in html
     assert "sesiones anteriores" in html
+    assert 'href="http://localhost:3000/contact"' in html
+    assert "contacta con soporte</a>." in html
+    assert "Soporte: http://localhost:3000/contact" in plain_body(message)
