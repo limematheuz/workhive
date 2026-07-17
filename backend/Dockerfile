@@ -1,5 +1,10 @@
 FROM python:3.12-slim
 
+ARG APP_VERSION=1.1.0
+ARG GIT_SHA=unknown
+ENV APP_VERSION=$APP_VERSION
+ENV GIT_SHA=$GIT_SHA
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xmlsec1 \
     && rm -rf /var/lib/apt/lists/*

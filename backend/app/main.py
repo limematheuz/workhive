@@ -15,6 +15,7 @@ from contextlib import asynccontextmanager
 from app.api.deps import get_db
 from app.api.v1.router import api_router
 from app.core.config import settings
+from app.core.build_info import build_info
 from app.core.logging import configure_logging
 from app.db import base as _models  # noqa: F401 - registers SQLAlchemy models
 from app.db.async_session import async_engine
@@ -49,7 +50,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="WorkHive API",
     description="API for the WorkHive management system",
-    version=settings.VERSION,
+    version=settings.APP_VERSION,
     docs_url=None if settings.is_production else "/docs",
     redoc_url=None if settings.is_production else "/redoc",
     openapi_url=None if settings.is_production else "/openapi.json",
@@ -207,7 +208,12 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/health", tags=["System"])
 async def health_check():
     return JSONResponse(
-        content={"status": "ok", "message": "WorkHive API is running"}, status_code=200
+        content={
+            "status": "ok",
+            "message": "WorkHive API is running",
+            "build": build_info(settings.APP_VERSION, settings.GIT_SHA),
+        },
+        status_code=200,
     )
 
 @app.get("/health/ready", tags=["System"])

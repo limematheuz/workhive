@@ -947,7 +947,7 @@ The migration is not complete until all of the following are true:
 - [x] Allowed and denied IAM operations tested.
 - [x] Weekly automated backup timer installed.
 - [x] First automated S3 backup completed and verified.
-- [ ] Application semantic versioning and SHA metadata.
+- [x] Application semantic versioning and SHA metadata.
 - [ ] Private backend/frontend ECR repositories.
 - [ ] GitHub Actions OIDC role.
 - [ ] Reproducible image build and publication workflow.

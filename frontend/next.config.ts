@@ -1,9 +1,15 @@
 import type { NextConfig } from "next";
+import packageMetadata from "./package.json";
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   output: "standalone",
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  env: {
+    NEXT_PUBLIC_APP_VERSION:
+      process.env.NEXT_PUBLIC_APP_VERSION || packageMetadata.version,
+    NEXT_PUBLIC_GIT_SHA: process.env.NEXT_PUBLIC_GIT_SHA || "unknown",
+  },
   skipTrailingSlashRedirect: true,
   turbopack: {
     root: process.cwd(),

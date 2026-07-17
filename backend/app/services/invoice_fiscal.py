@@ -217,7 +217,7 @@ def _software_identity(company: Company) -> dict:
         "producer_tax_id": producer_tax_id,
         "software_name": settings.PROJECT_NAME,
         "software_id": settings.VERIFACTU_SOFTWARE_ID,
-        "software_version": settings.VERSION,
+        "software_version": settings.APP_VERSION,
         "installation_id": (
             f"{settings.VERIFACTU_INSTALLATION_ID}-{company.id}"
         ),
