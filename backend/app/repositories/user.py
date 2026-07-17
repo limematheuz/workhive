@@ -1,6 +1,13 @@
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload, with_loader_criteria
+from app.models.calendar_governance import CompanyCalendarSettings
+from app.models.expense import Expense
+from app.models.google_calendar_connection import GoogleCalendarConnection
+from app.models.reservation import Reservation
 from app.models.role import Role
+from app.models.task_item import TaskItem
+from app.models.trial_request import TrialRequest
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.schemas.user import UserCreate, UserUpdate
@@ -85,3 +92,32 @@ def update_user(db: Session, db_user: User, user_data: UserUpdate) -> User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def has_protected_user_data(db: Session, user_id: int) -> bool:
+    """Return whether deleting a user would remove or orphan business history."""
+    protected_references = (
+        (TaskItem, TaskItem.user_id),
+        (TaskItem, TaskItem.accepted_by_user_id),
+        (WorkSession, WorkSession.user_id),
+        (Expense, Expense.created_by_user_id),
+        (Reservation, Reservation.created_by_user_id),
+        (Reservation, Reservation.updated_by_user_id),
+        (TrialRequest, TrialRequest.approved_by_user_id),
+        (TrialRequest, TrialRequest.created_user_id),
+        (GoogleCalendarConnection, GoogleCalendarConnection.connected_by_user_id),
+        (CompanyCalendarSettings, CompanyCalendarSettings.owner_user_id),
+    )
+    return any(
+        db.query(model).filter(column == user_id).first() is not None
+        for model, column in protected_references
+    )
+
+
+def delete_user(db: Session, db_user: User) -> None:
+    db.delete(db_user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise

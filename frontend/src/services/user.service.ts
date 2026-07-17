@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { buildWorkerInvitationPayload } from "@/lib/user-invitation";
 import { UserStatsResponse, WorkSession, TaskItem, User } from "@/types/user";
 
@@ -118,9 +118,6 @@ export const UserService = {
         const response = await apiFetch(`/api/v1/users/${id}`, {
             method: "DELETE",
         });
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || "Error deleting user");
-        }
+        await assertApiResponseOk(response, "No se pudo eliminar el usuario");
     }
 };

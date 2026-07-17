@@ -8,7 +8,6 @@ cffi==2.0.0
 click==8.3.3
 cryptography==48.0.1
 dnspython==2.8.0
-ecdsa==0.19.2
 email-validator==2.3.0
 fastapi==0.137.1
 greenlet==3.5.3
@@ -24,17 +23,15 @@ packaging==26.0
 Pillow==12.3.0
 aiosqlite==0.22.1
 psycopg[binary]==3.3.4
-pyasn1==0.6.3
 pycparser==3.0
 pydantic==2.10.6
 pydantic-settings==2.7.1
 pydantic_core==2.27.2
 python-dotenv==1.2.2
-python-jose==3.5.0
 python-multipart==0.0.32
+PyJWT==2.13.0
 PyYAML==6.0.3
 reportlab==4.5.1
-rsa==4.9.1
 signxml==4.5.1
 six==1.17.0
 SQLAlchemy==2.0.48

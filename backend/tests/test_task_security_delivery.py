@@ -78,7 +78,7 @@ def _task_ids(response) -> set[int]:
 @pytest.fixture(autouse=True)
 def _skip_calendar_background(monkeypatch):
     monkeypatch.setattr(
-        "app.api.v1.task_items.sync_user_calendar",
+        "app.api.v1.task_items.sync_company_calendar",
         lambda *args, **kwargs: None,
     )
 

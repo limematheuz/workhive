@@ -18,7 +18,6 @@ import { TaskItem, User } from "@/types/user";
 import { TaskService } from "@/services/task.service";
 import { CalendarTaskDetailDialog } from "./CalendarTaskDetailDialog";
 import {
-    canConnectCompanyCalendar,
     canManageCompanyCalendar,
     canViewCompanyCalendar,
 } from "@/domain/access/roles";
@@ -55,7 +54,6 @@ export function CompanyCalendar({
     const calendarDict = dict.calendar;
     const canView = canViewCompanyCalendar(currentUser);
     const canEdit = canManageCompanyCalendar(currentUser);
-    const canConnect = canConnectCompanyCalendar(currentUser);
     const [calendarTitle, setCalendarTitle] = useState("");
     const [calendarView, setCalendarView] = useState("timeGridWeek");
     const [locationFilter, setLocationFilter] = useState("");
@@ -64,7 +62,7 @@ export function CompanyCalendar({
     const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
     const dateLocale = locale === "es" ? "es-ES" : "en-US";
     const googleCalendar = useGoogleCalendarConnection({
-        canManage: canConnect,
+        canLoadStatus: canView,
         onTasksChanged,
         messages: {
             connectedSuccess: calendarDict.connected_success,
@@ -74,6 +72,10 @@ export function CompanyCalendar({
             syncError: calendarDict.sync_error,
             syncSuccess: calendarDict.sync_success,
             unconfigured: "Google Calendar no está configurado en el backend.",
+            ownershipRequested: calendarDict.ownership_requested,
+            ownershipRequestError: calendarDict.ownership_request_error,
+            ownershipApproved: calendarDict.ownership_approved,
+            ownershipRejected: calendarDict.ownership_rejected,
         },
     });
 
@@ -194,16 +196,21 @@ export function CompanyCalendar({
         <div className="space-y-5">
             <CalendarHeader
                 calendarDict={calendarDict}
-                canConnect={canConnect}
                 status={googleCalendar.status}
                 loading={googleCalendar.loading}
                 connecting={googleCalendar.connecting}
                 syncing={googleCalendar.syncing}
                 disconnecting={googleCalendar.disconnecting}
+                requestingOwnership={googleCalendar.requestingOwnership}
+                reviewingRequestId={googleCalendar.reviewingRequestId}
                 lastError={googleCalendar.status?.last_error}
                 onConnect={googleCalendar.connect}
                 onSync={googleCalendar.sync}
                 onDisconnectRequest={() => setDisconnectDialogOpen(true)}
+                onRequestOwnership={() => { void googleCalendar.requestOwnership(); }}
+                onReviewOwnership={(requestId, decision) => {
+                    void googleCalendar.reviewOwnership(requestId, decision);
+                }}
             />
 
             <section className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 shadow-sm md:p-5">

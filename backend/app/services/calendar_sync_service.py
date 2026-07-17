@@ -1,10 +1,10 @@
+import logging
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
-from jose import JWTError
+from fastapi import HTTPException
+from jwt.exceptions import PyJWTError
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.integrations.google import calendar_client
 from app.integrations.google.calendar_client import GoogleCalendarError
 from app.integrations.google.token_crypto import encrypt_token
@@ -25,56 +25,15 @@ from app.services.calendar_sync_payload import (
 )
 from app.services import calendar_sync_repository as sync_repo
 from app.services import security_token_service
+from app.services import calendar_governance_service
 
 
-def connection_status(
-    db: Session,
-    company_id: int,
-    user_id: int,
-    *,
-    include_company_connections: bool = False,
-) -> dict:
-    user_connection = sync_repo.connection(db, company_id, user_id)
-    company_connections = (
-        sync_repo.connections(db, company_id) if include_company_connections else []
-    )
-    pending_jobs = sync_repo.pending_job_count(db, company_id)
-    configured = bool(
-        settings.GOOGLE_CALENDAR_CLIENT_ID
-        and settings.GOOGLE_CALENDAR_CLIENT_SECRET
-    )
-    return {
-        "enabled": settings.GOOGLE_CALENDAR_ENABLED,
-        "configured": configured,
-        "connected": bool(user_connection and user_connection.status == "connected"),
-        "status": user_connection.status if user_connection else "disconnected",
-        "user_id": user_id,
-        "google_account_email": (
-            user_connection.google_account_email if user_connection else None
-        ),
-        "calendar_name": user_connection.calendar_name if user_connection else None,
-        "last_sync_at": user_connection.last_sync_at if user_connection else None,
-        "last_error": user_connection.last_error if user_connection else None,
-        "pending_jobs": pending_jobs,
-        "connected_users": [
-            {
-                "user_id": item.owner_user_id,
-                "google_account_email": item.google_account_email,
-                "calendar_name": item.calendar_name,
-                "status": item.status,
-                "last_sync_at": item.last_sync_at,
-            }
-            for item in company_connections
-        ],
-    }
+logger = logging.getLogger("workhive.calendar")
 
 
-def oauth_authorization_url(current_user: User) -> str:
-    if not settings.GOOGLE_CALENDAR_ENABLED:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Google Calendar integration is disabled",
-        )
+def oauth_authorization_url(db: Session, current_user: User) -> str:
+    calendar_governance_service.require_company_calendar_available(db)
+    calendar_governance_service.require_company_calendar_owner(db, current_user)
     return calendar_client.authorization_url(
         company_id=current_user.company_id,
         user_id=current_user.id,
@@ -89,7 +48,7 @@ def complete_oauth(
 ) -> GoogleCalendarConnection:
     try:
         state_data = calendar_client.decode_oauth_state(state)
-    except (JWTError, ValueError) as exc:
+    except (PyJWTError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="Invalid OAuth state") from exc
 
     expires_at = state_data.get("exp")
@@ -112,12 +71,15 @@ def complete_oauth(
     if not company or not user or user.company_id != company.id:
         raise HTTPException(status_code=400, detail="OAuth company is unavailable")
 
+    calendar_governance_service.require_company_calendar_available(db)
+    calendar_governance_service.require_company_calendar_owner(db, user)
+
     tokens = calendar_client.exchange_authorization_code(code)
     access_token = tokens["access_token"]
+    encrypted_access_token = encrypt_token(access_token)
     account_email = calendar_client.google_account_email(access_token)
-    existing = sync_repo.connection(db, company.id, user.id)
-    user_label = user.full_name or user.email
-    calendar_name = f"WorkHive - {company.name} - {user_label}"[:255]
+    existing = sync_repo.connection(db, company.id)
+    calendar_name = f"WorkHive - {company.name}"[:255]
     if existing:
         connection = existing
     else:
@@ -131,13 +93,13 @@ def complete_oauth(
             connected_by_user_id=user.id,
             calendar_id=calendar["id"],
             calendar_name=calendar_name,
-            access_token_encrypted="",
+            access_token_encrypted=encrypted_access_token,
         )
     connection.connected_by_user_id = user.id
     connection.owner_user_id = user.id
     connection.calendar_name = calendar_name
     connection.google_account_email = account_email
-    connection.access_token_encrypted = encrypt_token(access_token)
+    connection.access_token_encrypted = encrypted_access_token
     if tokens.get("refresh_token"):
         connection.refresh_token_encrypted = encrypt_token(tokens["refresh_token"])
     connection.token_expires_at = datetime.now(timezone.utc) + timedelta(
@@ -152,20 +114,24 @@ def complete_oauth(
 
     tasks = db.query(TaskItem).filter(TaskItem.company_id == company.id).all()
     for task in tasks:
-        if user.id in get_target_user_ids(task):
-            enqueue_task_sync(db, task)
+        enqueue_task_sync(db, task)
     return connection
 
 
-def disconnect(db: Session, company_id: int, user_id: int) -> None:
-    user_connection = sync_repo.connection(db, company_id, user_id)
+def disconnect(db: Session, current_user: User) -> None:
+    calendar_governance_service.require_company_calendar_owner(db, current_user)
+    company_id = current_user.company_id
+    if company_id is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Company calendar access is not permitted",
+        )
+    user_connection = sync_repo.connection(db, company_id)
     db.query(CalendarSyncJob).filter(
         CalendarSyncJob.company_id == company_id,
-        CalendarSyncJob.user_id == user_id,
     ).delete(synchronize_session=False)
     db.query(TaskCalendarEvent).filter(
         TaskCalendarEvent.company_id == company_id,
-        TaskCalendarEvent.user_id == user_id,
     ).delete(synchronize_session=False)
     if user_connection:
         db.delete(user_connection)
@@ -393,8 +359,8 @@ def process_outbox(
     for job in jobs:
         if job.next_attempt_at and utc(job.next_attempt_at) > now:
             continue
-        user_connection = sync_repo.connection(db, company_id, job.user_id)
-        if not user_connection:
+        user_connection = sync_repo.connection(db, company_id)
+        if not user_connection or user_connection.owner_user_id != job.user_id:
             job.status = "done"
             job.last_error = None
             db.add(job)
@@ -409,14 +375,12 @@ def process_outbox(
             db.commit()
         except (GoogleCalendarError, ValueError) as exc:
             db.rollback()
-            job = db.query(CalendarSyncJob).filter(
-                CalendarSyncJob.id == job.id
-            ).one()
+            job = db.query(CalendarSyncJob).filter(CalendarSyncJob.id == job.id).one()
             job.attempt_count += 1
             job.status = "retry"
             job.last_error = str(exc)[:2000]
             job.next_attempt_at = now + timedelta(
-                minutes=min(2 ** job.attempt_count, 24 * 60)
+                minutes=min(2**job.attempt_count, 24 * 60)
             )
             db.add(job)
             db.commit()
@@ -475,18 +439,26 @@ def _import_event(
 
     if not task_id:
         # Check if we already have a mapping for this event_id
-        mapping = db.query(TaskCalendarEvent).filter(
-            TaskCalendarEvent.external_event_id == event["id"],
-            TaskCalendarEvent.company_id == connection.company_id,
-            TaskCalendarEvent.user_id == connection.owner_user_id
-        ).first()
+        mapping = (
+            db.query(TaskCalendarEvent)
+            .filter(
+                TaskCalendarEvent.external_event_id == event["id"],
+                TaskCalendarEvent.company_id == connection.company_id,
+                TaskCalendarEvent.user_id == connection.owner_user_id,
+            )
+            .first()
+        )
 
         if event.get("status") == "cancelled":
             if mapping:
-                task = db.query(TaskItem).filter(
-                    TaskItem.id == mapping.task_id,
-                    TaskItem.company_id == connection.company_id
-                ).first()
+                task = (
+                    db.query(TaskItem)
+                    .filter(
+                        TaskItem.id == mapping.task_id,
+                        TaskItem.company_id == connection.company_id,
+                    )
+                    .first()
+                )
                 if task:
                     db.delete(task)
                 db.delete(mapping)
@@ -494,10 +466,14 @@ def _import_event(
             return False
 
         # Find location
-        location = db.query(Location).filter(
-            (Location.managing_company_id == connection.company_id) |
-            (Location.owner_company_id == connection.company_id)
-        ).first()
+        location = (
+            db.query(Location)
+            .filter(
+                (Location.managing_company_id == connection.company_id)
+                | (Location.owner_company_id == connection.company_id)
+            )
+            .first()
+        )
         if not location:
             location = Location(
                 name="General / Google Calendar",
@@ -513,10 +489,14 @@ def _import_event(
         due = parse_google_datetime(event.get("end"))
 
         if mapping:
-            task = db.query(TaskItem).filter(
-                TaskItem.id == mapping.task_id,
-                TaskItem.company_id == connection.company_id
-            ).first()
+            task = (
+                db.query(TaskItem)
+                .filter(
+                    TaskItem.id == mapping.task_id,
+                    TaskItem.company_id == connection.company_id,
+                )
+                .first()
+            )
             if not task:
                 return False
             task.title = event.get("summary") or "Tarea importada de Google Calendar"
@@ -573,10 +553,17 @@ def _import_event(
                                 "workhive_user_id": str(connection.owner_user_id),
                             }
                         }
-                    }
+                    },
                 )
-            except Exception:
-                pass
+            except GoogleCalendarError as exc:
+                logger.warning(
+                    "Imported Google event could not be linked remotely",
+                    extra={
+                        "company_id": connection.company_id,
+                        "event_id": event["id"],
+                        "detail": str(exc),
+                    },
+                )
             return True
 
     if company_id != str(connection.company_id):
@@ -618,9 +605,7 @@ def _import_event(
         )
         return True
 
-    google_updated = datetime.fromisoformat(
-        event["updated"].replace("Z", "+00:00")
-    )
+    google_updated = datetime.fromisoformat(event["updated"].replace("Z", "+00:00"))
     if mapping and mapping.google_updated_at:
         previous = utc(mapping.google_updated_at)
         if previous and google_updated <= previous:

@@ -5,7 +5,7 @@ from app.models.role import Role
 from app.models.user import User
 
 
-CALENDAR_OWNER_ROLES = ("admin", "manager", "superadmin")
+CALENDAR_OWNER_ROLES = ("admin",)
 
 
 def resolve_calendar_owner_user_id(

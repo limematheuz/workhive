@@ -1,12 +1,19 @@
 from datetime import datetime, timezone
 
-from jose import jwt
+import jwt
 
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.company import Company
 from app.models.user import User
-from credentials import TEST_NEW, TEST_OLD, TEST_SECRET, login_form, CREDENTIAL_FIELD, NEW_CREDENTIAL_FIELD
+from credentials import (
+    TEST_NEW,
+    TEST_OLD,
+    TEST_SECRET,
+    login_form,
+    CREDENTIAL_FIELD,
+    NEW_CREDENTIAL_FIELD,
+)
 
 
 def test_register_user(client):

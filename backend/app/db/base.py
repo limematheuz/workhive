@@ -25,6 +25,11 @@ from app.models.company_fiscal_settings import CompanyFiscalSettings
 from app.models.invoice_email_contact import InvoiceEmailContact
 from app.models.audit_log import AuditLog
 from app.models.google_calendar_connection import GoogleCalendarConnection
+from app.models.calendar_governance import (
+    CalendarOwnershipRequest,
+    CompanyCalendarSettings,
+    PlatformCalendarConfig,
+)
 from app.models.task_calendar_event import TaskCalendarEvent
 from app.models.calendar_sync_job import CalendarSyncJob
 from app.models.privacy_consent import PrivacyConsent

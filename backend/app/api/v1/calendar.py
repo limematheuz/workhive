@@ -1,23 +1,66 @@
 import logging
 from urllib.parse import urlencode
 
-from fastapi import APIRouter, Depends, Query, Request
+from fastapi import APIRouter, Depends, Query, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveUser, get_db
 from app.core.config import settings
+from app.core.rate_limit import rate_limit_key, rate_limiter
 from app.models.user import User
 from app.schemas.calendar import (
     CalendarConnectionStatus,
     CalendarOAuthStartResponse,
+    CalendarOwnershipRequestResponse,
     CalendarSyncResponse,
+    PlatformCalendarStatus,
+    PlatformCalendarUpdate,
 )
-from app.services import audit_service, calendar_sync_service
+from app.services import (
+    audit_service,
+    calendar_governance_service,
+    calendar_sync_service,
+)
 
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+@router.get("/platform/status", response_model=PlatformCalendarStatus)
+def read_platform_calendar_status(
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    return calendar_governance_service.platform_status(db, current_user)
+
+
+@router.patch("/platform/status", response_model=PlatformCalendarStatus)
+def update_platform_calendar_status(
+    payload: PlatformCalendarUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    result = calendar_governance_service.update_platform_status(
+        db,
+        current_user,
+        company_connections_enabled_value=payload.company_connections_enabled,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=None,
+        action="calendar.platform_availability_updated",
+        entity_type="platform_calendar_config",
+        entity_id=1,
+        request=request,
+        details={
+            "company_connections_enabled": payload.company_connections_enabled,
+        },
+    )
+    return result
 
 
 @router.get("/status", response_model=CalendarConnectionStatus)
@@ -25,12 +68,7 @@ def read_calendar_status(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
-    return calendar_sync_service.connection_status(
-        db,
-        current_user.company_id,
-        current_user.id,
-        include_company_connections=current_user.role.name in {"admin", "manager"},
-    )
+    return calendar_governance_service.company_status(db, current_user)
 
 
 @router.post(
@@ -38,13 +76,104 @@ def read_calendar_status(
     response_model=CalendarOAuthStartResponse,
 )
 def start_google_calendar_oauth(
+    request: Request,
+    db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
+    rate_limiter.enforce(
+        rate_limit_key(request, "calendar-oauth", str(current_user.id)),
+        settings.CALENDAR_OAUTH_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
     return {
         "authorization_url": (
-            calendar_sync_service.oauth_authorization_url(current_user)
+            calendar_sync_service.oauth_authorization_url(db, current_user)
         )
     }
+
+
+@router.post(
+    "/ownership-requests",
+    response_model=CalendarOwnershipRequestResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def request_calendar_ownership(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    rate_limiter.enforce(
+        rate_limit_key(request, "calendar-ownership", str(current_user.id)),
+        settings.CALENDAR_OWNERSHIP_REQUEST_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+    )
+    result = calendar_governance_service.request_ownership(db, current_user)
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="calendar.ownership_requested",
+        entity_type="calendar_ownership_request",
+        entity_id=result["id"],
+        request=request,
+    )
+    return result
+
+
+@router.post(
+    "/ownership-requests/{request_id}/approve",
+    response_model=CalendarOwnershipRequestResponse,
+)
+def approve_calendar_ownership(
+    request_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    result = calendar_governance_service.review_ownership_request(
+        db,
+        current_user,
+        request_id,
+        approve=True,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="calendar.ownership_approved",
+        entity_type="calendar_ownership_request",
+        entity_id=request_id,
+        request=request,
+    )
+    return result
+
+
+@router.post(
+    "/ownership-requests/{request_id}/reject",
+    response_model=CalendarOwnershipRequestResponse,
+)
+def reject_calendar_ownership(
+    request_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    result = calendar_governance_service.review_ownership_request(
+        db,
+        current_user,
+        request_id,
+        approve=False,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="calendar.ownership_rejected",
+        entity_type="calendar_ownership_request",
+        entity_id=request_id,
+        request=request,
+    )
+    return result
 
 
 @router.get("/google/callback")
@@ -93,19 +222,24 @@ def sync_google_calendar(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
+    company_id = calendar_governance_service.require_company_calendar_role(
+        current_user,
+        calendar_governance_service.COMPANY_CALENDAR_SYNC_ROLES,
+    )
+    calendar_governance_service.require_company_calendar_available(db)
     result = calendar_sync_service.synchronize(
         db,
-        current_user.company_id,
+        company_id,
         user_id=None,
     )
     if any(result.get(key, 0) for key in ("imported", "exported", "deleted", "failed")):
         audit_service.record_event(
             db,
             actor=current_user,
-            company_id=current_user.company_id,
+            company_id=company_id,
             action="calendar.synchronized",
             entity_type="google_calendar_connection",
-            entity_id=current_user.company_id,
+            entity_id=company_id,
             request=request,
             details={
                 key: value
@@ -122,14 +256,18 @@ def disconnect_google_calendar(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
-    calendar_sync_service.disconnect(db, current_user.company_id, current_user.id)
+    company_id = calendar_governance_service.require_company_calendar_role(
+        current_user,
+        {calendar_governance_service.COMPANY_CALENDAR_ADMIN_ROLE},
+    )
+    calendar_sync_service.disconnect(db, current_user)
     audit_service.record_event(
         db,
         actor=current_user,
-        company_id=current_user.company_id,
+        company_id=company_id,
         action="calendar.disconnected",
         entity_type="google_calendar_connection",
-        entity_id=current_user.company_id,
+        entity_id=company_id,
         request=request,
     )
     return {"status": "disconnected"}

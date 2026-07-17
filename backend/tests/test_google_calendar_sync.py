@@ -1,5 +1,9 @@
 from datetime import datetime, timedelta, timezone
 
+import pytest
+from cryptography.fernet import Fernet
+from fastapi import HTTPException
+
 from app.core.config import settings
 from app.integrations.google import calendar_client
 from app.integrations.google.token_crypto import decrypt_token, encrypt_token
@@ -10,7 +14,7 @@ from app.models.location import Location
 from app.models.task_calendar_event import TaskCalendarEvent
 from app.models.task_item import TaskItem
 from app.models.user import User
-from app.services import calendar_sync_service
+from app.services import calendar_background_service, calendar_sync_service
 
 
 def _calendar_entities(db):
@@ -78,6 +82,64 @@ def test_google_tokens_are_encrypted_at_rest():
 
     assert encrypted != "sensitive-token"
     assert decrypt_token(encrypted) == "sensitive-token"
+
+
+def test_stale_encryption_key_marks_connection_for_reconnect(db):
+    company, _, connection, _ = _calendar_entities(db)
+    foreign_cipher = Fernet(Fernet.generate_key())
+    connection.access_token_encrypted = foreign_cipher.encrypt(
+        b"unreadable-access-token"
+    ).decode("ascii")
+    connection.refresh_token_encrypted = foreign_cipher.encrypt(
+        b"unreadable-refresh-token"
+    ).decode("ascii")
+    db.add(connection)
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        calendar_sync_service.synchronize(db, company.id)
+
+    assert error.value.status_code == 502
+    db.refresh(connection)
+    assert connection.status == "error"
+    assert connection.last_error == "Google Calendar request failed (status 401)"
+    assert "token" not in connection.last_error.lower()
+
+
+def test_company_background_sync_resolves_primary_connection_owner(
+    db,
+    monkeypatch,
+):
+    company, owner, _, _ = _calendar_entities(db)
+    calls = []
+
+    class SessionProxy:
+        def __getattr__(self, name):
+            return getattr(db, name)
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(settings, "GOOGLE_CALENDAR_ENABLED", True)
+    monkeypatch.setattr(
+        calendar_background_service,
+        "SessionLocal",
+        lambda: SessionProxy(),
+    )
+    monkeypatch.setattr(
+        calendar_background_service.calendar_governance_service,
+        "company_calendar_available",
+        lambda _db: True,
+    )
+    monkeypatch.setattr(
+        calendar_sync_service,
+        "synchronize",
+        lambda _db, company_id, user_id: calls.append((company_id, user_id)),
+    )
+
+    calendar_background_service.sync_company_calendar(company.id)
+
+    assert calls == [(company.id, owner.id)]
 
 
 def test_oauth_state_and_authorization_url_are_company_scoped(monkeypatch):
@@ -242,7 +304,7 @@ def test_incremental_google_change_updates_linked_task(db, monkeypatch):
     assert connection.sync_token == "next-sync-token"
 
 
-def test_assignment_change_moves_event_between_user_calendars(db, monkeypatch):
+def test_assignment_change_keeps_event_in_company_calendar(db, monkeypatch):
     company, first_user, _, task = _calendar_entities(db)
     second_user = User(
         email="calendar-manager@test.local",
@@ -254,22 +316,8 @@ def test_assignment_change_moves_event_between_user_calendars(db, monkeypatch):
     db.add(second_user)
     db.commit()
     db.refresh(second_user)
-    db.add(
-        GoogleCalendarConnection(
-            company_id=company.id,
-            connected_by_user_id=second_user.id,
-            owner_user_id=second_user.id,
-            google_account_email=second_user.email,
-            calendar_id="workhive-calendar-manager",
-            calendar_name="WorkHive - Calendar Company - Manager",
-            access_token_encrypted=encrypt_token("access-token-2"),
-            refresh_token_encrypted=encrypt_token("refresh-token-2"),
-            token_expires_at=datetime.now(timezone.utc) + timedelta(hours=1),
-        )
-    )
-    db.commit()
     inserted = []
-    deleted = []
+    updated = []
 
     def insert_event(_db, connection, payload):
         inserted.append((connection.owner_user_id, payload["id"]))
@@ -280,11 +328,17 @@ def test_assignment_change_moves_event_between_user_calendars(db, monkeypatch):
             "updated": "2026-06-15T10:00:00Z",
         }
 
-    def delete_event(_db, connection, event_id):
-        deleted.append((connection.owner_user_id, event_id))
+    def update_event(_db, connection, event_id, payload):
+        updated.append((connection.owner_user_id, event_id, payload["summary"]))
+        return {
+            "id": event_id,
+            "htmlLink": "https://calendar.google.com/event/updated",
+            "etag": "etag-updated",
+            "updated": "2026-06-15T11:00:00Z",
+        }
 
     monkeypatch.setattr(calendar_client, "insert_event", insert_event)
-    monkeypatch.setattr(calendar_client, "delete_event", delete_event)
+    monkeypatch.setattr(calendar_client, "update_event", update_event)
 
     calendar_sync_service.enqueue_task_sync(db, task)
     assert calendar_sync_service.process_outbox(db, company.id)["exported"] == 1
@@ -297,19 +351,18 @@ def test_assignment_change_moves_event_between_user_calendars(db, monkeypatch):
     calendar_sync_service.enqueue_task_sync(db, task)
     result = calendar_sync_service.process_outbox(db, company.id)
 
-    second_event_id = f"a{company.id:08x}{second_user.id:08x}{task.id:08x}"
-    assert result["deleted"] == 1
     assert result["exported"] == 1
-    assert deleted == [(first_user.id, first_event_id)]
-    assert inserted[-1] == (second_user.id, second_event_id)
+    assert result["deleted"] == 0
+    assert inserted == [(first_user.id, first_event_id)]
+    assert updated == [(first_user.id, first_event_id, task.title)]
     assert db.query(TaskCalendarEvent).filter_by(
         task_id=task.id,
         user_id=first_user.id,
-    ).first() is None
+    ).one().external_event_id == first_event_id
     assert db.query(TaskCalendarEvent).filter_by(
         task_id=task.id,
         user_id=second_user.id,
-    ).one().external_event_id == second_event_id
+    ).first() is None
 
 
 def test_task_assigned_to_unconnected_worker_syncs_to_calendar_owner(db, monkeypatch):

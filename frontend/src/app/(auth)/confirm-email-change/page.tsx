@@ -6,6 +6,7 @@ import { AlertTriangle, CheckCircle2, MailCheck } from "lucide-react";
 
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { AuthTopControls } from "@/components/auth/AuthTopControls";
+import { BrandIconWell } from "@/components/ui/brand-icon-well";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { useThemeMode } from "@/lib/theme";
@@ -95,8 +96,8 @@ function ConfirmEmailChangeContent() {
                     ) : (
                         <div className="space-y-6">
                             <div>
-                                <div className="mb-4 inline-flex rounded-xl bg-accent/10 p-3 text-accent">
-                                    <MailCheck className="h-6 w-6" />
+                                <div className="mb-4">
+                                    <BrandIconWell icon={MailCheck} size="lg" iconClassName="h-6 w-6" />
                                 </div>
                                 <h1 className="text-2xl font-black">
                                     {isSpanish ? "Confirmar nuevo correo" : "Confirm new email"}

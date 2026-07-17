@@ -48,6 +48,8 @@ export function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
                 ? (dict.dashboard.live_work || "Fichajes en vivo")
             : pathname.includes("/dashboard/calendar")
                 ? dict.dashboard.calendar
+            : pathname.includes("/dashboard/integrations")
+                ? dict.dashboard.integrations
             : pathname.includes("/dashboard/clients")
                 ? dict.dashboard.clients
                 : pathname.includes("/dashboard/locations")

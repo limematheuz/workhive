@@ -11,13 +11,37 @@ export interface CalendarConnectionStatus {
     last_sync_at?: string | null;
     last_error?: string | null;
     pending_jobs: number;
-    connected_users: Array<{
-        user_id: number;
-        google_account_email?: string | null;
-        calendar_name?: string | null;
-        status: string;
-        last_sync_at?: string | null;
-    }>;
+    owner_user_id: number;
+    owner_name?: string | null;
+    owner_email?: string | null;
+    is_owner: boolean;
+    can_connect: boolean;
+    can_disconnect: boolean;
+    can_sync: boolean;
+    can_request_ownership: boolean;
+    ownership_request_status?: string | null;
+    pending_ownership_requests: CalendarOwnershipRequest[];
+}
+
+export interface CalendarOwnershipRequest {
+    id: number;
+    requester_user_id: number;
+    requester_name?: string | null;
+    requester_email: string;
+    status: string;
+    created_at: string;
+}
+
+export interface PlatformCalendarStatus {
+    environment_enabled: boolean;
+    google_cloud_configured: boolean;
+    company_connections_enabled: boolean;
+    available: boolean;
+    redirect_uri: string;
+    timezone: string;
+    background_sync_enabled: boolean;
+    connected_companies: number;
+    pending_ownership_requests: number;
 }
 
 export interface CalendarSyncResult {
@@ -67,6 +91,55 @@ export const CalendarService = {
         if (!response.ok) {
             throw new Error(await extractErrorMessage(response, "Could not disconnect Google Calendar"));
         }
+    },
+
+    requestOwnership: async (): Promise<CalendarOwnershipRequest> => {
+        const response = await apiFetch("/api/v1/calendar/ownership-requests", {
+            method: "POST",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Could not request calendar control"));
+        }
+        return response.json();
+    },
+
+    reviewOwnership: async (
+        requestId: number,
+        decision: "approve" | "reject",
+    ): Promise<CalendarOwnershipRequest> => {
+        const response = await apiFetch(
+            `/api/v1/calendar/ownership-requests/${requestId}/${decision}`,
+            { method: "POST" },
+        );
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Could not review calendar request"));
+        }
+        return response.json();
+    },
+
+    getPlatformStatus: async (): Promise<PlatformCalendarStatus> => {
+        const response = await apiFetch("/api/v1/calendar/platform/status", {
+            cache: "no-store",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Could not load Google Calendar configuration"));
+        }
+        return response.json();
+    },
+
+    updatePlatformStatus: async (
+        companyConnectionsEnabled: boolean,
+    ): Promise<PlatformCalendarStatus> => {
+        const response = await apiFetch("/api/v1/calendar/platform/status", {
+            method: "PATCH",
+            body: JSON.stringify({
+                company_connections_enabled: companyConnectionsEnabled,
+            }),
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Could not update Google Calendar availability"));
+        }
+        return response.json();
     },
 
     syncInBackground: (): void => {

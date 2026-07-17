@@ -18,8 +18,7 @@ class GoogleCalendarConnection(Base):
     __table_args__ = (
         UniqueConstraint(
             "company_id",
-            "owner_user_id",
-            name="uq_google_calendar_company_user",
+            name="uq_google_calendar_company",
         ),
     )
 

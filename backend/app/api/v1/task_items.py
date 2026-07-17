@@ -17,7 +17,7 @@ from app.schemas.task_item import (
 )
 from app.services import task_item_service
 from app.services import task_assignment_service
-from app.services.calendar_background_service import sync_user_calendar
+from app.services.calendar_background_service import sync_company_calendar
 from app.services.user_scope import can_manage_company, is_platform_superadmin
 
 
@@ -98,7 +98,7 @@ async def create_task_item(
 
     response = await db.run_sync(operation)
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
     return response
 
 
@@ -121,7 +121,7 @@ async def update_task_item(
 
     response = await db.run_sync(operation)
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
     return response
 
 
@@ -150,9 +150,8 @@ async def update_task_checklist_item(
     response = await db.run_sync(operation)
     if background_tasks:
         background_tasks.add_task(
-            sync_user_calendar,
+            sync_company_calendar,
             current_user.company_id,
-            current_user.id,
         )
     return response
 
@@ -179,7 +178,7 @@ async def start_task_work(
 
     response = await db.run_sync(operation)
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
     return response
 
 
@@ -200,7 +199,7 @@ async def finish_task_work(
 
     response = await db.run_sync(operation)
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
     return response
 
 
@@ -219,7 +218,7 @@ async def delete_task_item(
         )
     )
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
 
 
 @router.post("/{task_item_id}/accept", response_model=TaskItemResponse)
@@ -241,7 +240,7 @@ async def accept_task_item(
 
     response = await db.run_sync(operation)
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
     return response
 
 
@@ -262,5 +261,5 @@ async def reject_task_item(
 
     response = await db.run_sync(operation)
     if background_tasks:
-        background_tasks.add_task(sync_user_calendar, current_user.company_id, current_user.id)
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
     return response

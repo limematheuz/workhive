@@ -1,6 +1,7 @@
 from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -54,7 +55,7 @@ def _session_identity(
         session_version = payload.get("ver")
         if email is None or not isinstance(session_version, int):
             raise credentials_exception
-    except JWTError:
+    except PyJWTError:
         raise credentials_exception
     return email, session_version
 
@@ -76,11 +77,7 @@ def _validate_authenticated_user(user: User | None, session_version: int) -> Use
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    if (
-        not is_superadmin(user)
-        and user.company
-        and not user.company.is_active
-    ):
+    if not is_superadmin(user) and user.company and not user.company.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Company account is inactive",
@@ -91,7 +88,9 @@ def _validate_authenticated_user(user: User | None, session_version: int) -> Use
 def get_authenticated_user(
     db: Session = Depends(get_db),
     bearer_token: str | None = Depends(oauth2_scheme),
-    session_token: str | None = Cookie(default=None, alias=settings.SESSION_COOKIE_NAME),
+    session_token: str | None = Cookie(
+        default=None, alias=settings.SESSION_COOKIE_NAME
+    ),
 ) -> User:
     email, session_version = _session_identity(bearer_token, session_token)
     user = user_repo.get_user_by_email(db, email)
@@ -101,7 +100,9 @@ def get_authenticated_user(
 async def get_authenticated_user_async(
     db: AsyncSession = Depends(get_async_db),
     bearer_token: str | None = Depends(oauth2_scheme),
-    session_token: str | None = Cookie(default=None, alias=settings.SESSION_COOKIE_NAME),
+    session_token: str | None = Cookie(
+        default=None, alias=settings.SESSION_COOKIE_NAME
+    ),
 ) -> User:
     email, session_version = _session_identity(bearer_token, session_token)
     user = await async_user_repo.get_user_by_email(db, email)
@@ -134,6 +135,7 @@ def require_role(*allowed_roles: str):
                 status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions"
             )
         return current_user
+
     return role_checker
 
 

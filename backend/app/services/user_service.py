@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.user import User
 from app.schemas.user import UserUpdate, UserStatsResponse
@@ -6,13 +7,27 @@ from app.repositories import user as user_repo
 from app.repositories import work_session as work_session_repo
 from app.repositories import task_item as task_item_repo
 from app.repositories import role as role_repo
-from app.models.task_item import TaskItem
-from app.models.work_session import WorkSession
 from app.core.security import get_password_hash, verify_password
 from app.services.subscription_policy import require_active_user_capacity
 from app.services.user_scope import is_superadmin
 from datetime import datetime, timedelta, timezone
 import calendar
+
+
+USER_DELETE_RELATED_DATA_ERROR = {
+    "code": "USER_HAS_RELATED_DATA",
+    "message": (
+        "This user keeps operational history or controls an integration. "
+        "Deactivate the user to preserve company records."
+    ),
+}
+
+
+def _raise_user_delete_conflict() -> None:
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=USER_DELETE_RELATED_DATA_ERROR,
+    )
 
 
 def get_users(
@@ -156,7 +171,7 @@ def get_user_stats(
             start_date = now - timedelta(days=7)
         elif time_range == "month":
             year = now.year
-            month = now.month -1
+            month = now.month - 1
             if month == 0:
                 month = 12
                 year -= 1
@@ -164,7 +179,7 @@ def get_user_stats(
             day = min(now.day, max_days_prev_month)
             start_date = now.replace(year=year, month=month, day=day)
         elif time_range == "year":
-            year = now.year -1
+            year = now.year - 1
             day = now.day
             if now.month == 2 and now.day == 29:
                 if not calendar.isleap(year):
@@ -174,7 +189,9 @@ def get_user_stats(
     active_session = work_session_repo.get_active_session_by_user(db, user_id)
     active_session_id = active_session.id if active_session else None
 
-    closed_sessions = work_session_repo.get_closed_sessions_by_user(db, user_id, start_date)
+    closed_sessions = work_session_repo.get_closed_sessions_by_user(
+        db, user_id, start_date
+    )
     total_seconds = sum(
         (s.end_time - s.start_time).total_seconds() for s in closed_sessions
     )
@@ -188,8 +205,12 @@ def get_user_stats(
         db, user_id, "pending", start_date
     )
 
-    session_locations = work_session_repo.get_distinct_location_ids_by_user(db, user_id, start_date)
-    task_locations = task_item_repo.get_distinct_location_ids_by_user(db, user_id, start_date)
+    session_locations = work_session_repo.get_distinct_location_ids_by_user(
+        db, user_id, start_date
+    )
+    task_locations = task_item_repo.get_distinct_location_ids_by_user(
+        db, user_id, start_date
+    )
     locations_worked_count = len(set(session_locations) | set(task_locations))
 
     return UserStatsResponse(
@@ -214,21 +235,20 @@ def delete_user_permanently(db: Session, user_id: int, current_user: User) -> No
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to permanently delete users",
         )
-    if not is_superadmin(current_user) and db_user.role and db_user.role.name == "admin":
+    if (
+        not is_superadmin(current_user)
+        and db_user.role
+        and db_user.role.name == "admin"
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only superadmins can permanently delete company admins",
         )
 
-    protected_count = (
-        db.query(TaskItem).filter(TaskItem.user_id == db_user.id).count()
-        + db.query(WorkSession).filter(WorkSession.user_id == db_user.id).count()
-    )
-    if protected_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User has tasks or work sessions. Deactivate the user instead.",
-        )
+    if user_repo.has_protected_user_data(db, db_user.id):
+        _raise_user_delete_conflict()
 
-    db.delete(db_user)
-    db.commit()
+    try:
+        user_repo.delete_user(db, db_user)
+    except IntegrityError:
+        _raise_user_delete_conflict()
