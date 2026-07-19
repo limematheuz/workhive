@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="cell" x1="200" y1="180" x2="820" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3B82F6"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <radialGradient id="core" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#F8FAFC"/>
+      <stop offset="30%" stop-color="#93C5FD"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="228" ry="228" fill="#191919"/>
+  <g stroke-linejoin="round">
+    <polygon fill="url(#cell)" stroke="#60A5FA" stroke-width="12" points="873.12,640.17 803.56,760.65 664.44,760.65 594.88,640.17 664.44,519.69 803.56,519.69"/>
+    <polygon fill="url(#cell)" stroke="#60A5FA" stroke-width="12" points="873.12,383.83 803.56,504.31 664.44,504.31 594.88,383.83 664.44,263.35 803.56,263.35"/>
+    <polygon fill="url(#cell)" stroke="#60A5FA" stroke-width="12" points="651.12,768.34 581.56,888.82 442.44,888.82 372.88,768.34 442.44,647.86 581.56,647.86"/>
+    <polygon fill="url(#cell)" stroke="#60A5FA" stroke-width="12" points="651.12,255.66 581.56,376.14 442.44,376.14 372.88,255.66 442.44,135.18 581.56,135.18"/>
+    <polygon fill="url(#cell)" stroke="#60A5FA" stroke-width="12" points="429.12,640.17 359.56,760.65 220.44,760.65 150.88,640.17 220.44,519.69 359.56,519.69"/>
+    <polygon fill="url(#cell)" stroke="#60A5FA" stroke-width="12" points="429.12,383.83 359.56,504.31 220.44,504.31 150.88,383.83 220.44,263.35 359.56,263.35"/>
+    <polygon fill="url(#core)" stroke="#DBEAFE" stroke-width="14" points="651.12,512.00 581.56,632.48 442.44,632.48 372.88,512.00 442.44,391.52 581.56,391.52"/>
+  </g>
+</svg>
