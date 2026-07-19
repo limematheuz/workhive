@@ -33,9 +33,11 @@ The following controls are implemented and verified:
 - local backup cleanup after a short retention period;
 - CI coverage for the backup script.
 
-The application image build and deployment pipeline is **not** implemented yet.
-GitHub Actions currently validates the application, but EC2 still builds the
-backend and frontend images during deployment.
+GitHub Actions now publishes reviewed immutable backend and frontend images to
+private ECR using OIDC, without static AWS keys. EC2 has been granted and
+tested with least-privilege ECR image-read access. The remaining migration step
+is a separately reviewed manual pull-only deployment and rollback command; do
+not switch the live Compose path until that code and its EC2 setup are merged.
 
 ## Why this architecture was chosen
 
@@ -752,14 +754,17 @@ The workflows under `.github/workflows/` currently run:
 - secret and misconfiguration scanning;
 - Python SAST and dependency auditing;
 - the focused backup automation test.
+- the focused ECR deployment automation contract test.
 
-The frontend validation build proves that source code compiles, but it is not a
-published production Docker image.
+The release workflow additionally verifies the same required checks on an
+annotated release tag before publishing backend and frontend images to ECR.
+Those images have both immutable semantic-version and full-commit-SHA tags.
 
 ### What EC2 still does
 
-Production deployment still uses Compose `build:` entries. Therefore this
-command compiles images on EC2:
+Until the ECR pull-only phase is merged and configured, production deployment
+still uses Compose `build:` entries. Therefore this command compiles images on
+EC2:
 
 ```bash
 docker compose --env-file .env up -d --build
@@ -811,8 +816,14 @@ The next AI must treat this section as an execution contract.
   AWS CLI, weekly systemd timer, and first automated backup are complete.
 - The EC2 backup role can list only `production/`, upload there, and cannot list
   the root or delete objects.
-- GitHub Actions validates code and security but does not publish images.
-- EC2 still builds backend and frontend images locally.
+- GitHub Actions validates code/security and can publish reviewed annotated
+  release tags to private ECR through OIDC.
+- Private ECR repositories use immutable tags and Basic scan-on-push. Buildx
+  provenance/SBOM attestations are intentionally disabled in the ECR publishing
+  workflow because Basic scanning cannot scan their OCI index artifact; CI
+  remains the required security gate.
+- EC2 has verified least-privilege pull access for the backend and frontend
+  release images, but the live Compose deployment path still builds locally.
 
 ### Required next phases and exact order
 
@@ -838,7 +849,7 @@ The next AI must treat this section as an execution contract.
 Do not create automatic version bumps on every commit. A release version should
 represent a reviewed release; the commit SHA distinguishes individual builds.
 
-#### Phase B: private ECR repositories
+#### Phase B: private ECR repositories — complete
 
 1. Reconfirm AWS credits and current month forecast before creation.
 2. Explain that ECR is a private Docker image registry.
@@ -849,9 +860,9 @@ represent a reviewed release; the commit SHA distinguishes individual builds.
 6. Record repository names only in private deployment configuration or GitHub
    variables, not as sensitive production identifiers in public documentation.
 
-Do not switch Compose to ECR yet.
+Do not switch Compose to ECR until Phase E is reviewed and configured on EC2.
 
-#### Phase C: GitHub-to-AWS OIDC
+#### Phase C: GitHub-to-AWS OIDC — complete
 
 1. Explain OIDC as short-lived authentication without saved AWS access keys.
 2. Configure the GitHub OIDC provider in AWS if it does not already exist.
@@ -863,7 +874,7 @@ Do not switch Compose to ECR yet.
    GitHub environment/repository variables. Store no static AWS keys.
 7. Add a read-only authentication test before adding image publication.
 
-#### Phase D: reproducible image build and publication
+#### Phase D: reproducible image build and publication — complete
 
 1. Pin GitHub Actions by reviewed versions or commit SHAs.
 2. Run all existing tests and security checks before publishing.
@@ -871,12 +882,13 @@ Do not switch Compose to ECR yet.
 4. Tag every image with the full or safely shortened Git SHA; add a semantic
    version tag only for a release.
 5. Push both images to ECR only after checks pass.
-6. Produce build provenance/SBOM if practical without exceeding the current
-   cost and complexity constraints.
+6. Defer embedded Buildx provenance/SBOM while ECR Basic scanning is used: it
+   cannot scan the resulting OCI image indexes. Mandatory CI security gates and
+   immutable Git/ECR references remain the current evidence.
 7. Never publish `latest` as the only deployable reference.
 8. Test pulling the exact immutable image tags from EC2.
 
-#### Phase E: production Compose without builds
+#### Phase E: production Compose without builds — in review
 
 1. Create a production Compose override or equivalent that replaces backend and
    frontend `build:` with explicit ECR `image:` references.
@@ -888,7 +900,7 @@ Do not switch Compose to ECR yet.
    write permissions logically documented and independently reviewable.
 6. Validate rendered Compose configuration before changing containers.
 
-#### Phase F: safe deployment and rollback
+#### Phase F: safe deployment and rollback — in review
 
 1. Create a small deployment script under `ops/deploy/` with a lock, strict
    error handling, configuration validation, ECR login, image pull, Compose
@@ -948,9 +960,9 @@ The migration is not complete until all of the following are true:
 - [x] Weekly automated backup timer installed.
 - [x] First automated S3 backup completed and verified.
 - [x] Application semantic versioning and SHA metadata.
-- [ ] Private backend/frontend ECR repositories.
-- [ ] GitHub Actions OIDC role.
-- [ ] Reproducible image build and publication workflow.
+- [x] Private backend/frontend ECR repositories.
+- [x] GitHub Actions OIDC role.
+- [x] Reproducible image build and publication workflow.
 - [ ] Production Compose using immutable ECR images.
 - [ ] Health-checked deployment and rollback script.
 - [ ] Pilot monitoring and final operations review.
