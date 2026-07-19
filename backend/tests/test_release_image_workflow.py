@@ -98,8 +98,8 @@ def test_images_use_sha_and_release_tags_but_never_latest():
         assert ":${{ needs.release-metadata.outputs.git_sha }}" in tags
         assert ":${{ needs.release-metadata.outputs.release_tag }}" in tags
         assert step["with"]["push"] == "true"
-        assert step["with"]["provenance"] == "mode=min"
-        assert step["with"]["sbom"] == "true"
+        assert step["with"]["provenance"] == "false"
+        assert step["with"]["sbom"] == "false"
 
 
 def test_existing_tags_are_rejected_and_published_tags_are_verified():

@@ -69,7 +69,11 @@ Before requesting temporary AWS credentials, the workflow verifies that:
 
 Backend and frontend images receive both the full commit SHA and semantic
 release tag. ECR tags are immutable, existing tags are rejected, and `latest`
-is never published. The build also records minimal provenance and an SBOM.
+is never published. The workflow intentionally publishes a single Docker image
+manifest because ECR Basic scanning cannot scan OCI indexes that contain Buildx
+attestations. The Git tag, pinned workflow, build record, and mandatory CI
+security gates remain the release evidence. Revisit embedded SBOM/provenance
+only when adopting an ECR scanner that supports those OCI artifacts.
 
 The workflow reads AWS region, role ARN, and ECR repository names from GitHub
 repository variables. Optional public support contact values can use these
