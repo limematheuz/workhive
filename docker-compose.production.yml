@@ -1,0 +1,10 @@
+# Production only: compose this file after docker-compose.yml.  It deliberately
+# removes local application builds, so EC2 can only pull immutable ECR images.
+services:
+  backend:
+    image: ${BACKEND_IMAGE:?Define BACKEND_IMAGE}
+    build: !reset null
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?Define FRONTEND_IMAGE}
+    build: !reset null
