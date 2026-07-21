@@ -1,0 +1,100 @@
+name: Deploy reviewed release to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Immutable release tag already published to ECR, for example v1.2.3
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: workhive-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy reviewed ECR release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Validate immutable release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            printf 'release_tag must use vMAJOR.MINOR.PATCH.\n' >&2
+            exit 1
+          fi
+
+      - name: Request temporary AWS deployment credentials
+        uses: aws-actions/configure-aws-credentials@517a711dbcd0e402f90c77e7e2f81e849156e31d # v6.2.2
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+          role-session-name: workhive-production-deploy-${{ github.run_id }}
+          role-duration-seconds: 1800
+          mask-aws-account-id: true
+
+      - name: Request approved production deployment
+        id: deploy
+        env:
+          INSTANCE_ID: ${{ vars.PRODUCTION_EC2_INSTANCE_ID }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          command_id="$(aws ssm send-command \
+            --document-name WorkHiveProductionDeploy \
+            --instance-ids "$INSTANCE_ID" \
+            --parameters "ReleaseTag=${RELEASE_TAG}" \
+            --timeout-seconds 900 \
+            --comment "WorkHive reviewed release ${RELEASE_TAG}" \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          test -n "$command_id"
+          printf 'command_id=%s\n' "$command_id" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for verified deployment result
+        env:
+          COMMAND_ID: ${{ steps.deploy.outputs.command_id }}
+          INSTANCE_ID: ${{ vars.PRODUCTION_EC2_INSTANCE_ID }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          for _ in $(seq 1 61); do
+            status="$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query 'Status' \
+              --output text 2>/dev/null || true)"
+
+            case "$status" in
+              Success)
+                printf 'Production deployment of %s succeeded.\n' "$RELEASE_TAG"
+                exit 0
+                ;;
+              Pending|InProgress|Delayed|"")
+                sleep 15
+                ;;
+              *)
+                printf 'Production deployment ended with SSM status: %s\n' "$status" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          printf 'Timed out waiting for the production deployment result.\n' >&2
+          exit 1
