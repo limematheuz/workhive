@@ -33,11 +33,12 @@ The following controls are implemented and verified:
 - local backup cleanup after a short retention period;
 - CI coverage for the backup script.
 
-GitHub Actions now publishes reviewed immutable backend and frontend images to
-private ECR using OIDC, without static AWS keys. EC2 has been granted and
-tested with least-privilege ECR image-read access. The remaining migration step
-is a separately reviewed manual pull-only deployment and rollback command; do
-not switch the live Compose path until that code and its EC2 setup are merged.
+GitHub Actions publishes reviewed immutable backend and frontend images to
+private ECR using OIDC, without static AWS keys. EC2 has least-privilege ECR
+image-read access and runs the verified pull-only deployment and rollback
+script. A separate GitHub OIDC role can request one private SSM Command
+document for the production instance; it cannot open SSH, run arbitrary shell
+commands, or publish ECR images.
 
 ## Why this architecture was chosen
 
@@ -95,6 +96,18 @@ Real configuration does not belong there. For example:
 
 - committed template: `ops/backup/workhive-backup.env.example`;
 - real host configuration: `/etc/workhive/backup.env`.
+
+### Why GitHub deploys through a private SSM document
+
+GitHub Actions must not receive SSH access to production or a long-lived AWS
+key. Instead, it exchanges its OIDC identity for a short-lived deployment role
+and invokes the single private `WorkHiveProductionDeploy` SSM document.
+
+That document accepts only a `vMAJOR.MINOR.PATCH` release tag, passes it as an
+environment variable, and calls the already-reviewed host deployment script.
+The deployment role is separate from the ECR publishing role. This separation
+means that a workflow permitted to build an image cannot deploy it, and a
+workflow permitted to deploy cannot overwrite image tags.
 
 ## Security invariants
 

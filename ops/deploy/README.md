@@ -62,6 +62,34 @@ healthy without a build, then checks backend health, login, running containers,
 and Alembic state. On success, the current release is recorded in
 `/etc/workhive/deployed-release.env`.
 
+## Deploy from GitHub Actions through SSM
+
+The preferred production path is the manual `Deploy reviewed release to
+production` GitHub Actions workflow. It never opens SSH from GitHub and it
+does not contain AWS access keys.
+
+The workflow can only be dispatched from `main` with a strict
+`vMAJOR.MINOR.PATCH` release tag. It assumes a dedicated GitHub OIDC role,
+requests the private `WorkHiveProductionDeploy` SSM Command document for the
+one configured production instance, and waits for the result. The SSM document
+starts this same host script, so backup validation, immutable image checks,
+health checks, and rollback behavior remain in one place.
+
+Before enabling the workflow, configure outside Git:
+
+- the EC2 instance role with Systems Manager managed-instance access;
+- the private SSM document named `WorkHiveProductionDeploy`;
+- a dedicated GitHub OIDC deployment role that can only invoke that document
+  for the production EC2 instance and read the invocation result;
+- the GitHub repository variables `AWS_DEPLOY_ROLE_ARN` and
+  `PRODUCTION_EC2_INSTANCE_ID`.
+
+To deploy, open **GitHub → Actions → Deploy reviewed release to production →
+Run workflow**, keep branch `main`, and enter an image tag that already passed
+the release-publication workflow, such as `v1.2.3`. Review the workflow result
+and the SSM command details; do not treat dispatching the workflow as a
+successful deployment until its final status is successful.
+
 ## Verify and rollback
 
 After a successful deploy:
