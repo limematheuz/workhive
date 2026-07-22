@@ -76,6 +76,9 @@ def test_production_deployment_defends_against_invalid_input_and_waits_for_ssm_r
     assert "aws ssm get-command-invocation" in wait_step["run"]
     assert "Success)" in wait_step["run"]
     assert "Pending|InProgress|Delayed" in wait_step["run"]
+    assert "InvocationDoesNotExist" in wait_step["run"]
+    assert "2>/dev/null || true" not in wait_step["run"]
+    assert "Unable to read the SSM deployment result" in wait_step["run"]
     assert "Timed out waiting for the production deployment result" in wait_step["run"]
 
 

@@ -1,0 +1,22 @@
+schemaVersion: '2.2'
+description: Deploy a reviewed immutable WorkHive release from ECR.
+parameters:
+  ReleaseTag:
+    type: String
+    description: Existing WorkHive semantic release tag.
+    interpolationType: ENV_VAR
+    allowedPattern: '^v[0-9]+\.[0-9]+\.[0-9]+$'
+mainSteps:
+  - action: aws:runShellScript
+    name: deployReviewedRelease
+    precondition:
+      StringEquals:
+        - platformType
+        - Linux
+    inputs:
+      timeoutSeconds: '900'
+      runCommand:
+        - |
+          set -eu
+          release_tag="${SSM_ReleaseTag:?ReleaseTag is required}"
+          exec /bin/bash /home/ubuntu/workhive/ops/deploy/deploy_ecr_release.sh "$release_tag"
