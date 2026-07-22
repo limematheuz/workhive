@@ -15,6 +15,10 @@ Use placeholders such as `<BUCKET_NAME>` only while reading this document.
 Real values must live in AWS, the EC2 host environment, or an approved password
 manager and must never be committed.
 
+For the full vocabulary and the end-to-end path from a reviewed pull request to
+an immutable production deployment, read the
+[production delivery guide](PRODUCTION_DELIVERY_GUIDE.md).
+
 ## Outcomes achieved
 
 The following controls are implemented and verified:

@@ -4,6 +4,9 @@ This directory defines the **manual** production deployment path after a release
 image has passed CI and been published to private Amazon ECR. EC2 pulls an
 immutable image; it never builds backend or frontend application images.
 
+The broader explanation of the release lifecycle and its AWS/GitHub terms is
+in [the production delivery guide](../../docs/operations/PRODUCTION_DELIVERY_GUIDE.md).
+
 ## Security boundaries
 
 - The EC2 instance role supplies short-lived AWS credentials. Do not run
