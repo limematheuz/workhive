@@ -84,6 +84,13 @@ Before enabling the workflow, configure outside Git:
 - the GitHub repository variables `AWS_DEPLOY_ROLE_ARN` and
   `PRODUCTION_EC2_INSTANCE_ID`.
 
+The canonical content for the private SSM document is
+[`workhive-production-deploy.ssm.yaml`](workhive-production-deploy.ssm.yaml).
+When changing it in AWS, use **Actions → Create new version**, paste that
+file's content, and then set the new document version as default. Do not use
+**Clone document**: the GitHub workflow is intentionally limited to the
+existing `WorkHiveProductionDeploy` document.
+
 To deploy, open **GitHub → Actions → Deploy reviewed release to production →
 Run workflow**, keep branch `main`, and enter an image tag that already passed
 the release-publication workflow, such as `v1.2.3`. Review the workflow result
