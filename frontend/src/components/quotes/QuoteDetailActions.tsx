@@ -28,7 +28,7 @@ export function QuoteDetailActions({
     onClose,
 }: QuoteDetailActionsProps) {
     return (
-        <div className="p-5 border-t border-[var(--border-soft)] bg-[var(--bg-card)] flex-shrink-0">
+        <div className="dialog-glass-chrome p-5 border-t border-[var(--border-soft)] flex-shrink-0">
             <div className="flex flex-wrap gap-2">
                 <button
                     type="button"

@@ -15,7 +15,7 @@ export function ReservationFormDialogActions({
     dict,
 }: ReservationFormDialogActionsProps) {
     return (
-        <div className="p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] bg-[var(--bg-card)] flex-shrink-0 justify-end">
+        <div className="dialog-glass-chrome p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] flex-shrink-0 justify-end">
             <Button
                 type="button"
                 variant="outline"

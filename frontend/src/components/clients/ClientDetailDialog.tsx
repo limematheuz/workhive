@@ -115,7 +115,7 @@ export function ClientDetailDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl p-0 overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col bg-[var(--bg-card)] text-[var(--text-main)] border border-[var(--border-soft)]">
+            <DialogContent className="max-w-2xl p-0 overflow-hidden max-h-[90vh] sm:max-h-[85vh] flex flex-col text-[var(--text-main)] border border-[var(--border-soft)]">
                 <ClientDetailDialogHeader client={client} />
 
                 <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">

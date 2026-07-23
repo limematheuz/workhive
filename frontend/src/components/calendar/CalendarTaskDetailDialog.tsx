@@ -71,10 +71,10 @@ export function CalendarTaskDetailDialog({
 
     return (
         <Dialog open={open} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl bg-[var(--bg-card-solid)] border-[var(--border-soft)]">
+            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-2xl md:max-w-3xl border-[var(--border-soft)]">
                 {task && (
                     <>
-                        <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-6 pr-16 text-left sm:text-left">
+                        <DialogHeader className="dialog-glass-chrome shrink-0 border-b border-[var(--border-soft)] p-6 pr-16 text-left sm:text-left">
                             <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                                 Detalles de la tarea
                             </span>

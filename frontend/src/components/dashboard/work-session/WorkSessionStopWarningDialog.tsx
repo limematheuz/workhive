@@ -33,7 +33,7 @@ export function WorkSessionStopWarningDialog({
 }: WorkSessionStopWarningDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-md bg-[var(--bg-card)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-3xl p-6 z-[10002]">
+            <DialogContent className="max-w-md border border-[var(--border-soft)] text-[var(--text-main)] rounded-3xl p-6 z-[10002]">
                 <div className="flex items-start gap-4">
                     <div className="p-2.5 bg-[var(--alert-warning-bg)] rounded-2xl border border-[var(--alert-warning-border)] text-[var(--alert-warning-text)] shrink-0">
                         <AlertCircle className="h-5 w-5" />

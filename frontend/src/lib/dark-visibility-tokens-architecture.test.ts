@@ -21,13 +21,21 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.match(globals, /--brand-blue-sky:/);
     assert.match(globals, /--popover-surface-bg:\s*#323238/);
     assert.match(globals, /--z-header:\s*20/);
-    assert.match(globals, /--dialog-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.85\)/);
+    assert.match(globals, /--dialog-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.72\)/);
     assert.match(globals, /--glass-blur-strong:\s*140px/);
-    assert.match(globals, /--glass-overlay-blur:\s*140px/);
-    assert.match(globals, /--glass-sheet-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.85\)/);
+    assert.match(globals, /--glass-overlay-blur:\s*80px/);
+    assert.match(globals, /--dialog-surface-blur:\s*48px/);
+    assert.match(globals, /--glass-sheet-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.72\)/);
     assert.match(globals, /--glass-overlay-bg:\s*rgba\(4,\s*6,\s*12,\s*0\.55\)/);
     assert.match(globals, /\[data-slot="dialog-overlay"\]/);
-    assert.match(globals, /blur\(140px\)/);
+    assert.match(
+      globals,
+      /\[data-slot="dialog-content"\][\s\S]*backdrop-filter:\s*blur\(var\(--dialog-surface-blur\)\)/
+    );
+    assert.match(
+      globals,
+      /\[data-slot="dialog-overlay"\][\s\S]*backdrop-filter:\s*blur\(var\(--glass-overlay-blur\)\)/
+    );
     assert.match(globals, /\[data-slot="dialog-content"\][\s\S]*transform:\s*none/);
     assert.match(globals, /\[data-slot="dialog-overlay"\][\s\S]*transform:\s*none/);
     assert.match(globals, /\.surface-glass-card\s*\{/);
@@ -54,6 +62,7 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.match(notifications, /header-popover-layer/);
     assert.match(popover, /surface-popover/);
     assert.match(dialog, /dialog-glass-overlay/);
+    assert.match(dialog, /dialog-glass/);
     assert.match(dialog, /inset-0/);
     assert.match(dialog, /m-auto/);
     assert.doesNotMatch(dialog, /translate-x-\[-50%\]/);

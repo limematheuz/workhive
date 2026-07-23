@@ -10,7 +10,7 @@ export function LocationFormActions({ isLoading, onCancel }: LocationFormActions
     const { dict } = useDictionary()
 
     return (
-        <div className="p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] bg-[var(--bg-card)] flex-shrink-0">
+        <div className="dialog-glass-chrome p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] flex-shrink-0">
             <Button
                 type="button"
                 variant="outline"

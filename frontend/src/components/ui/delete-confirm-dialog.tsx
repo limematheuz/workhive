@@ -34,7 +34,7 @@ export function DeleteConfirmDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 showCloseButton={false}
-                className="w-[calc(100vw-2rem)] bg-[var(--bg-card)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl p-5 sm:max-w-md sm:p-6"
+                className="w-[calc(100vw-2rem)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl p-5 sm:max-w-md sm:p-6"
             >
                 <div className="flex items-start gap-4">
                     <div className="p-2.5 bg-[var(--btn-cancel-bg)] rounded-xl border border-[var(--btn-cancel-border)] text-[var(--btn-cancel-text)] shrink-0">
