@@ -153,7 +153,7 @@ export function TechTaskCard({
             <div className="flex items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3 mb-3 text-[10px] font-extrabold uppercase tracking-wider">
                 <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                     {isOverdue ? (
-                        <AlertCircle className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                        <AlertCircle className="w-3.5 h-3.5 text-red-500" />
                     ) : (
                         <Calendar className="w-3.5 h-3.5 text-accent" />
                     )}
@@ -171,14 +171,11 @@ export function TechTaskCard({
                             : isCompleted
                             ? "bg-[var(--bg-tertiary)] border-[var(--border-color)] text-[var(--text-muted)]"
                             : isProgress
-                            ? "relative isolate overflow-visible bg-accent border-accent text-white shadow-lg shadow-accent/30 ring-2 ring-[var(--bg-card)]"
+                            ? "bg-accent border-accent text-white shadow-lg shadow-accent/30"
                             : "bg-accent/10 border-accent/20 text-accent"
                     )}
                 >
-                    {isProgress && (
-                        <span className="absolute inset-0 rounded-full bg-accent opacity-60 motion-safe:animate-ping" />
-                    )}
-                    <span className="relative z-10">{statusLabel}</span>
+                    {statusLabel}
                 </span>
             </div>
 
@@ -211,7 +208,7 @@ export function TechTaskCard({
                                 title={`${w.user_name}: ${formatHoursShort(w.total_seconds)}`}
                             >
                                 {w.user_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)} {formatHoursShort(w.total_seconds)}
-                                {w.is_active && <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />}
+                                {w.is_active && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
                             </span>
                         ))}
                     </div>
@@ -222,7 +219,7 @@ export function TechTaskCard({
             <div className="mt-4 flex items-center gap-2 border-t border-[var(--border-soft)] pt-3">
                 <div className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
-                    isOverdue ? "bg-orange-500" : isCompleted ? "bg-[var(--text-muted)]" : "bg-accent"
+                    isOverdue ? "bg-red-500" : isCompleted ? "bg-[var(--text-muted)]" : "bg-accent"
                 )}>
                     <MapPin className="h-4 w-4" />
                 </div>
