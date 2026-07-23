@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api"
+import type { QuoteClientRegistrationInput } from "@/lib/quote-client-registration"
 import { Quote, QuoteItem } from "@/types/quote"
 
 export interface QuoteCreate {
@@ -15,6 +16,7 @@ export interface QuoteCreate {
     custom_issuer_info?: string | null;
     custom_recipient_info?: string | null;
     signature_url?: string | null;
+    items?: QuoteItemCreate[];
 }
 
 export interface QuoteUpdate {
@@ -32,6 +34,7 @@ export interface QuoteUpdate {
     custom_issuer_info?: string | null;
     custom_recipient_info?: string | null;
     signature_url?: string | null;
+    items?: QuoteItemCreate[];
 }
 
 export interface QuoteItemCreate {
@@ -44,6 +47,11 @@ export interface QuoteItemUpdate {
     description?: string;
     quantity?: number;
     unit_price?: number;
+}
+
+export interface QuoteAcceptRequest {
+    register_client: boolean;
+    client?: QuoteClientRegistrationInput;
 }
 
 export const QuoteService = {
@@ -97,6 +105,15 @@ export const QuoteService = {
             const err = await response.json().catch(() => ({}))
             throw new Error(err.detail || "Error updating quote")
         }
+        return await response.json()
+    },
+
+    acceptQuote: async (id: number, data: QuoteAcceptRequest): Promise<Quote> => {
+        const response = await apiFetch(`/api/v1/quotes/${id}/accept`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        })
+        await assertApiResponseOk(response, "Error accepting quote")
         return await response.json()
     },
 

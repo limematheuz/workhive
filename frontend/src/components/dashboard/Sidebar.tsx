@@ -27,10 +27,9 @@ interface SidebarProps {
     isOpen: boolean;
     theme: "dark" | "light";
     onThemeChange: (theme: "dark" | "light") => void;
-    onLogout: () => void;
 }
 
-export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps) {
+export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     const { dict, locale, setLocale } = useDictionary();
     const pathname = usePathname();
     const { user } = useUser();
@@ -125,10 +124,8 @@ export function Sidebar({ isOpen, theme, onThemeChange, onLogout }: SidebarProps
                 isOpen={isOpen}
                 theme={theme}
                 locale={locale}
-                logoutLabel={dict.dashboard.logout}
                 onThemeChange={onThemeChange}
                 onLocaleChange={setLocale}
-                onLogout={onLogout}
             />
         </aside>
     );

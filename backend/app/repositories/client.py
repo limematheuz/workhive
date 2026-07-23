@@ -40,14 +40,20 @@ def get_all_clients(
 
 
 def create_client(db: Session, client_data: ClientCreate) -> Client:
+    db_client = stage_client(db, client_data)
+    db.commit()
+    db.refresh(db_client)
+    return db_client
+
+
+def stage_client(db: Session, client_data: ClientCreate) -> Client:
     data = client_data.model_dump()
     for optional_field in ("legal_number", "email", "phone"):
         if data.get(optional_field) == "":
             data[optional_field] = None
     db_client = Client(**data)
     db.add(db_client)
-    db.commit()
-    db.refresh(db_client)
+    db.flush()
     return db_client
 
 

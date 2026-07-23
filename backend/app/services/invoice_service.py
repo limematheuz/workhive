@@ -15,7 +15,6 @@ from app.models.task_item import TaskItem
 from app.repositories import client as client_repo
 from app.repositories import invoice as invoice_repo
 from app.repositories import invoice_item as invoice_item_repo
-from app.repositories import task_item as task_item_repo
 from app.schemas.invoice import (
     FiscalCancellationRequest,
     InvoiceCreate,
@@ -24,7 +23,7 @@ from app.schemas.invoice import (
     InvoiceUpdate,
     RectificationCreate,
 )
-from app.schemas.invoice_item import InvoiceItemCreate
+from app.schemas.invoice_item import InvoiceItemCreate, RectificationInvoiceItemCreate
 from app.services import (
     email_service,
     fiscal_submission_service,
@@ -40,7 +39,11 @@ from app.services.invoice_pdf import (
     generate_invoice_preview_pdf,
     resolve_invoice_pdf,
 )
-from app.services.invoice_tasks import get_invoiceable_completed_tasks  # noqa: F401
+from app.services.invoice_tasks import (  # noqa: F401
+    get_invoiceable_completed_tasks,
+    validate_invoice_client_for_linked_tasks,
+    validate_task_for_invoice,
+)
 
 
 RECTIFIABLE_STATUSES = {"issued", "paid", "overdue"}
@@ -79,23 +82,6 @@ def _validate_client(db: Session, company_id: int, client_id: int) -> Client:
     return client
 
 
-def _task_for_invoice(
-    db: Session, company_id: int, task_item_id: int
-) -> TaskItem:
-    task = task_item_repo.get_task_item(db, company_id, task_item_id)
-    if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task item not found or belongs to another company",
-        )
-    if task.is_invoiced:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Task item is already linked to another invoice",
-        )
-    return task
-
-
 def _ensure_invoice_number_available(
     db: Session,
     company_id: int,
@@ -117,6 +103,18 @@ def _ensure_invoice_number_available(
             status_code=status.HTTP_409_CONFLICT,
             detail="Invoice number already exists",
         )
+
+
+def _task_ids_from_invoice_items(
+    items: list[InvoiceItemCreate],
+) -> list[int]:
+    task_ids = [item.task_item_id for item in items if item.task_item_id is not None]
+    if len(task_ids) != len(set(task_ids)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A task item cannot appear more than once in the same invoice",
+        )
+    return task_ids
 
 
 def create_invoice(
@@ -144,14 +142,7 @@ def create_invoice_draft(
 ) -> Invoice:
     _validate_client(db, company_id, data.client_id)
     _ensure_invoice_number_available(db, company_id, data.invoice_number)
-    task_ids = [
-        item.task_item_id for item in data.items if item.task_item_id is not None
-    ]
-    if len(task_ids) != len(set(task_ids)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A task item cannot appear more than once in the same invoice",
-        )
+    _task_ids_from_invoice_items(data.items)
 
     try:
         header = InvoiceCreate(**data.model_dump(exclude={"items"}))
@@ -163,7 +154,12 @@ def create_invoice_draft(
         )
         for item_data in data.items:
             if item_data.task_item_id is not None:
-                task = _task_for_invoice(db, company_id, item_data.task_item_id)
+                task = validate_task_for_invoice(
+                    db,
+                    company_id,
+                    item_data.task_item_id,
+                    data.client_id,
+                )
                 task.is_invoiced = True
                 db.add(task)
             invoice_item_repo.create_invoice_item(db, invoice.id, item_data)
@@ -284,9 +280,7 @@ def email_invoice(
         recipient = invoice.recipient_snapshot or {}
         issuer = invoice.issuer_snapshot or {}
     recipient_emails = [
-        str(email)
-        for email in (data.recipient_emails or [])
-        if str(email).strip()
+        str(email) for email in (data.recipient_emails or []) if str(email).strip()
     ]
     if data.recipient_email:
         recipient_emails.append(str(data.recipient_email))
@@ -303,7 +297,8 @@ def email_invoice(
     try:
         sent = email_service.send_invoice_email(
             recipient_email=recipient_emails,
-            recipient_name=recipient.get("name") or ("client" if locale == "en" else "cliente"),
+            recipient_name=recipient.get("name")
+            or ("client" if locale == "en" else "cliente"),
             issuer_name=issuer.get("name") or "WorkHive",
             invoice_number=invoice.invoice_number,
             pdf_path=pdf_path,
@@ -415,74 +410,212 @@ def cancel_fiscal_invoice(
         raise
 
 
+def _validate_invoice_update_links(
+    db: Session,
+    company_id: int,
+    invoice: Invoice,
+    changes: dict,
+    replacement_items: list[InvoiceItemCreate] | None,
+) -> dict[int, TaskItem]:
+    target_client_id = changes.get("client_id") or invoice.client_id
+    client_changed = changes.get("client_id") is not None
+    if client_changed:
+        _validate_client(db, company_id, target_client_id)
+
+    if replacement_items is not None:
+        return {
+            task_id: validate_task_for_invoice(
+                db,
+                company_id,
+                task_id,
+                target_client_id,
+                linked_invoice_id=invoice.id,
+            )
+            for task_id in _task_ids_from_invoice_items(replacement_items)
+        }
+
+    if client_changed:
+        validate_invoice_client_for_linked_tasks(
+            db,
+            company_id,
+            invoice.id,
+            target_client_id,
+            [
+                item.task_item_id
+                for item in invoice.items
+                if item.task_item_id is not None
+            ],
+        )
+    return {}
+
+
+def _cancel_draft_invoice(db: Session, invoice: Invoice) -> None:
+    for item in list(invoice.items):
+        if item.task_item_id is not None and item.task_item:
+            item.task_item.is_invoiced = False
+            db.add(item.task_item)
+    invoice.items.clear()
+    invoice.base_amount = Decimal(0)
+    invoice.tax_amount = Decimal(0)
+    invoice.total_amount = Decimal(0)
+
+
+def _replace_draft_invoice_items(
+    db: Session,
+    invoice: Invoice,
+    replacement_items: list[InvoiceItemCreate],
+    validated_tasks: dict[int, TaskItem],
+) -> None:
+    replacement_task_ids = {
+        item.task_item_id for item in replacement_items if item.task_item_id is not None
+    }
+    for item in list(invoice.items):
+        if (
+            item.task_item_id is not None
+            and item.task_item_id not in replacement_task_ids
+            and item.task_item
+        ):
+            item.task_item.is_invoiced = False
+            db.add(item.task_item)
+    invoice.items.clear()
+    db.flush()
+
+    for item_data in replacement_items:
+        if item_data.task_item_id is not None:
+            task = validated_tasks[item_data.task_item_id]
+            task.is_invoiced = True
+            db.add(task)
+        invoice_item_repo.create_invoice_item(db, invoice.id, item_data)
+
+
+def _apply_draft_invoice_changes(
+    db: Session,
+    invoice: Invoice,
+    requested_status: str | None,
+    replacement_items: list[InvoiceItemCreate] | None,
+    validated_tasks: dict[int, TaskItem],
+) -> None:
+    if requested_status not in {None, "draft", "cancelled"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A draft can only be issued or cancelled",
+        )
+    if requested_status == "cancelled":
+        _cancel_draft_invoice(db, invoice)
+    elif replacement_items is not None:
+        _replace_draft_invoice_items(
+            db,
+            invoice,
+            replacement_items,
+            validated_tasks,
+        )
+
+
+def _apply_issued_invoice_transition(
+    invoice: Invoice,
+    changes: dict,
+    replacement_items: list[InvoiceItemCreate] | None,
+    requested_status: str | None,
+) -> None:
+    detail_changes = {key for key in changes if key != "status"}
+    if replacement_items is not None:
+        detail_changes.add("items")
+    if detail_changes:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Issued invoice details are immutable",
+        )
+    allowed = {
+        "issued": {"paid", "overdue"},
+        "overdue": {"paid"},
+        "paid": set(),
+        "rectified": set(),
+        "cancelled": set(),
+    }
+    if requested_status not in allowed.get(invoice.status, set()):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid invoice status transition",
+        )
+    if requested_status == "paid":
+        invoice.paid_at = datetime.now(timezone.utc)
+
+
+def _normalize_invoice_update_number(
+    db: Session,
+    company_id: int,
+    invoice: Invoice,
+    invoice_data: InvoiceUpdate,
+    changes: dict,
+) -> None:
+    if changes.get("invoice_number") is None:
+        return
+    normalized = changes["invoice_number"].strip()
+    _ensure_invoice_number_available(
+        db,
+        company_id,
+        normalized,
+        ignore_invoice_id=invoice.id,
+    )
+    invoice_data.invoice_number = normalized or invoice.invoice_number
+
+
 def update_invoice(
     db: Session, company_id: int, invoice_id: int, invoice_data: InvoiceUpdate
 ) -> Invoice:
     invoice = get_invoice(db, company_id, invoice_id)
     changes = invoice_data.model_dump(exclude_unset=True)
+    replacement_items = (
+        invoice_data.items if "items" in invoice_data.model_fields_set else None
+    )
+    changes.pop("items", None)
     requested_status = changes.get("status")
-
-    if "client_id" in changes and changes["client_id"] is not None:
-        _validate_client(db, company_id, changes["client_id"])
+    validated_tasks = _validate_invoice_update_links(
+        db,
+        company_id,
+        invoice,
+        changes,
+        replacement_items,
+    )
 
     if requested_status == "issued":
-        if len(changes) != 1:
+        if invoice_data.model_fields_set != {"status"}:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Issue the invoice separately from draft edits",
             )
         return issue_invoice(db, company_id, invoice_id)
 
-    if invoice.status == "draft":
-        if requested_status not in {None, "draft", "cancelled"}:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A draft can only be issued or cancelled",
-            )
-        if requested_status == "cancelled":
-            for item in list(invoice.items):
-                if item.task_item_id is not None and item.task_item:
-                    item.task_item.is_invoiced = False
-                    db.add(item.task_item)
-                db.delete(item)
-            invoice.base_amount = Decimal(0)
-            invoice.tax_amount = Decimal(0)
-            invoice.total_amount = Decimal(0)
-    else:
-        detail_changes = {key for key in changes if key != "status"}
-        if detail_changes:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Issued invoice details are immutable",
-            )
-        allowed = {
-            "issued": {"paid", "overdue"},
-            "overdue": {"paid"},
-            "paid": set(),
-            "rectified": set(),
-            "cancelled": set(),
-        }
-        if requested_status not in allowed.get(invoice.status, set()):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid invoice status transition",
-            )
-        if requested_status == "paid":
-            invoice.paid_at = datetime.now(timezone.utc)
-
     try:
-        if "invoice_number" in changes and changes["invoice_number"] is not None:
-            changes["invoice_number"] = changes["invoice_number"].strip()
-            _ensure_invoice_number_available(
+        if invoice.status == "draft":
+            _apply_draft_invoice_changes(
                 db,
-                company_id,
-                changes["invoice_number"],
-                ignore_invoice_id=invoice.id,
+                invoice,
+                requested_status,
+                replacement_items,
+                validated_tasks,
             )
-            invoice_data.invoice_number = changes["invoice_number"] or invoice.invoice_number
+        else:
+            _apply_issued_invoice_transition(
+                invoice,
+                changes,
+                replacement_items,
+                requested_status,
+            )
+
+        _normalize_invoice_update_number(
+            db,
+            company_id,
+            invoice,
+            invoice_data,
+            changes,
+        )
         invoice_repo.update_invoice(db, invoice, invoice_data)
+        if replacement_items is not None and requested_status != "cancelled":
+            invoice_item_repo.recalculate_invoice_totals(db, invoice)
         db.commit()
         db.refresh(invoice)
+        db.expire(invoice, ["items"])
         return invoice
     except Exception:
         db.rollback()
@@ -516,9 +649,7 @@ def create_rectification_invoice(
             detail="Only issued, paid, or overdue invoices can be rectified",
         )
     if not original.items:
-        raise HTTPException(
-            status_code=400, detail="The original invoice has no lines"
-        )
+        raise HTTPException(status_code=400, detail="The original invoice has no lines")
     if (
         db.query(Invoice)
         .filter(
@@ -535,8 +666,7 @@ def create_rectification_invoice(
     generated_path = None
     try:
         notes = (
-            f"Rectification of invoice {original.invoice_number}. "
-            f"Reason: {data.reason}"
+            f"Rectification of invoice {original.invoice_number}. Reason: {data.reason}"
         )
         if data.notes:
             notes = f"{notes}\n{data.notes}"
@@ -567,7 +697,7 @@ def create_rectification_invoice(
             invoice_item_repo.create_invoice_item(
                 db,
                 rectification.id,
-                InvoiceItemCreate(
+                RectificationInvoiceItemCreate(
                     task_item_id=None,
                     description=f"Rectification: {original_item.description}",
                     quantity=float(original_item.quantity),

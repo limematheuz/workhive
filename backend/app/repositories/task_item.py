@@ -101,8 +101,7 @@ def create_task_item(
         dump.pop("created_at", None)
     db_task_item = TaskItem(**dump, company_id=company_id)
     db.add(db_task_item)
-    db.commit()
-    db.refresh(db_task_item)
+    db.flush()
     return db_task_item
 
 
@@ -113,14 +112,13 @@ def update_task_item(
     for key, value in update_data.items():
         setattr(db_task_item, key, value)
     db.add(db_task_item)
-    db.commit()
-    db.refresh(db_task_item)
+    db.flush()
     return db_task_item
 
 
 def delete_task_item(db: Session, db_task_item: TaskItem) -> None:
     db.delete(db_task_item)
-    db.commit()
+    db.flush()
 
 
 def count_tasks_by_user(

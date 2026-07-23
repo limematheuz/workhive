@@ -6,14 +6,21 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
+from app.models.task_structure import TaskAssignment
 from app.models.work_session import WorkSession
 from app.models.user import User
 from app.repositories import location as location_repo
 from app.repositories import reservation as reservation_repo
 from app.repositories import task_item as task_item_repo
-from app.schemas.reservation import ReservationCreate, ReservationResponse, ReservationUpdate
+from app.schemas.reservation import (
+    ReservationCreate,
+    ReservationResponse,
+    ReservationUpdate,
+)
 from app.schemas.work_session import WorkSessionStartLocationResponse
 from app.services import location_access_service
+from app.services.company_client_service import ensure_company_as_client
+from app.services import task_lifecycle_notification_service
 from app.services.reservation_tasks import (
     ensure_location_access,
     get_live_external_task_snapshot,  # noqa: F401 - compatibility re-export
@@ -34,6 +41,28 @@ from app.services.user_scope import (
     is_platform_superadmin,
     scoped_company_id,
 )
+
+
+def _record_external_service_request(
+    db: Session,
+    reservation: Reservation,
+    task: TaskItem,
+) -> None:
+    if task.company_id == reservation.owner_company_id:
+        return
+    reservation.service_request_sent_at = datetime.now(timezone.utc)
+    ensure_company_as_client(
+        db,
+        owner_company_id=task.company_id,
+        partner_company=reservation.owner_company,
+    )
+    db.add(reservation)
+    task_lifecycle_notification_service.notify_request_sent(
+        db,
+        reservation,
+        task,
+        commit=False,
+    )
 
 
 def build_reservation_response(
@@ -58,12 +87,9 @@ def build_reservation_response(
             assigned_company_name = task.company.name if task.company else None
         cleaning_status = task.status
         cleaning_scheduled_at = task.scheduled_start_at
-        can_view_start_locations = (
-            can_manage_company(current_user)
-            and (
-                current_user.company_id == reservation.owner_company_id
-                or current_user.company_id == task.company_id
-            )
+        can_view_start_locations = can_manage_company(current_user) and (
+            current_user.company_id == reservation.owner_company_id
+            or current_user.company_id == task.company_id
         )
         if can_view_start_locations:
             cleaning_start_locations = [
@@ -71,8 +97,7 @@ def build_reservation_response(
                     session_id=work_session.id,
                     user_id=work_session.user_id,
                     user_name=(
-                        work_session.user.full_name
-                        or work_session.user.email
+                        work_session.user.full_name or work_session.user.email
                         if work_session.user
                         else f"User {work_session.user_id}"
                     ),
@@ -196,7 +221,10 @@ def get_reservation(
         assigned_link = (
             db.query(TaskItem.id)
             .filter(
-                TaskItem.user_id == current_user.id,
+                or_(
+                    TaskItem.user_id == current_user.id,
+                    TaskItem.assignments.any(TaskAssignment.user_id == current_user.id),
+                ),
                 (
                     (TaskItem.checkout_reservation_id == reservation.id)
                     | (TaskItem.next_reservation_id == reservation.id)
@@ -233,28 +261,36 @@ def create_reservation(
             owner_company_id,
             data.assigned_company_id,
         )
-    reservation = reservation_repo.create_reservation(
-        db,
-        data,
-        current_user.id,
-        owner_company_id,
-    )
-
-    if data.cleaning_required:
-        target_company_id = data.assigned_company_id or owner_company_id
-        if data.assigned_company_id is not None:
-            ensure_location_access(db, data.location_id, target_company_id)
-        sync_checkout_task(
+    try:
+        reservation = reservation_repo.create_reservation(
             db,
-            reservation,
-            location,
-            target_company_id,
-            data.check_out_at,
-            data.guest_count,
-            data.cleaning_scheduled_at,
+            data,
+            current_user.id,
+            owner_company_id,
         )
-    sync_location_reservation_chain(db, data.location_id)
-    return reservation
+
+        if data.cleaning_required:
+            target_company_id = data.assigned_company_id or owner_company_id
+            if data.assigned_company_id is not None:
+                ensure_location_access(db, data.location_id, target_company_id)
+            checkout_task = sync_checkout_task(
+                db,
+                reservation,
+                location,
+                target_company_id,
+                data.check_out_at,
+                data.guest_count,
+                data.cleaning_scheduled_at,
+            )
+            if data.assigned_company_id is not None and checkout_task is not None:
+                _record_external_service_request(db, reservation, checkout_task)
+        sync_location_reservation_chain(db, data.location_id)
+        db.commit()
+        db.refresh(reservation)
+        return reservation
+    except Exception:
+        db.rollback()
+        raise
 
 
 def dispatch_cleaning_request(
@@ -291,50 +327,48 @@ def dispatch_cleaning_request(
         reservation.owner_company_id,
         reservation.assigned_company_id,
     )
-    checkout_task = (
-        db.query(TaskItem)
-        .filter(TaskItem.checkout_reservation_id == reservation.id)
-        .first()
-    )
-    if checkout_task and checkout_task.status not in {"requested", "rejected"}:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="The receiving company has already incorporated this request.",
+    try:
+        checkout_task = (
+            db.query(TaskItem)
+            .filter(TaskItem.checkout_reservation_id == reservation.id)
+            .first()
         )
-    if checkout_task and checkout_task.status == "rejected":
-        task_item_repo.delete_task_item(db, checkout_task)
+        if checkout_task and checkout_task.status not in {"requested", "rejected"}:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="The receiving company has already incorporated this request.",
+            )
+        if checkout_task and checkout_task.status == "rejected":
+            task_item_repo.delete_task_item(db, checkout_task)
 
-    ensure_location_access(
-        db, reservation.location_id, reservation.assigned_company_id
-    )
-    sync_checkout_task(
-        db,
-        reservation,
-        get_location(db, reservation.location_id),
-        reservation.assigned_company_id,
-        reservation.check_out_at,
-        reservation.guest_count,
-        reservation.cleaning_scheduled_at,
-    )
-    reservation.service_request_sent_at = datetime.now(timezone.utc)
-    db.add(reservation)
-    db.commit()
-    db.refresh(reservation)
-    sync_location_reservation_chain(db, reservation.location_id)
-    return reservation
+        ensure_location_access(
+            db, reservation.location_id, reservation.assigned_company_id
+        )
+        checkout_task = sync_checkout_task(
+            db,
+            reservation,
+            get_location(db, reservation.location_id),
+            reservation.assigned_company_id,
+            reservation.check_out_at,
+            reservation.guest_count,
+            reservation.cleaning_scheduled_at,
+        )
+        if checkout_task is not None:
+            _record_external_service_request(db, reservation, checkout_task)
+        sync_location_reservation_chain(db, reservation.location_id)
+        db.commit()
+        db.refresh(reservation)
+        return reservation
+    except Exception:
+        db.rollback()
+        raise
 
 
-def update_reservation(
-    db: Session, current_user: User, reservation_id: int, data: ReservationUpdate
-) -> Reservation:
-    reservation = reservation_repo.get_reservation(db, reservation_id)
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Reservation not found")
-    require_reservation_owner(current_user, reservation.owner_company_id)
-    location_access_service.require_location_capability(
-        db, current_user, reservation.location_id, "can_manage_reservations"
-    )
-
+def _validate_reservation_update_schedule(
+    db: Session,
+    reservation: Reservation,
+    data: ReservationUpdate,
+):
     check_in_at = data.check_in_at or reservation.check_in_at
     check_out_at = data.check_out_at or reservation.check_out_at
     if check_out_at <= check_in_at:
@@ -344,9 +378,7 @@ def update_reservation(
         )
 
     guest_count = (
-        data.guest_count
-        if data.guest_count is not None
-        else reservation.guest_count
+        data.guest_count if data.guest_count is not None else reservation.guest_count
     )
     location = get_location(db, reservation.location_id)
     validate_guest_capacity(location, guest_count)
@@ -369,14 +401,15 @@ def update_reservation(
         proposed_cleaning_at,
         reservation.id,
     )
+    return check_in_at, check_out_at, guest_count, location
 
-    checkout_task = (
-        db.query(TaskItem)
-        .filter(TaskItem.checkout_reservation_id == reservation.id)
-        .first()
-    )
+
+def _resolve_reservation_assignment(
+    db: Session,
+    reservation: Reservation,
+    data: ReservationUpdate,
+) -> tuple[bool, int | None]:
     assignment_was_submitted = "assigned_company_id" in data.model_fields_set
-    previous_assigned_company_id = reservation.assigned_company_id
     assigned_company_id = (
         data.assigned_company_id
         if assignment_was_submitted
@@ -391,83 +424,201 @@ def update_reservation(
             reservation.owner_company_id,
             target_company_id,
         )
-
     assignment_changed = (
         assignment_was_submitted
-        and assigned_company_id != previous_assigned_company_id
+        and assigned_company_id != reservation.assigned_company_id
     )
-    if assignment_changed and checkout_task:
-        if checkout_task.is_invoiced or checkout_task.status not in {
-            "requested",
-            "rejected",
-            "pending",
-        }:
+    return assignment_changed, assigned_company_id
+
+
+def _discard_checkout_task_for_assignment_change(
+    db: Session,
+    reservation: Reservation,
+    checkout_task: TaskItem | None,
+    assignment_changed: bool,
+) -> TaskItem | None:
+    if not assignment_changed or checkout_task is None:
+        return checkout_task
+    if checkout_task.is_invoiced or checkout_task.status not in {
+        "requested",
+        "rejected",
+        "pending",
+    }:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "The service provider cannot be changed after the work "
+                "has been accepted or started."
+            ),
+        )
+    task_item_repo.delete_task_item(db, checkout_task)
+    reservation.service_request_sent_at = None
+    return None
+
+
+def _cancel_updated_reservation(
+    db: Session,
+    reservation: Reservation,
+    checkout_task: TaskItem | None,
+) -> Reservation:
+    if checkout_task:
+        if checkout_task.is_invoiced:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=(
-                    "The service provider cannot be changed after the work "
-                    "has been accepted or started."
-                ),
+                detail="Reservations linked to invoiced work cannot be cancelled.",
             )
         task_item_repo.delete_task_item(db, checkout_task)
-        checkout_task = None
-        reservation.service_request_sent_at = None
+    sync_location_reservation_chain(db, reservation.location_id)
+    db.commit()
+    db.refresh(reservation)
+    return reservation
 
-    updated_reservation = reservation_repo.update_reservation(
-        db, reservation, data, current_user.id
+
+def _sync_updated_reservation_cleaning(
+    db: Session,
+    reservation: Reservation,
+    data: ReservationUpdate,
+    location,
+    assigned_company_id: int | None,
+    checkout_task: TaskItem | None,
+    check_out_at: datetime,
+    guest_count: int,
+) -> None:
+    cleaning_at = (
+        data.cleaning_scheduled_at
+        if "cleaning_scheduled_at" in data.model_fields_set
+        else reservation.cleaning_scheduled_at or check_out_at
     )
-
-    if updated_reservation.status == "cancelled":
-        if checkout_task and not checkout_task.is_invoiced:
-            task_item_repo.delete_task_item(db, checkout_task)
-        sync_location_reservation_chain(db, reservation.location_id)
-        return updated_reservation
-
-    cleaning_required = (
-        data.cleaning_required
-        if data.cleaning_required is not None
-        else updated_reservation.cleaning_required
-    )
-    if cleaning_required:
-        cleaning_at = (
-            data.cleaning_scheduled_at
-            if "cleaning_scheduled_at" in data.model_fields_set
-            else updated_reservation.cleaning_scheduled_at or check_out_at
+    if assigned_company_id is None:
+        sync_checkout_task(
+            db,
+            reservation,
+            location,
+            reservation.owner_company_id,
+            check_out_at,
+            guest_count,
+            cleaning_at,
         )
-        if assigned_company_id is None:
-            sync_checkout_task(
+        return
+    if reservation.service_request_sent_at and checkout_task:
+        sync_checkout_task(
+            db,
+            reservation,
+            location,
+            assigned_company_id,
+            check_out_at,
+            guest_count,
+            cleaning_at,
+        )
+        return
+
+    ensure_location_access(db, reservation.location_id, assigned_company_id)
+    checkout_task = sync_checkout_task(
+        db,
+        reservation,
+        location,
+        assigned_company_id,
+        check_out_at,
+        guest_count,
+        cleaning_at,
+    )
+    if checkout_task is not None:
+        _record_external_service_request(db, reservation, checkout_task)
+
+
+def _remove_updated_reservation_cleaning(
+    db: Session,
+    reservation: Reservation,
+    checkout_task: TaskItem | None,
+) -> None:
+    if not checkout_task:
+        return
+    if checkout_task.is_invoiced:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cleaning cannot be disabled after its work was invoiced.",
+        )
+    task_item_repo.delete_task_item(db, checkout_task)
+    reservation.service_request_sent_at = None
+    db.add(reservation)
+
+
+def update_reservation(
+    db: Session, current_user: User, reservation_id: int, data: ReservationUpdate
+) -> Reservation:
+    reservation = reservation_repo.get_reservation(db, reservation_id)
+    if not reservation:
+        raise HTTPException(status_code=404, detail="Reservation not found")
+    require_reservation_owner(current_user, reservation.owner_company_id)
+    location_access_service.require_location_capability(
+        db, current_user, reservation.location_id, "can_manage_reservations"
+    )
+    _, check_out_at, guest_count, location = _validate_reservation_update_schedule(
+        db,
+        reservation,
+        data,
+    )
+    assignment_changed, assigned_company_id = _resolve_reservation_assignment(
+        db,
+        reservation,
+        data,
+    )
+    checkout_task = (
+        db.query(TaskItem)
+        .filter(TaskItem.checkout_reservation_id == reservation.id)
+        .first()
+    )
+
+    try:
+        checkout_task = _discard_checkout_task_for_assignment_change(
+            db,
+            reservation,
+            checkout_task,
+            assignment_changed,
+        )
+        updated_reservation = reservation_repo.update_reservation(
+            db, reservation, data, current_user.id
+        )
+        if updated_reservation.status == "cancelled":
+            return _cancel_updated_reservation(
                 db,
                 updated_reservation,
-                location,
-                updated_reservation.owner_company_id,
-                check_out_at,
-                guest_count,
-                cleaning_at,
+                checkout_task,
             )
-        elif updated_reservation.service_request_sent_at and checkout_task:
-            sync_checkout_task(
+
+        cleaning_required = (
+            data.cleaning_required
+            if data.cleaning_required is not None
+            else updated_reservation.cleaning_required
+        )
+        if cleaning_required:
+            _sync_updated_reservation_cleaning(
                 db,
                 updated_reservation,
+                data,
                 location,
                 assigned_company_id,
+                checkout_task,
                 check_out_at,
                 guest_count,
-                cleaning_at,
             )
-    elif checkout_task and not checkout_task.is_invoiced:
-        task_item_repo.delete_task_item(db, checkout_task)
-        updated_reservation.service_request_sent_at = None
-        db.add(updated_reservation)
+        else:
+            _remove_updated_reservation_cleaning(
+                db,
+                updated_reservation,
+                checkout_task,
+            )
+
+        sync_location_reservation_chain(db, reservation.location_id)
         db.commit()
         db.refresh(updated_reservation)
+        return updated_reservation
+    except Exception:
+        db.rollback()
+        raise
 
-    sync_location_reservation_chain(db, reservation.location_id)
-    return updated_reservation
 
-
-def delete_reservation(
-    db: Session, current_user: User, reservation_id: int
-) -> None:
+def delete_reservation(db: Session, current_user: User, reservation_id: int) -> None:
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
@@ -477,13 +628,23 @@ def delete_reservation(
     )
     location_id = reservation.location_id
 
-    checkout_tasks = (
-        db.query(TaskItem)
-        .filter(TaskItem.checkout_reservation_id == reservation.id)
-        .all()
-    )
-    for task in checkout_tasks:
-        if not task.is_invoiced:
+    try:
+        checkout_tasks = (
+            db.query(TaskItem)
+            .filter(TaskItem.checkout_reservation_id == reservation.id)
+            .all()
+        )
+        invoiced_tasks = [task for task in checkout_tasks if task.is_invoiced]
+        if invoiced_tasks:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Reservations linked to invoiced work cannot be deleted.",
+            )
+        for task in checkout_tasks:
             task_item_repo.delete_task_item(db, task)
-    reservation_repo.delete_reservation(db, reservation)
-    sync_location_reservation_chain(db, location_id)
+        reservation_repo.delete_reservation(db, reservation)
+        sync_location_reservation_chain(db, location_id)
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise

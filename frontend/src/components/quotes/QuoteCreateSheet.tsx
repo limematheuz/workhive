@@ -14,10 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Loader2, FileText } from "lucide-react";
 import { BillingPartyCard } from "@/components/billing/BillingPartyCard";
-import { CompanyLogoUpload } from "@/components/billing/CompanyLogoUpload";
+import { DocumentSummary } from "@/components/billing/DocumentSummary";
 import { SignatureUpload } from "@/components/billing/SignatureUpload";
 import { QuoteItemsTable } from "./QuoteItemsTable";
-import { QuoteSummary } from "./QuoteSummary";
 import { InvoiceAdditionalInfo } from "@/components/invoices/InvoiceAdditionalInfo";
 
 interface QuoteCreateSheetProps {
@@ -40,13 +39,10 @@ export function QuoteCreateSheet({
         clients,
         selectedClientId,
         setSelectedClientId,
-        company,
         title,
         setTitle,
         validUntil,
         setValidUntil,
-        companyLogo,
-        setCompanyLogo,
         shippingAddress,
         setShippingAddress,
         concepts,
@@ -121,44 +117,33 @@ export function QuoteCreateSheet({
                             <>
                                 {/* Left Side - Fields & Concepts (Takes 2/3) */}
                                 <div className="lg:col-span-2 space-y-6">
-                                    {/* Quote Details Grid */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div className="md:col-span-2 space-y-3">
-                                            <div className="space-y-1">
-                                                <Label className="text-xs text-[var(--text-muted)] font-medium">
-                                                    {dict.quotes?.title_label || "Título *"}
-                                                </Label>
-                                                <input
-                                                    type="text"
-                                                    value={title}
-                                                    onChange={(e) => setTitle(e.target.value)}
-                                                    required
-                                                    placeholder={dict.quotes?.title_placeholder || "Ej: Limpieza de apartamento turístico"}
-                                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
-                                                />
-                                            </div>
-
-                                            <div className="space-y-1">
-                                                <Label className="text-xs text-[var(--text-muted)] font-medium">
-                                                    {dict.quotes?.valid_until_label || "Válido hasta"}
-                                                </Label>
-                                                <input
-                                                    type="date"
-                                                    value={validUntil}
-                                                    onChange={(e) => setValidUntil(e.target.value)}
-                                                    aria-label={dict.quotes?.valid_until_label || "Válido hasta"}
-                                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
-                                                />
-                                            </div>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div className="space-y-1">
+                                            <Label className="text-xs font-medium text-[var(--text-muted)]">
+                                                {dict.quotes?.title_label || "Título *"}
+                                            </Label>
+                                            <input
+                                                type="text"
+                                                value={title}
+                                                onChange={(event) => setTitle(event.target.value)}
+                                                required
+                                                maxLength={255}
+                                                placeholder={dict.quotes?.title_placeholder || "Ej: Limpieza de apartamento turístico"}
+                                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                                            />
                                         </div>
-
-                                        {/* Logo Uploader Block */}
-                                        <CompanyLogoUpload
-                                            companyId={company?.id}
-                                            logoUrl={companyLogo}
-                                            onLogoChange={setCompanyLogo}
-                                            dict={dict}
-                                        />
+                                        <div className="space-y-1">
+                                            <Label className="text-xs font-medium text-[var(--text-muted)]">
+                                                {dict.quotes?.valid_until_label || "Válido hasta"}
+                                            </Label>
+                                            <input
+                                                type="date"
+                                                value={validUntil}
+                                                onChange={(event) => setValidUntil(event.target.value)}
+                                                aria-label={dict.quotes?.valid_until_label || "Válido hasta"}
+                                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Client Selection */}
@@ -183,41 +168,6 @@ export function QuoteCreateSheet({
                                         </select>
                                     </div>
 
-                                    {/* Billing Information text boxes */}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <BillingPartyCard
-                                            type="issuer"
-                                            dict={dict}
-                                            isEditing={isEditingIssuer}
-                                            setIsEditing={setIsEditingIssuer}
-                                            structuredFields={issuerFields}
-                                            onChangeField={handleUpdateIssuerField}
-                                        />
-
-                                        <BillingPartyCard
-                                            type="recipient"
-                                            dict={dict}
-                                            isEditing={isEditingRecipient}
-                                            setIsEditing={setIsEditingRecipient}
-                                            structuredFields={recipientFields}
-                                            onChangeField={handleUpdateRecipientField}
-                                        />
-                                    </div>
-
-                                    {/* Shipping Address */}
-                                    <div className="space-y-1">
-                                        <Label className="text-xs text-[var(--text-muted)] font-medium">
-                                            {dict.invoices?.shipping_address_label || "Dirección de envío (opcional)"}
-                                        </Label>
-                                        <textarea
-                                            value={shippingAddress}
-                                            onChange={(e) => setShippingAddress(e.target.value)}
-                                            rows={2}
-                                            placeholder={dict.invoices?.shipping_address_placeholder || "Haz click para rellenar dirección de envío si difiere de la dirección fiscal"}
-                                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors resize-none"
-                                        />
-                                    </div>
-
                                     {/* Concepts Table Section */}
                                     <QuoteItemsTable
                                         concepts={concepts}
@@ -227,23 +177,68 @@ export function QuoteCreateSheet({
                                         handleDeleteRow={handleDeleteRow}
                                     />
 
-                                    {/* Additional toggles: Notes and Terms */}
-                                    <InvoiceAdditionalInfo
-                                        dict={dict}
-                                        notesEnabled={notesEnabled}
-                                        setNotesEnabled={setNotesEnabled}
-                                        notes={notes}
-                                        setNotes={setNotes}
-                                        termsEnabled={termsEnabled}
-                                        setTermsEnabled={setTermsEnabled}
-                                        terms={terms}
-                                        setTerms={setTerms}
-                                    />
+                                    <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
+                                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
+                                            Opciones avanzadas
+                                            <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">
+                                                Datos fiscales, envío, notas y firma
+                                            </span>
+                                        </summary>
+                                        <div className="space-y-5 border-t border-[var(--border-soft)] p-4">
+                                            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                                <BillingPartyCard
+                                                    type="issuer"
+                                                    dict={dict}
+                                                    isEditing={isEditingIssuer}
+                                                    setIsEditing={setIsEditingIssuer}
+                                                    structuredFields={issuerFields}
+                                                    onChangeField={handleUpdateIssuerField}
+                                                />
+                                                <BillingPartyCard
+                                                    type="recipient"
+                                                    dict={dict}
+                                                    isEditing={isEditingRecipient}
+                                                    setIsEditing={setIsEditingRecipient}
+                                                    structuredFields={recipientFields}
+                                                    onChangeField={handleUpdateRecipientField}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-xs font-medium text-[var(--text-muted)]">
+                                                    {dict.invoices?.shipping_address_label || "Dirección de envío (opcional)"}
+                                                </Label>
+                                                <textarea
+                                                    value={shippingAddress}
+                                                    onChange={(event) => setShippingAddress(event.target.value)}
+                                                    rows={2}
+                                                    maxLength={500}
+                                                    placeholder={dict.invoices?.shipping_address_placeholder || "Solo si difiere de la dirección fiscal"}
+                                                    className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                                                />
+                                            </div>
+                                            <InvoiceAdditionalInfo
+                                                dict={dict}
+                                                notesEnabled={notesEnabled}
+                                                setNotesEnabled={setNotesEnabled}
+                                                notes={notes}
+                                                setNotes={setNotes}
+                                                termsEnabled={termsEnabled}
+                                                setTermsEnabled={setTermsEnabled}
+                                                terms={terms}
+                                                setTerms={setTerms}
+                                            />
+                                            <SignatureUpload
+                                                signatureUrl={signatureUrl}
+                                                onSignatureChange={setSignatureUrl}
+                                                dict={dict}
+                                            />
+                                        </div>
+                                    </details>
                                 </div>
 
                                 {/* Right Side - Task Selection & Summary (Takes 1/3) */}
                                 <div className="space-y-6 lg:border-l lg:border-[var(--border-soft)] lg:pl-6">
-                                    <QuoteSummary
+                                    <DocumentSummary
                                         dict={dict}
                                         subtotal={subtotal}
                                         discount={discount}
@@ -261,12 +256,6 @@ export function QuoteCreateSheet({
                                         totalGeneral={totalGeneral}
                                     />
 
-                                    {/* Signature Block */}
-                                    <SignatureUpload
-                                        signatureUrl={signatureUrl}
-                                        onSignatureChange={setSignatureUrl}
-                                        dict={dict}
-                                    />
                                 </div>
                             </>
                         )}

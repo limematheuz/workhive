@@ -1,4 +1,8 @@
 minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - next@16.2.11
+  - "@next/env@16.2.11"
+  - "@next/swc-*"
 trustPolicy: no-downgrade
 blockExoticSubdeps: true
 

@@ -13,6 +13,7 @@ import {
     buildInvoicePdfTitle,
     printWithDocumentTitle,
 } from "@/lib/document-print";
+import { validateDocumentLines } from "@/lib/document-line-validation";
 import { createEditableLineKey } from "@/lib/editable-line-key";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
@@ -26,7 +27,6 @@ import {
     FiscalInvoiceRecord,
     FiscalReadiness,
     InvoiceEmailPayload,
-    InvoiceItemCreate,
     InvoiceService,
 } from "@/services/invoice.service";
 import { Invoice } from "@/types/invoice";
@@ -39,6 +39,7 @@ export interface EditingInvoiceItem {
     quantity: number;
     unit_price: number;
     tax_rate: number;
+    task_item_id?: number | null;
 }
 
 const EMPTY_BILLING_PARTY_FIELDS: BillingPartyFields = {
@@ -201,7 +202,6 @@ export function useInvoiceDetail(invoiceId: number) {
         EMPTY_BILLING_PARTY_FIELDS
     );
     const [editingItems, setEditingItems] = useState<EditingInvoiceItem[]>([]);
-    const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
     const [isSavingDraft, setIsSavingDraft] = useState(false);
     const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
     const [isSendingEmail, setIsSendingEmail] = useState(false);
@@ -437,9 +437,9 @@ export function useInvoiceDetail(invoiceId: number) {
                 quantity: item.quantity,
                 unit_price: item.unit_price,
                 tax_rate: item.tax_rate,
+                task_item_id: item.task_item_id,
             }))
         );
-        setDeletedItemIds([]);
         setIsEditMode(true);
     };
 
@@ -451,7 +451,6 @@ export function useInvoiceDetail(invoiceId: number) {
         setEditingIssuerFields(EMPTY_BILLING_PARTY_FIELDS);
         setEditingRecipientFields(EMPTY_BILLING_PARTY_FIELDS);
         setEditingItems([]);
-        setDeletedItemIds([]);
     };
 
     const handleEditIssuerFieldChange = (
@@ -486,10 +485,6 @@ export function useInvoiceDetail(invoiceId: number) {
     };
 
     const handleRemoveEditItem = (index: number) => {
-        const item = editingItems[index];
-        if (item.id) {
-            setDeletedItemIds((current) => [...current, item.id as number]);
-        }
         setEditingItems((current) =>
             current.filter((_, itemIndex) => itemIndex !== index)
         );
@@ -509,6 +504,23 @@ export function useInvoiceDetail(invoiceId: number) {
 
     const handleSaveDraft = async () => {
         if (!invoice) return;
+        const lineError = validateDocumentLines(
+            editingItems.map((item) => ({
+                description: item.description,
+                quantity: item.quantity,
+                unitPrice: item.unit_price,
+            }))
+        );
+        if (lineError) {
+            const messages = {
+                empty: "Añade al menos una línea a la factura.",
+                description: "Completa la descripción de todas las líneas.",
+                quantity: "La cantidad de cada línea debe ser mayor que cero.",
+                "unit-price": "El precio de una línea no puede ser negativo.",
+            };
+            toast.error(messages[lineError]);
+            return;
+        }
         try {
             setIsSavingDraft(true);
             const headerPayload = {
@@ -523,38 +535,15 @@ export function useInvoiceDetail(invoiceId: number) {
                 ...(editingInvoiceNumber.trim()
                     ? { invoice_number: editingInvoiceNumber.trim() }
                     : {}),
+                items: editingItems.map((item) => ({
+                    description: item.description.trim(),
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    tax_rate: item.tax_rate,
+                    task_item_id: item.task_item_id,
+                })),
             };
             await InvoiceService.updateInvoice(invoice.id, headerPayload);
-            const itemMutations = editingItems.flatMap((item) => {
-                if (item.id) {
-                    return [
-                        InvoiceService.updateInvoiceItem(
-                            invoice.id,
-                            item.id,
-                            {
-                                description: item.description,
-                                quantity: item.quantity,
-                                unit_price: item.unit_price,
-                                tax_rate: item.tax_rate,
-                            }
-                        ),
-                    ];
-                }
-                return [
-                    InvoiceService.createInvoiceItem(invoice.id, {
-                        description: item.description,
-                        quantity: item.quantity,
-                        unit_price: item.unit_price,
-                        tax_rate: item.tax_rate,
-                    } as InvoiceItemCreate),
-                ];
-            });
-            await Promise.all([
-                ...deletedItemIds.map((itemId) =>
-                    InvoiceService.deleteInvoiceItem(invoice.id, itemId)
-                ),
-                ...itemMutations,
-            ]);
             toast.success("Borrador actualizado correctamente");
             setIsEditMode(false);
             setEditingInvoiceNumber("");
@@ -563,7 +552,6 @@ export function useInvoiceDetail(invoiceId: number) {
             setEditingIssuerFields(EMPTY_BILLING_PARTY_FIELDS);
             setEditingRecipientFields(EMPTY_BILLING_PARTY_FIELDS);
             setEditingItems([]);
-            setDeletedItemIds([]);
             await loadAllData();
         } catch (error: unknown) {
             toast.error(

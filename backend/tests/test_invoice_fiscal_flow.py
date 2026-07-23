@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.models.client import Client
 from app.models.fiscal_invoice_record import FiscalInvoiceRecord
@@ -16,7 +17,11 @@ from app.schemas.invoice import (
     InvoiceUpdate,
     RectificationCreate,
 )
-from app.schemas.invoice_item import InvoiceItemCreate
+from app.schemas.invoice_item import (
+    InvoiceItemCreate,
+    InvoiceItemResponse,
+    RectificationInvoiceItemCreate,
+)
 from app.services import invoice_service
 from tests.test_reservations import _company
 
@@ -132,6 +137,36 @@ def test_full_rectification_preserves_original_and_matches_negative_total(db):
     assert rectification.invoice_hash is not None
     assert rectification.pdf_sha256 is not None
     assert Path(rectification.pdf_path).read_bytes().startswith(b"%PDF-")
+
+
+def test_only_rectification_lines_can_use_negative_prices():
+    with pytest.raises(ValidationError):
+        InvoiceItemCreate(
+            description="Negative ordinary line",
+            quantity=1,
+            unit_price=-100,
+            tax_rate=0.21,
+        )
+
+    rectification = RectificationInvoiceItemCreate(
+        description="Rectification line",
+        quantity=1,
+        unit_price=-100,
+        tax_rate=0.21,
+    )
+    response = InvoiceItemResponse.model_validate(
+        {
+            **rectification.model_dump(),
+            "id": 1,
+            "invoice_id": 1,
+            "subtotal": -100,
+            "total": -121,
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+    )
+
+    assert response.unit_price == -100
 
 
 def test_issue_without_recipient_tax_id_uses_simplified_f2_record(db):

@@ -9,6 +9,10 @@ WorkHive identifies a production release with two complementary values:
 frontend package version and backend default must match it; CI tests reject
 drift between those files.
 
+For the complete human-operated release flow, AWS/GitHub terminology, security
+boundaries, verification, and rollback, read the
+[production delivery guide](PRODUCTION_DELIVERY_GUIDE.md).
+
 ## Semantic version rules
 
 WorkHive follows `MAJOR.MINOR.PATCH`:

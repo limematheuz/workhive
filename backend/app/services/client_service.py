@@ -3,8 +3,6 @@ from app.models.client import Client
 from app.schemas.client import ClientCreate, ClientUpdate
 from app.repositories import client as client_repo
 from fastapi import HTTPException, status
-from app.repositories import company_collaboration as collaboration_repo
-from app.services.company_client_service import ensure_company_as_client
 
 
 def get_clients(
@@ -14,16 +12,6 @@ def get_clients(
     limit: int = 100,
     is_active: bool | None = True,
 ) -> list[Client]:
-    if company_id is not None:
-        partners = collaboration_repo.list_partner_companies(db, company_id)
-        for partner in partners:
-            ensure_company_as_client(
-                db,
-                owner_company_id=company_id,
-                partner_company=partner,
-            )
-        if partners:
-            db.commit()
     return client_repo.get_all_clients(db, company_id, skip, limit, is_active)
 
 

@@ -3,8 +3,8 @@ from fastapi import HTTPException, status
 from app.models.invoice_item import InvoiceItem
 from app.schemas.invoice_item import InvoiceItemCreate, InvoiceItemUpdate
 from app.repositories import invoice_item as invoice_item_repo
-from app.repositories import task_item as task_item_repo
 from app.repositories import invoice as invoice_repo
+from app.services.invoice_tasks import validate_task_for_invoice
 
 
 def get_invoice_items(
@@ -43,19 +43,12 @@ def create_invoice_item(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     try:
         if invoice_item_data.task_item_id is not None:
-            task_item = task_item_repo.get_task_item(
-                db, company_id, invoice_item_data.task_item_id
+            task_item = validate_task_for_invoice(
+                db,
+                company_id,
+                invoice_item_data.task_item_id,
+                existing.client_id,
             )
-            if not task_item:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Task Item not found",
-                )
-            if task_item.is_invoiced:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Task Item is already invoiced",
-                )
             task_item.is_invoiced = True
             db.add(task_item)
 
@@ -97,26 +90,22 @@ def update_invoice_item(
             new_task_id = item_data.task_item_id
             if new_task_id != existing_item.task_item_id:
                 if existing_item.task_item_id is not None:
-                    old_task = task_item_repo.get_task_item(
-                        db, company_id, existing_item.task_item_id
+                    old_task = validate_task_for_invoice(
+                        db,
+                        company_id,
+                        existing_item.task_item_id,
+                        db_invoice.client_id,
+                        linked_invoice_id=db_invoice.id,
                     )
-                    if old_task:
-                        old_task.is_invoiced = False
-                        db.add(old_task)
+                    old_task.is_invoiced = False
+                    db.add(old_task)
                 if new_task_id is not None:
-                    new_task = task_item_repo.get_task_item(
-                        db, company_id, new_task_id
+                    new_task = validate_task_for_invoice(
+                        db,
+                        company_id,
+                        new_task_id,
+                        db_invoice.client_id,
                     )
-                    if not new_task:
-                        raise HTTPException(
-                            status_code=status.HTTP_404_NOT_FOUND,
-                            detail="New Task Item not found",
-                        )
-                    if new_task.is_invoiced:
-                        raise HTTPException(
-                            status_code=status.HTTP_409_CONFLICT,
-                            detail="New Task Item is already invoiced",
-                        )
                     new_task.is_invoiced = True
                     db.add(new_task)
         item = invoice_item_repo.update_invoice_item(
@@ -148,12 +137,15 @@ def delete_invoice_item(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
     try:
         if existing_item.task_item_id is not None:
-            task_item = task_item_repo.get_task_item(
-                db, company_id, existing_item.task_item_id
+            task_item = validate_task_for_invoice(
+                db,
+                company_id,
+                existing_item.task_item_id,
+                db_invoice.client_id,
+                linked_invoice_id=db_invoice.id,
             )
-            if task_item:
-                task_item.is_invoiced = False
-                db.add(task_item)
+            task_item.is_invoiced = False
+            db.add(task_item)
         invoice_item_repo.delete_invoice_item(db, existing_item)
         db.flush()
         db.refresh(db_invoice)

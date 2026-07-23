@@ -11,9 +11,10 @@ import { NotificationPanel } from "./notifications/NotificationPanel";
 interface DashboardHeaderProps {
     isSidebarOpen: boolean;
     onToggleSidebar: () => void;
+    onLogout: () => void;
 }
 
-export function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
+export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderProps) {
     const { dict } = useDictionary();
     const pathname = usePathname();
     const { user } = useUser();
@@ -120,6 +121,19 @@ export function DashboardHeader({ onToggleSidebar }: DashboardHeaderProps) {
                                 >
                                     {dict.dashboard.view_profile}
                                 </Link>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsProfileOpen(false);
+                                        onLogout();
+                                    }}
+                                    className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--btn-cancel-text)] transition-colors text-left"
+                                >
+                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                    </svg>
+                                    {dict.dashboard.logout}
+                                </button>
                             </div>
                         </div>
                     )}

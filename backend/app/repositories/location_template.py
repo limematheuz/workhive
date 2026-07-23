@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.location_template import LocationTemplate
 from app.models.template_task import TemplateTask
 from app.schemas.location_template import LocationTemplateCreate, LocationTemplateUpdate
@@ -12,6 +12,7 @@ def get_location_template(
 ) -> LocationTemplate | None:
     query = (
         db.query(LocationTemplate)
+        .options(selectinload(LocationTemplate.template))
         .join(TemplateTask)
         .filter(LocationTemplate.location_id == location_id)
         .filter(LocationTemplate.template_task_id == template_task_id)
@@ -31,6 +32,7 @@ def get_template_by_location(
 ) -> list[LocationTemplate]:
     query = (
         db.query(LocationTemplate)
+        .options(selectinload(LocationTemplate.template))
         .join(TemplateTask)
         .filter(LocationTemplate.location_id == location_id)
         .filter(TemplateTask.is_active.is_(True))

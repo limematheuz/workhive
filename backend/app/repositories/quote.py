@@ -1,18 +1,39 @@
 from datetime import datetime, timezone
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.quote import Quote
+from app.models.quote_item import QuoteItem
+
+
+def _lock_numbering(db: Session, company_id: int, year: int) -> None:
+    if db.bind and db.bind.dialect.name == "postgresql":
+        db.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+            {"lock_key": f"quote:{company_id}:{year}"},
+        )
 
 
 def _generate_quote_number(db: Session, company_id: int) -> str:
     year = datetime.now(timezone.utc).year
-    count = (
-        db.query(Quote)
-        .filter(Quote.company_id == company_id)
-        .count()
+    _lock_numbering(db, company_id, year)
+    prefix = f"QUO-{year}-"
+    numbers = (
+        db.query(Quote.quote_number)
+        .filter(
+            Quote.company_id == company_id,
+            Quote.quote_number.like(f"{prefix}%"),
+        )
+        .all()
     )
-    return f"QUO-{year}-{str(count + 1).zfill(4)}"
+    last_sequence = 0
+    for (number,) in numbers:
+        try:
+            last_sequence = max(last_sequence, int(number.removeprefix(prefix)))
+        except ValueError:
+            continue
+    return f"{prefix}{last_sequence + 1:04d}"
 
 
 def get_quotes(
@@ -45,6 +66,25 @@ def get_quote(db: Session, company_id: int, quote_id: int) -> Quote | None:
         )
         .first()
     )
+
+
+def get_quote_for_update(
+    db: Session,
+    company_id: int,
+    quote_id: int,
+) -> Quote | None:
+    query = (
+        db.query(Quote)
+        .options(selectinload(Quote.items))
+        .filter(
+            Quote.id == quote_id,
+            Quote.company_id == company_id,
+            Quote.is_active.is_(True),
+        )
+    )
+    if db.bind and db.bind.dialect.name == "postgresql":
+        query = query.with_for_update()
+    return query.first()
 
 
 def create_quote(
@@ -87,29 +127,35 @@ def create_quote(
         signature_url=signature_url,
     )
     db.add(quote)
-    db.commit()
-    db.refresh(quote)
+    db.flush()
     return quote
 
 
 def update_quote(db: Session, quote: Quote, **kwargs) -> Quote:
     for key, value in kwargs.items():
-        if value is not None:
-            setattr(quote, key, value)
-    db.commit()
-    db.refresh(quote)
+        setattr(quote, key, value)
+    db.add(quote)
+    db.flush()
     return quote
 
 
 def recalculate_totals(db: Session, quote: Quote) -> Quote:
-    subtotal = sum(item.subtotal for item in quote.items)
+    # Query the current transaction snapshot. Relationship collections may be
+    # stale after adding or deleting rows through the compatibility endpoints.
+    items = (
+        db.query(QuoteItem)
+        .filter(QuoteItem.quote_id == quote.id)
+        .order_by(QuoteItem.id.asc())
+        .all()
+    )
+    subtotal = sum(item.subtotal for item in items)
     
     discount_pct = getattr(quote, "discount", 0.0) or 0.0
     discount_amount = subtotal * (discount_pct / 100.0)
     base_amount = subtotal - discount_amount
     
     tax_amount = 0.0
-    for item in quote.items:
+    for item in items:
         item_subtotal_discounted = item.subtotal * (1.0 - discount_pct / 100.0)
         item_tax = item_subtotal_discounted * quote.tax_rate
         tax_amount += item_tax
@@ -124,11 +170,12 @@ def recalculate_totals(db: Session, quote: Quote) -> Quote:
     quote.tax_amount = round(tax_amount + surcharge_amount, 2)
     quote.total_amount = round(base_amount + tax_amount + surcharge_amount - retention_amount, 2)
 
-    db.commit()
-    db.refresh(quote)
+    db.add(quote)
+    db.flush()
     return quote
 
 
 def delete_quote(db: Session, quote: Quote) -> None:
     quote.is_active = False
-    db.commit()
+    db.add(quote)
+    db.flush()

@@ -122,7 +122,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 isOpen={isSidebarOpen}
                 theme={theme}
                 onThemeChange={setTheme}
-                onLogout={handleLogout}
             />
 
             <div className="flex-1 h-screen overflow-hidden p-0 lg:py-4 lg:pr-4 lg:pl-0 transition-colors duration-300">
@@ -131,6 +130,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                     <DashboardHeader
                         isSidebarOpen={isSidebarOpen}
                         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+                        onLogout={handleLogout}
                     />
 
                     <main className="relative z-[var(--z-dashboard-content)] flex-1 overflow-auto p-0 min-h-0">

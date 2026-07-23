@@ -7,6 +7,15 @@ from app.schemas.reservation import ReservationOperationalResponse
 
 MAX_REPORT_COLLECTION_ITEMS = 200
 MAX_REPORT_PAYLOAD_BYTES = 256 * 1024
+TaskStatus = Literal[
+    "requested",
+    "pending",
+    "accepted",
+    "progress",
+    "review",
+    "completed",
+    "rejected",
+]
 
 
 def _validate_report_payload(value: Any) -> Any:
@@ -52,7 +61,7 @@ class TaskItemBase(BaseModel):
 
 
 class TaskItemCreate(TaskItemBase):
-    status: str = "accepted"
+    status: TaskStatus = "accepted"
     created_at: datetime | None = None
 
 
@@ -67,7 +76,7 @@ class TaskItemUpdate(BaseModel):
     price: float | None = None
     quantity: float | None = None
     unit: str | None = None
-    status: str | None = None
+    status: TaskStatus | None = None
     date_done: datetime | None = None
     template_task_id: int | None = None
     location_id: int | None = None

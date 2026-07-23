@@ -40,7 +40,6 @@ export function InvoiceCreateSheet({
         selectedClientId,
         setSelectedClientId,
         isClientLocked,
-        company,
         issueDate,
         setIssueDate,
         dueDate,
@@ -48,8 +47,6 @@ export function InvoiceCreateSheet({
         invoiceNumber,
         setInvoiceNumber,
         maxDueDate,
-        companyLogo,
-        setCompanyLogo,
         shippingAddress,
         setShippingAddress,
         concepts,
@@ -134,7 +131,6 @@ export function InvoiceCreateSheet({
                                     setSelectedClientId={setSelectedClientId}
                                     isClientLocked={isClientLocked}
                                     initialTasks={initialTasks}
-                                    companyId={company?.id}
                                     issueDate={issueDate}
                                     setIssueDate={setIssueDate}
                                     dueDate={dueDate}
@@ -142,8 +138,6 @@ export function InvoiceCreateSheet({
                                     invoiceNumber={invoiceNumber}
                                     setInvoiceNumber={setInvoiceNumber}
                                     maxDueDate={maxDueDate}
-                                    companyLogo={companyLogo}
-                                    setCompanyLogo={setCompanyLogo}
                                     shippingAddress={shippingAddress}
                                     setShippingAddress={setShippingAddress}
                                     concepts={concepts}

@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
@@ -14,6 +14,11 @@ from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.reservation_validation import get_location
 from app.services import task_assignment_service
+
+
+def _utc(value: datetime) -> datetime:
+    """Normalize database datetimes before comparing SQLite/PostgreSQL values."""
+    return value if value.tzinfo is not None else value.replace(tzinfo=timezone.utc)
 
 
 def ensure_location_access(
@@ -51,7 +56,7 @@ def ensure_location_access(
             can_view_sensitive=False,
         )
     )
-    db.commit()
+    db.flush()
 
 
 def _build_service_snapshot(
@@ -133,7 +138,7 @@ def get_live_external_task_snapshot(
 ) -> dict[str, object | None]:
     """Return issuer scope until the receiving company starts executing it."""
     if (
-        task.status not in {"requested", "pending", "accepted"}
+        task.status not in {"requested", "pending"}
         or not task.checkout_reservation
         or task.is_invoiced
         or task.work_sessions
@@ -167,7 +172,7 @@ def get_live_external_task_snapshot_loaded(
 ) -> dict[str, object | None]:
     """Build the live snapshot without issuing SQL from a response loop."""
     if (
-        task.status not in {"requested", "pending", "accepted"}
+        task.status not in {"requested", "pending"}
         or not task.checkout_reservation
         or task.is_invoiced
         or task.work_sessions
@@ -263,8 +268,7 @@ def sync_checkout_task(
         from app.services import task_structure_service
 
         task_structure_service.sync_from_description(db, task, strict=False)
-        db.commit()
-        db.refresh(task)
+        db.flush()
         return task
 
     task = task_item_repo.create_task_item(
@@ -290,8 +294,7 @@ def sync_checkout_task(
     from app.services import task_structure_service
 
     task_structure_service.sync_from_description(db, task, strict=False)
-    db.commit()
-    db.refresh(task)
+    db.flush()
     return task
 
 
@@ -312,7 +315,7 @@ def sync_location_reservation_chain(db: Session, location_id: int) -> None:
                 candidate
                 for candidate in reservations
                 if candidate.id != reservation.id
-                and candidate.check_in_at >= reservation.check_out_at
+                and _utc(candidate.check_in_at) >= _utc(reservation.check_out_at)
             ),
             None,
         )
@@ -327,14 +330,21 @@ def sync_location_reservation_chain(db: Session, location_id: int) -> None:
         checkout_task.next_reservation_id = (
             next_reservation.id if next_reservation else None
         )
-        earliest_start = reservation.check_out_at
-        latest_start = next_reservation.check_in_at if next_reservation else None
+        earliest_start = _utc(reservation.check_out_at)
+        latest_start = (
+            _utc(next_reservation.check_in_at) if next_reservation else None
+        )
+        scheduled_start = (
+            _utc(checkout_task.scheduled_start_at)
+            if checkout_task.scheduled_start_at is not None
+            else None
+        )
         if (
-            checkout_task.scheduled_start_at is None
-            or checkout_task.scheduled_start_at < earliest_start
+            scheduled_start is None
+            or scheduled_start < earliest_start
             or (
                 latest_start is not None
-                and checkout_task.scheduled_start_at > latest_start
+                and scheduled_start > latest_start
             )
         ):
             checkout_task.scheduled_start_at = earliest_start
@@ -352,4 +362,4 @@ def sync_location_reservation_chain(db: Session, location_id: int) -> None:
         )
         db.add(checkout_task)
 
-    db.commit()
+    db.flush()

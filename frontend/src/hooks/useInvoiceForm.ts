@@ -4,7 +4,7 @@ import { startTransition, useState, useEffect, useRef, useCallback, useEffectEve
 import { ClientService, Client } from "@/services/client.service";
 import { TaskItem } from "@/services/task.service";
 import { InvoiceService, InvoiceableTask } from "@/services/invoice.service";
-import { CompanyService, Company } from "@/services/company.service";
+import { CompanyService } from "@/services/company.service";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
@@ -21,6 +21,7 @@ import {
     buildInvoiceTaskConcepts,
     prepareInvoiceTasks,
 } from "@/lib/invoice-task-selection";
+import { validateDocumentLines } from "@/lib/document-line-validation";
 import {
     buildInvoiceDraftPayload,
     createInvoiceConceptRow,
@@ -66,13 +67,10 @@ export function useInvoiceForm({
     const [selectedClientId, setSelectedClientId] = useState<string>(
         () => initialTaskClientId || initialClientId || ""
     );
-    const [company, setCompany] = useState<Company | null>(null);
-    
     const [issueDate, setIssueDateValue] = useState<string>(getTodayIsoDate);
     const [dueDate, setDueDate] = useState<string>(() => getDefaultInvoiceDueDate());
     const [invoiceNumber, setInvoiceNumber] = useState<string>("");
 
-    const [companyLogo, setCompanyLogo] = useState<string | null>(null);
     const [customIssuerInfo, setCustomIssuerInfo] = useState<string>("");
     const [customRecipientInfo, setCustomRecipientInfo] = useState<string>("");
     const [shippingAddress, setShippingAddress] = useState<string>("");
@@ -257,9 +255,7 @@ export function useInvoiceForm({
                 if (user?.company_id) {
                     const comp = await CompanyService.getCompany(user.company_id);
                     const issuer = getIssuerFieldsFromCompany(comp);
-                    setCompany(comp);
-                    setCompanyLogo(comp.logo ?? null);
-                    
+
                     setIssuerName(issuer.name);
                     setIssuerTaxId(issuer.taxId);
                     setIssuerAddress(issuer.address);
@@ -395,8 +391,21 @@ export function useInvoiceForm({
             toast.error(dict.invoices.client_select);
             return;
         }
-        if (concepts.length === 0) {
-            toast.error("Debe añadir al menos un concepto en la factura.");
+        const lineError = validateDocumentLines(
+            concepts.map((concept) => ({
+                description: concept.description,
+                quantity: concept.quantity,
+                unitPrice: concept.unitPrice,
+            }))
+        );
+        if (lineError) {
+            const messages = {
+                empty: "Debe añadir al menos un concepto en la factura.",
+                description: "Completa la descripción de todos los conceptos.",
+                quantity: "La cantidad de cada concepto debe ser mayor que cero.",
+                "unit-price": "El precio de un concepto no puede ser negativo.",
+            };
+            toast.error(messages[lineError]);
             return;
         }
         try {
@@ -477,7 +486,6 @@ export function useInvoiceForm({
         selectedClientId,
         setSelectedClientId: handleSelectedClientIdChange,
         isClientLocked: hasInitialTasks,
-        company,
         issueDate,
         setIssueDate,
         dueDate,
@@ -485,8 +493,6 @@ export function useInvoiceForm({
         invoiceNumber,
         setInvoiceNumber,
         maxDueDate,
-        companyLogo,
-        setCompanyLogo,
         customIssuerInfo,
         setCustomIssuerInfo,
         customRecipientInfo,

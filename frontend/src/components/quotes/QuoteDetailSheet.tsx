@@ -10,14 +10,17 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/lib/toast"
-import { QuoteService, type QuoteUpdate } from "@/services/quote.service"
+import { QuoteService } from "@/services/quote.service"
 import { formatQuoteNumber } from "@/lib/format"
 import { QUOTE_STATUS_BADGE } from "@/lib/constants"
-import { parseBillingInfo } from "@/lib/billing"
 import { printQuote } from "@/lib/quote-print"
 import { Quote } from "@/types/quote"
 import { useDictionary } from "@/lib/dictionary-context"
-import { ClientService, Client } from "@/services/client.service"
+import type { Client } from "@/services/client.service"
+import {
+    createQuoteClientRegistrationDraft,
+    type QuoteClientRegistrationInput,
+} from "@/lib/quote-client-registration"
 import { RegisterClientDialog } from "./RegisterClientDialog"
 import { QuoteDetailMeta } from "./QuoteDetailMeta"
 import { QuoteDetailItems } from "./QuoteDetailItems"
@@ -72,29 +75,20 @@ export function QuoteDetailSheet({
         return labels[status] ?? status
     }
 
-    const updateStatus = async (newStatus: string, registerClient: boolean = false) => {
+    const updateStatus = async (
+        newStatus: string,
+        clientRegistration?: QuoteClientRegistrationInput,
+    ) => {
         setLoading(true)
         try {
-            const updatedFields: QuoteUpdate = { status: newStatus }
-
-            if (newStatus === "accepted" && quote.client_id === null && registerClient) {
-                const parsed = parseBillingInfo(quote.custom_recipient_info || "")
-                const newClient = await ClientService.createClient({
-                    name: parsed.name || quote.title || "Nuevo Cliente",
-                    client_type: "individual",
-                    legal_number: parsed.taxId || "",
-                    address: parsed.address || "",
-                    phone: parsed.phone || "",
-                    email: parsed.email || "",
-                    city: "",
-                    postal_code: "",
-                    country: "",
+            if (newStatus === "accepted") {
+                await QuoteService.acceptQuote(quote.id, {
+                    register_client: Boolean(clientRegistration),
+                    ...(clientRegistration ? { client: clientRegistration } : {}),
                 })
-                updatedFields.client_id = newClient.id
-                toast.success(`Cliente "${newClient.name}" registrado en la base de datos`)
+            } else {
+                await QuoteService.updateQuote(quote.id, { status: newStatus })
             }
-
-            await QuoteService.updateQuote(quote.id, updatedFields)
             toast.success(dict.quotes?.status_updated ?? "Estado actualizado")
             onQuoteUpdated()
             onOpenChange(false)
@@ -118,9 +112,7 @@ export function QuoteDetailSheet({
         })
     }
 
-    const clientDisplayName = quote.custom_recipient_info
-        ? quote.custom_recipient_info.split("\n")[0]
-        : quote.title
+    const clientRegistrationDraft = createQuoteClientRegistrationDraft(quote)
 
     return (
         <>
@@ -180,9 +172,11 @@ export function QuoteDetailSheet({
                 open={showRegisterClientPrompt}
                 onOpenChange={setShowRegisterClientPrompt}
                 loading={loading}
-                clientDisplayName={clientDisplayName}
-                onAcceptOnly={() => updateStatus("accepted", false)}
-                onRegisterAndAccept={() => updateStatus("accepted", true)}
+                initialClient={clientRegistrationDraft}
+                onAcceptOnly={() => updateStatus("accepted")}
+                onRegisterAndAccept={(clientData) =>
+                    updateStatus("accepted", clientData)
+                }
             />
         </>
     )

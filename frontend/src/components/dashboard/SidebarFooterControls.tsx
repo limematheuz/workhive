@@ -6,20 +6,16 @@ type SidebarFooterControlsProps = {
     isOpen: boolean;
     theme: "dark" | "light";
     locale: string;
-    logoutLabel: string;
     onThemeChange: (theme: "dark" | "light") => void;
     onLocaleChange: (locale: "en" | "es") => void;
-    onLogout: () => void;
 };
 
 export function SidebarFooterControls({
     isOpen,
     theme,
     locale,
-    logoutLabel,
     onThemeChange,
     onLocaleChange,
-    onLogout,
 }: SidebarFooterControlsProps) {
     return (
         <div className="p-2 flex flex-col gap-2 mb-1 flex-shrink-0 border-t border-[var(--border-soft)] bg-transparent text-[13px]">
@@ -95,17 +91,6 @@ export function SidebarFooterControls({
                     {publicBuildInfo.label}
                 </p>
             )}
-
-            <button
-                type="button"
-                onClick={onLogout}
-                className="flex items-center gap-2 px-2 py-2 w-full text-left rounded-lg text-[var(--text-muted)] hover:text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)] transition-colors"
-            >
-                <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                {isOpen && <span>{logoutLabel}</span>}
-            </button>
         </div>
     );
 }

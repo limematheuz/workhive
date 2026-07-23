@@ -3,7 +3,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, status
 from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.models.user import User
-from app.schemas.quote import QuoteCreate, QuoteUpdate, QuoteResponse
+from app.schemas.quote import (
+    QuoteAcceptRequest,
+    QuoteCreate,
+    QuoteResponse,
+    QuoteUpdate,
+)
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate, QuoteItemResponse
 from app.services import quote_service
 from app.services.user_scope import is_platform_superadmin
@@ -68,6 +73,21 @@ def update_quote(
 ):
     return quote_service.update_quote(
         db, current_user.company_id, quote_id, quote_data
+    )
+
+
+@router.post("/{quote_id}/accept", response_model=QuoteResponse)
+def accept_quote(
+    quote_id: int,
+    accept_data: QuoteAcceptRequest,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    return quote_service.accept_quote(
+        db,
+        current_user.company_id,
+        quote_id,
+        accept_data,
     )
 
 

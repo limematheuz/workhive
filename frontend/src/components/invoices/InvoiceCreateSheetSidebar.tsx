@@ -1,8 +1,8 @@
 "use client";
 
 import { SignatureUpload } from "@/components/billing/SignatureUpload";
+import { DocumentSummary } from "@/components/billing/DocumentSummary";
 import { InvoiceTaskSelector } from "./InvoiceTaskSelector";
-import { InvoiceSummary } from "./InvoiceSummary";
 import type { TaskItem } from "@/services/task.service";
 import type { Dictionary } from "@/lib/dictionary-context";
 
@@ -68,7 +68,7 @@ export function InvoiceCreateSheetSidebar({
                 handleToggleTask={handleToggleTask}
             />
 
-            <InvoiceSummary
+            <DocumentSummary
                 dict={dict}
                 subtotal={subtotal}
                 discount={discount}
@@ -86,12 +86,18 @@ export function InvoiceCreateSheetSidebar({
                 totalGeneral={totalGeneral}
             />
 
-            {/* Signature Block */}
-            <SignatureUpload
-                signatureUrl={signatureUrl}
-                onSignatureChange={setSignatureUrl}
-                dict={dict}
-            />
+            <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
+                <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
+                    Firma opcional
+                </summary>
+                <div className="border-t border-[var(--border-soft)] p-4">
+                    <SignatureUpload
+                        signatureUrl={signatureUrl}
+                        onSignatureChange={setSignatureUrl}
+                        dict={dict}
+                    />
+                </div>
+            </details>
         </div>
     );
 }

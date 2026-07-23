@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
-from app.schemas.invoice_item import InvoiceItemCreate, InvoiceItemUpdate
+from app.schemas.invoice_item import InvoiceItemBase, InvoiceItemUpdate
 
 
 MONEY_QUANTUM = Decimal("0.01")
@@ -28,12 +28,13 @@ def calculate_item_amounts(
 
 
 def recalculate_invoice_totals(db: Session, invoice: Invoice) -> None:
-    subtotal = sum((decimal_value(item.subtotal) for item in invoice.items), Decimal(0))
+    items = get_invoice_items(db, invoice.id)
+    subtotal = sum((decimal_value(item.subtotal) for item in items), Decimal(0))
     discount_rate = decimal_value(invoice.discount) / Decimal(100)
     base_amount = round_money(subtotal * (Decimal(1) - discount_rate))
 
     tax_amount = Decimal(0)
-    for item in invoice.items:
+    for item in items:
         discounted_subtotal = decimal_value(item.subtotal) * (
             Decimal(1) - discount_rate
         )
@@ -57,7 +58,7 @@ def recalculate_invoice_totals(db: Session, invoice: Invoice) -> None:
 
 
 def create_invoice_item(
-    db: Session, invoice_id: int, item_data: InvoiceItemCreate
+    db: Session, invoice_id: int, item_data: InvoiceItemBase
 ) -> InvoiceItem:
     subtotal, total = calculate_item_amounts(
         item_data.quantity, item_data.unit_price, item_data.tax_rate

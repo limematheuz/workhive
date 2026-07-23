@@ -23,7 +23,7 @@ export default function QuoteDetailPage() {
         handleDiscardEdit, handleAddEditItem, handleRemoveEditItem,
         handleEditItemChange, handleSaveDraft, editSubtotal, editBaseAmount,
         editTaxAmount, editTotalAmount, getClientName, getStatusLabel,
-        nextStates,
+        nextStates, clientRegistrationDraft,
     } = useQuoteDetail(quoteId)
 
     if (userLoading || loading) {
@@ -115,14 +115,18 @@ export default function QuoteDetailPage() {
                 getStatusLabel={getStatusLabel}
             />
 
-            <RegisterClientDialog
-                open={showRegisterClientPrompt}
-                onOpenChange={setShowRegisterClientPrompt}
-                loading={updatingStatus}
-                clientDisplayName={quote.custom_recipient_info ? quote.custom_recipient_info.split("\n")[0] : quote.title || "Cliente"}
-                onAcceptOnly={() => handleStatusChange("accepted", false)}
-                onRegisterAndAccept={() => handleStatusChange("accepted", true)}
-            />
+            {clientRegistrationDraft && (
+                <RegisterClientDialog
+                    open={showRegisterClientPrompt}
+                    onOpenChange={setShowRegisterClientPrompt}
+                    loading={updatingStatus}
+                    initialClient={clientRegistrationDraft}
+                    onAcceptOnly={() => handleStatusChange("accepted")}
+                    onRegisterAndAccept={(clientData) =>
+                        handleStatusChange("accepted", clientData)
+                    }
+                />
+            )}
         </div>
     )
 }

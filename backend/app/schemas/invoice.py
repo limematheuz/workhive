@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class InvoiceBase(BaseModel):
-    client_id: int
+    client_id: int = Field(gt=0)
     issue_date: datetime
     due_date: datetime | None = None
     invoice_number: str | None = Field(default=None, max_length=50)
@@ -33,7 +33,7 @@ class InvoiceDraftCreate(InvoiceCreate):
 
 
 class InvoiceUpdate(BaseModel):
-    client_id: int | None = None
+    client_id: int | None = Field(default=None, gt=0)
     issue_date: datetime | None = None
     due_date: datetime | None = None
     invoice_number: str | None = Field(default=None, max_length=50)
@@ -47,6 +47,7 @@ class InvoiceUpdate(BaseModel):
     custom_issuer_info: str | None = None
     custom_recipient_info: str | None = None
     signature_url: str | None = None
+    items: list[InvoiceItemCreate] | None = Field(default=None, min_length=1)
 
 
 class InvoiceResponse(InvoiceBase):

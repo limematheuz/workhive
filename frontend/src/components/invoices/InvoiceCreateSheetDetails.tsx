@@ -2,7 +2,6 @@
 
 import { Label } from "@/components/ui/label";
 import { BillingPartyCard, BillingPartyFields } from "@/components/billing/BillingPartyCard";
-import { CompanyLogoUpload } from "@/components/billing/CompanyLogoUpload";
 import { InvoiceConceptsTable } from "./InvoiceConceptsTable";
 import { InvoiceAdditionalInfo } from "./InvoiceAdditionalInfo";
 import type { Client } from "@/services/client.service";
@@ -18,7 +17,6 @@ interface InvoiceCreateSheetDetailsProps {
     setSelectedClientId: (id: string) => void;
     isClientLocked: boolean;
     initialTasks: InvoiceableTask[];
-    companyId?: number | null;
     issueDate: string;
     setIssueDate: (value: string) => void;
     dueDate: string;
@@ -26,8 +24,6 @@ interface InvoiceCreateSheetDetailsProps {
     invoiceNumber: string;
     setInvoiceNumber: (value: string) => void;
     maxDueDate: string;
-    companyLogo: string | null;
-    setCompanyLogo: (url: string | null) => void;
     shippingAddress: string;
     setShippingAddress: (value: string) => void;
     concepts: ConceptRow[];
@@ -64,7 +60,6 @@ export function InvoiceCreateSheetDetails({
     setSelectedClientId,
     isClientLocked,
     initialTasks,
-    companyId,
     issueDate,
     setIssueDate,
     dueDate,
@@ -72,8 +67,6 @@ export function InvoiceCreateSheetDetails({
     invoiceNumber,
     setInvoiceNumber,
     maxDueDate,
-    companyLogo,
-    setCompanyLogo,
     shippingAddress,
     setShippingAddress,
     concepts,
@@ -100,60 +93,46 @@ export function InvoiceCreateSheetDetails({
 }: InvoiceCreateSheetDetailsProps) {
     return (
         <div className="lg:col-span-2 space-y-6">
-            {/* Invoice Details Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2 space-y-3">
-                    <div className="space-y-1">
-                        <Label className="text-xs text-[var(--text-muted)] font-medium">
-                            {dict.invoices?.invoice_number_label || "Número de Factura"}
-                        </Label>
-                        <input
-                            type="text"
-                            value={invoiceNumber}
-                            onChange={(e) => setInvoiceNumber(e.target.value)}
-                            placeholder="Opcional: FV/2026/0069"
-                            maxLength={50}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors font-mono"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                            <Label className="text-xs text-[var(--text-muted)] font-medium">
-                                {dict.invoices?.issue_date} *
-                            </Label>
-                            <input
-                                type="date"
-                                value={issueDate}
-                                onChange={(e) => setIssueDate(e.target.value)}
-                                required
-                                aria-label={dict.invoices?.issue_date}
-                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-xs text-[var(--text-muted)] font-medium">
-                                {dict.invoices?.due_date}
-                            </Label>
-                            <input
-                                type="date"
-                                value={dueDate}
-                                onChange={(e) => setDueDate(e.target.value)}
-                                max={maxDueDate}
-                                aria-label={dict.invoices?.due_date}
-                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
-                            />
-                        </div>
-                    </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[var(--text-muted)]">
+                        {dict.invoices?.invoice_number_label || "Número de factura"}
+                    </Label>
+                    <input
+                        type="text"
+                        value={invoiceNumber}
+                        onChange={(event) => setInvoiceNumber(event.target.value)}
+                        placeholder="Automático si se deja vacío"
+                        maxLength={50}
+                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 font-mono text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                    />
                 </div>
-
-                {/* Logo Uploader Block */}
-                <CompanyLogoUpload
-                    logoUrl={companyLogo}
-                    onLogoChange={setCompanyLogo}
-                    dict={dict}
-                    companyId={companyId}
-                />
+                <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[var(--text-muted)]">
+                        {dict.invoices?.issue_date} *
+                    </Label>
+                    <input
+                        type="date"
+                        value={issueDate}
+                        onChange={(event) => setIssueDate(event.target.value)}
+                        required
+                        aria-label={dict.invoices?.issue_date}
+                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                    />
+                </div>
+                <div className="space-y-1">
+                    <Label className="text-xs font-medium text-[var(--text-muted)]">
+                        {dict.invoices?.due_date}
+                    </Label>
+                    <input
+                        type="date"
+                        value={dueDate}
+                        onChange={(event) => setDueDate(event.target.value)}
+                        max={maxDueDate}
+                        aria-label={dict.invoices?.due_date}
+                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                    />
+                </div>
             </div>
 
             {/* Client Selection */}
@@ -195,41 +174,6 @@ export function InvoiceCreateSheetDetails({
                 )}
             </div>
 
-            {/* Billing Information text boxes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <BillingPartyCard
-                    type="issuer"
-                    dict={dict}
-                    isEditing={isEditingIssuer}
-                    setIsEditing={setIsEditingIssuer}
-                    structuredFields={issuerFields}
-                    onChangeField={handleUpdateIssuerField}
-                />
-
-                <BillingPartyCard
-                    type="recipient"
-                    dict={dict}
-                    isEditing={isEditingRecipient}
-                    setIsEditing={setIsEditingRecipient}
-                    structuredFields={recipientFields}
-                    onChangeField={handleUpdateRecipientField}
-                />
-            </div>
-
-            {/* Shipping Address */}
-            <div className="space-y-1">
-                <Label className="text-xs text-[var(--text-muted)] font-medium">
-                    {dict.invoices?.shipping_address_label || "Dirección de envío (opcional)"}
-                </Label>
-                <textarea
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    rows={2}
-                    placeholder={dict.invoices?.shipping_address_placeholder || "Haz click para rellenar dirección de envío si difiere de la dirección fiscal"}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors resize-none"
-                />
-            </div>
-
             {/* Concepts Table Section */}
             <InvoiceConceptsTable
                 concepts={concepts}
@@ -240,18 +184,58 @@ export function InvoiceCreateSheetDetails({
                 handleDeleteRow={handleDeleteRow}
             />
 
-            {/* Additional toggles: Notes and Terms */}
-            <InvoiceAdditionalInfo
-                dict={dict}
-                notesEnabled={notesEnabled}
-                setNotesEnabled={setNotesEnabled}
-                notes={notes}
-                setNotes={setNotes}
-                termsEnabled={termsEnabled}
-                setTermsEnabled={setTermsEnabled}
-                terms={terms}
-                setTerms={setTerms}
-            />
+            <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
+                <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
+                    Datos adicionales
+                    <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">
+                        Solo si necesitas modificar los datos fiscales o añadir notas
+                    </span>
+                </summary>
+                <div className="space-y-5 border-t border-[var(--border-soft)] p-4">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <BillingPartyCard
+                            type="issuer"
+                            dict={dict}
+                            isEditing={isEditingIssuer}
+                            setIsEditing={setIsEditingIssuer}
+                            structuredFields={issuerFields}
+                            onChangeField={handleUpdateIssuerField}
+                        />
+                        <BillingPartyCard
+                            type="recipient"
+                            dict={dict}
+                            isEditing={isEditingRecipient}
+                            setIsEditing={setIsEditingRecipient}
+                            structuredFields={recipientFields}
+                            onChangeField={handleUpdateRecipientField}
+                        />
+                    </div>
+                    <div className="space-y-1">
+                        <Label className="text-xs font-medium text-[var(--text-muted)]">
+                            {dict.invoices?.shipping_address_label || "Dirección de envío (opcional)"}
+                        </Label>
+                        <textarea
+                            value={shippingAddress}
+                            onChange={(event) => setShippingAddress(event.target.value)}
+                            rows={2}
+                            maxLength={500}
+                            placeholder={dict.invoices?.shipping_address_placeholder || "Solo si difiere de la dirección fiscal"}
+                            className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        />
+                    </div>
+                    <InvoiceAdditionalInfo
+                        dict={dict}
+                        notesEnabled={notesEnabled}
+                        setNotesEnabled={setNotesEnabled}
+                        notes={notes}
+                        setNotes={setNotes}
+                        termsEnabled={termsEnabled}
+                        setTermsEnabled={setTermsEnabled}
+                        terms={terms}
+                        setTerms={setTerms}
+                    />
+                </div>
+            </details>
         </div>
     );
 }

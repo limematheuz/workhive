@@ -2,7 +2,7 @@ import type { BillingPartyFields } from "@/components/billing/BillingPartyCard";
 import type { Client } from "@/services/client.service";
 import type { Company } from "@/services/company.service";
 import type { QuoteCreate } from "@/services/quote.service";
-import type { Quote, QuoteItem } from "@/types/quote";
+import type { Quote } from "@/types/quote";
 
 export const DEFAULT_QUOTE_TAX_RATE = 0.21;
 
@@ -12,12 +12,6 @@ export interface QuoteFormConceptRow {
     unitPrice: number;
     quantity: number;
     taxRate: number;
-}
-
-export interface QuoteItemChanges {
-    deletedItems: QuoteItem[];
-    updatedItems: QuoteFormConceptRow[];
-    newItems: QuoteFormConceptRow[];
 }
 
 export function createQuoteConceptRow(
@@ -130,19 +124,12 @@ export function buildQuotePayload(params: {
     };
 }
 
-export function getQuoteItemChanges(
-    originalItems: QuoteItem[],
+export function buildQuoteItemsSnapshot(
     concepts: QuoteFormConceptRow[],
-): QuoteItemChanges {
-    const deletedItems = originalItems.filter(
-        original => !concepts.some(concept => concept.id === original.id.toString()),
-    );
-    const updatedItems = concepts.filter(
-        concept =>
-            !concept.id.startsWith("manual-")
-            && originalItems.some(original => original.id.toString() === concept.id),
-    );
-    const newItems = concepts.filter(concept => concept.id.startsWith("manual-"));
-
-    return { deletedItems, updatedItems, newItems };
+): Array<{ description: string; quantity: number; unit_price: number }> {
+    return concepts.map((concept) => ({
+        description: concept.description.trim(),
+        quantity: concept.quantity,
+        unit_price: concept.unitPrice,
+    }));
 }

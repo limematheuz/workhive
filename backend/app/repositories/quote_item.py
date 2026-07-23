@@ -23,8 +23,7 @@ def create_quote_item(
         subtotal=subtotal,
     )
     db.add(item)
-    db.commit()
-    db.refresh(item)
+    db.flush()
     return item
 
 
@@ -34,13 +33,12 @@ def update_quote_item(db: Session, item: QuoteItem, **kwargs) -> QuoteItem:
         price = kwargs.get("unit_price", item.unit_price)
         kwargs["subtotal"] = round(qty * price, 2)
     for key, value in kwargs.items():
-        if value is not None:
-            setattr(item, key, value)
-    db.commit()
-    db.refresh(item)
+        setattr(item, key, value)
+    db.add(item)
+    db.flush()
     return item
 
 
 def delete_quote_item(db: Session, item: QuoteItem) -> None:
     db.delete(item)
-    db.commit()
+    db.flush()

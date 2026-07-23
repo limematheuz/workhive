@@ -9,7 +9,7 @@ from app.models.task_item import TaskItem
 from app.models.template_task import TemplateTask
 from app.schemas.invoice import InvoiceDraftCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate
-from app.schemas.task_item import TaskAcceptRequest, TaskItemUpdate
+from app.schemas.task_item import TaskAcceptRequest, TaskChecklistItemUpdate
 from app.services import (
     invoice_service,
     company_service,
@@ -77,12 +77,15 @@ def _external_completed_task_setup(db):
     db.refresh(task)
     assert task.status == "accepted"
 
-    completed = task_item_service.update_task_item(
-        db,
-        receiver_admin,
-        task.id,
-        TaskItemUpdate(status="completed", date_done=datetime.now(timezone.utc)),
-    )
+    completed = task
+    for checklist_item in list(task.checklist_items):
+        completed = task_item_service.update_task_checklist_item(
+            db,
+            receiver_admin,
+            task.id,
+            checklist_item.id,
+            TaskChecklistItemUpdate(completed=True, answer="yes"),
+        )
     assert completed.status == "completed"
     return issuer, receiver, receiver_admin, task
 

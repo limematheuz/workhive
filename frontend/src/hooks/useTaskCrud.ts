@@ -36,6 +36,7 @@ import {
     getTaskCreationSchedule,
 } from "@/domain/tasks/task-create";
 import { canDuplicateTask } from "@/domain/tasks/task-permissions";
+import { loadTaskCreateLocationData } from "@/lib/load-task-create-location-data";
 
 interface UseTaskCrudParams {
     dict: Dictionary;
@@ -130,33 +131,48 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
         setHouseTemplateState({ items: [], selectedIds: [], loading: true });
         setReservationState({ items: [], checkoutId: "", nextId: "", loading: true });
 
-        const [templatesResult, reservationsResult] = await Promise.allSettled([
-            LocationTemplateService.getTemplates(Number(locationId)),
-            ReservationService.getReservations({ locationId: parseInt(locationId, 10) }),
-        ]);
+        const result = await loadTaskCreateLocationData(Number(locationId), {
+            getLocationTemplates: LocationTemplateService.getTemplates,
+            getReservations: (selectedLocationId) =>
+                ReservationService.getReservations({
+                    locationId: selectedLocationId,
+                }),
+        });
 
-        if (templatesResult.status === "fulfilled") {
-            const data = templatesResult.value;
+        if (!result.locationTemplatesError) {
+            const data = result.locationTemplates;
             setHouseTemplateState({
                 items: data,
                 selectedIds: data.map((ht) => ht.template_task_id),
                 loading: false,
             });
         } else {
-            console.error("Error fetching house templates", templatesResult.reason);
             setHouseTemplateState(EMPTY_HOUSE_TEMPLATES);
+            toast.error(
+                getErrorMessage(
+                    result.locationTemplatesError,
+                    "No se pudieron cargar las plantillas del local.",
+                ),
+            );
         }
 
-        if (reservationsResult.status === "fulfilled") {
+        if (!result.reservationsError) {
             setReservationState({
-                items: reservationsResult.value.filter((reservation) => reservation.status !== "cancelled"),
+                items: result.reservations.filter(
+                    (reservation) => reservation.status !== "cancelled",
+                ),
                 checkoutId: "",
                 nextId: "",
                 loading: false,
             });
         } else {
-            console.error("Error loading location reservations", reservationsResult.reason);
             setReservationState(EMPTY_RESERVATIONS);
+            toast.error(
+                getErrorMessage(
+                    result.reservationsError,
+                    "No se pudieron cargar las reservas del local.",
+                ),
+            );
         }
     });
 
