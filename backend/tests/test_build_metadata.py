@@ -14,7 +14,7 @@ def test_release_version_sources_stay_in_sync():
         (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
     )
 
-    assert release_version == "1.1.1"
+    assert release_version == "1.2.0"
     assert Settings.model_fields["APP_VERSION"].default == release_version
     assert frontend_package["version"] == release_version
 
