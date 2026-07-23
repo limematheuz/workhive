@@ -17,10 +17,12 @@ from app.models.company_collaboration import CompanyCollaboration
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.location import Location
+from app.models.location_template import LocationTemplate
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
 from app.models.role import Role
 from app.models.task_item import TaskItem
+from app.models.template_task import TemplateTask
 from app.models.user import User
 
 
@@ -146,7 +148,14 @@ async def async_business_factory():
             location_id=location.id,
             user_id=user.id,
         )
-        session.add_all([invoice, quote, rejected_task])
+        template = TemplateTask(
+            name="Async Cleaning Template",
+            description="Async template description",
+            default_price=95.0,
+            unit="service",
+            company_id=owner.id,
+        )
+        session.add_all([invoice, quote, rejected_task, template])
         await session.flush()
         session.add_all(
             [
@@ -166,6 +175,10 @@ async def async_business_factory():
                     subtotal=100.0,
                     quote_id=quote.id,
                 ),
+                LocationTemplate(
+                    location_id=location.id,
+                    template_task_id=template.id,
+                ),
             ]
         )
         await session.commit()
@@ -177,6 +190,8 @@ async def async_business_factory():
             "invoice_id": invoice.id,
             "quote_id": quote.id,
             "rejected_task_id": rejected_task.id,
+            "location_id": location.id,
+            "template_id": template.id,
         }
 
     try:
@@ -213,6 +228,11 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
         f"/api/v1/quotes/{seed['quote_id']}",
         f"/api/v1/quotes/{seed['quote_id']}/items",
         "/api/v1/task-items/?task_status=rejected",
+        f"/api/v1/locations/{seed['location_id']}/templates",
+        (
+            f"/api/v1/locations/{seed['location_id']}/templates/"
+            f"{seed['template_id']}"
+        ),
     )
     try:
         async with AsyncClient(
@@ -277,6 +297,10 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
     rejected = responses["/api/v1/task-items/?task_status=rejected"].json()
     assert any(item["id"] == seed["rejected_task_id"] for item in rejected)
     assert all(item["status"] == "rejected" for item in rejected)
+    location_templates = responses[
+        f"/api/v1/locations/{seed['location_id']}/templates"
+    ].json()
+    assert location_templates[0]["template"]["name"] == "Async Cleaning Template"
 
 
 @pytest.mark.asyncio
@@ -294,6 +318,11 @@ async def test_async_business_endpoints_require_authentication(async_business_fa
         "/api/v1/quotes/",
         "/api/v1/collaborations/",
         "/api/v1/task-items/?task_status=rejected",
+        f"/api/v1/locations/{seed['location_id']}/templates",
+        (
+            f"/api/v1/locations/{seed['location_id']}/templates/"
+            f"{seed['template_id']}"
+        ),
     )
     try:
         async with AsyncClient(
@@ -339,6 +368,17 @@ async def test_async_business_endpoints_keep_company_data_tenant_isolated(
             rejected = await client.get(
                 "/api/v1/task-items/?task_status=rejected", headers=headers
             )
+            location_templates = await client.get(
+                f"/api/v1/locations/{seed['location_id']}/templates",
+                headers=headers,
+            )
+            location_template = await client.get(
+                (
+                    f"/api/v1/locations/{seed['location_id']}/templates/"
+                    f"{seed['template_id']}"
+                ),
+                headers=headers,
+            )
     finally:
         app.dependency_overrides.pop(get_async_db, None)
 
@@ -349,6 +389,8 @@ async def test_async_business_endpoints_keep_company_data_tenant_isolated(
     assert quote.status_code == 404
     assert rejected.status_code == 200
     assert all(item["id"] != seed["rejected_task_id"] for item in rejected.json())
+    assert location_templates.status_code == 404
+    assert location_template.status_code == 404
 
 
 @pytest.mark.asyncio
