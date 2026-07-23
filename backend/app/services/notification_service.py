@@ -19,6 +19,7 @@ def notify_users(
     entity_id: int,
     href: str,
     metadata: dict | None = None,
+    commit: bool = True,
 ) -> None:
     unique_users = {user.id: user for user in users if user.is_active and user.company_id}
     db.add_all([
@@ -35,7 +36,73 @@ def notify_users(
         )
         for user in unique_users.values()
     ])
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
+
+
+def notify_users_once(
+    db: Session,
+    *,
+    users: list[User],
+    event_type: str,
+    title: str,
+    message: str,
+    entity_type: str,
+    entity_id: int,
+    href: str,
+    dedupe_key: str,
+    metadata: dict | None = None,
+    commit: bool = True,
+) -> None:
+    """Persist one notification per recipient and business event.
+
+    Polling, retries and idempotent commands can execute the same service more
+    than once. The explicit key prevents duplicate user notifications without
+    coupling deduplication to translated titles or messages.
+    """
+    unique_users = {user.id: user for user in users if user.is_active and user.company_id}
+    if not unique_users:
+        return
+
+    existing = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id.in_(unique_users),
+            Notification.event_type == event_type,
+            Notification.entity_type == entity_type,
+            Notification.entity_id == entity_id,
+        )
+        .all()
+    )
+    notified_user_ids = {
+        notification.user_id
+        for notification in existing
+        if (notification.metadata_json or {}).get("dedupe_key") == dedupe_key
+    }
+    event_metadata = {**(metadata or {}), "dedupe_key": dedupe_key}
+    db.add_all(
+        [
+            Notification(
+                user_id=user.id,
+                company_id=user.company_id,
+                event_type=event_type,
+                title=title,
+                message=message,
+                entity_type=entity_type,
+                entity_id=entity_id,
+                href=href,
+                metadata_json=event_metadata,
+            )
+            for user in unique_users.values()
+            if user.id not in notified_user_ids
+        ]
+    )
+    if commit:
+        db.commit()
+    else:
+        db.flush()
 
 
 def list_notifications(

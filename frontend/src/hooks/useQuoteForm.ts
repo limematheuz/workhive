@@ -2,7 +2,7 @@
 
 import { startTransition, useState, useEffect, useCallback, useEffectEvent } from "react";
 import { ClientService, Client } from "@/services/client.service";
-import { CompanyService, Company } from "@/services/company.service";
+import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { useDictionary } from "@/lib/dictionary-context";
 import { Quote } from "@/types/quote";
@@ -17,13 +17,14 @@ import {
     updateBillingPartyField,
 } from "@/lib/billing-party";
 import { getErrorMessage } from "@/lib/errors";
+import { validateDocumentLines } from "@/lib/document-line-validation";
 import {
+    buildQuoteItemsSnapshot,
     buildQuotePayload,
     createQuoteConceptRow,
     DEFAULT_QUOTE_TAX_RATE,
     formatQuoteValidUntilDate,
     getQuoteIssuerFieldsFromCompany,
-    getQuoteItemChanges,
     getQuoteRecipientFieldsFromClient,
     mapQuoteItemsToConceptRows,
     QuoteFormConceptRow,
@@ -50,12 +51,9 @@ export function useQuoteForm({
     const { user } = useUser();
     const [clients, setClients] = useState<Client[]>(initialClients);
     const [selectedClientId, setSelectedClientId] = useState<string>("");
-    const [company, setCompany] = useState<Company | null>(null);
-    
     const [title, setTitle] = useState<string>("");
     const [validUntil, setValidUntil] = useState<string>("");
 
-    const [companyLogo, setCompanyLogo] = useState<string | null>(null);
     const [customIssuerInfo, setCustomIssuerInfo] = useState<string>("");
     const [customRecipientInfo, setCustomRecipientInfo] = useState<string>("");
     const [shippingAddress, setShippingAddress] = useState<string>("");
@@ -160,12 +158,6 @@ export function useQuoteForm({
                     setCustomRecipientInfo(quoteToEdit.custom_recipient_info || "");
                     setShippingAddress(quoteToEdit.shipping_address || "");
 
-                    if (user?.company_id) {
-                        const comp = await CompanyService.getCompany(user.company_id);
-                        setCompany(comp);
-                        setCompanyLogo(comp.logo ?? null);
-                    }
-
                     if (quoteToEdit.custom_issuer_info) {
                         const parsed = parseBillingParty(quoteToEdit.custom_issuer_info);
                         setIssuerName(parsed.name);
@@ -196,9 +188,7 @@ export function useQuoteForm({
                     if (user?.company_id) {
                         const comp = await CompanyService.getCompany(user.company_id);
                         const issuer = getQuoteIssuerFieldsFromCompany(comp);
-                        setCompany(comp);
-                        setCompanyLogo(comp.logo ?? null);
-                        
+
                         setIssuerName(issuer.name);
                         setIssuerTaxId(issuer.taxId);
                         setIssuerAddress(issuer.address);
@@ -282,12 +272,25 @@ export function useQuoteForm({
 
     const handleCreateQuote = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (concepts.length === 0) {
-            toast.error(dict.quotes?.error_items || "Completa todos los campos de las líneas");
-            return;
-        }
-        if (concepts.some(c => !c.description)) {
-            toast.error(dict.quotes?.error_items || "Completa todos los campos de las líneas");
+        const lineError = validateDocumentLines(
+            concepts.map((concept) => ({
+                description: concept.description,
+                quantity: concept.quantity,
+                unitPrice: concept.unitPrice,
+            }))
+        );
+        if (lineError) {
+            const messages = {
+                empty: "Añade al menos una línea al presupuesto.",
+                description: "Completa la descripción de todas las líneas.",
+                quantity: "La cantidad de cada línea debe ser mayor que cero.",
+                "unit-price": "El precio de una línea no puede ser negativo.",
+            };
+            toast.error(
+                lineError === "description"
+                    ? dict.quotes?.error_items || messages.description
+                    : messages[lineError]
+            );
             return;
         }
 
@@ -310,56 +313,19 @@ export function useQuoteForm({
                 customRecipientInfo,
                 signatureUrl,
             });
+            const quoteSnapshot = {
+                ...quotePayload,
+                items: buildQuoteItemsSnapshot(concepts),
+            };
 
             if (quoteToEdit) {
-                await QuoteService.updateQuote(quoteToEdit.id, quotePayload);
-
-                const { deletedItems, updatedItems, newItems } = getQuoteItemChanges(
-                    quoteToEdit.items || [],
-                    concepts,
-                );
-
-                const deletePromises = deletedItems.map(item => 
-                    QuoteService.deleteQuoteItem(quoteToEdit.id, item.id)
-                );
-
-                const updatePromises = updatedItems.map(item => 
-                    QuoteService.updateQuoteItem(quoteToEdit.id, parseInt(item.id, 10), {
-                        description: item.description,
-                        quantity: item.quantity,
-                        unit_price: item.unitPrice,
-                    })
-                );
-
-                const createPromises = newItems.map(item => 
-                    QuoteService.createQuoteItem(quoteToEdit.id, {
-                        description: item.description,
-                        quantity: item.quantity,
-                        unit_price: item.unitPrice,
-                    })
-                );
-
-                await Promise.all([
-                    ...deletePromises,
-                    ...updatePromises,
-                    ...createPromises
-                ]);
+                await QuoteService.updateQuote(quoteToEdit.id, quoteSnapshot);
 
                 toast.success(dict.quotes?.success_updated || "Presupuesto actualizado correctamente");
                 onQuoteCreated();
                 handleClose();
             } else {
-                const newQuote = await QuoteService.createQuote(quotePayload);
-
-                const itemsPromises = concepts.map((c) => {
-                    return QuoteService.createQuoteItem(newQuote.id, {
-                        description: c.description,
-                        quantity: c.quantity,
-                        unit_price: c.unitPrice,
-                    });
-                });
-
-                await Promise.all(itemsPromises);
+                await QuoteService.createQuote(quoteSnapshot);
 
                 toast.success(dict.quotes?.success_created || "Presupuesto creado correctamente");
                 onQuoteCreated();
@@ -439,13 +405,10 @@ export function useQuoteForm({
         clients,
         selectedClientId,
         setSelectedClientId: handleSelectedClientIdChange,
-        company,
         title,
         setTitle,
         validUntil,
         setValidUntil,
-        companyLogo,
-        setCompanyLogo,
         customIssuerInfo,
         setCustomIssuerInfo,
         customRecipientInfo,

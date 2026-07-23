@@ -59,63 +59,9 @@ def update_template_task(
             status_code=status.HTTP_404_NOT_FOUND, detail="Template Task not found"
         )
 
-    updated_template = template_task_repo.update_template_task(db, db_template, template_update)
-
-    # Propagate description/checklist changes to active uninvoiced tasks
-    if template_update.description is not None:
-        import re
-        from app.models.task_item import TaskItem
-        from app.services import task_assignment_service, task_structure_service
-
-        active_tasks = db.query(TaskItem).filter(
-            TaskItem.template_task_id == template_id,
-            TaskItem.status != "completed",
-            TaskItem.is_invoiced.is_(False)
-        ).all()
-
-        new_desc = template_update.description or ""
-        new_lines = new_desc.split("\n")
-        new_questions = []
-        for line in new_lines:
-            match = re.match(r"^\s*[-*]?\s*\[\s*[xX\s]?\s*\]\s*(.+)$", line)
-            if match:
-                new_questions.append(match.group(1).strip())
-
-        for task in active_tasks:
-            previous_description = task.description
-            if not task.description:
-                task.description = new_desc
-                task_structure_service.sync_from_description(db, task, strict=False)
-                continue
-
-            # Find which elements were already marked as completed
-            checked_questions = set()
-            current_lines = task.description.split("\n")
-            for line in current_lines:
-                match = re.match(r"^\s*[-*]?\s*\[\s*([xX])\s*\]\s*(.+)$", line)
-                if match:
-                    checked_questions.add(match.group(2).strip())
-
-            # Rebuild description based on new template items
-            updated_lines = []
-            for q in new_questions:
-                box = "x" if q in checked_questions else " "
-                updated_lines.append(f"- [{box}] {q}")
-
-            rebuilt_description = "\n".join(updated_lines)
-            rebuilt_description = task_assignment_service.merge_checklist_assignments(
-                previous_description,
-                rebuilt_description,
-            )
-            task.description = task_assignment_service.assign_to_users(
-                rebuilt_description,
-                task_assignment_service.hidden_assignee_ids(previous_description),
-            )
-            task_structure_service.sync_from_description(db, task, strict=False)
-
-        db.commit()
-
-    return updated_template
+    # A template is a recipe for future work. Existing tasks are immutable
+    # snapshots of the scope that was agreed when they were created/accepted.
+    return template_task_repo.update_template_task(db, db_template, template_update)
 
 
 def delete_template_task(

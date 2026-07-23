@@ -624,8 +624,10 @@ def test_create_reservation_with_assigned_task(db):
     accepted_snapshot = reservation_service.get_live_external_task_snapshot(
         db, task_ext
     )
-    assert "Revisar terraza" in accepted_snapshot["description"]
-    assert f"@{other_worker.id}:worker" in accepted_snapshot["description"]
+    assert accepted_snapshot == {}
+    db.refresh(task_ext)
+    assert "Revisar terraza" not in task_ext.description
+    assert f"@{other_worker.id}:worker" in task_ext.description
     response_snapshot = task_item_service.build_task_response(db, task_ext, other_admin)
     assert f"@{other_worker.id}:worker" in response_snapshot.description
 
@@ -643,7 +645,8 @@ def test_create_reservation_with_assigned_task(db):
         start_longitude=2.1734,
         start_accuracy_meters=7.5,
     )
-    assert "Revisar terraza" in started.description
+    assert "Revisar terraza" not in started.description
+    assert f"@{other_worker.id}:worker" in started.description
     assert reservation_service.get_live_external_task_snapshot(db, started) == {}
     issuer_response = reservation_service.build_reservation_response(
         db,

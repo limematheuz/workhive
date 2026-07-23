@@ -8,7 +8,7 @@ class ReservationBase(BaseModel):
     location_id: int
     check_in_at: datetime
     check_out_at: datetime
-    guest_count: int = Field(default=1, ge=0)
+    guest_count: int = Field(default=1, ge=1)
     stay_type: str = "guest"
     status: str = "confirmed"
     source: str = "manual"
@@ -33,7 +33,7 @@ class ReservationCreate(ReservationBase):
 class ReservationUpdate(BaseModel):
     check_in_at: datetime | None = None
     check_out_at: datetime | None = None
-    guest_count: int | None = Field(default=None, ge=0)
+    guest_count: int | None = Field(default=None, ge=1)
     stay_type: str | None = None
     status: str | None = None
     source: str | None = None

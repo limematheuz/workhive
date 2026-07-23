@@ -84,11 +84,23 @@ def test_task_edit_modal_update_allows_owner_checklist_and_blocks_cross_tenant(c
     assert created.status_code == 201, created.text
     task_id = created.json()["id"]
 
-    updated = client.patch(
+    incomplete = client.patch(
         f"/api/v1/task-items/{task_id}",
         headers=_headers(admin),
         json={
             "description": "- [x] Cocina\n- [ ] Bano",
+            "status": "completed",
+            "priority": "high",
+        },
+    )
+    assert incomplete.status_code == 409, incomplete.text
+    assert "checklist" in incomplete.json()["detail"].lower()
+
+    updated = client.patch(
+        f"/api/v1/task-items/{task_id}",
+        headers=_headers(admin),
+        json={
+            "description": "- [x] Cocina\n- [x] Bano",
             "status": "completed",
             "priority": "high",
         },
@@ -98,7 +110,7 @@ def test_task_edit_modal_update_allows_owner_checklist_and_blocks_cross_tenant(c
     assert payload["status"] == "completed"
     assert payload["priority"] == "high"
     assert payload["checklist_items"][0]["completed"] is True
-    assert payload["checklist_items"][1]["completed"] is False
+    assert payload["checklist_items"][1]["completed"] is True
 
     cross = client.patch(
         f"/api/v1/task-items/{task_id}",

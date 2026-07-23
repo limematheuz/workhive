@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import {
     calculateDocumentTaxTotals,
 } from "@/lib/billing-calculations";
-import { parseBillingInfo } from "@/lib/billing";
 import {
     buildQuotePdfTitle,
     printWithDocumentTitle,
@@ -12,14 +11,16 @@ import {
 import { createEditableLineKey } from "@/lib/editable-line-key";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { buildQuoteItemsSnapshot } from "@/lib/quote-form";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
+import {
+    createQuoteClientRegistrationDraft,
+    type QuoteClientRegistrationInput,
+} from "@/lib/quote-client-registration";
 import { Client, ClientService } from "@/services/client.service";
 import { Company, CompanyService } from "@/services/company.service";
-import {
-    QuoteService,
-    type QuoteUpdate,
-} from "@/services/quote.service";
+import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
 
 
@@ -54,7 +55,6 @@ export function useQuoteDetail(quoteId: number) {
     const [editTitle, setEditTitle] = useState("");
     const [editValidUntil, setEditValidUntil] = useState("");
     const [editingItems, setEditingItems] = useState<EditingQuoteItem[]>([]);
-    const [deletedItemIds, setDeletedItemIds] = useState<number[]>([]);
     const [editNotes, setEditNotes] = useState("");
     const [editTerms, setEditTerms] = useState("");
     const [editDiscount, setEditDiscount] = useState(0);
@@ -116,37 +116,19 @@ export function useQuoteDetail(quoteId: number) {
 
     const handleStatusChange = async (
         newStatus: string,
-        registerClient = false
+        clientRegistration?: QuoteClientRegistrationInput,
     ) => {
         if (!quote) return;
         try {
             setUpdatingStatus(true);
-            const updatedFields: QuoteUpdate = { status: newStatus };
-
-            if (
-                newStatus === "accepted"
-                && quote.client_id === null
-                && registerClient
-            ) {
-                const parsed = parseBillingInfo(quote.custom_recipient_info || "");
-                const newClient = await ClientService.createClient({
-                    name: parsed.name || quote.title || "Nuevo Cliente",
-                    client_type: "individual",
-                    legal_number: parsed.taxId || "",
-                    address: parsed.address || "",
-                    phone: parsed.phone || "",
-                    email: parsed.email || "",
-                    city: "",
-                    postal_code: "",
-                    country: "",
+            if (newStatus === "accepted") {
+                await QuoteService.acceptQuote(quote.id, {
+                    register_client: Boolean(clientRegistration),
+                    ...(clientRegistration ? { client: clientRegistration } : {}),
                 });
-                updatedFields.client_id = newClient.id;
-                toast.success(
-                    `Cliente "${newClient.name}" registrado correctamente`
-                );
+            } else {
+                await QuoteService.updateQuote(quote.id, { status: newStatus });
             }
-
-            await QuoteService.updateQuote(quote.id, updatedFields);
             toast.success(dict.quotes?.status_updated ?? "Estado actualizado");
             await loadAllData();
         } catch (error: unknown) {
@@ -200,7 +182,6 @@ export function useQuoteDetail(quoteId: number) {
                 unit_price: item.unit_price,
             }))
         );
-        setDeletedItemIds([]);
         setEditNotes(quote.notes || "");
         setEditTerms(quote.terms || "");
         setEditDiscount(quote.discount || 0);
@@ -236,7 +217,6 @@ export function useQuoteDetail(quoteId: number) {
     const handleDiscardEdit = () => {
         setIsEditMode(false);
         setEditingItems([]);
-        setDeletedItemIds([]);
     };
 
     const handleAddEditItem = () => {
@@ -247,10 +227,6 @@ export function useQuoteDetail(quoteId: number) {
     };
 
     const handleRemoveEditItem = (index: number) => {
-        const item = editingItems[index];
-        if (item.id) {
-            setDeletedItemIds((current) => [...current, item.id as number]);
-        }
         setEditingItems((current) =>
             current.filter((_, itemIndex) => itemIndex !== index)
         );
@@ -283,32 +259,16 @@ export function useQuoteDetail(quoteId: number) {
                 tax_rate: editTaxRate,
                 equivalence_surcharge: editEquivalenceSurcharge,
                 retention: editRetention,
-            });
-
-            const itemMutations = editingItems.flatMap((item) => {
-                if (item.id) {
-                    return [
-                        QuoteService.updateQuoteItem(quote.id, item.id, {
-                            description: item.description,
-                            quantity: item.quantity,
-                            unit_price: item.unit_price,
-                        }),
-                    ];
-                }
-                return [
-                    QuoteService.createQuoteItem(quote.id, {
+                items: buildQuoteItemsSnapshot(
+                    editingItems.map((item) => ({
+                        id: item.id?.toString() ?? item.clientKey,
                         description: item.description,
                         quantity: item.quantity,
-                        unit_price: item.unit_price,
-                    }),
-                ];
-            });
-            await Promise.all([
-                ...deletedItemIds.map((itemId) =>
-                    QuoteService.deleteQuoteItem(quote.id, itemId)
+                        unitPrice: item.unit_price,
+                        taxRate: editTaxRate,
+                    }))
                 ),
-                ...itemMutations,
-            ]);
+            });
 
             toast.success(
                 dict.quotes?.success_updated
@@ -316,7 +276,6 @@ export function useQuoteDetail(quoteId: number) {
             );
             setIsEditMode(false);
             setEditingItems([]);
-            setDeletedItemIds([]);
             await loadAllData();
         } catch (error: unknown) {
             console.error(error);
@@ -417,5 +376,8 @@ export function useQuoteDetail(quoteId: number) {
         getClientName,
         getStatusLabel,
         nextStates: quote ? ALLOWED_TRANSITIONS[quote.status] || [] : [],
+        clientRegistrationDraft: quote
+            ? createQuoteClientRegistrationDraft(quote)
+            : null,
     };
 }

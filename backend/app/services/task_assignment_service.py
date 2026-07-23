@@ -271,9 +271,29 @@ def user_checklist_is_complete(task: TaskItem, user_id: int) -> bool:
 def all_task_checklist_items_are_complete(task: TaskItem) -> bool:
     if task.checklist_items:
         return all(item.completed for item in task.checklist_items)
-    checklist = parse_checklist(task.description)
-    return bool(checklist) and all(
-        _is_answered(task, index, item)
+    return checklist_snapshot_is_complete(
+        task.description,
+        task.checklist_evidence,
+    )
+
+
+def checklist_snapshot_is_complete(
+    description: str | None,
+    checklist_evidence: dict | None = None,
+) -> bool:
+    """Return whether every checklist row in an incoming snapshot is answered.
+
+    This is used before persisting a combined description/status update, where
+    the relational checklist rows still represent the previous snapshot.
+    """
+    checklist = parse_checklist(description)
+    if not checklist:
+        return False
+    evidence = checklist_evidence or {}
+    return all(
+        item.checked
+        or item.assigned_status == "completed"
+        or (evidence.get(f"parsed_{index}") or {}).get("answer") in {"yes", "no"}
         for index, item in enumerate(checklist, start=1)
     )
 

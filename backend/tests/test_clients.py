@@ -1,3 +1,7 @@
+import pytest
+from pydantic import ValidationError
+
+from app.schemas.client import ClientCreate, ClientResponse
 from credentials import TEST_SECRET, login_form, CREDENTIAL_FIELD
 
 
@@ -71,3 +75,29 @@ def test_client_contact_is_optional_and_status_filter_includes_inactive(client):
     assert all_clients.status_code == 200
     assert [item["id"] for item in all_clients.json()] == [created.json()["id"]]
     assert all_clients.json()[0]["is_active"] is False
+
+
+def test_client_writes_reject_blank_required_data_but_responses_allow_legacy_blanks():
+    payload = {
+        "name": "Cliente",
+        "address": "Calle Uno",
+        "city": " ",
+        "postal_code": "17001",
+        "country": "España",
+    }
+
+    with pytest.raises(ValidationError):
+        ClientCreate.model_validate(payload)
+
+    response = ClientResponse.model_validate(
+        {
+            **payload,
+            "id": 1,
+            "company_id": 1,
+            "city": "",
+            "postal_code": "",
+        }
+    )
+
+    assert response.city == ""
+    assert response.postal_code == ""

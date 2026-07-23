@@ -38,6 +38,7 @@ export interface InvoiceUpdate {
     custom_issuer_info?: string | null;
     custom_recipient_info?: string | null;
     signature_url?: string | null;
+    items?: InvoiceItemCreate[];
 }
 
 export interface InvoiceItemCreate {

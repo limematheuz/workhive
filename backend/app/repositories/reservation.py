@@ -93,8 +93,7 @@ def create_reservation(
         updated_by_user_id=user_id,
     )
     db.add(reservation)
-    db.commit()
-    db.refresh(reservation)
+    db.flush()
     return reservation
 
 
@@ -106,11 +105,10 @@ def update_reservation(
         setattr(reservation, key, value)
     reservation.updated_by_user_id = user_id
     db.add(reservation)
-    db.commit()
-    db.refresh(reservation)
+    db.flush()
     return reservation
 
 
 def delete_reservation(db: Session, reservation: Reservation) -> None:
     db.delete(reservation)
-    db.commit()
+    db.flush()

@@ -5,26 +5,40 @@ from app.models.company import Company
 from app.repositories import client as client_repo
 
 
+def find_company_client(
+    db: Session,
+    *,
+    owner_company_id: int,
+    partner_company: Company,
+) -> Client | None:
+    client = client_repo.get_client_by_legal_number(
+        db,
+        owner_company_id,
+        partner_company.tax_id,
+    )
+    if client is not None:
+        return client
+    return (
+        db.query(Client)
+        .filter(
+            Client.company_id == owner_company_id,
+            Client.name == partner_company.name,
+        )
+        .first()
+    )
+
+
 def ensure_company_as_client(
     db: Session,
     *,
     owner_company_id: int,
     partner_company: Company,
 ) -> Client:
-    client = client_repo.get_client_by_legal_number(
+    client = find_company_client(
         db,
-        owner_company_id,
-        partner_company.tax_id,
+        owner_company_id=owner_company_id,
+        partner_company=partner_company,
     )
-    if client is None:
-        client = (
-            db.query(Client)
-            .filter(
-                Client.company_id == owner_company_id,
-                Client.name == partner_company.name,
-            )
-            .first()
-        )
     if client is None:
         client = Client(
             company_id=owner_company_id,

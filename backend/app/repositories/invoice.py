@@ -110,7 +110,10 @@ def create_invoice(
 def update_invoice(
     db: Session, db_invoice: Invoice, invoice_data: InvoiceUpdate
 ) -> Invoice:
-    for key, value in invoice_data.model_dump(exclude_unset=True).items():
+    for key, value in invoice_data.model_dump(
+        exclude_unset=True,
+        exclude={"items"},
+    ).items():
         setattr(db_invoice, key, value)
     db.add(db_invoice)
     db.flush()

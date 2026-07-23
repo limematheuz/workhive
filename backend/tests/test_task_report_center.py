@@ -315,6 +315,18 @@ def test_viewing_report_center_clears_only_current_users_report_notifications(
     db.add(assignment)
     db.commit()
 
+    before = client.get(
+        "/api/v1/notifications/?unread_only=true&limit=200",
+        headers=_headers(users["owner_admin"]),
+    )
+    assert before.status_code == 200
+    assert any(item["event_type"] == "task.reported" for item in before.json())
+    unrelated_notification_ids = {
+        item["id"]
+        for item in before.json()
+        if item["event_type"] != "task.reported"
+    }
+
     response = client.patch(
         "/api/v1/task-reports/notifications/read",
         headers=_headers(users["owner_admin"]),
@@ -325,7 +337,7 @@ def test_viewing_report_center_clears_only_current_users_report_notifications(
         headers=_headers(users["owner_admin"]),
     )
     assert remaining.status_code == 200
-    assert [item["event_type"] for item in remaining.json()] == ["task.assigned"]
+    assert {item["id"] for item in remaining.json()} == unrelated_notification_ids
 
     other_admin = client.get(
         "/api/v1/notifications/?unread_only=true&limit=200",

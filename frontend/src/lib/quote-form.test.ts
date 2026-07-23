@@ -6,10 +6,10 @@ import type { Company } from "@/types/company";
 import type { Quote } from "@/types/quote";
 import {
     buildQuotePayload,
+    buildQuoteItemsSnapshot,
     createQuoteConceptRow,
     formatQuoteValidUntilDate,
     getQuoteIssuerFieldsFromCompany,
-    getQuoteItemChanges,
     getQuoteRecipientFieldsFromClient,
     mapQuoteItemsToConceptRows,
 } from "./quote-form.ts";
@@ -104,18 +104,17 @@ test("quote payload preserves optional document fields", () => {
     assert.equal(payload.shipping_address, null);
 });
 
-test("quote item changes split deleted updated and new rows", () => {
-    const originalItems = [
-        { id: 1, quote_id: 1, description: "Old", quantity: 1, unit_price: 10, subtotal: 10 },
-        { id: 2, quote_id: 1, description: "Delete", quantity: 1, unit_price: 20, subtotal: 20 },
-    ] as Quote["items"];
+test("quote item snapshot contains every current row and no UI identifiers", () => {
     const concepts = [
         { id: "1", description: "Updated", quantity: 2, unitPrice: 15, taxRate: 0.21 },
         createQuoteConceptRow(0.21, "manual-new"),
     ];
-    const result = getQuoteItemChanges(originalItems, concepts);
+    concepts[1].description = "New";
+    concepts[1].unitPrice = 20;
+    const result = buildQuoteItemsSnapshot(concepts);
 
-    assert.deepEqual(result.deletedItems.map(item => item.id), [2]);
-    assert.deepEqual(result.updatedItems.map(item => item.id), ["1"]);
-    assert.deepEqual(result.newItems.map(item => item.id), ["manual-new"]);
+    assert.deepEqual(result, [
+        { description: "Updated", quantity: 2, unit_price: 15 },
+        { description: "New", quantity: 1, unit_price: 20 },
+    ]);
 });
