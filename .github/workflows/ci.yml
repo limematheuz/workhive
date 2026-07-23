@@ -67,8 +67,8 @@ jobs:
           POSTGRES_PASSWORD: compose-test-password
           SECRET_KEY: compose-test-secret
           APP_DOMAIN: example.test
-          BACKEND_IMAGE: registry.example/workhive/backend:v1.1.1
-          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.1.1
+          BACKEND_IMAGE: registry.example/workhive/backend:v1.2.0
+          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.2.0
         run: |
           docker compose \
             -f docker-compose.yml \
