@@ -36,7 +36,7 @@ export function InvoiceEmailDialogFooter({
     invoiceText,
 }: InvoiceEmailDialogFooterProps) {
     return (
-        <DialogFooter className="items-center justify-between gap-3 border-t border-[var(--border-soft)] bg-[var(--bg-card)] px-5 py-4 sm:flex-row">
+        <DialogFooter className="dialog-glass-chrome items-center justify-between gap-3 border-t border-[var(--border-soft)] px-5 py-4 sm:flex-row">
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                 <label className="flex w-full items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-sm font-semibold text-[var(--text-main)] sm:w-auto">
                     <input

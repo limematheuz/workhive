@@ -21,7 +21,7 @@ export function ClientDetailManageActions({
     onClose,
 }: ClientDetailManageActionsProps) {
     return (
-        <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-card)] p-4 sm:flex-row sm:justify-end sm:p-5">
+        <div className="dialog-glass-chrome flex flex-col-reverse gap-2 border-t border-[var(--border-soft)] p-4 sm:flex-row sm:justify-end sm:p-5">
             {onEditClient && (
                 <Button
                     type="button"

@@ -43,19 +43,20 @@
   --glass-blur-strong: 140px;
   --glass-saturate: 1.9;
   /*
-   * Modal sheet: 85% opaque fill + heavy blur.
-   * Readable bleed-through is a bug — keep alpha high.
+   * Modal sheet: light translucency + frosted blur (glassmorphism).
+   * Alpha stays high enough for readability; blur carries the frost look.
    */
-  --glass-sheet-bg: rgba(28, 28, 32, 0.85);
+  --glass-sheet-bg: rgba(28, 28, 32, 0.72);
   --glass-sheet-border: rgba(255, 255, 255, 0.16);
   --glass-sheet-highlight: rgba(255, 255, 255, 0.2);
   --glass-sheet-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
-  --glass-chrome-bg: rgba(24, 24, 28, 0.88);
+  --glass-chrome-bg: rgba(24, 24, 28, 0.55);
   --glass-panel-bg: rgba(255, 255, 255, 0.08);
   --glass-panel-border: rgba(255, 255, 255, 0.12);
   /* Overlay dims + frosts the page behind the sheet */
   --glass-overlay-bg: rgba(4, 6, 12, 0.55);
-  --glass-overlay-blur: 140px;
+  /* Keep blur in a range browsers reliably composite on full-viewport overlays */
+  --glass-overlay-blur: 80px;
   --glass-close-bg: rgba(255, 255, 255, 0.16);
   --glass-close-border: rgba(255, 255, 255, 0.28);
   --glass-close-hover-bg: rgba(255, 255, 255, 0.28);
@@ -72,9 +73,9 @@
   --popover-surface-blur: 20px;
   --popover-surface-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 
-  /* Default modal panel = frosted sheet at 85% opacity */
-  --dialog-bg: rgba(28, 28, 32, 0.85);
-  --dialog-surface-blur: 140px;
+  /* Default modal panel = frosted translucent sheet */
+  --dialog-bg: rgba(28, 28, 32, 0.72);
+  --dialog-surface-blur: 48px;
 
   /*
    * Dashboard stacking (mobile/tablet):
@@ -263,15 +264,15 @@
   --glass-blur: 32px;
   --glass-blur-strong: 140px;
   --glass-saturate: 1.8;
-  --glass-sheet-bg: rgba(248, 252, 252, 0.85);
+  --glass-sheet-bg: rgba(248, 252, 252, 0.7);
   --glass-sheet-border: rgba(255, 255, 255, 0.72);
   --glass-sheet-highlight: rgba(255, 255, 255, 0.9);
   --glass-sheet-shadow: 0 40px 120px rgba(52, 74, 94, 0.28);
-  --glass-chrome-bg: rgba(244, 248, 251, 0.9);
+  --glass-chrome-bg: rgba(244, 248, 251, 0.55);
   --glass-panel-bg: rgba(255, 255, 255, 0.55);
   --glass-panel-border: rgba(82, 101, 119, 0.16);
   --glass-overlay-bg: rgba(15, 23, 42, 0.4);
-  --glass-overlay-blur: 140px;
+  --glass-overlay-blur: 80px;
   --glass-close-bg: rgba(255, 255, 255, 0.92);
   --glass-close-border: rgba(15, 23, 42, 0.12);
   --glass-close-hover-bg: #ffffff;
@@ -285,8 +286,8 @@
   --popover-surface-blur: 18px;
   --popover-surface-shadow: 0 18px 48px rgba(52, 74, 94, 0.22);
 
-  --dialog-bg: rgba(248, 252, 252, 0.85);
-  --dialog-surface-blur: 140px;
+  --dialog-bg: rgba(248, 252, 252, 0.7);
+  --dialog-surface-blur: 48px;
 
   --z-dashboard-content: 10;
   --z-header: 20;
@@ -381,25 +382,26 @@
   }
 }
 
-/* Frosted sheet — 85% fill + blur 140 (no transform) */
+/* Frosted sheet — translucent fill + blur (no transform) */
 [data-slot="dialog-content"],
 [data-slot="dialog-content"].dialog-glass {
   background-color: var(--glass-sheet-bg) !important;
-  backdrop-filter: blur(140px) saturate(1.9) !important;
-  -webkit-backdrop-filter: blur(140px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
   border: 1px solid var(--glass-sheet-border) !important;
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
+  will-change: backdrop-filter;
   box-shadow:
     var(--glass-sheet-shadow),
     inset 0 1px 0 var(--glass-sheet-highlight) !important;
 }
 
 .dialog-glass-chrome {
-  background-color: var(--glass-chrome-bg);
-  backdrop-filter: blur(40px) saturate(1.6);
-  -webkit-backdrop-filter: blur(40px) saturate(1.6);
+  background-color: var(--glass-chrome-bg) !important;
+  -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(1.6) !important;
+  backdrop-filter: blur(var(--dialog-surface-blur)) saturate(1.6) !important;
   border-color: var(--glass-sheet-border);
 }
 
@@ -421,15 +423,18 @@
 /*
  * Dimmed frosted world behind modals (main iOS/macOS effect).
  * CRITICAL: no transform / opacity < 1 or backdrop-filter dies.
+ * Extreme blur radii (e.g. 140px) on full-viewport overlays are often
+ * dropped by the compositor — use --glass-overlay-blur instead.
  */
 .dialog-glass-overlay,
 [data-slot="dialog-overlay"] {
   background-color: var(--glass-overlay-bg) !important;
-  backdrop-filter: blur(140px) saturate(1.9) !important;
-  -webkit-backdrop-filter: blur(140px) saturate(1.9) !important;
+  -webkit-backdrop-filter: blur(var(--glass-overlay-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--glass-overlay-blur)) saturate(var(--glass-saturate)) !important;
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
+  will-change: backdrop-filter;
 }
 
 /* High-contrast dialog close control (default theme = dark) */
@@ -871,11 +876,12 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 .light-mode [data-slot="sheet-content"] {
   background-color: var(--glass-sheet-bg) !important;
   border-color: var(--glass-sheet-border) !important;
-  backdrop-filter: blur(140px) saturate(1.8) !important;
-  -webkit-backdrop-filter: blur(140px) saturate(1.8) !important;
+  -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
+  will-change: backdrop-filter;
 }
 
 .light-mode [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),

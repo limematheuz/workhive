@@ -67,7 +67,7 @@ export function RectificationModal({
 
     return (
         <Dialog open={open} onOpenChange={(o) => !loading && onOpenChange(o)}>
-            <DialogContent className="w-[95vw] sm:max-w-lg p-0 overflow-hidden bg-[var(--bg-card)] border-[var(--border-soft)]">
+            <DialogContent className="w-[95vw] sm:max-w-lg p-0 overflow-hidden border-[var(--border-soft)]">
                 {/* Header */}
                 <DialogHeader className="p-6 border-b border-[var(--border-soft)] text-left sm:text-left">
                     <div className="flex items-center gap-3">

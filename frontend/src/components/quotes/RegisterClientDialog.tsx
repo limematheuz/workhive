@@ -47,7 +47,7 @@ function OpenRegisterClientDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border-[var(--border-soft)] bg-[var(--bg-card)]">
+            <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border-[var(--border-soft)]">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-black text-[var(--text-main)]">
                         ¿Registrar cliente nuevo?

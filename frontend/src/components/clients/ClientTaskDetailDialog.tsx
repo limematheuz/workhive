@@ -54,7 +54,7 @@ export function ClientTaskDetailDialog({
 }: ClientTaskDetailDialogProps) {
     return (
         <Dialog open={!!task} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <DialogContent className="max-w-md bg-[var(--bg-card)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl p-6">
+            <DialogContent className="max-w-md border border-[var(--border-soft)] text-[var(--text-main)] rounded-2xl p-6">
                 <DialogHeader>
                     <DialogTitle className="text-base font-bold flex items-center gap-2">
                         <ListTodo className="w-5 h-5 text-accent" />

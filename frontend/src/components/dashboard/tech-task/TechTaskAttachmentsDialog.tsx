@@ -28,7 +28,7 @@ export function TechTaskAttachmentsDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[80vh] max-w-md flex-col overflow-hidden rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 text-[var(--text-main)]">
+            <DialogContent className="flex max-h-[80vh] max-w-md flex-col overflow-hidden rounded-3xl border border-[var(--border-soft)] p-6 text-[var(--text-main)]">
                 <DialogHeader className="border-b border-[var(--border-soft)] pb-4">
                     <DialogTitle className="flex items-center gap-2 text-base font-bold">
                         <Paperclip className="h-5 w-5 text-accent" />

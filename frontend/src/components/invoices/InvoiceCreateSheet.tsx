@@ -105,7 +105,7 @@ export function InvoiceCreateSheet({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-5xl w-full max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-[28px] border-[var(--border-soft)] backdrop-blur-2xl bg-[var(--bg-card)]">
+            <DialogContent className="sm:max-w-5xl w-full max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-[28px] border-[var(--border-soft)]">
                 <form onSubmit={handleCreateInvoice} className="flex flex-col flex-1 overflow-hidden">
                     <DialogHeader className="p-6 border-b border-[var(--border-soft)] flex-shrink-0">
                         <DialogTitle className="text-xl font-bold flex items-center gap-2 text-[var(--text-main)]">
@@ -192,7 +192,7 @@ export function InvoiceCreateSheet({
                     </div>
 
                     {/* Bottom Actions footer */}
-                    <div className="p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] bg-[var(--bg-card)] flex-shrink-0">
+                    <div className="dialog-glass-chrome p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] flex-shrink-0">
                         <Button
                             type="button"
                             variant="outline"

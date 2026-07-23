@@ -55,8 +55,10 @@ test("mobile checklist owns one vertical scroll and keeps its translucent footer
     assert.equal(dialogSource.match(/overflow-y-auto/g)?.length, 1);
     assert.match(dialogSource, /h-\[100dvh\]/);
     assert.match(dialogSource, /scrollbar-width:none/);
-    assert.match(dialogSource, /backdrop-blur-xl/);
+    assert.match(dialogSource, /dialog-glass-chrome/);
     assert.match(dialogSource, /shrink-0/);
+    assert.doesNotMatch(dialogSource, /sm:-translate-x-1\/2/);
+    assert.doesNotMatch(dialogSource, /sm:-translate-y-1\/2/);
 });
 
 test("requirement cards keep compact pill controls in a single action row", () => {

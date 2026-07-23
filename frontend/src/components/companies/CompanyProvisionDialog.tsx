@@ -143,7 +143,7 @@ export function CompanyProvisionDialog({
                             </p>
                         </section>
                     </div>
-                    <DialogFooter className="border-t border-[var(--border-soft)] bg-[var(--bg-card)] p-6">
+                    <DialogFooter className="dialog-glass-chrome border-t border-[var(--border-soft)] p-6">
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">
                             Cancelar
                         </Button>

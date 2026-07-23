@@ -182,7 +182,7 @@ function InvoiceEmailDialogBody({
 
     return (
         <>
-            <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-5 pr-16 sm:px-7">
+            <DialogHeader className="dialog-glass-chrome border-b border-[var(--border-soft)] px-5 py-5 pr-16 sm:px-7">
                 <DialogTitle className="flex min-w-0 items-center gap-3 text-xl font-black tracking-tight text-[var(--text-main)] sm:text-2xl">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-white shadow-lg shadow-accent/25 sm:h-11 sm:w-11">
                         <Mail className="h-5 w-5" />

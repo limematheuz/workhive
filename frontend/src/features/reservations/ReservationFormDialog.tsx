@@ -45,7 +45,7 @@ export function ReservationFormDialog({
 }: ReservationFormDialogProps) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] flex flex-col p-0 overflow-hidden sm:max-w-xl bg-[var(--bg-card)] border-[var(--border-soft)] rounded-3xl">
+            <DialogContent className="max-h-[90vh] flex flex-col p-0 overflow-hidden sm:max-w-xl border-[var(--border-soft)] rounded-3xl">
                 <form
                     onSubmit={onSubmit}
                     className="flex flex-col flex-1 overflow-hidden"

@@ -264,7 +264,7 @@ export function PrivacyControls({
                 confirmVariant="danger"
             />
             <Dialog open={Boolean(resolveTarget)} onOpenChange={(open) => !open && closeResolveDialog()}>
-                <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] text-[var(--text-main)] sm:max-w-lg">
+                <DialogContent className="w-[calc(100vw-2rem)] rounded-2xl border border-[var(--border-soft)] text-[var(--text-main)] sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>
                             {resolveDecision === "complete"
