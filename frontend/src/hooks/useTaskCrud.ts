@@ -25,6 +25,7 @@ import {
     isTaskPlanningDateBeforeToday,
 } from "@/domain/tasks/task-schedule";
 import { completionDateForStatus } from "@/domain/tasks/task-status";
+import { canMarkTaskCompleted } from "@/lib/task-checklist-completion";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
 import {
@@ -206,6 +207,13 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
         }
 
         const newStatus = task.status === "completed" ? "pending" : "completed";
+        if (newStatus === "completed" && !canMarkTaskCompleted(task)) {
+            toast.error(
+                dict.tasks?.error_checklist_incomplete
+                    || "Completa todos los elementos del checklist antes de marcar la tarea como hecha",
+            );
+            return;
+        }
         try {
             setTasks(prev =>
                 prev.map(t => (t.id === task.id ? { ...t, status: newStatus } : t))

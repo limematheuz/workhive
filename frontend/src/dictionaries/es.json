@@ -789,6 +789,7 @@
     "success_update": "Estado de la tarea actualizado",
     "error_create": "Error al crear la tarea",
     "error_update": "Error al actualizar la tarea",
+    "error_checklist_incomplete": "Completa todos los elementos del checklist antes de marcar la tarea como hecha",
     "errors": {
       "planning_date_limit": "La fecha de planificación no puede ser posterior a la entrada del próximo huésped."
     },

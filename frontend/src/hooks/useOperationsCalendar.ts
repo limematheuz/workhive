@@ -21,6 +21,7 @@ import {
     isTaskPlanningDateBeforeToday,
     sortTasksByOperationalPriority,
 } from "@/domain/tasks/task-schedule";
+import { canMarkTaskCompleted } from "@/lib/task-checklist-completion";
 import {
     completionDateForStatus,
     toKanbanStatus,
@@ -164,6 +165,13 @@ export function useOperationsCalendar({
             });
             return;
         }
+        if (newStatus === "completed" && !canMarkTaskCompleted(task)) {
+            toast.error(
+                dict.tasks?.error_checklist_incomplete
+                    || "Completa todos los elementos del checklist antes de marcar la tarea como hecha",
+            );
+            return;
+        }
 
         setUpdatingTaskId(taskId);
         try {
@@ -178,9 +186,8 @@ export function useOperationsCalendar({
                 setSelectedTask(prev => prev ? { ...prev, status: newStatus } : null);
                 setEditStatus(newStatus);
             }
-        } catch (error) {
-            console.error("Error updating task status", error);
-            toast.error(dict.tasks.error_update);
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, dict.tasks.error_update));
         } finally {
             setUpdatingTaskId(null);
         }
@@ -268,6 +275,19 @@ export function useOperationsCalendar({
         };
         if (isTaskPlanningDateBeforeToday(values.planningDate)) {
             toast.error("La fecha de planificación no puede ser anterior a hoy");
+            return;
+        }
+        if (
+            values.status === "completed"
+            && !canMarkTaskCompleted({
+                ...selectedTask,
+                description: values.description,
+            })
+        ) {
+            toast.error(
+                dict.tasks?.error_checklist_incomplete
+                    || "Completa todos los elementos del checklist antes de marcar la tarea como hecha",
+            );
             return;
         }
         const violation = getScheduleViolation(
