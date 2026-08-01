@@ -789,6 +789,7 @@
     "success_update": "Task status updated successfully",
     "error_create": "Error creating task",
     "error_update": "Error updating task status",
+    "error_checklist_incomplete": "Complete every checklist item before marking the task as done",
     "errors": {
       "planning_date_limit": "The planned date cannot be later than the next guest's check-in."
     },

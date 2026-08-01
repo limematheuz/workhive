@@ -10,7 +10,7 @@ import {
 
 test("task checklist parsing preserves completion and assignment metadata", () => {
     const items = parseTaskChecklist(
-        "- [ ] Cocina (@12:Ana Pérez)\n- [x] Baño (@13:Luis)\nNota libre"
+        "- [ ] Cocina (@12:Ana Pérez:completed)\n- [x] Baño (@13:Luis)\nNota libre"
     );
 
     assert.equal(items.length, 2);
@@ -19,6 +19,7 @@ test("task checklist parsing preserves completion and assignment metadata", () =
         checked: false,
         assignedUserId: 12,
         assignedUserName: "Ana Pérez",
+        assignedStatus: "completed",
         index: 0,
     });
     assert.equal(items[1].checked, true);

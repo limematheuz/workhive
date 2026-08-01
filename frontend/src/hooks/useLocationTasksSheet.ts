@@ -22,6 +22,7 @@ import {
     canManageCompanyTasks,
     isSuperadmin,
 } from "@/domain/access/roles";
+import { canMarkTaskCompleted } from "@/lib/task-checklist-completion";
 
 interface UseLocationTasksSheetParams {
     location: Location | null;
@@ -211,6 +212,13 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
         }
 
         const newStatus = task.status === "completed" ? "pending" : "completed";
+        if (newStatus === "completed" && !canMarkTaskCompleted(task)) {
+            toast.error(
+                dict.tasks?.error_checklist_incomplete
+                    || "Completa todos los elementos del checklist antes de marcar la tarea como hecha",
+            );
+            return;
+        }
         try {
             setTasks(prev =>
                 prev.map(t => (t.id === task.id ? { ...t, status: newStatus } : t))
