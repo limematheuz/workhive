@@ -5,6 +5,12 @@ asociarse a una EC2: requiere un recurso compatible, como un Application Load
 Balancer (ALB). Esta carpeta contiene una plantilla de CloudFormation que crea
 un Web ACL regional y lo asocia a un ALB público existente.
 
+> **Estado: WIP — despliegue aplazado por coste.** La configuración está
+> versionada y validada, pero actualmente no existe un ALB ni un Web ACL
+> desplegados para WorkHive. No ejecutes la plantilla, no cambies DNS ni
+> security groups, y no actives `EDGE_TLS_TERMINATED` hasta retomar este corte
+> de producción con presupuesto aprobado.
+
 La plantilla bloquea las fuentes con mala reputación, reglas administradas para
 entradas conocidas y SQL injection, y limita por IP las escrituras públicas,
 la API completa y el sitio completo. Las respuestas de límite usan HTTP 429.
