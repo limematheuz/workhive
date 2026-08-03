@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { CheckCircle2, FileText, Hammer, Loader2, Lock, MessageCircle, MoreHorizontal, Timer, TriangleAlert, UserRound } from "lucide-react";
 import { TaskItem, TaskWorkDetailedSummary } from "@/types/user";
 import { useDictionary } from "@/lib/dictionary-context";
 import { cleanChecklistDescription } from "@/lib/format";
-import { WorkSessionService } from "@/services/work-session.service";
 import { formatHoursShort } from "@/lib/format-hours";
 import { localizeTaskDescription, taskLocationTitle } from "@/lib/task-display";
 import {
@@ -23,6 +22,7 @@ interface CalendarKanbanCardProps {
     onClick: (task: TaskItem) => void;
     isExternal?: boolean;
     canDrag?: boolean;
+    workSummary?: TaskWorkDetailedSummary;
 }
 
 export function CalendarKanbanCard({
@@ -35,6 +35,7 @@ export function CalendarKanbanCard({
     onClick,
     isExternal = false,
     canDrag = true,
+    workSummary,
 }: CalendarKanbanCardProps) {
     const { dict } = useDictionary();
     const assignee = getCalendarKanbanAssignee(
@@ -72,16 +73,6 @@ export function CalendarKanbanCard({
                 label: dict.tasks?.dialog?.status_pending || "Pendiente",
             };
     const StatusIcon = statusTone.Icon;
-
-    const [workSummary, setWorkSummary] = useState<TaskWorkDetailedSummary | null>(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        WorkSessionService.getTaskDetailedSummary(task.id)
-            .then((data) => { if (!cancelled) setWorkSummary(data); })
-            .catch(() => {});
-        return () => { cancelled = true; };
-    }, [task.id]);
 
     const checklist = parseCalendarKanbanChecklist(localizedDescription);
     const progress = checklist.length > 0

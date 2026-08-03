@@ -346,6 +346,65 @@ def test_task_detailed_summary_desgloses_workers(db):
     assert workers_dict[second_worker.id].is_active is True
 
 
+def test_task_detailed_summaries_batches_visible_tasks(db):
+    company = _company(db, "BatchDetailed")
+    admin = _user(db, company, "admin_batch_detailed@ownet.test")
+    location = Location(
+        name="Casa batch detailed",
+        address="Calle Batch 2",
+        city="Girona",
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.flush()
+    first_task = TaskItem(
+        title="Primera tarea",
+        unit="servicio",
+        company_id=company.id,
+        location_id=location.id,
+        user_id=admin.id,
+    )
+    second_task = TaskItem(
+        title="Segunda tarea",
+        unit="servicio",
+        company_id=company.id,
+        location_id=location.id,
+        user_id=admin.id,
+    )
+    db.add_all([first_task, second_task])
+    db.flush()
+    start = datetime.now(timezone.utc) - timedelta(hours=2)
+    db.add_all(
+        [
+            WorkSession(
+                user_id=admin.id,
+                location_id=location.id,
+                task_item_id=first_task.id,
+                start_time=start,
+                end_time=start + timedelta(hours=1),
+            ),
+            WorkSession(
+                user_id=admin.id,
+                location_id=location.id,
+                task_item_id=second_task.id,
+                start_time=start + timedelta(hours=1),
+                end_time=start + timedelta(hours=2),
+            ),
+        ]
+    )
+    db.commit()
+
+    summaries = work_session_service.get_task_work_detailed_summaries(
+        db,
+        admin,
+        [second_task.id, first_task.id, 999999],
+    )
+
+    assert [summary.task_item_id for summary in summaries] == [first_task.id, second_task.id]
+    assert all(summary.session_count == 1 for summary in summaries)
+    assert all(summary.total_seconds == 60 * 60 for summary in summaries)
+
+
 def test_viewers_start_accepted_work_and_finish_only_their_assigned_work(db):
     company = _company(db, "FieldTeam")
     manager = _user(db, company, "manager@field.test", role_id=2)

@@ -230,7 +230,6 @@ def get_task_work_detailed_summary(
     ):
         raise HTTPException(status_code=404, detail="Task Item not found")
 
-    now = datetime.now(timezone.utc)
     if current_user.company_id is None:
         sessions = work_session_repo.get_sessions_by_task(db, task_item_id)
     else:
@@ -238,7 +237,59 @@ def get_task_work_detailed_summary(
             db, current_user.company_id, task_item_id
         )
 
-    # Group by user_id
+    return _build_task_work_detailed_summary(
+        task_item_id,
+        sessions,
+        datetime.now(timezone.utc),
+    )
+
+
+def get_task_work_detailed_summaries(
+    db: Session, current_user: User, task_item_ids: list[int]
+) -> list[TaskWorkDetailedSummaryResponse]:
+    requested_ids = list(dict.fromkeys(task_item_ids))
+    if not requested_ids:
+        return []
+
+    visible_tasks = task_item_repo.get_task_items_by_ids(
+        db,
+        current_user.company_id,
+        requested_ids,
+        user_id=current_user.id if current_user.role.name == "viewer" else None,
+    )
+    visible_ids = [task.id for task in visible_tasks]
+    if not visible_ids:
+        return []
+
+    if current_user.company_id is None:
+        sessions = work_session_repo.get_sessions_by_tasks(db, visible_ids)
+    else:
+        sessions = work_session_repo.get_visible_sessions_by_tasks(
+            db,
+            current_user.company_id,
+            visible_ids,
+        )
+
+    sessions_by_task: dict[int, list[WorkSession]] = {
+        task_id: [] for task_id in visible_ids
+    }
+    for session in sessions:
+        if session.task_item_id in sessions_by_task:
+            sessions_by_task[session.task_item_id].append(session)
+
+    now = datetime.now(timezone.utc)
+    return [
+        _build_task_work_detailed_summary(task_id, sessions_by_task[task_id], now)
+        for task_id in visible_ids
+    ]
+
+
+def _build_task_work_detailed_summary(
+    task_item_id: int,
+    sessions: list[WorkSession],
+    now: datetime,
+) -> TaskWorkDetailedSummaryResponse:
+    # Group by user_id.
     user_data: dict[int, dict] = {}
     for ws in sessions:
         end = ws.end_time or now

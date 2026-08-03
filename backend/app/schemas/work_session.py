@@ -74,3 +74,7 @@ class TaskWorkDetailedSummaryResponse(BaseModel):
     session_count: int
     workers: list[WorkerTimeSummary]
     start_locations: list[WorkSessionStartLocationResponse]
+
+
+class TaskWorkDetailedSummariesResponse(BaseModel):
+    summaries: list[TaskWorkDetailedSummaryResponse]

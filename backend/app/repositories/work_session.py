@@ -1,7 +1,7 @@
 from datetime import datetime
 from app.schemas.work_session import WorkSessionCreate
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.work_session import WorkSession
@@ -106,6 +106,18 @@ def get_sessions_by_task(db: Session, task_item_id: int) -> list[WorkSession]:
     )
 
 
+def get_sessions_by_tasks(db: Session, task_item_ids: list[int]) -> list[WorkSession]:
+    if not task_item_ids:
+        return []
+    return (
+        db.query(WorkSession)
+        .options(joinedload(WorkSession.user))
+        .filter(WorkSession.task_item_id.in_(task_item_ids))
+        .order_by(WorkSession.task_item_id.asc(), WorkSession.start_time.asc())
+        .all()
+    )
+
+
 def get_visible_sessions_by_task(
     db: Session, company_id: int, task_item_id: int
 ) -> list[WorkSession]:
@@ -130,6 +142,37 @@ def get_visible_sessions_by_task(
             ),
         )
         .order_by(WorkSession.start_time.asc())
+        .all()
+    )
+
+
+def get_visible_sessions_by_tasks(
+    db: Session, company_id: int, task_item_ids: list[int]
+) -> list[WorkSession]:
+    if not task_item_ids:
+        return []
+    return (
+        db.query(WorkSession)
+        .options(joinedload(WorkSession.user))
+        .join(User, WorkSession.user_id == User.id)
+        .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
+        .outerjoin(
+            Reservation,
+            TaskItem.checkout_reservation_id == Reservation.id,
+        )
+        .filter(
+            WorkSession.task_item_id.in_(task_item_ids),
+            User.is_active.is_(True),
+            or_(
+                User.company_id == company_id,
+                and_(
+                    User.company_id != company_id,
+                    TaskItem.company_id == User.company_id,
+                    Reservation.owner_company_id == company_id,
+                ),
+            ),
+        )
+        .order_by(WorkSession.task_item_id.asc(), WorkSession.start_time.asc())
         .all()
     )
 

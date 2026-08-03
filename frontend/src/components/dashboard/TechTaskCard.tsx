@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Clock, MapPin, Check, X, Calendar, Flag, AlertCircle, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TaskItem, User, TaskWorkDetailedSummary } from "@/types/user";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getUserTaskStatus, isTaskAssignedToUser } from "@/lib/format";
-import { WorkSessionService } from "@/services/work-session.service";
 import { formatHoursShort } from "@/lib/format-hours";
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import { getTaskScheduleDate } from "@/domain/tasks/task-schedule";
@@ -20,6 +19,7 @@ interface TechTaskCardProps {
     onReject: (taskId: number) => void;
     onViewDetails: (task: TaskItem) => void;
     hideLocationName?: boolean;
+    workSummary?: TaskWorkDetailedSummary;
 }
 
 export function TechTaskCard({
@@ -31,19 +31,10 @@ export function TechTaskCard({
     onReject,
     onViewDetails,
     hideLocationName = false,
+    workSummary,
 }: TechTaskCardProps) {
     const { dict, locale } = useDictionary();
     const canAcceptAssignments = canManageCompanyTasks(currentUser);
-
-    const [workSummary, setWorkSummary] = useState<TaskWorkDetailedSummary | null>(null);
-
-    useEffect(() => {
-        let cancelled = false;
-        WorkSessionService.getTaskDetailedSummary(task.id)
-            .then((data) => { if (!cancelled) setWorkSummary(data); })
-            .catch(() => {});
-        return () => { cancelled = true; };
-    }, [task.id]);
 
     const userStatus = React.useMemo(() => {
         if (!currentUser) return task.status;

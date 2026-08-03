@@ -10,6 +10,10 @@ const card = readFileSync(
     new URL("../components/dashboard/CalendarKanbanCard.tsx", import.meta.url),
     "utf8",
 );
+const operationsCalendar = readFileSync(
+    new URL("../components/dashboard/OperationsCalendar.tsx", import.meta.url),
+    "utf8",
+);
 
 test("kanban card opens task details from an accessible full-card control", () => {
     assert.match(
@@ -49,4 +53,10 @@ test("kanban checklist parsing preserves optional assignees in one pass", () => 
             { text: "Baño", checked: true, assignedUserId: undefined, assignedUserName: undefined },
         ],
     );
+});
+
+test("kanban loads work summaries in a batch instead of one request per card", () => {
+    assert.doesNotMatch(card, /getTaskDetailedSummary\(task\.id\)/);
+    assert.match(operationsCalendar, /useTaskWorkSummaries\(tasks\)/);
+    assert.match(operationsCalendar, /workSummary=\{workSummaries\[task\.id\]\}/);
 });

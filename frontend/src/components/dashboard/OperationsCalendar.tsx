@@ -19,6 +19,7 @@ import { TaskEditModal } from "@/components/tasks/TaskEditModal";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { isExternalTaskForCompany } from "@/lib/task-display";
+import { useTaskWorkSummaries } from "@/hooks/useTaskWorkSummaries";
 
 interface OperationsCalendarProps {
     tasks: TaskItem[];
@@ -44,6 +45,7 @@ export function OperationsCalendar({
         onTaskUpdate,
         currentUser,
     });
+    const workSummaries = useTaskWorkSummaries(tasks);
 
     const kanbanColumns = [
         {
@@ -205,6 +207,7 @@ export function OperationsCalendar({
                                                 onClick={state.handleOpenDetail}
                                                 isExternal={isExternal}
                                                 canDrag={state.isAdminOrManager}
+                                                workSummary={workSummaries[task.id]}
                                             />
                                         );
                                     })

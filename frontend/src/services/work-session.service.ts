@@ -68,6 +68,28 @@ export const WorkSessionService = {
         return await response.json()
     },
 
+    getTaskDetailedSummaries: async (taskItemIds: number[]): Promise<TaskWorkDetailedSummary[]> => {
+        const ids = [...new Set(taskItemIds)];
+        if (ids.length === 0) return [];
+
+        const batches = Array.from({ length: Math.ceil(ids.length / 100) }, (_, index) =>
+            ids.slice(index * 100, (index + 1) * 100),
+        );
+        const responses = await Promise.all(batches.map(async (batch) => {
+            const params = new URLSearchParams();
+            batch.forEach((taskItemId) => params.append("task_item_ids", taskItemId.toString()));
+            const response = await apiFetch(`/api/v1/work-sessions/tasks/detailed-summaries?${params}`, {
+                method: "GET",
+                cache: "no-store",
+            });
+            if (!response.ok) {
+                throw new Error("Error fetching task detailed work summaries");
+            }
+            return (await response.json() as { summaries: TaskWorkDetailedSummary[] }).summaries;
+        }));
+        return responses.flat();
+    },
+
     getWorkSession: async (id: number): Promise<WorkSession> => {
         const response = await apiFetch(`/api/v1/work-sessions/${id}`, {
             method: "GET",
