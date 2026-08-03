@@ -34,6 +34,7 @@ set +a
 
 workhive_dir="${WORKHIVE_DIR:-/home/ubuntu/workhive}"
 compose_env_file="${COMPOSE_ENV_FILE:-${workhive_dir}/.env}"
+edge_tls_terminated="${EDGE_TLS_TERMINATED:-false}"
 aws_region="${AWS_REGION:-eu-west-1}"
 aws_bin="${AWS_BIN:-/snap/bin/aws}"
 docker_bin="${DOCKER_BIN:-docker}"
@@ -50,6 +51,21 @@ for required_file in \
         exit 1
     fi
 done
+
+case "${edge_tls_terminated}" in
+    true|false)
+        ;;
+    *)
+        echo "EDGE_TLS_TERMINATED must be true or false." >&2
+        exit 1
+        ;;
+esac
+
+edge_compose_file="${workhive_dir}/ops/security/docker-compose.alb.yml"
+if [[ "${edge_tls_terminated}" == "true" && ! -f "${edge_compose_file}" ]]; then
+    echo "Required edge configuration not found: ${edge_compose_file}" >&2
+    exit 1
+fi
 
 for required_command in \
     "${aws_bin}" \
@@ -70,15 +86,26 @@ if ! "${flock_bin}" -n 9; then
     exit 1
 fi
 
+compose_files=(
+    -f "${workhive_dir}/docker-compose.yml"
+    -f "${workhive_dir}/docker-compose.production.yml"
+)
+if [[ "${edge_tls_terminated}" == "true" ]]; then
+    compose_files+=(-f "${edge_compose_file}")
+fi
+
 compose_base=(
     "${docker_bin}" compose
     -f "${workhive_dir}/docker-compose.yml"
-    --env-file "${compose_env_file}"
 )
+if [[ "${edge_tls_terminated}" == "true" ]]; then
+    compose_base+=(-f "${edge_compose_file}")
+fi
+compose_base+=(--env-file "${compose_env_file}")
+
 compose_production=(
     "${docker_bin}" compose
-    -f "${workhive_dir}/docker-compose.yml"
-    -f "${workhive_dir}/docker-compose.production.yml"
+    "${compose_files[@]}"
     --env-file "${compose_env_file}"
 )
 
@@ -138,12 +165,21 @@ health_check() {
     BACKEND_IMAGE="${1}" FRONTEND_IMAGE="${2}" "${compose_production[@]}" ps --status running \
         | grep -q 'frontend'
 
-    "${curl_bin}" --fail --silent --show-error \
-        --resolve "${domain}:443:127.0.0.1" \
-        "https://${domain}/health" >/dev/null
-    "${curl_bin}" --fail --silent --show-error \
-        --resolve "${domain}:443:127.0.0.1" \
-        "https://${domain}/login" >/dev/null
+    if [[ "${edge_tls_terminated}" == "true" ]]; then
+        "${curl_bin}" --fail --silent --show-error \
+            --resolve "${domain}:80:127.0.0.1" \
+            "http://${domain}/health" >/dev/null
+        "${curl_bin}" --fail --silent --show-error \
+            --resolve "${domain}:80:127.0.0.1" \
+            "http://${domain}/login" >/dev/null
+    else
+        "${curl_bin}" --fail --silent --show-error \
+            --resolve "${domain}:443:127.0.0.1" \
+            "https://${domain}/health" >/dev/null
+        "${curl_bin}" --fail --silent --show-error \
+            --resolve "${domain}:443:127.0.0.1" \
+            "https://${domain}/login" >/dev/null
+    fi
     BACKEND_IMAGE="${1}" FRONTEND_IMAGE="${2}" "${compose_production[@]}" exec -T backend alembic current >/dev/null
 }
 

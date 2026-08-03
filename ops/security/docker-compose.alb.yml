@@ -1,0 +1,6 @@
+# Apply only after the public ALB has its HTTPS listener and the target group
+# is ready. TLS terminates at the ALB; this replaces Caddy's direct-TLS config.
+services:
+  caddy:
+    volumes:
+      - ./ops/security/Caddyfile.alb:/etc/caddy/Caddyfile:ro

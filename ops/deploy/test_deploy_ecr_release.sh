@@ -24,6 +24,9 @@ grep -Fq 'up -d --no-build --wait --wait-timeout 180 backend frontend caddy' "${
 grep -Fq 'rollback "${previous_backend_image}" "${previous_frontend_image}"' "${script_under_test}"
 grep -Fq 'recover_local_compose_images' "${script_under_test}"
 grep -Fq 'alembic current' "${script_under_test}"
+grep -Fq 'EDGE_TLS_TERMINATED must be true or false.' "${script_under_test}"
+grep -Fq 'ops/security/docker-compose.alb.yml' "${script_under_test}"
+grep -Fq 'http://${domain}/health' "${script_under_test}"
 
 if grep -Eq '(^|[[:space:]])up[[:space:]].*--build' "${script_under_test}"; then
     echo 'Deployment script must never build application images on EC2.' >&2
