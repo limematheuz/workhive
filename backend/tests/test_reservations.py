@@ -490,6 +490,43 @@ def test_viewer_cannot_create_reservations_and_tasks_can_be_standalone(db):
     assert task.service_context == "standalone"
 
 
+def test_service_provider_cannot_link_reservations_when_creating_manual_work(db):
+    issuer = _company(db, "Inmobiliaria", "INMOTASK")
+    receiver = _company(db, "Limpiezas", "CLEANTASK")
+    location = _location(db, issuer)
+    issuer_admin = _user(db, issuer, role_id=1, email="admin@inmotask.test")
+    receiver_admin = _user(db, receiver, role_id=1, email="admin@cleantask.test")
+    reservation = reservation_service.create_reservation(
+        db,
+        issuer_admin,
+        _reservation_data(location.id),
+    )
+    db.add(
+        LocationCompanyAccess(
+            location_id=location.id,
+            company_id=receiver.id,
+            relationship_type="service_provider",
+            can_manage_reservations=False,
+            can_manage_tasks=True,
+        )
+    )
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        task_item_service.create_task_item(
+            db,
+            receiver_admin,
+            TaskItemCreate(
+                title="Limpieza manual",
+                unit="servicio",
+                location_id=location.id,
+                checkout_reservation_id=reservation.id,
+            ),
+        )
+
+    assert error.value.status_code == 403
+
+
 def test_create_reservation_with_assigned_task(db):
     company = _company(db, "Ownet", "OWNET")
     other_company = _company(db, "Other", "OTHER")

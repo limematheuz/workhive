@@ -365,7 +365,7 @@ def test_task_with_pending_checklist_cannot_be_forced_to_completed(db):
     assert exc_info.value.status_code == 409
     assert "checklist" in str(exc_info.value.detail).lower()
     db.refresh(task)
-    assert task.status == "accepted"
+    assert task.status == "pending"
     assert company.id == task.company_id
 
 
