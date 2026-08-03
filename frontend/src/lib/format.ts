@@ -38,24 +38,6 @@ export function formatDateLong(dateStr: string | null | undefined, locale = "es-
     }
 }
 
-function padDatePart(value: number): string {
-    return value.toString().padStart(2, "0")
-}
-
-export function toLocalDateInput(dateStr: string | null | undefined): string {
-    if (!dateStr) return ""
-    const date = new Date(dateStr)
-    if (Number.isNaN(date.getTime())) return ""
-    return `${date.getFullYear()}-${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`
-}
-
-export function toLocalTimeInput(dateStr: string | null | undefined, fallback = "12:00"): string {
-    if (!dateStr) return fallback
-    const date = new Date(dateStr)
-    if (Number.isNaN(date.getTime())) return fallback
-    return `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`
-}
-
 export function buildLocalDateTimeIso(dateValue: string, timeValue: string): string | null {
     if (!dateValue) return null
     const date = new Date(`${dateValue}T${timeValue || "12:00"}:00`)
@@ -74,11 +56,10 @@ export function parseTaskAssigneeIds(desc: string | null | undefined): number[] 
     if (!desc) return [];
     const ids = new Set<number>();
     for (const match of desc.matchAll(/<!-- workhive_assignees:([\s\S]*?) -->/g)) {
-        match[1]
-            .split(",")
-            .map(value => Number.parseInt(value.trim(), 10))
-            .filter(Number.isFinite)
-            .forEach(value => ids.add(value));
+        for (const rawValue of match[1].split(",")) {
+            const value = Number.parseInt(rawValue.trim(), 10);
+            if (Number.isFinite(value)) ids.add(value);
+        }
     }
     return Array.from(ids);
 }
@@ -258,11 +239,10 @@ export function getUserChecklistItems(task: FormattableTask | null | undefined, 
         const assignment = task.assignments?.find(item => item.user_id === userId);
         if (assignment?.source === "all") return checklist;
         if (assignment?.source === "direct") {
-            const unassignedIds = new Set(
-                task.checklist_items
-                    .filter(item => item.assignments.length === 0)
-                    .map(item => item.id)
-            );
+            const unassignedIds = new Set<number>();
+            for (const item of task.checklist_items) {
+                if (item.assignments.length === 0) unassignedIds.add(item.id);
+            }
             return checklist.filter(item => (
                 item.structuredId !== undefined && unassignedIds.has(item.structuredId)
             ));

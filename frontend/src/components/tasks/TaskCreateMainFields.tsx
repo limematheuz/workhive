@@ -37,7 +37,7 @@ export function TaskCreateMainFields({
                         onChange={(e) => setNewLocationId(e.target.value)}
                         aria-label={dict.tasks?.create_dialog?.select_location || "Select Location *"}
                         required
-                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all cursor-pointer h-10 shadow-xs"
+                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent ui-motion cursor-pointer h-10 shadow-xs"
                     >
                         <option value="" disabled>{dict.tasks?.create_dialog?.select_location_placeholder || "-- Select a location --"}</option>
                         {ownLocations.map(loc => (
@@ -70,7 +70,7 @@ export function TaskCreateMainFields({
                         min={getDefaultTaskDate()}
                         onChange={(e) => setNewCreatedAt(e.target.value)}
                         aria-label={dict.tasks?.create_dialog?.date || "Planning Date"}
-                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all cursor-pointer h-10 shadow-xs"
+                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent ui-motion cursor-pointer h-10 shadow-xs"
                     />
                 </div>
             </div>

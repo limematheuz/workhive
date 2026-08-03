@@ -56,29 +56,14 @@ const CATEGORIES = ["General", "Baño", "Cocina"] as const;
 const scrollHide =
     "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
-export function TechTaskChecklistDialog({
-    open,
-    onOpenChange,
-    checklist,
-    categoryItems,
-    activeCategory,
-    setActiveCategory,
-    isCurrentTaskSessionActive,
-    dict,
-    expandedItem,
-    setExpandedItem,
-    hideCompleted,
-    setHideCompleted,
-    uploadingChecklistItem,
-    availableAssignees,
-    getCategoryForItem,
-    onAnswer,
-    onNoteChange,
-    onPersistNote,
-    onChecklistPhoto,
-    onResetChecklist,
-    onAddChecklistItem,
-}: TechTaskChecklistDialogProps) {
+function useTechTaskChecklistDialogState(props: TechTaskChecklistDialogProps) {
+    const {
+        checklist,
+        categoryItems,
+        getCategoryForItem,
+        setActiveCategory,
+        setHideCompleted,
+    } = props;
     const [focusItemId, setFocusItemId] = React.useState<string | null>(null);
     const progress = getChecklistProgress(checklist);
     const firstPendingItem = getFirstPendingChecklistItem(checklist);
@@ -103,6 +88,40 @@ export function TechTaskChecklistDialog({
         setFocusItemId(firstPendingItem.id);
     };
 
+    return { firstPendingItem, goToFirstPending, progress };
+}
+
+export function TechTaskChecklistDialog(props: TechTaskChecklistDialogProps) {
+    const state = useTechTaskChecklistDialogState(props);
+    return <TechTaskChecklistDialogContent {...props} {...state} />;
+}
+
+function TechTaskChecklistDialogContent({
+    open,
+    onOpenChange,
+    checklist,
+    categoryItems,
+    activeCategory,
+    setActiveCategory,
+    isCurrentTaskSessionActive,
+    dict,
+    expandedItem,
+    setExpandedItem,
+    hideCompleted,
+    setHideCompleted,
+    uploadingChecklistItem,
+    availableAssignees,
+    getCategoryForItem,
+    onAnswer,
+    onNoteChange,
+    onPersistNote,
+    onChecklistPhoto,
+    onResetChecklist,
+    onAddChecklistItem,
+    firstPendingItem,
+    goToFirstPending,
+    progress,
+}: TechTaskChecklistDialogProps & ReturnType<typeof useTechTaskChecklistDialogState>) {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -214,139 +233,18 @@ export function TechTaskChecklistDialog({
                         </details>
                     )}
 
-                                    <section aria-label={dict.tech.requirements_list} className="space-y-2">
-                        {categoryItems.length === 0 ? (
-                            <div className="rounded-xl border border-dashed border-[var(--border-soft)] px-4 py-8 text-center text-sm font-semibold text-[var(--text-muted)]">
-                                {hideCompleted ? dict.tech.requirements_hidden_done : dict.tech.requirements_empty}
-                            </div>
-                        ) : (
-                            categoryItems.map((item, index) => {
-                                const isExpanded = expandedItem === item.id;
-                                const isAnswered = item.answer !== null;
-                                const label = (dict.tech.checklist as Record<string, string>)?.[item.id] || item.question;
-
-                                return (
-                                    <article
-                                        id={`checklist-requirement-${item.id}`}
-                                        key={item.id}
-                                        tabIndex={-1}
-                                        className={`scroll-mt-24 rounded-xl border px-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
-                                            isAnswered
-                                                ? "border-accent/25 bg-accent/[0.04]"
-                                                : "border-[var(--border-soft)] bg-[var(--bg-card)]"
-                                        }`}
-                                    >
-                                        <div className="flex items-start gap-2.5">
-                                            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
-                                                isAnswered ? "bg-accent text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-                                            }`}>
-                                                {isAnswered ? <CheckCircle2 className="h-3.5 w-3.5" /> : index + 1}
-                                            </span>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <p className="min-w-0 flex-1 text-[13px] font-bold leading-snug text-[var(--text-main)]">
-                                                        {label}
-                                                    </p>
-                                                    {item.assignedUserId && (
-                                                        <p className="inline-flex max-w-[45%] shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-accent">
-                                                            <span className="truncate">
-                                                                {dict.tech.requirements_assign_to} {item.assignedUserName || `ID: ${item.assignedUserId}`}
-                                                            </span>
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <fieldset className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-2.5">
-                                            <legend className="sr-only">{dict.tech.requirements_answer}</legend>
-                                            <div className="flex items-center gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    aria-pressed={item.answer === "yes"}
-                                                    onClick={() => onAnswer(item.id, "yes")}
-                                                    className={`min-h-8 min-w-14 rounded-full border px-3 text-[10px] font-black transition-colors ${
-                                                        item.answer === "yes"
-                                                            ? "border-accent bg-accent text-white"
-                                                            : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]/80"
-                                                    }`}
-                                                >
-                                                    {dict.tech.yes_label}
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    aria-pressed={item.answer === "no"}
-                                                    onClick={() => onAnswer(item.id, "no")}
-                                                    className={`min-h-8 min-w-14 rounded-full border px-3 text-[10px] font-black transition-colors ${
-                                                        item.answer === "no"
-                                                            ? "border-red-600 bg-red-600 text-white"
-                                                            : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]/80"
-                                                    }`}
-                                                >
-                                                    {dict.tech.no_label}
-                                                </button>
-                                            </div>
-                                            <div className="flex shrink-0 items-center gap-1.5">
-                                                <input
-                                                    id={`tech-checklist-photo-${item.id}`}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="sr-only"
-                                                    disabled={uploadingChecklistItem === item.id}
-                                                    onChange={event => onChecklistPhoto(item.id, event)}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    title={dict.tech.btn_upload_photo}
-                                                    aria-label={dict.tech.btn_upload_photo}
-                                                    disabled={uploadingChecklistItem === item.id}
-                                                    onClick={() => document.getElementById(`tech-checklist-photo-${item.id}`)?.click()}
-                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                                                        item.photoAttached
-                                                            ? "border-accent bg-accent/10 text-accent"
-                                                            : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                                                    }`}
-                                                >
-                                                    <Camera className="h-3.5 w-3.5 shrink-0" />
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    title={dict.tech.btn_add_note}
-                                                    aria-label={dict.tech.btn_add_note}
-                                                    onClick={() => setExpandedItem(isExpanded ? null : item.id)}
-                                                    aria-expanded={isExpanded}
-                                                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                                                        item.note || isExpanded
-                                                            ? "border-accent bg-accent/10 text-accent"
-                                                            : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                                                    }`}
-                                                >
-                                                    <Pencil className="h-3.5 w-3.5 shrink-0" />
-                                                </button>
-                                            </div>
-                                        </fieldset>
-
-                                        {isExpanded && (
-                                            <div className="mt-2.5 space-y-1.5 border-t border-dashed border-[var(--border-soft)] pt-2.5">
-                                                <label htmlFor={`tech-checklist-note-${item.id}`} className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)]">
-                                                    {dict.tech.ops_notes_label}
-                                                </label>
-                                                <textarea
-                                                    id={`tech-checklist-note-${item.id}`}
-                                                    value={item.note}
-                                                    onChange={event => onNoteChange(item.id, event.target.value)}
-                                                    onBlur={event => onPersistNote(item.id, event.target.value)}
-                                                    placeholder={dict.tech.notes_placeholder}
-                                                    rows={2}
-                                                    className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
-                                                />
-                                            </div>
-                                        )}
-                                    </article>
-                                );
-                            })
-                        )}
-                    </section>
+                    <ChecklistRequirementsList
+                        categoryItems={categoryItems}
+                        dict={dict}
+                        expandedItem={expandedItem}
+                        hideCompleted={hideCompleted}
+                        onAnswer={onAnswer}
+                        onChecklistPhoto={onChecklistPhoto}
+                        onNoteChange={onNoteChange}
+                        onPersistNote={onPersistNote}
+                        setExpandedItem={setExpandedItem}
+                        uploadingChecklistItem={uploadingChecklistItem}
+                    />
 
                     <button
                         type="button"
@@ -379,5 +277,227 @@ export function TechTaskChecklistDialog({
                 </footer>
             </DialogContent>
         </Dialog>
+    );
+}
+
+interface ChecklistRequirementsListProps {
+    categoryItems: ChecklistItem[];
+    dict: Dictionary;
+    expandedItem: string | null;
+    hideCompleted: boolean;
+    onAnswer: (itemId: string, answer: "yes" | "no") => Promise<void>;
+    onChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+    onNoteChange: (itemId: string, note: string) => void;
+    onPersistNote: (itemId: string, note: string) => Promise<void>;
+    setExpandedItem: React.Dispatch<React.SetStateAction<string | null>>;
+    uploadingChecklistItem: string | null;
+}
+
+function ChecklistRequirementsList({
+    categoryItems,
+    dict,
+    expandedItem,
+    hideCompleted,
+    onAnswer,
+    onChecklistPhoto,
+    onNoteChange,
+    onPersistNote,
+    setExpandedItem,
+    uploadingChecklistItem,
+}: ChecklistRequirementsListProps) {
+    return (
+        <section aria-label={dict.tech.requirements_list} className="space-y-2">
+            {categoryItems.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-[var(--border-soft)] px-4 py-8 text-center text-sm font-semibold text-[var(--text-muted)]">
+                    {hideCompleted ? dict.tech.requirements_hidden_done : dict.tech.requirements_empty}
+                </div>
+            ) : (
+                categoryItems.map((item, index) => (
+                    <ChecklistRequirementItem
+                        key={item.id}
+                        dict={dict}
+                        expanded={expandedItem === item.id}
+                        index={index}
+                        item={item}
+                        onAnswer={onAnswer}
+                        onChecklistPhoto={onChecklistPhoto}
+                        onNoteChange={onNoteChange}
+                        onPersistNote={onPersistNote}
+                        onToggleNote={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
+                        uploading={uploadingChecklistItem === item.id}
+                    />
+                ))
+            )}
+        </section>
+    );
+}
+
+interface ChecklistRequirementItemProps {
+    dict: Dictionary;
+    expanded: boolean;
+    index: number;
+    item: ChecklistItem;
+    onAnswer: ChecklistRequirementsListProps["onAnswer"];
+    onChecklistPhoto: ChecklistRequirementsListProps["onChecklistPhoto"];
+    onNoteChange: ChecklistRequirementsListProps["onNoteChange"];
+    onPersistNote: ChecklistRequirementsListProps["onPersistNote"];
+    onToggleNote: () => void;
+    uploading: boolean;
+}
+
+function ChecklistRequirementItem({
+    dict,
+    expanded,
+    index,
+    item,
+    onAnswer,
+    onChecklistPhoto,
+    onNoteChange,
+    onPersistNote,
+    onToggleNote,
+    uploading,
+}: ChecklistRequirementItemProps) {
+    const answered = item.answer !== null;
+    const label = (dict.tech.checklist as Record<string, string>)?.[item.id] || item.question;
+    const photoInputId = `tech-checklist-photo-${item.id}`;
+
+    return (
+        <article
+            id={`checklist-requirement-${item.id}`}
+            tabIndex={-1}
+            className={`scroll-mt-24 rounded-xl border px-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
+                answered ? "border-accent/25 bg-accent/[0.04]" : "border-[var(--border-soft)] bg-[var(--bg-card)]"
+            }`}
+        >
+            <div className="flex items-start gap-2.5">
+                <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
+                    answered ? "bg-accent text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+                }`}>
+                    {answered ? <CheckCircle2 className="h-3.5 w-3.5" /> : index + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 flex-1 text-[13px] font-bold leading-snug text-[var(--text-main)]">{label}</p>
+                        {item.assignedUserId && (
+                            <p className="inline-flex max-w-[45%] shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-accent">
+                                <span className="truncate">
+                                    {dict.tech.requirements_assign_to} {item.assignedUserName || `ID: ${item.assignedUserId}`}
+                                </span>
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            <fieldset className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-2.5">
+                <legend className="sr-only">{dict.tech.requirements_answer}</legend>
+                <div className="flex items-center gap-1.5">
+                    <ChecklistAnswerButton active={item.answer === "yes"} label={dict.tech.yes_label} onClick={() => onAnswer(item.id, "yes")} />
+                    <ChecklistAnswerButton active={item.answer === "no"} danger label={dict.tech.no_label} onClick={() => onAnswer(item.id, "no")} />
+                </div>
+                <div className="flex shrink-0 items-center gap-1.5">
+                    <input
+                        id={photoInputId}
+                        type="file"
+                        accept="image/*"
+                        aria-label={dict.tech.btn_upload_photo}
+                        className="sr-only"
+                        disabled={uploading}
+                        onChange={event => onChecklistPhoto(item.id, event)}
+                    />
+                    <ChecklistIconButton
+                        active={item.photoAttached}
+                        ariaLabel={dict.tech.btn_upload_photo}
+                        disabled={uploading}
+                        icon={<Camera className="h-3.5 w-3.5 shrink-0" />}
+                        onClick={() => document.getElementById(photoInputId)?.click()}
+                    />
+                    <ChecklistIconButton
+                        active={Boolean(item.note) || expanded}
+                        ariaLabel={dict.tech.btn_add_note}
+                        icon={<Pencil className="h-3.5 w-3.5 shrink-0" />}
+                        onClick={onToggleNote}
+                        expanded={expanded}
+                    />
+                </div>
+            </fieldset>
+
+            {expanded && (
+                <div className="mt-2.5 space-y-1.5 border-t border-dashed border-[var(--border-soft)] pt-2.5">
+                    <label htmlFor={`tech-checklist-note-${item.id}`} className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)]">
+                        {dict.tech.ops_notes_label}
+                    </label>
+                    <textarea
+                        id={`tech-checklist-note-${item.id}`}
+                        value={item.note}
+                        onChange={event => onNoteChange(item.id, event.target.value)}
+                        onBlur={event => onPersistNote(item.id, event.target.value)}
+                        placeholder={dict.tech.notes_placeholder}
+                        rows={2}
+                        className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
+                    />
+                </div>
+            )}
+        </article>
+    );
+}
+
+function ChecklistAnswerButton({
+    active,
+    danger = false,
+    label,
+    onClick,
+}: {
+    active: boolean;
+    danger?: boolean;
+    label: string;
+    onClick: () => void;
+}) {
+    const activeClassName = danger ? "border-red-600 bg-red-600 text-white" : "border-accent bg-accent text-white";
+    return (
+        <button
+            type="button"
+            aria-pressed={active}
+            onClick={onClick}
+            className={`min-h-8 min-w-14 rounded-full border px-3 text-[10px] font-black transition-colors ${
+                active ? activeClassName : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]/80"
+            }`}
+        >
+            {label}
+        </button>
+    );
+}
+
+function ChecklistIconButton({
+    active,
+    ariaLabel,
+    disabled = false,
+    expanded,
+    icon,
+    onClick,
+}: {
+    active: boolean;
+    ariaLabel: string;
+    disabled?: boolean;
+    expanded?: boolean;
+    icon: React.ReactNode;
+    onClick: () => void;
+}) {
+    return (
+        <button
+            type="button"
+            title={ariaLabel}
+            aria-label={ariaLabel}
+            aria-expanded={expanded}
+            disabled={disabled}
+            onClick={onClick}
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
+                active
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
+            }`}
+        >
+            {icon}
+        </button>
     );
 }

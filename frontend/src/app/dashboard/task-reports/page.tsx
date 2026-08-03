@@ -270,7 +270,7 @@ export default function TaskReportsPage() {
                                 type="button"
                                 disabled={safePage === 1}
                                 onClick={() => setPage(current => Math.max(current - 1, 1))}
-                                className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-1.5 font-bold transition-all hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-1.5 font-bold ui-motion hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 {copy.prev_page}
                             </button>
@@ -281,7 +281,7 @@ export default function TaskReportsPage() {
                                 type="button"
                                 disabled={safePage === totalPages}
                                 onClick={() => setPage(current => Math.min(current + 1, totalPages))}
-                                className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-1.5 font-bold transition-all hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-1.5 font-bold ui-motion hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 {copy.next_page}
                             </button>

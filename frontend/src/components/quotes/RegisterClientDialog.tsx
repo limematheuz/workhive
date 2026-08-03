@@ -118,7 +118,7 @@ function OpenRegisterClientDialog({
                         <button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] rounded-xl transition-all cursor-pointer"
+                            className="px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] rounded-xl ui-motion cursor-pointer"
                         >
                             Cancelar
                         </button>
@@ -126,14 +126,14 @@ function OpenRegisterClientDialog({
                             type="button"
                             disabled={loading}
                             onClick={onAcceptOnly}
-                            className="px-4 py-2 text-xs font-semibold bg-[var(--bg-tertiary)] text-[var(--text-main)] border border-[var(--border-soft)] rounded-xl transition-all cursor-pointer"
+                            className="px-4 py-2 text-xs font-semibold bg-[var(--bg-tertiary)] text-[var(--text-main)] border border-[var(--border-soft)] rounded-xl ui-motion cursor-pointer"
                         >
                             Aceptar sin registrar
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-all cursor-pointer"
+                            className="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl ui-motion cursor-pointer"
                         >
                             Registrar y aceptar
                         </button>

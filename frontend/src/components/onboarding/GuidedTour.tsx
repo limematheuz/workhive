@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react"
 import { User } from "@/types/user"
 import { TOUR_STEPS, TourCoords } from "./guidedTourSteps"
 import { GuidedTourOverlay } from "./GuidedTourOverlay"
+import { Viewport } from "@/lib/guided-tour-position"
 
 interface GuidedTourProps {
     user: User
@@ -14,16 +15,18 @@ export function GuidedTour({ user, onComplete }: GuidedTourProps) {
     const [step, setStep] = useState(0)
     const [coords, setCoords] = useState<TourCoords | null>(null)
     const [isMobile, setIsMobile] = useState(false)
+    const [viewport, setViewport] = useState<Viewport>({ width: 0, height: 0 })
     const [tooltipHeight, setTooltipHeight] = useState(160)
     const tooltipRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        const checkMobile = () => {
+        const updateViewport = () => {
             setIsMobile(window.innerWidth < 768)
+            setViewport({ width: window.innerWidth, height: window.innerHeight })
         }
-        checkMobile()
-        window.addEventListener("resize", checkMobile)
-        return () => window.removeEventListener("resize", checkMobile)
+        updateViewport()
+        window.addEventListener("resize", updateViewport)
+        return () => window.removeEventListener("resize", updateViewport)
     }, [])
 
     // Control sidebar state programmatically depending on the current step
@@ -43,18 +46,27 @@ export function GuidedTour({ user, onComplete }: GuidedTourProps) {
     }, []);
 
     useEffect(() => {
-        const updatePosition = () => {
+        let delayedMeasure: number | undefined
+        let coordinateMeasure: number | undefined
+
+        const clearScheduledMeasurements = () => {
+            if (delayedMeasure !== undefined) window.clearTimeout(delayedMeasure)
+            if (coordinateMeasure !== undefined) window.clearTimeout(coordinateMeasure)
+        }
+
+        const updatePosition = (shouldScrollIntoView: boolean) => {
+            clearScheduledMeasurements()
             const currentStep = TOUR_STEPS[step]
             if (!currentStep) return
-
-            const delay = step === 4 ? 350 : 150;
 
             const measure = () => {
                 const element = document.querySelector(currentStep.selector)
                 if (element) {
-                    element.scrollIntoView({ behavior: "smooth", block: "center" })
+                    if (shouldScrollIntoView) {
+                        element.scrollIntoView({ behavior: "smooth", block: "center" })
+                    }
 
-                    setTimeout(() => {
+                    coordinateMeasure = window.setTimeout(() => {
                         const rect = element.getBoundingClientRect()
                         setCoords({
                             top: rect.top + window.scrollY,
@@ -68,19 +80,22 @@ export function GuidedTour({ user, onComplete }: GuidedTourProps) {
                 }
             }
 
-            if (step === 4) {
-                setTimeout(measure, delay);
+            if (step === 4 && shouldScrollIntoView) {
+                delayedMeasure = window.setTimeout(measure, 350)
             } else {
                 measure();
             }
         }
 
-        updatePosition()
-        window.addEventListener("resize", updatePosition)
-        window.addEventListener("scroll", updatePosition)
+        const handleViewportChange = () => updatePosition(false)
+
+        updatePosition(true)
+        window.addEventListener("resize", handleViewportChange)
+        window.addEventListener("scroll", handleViewportChange)
         return () => {
-            window.removeEventListener("resize", updatePosition)
-            window.removeEventListener("scroll", updatePosition)
+            clearScheduledMeasurements()
+            window.removeEventListener("resize", handleViewportChange)
+            window.removeEventListener("scroll", handleViewportChange)
         }
     }, [step])
 
@@ -124,6 +139,7 @@ export function GuidedTour({ user, onComplete }: GuidedTourProps) {
             coords={coords}
             isMobile={isMobile}
             tooltipHeight={tooltipHeight}
+            viewport={viewport}
             tooltipRef={tooltipRef}
             onNext={handleNext}
             onBack={handleBack}

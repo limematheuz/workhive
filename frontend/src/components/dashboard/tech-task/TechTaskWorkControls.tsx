@@ -42,7 +42,7 @@ export function TechTaskWorkControls({
                 <Button
                     disabled={updatingStatus}
                     onClick={onFinishWork}
-                    className="w-full bg-accent hover:bg-accent-light text-white font-black py-4 rounded-2xl shadow-md flex items-center justify-center gap-2 border-none cursor-pointer text-sm uppercase tracking-wider transition-all duration-200"
+                    className="w-full bg-accent hover:bg-accent-light text-white font-black py-4 rounded-2xl shadow-md flex items-center justify-center gap-2 border-none cursor-pointer text-sm uppercase tracking-wider transition-colors duration-200"
                 >
                     <CheckCircle2 className="w-4 h-4" />
                     {dict.tech.btn_finish_work}
@@ -67,7 +67,7 @@ export function TechTaskWorkControls({
                 <Button
                     disabled={updatingStatus}
                     onClick={onStartWork}
-                    className="w-full bg-accent hover:bg-accent-light text-white font-black py-4 rounded-2xl shadow-md flex items-center justify-center gap-2 border-none cursor-pointer text-sm uppercase tracking-wider transition-all duration-200"
+                    className="w-full bg-accent hover:bg-accent-light text-white font-black py-4 rounded-2xl shadow-md flex items-center justify-center gap-2 border-none cursor-pointer text-sm uppercase tracking-wider transition-colors duration-200"
                 >
                     <Play className="w-4 h-4 fill-white" />
                     {dict.tech.btn_start_work}

@@ -258,7 +258,7 @@ export function CreateLocationSheet({ clients, defaultClientId, onLocationCreate
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs border border-[var(--border-soft)] shadow-sm w-full md:w-auto transition-all cursor-pointer">
+                <Button className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs border border-[var(--border-soft)] shadow-sm w-full md:w-auto ui-motion cursor-pointer">
                     <Plus className="mr-2 h-4 w-4" />
                     {dict.locations.form.new_location}
                 </Button>

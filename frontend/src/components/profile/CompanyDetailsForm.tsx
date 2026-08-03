@@ -86,11 +86,13 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
             dispatch({ type: "loading", value: false });
             return;
         }
+        let cancelled = false;
 
         const fetchCompany = async () => {
             try {
                 dispatch({ type: "loading", value: true });
                 const comp = await CompanyService.getCompany(user.company_id!);
+                if (cancelled) return;
                 dispatch({
                     type: "loaded",
                     fields: {
@@ -109,13 +111,17 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
                     },
                 });
             } catch (err) {
+                if (cancelled) return;
                 console.error("Error loading company details:", err);
                 toast.error(dict.invoices?.error_load || "Error loading company details");
                 dispatch({ type: "loading", value: false });
             }
         };
 
-        fetchCompany();
+        void fetchCompany();
+        return () => {
+            cancelled = true;
+        };
     }, [user.company_id, dict]);
 
     const setField = (field: keyof CompanyFormFields) => (value: string) => {

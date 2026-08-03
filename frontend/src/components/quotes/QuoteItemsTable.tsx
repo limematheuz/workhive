@@ -49,7 +49,11 @@ export function QuoteItemsTable({
                             concepts.map((row) => (
                                 <tr key={row.id} className="hover:bg-[var(--bg-secondary)]/30">
                                     <td className="py-2 px-3">
+                                        <label className="sr-only" htmlFor={`quote-concept-${row.id}-description`}>
+                                            {dict.invoices?.col_description || "Descripción"}
+                                        </label>
                                         <input
+                                            id={`quote-concept-${row.id}-description`}
                                             type="text"
                                             value={row.description}
                                             onChange={(e) => handleUpdateRow(row.id, "description", e.target.value)}
@@ -59,7 +63,11 @@ export function QuoteItemsTable({
                                         />
                                     </td>
                                     <td className="py-2 px-2">
+                                        <label className="sr-only" htmlFor={`quote-concept-${row.id}-price`}>
+                                            {dict.invoices?.col_price || "Precio (€)"}
+                                        </label>
                                         <input
+                                            id={`quote-concept-${row.id}-price`}
                                             type="number"
                                             step="0.01"
                                             value={row.unitPrice || ""}
@@ -70,7 +78,11 @@ export function QuoteItemsTable({
                                         />
                                     </td>
                                     <td className="py-2 px-2">
+                                        <label className="sr-only" htmlFor={`quote-concept-${row.id}-quantity`}>
+                                            {dict.invoices?.col_qty || "Cantidad"}
+                                        </label>
                                         <input
+                                            id={`quote-concept-${row.id}-quantity`}
                                             type="number"
                                             step="any"
                                             value={row.quantity || ""}
@@ -110,7 +122,7 @@ export function QuoteItemsTable({
             <button
                 type="button"
                 onClick={handleAddManualRow}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer bg-transparent"
+                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] ui-motion cursor-pointer bg-transparent"
             >
                 <Plus className="w-3.5 h-3.5" />
                 {dict.quotes?.add_concept || dict.invoices?.add_concept || "Añadir Línea"}

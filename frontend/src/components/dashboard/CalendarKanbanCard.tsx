@@ -109,25 +109,13 @@ export function CalendarKanbanCard({
     const computedPriority = task.priority || "medium";
 
     return (
-        <div
-            role="button"
-            tabIndex={0}
-            aria-label={displayTitle}
+        <article
             draggable={canDrag && !task.is_invoiced && !updating}
             onDragStart={(e) => onDragStart(e, task.id)}
-            onClick={() => onClick(task)}
-            onKeyDown={(event) => {
-                // Only handle keys on the card itself, not on nested interactive elements
-                if (event.target !== event.currentTarget) return;
-                if (event.key === "Enter" || event.key === " ") {
-                    if (event.key === " ") event.preventDefault();
-                    onClick(task);
-                }
-            }}
-            className={`rounded-2xl border bg-[var(--bg-card)] shadow-[0_2px_8px_var(--shadow-color)] transition-all select-none group relative flex flex-col justify-between overflow-hidden ${statusTone.card} ${
+            className={`rounded-2xl border bg-[var(--bg-card)] shadow-[0_2px_8px_var(--shadow-color)] ui-motion select-none group relative flex flex-col justify-between overflow-hidden ${statusTone.card} ${
                 task.is_invoiced
                     ? "opacity-85 cursor-default hover:border-[var(--border-soft)]"
-                    : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+                    : canDrag ? "cursor-grab active:cursor-grabbing" : ""
             }`}
         >
             {updating && (
@@ -160,20 +148,25 @@ export function CalendarKanbanCard({
                             </span>
                         )}
                     </div>
-                    <button
-                        type="button"
-                        className="p-1 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] transition-colors cursor-pointer"
-                        aria-label="Task options"
-                    >
+                    <span className="p-1 text-[var(--text-muted)]" aria-hidden="true">
                         <MoreHorizontal className="w-4 h-4" />
-                    </button>
+                    </span>
                 </div>
 
                 <div className="space-y-1">
-                    <h4 className={`text-sm font-bold text-[var(--text-main)] group-hover:text-accent transition-colors leading-snug ${
-                        isCompleted ? "line-through text-[var(--text-muted)]" : ""
-                    }`}>
-                        {displayTitle}
+                    <h4>
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onClick(task);
+                            }}
+                            className={`cursor-pointer text-left text-sm font-bold leading-snug text-[var(--text-main)] transition-colors group-hover:text-accent ${
+                                isCompleted ? "line-through text-[var(--text-muted)]" : ""
+                            }`}
+                        >
+                            {displayTitle}
+                        </button>
                     </h4>
                     {checklist.length > 0 ? (
                         <div className="space-y-1.5 mt-2 relative pl-4 border-l border-neutral-300 dark:border-neutral-700/60 ml-1.5">
@@ -312,7 +305,6 @@ export function CalendarKanbanCard({
                     {task.notes || task.description ? 1 : 0}
                 </span>
             </div>
-        </div>
 
             <div className="px-4 pb-4 -mt-2 flex flex-wrap gap-2 text-2xs font-semibold text-[var(--text-muted)]">
                 <span className="bg-[var(--bg-tertiary)] px-2.5 py-1 rounded-lg border border-[var(--border-soft)] flex items-center gap-1.5">
@@ -331,6 +323,7 @@ export function CalendarKanbanCard({
                     </span>
                 ) : null}
             </div>
-        </div>
+            </div>
+        </article>
     );
 }

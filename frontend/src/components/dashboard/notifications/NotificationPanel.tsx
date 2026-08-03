@@ -102,7 +102,7 @@ export function NotificationPanel() {
             </button>
 
             {isNotificationsOpen && user && (
-                <div className="surface-popover header-popover-layer fixed left-3 right-3 top-20 max-w-[calc(100vw-1.5rem)] rounded-3xl p-4 transition-all sm:left-auto sm:right-8 sm:w-[min(25rem,calc(100vw-2rem))]">
+                <div className="surface-popover header-popover-layer fixed left-3 right-3 top-20 max-w-[calc(100vw-1.5rem)] rounded-3xl p-4 ui-motion sm:left-auto sm:right-8 sm:w-[min(25rem,calc(100vw-2rem))]">
                     <div className="flex items-start justify-between gap-4 pb-3">
                         <div>
                             <p className="text-sm font-black text-[var(--text-main)]">

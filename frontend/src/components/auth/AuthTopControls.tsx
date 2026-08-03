@@ -22,7 +22,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                     <button
                         onClick={() => onThemeChange("light")}
                         type="button"
-                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+                        className={`flex items-center justify-center w-8 h-8 rounded-full ui-motion ${
                             theme === "light"
                                 ? "shadow-sm"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
@@ -49,7 +49,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                     <button
                         onClick={() => onThemeChange("dark")}
                         type="button"
-                        className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+                        className={`flex items-center justify-center w-8 h-8 rounded-full ui-motion ${
                             theme === "dark"
                                 ? "shadow-sm"
                                 : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
@@ -85,7 +85,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                     onClick={() => setLocale("en")}
                     type="button"
                     aria-label="Cambiar idioma a inglés"
-                    className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs transition-all ${
+                    className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs ui-motion ${
                         locale === "en"
                             ? "shadow-sm text-[var(--pill-active-text)]"
                             : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
@@ -105,7 +105,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                     onClick={() => setLocale("es")}
                     type="button"
                     aria-label="Cambiar idioma a español"
-                    className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs transition-all ${
+                    className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs ui-motion ${
                         locale === "es"
                             ? "shadow-sm text-[var(--pill-active-text)]"
                             : "text-[var(--text-muted)] hover:text-[var(--text-main)]"

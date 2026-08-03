@@ -97,7 +97,7 @@ export default function LoginPage() {
                                     name="email"
                                     autoComplete="email"
                                     inputMode="email"
-                                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] transition-all"
+                                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
                                     placeholder={t.email_placeholder}
                                     required
                                     value={email}
@@ -117,7 +117,7 @@ export default function LoginPage() {
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         autoComplete="current-password"
-                                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-4 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] transition-all"
+                                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-4 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
                                         placeholder={t.password_placeholder}
                                         required
                                         value={password}
@@ -149,7 +149,7 @@ export default function LoginPage() {
 
                             {alertMsg.text !== "" && (
                                 <div
-                                    className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all ${
+                                    className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] ui-motion ${
                                         alertMsg.type === "error"
                                             ? "border-red-500/50 text-red-400 bg-red-500/10 shadow-red-500/20"
                                             : alertMsg.type === "success"
@@ -164,7 +164,7 @@ export default function LoginPage() {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-[var(--text-main)] text-[var(--bg-primary)] font-semibold rounded-xl py-3 hover:opacity-90 transition-all mt-6 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)]"
+                                className="w-full bg-[var(--text-main)] text-[var(--bg-primary)] font-semibold rounded-xl py-3 hover:opacity-90 ui-motion mt-6 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)]"
                             >
                                 {submitting
                                     ? (locale === "es" ? "Entrando..." : "Signing in...")
@@ -203,7 +203,7 @@ export default function LoginPage() {
                     <div className="mt-2 text-center lg:text-left">
                         <Link
                             href="/subscription"
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-accent dark:text-accent hover:text-accent dark:hover:text-accent hover:underline transition-all"
+                            className="inline-flex items-center gap-2 text-sm font-semibold text-accent dark:text-accent hover:text-accent dark:hover:text-accent hover:underline ui-motion"
                         >
                             <span>{t.free_trial_link || "Solicitar evaluación de 14 días"}</span>
                         </Link>

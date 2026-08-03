@@ -50,19 +50,8 @@ export function LocationCard({
     const tasksLabel = dict.locations?.sheet?.tab_templates || "Fixed services"
 
     return (
-        <div
-            role="button"
-            tabIndex={0}
-            aria-label={location.name}
-            onClick={onCardClick}
-            onKeyDown={(event) => {
-                if (event.target !== event.currentTarget) return
-                if (event.key === "Enter" || event.key === " ") {
-                    if (event.key === " ") event.preventDefault()
-                    onCardClick()
-                }
-            }}
-            className="surface-glass-card group relative flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-2xl transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/35"
+        <article
+            className="surface-glass-card group relative flex h-full w-full flex-col overflow-hidden rounded-2xl transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-accent/35"
         >
             {location.photo_url ? (
                 <div className="relative h-32 w-full overflow-hidden border-b border-[var(--border-soft)] bg-[var(--bg-tertiary)] sm:h-36">
@@ -169,8 +158,17 @@ export function LocationCard({
 
             <div className="flex flex-1 flex-col gap-2.5 p-3.5 sm:p-4">
                 <div className="min-w-0">
-                    <h3 className="truncate text-[15px] font-bold leading-snug text-[var(--text-main)]">
-                        {location.name}
+                    <h3 className="truncate">
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation()
+                                onCardClick()
+                            }}
+                            className="cursor-pointer text-left text-[15px] font-bold leading-snug text-[var(--text-main)]"
+                        >
+                            {location.name}
+                        </button>
                     </h3>
                     <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
                         {location.address}
@@ -205,6 +203,6 @@ export function LocationCard({
                     <span className="truncate">{tasksLabel}</span>
                 </button>
             </div>
-        </div>
+        </article>
     )
 }

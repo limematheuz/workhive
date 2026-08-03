@@ -201,7 +201,7 @@ export default function LocationsPage() {
                         aria-label={dict.locations?.filter?.all_clients || "Todos los clientes"}
                         value={selectedClientId}
                         onChange={(e) => setSelectedClientId(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
-                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer transition-all w-full md:w-[260px]"
+                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer ui-motion w-full md:w-[260px]"
                     >
                         <option value="ALL">{dict.locations?.filter?.all_clients || "Todos los clientes"}</option>
                         {clients.map((c) => (
@@ -215,7 +215,7 @@ export default function LocationsPage() {
                         aria-label="Todos los colaboradores"
                         value={ownerFilter}
                         onChange={(e) => setOwnerFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
-                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer transition-all w-full md:w-[260px]"
+                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer ui-motion w-full md:w-[260px]"
                     >
                         <option value="ALL">Todos los colaboradores</option>
                         {collaborators.map((collab) => (

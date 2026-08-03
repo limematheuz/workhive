@@ -1,20 +1,11 @@
-export const OPERATING_MODELS = [
-    "service_provider",
-    "property_manager",
-    "hybrid",
-] as const;
+export type OperatingModel = "service_provider" | "property_manager" | "hybrid";
 
-export type OperatingModel = (typeof OPERATING_MODELS)[number];
-
-export const ONBOARDING_LOCATION_TYPES = [
-    "private",
-    "real_estate",
-    "business",
-    "exterior",
-    "other",
-] as const;
-
-export type OnboardingLocationType = (typeof ONBOARDING_LOCATION_TYPES)[number];
+export type OnboardingLocationType =
+    | "private"
+    | "real_estate"
+    | "business"
+    | "exterior"
+    | "other";
 
 export interface OnboardingLocationFields {
     name: string;

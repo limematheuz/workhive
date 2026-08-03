@@ -49,7 +49,7 @@ export function QuoteDetailActionBar({
             <div className="flex items-center gap-2">
                 <Link
                     href="/dashboard/quotes"
-                    className="p-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl transition-all"
+                    className="p-2 bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl ui-motion"
                 >
                     <ArrowLeft className="w-4 h-4" />
                 </Link>
@@ -97,7 +97,7 @@ export function QuoteDetailActionBar({
                                                     onStatusChange(state)
                                                 }
                                             }}
-                                            className={`px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${btnColor}`}
+                                            className={`px-2.5 py-1 text-xs font-semibold rounded-lg border ui-motion cursor-pointer ${btnColor}`}
                                         >
                                             {stateText}
                                         </button>
@@ -112,7 +112,7 @@ export function QuoteDetailActionBar({
                     <button
                         type="button"
                         onClick={onEnterEditMode}
-                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center justify-center gap-2 ui-motion cursor-pointer"
                     >
                         <Pencil className="w-4 h-4" />
                         {dict.quotes?.edit_quote ?? "Editar borrador"}
@@ -125,7 +125,7 @@ export function QuoteDetailActionBar({
                             type="button"
                             onClick={onDiscardEdit}
                             disabled={isSavingDraft}
-                            className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer"
+                            className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 ui-motion cursor-pointer"
                         >
                             <X className="w-4 h-4" />
                             {dict.clients?.form.cancel ?? "Descartar"}
@@ -134,7 +134,7 @@ export function QuoteDetailActionBar({
                             type="button"
                             onClick={onSaveDraft}
                             disabled={isSavingDraft}
-                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center gap-2 ui-motion cursor-pointer disabled:opacity-50"
                         >
                             {isSavingDraft ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -149,7 +149,7 @@ export function QuoteDetailActionBar({
                 <button
                     type="button"
                     onClick={onPrint}
-                    className="bg-accent hover:bg-accent/90 text-white rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center justify-center gap-2 transition-all shadow-sm border-none cursor-pointer"
+                    className="bg-accent hover:bg-accent/90 text-white rounded-xl px-4 py-2.5 text-xs font-semibold flex items-center justify-center gap-2 ui-motion shadow-sm border-none cursor-pointer"
                 >
                     <Printer className="w-4 h-4" />
                     {dict.invoices?.print_pdf ?? "Imprimir PDF"}

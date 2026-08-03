@@ -29,7 +29,7 @@ export function ReservationsPageHeader({
             actions={showCreateButton ? (
                 <Button
                     onClick={onCreate}
-                    className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                    className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border border-[var(--border-soft)] cursor-pointer"
                 >
                     <Plus className="w-4 h-4" />
                     {dict.reservations?.new_reservation || "Nueva reserva"}

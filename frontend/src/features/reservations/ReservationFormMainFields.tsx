@@ -46,7 +46,7 @@ export function ReservationFormMainFields({
                                 "",
                         });
                     }}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 transition-all"
+                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                 >
                     <option value="" disabled>
                         {dict.reservations?.form?.select_property ||
@@ -83,7 +83,7 @@ export function ReservationFormMainFields({
                                 checkIn: event.target.value,
                             })
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 transition-all"
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                     />
                 </div>
                 <div className="space-y-1">
@@ -114,7 +114,7 @@ export function ReservationFormMainFields({
                                         : form.cleaningScheduledAt,
                             });
                         }}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 transition-all"
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                     />
                 </div>
             </div>
@@ -139,7 +139,7 @@ export function ReservationFormMainFields({
                                 guestCount: event.target.value,
                             })
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 transition-all"
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                     />
                 </div>
                 <div className="space-y-1">
@@ -159,7 +159,7 @@ export function ReservationFormMainFields({
                                 stayType: event.target.value,
                             })
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 transition-all"
+                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                     >
                         <option value="guest">
                             {dict.reservations?.form

@@ -156,7 +156,7 @@ export function OperationsCalendar({
                             onDragOver={(e) => state.handleDragOver(e, column.id)}
                             onDragLeave={state.handleDragLeave}
                             onDrop={(e) => state.handleDrop(e, column.id)}
-                            className={`flex flex-col min-h-[520px] rounded-3xl border p-3 transition-all duration-200 bg-[var(--bg-secondary)] w-[280px] sm:w-[320px] shrink-0 xl:w-full xl:shrink ${
+                            className={`flex flex-col min-h-[520px] rounded-3xl border p-3 ui-motion duration-200 bg-[var(--bg-secondary)] w-[280px] sm:w-[320px] shrink-0 xl:w-full xl:shrink ${
                                 isActiveDrop ? column.ring : "border-[var(--border-soft)]"
                             }`}
                         >

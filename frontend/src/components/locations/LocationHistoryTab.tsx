@@ -98,7 +98,7 @@ export function LocationHistoryTab({
                                 setAssignedUserId("");
                                 setShowCreateForm(true);
                             }}
-                            className="w-full bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-2 transition-all border-none cursor-pointer"
+                            className="w-full bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-2 ui-motion border-none cursor-pointer"
                         >
                             <Plus className="w-4 h-4" />
                             Crear trabajo puntual
@@ -267,13 +267,13 @@ export function LocationHistoryTab({
                                               }
                                           }
                                 }
-                                className={`flex items-start gap-3 p-3 rounded-2xl border border-[var(--border-soft)] select-none transition-all duration-150 ${isCompleted
+                                className={`flex items-start gap-3 p-3 rounded-2xl border border-[var(--border-soft)] select-none ui-motion duration-150 ${isCompleted
                                         ? "bg-[var(--bg-primary)]/40 opacity-70"
                                         : "bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]"
                                     } ${readOnly ? "cursor-default" : "cursor-pointer"}`}
                             >
                                 <div className="mt-0.5">
-                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isCompleted ? "bg-accent border-accent text-white" : "border-[var(--border-color)] bg-[var(--bg-primary)]"
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ui-motion ${isCompleted ? "bg-accent border-accent text-white" : "border-[var(--border-color)] bg-[var(--bg-primary)]"
                                         }`}>
                                         {isCompleted && <Check className="w-3 h-3 stroke-[3px]" />}
                                     </div>

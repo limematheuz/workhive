@@ -28,7 +28,7 @@ export function PasswordStrengthChecklist({ password, locale = "es" }: PasswordS
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-tertiary)]">
                 <div
-                    className={`h-full rounded-full transition-all duration-300 ${strength.fillClass}`}
+                    className={`h-full rounded-full transition-[width] duration-300 ${strength.fillClass}`}
                     style={{ width }}
                 />
             </div>

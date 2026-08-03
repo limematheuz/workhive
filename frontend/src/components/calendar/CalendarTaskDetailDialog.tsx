@@ -161,7 +161,7 @@ export function CalendarTaskDetailDialog({
                             <Button onClick={onClose} className="flex-1 rounded-xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] py-2.5 text-xs font-semibold text-[var(--btn-cancel-text)] hover:border-transparent hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)]">
                                 {calendarDict.close || "Cerrar"}
                             </Button>
-                            <Button asChild className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] py-2.5 text-xs font-semibold text-[var(--btn-primary-text)] transition-all hover:bg-[var(--btn-primary-hover-bg)]">
+                            <Button asChild className="flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] py-2.5 text-xs font-semibold text-[var(--btn-primary-text)] ui-motion hover:bg-[var(--btn-primary-hover-bg)]">
                                 <Link href={`/dashboard/tasks?taskId=${task.id}`}>
                                     {calendarDict.open_task || "Abrir en tareas"}
                                 </Link>

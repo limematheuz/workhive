@@ -6,7 +6,10 @@ import { Camera, Compass } from "lucide-react";
 import { Location } from "@/types/location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { resolveApiMediaUrl } from "@/lib/api";
-import { buildGoogleMapsEmbedUrl } from "@/lib/google-maps-embed";
+import {
+    buildGoogleMapsEmbedUrl,
+    GOOGLE_MAPS_EMBED_SANDBOX,
+} from "@/lib/google-maps-embed";
 import { isSafeLocationMapUrl } from "@/lib/location-map-url";
 
 interface TechTaskMapAreaProps {
@@ -46,6 +49,7 @@ export function TechTaskMapArea({
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
+                    sandbox={GOOGLE_MAPS_EMBED_SANDBOX}
                     title={locationName}
                 />
             ) : location?.photo_url ? (
@@ -70,7 +74,7 @@ export function TechTaskMapArea({
                 href={mapsHref}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="absolute top-4 left-4 z-20 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-accent text-white shadow-md transition-all hover:scale-105 hover:bg-accent-light"
+                className="absolute top-4 left-4 z-20 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border-none bg-accent text-white shadow-md ui-motion hover:scale-105 hover:bg-accent-light"
                 title={dict.tech?.navigate_gps || "Navigate with GPS"}
                 aria-label={dict.tech?.navigate_gps || "Navigate with GPS"}
             >

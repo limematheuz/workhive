@@ -167,7 +167,7 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
                             <TableRow
                                 key={client.id}
                                 onClick={() => onDetails(client)}
-                                className="cursor-pointer hover:bg-[var(--bg-secondary)]/40 transition-all duration-150"
+                                className="cursor-pointer transition-colors duration-150 hover:bg-[var(--bg-secondary)]/40"
                             >
                                 <TableCell className="font-semibold">
                                     <div className="flex items-center gap-2">

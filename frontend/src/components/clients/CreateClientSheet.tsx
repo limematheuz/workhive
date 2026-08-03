@@ -62,7 +62,7 @@ export function CreateClientSheet({ onClientCreated }: CreateClientSheetProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs border border-[var(--border-soft)] shadow-sm w-full md:w-auto transition-all cursor-pointer">
+                <Button className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs border border-[var(--border-soft)] shadow-sm w-full md:w-auto ui-motion cursor-pointer">
                     <Plus className="mr-2 h-4 w-4" />
                     {dict.clients.form.new_client}
                 </Button>
@@ -211,14 +211,14 @@ export function CreateClientSheet({ onClientCreated }: CreateClientSheetProps) {
                             type="button" 
                             variant="outline" 
                             onClick={() => setOpen(false)}
-                            className="w-1/2 bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer transition-all"
+                            className="w-1/2 bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer ui-motion"
                         >
                             {dict.clients.form.cancel}
                         </Button>
                         <Button 
                             type="submit" 
                             disabled={isLoading}
-                            className="w-1/2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                            className="w-1/2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center justify-center gap-1.5 cursor-pointer ui-motion"
                         >
                             {isLoading ? dict.clients.form.saving : dict.clients.form.save}
                         </Button>

@@ -23,7 +23,7 @@ export function ProfileStats({
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Hours worked */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs hover:-translate-y-1 transition-all duration-300">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
                         {dict.profile?.stats?.hours_worked || "Horas Trabajadas"}
@@ -48,7 +48,7 @@ export function ProfileStats({
             </div>
 
             {/* Completed tasks */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs hover:-translate-y-1 transition-all duration-300">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
                         {dict.profile?.stats?.tasks_completed || "Tareas Completadas"}
@@ -71,7 +71,7 @@ export function ProfileStats({
                 </div>
                 <div className="w-full bg-[var(--bg-tertiary)] rounded-full h-1.5 mt-4 overflow-hidden">
                     <div
-                        className="bg-green-500 h-1.5 rounded-full transition-all duration-500"
+                        className="bg-green-500 h-1.5 rounded-full transition-[width] duration-500"
                         style={{
                             width: `${
                                 stats?.total_tasks
@@ -84,7 +84,7 @@ export function ProfileStats({
             </div>
 
             {/* Locations visited */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs hover:-translate-y-1 transition-all duration-300">
+            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs transition-transform duration-300 hover:-translate-y-1">
                 <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
                         {dict.profile?.stats?.locations_visited || "Ubicaciones Visitadas"}
@@ -110,7 +110,7 @@ export function ProfileStats({
 
             {/* Active clock-in or shift */}
             <div
-                className={`border rounded-2xl p-6 shadow-xs transition-all duration-300 ${
+                className={`border rounded-2xl p-6 shadow-xs transition-transform duration-300 ${
                     activeSession
                         ? "bg-accent/5 border-accent/20"
                         : "bg-[var(--bg-card)] border-[var(--border-soft)] hover:-translate-y-1"

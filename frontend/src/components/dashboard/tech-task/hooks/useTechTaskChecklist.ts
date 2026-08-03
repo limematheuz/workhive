@@ -359,13 +359,13 @@ export function useTechTaskChecklist({
         const structuredItems = checklist.filter(item => item.id.startsWith("item_"));
         if (structuredItems.length > 0) {
             try {
-                for (const item of structuredItems) {
-                    await TaskService.updateChecklistItem(
+                await Promise.all(structuredItems.map(item =>
+                    TaskService.updateChecklistItem(
                         task.id,
                         Number(item.id.slice("item_".length)),
                         { completed: false, answer: null },
-                    );
-                }
+                    )
+                ));
                 toast.success(dict.tech.toast_checklist_reset || "Checklist reiniciado");
                 onStatusUpdate();
             } catch (error) {

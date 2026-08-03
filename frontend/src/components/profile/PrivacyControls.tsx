@@ -56,7 +56,7 @@ export function PrivacyControls({
         } catch {
             // Keep polling quiet; direct actions show their own toast.
         } finally {
-            if (!silent) setLoading(false);
+            setLoading(false);
         }
     }, [canManageRequests]);
 
@@ -178,7 +178,7 @@ export function PrivacyControls({
                         type="button"
                         onClick={exportData}
                         disabled={working !== null}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-5 py-2.5 text-xs font-semibold text-[var(--btn-primary-text)] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-5 py-2.5 text-xs font-semibold text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                     >
                         {working === "export"
                             ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -189,7 +189,7 @@ export function PrivacyControls({
                         type="button"
                         onClick={() => setErasureDialogOpen(true)}
                         disabled={working !== null || Boolean(openRequest)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-xs font-semibold text-red-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-xs font-semibold text-red-600 shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                     >
                         {working === "erasure"
                             ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -226,14 +226,14 @@ export function PrivacyControls({
                                     <button
                                         type="button"
                                         onClick={() => openResolveDialog(request, "reject")}
-                                        className="inline-flex h-8 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-3 text-sm font-medium text-red-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
+                                        className="inline-flex h-8 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-3 text-sm font-medium text-red-600 shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
                                     >
                                         {isSpanish ? "Rechazar" : "Reject"}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => openResolveDialog(request, "complete")}
-                                        className="inline-flex h-8 items-center justify-center rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-3 text-sm font-medium text-[var(--btn-primary-text)] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-color)]"
+                                        className="inline-flex h-8 items-center justify-center rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-3 text-sm font-medium text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-color)]"
                                     >
                                         {isSpanish ? "Completar" : "Complete"}
                                     </button>
@@ -292,7 +292,7 @@ export function PrivacyControls({
                             id="privacy-resolution-notes"
                             value={resolutionNotes}
                             onChange={(event) => setResolutionNotes(event.target.value)}
-                            className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm outline-none transition-all focus:border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-soft)]"
+                            className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm outline-none ui-motion focus:border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-soft)]"
                             placeholder={isSpanish ? "Ej.: Hemos verificado tu solicitud. Conservaremos únicamente los registros fiscales exigidos por ley." : "E.g. We verified your request. We will retain only legally required fiscal records."}
                         />
                     </div>
@@ -301,7 +301,7 @@ export function PrivacyControls({
                             type="button"
                             onClick={closeResolveDialog}
                             disabled={resolving}
-                            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] px-4 text-sm font-medium text-[var(--btn-neutral-text)] transition-all hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] disabled:opacity-50"
+                            className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] px-4 text-sm font-medium text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] disabled:opacity-50"
                         >
                             {isSpanish ? "Cancelar" : "Cancel"}
                         </button>
@@ -310,8 +310,8 @@ export function PrivacyControls({
                             disabled={resolving || !resolutionNotes.trim()}
                             onClick={resolveRequest}
                             className={resolveDecision === "reject"
-                                ? "inline-flex h-9 items-center justify-center rounded-xl border border-red-600 bg-red-600 px-4 text-sm font-medium text-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-700 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
-                                : "inline-flex h-9 items-center justify-center rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-4 text-sm font-medium text-[var(--btn-primary-text)] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"}
+                                ? "inline-flex h-9 items-center justify-center rounded-xl border border-red-600 bg-red-600 px-4 text-sm font-medium text-white shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-700 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"
+                                : "inline-flex h-9 items-center justify-center rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-4 text-sm font-medium text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50"}
                         >
                             {resolving
                                 ? (isSpanish ? "Guardando..." : "Saving...")

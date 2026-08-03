@@ -58,7 +58,7 @@ export function WorkSessionMobileBar({
                             type="button"
                             onClick={onPreStopShift}
                             disabled={actionLoading}
-                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold transition-all border-none shadow-sm cursor-pointer flex items-center justify-center"
+                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold ui-motion border-none shadow-sm cursor-pointer flex items-center justify-center"
                         >
                             {actionLoading ? (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

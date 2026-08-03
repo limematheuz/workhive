@@ -73,7 +73,7 @@ function DashboardOverviewContent() {
             console.error("Error loading dashboard data", err);
             if (!silent) setError(dict.dashboard.error_load_data);
         } finally {
-            if (!silent) setLoadingData(false);
+            setLoadingData(false);
         }
     }, [user, dict.dashboard.error_load_data]);
 

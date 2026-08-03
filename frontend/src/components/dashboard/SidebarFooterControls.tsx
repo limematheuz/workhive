@@ -29,7 +29,7 @@ export function SidebarFooterControls({
                             type="button"
                             onClick={() => onThemeChange("light")}
                             aria-label="Activar modo claro"
-                            className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+                            className={`flex items-center justify-center w-8 h-8 rounded-full ui-motion ${
                                 theme === "light" ? "" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
                             }`}
                             style={theme === "light" ? { backgroundColor: "var(--pill-active)", color: "var(--pill-active-text)" } : {}}
@@ -42,7 +42,7 @@ export function SidebarFooterControls({
                             type="button"
                             onClick={() => onThemeChange("dark")}
                             aria-label="Activar modo oscuro"
-                            className={`flex items-center justify-center w-8 h-8 rounded-full transition-all ${
+                            className={`flex items-center justify-center w-8 h-8 rounded-full ui-motion ${
                                 theme === "dark" ? "" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
                             }`}
                             style={theme === "dark" ? { backgroundColor: "var(--pill-active)", color: "var(--pill-active-text)" } : {}}
@@ -61,7 +61,7 @@ export function SidebarFooterControls({
                             type="button"
                             onClick={() => onLocaleChange("en")}
                             aria-label="Cambiar idioma a inglés"
-                            className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs transition-all ${
+                            className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs ui-motion ${
                                 locale === "en" ? "" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
                             }`}
                             style={locale === "en" ? { backgroundColor: "var(--pill-active)", color: "var(--pill-active-text)" } : {}}
@@ -72,7 +72,7 @@ export function SidebarFooterControls({
                             type="button"
                             onClick={() => onLocaleChange("es")}
                             aria-label="Cambiar idioma a español"
-                            className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs transition-all ${
+                            className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs ui-motion ${
                                 locale === "es" ? "" : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
                             }`}
                             style={locale === "es" ? { backgroundColor: "var(--pill-active)", color: "var(--pill-active-text)" } : {}}

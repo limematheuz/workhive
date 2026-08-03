@@ -44,7 +44,7 @@ export function PremiumTabs<T extends string>({
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
                         title={typeof tab.label === "string" ? tab.label : undefined}
-                        className={`flex flex-1 items-center justify-center gap-1 rounded-xl border-none px-1.5 py-2 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer select-none sm:gap-2 sm:px-3 md:text-xs ${
+                        className={`flex flex-1 items-center justify-center gap-1 rounded-xl border-none px-1.5 py-2 text-[10px] font-bold uppercase tracking-wider ui-motion cursor-pointer select-none sm:gap-2 sm:px-3 md:text-xs ${
                             fit ? "min-w-0" : "shrink-0 snap-align-start"
                         } ${
                             isActive

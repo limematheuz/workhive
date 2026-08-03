@@ -97,7 +97,7 @@ export function TechTaskIssuesSection({
                                     type="button"
                                     onClick={() => setShowNewIssueForm(false)}
                                     aria-label={dict.tech.btn_cancel}
-                                    className="surface-control-btn p-1 rounded-full cursor-pointer flex items-center justify-center transition-all"
+                                    className="surface-control-btn p-1 rounded-full cursor-pointer flex items-center justify-center ui-motion"
                                 >
                                     <X className="w-4 h-4" />
                                 </button>
@@ -115,7 +115,7 @@ export function TechTaskIssuesSection({
                                             type="button"
                                             onClick={() => setNewIssueType(type)}
                                             className={cn(
-                                                "py-2 px-1 text-[10px] font-black uppercase rounded-xl border text-center transition-all cursor-pointer",
+                                                "py-2 px-1 text-[10px] font-black uppercase rounded-xl border text-center ui-motion cursor-pointer",
                                                 newIssueType === type
                                                     ? type === "mantenimiento"
                                                         ? "bg-red-500/10 border-red-500/30 text-red-600"

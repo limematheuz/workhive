@@ -157,7 +157,7 @@ function ResetPasswordContent() {
                                             <input
                                                 id="new-password"
                                                 type={showPassword ? "text" : "password"}
-                                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-11 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] transition-all"
+                                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-11 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
                                                 placeholder={t.password_placeholder}
                                                 autoComplete="new-password"
                                                 required
@@ -188,7 +188,7 @@ function ResetPasswordContent() {
                                             <input
                                                 id="confirm-new-password"
                                                 type={showConfirmPassword ? "text" : "password"}
-                                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-11 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] transition-all"
+                                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-11 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
                                                 placeholder={t.password_placeholder}
                                                 autoComplete="new-password"
                                                 required
@@ -213,7 +213,7 @@ function ResetPasswordContent() {
 
                             {alertMsg.text !== "" && (
                                 <div
-                                    className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] transition-all ${
+                                    className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] ui-motion ${
                                         alertMsg.type === "error"
                                             ? "border-red-500/50 text-red-400 bg-red-500/10 shadow-red-500/20"
                                             : "border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-emerald-500/20"
@@ -226,7 +226,7 @@ function ResetPasswordContent() {
                             <button
                                 type="submit"
                                 disabled={submitting || !token || !isStrongPassword(password)}
-                                className="w-full bg-[var(--text-main)] text-[var(--bg-primary)] font-semibold rounded-xl py-3 hover:opacity-90 transition-all mt-4 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)] disabled:opacity-50 cursor-pointer"
+                                className="w-full bg-[var(--text-main)] text-[var(--bg-primary)] font-semibold rounded-xl py-3 hover:opacity-90 ui-motion mt-4 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)] disabled:opacity-50 cursor-pointer"
                             >
                                 {submitting
                                     ? (locale === "es" ? "Guardando..." : "Saving...")

@@ -77,7 +77,11 @@ export function QuoteDetailHeaderSection({
                 </div>
                 {isEditMode ? (
                     <div className="mt-2 w-full md:max-w-[240px] ml-auto">
+                        <label className="sr-only" htmlFor="quote-title">
+                            Título del presupuesto
+                        </label>
                         <input
+                            id="quote-title"
                             type="text"
                             value={editTitle}
                             onChange={(e) => onEditTitleChange(e.target.value)}

@@ -51,7 +51,7 @@ type Step = "model" | "location" | "ready"
 const fieldClass =
     "h-11 rounded-lg border-[var(--border-color)] bg-[var(--bg-tertiary)] text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
 
-export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
+function useOnboardingModalController({ user, onComplete }: OnboardingModalProps) {
     const { dict } = useDictionary()
     const router = useRouter()
     const [step, setStep] = React.useState<Step>("model")
@@ -167,6 +167,73 @@ export function OnboardingModal({ user, onComplete }: OnboardingModalProps) {
         { label: dict.onboarding.modal_step_location, icon: MapPin },
         { label: dict.onboarding.modal_step_ready, icon: Sparkles },
     ]
+
+    return {
+        closeOnboarding,
+        completeWithoutLocation,
+        createStarterSetup,
+        dict,
+        loading,
+        locationAddress,
+        locationCity,
+        locationName,
+        locationOptions,
+        locationPostalCode,
+        locationType,
+        modelOptions,
+        operatingModel,
+        result,
+        selectOperatingModel,
+        setLocationAddress,
+        setLocationCity,
+        setLocationName,
+        setLocationPostalCode,
+        setLocationType,
+        setStep,
+        starterItems,
+        step,
+        stepIndex,
+        steps,
+    }
+}
+
+export function OnboardingModal(props: OnboardingModalProps) {
+    const controller = useOnboardingModalController(props)
+    return <OnboardingModalContent controller={controller} />
+}
+
+function OnboardingModalContent({
+    controller,
+}: {
+    controller: ReturnType<typeof useOnboardingModalController>
+}) {
+    const {
+        closeOnboarding,
+        completeWithoutLocation,
+        createStarterSetup,
+        dict,
+        loading,
+        locationAddress,
+        locationCity,
+        locationName,
+        locationOptions,
+        locationPostalCode,
+        locationType,
+        modelOptions,
+        operatingModel,
+        result,
+        selectOperatingModel,
+        setLocationAddress,
+        setLocationCity,
+        setLocationName,
+        setLocationPostalCode,
+        setLocationType,
+        setStep,
+        starterItems,
+        step,
+        stepIndex,
+        steps,
+    } = controller
 
     return (
         <Dialog open>

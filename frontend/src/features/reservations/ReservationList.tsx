@@ -112,7 +112,7 @@ function ReservationCard({
 
     return (
         <article
-            className={`surface-glass-card group relative rounded-3xl p-5 hover:border-accent/35 hover:shadow-lg hover:translate-y-[-2px] transition-all duration-300 flex flex-col justify-between ${
+            className={`surface-glass-card group relative rounded-3xl p-5 hover:border-accent/35 hover:shadow-lg hover:translate-y-[-2px] ui-motion duration-300 flex flex-col justify-between ${
                 reservation.status === "cancelled" ? "opacity-60" : ""
             }`}
         >
@@ -352,7 +352,7 @@ function ReservationCard({
                                 variant="outline"
                                 disabled={isFinished}
                                 onClick={() => onEdit(reservation)}
-                                className="bg-transparent border border-[var(--border-soft)] text-[9px] font-black uppercase hover:bg-[var(--btn-secondary-bg)] hover:text-[var(--btn-secondary-text)] px-3.5 h-8 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                                className="bg-transparent border border-[var(--border-soft)] text-[9px] font-black uppercase hover:bg-[var(--btn-secondary-bg)] hover:text-[var(--btn-secondary-text)] px-3.5 h-8 rounded-xl ui-motion flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                             >
                                 <Edit3 className="w-3.5 h-3.5 text-accent" />
                                 {dict.reservations?.table?.btn_edit || "Editar"}
@@ -362,7 +362,7 @@ function ReservationCard({
                                 variant="outline"
                                 disabled={isFinished}
                                 onClick={() => onCancel(reservation)}
-                                className="bg-transparent border border-[var(--border-soft)] text-[9px] font-black uppercase hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)] px-3.5 h-8 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                                className="bg-transparent border border-[var(--border-soft)] text-[9px] font-black uppercase hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)] px-3.5 h-8 rounded-xl ui-motion flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                             >
                                 <XCircle className="w-3.5 h-3.5 text-red-500" />
                                 {dict.reservations?.table?.btn_cancel ||

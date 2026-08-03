@@ -43,7 +43,7 @@ export function BillingPartyCard({
                         <button
                             type="button"
                             onClick={() => setIsEditing(!isEditing)}
-                            className="text-3xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-[var(--text-main)] font-extrabold px-2.5 py-1 rounded-lg transition-all cursor-pointer uppercase tracking-wider"
+                            className="text-3xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-[var(--text-main)] font-extrabold px-2.5 py-1 rounded-lg ui-motion cursor-pointer uppercase tracking-wider"
                         >
                             {isEditing ? (dict.invoices?.done || "Listo") : (dict.invoices?.edit || "Editar")}
                         </button>

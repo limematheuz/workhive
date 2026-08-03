@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, Suspense, useEffect, useState } from "react";
+import { ChangeEvent, Suspense, useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, Eye, EyeOff, KeyRound, MailCheck } from "lucide-react";
@@ -125,10 +125,21 @@ function AcceptInvitationContent() {
                         <PasswordInput label={text.password} value={password} onChange={setPassword} visible={showPassword} onVisibilityChange={setShowPassword} />
                         <PasswordStrengthChecklist password={password} locale={locale} />
                         <PasswordInput label={text.confirm} value={confirmPassword} onChange={setConfirmPassword} visible={showConfirmPassword} onVisibilityChange={setShowConfirmPassword} />
-                        <label className="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-[var(--text-muted)]">
-                            <input type="checkbox" checked={acceptLegal} onChange={(event) => setAcceptLegal(event.target.checked)} className="mt-0.5" />
-                            <span>{text.legal} <Link className="text-accent underline" href="/terms" target="_blank">{locale === "es" ? "Términos" : "Terms"}</Link> · <Link className="text-accent underline" href="/privacy" target="_blank">{locale === "es" ? "Privacidad" : "Privacy"}</Link></span>
-                        </label>
+                        <div className="flex items-start gap-3 text-xs leading-relaxed text-[var(--text-muted)]">
+                            <input
+                                id="accept-legal"
+                                type="checkbox"
+                                checked={acceptLegal}
+                                onChange={(event) => setAcceptLegal(event.target.checked)}
+                                className="mt-0.5"
+                            />
+                            <span>
+                                <label htmlFor="accept-legal" className="cursor-pointer">{text.legal}</label>{" "}
+                                <Link className="text-accent underline" href="/terms" target="_blank">{locale === "es" ? "Términos" : "Terms"}</Link>
+                                {" · "}
+                                <Link className="text-accent underline" href="/privacy" target="_blank">{locale === "es" ? "Privacidad" : "Privacy"}</Link>
+                            </span>
+                        </div>
                         <button type="submit" disabled={submitting || invalid} className="w-full rounded-xl bg-[var(--text-main)] py-3 font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
                             {submitting ? text.creating : text.submit}
                         </button>
@@ -146,16 +157,20 @@ function PasswordInput({ label, value, onChange, visible, onVisibilityChange }: 
     visible: boolean;
     onVisibilityChange: (visible: boolean) => void;
 }) {
-    return <label className="block text-sm font-medium text-[var(--text-muted)]">
-        {label}
+    const inputId = useId();
+
+    return <div>
+        <label htmlFor={inputId} className="block text-sm font-medium text-[var(--text-muted)]">
+            {label}
+        </label>
         <span className="relative mt-2 block">
             <KeyRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[var(--text-muted)]" />
-            <input type={visible ? "text" : "password"} autoComplete="new-password" required value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] py-3 pl-11 pr-12 text-[var(--text-main)] outline-none focus:border-accent/50" />
+            <input id={inputId} type={visible ? "text" : "password"} autoComplete="new-password" required value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] py-3 pl-11 pr-12 text-[var(--text-main)] outline-none focus:border-accent/50" />
             <button type="button" onClick={() => onVisibilityChange(!visible)} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
                 {visible ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
         </span>
-    </label>;
+    </div>;
 }
 
 export default function AcceptInvitationPage() {

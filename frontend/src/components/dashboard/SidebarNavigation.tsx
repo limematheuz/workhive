@@ -27,6 +27,15 @@ type SidebarNavigationProps = {
     onOpenGroupChange: (groupId: string, open: boolean) => void;
 };
 
+function renderAlertBadge(count: number, className: string) {
+    return (
+        <span className={className}>
+            <span className={SIDEBAR_ALERT_PULSE_CLASS} aria-hidden="true" />
+            <span className="relative z-10">{formatSidebarAlertCount(count)}</span>
+        </span>
+    );
+}
+
 export function SidebarNavigation({
     isOpen,
     pathname,
@@ -51,13 +60,6 @@ export function SidebarNavigation({
     const showReportAlerts = (href: string) =>
         href === "/dashboard/task-reports" && reportAlertsCount > 0;
 
-    const renderAlertBadge = (count: number, className: string) => (
-        <span className={className}>
-            <span className={SIDEBAR_ALERT_PULSE_CLASS} aria-hidden="true" />
-            <span className="relative z-10">{formatSidebarAlertCount(count)}</span>
-        </span>
-    );
-
     const renderNavLink = (link: NavLink, nested = false) => {
         const reservationAlerts = showReservationAlerts(link.href);
         const taskAlerts = showTaskAlerts(link.href);
@@ -77,7 +79,7 @@ export function SidebarNavigation({
             <Link
                 key={link.href}
                 href={link.href}
-                className={`group flex items-center gap-2 rounded-lg font-medium transition-all ${linkStackClass} ${
+                className={`group flex items-center gap-2 rounded-lg font-medium ui-motion ${linkStackClass} ${
                     nested ? "px-2 py-1.5 text-[13px]" : "px-2 py-1.5"
                 } ${
                     isActive(link.href, link.exact)
@@ -121,7 +123,7 @@ export function SidebarNavigation({
                 className="space-y-0.5"
             >
                 <CollapsibleTrigger
-                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-semibold transition-all ${
+                    className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left font-semibold ui-motion ${
                         groupActive
                             ? "text-[var(--text-main)]"
                             : "text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)]"

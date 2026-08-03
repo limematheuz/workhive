@@ -10,7 +10,7 @@ type SidebarLogoProps = {
 export function SidebarLogo({ isOpen }: SidebarLogoProps) {
     return (
         <div
-            className={`relative z-10 flex shrink-0 items-center overflow-hidden transition-all duration-300 h-16 max-lg:h-[4.75rem] lg:h-[4.25rem] ${
+            className={`relative z-10 flex shrink-0 items-center overflow-hidden ui-motion duration-300 h-16 max-lg:h-[4.75rem] lg:h-[4.25rem] ${
                 isOpen ? "px-4 pb-1 max-lg:pb-2" : "justify-center"
             }`}
         >

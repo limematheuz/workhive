@@ -99,7 +99,7 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     return (
         <aside
             id="tour-sidebar"
-            className={`fixed lg:relative z-[var(--z-sidebar)] h-full flex flex-col transition-all duration-300 ease-in-out ${
+            className={`fixed lg:relative z-[var(--z-sidebar)] h-full flex flex-col ui-motion duration-300 ease-in-out ${
                 isOpen ? "translate-x-0 w-60 max-lg:z-[var(--z-sidebar-mobile-open)]" : "-translate-x-full w-60 lg:translate-x-0 lg:w-20"
             } sidebar-mobile-bg`}
         >

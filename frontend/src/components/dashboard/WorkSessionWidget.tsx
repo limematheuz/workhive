@@ -21,7 +21,7 @@ interface WorkSessionWidgetProps {
     allowedLocations?: Location[];
 }
 
-export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
+function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
     const { dict } = useDictionary()
     const { user } = useUser()
     const [activeSession, setActiveSession] = useState<WorkSession | null>(null)
@@ -104,6 +104,8 @@ export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps =
     }, [user])
 
     useEffect(() => {
+        let cancelled = false
+
         const refreshAvailableTasks = async () => {
             if (!user) return
 
@@ -122,7 +124,7 @@ export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps =
                     )
                 })
 
-                setAvailableTasks(nextTasks)
+                if (!cancelled) setAvailableTasks(nextTasks)
             } catch (error) {
                 console.error("Error refreshing available work assignments", error)
             }
@@ -133,9 +135,14 @@ export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps =
             const intervalId = window.setInterval(refreshAvailableTasks, POLL_INTERVALS.tasks)
             window.addEventListener("workhive:tasks-changed", refreshAvailableTasks)
             return () => {
+                cancelled = true
                 window.clearInterval(intervalId)
                 window.removeEventListener("workhive:tasks-changed", refreshAvailableTasks)
             }
+        }
+
+        return () => {
+            cancelled = true
         }
     }, [user, allLocations, loading])
 
@@ -178,12 +185,15 @@ export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps =
                 )
                 setActionLoading(true)
                 const sessionId = activeSession.id
-                await WorkSessionService.stopSession()
-                cleanWorkSessionLocalStorage(user.id, sessionId)
-                setActiveSession(null)
-                setMonitoredTaskIds([])
-                window.dispatchEvent(new CustomEvent("workhive:session-changed"))
-                setActionLoading(false)
+                try {
+                    await WorkSessionService.stopSession()
+                    cleanWorkSessionLocalStorage(user.id, sessionId)
+                    setActiveSession(null)
+                    setMonitoredTaskIds([])
+                    window.dispatchEvent(new CustomEvent("workhive:session-changed"))
+                } finally {
+                    setActionLoading(false)
+                }
             }
         } catch (error) {
             console.error("Error polling for cancelled tasks", error)
@@ -273,9 +283,52 @@ export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps =
         await handleStopShift()
     }
 
-    if (loading) {
-        return <WorkSessionWidgetLoading loadingLabel={dict.dashboard.loading || "Loading..."} />
+    return {
+        actionLoading,
+        activeSession,
+        allLocations,
+        availableTasks,
+        confirmStopShift,
+        dict,
+        elapsedTime,
+        loading,
+        pendingTasksCount,
+        preStopShift,
+        setShowStopWarning,
+        showStopWarning,
+        user,
     }
+}
+
+export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
+    const controller = useWorkSessionWidget({ allowedLocations })
+
+    if (controller.loading) {
+        return <WorkSessionWidgetLoading loadingLabel={controller.dict.dashboard.loading || "Loading..."} />
+    }
+
+    return <WorkSessionWidgetContent controller={controller} />
+}
+
+function WorkSessionWidgetContent({
+    controller,
+}: {
+    controller: ReturnType<typeof useWorkSessionWidget>
+}) {
+    const {
+        actionLoading,
+        activeSession,
+        allLocations,
+        availableTasks,
+        confirmStopShift,
+        dict,
+        elapsedTime,
+        pendingTasksCount,
+        preStopShift,
+        setShowStopWarning,
+        showStopWarning,
+        user,
+    } = controller
 
     const activeLocationName = activeSession
         ? allLocations.find((l) => l.id === activeSession.location_id)?.name || `ID: ${activeSession.location_id}`

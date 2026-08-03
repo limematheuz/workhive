@@ -61,7 +61,7 @@ export function ReservationFormCleaningSection({
                                         event.target.value,
                                 })
                             }
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 transition-all"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                         />
                         <p className="text-xs font-medium leading-relaxed text-[var(--text-muted)]">
                             {dict.reservations?.form
@@ -89,7 +89,7 @@ export function ReservationFormCleaningSection({
                                         event.target.value,
                                 })
                             }
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 transition-all"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                         >
                             <option value="">
                                 {dict.reservations?.form

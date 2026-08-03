@@ -36,7 +36,7 @@ export function LocationFormRoomsSection({
                     type="button"
                     onClick={onAddRoom}
                     size="sm"
-                    className="bg-accent/10 hover:bg-accent/20 text-accent text-2xs font-black uppercase tracking-wide px-3 py-1.5 rounded-lg border-0 transition-all cursor-pointer"
+                    className="bg-accent/10 hover:bg-accent/20 text-accent text-2xs font-black uppercase tracking-wide px-3 py-1.5 rounded-lg border-0 ui-motion cursor-pointer"
                 >
                     {dict.locations.form.rooms_add}
                 </Button>

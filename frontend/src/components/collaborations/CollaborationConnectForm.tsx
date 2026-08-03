@@ -33,13 +33,17 @@ export function CollaborationConnectForm({
             <form onSubmit={onSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
+                        <label className="sr-only" htmlFor="collaboration-code">
+                            Código de partner
+                        </label>
                         <input
+                            id="collaboration-code"
                             required
                             type="text"
                             placeholder="Introduce el código de partner..."
                             value={inputCode}
                             onChange={(e) => onInputCodeChange(e.target.value.toUpperCase())}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-4 py-2.5 rounded-xl outline-none text-xs font-semibold focus:border-accent/50 transition-all uppercase placeholder:normal-case"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-4 py-2.5 rounded-xl outline-none text-xs font-semibold focus:border-accent/50 ui-motion uppercase placeholder:normal-case"
                         />
                     </div>
                     <div>
@@ -47,7 +51,7 @@ export function CollaborationConnectForm({
                             aria-label="Tipo de vinculación"
                             value={roleType}
                             onChange={(e) => onRoleTypeChange(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-xs font-semibold cursor-pointer focus:border-accent/50 transition-all"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-xs font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                         >
                             <option value="service_provider">Prestará servicios</option>
                             <option value="property_manager">Solicitará servicios</option>
@@ -59,7 +63,7 @@ export function CollaborationConnectForm({
                     <Button
                         type="submit"
                         disabled={sending || loading}
-                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center justify-center gap-1.5 cursor-pointer transition-all"
+                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center justify-center gap-1.5 cursor-pointer ui-motion"
                     >
                         {sending && <Loader2 className="w-4 h-4 animate-spin" />}
                         Solicitar vinculación

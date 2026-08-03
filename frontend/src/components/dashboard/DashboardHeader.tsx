@@ -90,7 +90,7 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                         type="button"
                         onClick={() => setIsProfileOpen(!isProfileOpen)}
                         aria-label="Abrir menú de perfil"
-                        className="w-10 h-10 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] flex items-center justify-center font-bold hover:border-accent cursor-pointer transition-all text-xs text-[var(--text-main)] overflow-hidden"
+                        className="w-10 h-10 rounded-full border border-[var(--border-color)] bg-[var(--bg-tertiary)] flex items-center justify-center font-bold hover:border-accent cursor-pointer ui-motion text-xs text-[var(--text-main)] overflow-hidden"
                     >
                         <UserAvatar
                             name={user?.full_name}
@@ -101,7 +101,7 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                         />
                     </button>
                     {isProfileOpen && user && (
-                        <div className="surface-popover header-popover-layer fixed top-20 right-[3%] md:right-8 mt-2 w-56 rounded-3xl p-6 flex flex-col gap-2 transition-all">
+                        <div className="surface-popover header-popover-layer fixed top-20 right-[3%] md:right-8 mt-2 w-56 rounded-3xl p-6 flex flex-col gap-2 ui-motion">
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-sm font-semibold text-[var(--text-main)] truncate">
                                     {user.full_name || dict.dashboard.default_user_name || "Usuario"}

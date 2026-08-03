@@ -53,16 +53,18 @@ import type { Reservation } from "@/types/reservation";
 import type { TemplateTask } from "@/types/template";
 import type { User } from "@/types/user";
 
-const initialReservationFilters: ReservationFiltersState = {
-    location: "ALL",
-    provider: "ALL",
-    cleaning: "ALL",
-    date: "UPCOMING",
-    year: new Date().getFullYear().toString(),
-    month: "ALL",
-    search: "",
-    showCancelled: false,
-};
+function createInitialReservationFilters(): ReservationFiltersState {
+    return {
+        location: "ALL",
+        provider: "ALL",
+        cleaning: "ALL",
+        date: "UPCOMING",
+        year: new Date().getFullYear().toString(),
+        month: "ALL",
+        search: "",
+        showCancelled: false,
+    };
+}
 
 function ReservationsPageContent() {
     const { user } = useUser();
@@ -76,7 +78,7 @@ function ReservationsPageContent() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [reservationFilters, setReservationFilters] =
-        useState<ReservationFiltersState>(initialReservationFilters);
+        useState<ReservationFiltersState>(createInitialReservationFilters);
     const [viewMode, setViewMode] = useState<ReservationViewMode>("active");
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<Reservation | null>(null);
@@ -325,7 +327,7 @@ function ReservationsPageContent() {
             loading={loading}
             reservationFilters={reservationFilters}
             onFiltersChange={setReservationFilters}
-            onResetFilters={() => setReservationFilters(initialReservationFilters)}
+            onResetFilters={() => setReservationFilters(createInitialReservationFilters())}
             locations={locations}
             providerOptions={providerOptions}
             filteredReservations={filteredReservations}

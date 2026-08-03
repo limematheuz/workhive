@@ -3,7 +3,7 @@ import test from "node:test";
 
 import {
     buildGoogleMapsEmbedUrl,
-    shouldSandboxGoogleMapsEmbed,
+    GOOGLE_MAPS_EMBED_SANDBOX,
 } from "./google-maps-embed.ts";
 
 test("buildGoogleMapsEmbedUrl encodes the address query", () => {
@@ -13,6 +13,6 @@ test("buildGoogleMapsEmbedUrl encodes the address query", () => {
     assert.match(url, /q=Calle%20Mayor%201%2C%20Madrid/);
 });
 
-test("google maps embed is not sandboxed to avoid cross-frame SecurityError", () => {
-    assert.equal(shouldSandboxGoogleMapsEmbed(), false);
+test("google maps embed allows only the capabilities it requires", () => {
+    assert.equal(GOOGLE_MAPS_EMBED_SANDBOX, "allow-scripts allow-same-origin allow-popups");
 });
