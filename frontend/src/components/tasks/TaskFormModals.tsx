@@ -50,8 +50,6 @@ interface TaskFormModalsProps {
     // Edit Task Modal
     selectedTask: TaskItem | null;
     setSelectedTask: (task: TaskItem | null) => void;
-    editTitle: string;
-    setEditTitle: (val: string) => void;
     editNotes: string;
     setEditNotes: (val: string) => void;
     editDescription: string;
@@ -131,8 +129,6 @@ interface TaskFormModalsProps {
  
      selectedTask,
      setSelectedTask,
-     editTitle,
-     setEditTitle,
      editNotes,
      setEditNotes,
      editDescription,
@@ -219,8 +215,6 @@ interface TaskFormModalsProps {
                  deletingTask={deletingTask}
                  selectedTask={selectedTask}
                  setSelectedTask={setSelectedTask}
-                 editTitle={editTitle}
-                 setEditTitle={setEditTitle}
                  editNotes={editNotes}
                  setEditNotes={setEditNotes}
                  editDescription={editDescription}

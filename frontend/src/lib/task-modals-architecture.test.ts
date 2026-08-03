@@ -123,4 +123,7 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.match(actions, /canDuplicateTask/);
     assert.match(actions, /taskDialogPrimaryBtnClass|btn-primary/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
+    assert.doesNotMatch(fields, /title_label/);
+    assert.match(fields, /Notas internas/);
+    assert.match(fields, /Responsable/);
 });

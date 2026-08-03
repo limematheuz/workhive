@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+    canLinkTaskReservations,
     canManageLocationReservations,
     createReservationForm,
     createReservationPayload,
@@ -73,6 +74,18 @@ test("reservation management requires explicit permission or matching company", 
     );
     assert.equal(canManageLocationReservations(location({}), null), false);
     assert.equal(getReservableLocations([location({}), location({ id: 2, owner_company_id: 10 })], 10).length, 1);
+});
+
+test("task reservation links fail closed unless the API grants the issuer capability", () => {
+    assert.equal(
+        canLinkTaskReservations(location({ can_manage_reservations: true })),
+        true,
+    );
+    assert.equal(
+        canLinkTaskReservations(location({ owner_company_id: 10 })),
+        false,
+    );
+    assert.equal(canLinkTaskReservations(location({})), false);
 });
 
 test("reservation form preserves editable values and payload nulls optional fields", () => {

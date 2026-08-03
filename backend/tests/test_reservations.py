@@ -506,11 +506,20 @@ def test_service_provider_cannot_link_reservations_when_creating_manual_work(db)
             location_id=location.id,
             company_id=receiver.id,
             relationship_type="service_provider",
-            can_manage_reservations=False,
+            # A misconfigured capability must not turn a cleaning company into
+            # a reservation issuer.
+            can_manage_reservations=True,
             can_manage_tasks=True,
         )
     )
     db.commit()
+
+    assert not location_access_service.has_location_capability(
+        db,
+        receiver_admin,
+        location,
+        "can_manage_reservations",
+    )
 
     with pytest.raises(HTTPException) as error:
         task_item_service.create_task_item(
@@ -525,6 +534,27 @@ def test_service_provider_cannot_link_reservations_when_creating_manual_work(db)
         )
 
     assert error.value.status_code == 403
+
+    standalone_task = task_item_service.create_task_item(
+        db,
+        receiver_admin,
+        TaskItemCreate(
+            title="Limpieza propia",
+            unit="servicio",
+            location_id=location.id,
+        ),
+    )
+    with pytest.raises(HTTPException) as update_error:
+        task_item_service.update_task_item(
+            db,
+            receiver_admin,
+            standalone_task.id,
+            TaskItemUpdate(checkout_reservation_id=reservation.id),
+        )
+
+    assert update_error.value.status_code == 403
+    db.refresh(standalone_task)
+    assert standalone_task.checkout_reservation_id is None
 
 
 def test_create_reservation_with_assigned_task(db):

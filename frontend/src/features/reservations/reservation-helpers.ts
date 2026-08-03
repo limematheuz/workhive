@@ -96,6 +96,15 @@ export function canManageLocationReservations(
     return Boolean(companyId && ownerCompanyId === companyId);
 }
 
+/**
+ * Linking a manual task to guest reservations is reserved for the emitting
+ * company (or a property manager). The API returns this explicit capability;
+ * fail closed while locations are still loading or when the response is old.
+ */
+export function canLinkTaskReservations(location: Location): boolean {
+    return location.can_manage_reservations === true;
+}
+
 export function getReservableLocations(
     locations: Location[],
     companyId?: number | null

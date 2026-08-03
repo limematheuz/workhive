@@ -26,7 +26,7 @@ import {
 } from "@/domain/access/roles";
 import { buildTaskListFilters } from "@/domain/tasks/task-list";
 import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
-import { canManageLocationReservations } from "@/features/reservations/reservation-helpers";
+import { canLinkTaskReservations } from "@/features/reservations/reservation-helpers";
 
 export type {
     LocationTemplateSummary as HouseTemplate,
@@ -156,10 +156,7 @@ export function useTasksPage() {
 
     const canManageReservationsForLocation = (locationId: number) => {
         const location = locations.find((item) => item.id === locationId);
-        return Boolean(
-            location
-            && canManageLocationReservations(location, currentUser?.company_id),
-        );
+        return Boolean(location && canLinkTaskReservations(location));
     };
 
     const crud = useTaskCrud({
@@ -189,7 +186,7 @@ export function useTasksPage() {
         if (ownLocations.length > 0 && !newLocationId) {
             setNewLocationId(ownLocations[0].id.toString());
         }
-        if (currentUser && !isAdminOrManager && !newUserId) {
+        if (currentUser && !newUserId) {
             setNewUserId(currentUser.id.toString());
         }
     };

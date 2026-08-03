@@ -49,6 +49,7 @@ def test_frequently_polled_dashboard_reads_are_async():
         work_sessions.active_company_sessions,
         work_sessions.task_work_summary,
         work_sessions.task_work_detailed_summary,
+        work_sessions.task_work_detailed_summaries,
         work_sessions.read_work_session,
         clients.read_clients,
         clients.read_client,

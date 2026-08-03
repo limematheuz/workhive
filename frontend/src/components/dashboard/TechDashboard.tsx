@@ -24,6 +24,7 @@ import {
 } from "@/domain/tasks/task-schedule";
 import { useTechDashboardTasks } from "@/hooks/useTechDashboardTasks";
 import { canManageCompanyTasks as canManageTasks } from "@/domain/access/roles";
+import { useTaskWorkSummaries } from "@/hooks/useTaskWorkSummaries";
 
 interface TechDashboardProps {
     currentUser: User;
@@ -59,6 +60,10 @@ function TechDashboardInner({
         tasks,
     });
     const canManageCompanyTasks = dashboardTasks.canManage;
+    const workSummaries = useTaskWorkSummaries([
+        ...dashboardTasks.overdueTasks,
+        ...dashboardTasks.standardTasks,
+    ]);
 
     const selectedTask = useMemo(() => {
         if (selectedTaskId === null) return null;
@@ -241,6 +246,7 @@ function TechDashboardInner({
                                                     onReject={handleReject}
                                                     onViewDetails={(task) => openTaskDetail(task.id)}
                                                     hideLocationName={true}
+                                                    workSummary={workSummaries[task.id]}
                                                 />
                                             ))}
 
@@ -255,6 +261,7 @@ function TechDashboardInner({
                                                     onReject={handleReject}
                                                     onViewDetails={(task) => openTaskDetail(task.id)}
                                                     hideLocationName={true}
+                                                    workSummary={workSummaries[task.id]}
                                                 />
                                             ))}
                                         </div>

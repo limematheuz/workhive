@@ -14,7 +14,6 @@ interface TaskEditFormProps {
     calendarAssigneeName: string;
     currentUser: User | null;
     dict: Dictionary;
-    displayTitle: string;
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
@@ -24,7 +23,6 @@ interface TaskEditFormProps {
     editPriority: TaskPriority;
     editQuantity: string;
     editStatus: TaskStatus;
-    editTitle: string;
     editUnit: string;
     handleDeleteTask: (task: TaskItem) => void;
     handleDuplicateTask: (task: TaskItem) => Promise<void>;
@@ -45,7 +43,6 @@ interface TaskEditFormProps {
     setEditPriority: (value: TaskPriority) => void;
     setEditQuantity: (value: string) => void;
     setEditStatus: (value: TaskStatus) => void;
-    setEditTitle: (value: string) => void;
     setEditUnit: (value: string) => void;
     users: User[];
 }
@@ -54,7 +51,6 @@ export function TaskEditForm({
     calendarAssigneeName,
     currentUser,
     dict,
-    displayTitle,
     editCreatedAt,
     editDescription,
     editLocationId,
@@ -64,7 +60,6 @@ export function TaskEditForm({
     editPriority,
     editQuantity,
     editStatus,
-    editTitle,
     editUnit,
     handleDeleteTask,
     handleDuplicateTask,
@@ -105,7 +100,6 @@ export function TaskEditForm({
                 <TaskEditFormFields
                     dict={dict}
                     calendarAssigneeName={calendarAssigneeName}
-                    displayTitle={displayTitle}
                     editCreatedAt={editCreatedAt}
                     editDescription={editDescription}
                     editLocationId={editLocationId}
@@ -115,7 +109,6 @@ export function TaskEditForm({
                     editPriority={editPriority}
                     editQuantity={editQuantity}
                     editStatus={editStatus}
-                    editTitle={editTitle}
                     editUnit={editUnit}
                     isReceiverCompany={receiverCompany}
                     managerEditable={managerEditable}

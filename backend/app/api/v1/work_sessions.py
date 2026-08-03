@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, status, APIRouter
+from fastapi import Depends, status, APIRouter, Query
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.api.deps import (
     ActiveUser,
@@ -17,6 +17,7 @@ from app.schemas.work_session import (
     ActiveCompanySessionResponse,
     TaskWorkSummaryResponse,
     TaskWorkDetailedSummaryResponse,
+    TaskWorkDetailedSummariesResponse,
 )
 
 router = APIRouter()
@@ -96,6 +97,25 @@ async def task_work_detailed_summary(
             task_item_id,
         )
     )
+
+
+@router.get(
+    "/tasks/detailed-summaries",
+    response_model=TaskWorkDetailedSummariesResponse,
+)
+async def task_work_detailed_summaries(
+    task_item_ids: list[int] = Query(min_length=1, max_length=100),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    summaries = await db.run_sync(
+        lambda sync_db: work_session_service.get_task_work_detailed_summaries(
+            sync_db,
+            current_user,
+            task_item_ids,
+        )
+    )
+    return {"summaries": summaries}
 
 
 @router.get("/{session_id}", response_model=WorkSessionResponse)

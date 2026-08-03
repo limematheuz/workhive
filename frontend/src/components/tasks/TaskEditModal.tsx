@@ -37,8 +37,6 @@ interface TaskEditModalProps {
     deletingTask: boolean;
     selectedTask: TaskItem | null;
     setSelectedTask: (task: TaskItem | null) => void;
-    editTitle: string;
-    setEditTitle: (val: string) => void;
     editNotes: string;
     setEditNotes: (val: string) => void;
     editDescription: string;
@@ -78,8 +76,6 @@ export function TaskEditModal({
     deletingTask,
     selectedTask,
     setSelectedTask,
-    editTitle,
-    setEditTitle,
     editNotes,
     setEditNotes,
     editDescription,
@@ -183,7 +179,6 @@ export function TaskEditModal({
                             calendarAssigneeName={calendarAssigneeName}
                             currentUser={currentUser}
                             dict={dict}
-                            displayTitle={displayTitle}
                             editCreatedAt={editCreatedAt}
                             editDescription={editDescription}
                             editLocationId={editLocationId}
@@ -193,7 +188,6 @@ export function TaskEditModal({
                             editPriority={editPriority}
                             editQuantity={editQuantity}
                             editStatus={editStatus}
-                            editTitle={editTitle}
                             editUnit={editUnit}
                             handleDeleteTask={handleDeleteTask}
                             handleDuplicateTask={handleDuplicateTask}
@@ -214,7 +208,6 @@ export function TaskEditModal({
                             setEditPriority={setEditPriority}
                             setEditQuantity={setEditQuantity}
                             setEditStatus={setEditStatus}
-                            setEditTitle={setEditTitle}
                             setEditUnit={setEditUnit}
                             users={users}
                         />

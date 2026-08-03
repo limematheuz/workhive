@@ -91,6 +91,42 @@ def get_task_item(db: Session, company_id: int, task_item_id: int) -> TaskItem |
     )
 
 
+def get_task_items_by_ids(
+    db: Session,
+    company_id: int,
+    task_item_ids: list[int],
+    user_id: int | None = None,
+) -> list[TaskItem]:
+    if not task_item_ids:
+        return []
+
+    query = (
+        db.query(TaskItem)
+        .join(Location)
+        .outerjoin(Client)
+        .filter(
+            or_(
+                and_(
+                    TaskItem.status != "rejected",
+                    TaskItem.company_id == company_id,
+                ),
+                and_(
+                    TaskItem.status == "rejected",
+                    TaskItem.checkout_reservation_id.is_(None),
+                    TaskItem.company_id == company_id,
+                ),
+                TaskItem.checkout_reservation.has(
+                    Reservation.owner_company_id == company_id
+                ),
+            )
+        )
+        .filter(TaskItem.id.in_(task_item_ids))
+    )
+    if user_id is not None:
+        query = query.filter(or_(*_user_assignment_conditions(user_id)))
+    return query.order_by(TaskItem.id.asc()).all()
+
+
 def create_task_item(
     db: Session,
     company_id: int,

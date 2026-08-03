@@ -439,6 +439,16 @@ def _validate_task_update_relations(
         location_access_service.require_location_capability(
             db, current_user, task_data.location_id, "can_manage_tasks"
         )
+    if {
+        "checkout_reservation_id",
+        "next_reservation_id",
+    } & task_data.model_fields_set:
+        location_access_service.require_location_capability(
+            db,
+            current_user,
+            target_location_id,
+            "can_manage_reservations",
+        )
     if task_data.user_id is not None:
         assigned_user = user_repo.get_user_by_id(db, task_data.user_id)
         if not assigned_user or assigned_user.company_id != current_user.company_id:

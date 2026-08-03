@@ -67,12 +67,16 @@ test("task creation keeps templates when reservations fail", async () => {
 
 test("task create hook uses the safe loader without logging handled load errors", () => {
     const hook = read("../hooks/useTaskCrud.ts");
+    const tasksPage = read("../hooks/useTasksPage.ts");
     const modal = read("../components/tasks/TaskCreateModal.tsx");
 
     assert.match(hook, /loadTaskCreateLocationData/);
     assert.match(hook, /canManageReservationsForLocation/);
-    assert.match(modal, /canManageLocationReservations/);
+    assert.match(tasksPage, /canLinkTaskReservations/);
+    assert.match(modal, /canLinkTaskReservations/);
     assert.match(modal, /newLocationId && canLinkReservations/);
+    assert.doesNotMatch(modal, /canManageLocationReservations/);
+    assert.match(tasksPage, /if \(currentUser && !newUserId\)/);
     assert.doesNotMatch(hook, /console\.error\("Error fetching house templates"/);
     assert.doesNotMatch(hook, /console\.error\("Error loading location reservations"/);
 });
