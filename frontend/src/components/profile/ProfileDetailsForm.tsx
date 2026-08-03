@@ -117,7 +117,7 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
                                 value={profileName}
                                 onChange={(e) => setProfileName(e.target.value)}
                                 placeholder={dict.profile.form.full_name_placeholder}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                         </div>
                     </div>

@@ -41,7 +41,7 @@ export function ReservationFormNotesSection({
                         notes: event.target.value,
                     })
                 }
-                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2 rounded-xl outline-none text-sm font-medium focus:border-accent/50 resize-none transition-all"
+                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2 rounded-xl outline-none text-sm font-medium focus:border-accent/50 resize-none ui-motion"
             />
             <p className="text-xs font-medium leading-relaxed text-[var(--text-muted)]">
                 {form.assignedUserId

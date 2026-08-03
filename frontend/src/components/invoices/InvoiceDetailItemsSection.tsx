@@ -85,7 +85,7 @@ export function InvoiceDetailItemsSection({
                                     type="button"
                                     aria-label="Eliminar línea"
                                     onClick={() => onRemoveEditItem(index)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border-soft)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--border-color)] transition-all cursor-pointer bg-transparent"
+                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border-soft)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--border-color)] ui-motion cursor-pointer bg-transparent"
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -96,7 +96,7 @@ export function InvoiceDetailItemsSection({
                     <button
                         type="button"
                         onClick={onAddEditItem}
-                        className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer bg-transparent"
+                        className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] ui-motion cursor-pointer bg-transparent"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         {dict.invoices.add_concept}

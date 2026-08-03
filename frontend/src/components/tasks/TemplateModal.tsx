@@ -170,7 +170,7 @@ export function TemplateModal({
                                             }
                                         }, 50);
                                     }}
-                                    className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-secondary-bg)] px-3 py-2 text-xs font-semibold text-[var(--btn-secondary-text)] transition-all hover:bg-[var(--btn-secondary-hover-bg)]"
+                                    className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-secondary-bg)] px-3 py-2 text-xs font-semibold text-[var(--btn-secondary-text)] ui-motion hover:bg-[var(--btn-secondary-hover-bg)]"
                                 >
                                     <Plus className="h-3.5 w-3.5" />
                                     Add item
@@ -182,7 +182,11 @@ export function TemplateModal({
                                         <div className="flex h-5 w-5 shrink-0 select-none items-center justify-center rounded-full bg-[var(--btn-primary-bg)] text-[10px] font-black text-[var(--btn-primary-text)]">
                                             {idx + 1}
                                         </div>
+                                        <label className="sr-only" htmlFor={`template-question-${q.id}`}>
+                                            Elemento de la lista de comprobación {idx + 1}
+                                        </label>
                                         <input
+                                            id={`template-question-${q.id}`}
                                             type="text"
                                             required={idx === 0}
                                             value={q.text}

@@ -53,14 +53,14 @@ export function WorkSessionStopWarningDialog({
                         type="button"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
-                        className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer transition-all"
+                        className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer ui-motion"
                     >
                         {dict.work_sessions?.pending_tasks_cancel || "Cancel"}
                     </Button>
                     <Button
                         type="button"
                         onClick={onConfirmStop}
-                        className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl px-5 py-2.5 border-none cursor-pointer transition-all"
+                        className="bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-xl px-5 py-2.5 border-none cursor-pointer ui-motion"
                     >
                         {dict.work_sessions?.pending_tasks_confirm || "Yes, Clock Out"}
                     </Button>

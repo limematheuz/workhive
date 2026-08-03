@@ -84,7 +84,7 @@ export function useTasksPage() {
             console.error("Error loading tasks list", error);
             if (!silent) toast.error(dict.tasks.error_update);
         } finally {
-            if (!silent) setLoadingTasks(false);
+            setLoadingTasks(false);
         }
     };
 

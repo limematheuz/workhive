@@ -47,7 +47,7 @@ export function TaskRequestCard({
                     onAccept(task);
                 }
             }}
-            className="surface-glass-card flex min-h-[250px] cursor-pointer flex-col justify-between rounded-2xl p-5 transition-all duration-200 hover:border-[var(--btn-secondary-border)]"
+            className="surface-glass-card flex min-h-[250px] cursor-pointer flex-col justify-between rounded-2xl p-5 transition-colors duration-200 hover:border-[var(--btn-secondary-border)]"
         >
             <div className="space-y-4">
                 <div className="flex items-start justify-between gap-2">

@@ -42,7 +42,7 @@ export default function ProfilePage() {
                 <p className="text-[var(--text-muted)] text-sm max-w-md mb-6">{state.error}</p>
                 <button type="button"
                     onClick={() => window.location.reload()}
-                    className="px-4 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] rounded-xl transition-all text-sm font-semibold cursor-pointer"
+                    className="px-4 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] rounded-xl ui-motion text-sm font-semibold cursor-pointer"
                 >
                     {state.locale === "es" ? "Reintentar" : "Retry"}
                 </button>
@@ -155,7 +155,7 @@ export default function ProfilePage() {
                             </div>
                             <button type="button"
                                 onClick={() => state.setIsEditing(false)}
-                                className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] px-3.5 py-2 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] transition-all border border-[var(--border-color)]/30 cursor-pointer self-start sm:self-auto"
+                                className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] px-3.5 py-2 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] ui-motion border border-[var(--border-color)]/30 cursor-pointer self-start sm:self-auto"
                             >
                                 {state.locale === "es" ? "Cerrar Editor" : "Close Editor"}
                             </button>
@@ -222,7 +222,7 @@ export default function ProfilePage() {
                             type="button"
                             variant="outline"
                             onClick={() => setShowResetConfirm(false)}
-                            className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer transition-all"
+                            className="bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer ui-motion"
                         >
                             {state.dict.clients?.form.cancel ?? "Cancelar"}
                         </Button>

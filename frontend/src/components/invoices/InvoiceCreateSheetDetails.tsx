@@ -95,10 +95,11 @@ export function InvoiceCreateSheetDetails({
         <div className="lg:col-span-2 space-y-6">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="space-y-1">
-                    <Label className="text-xs font-medium text-[var(--text-muted)]">
+                    <Label htmlFor="invoice-number" className="text-xs font-medium text-[var(--text-muted)]">
                         {dict.invoices?.invoice_number_label || "Número de factura"}
                     </Label>
                     <input
+                        id="invoice-number"
                         type="text"
                         value={invoiceNumber}
                         onChange={(event) => setInvoiceNumber(event.target.value)}

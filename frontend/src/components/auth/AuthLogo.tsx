@@ -24,7 +24,7 @@ export function AuthLogo({ className, priority = false }: AuthLogoProps) {
             priority={priority}
             sizes="(max-width: 640px) 10rem, 13rem"
             unoptimized
-            className={cn("h-auto opacity-90 transition-all", className)}
+            className={cn("h-auto opacity-90 ui-motion", className)}
             style={AUTH_LOGO_STYLE}
         />
     );

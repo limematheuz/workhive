@@ -87,7 +87,7 @@ export function QuoteDetailActions({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent rounded-xl transition-all cursor-pointer"
+                    className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent rounded-xl ui-motion cursor-pointer"
                 >
                     {dict.clients?.form.cancel ?? "Cerrar"}
                 </button>

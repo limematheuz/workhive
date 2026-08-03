@@ -86,7 +86,7 @@ export function CompanyDetailsFormFields({
                             required
                             value={companyName}
                             onChange={(e) => setCompanyName(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                         />
                     </div>
 
@@ -100,7 +100,7 @@ export function CompanyDetailsFormFields({
                             required
                             value={taxId}
                             onChange={(e) => setTaxId(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] font-mono"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] font-mono"
                         />
                     </div>
 
@@ -114,7 +114,7 @@ export function CompanyDetailsFormFields({
                             required
                             value={address}
                             onChange={(e) => setAddress(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                         />
                     </div>
 
@@ -173,7 +173,7 @@ export function CompanyDetailsFormFields({
                                 required
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                         </div>
                         <div className="space-y-1.5">
@@ -186,7 +186,7 @@ export function CompanyDetailsFormFields({
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                         </div>
                     </div>
@@ -201,7 +201,7 @@ export function CompanyDetailsFormFields({
                             value={bankAccount}
                             onChange={(e) => setBankAccount(e.target.value)}
                             placeholder="ES00 0000 0000 0000 0000 0000"
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] font-mono"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] font-mono"
                         />
                     </div>
                 </div>
@@ -212,7 +212,7 @@ export function CompanyDetailsFormFields({
                         Corporate Logo
                     </h3>
 
-                    <div className="border border-dashed border-[var(--border-color)] rounded-2xl p-6 bg-[var(--bg-tertiary)]/40 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden group hover:border-accent hover:bg-accent/5 transition-all">
+                    <div className="border border-dashed border-[var(--border-color)] rounded-2xl p-6 bg-[var(--bg-tertiary)]/40 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden group hover:border-accent hover:bg-accent/5 ui-motion">
                         {logoUrl ? (
                             <div className="text-center space-y-4">
                                 <Image

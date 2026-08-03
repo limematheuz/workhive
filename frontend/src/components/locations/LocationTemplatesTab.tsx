@@ -88,21 +88,25 @@ export function LocationTemplatesTab({
                                 {availableTemplates.map(template => {
                                     const selected = selectedGlobalTemplateIdSet.has(template.id);
                                     return (
-                                        <label key={template.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={selected}
-                                                onChange={() => setSelectedGlobalTemplateIds(ids => selected
-                                                    ? ids.filter(id => id !== template.id)
-                                                    : [...ids, template.id])}
-                                                className="h-4 w-4 accent-accent"
-                                            />
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-sm font-bold text-[var(--text-main)]">{template.name}</span>
-                                                <span className="text-xs text-[var(--text-muted)]">{template.default_price ?? 0} € / {template.unit}</span>
-                                            </span>
+                                        <div key={template.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3">
+                                            <label htmlFor={`location-template-${template.id}`} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                                                <input
+                                                    id={`location-template-${template.id}`}
+                                                    type="checkbox"
+                                                    checked={selected}
+                                                    onChange={() => setSelectedGlobalTemplateIds(ids => selected
+                                                        ? ids.filter(id => id !== template.id)
+                                                        : [...ids, template.id])}
+                                                    className="h-4 w-4 accent-accent"
+                                                />
+                                                <span className="min-w-0 flex-1">
+                                                    <span className="block truncate text-sm font-bold text-[var(--text-main)]">{template.name}</span>
+                                                    <span className="text-xs text-[var(--text-muted)]">{template.default_price ?? 0} € / {template.unit}</span>
+                                                </span>
+                                            </label>
                                             <input
                                                 type="number"
+                                                aria-label={`${template.name} ${dict.locations?.sheet?.price_short_placeholder || "Local price"}`}
                                                 step="0.01"
                                                 value={templatePrices[template.id] || ""}
                                                 onClick={event => event.stopPropagation()}
@@ -110,7 +114,7 @@ export function LocationTemplatesTab({
                                                 placeholder={dict.locations?.sheet?.price_short_placeholder || "Local price"}
                                                 className="h-9 w-28 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-2 text-xs text-[var(--text-main)] outline-none focus:border-accent"
                                             />
-                                        </label>
+                                        </div>
                                     );
                                 })}
                             </div>
@@ -253,7 +257,7 @@ export function LocationTemplatesTab({
                                     {!readOnly && !isEditing && (
                                         <button type="button"
                                             onClick={() => handleUnlinkTemplate(ht.template_task_id)}
-                                            className="p-2 text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)] rounded-xl border border-transparent hover:border-[var(--btn-cancel-border)] transition-all cursor-pointer self-start"
+                                            className="p-2 text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)] rounded-xl border border-transparent hover:border-[var(--btn-cancel-border)] ui-motion cursor-pointer self-start"
                                             title={dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}
                                             aria-label={dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}
                                         >

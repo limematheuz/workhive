@@ -15,7 +15,7 @@ export const taskDialogFooterClass =
     "dialog-glass-chrome flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[var(--border-soft)] px-5 py-3.5 sm:px-6 rounded-b-[28px]";
 
 export const taskDialogChipBtnClass =
-    "inline-flex h-10 items-center justify-center gap-1.5 rounded-2xl px-4 text-[11px] font-bold uppercase tracking-wide transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]";
+    "inline-flex h-10 items-center justify-center gap-1.5 rounded-2xl px-4 text-[11px] font-bold uppercase tracking-wide ui-motion cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98]";
 
 export const taskDialogPrimaryBtnClass =
     `${taskDialogChipBtnClass} border border-transparent bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm hover:bg-[var(--btn-primary-hover-bg)]`;
@@ -24,7 +24,4 @@ export const taskDialogSecondaryBtnClass =
     `${taskDialogChipBtnClass} border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)]`;
 
 export const taskDialogDangerBtnClass =
-    `${taskDialogChipBtnClass} border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent`;
-
-export const taskDialogGhostBtnClass =
     `${taskDialogChipBtnClass} border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent`;

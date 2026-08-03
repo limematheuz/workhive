@@ -115,7 +115,7 @@ export function WorkSessionDesktopCard({
                             type="button"
                             onClick={onPreStopShift}
                             disabled={actionLoading}
-                            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-semibold transition-all shadow-sm border-none cursor-pointer flex items-center justify-center"
+                            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-semibold ui-motion shadow-sm border-none cursor-pointer flex items-center justify-center"
                         >
                             {actionLoading ? (
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

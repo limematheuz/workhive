@@ -74,7 +74,7 @@ export function InvoiceTaskSelector({
                             >
                                 <div className="mt-0.5">
                                     <div
-                                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center ui-motion ${
                                             isChecked
                                                 ? "bg-accent border-accent text-white"
                                                 : "border-[var(--border-color)] bg-[var(--bg-primary)]"

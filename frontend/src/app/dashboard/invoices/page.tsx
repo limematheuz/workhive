@@ -132,7 +132,7 @@ export default function InvoicesPage() {
             console.error("Error loading completed jobs", error)
             toast.error("No se pudieron cargar los trabajos completados.")
         } finally {
-            if (showLoader) setLoadingJobs(false)
+            setLoadingJobs(false)
         }
     }, [isAdmin, user, userLoading])
 

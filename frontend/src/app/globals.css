@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/*
+ * Shared UI feedback: transition only paint/compositor properties, never every
+ * changed property. Components can still override duration with Tailwind's
+ * duration utilities, and progress indicators use transition-[width] instead.
+ */
+.ui-motion {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
 :root {
   --brand-blue: #2563eb;
   --brand-blue-hover: #1d4ed8;

@@ -44,13 +44,17 @@ export default function QuotesPage() {
 
     useEffect(() => {
         if (userLoading || !user) return;
+        let cancelled = false;
+
         const load = async () => {
             try {
                 const [clientsData] = await Promise.all([ClientService.getClients()]);
+                if (cancelled) return;
                 setClients(clientsData);
 
                 if (user.company_id) {
                     const company = await CompanyService.getCompany(user.company_id);
+                    if (cancelled) return;
                     setCompanyName(company.name);
                     setCompanyLogo(company.logo ?? null);
                 }
@@ -58,7 +62,10 @@ export default function QuotesPage() {
                 console.error(err);
             }
         };
-        load();
+        void load();
+        return () => {
+            cancelled = true;
+        };
     }, [user, userLoading]);
 
     const loadQuotes = useCallback(async () => {
@@ -156,7 +163,7 @@ export default function QuotesPage() {
                     <button
                         type="button"
                         onClick={() => setIsCreateOpen(true)}
-                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 transition-all shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border border-[var(--border-soft)] cursor-pointer"
                     >
                         <Plus className="w-4 h-4" />
                         {dict.quotes?.new_quote ?? "Nuevo Presupuesto"}

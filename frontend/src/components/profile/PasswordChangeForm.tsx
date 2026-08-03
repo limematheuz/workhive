@@ -85,7 +85,7 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                             value={profileOldPassword}
                             onChange={(e) => setProfileOldPassword(e.target.value)}
                             placeholder="Introduce tu clave actual"
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                         />
                         <button
                             type="button"
@@ -112,7 +112,7 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                 value={profilePassword}
                                 onChange={(e) => setProfilePassword(e.target.value)}
                                 placeholder="Mín. 6 caracteres"
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                             <button
                                 type="button"
@@ -138,7 +138,7 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                 value={profileConfirmPassword}
                                 onChange={(e) => setProfileConfirmPassword(e.target.value)}
                                 placeholder="Repite la clave"
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] transition-all shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
+                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
                             />
                             <button
                                 type="button"

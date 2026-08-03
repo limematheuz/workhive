@@ -3,6 +3,7 @@
 import React, { RefObject } from "react"
 import { Sparkles, ChevronRight, ChevronLeft, X } from "lucide-react"
 import { TOUR_STEPS, TourCoords, TourStep } from "./guidedTourSteps"
+import { getGuidedTourTooltipPosition, Viewport } from "@/lib/guided-tour-position"
 
 interface GuidedTourOverlayProps {
     step: number
@@ -10,149 +11,11 @@ interface GuidedTourOverlayProps {
     coords: TourCoords | null
     isMobile: boolean
     tooltipHeight: number
+    viewport: Viewport
     tooltipRef: RefObject<HTMLDivElement | null>
     onNext: () => void
     onBack: () => void
     onFinish: () => void
-}
-
-function getTooltipStyleAndArrow(
-    isMobile: boolean,
-    coords: TourCoords | null,
-    currentStepData: TourStep,
-    tooltipHeight: number,
-) {
-    if (isMobile) {
-        return {
-            style: {
-                position: "fixed" as const,
-                bottom: "24px",
-                left: "16px",
-                right: "16px",
-                width: "auto",
-                maxWidth: "calc(100% - 32px)",
-                zIndex: 10000,
-            },
-            arrowClass: "hidden"
-        }
-    }
-
-    if (!coords) {
-        return {
-            style: {
-                position: "fixed" as const,
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-            },
-            arrowClass: "hidden"
-        }
-    }
-
-    const margin = 16
-    const tooltipWidth = 320
-    let top = coords.top
-    let left = coords.left
-
-    let arrowClass = ""
-    const baseArrow = "absolute w-3 h-3 rotate-45 bg-[var(--popover-tour-bg)] border-[var(--popover-tour-border)]"
-
-    if (currentStepData.placement === "bottom") {
-        top = coords.top + coords.height + margin
-        left = coords.left
-        let useRightArrow = false
-
-        if (typeof window !== "undefined") {
-            if (left + tooltipWidth > window.innerWidth - 16) {
-                left = coords.left + coords.width - tooltipWidth
-                useRightArrow = true
-            }
-            if (left < 16) {
-                left = 16
-                useRightArrow = false
-            }
-        }
-
-        arrowClass = useRightArrow
-            ? `${baseArrow} top-[-6px] right-6 border-l border-t`
-            : `${baseArrow} top-[-6px] left-6 border-l border-t`
-
-    } else if (currentStepData.placement === "top") {
-        top = coords.top - tooltipHeight - margin
-        left = coords.left
-        let useRightArrow = false
-
-        if (typeof window !== "undefined") {
-            if (left + tooltipWidth > window.innerWidth - 16) {
-                left = coords.left + coords.width - tooltipWidth
-                useRightArrow = true
-            }
-            if (left < 16) {
-                left = 16
-                useRightArrow = false
-            }
-        }
-
-        arrowClass = useRightArrow
-            ? `${baseArrow} bottom-[-6px] right-6 border-r border-b`
-            : `${baseArrow} bottom-[-6px] left-6 border-r border-b`
-
-    } else if (currentStepData.placement === "left") {
-        left = coords.left - tooltipWidth - margin
-        top = coords.top
-        let useBottomArrow = false
-
-        if (typeof window !== "undefined") {
-            if (top + tooltipHeight > window.innerHeight - 16) {
-                top = coords.top + coords.height - tooltipHeight
-                useBottomArrow = true
-            }
-            if (top < 16) {
-                top = 16
-                useBottomArrow = false
-            }
-        }
-
-        arrowClass = useBottomArrow
-            ? `${baseArrow} right-[-6px] bottom-6 border-r border-t`
-            : `${baseArrow} right-[-6px] top-6 border-r border-t`
-
-    } else if (currentStepData.placement === "right") {
-        left = coords.left + coords.width + margin
-        top = coords.top
-        let useBottomArrow = false
-
-        if (typeof window !== "undefined") {
-            if (top + tooltipHeight > window.innerHeight - 16) {
-                top = coords.top + coords.height - tooltipHeight
-                useBottomArrow = true
-            }
-            if (top < 16) {
-                top = 16
-                useBottomArrow = false
-            }
-        }
-
-        arrowClass = useBottomArrow
-            ? `${baseArrow} left-[-6px] bottom-6 border-l border-b`
-            : `${baseArrow} left-[-6px] top-6 border-l border-b`
-    }
-
-    if (typeof window !== "undefined") {
-        if (left < 10) left = 10
-        if (left + tooltipWidth > window.innerWidth - 10) left = window.innerWidth - tooltipWidth - 10
-        if (top < 10) top = 10
-    }
-
-    return {
-        style: {
-            position: "absolute" as const,
-            top: `${top}px`,
-            left: `${left}px`,
-            width: `${tooltipWidth}px`,
-        },
-        arrowClass
-    }
 }
 
 export function GuidedTourOverlay({
@@ -161,16 +24,18 @@ export function GuidedTourOverlay({
     coords,
     isMobile,
     tooltipHeight,
+    viewport,
     tooltipRef,
     onNext,
     onBack,
     onFinish,
 }: GuidedTourOverlayProps) {
-    const { style, arrowClass } = getTooltipStyleAndArrow(
+    const { style, arrowClass } = getGuidedTourTooltipPosition(
         isMobile,
         coords,
         currentStepData,
         tooltipHeight,
+        viewport,
     )
 
     return (

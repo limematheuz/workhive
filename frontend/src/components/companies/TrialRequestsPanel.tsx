@@ -180,7 +180,7 @@ export function TrialRequestsPanel() {
                                         size="sm"
                                         disabled={request.status !== "email_verified"}
                                         onClick={() => openApproval(request)}
-                                        className="gap-2 rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                                        className="gap-2 rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                                     >
                                         <CheckCircle2 className="h-4 w-4" />
                                         Aprobar
@@ -190,7 +190,7 @@ export function TrialRequestsPanel() {
                                         variant="ghost"
                                         disabled={request.status === "approved" || request.status === "rejected"}
                                         onClick={() => setRejectTarget(request)}
-                                        className="gap-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                                        className="gap-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                                     >
                                         <XCircle className="h-4 w-4" />
                                         Rechazar
@@ -245,14 +245,14 @@ export function TrialRequestsPanel() {
                                 type="button"
                                 variant="ghost"
                                 onClick={() => setSelectedRequest(null)}
-                                className="rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] transition-all hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
+                                className="rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
                             >
                                 Cancelar
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={submitting}
-                                className="rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm transition-all hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0"
+                                className="rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0"
                             >
                                 {submitting ? "Aprobando..." : "Aprobar y enviar acceso"}
                             </Button>
@@ -266,7 +266,11 @@ export function TrialRequestsPanel() {
                     <DialogHeader>
                         <DialogTitle>Rechazar solicitud</DialogTitle>
                     </DialogHeader>
+                    <label className="sr-only" htmlFor="trial-rejection-note">
+                        Motivo interno opcional
+                    </label>
                     <textarea
+                        id="trial-rejection-note"
                         value={rejectNote}
                         onChange={(event) => setRejectNote(event.target.value)}
                         className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm"
@@ -277,7 +281,7 @@ export function TrialRequestsPanel() {
                             type="button"
                             variant="ghost"
                             onClick={() => setRejectTarget(null)}
-                            className="rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] transition-all hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
+                            className="rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
                         >
                             Cancelar
                         </Button>
@@ -285,7 +289,7 @@ export function TrialRequestsPanel() {
                             type="button"
                             disabled={submitting}
                             onClick={handleReject}
-                            className="rounded-xl border border-red-600 bg-red-600 text-white shadow-sm transition-all hover:-translate-y-0.5 hover:border-red-700 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40"
+                            className="rounded-xl border border-red-600 bg-red-600 text-white shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-700 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40"
                         >
                             Rechazar
                         </Button>

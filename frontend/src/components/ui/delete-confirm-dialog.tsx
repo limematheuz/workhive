@@ -53,7 +53,7 @@ export function DeleteConfirmDialog({
                     <button
                         type="button"
                         onClick={() => onOpenChange(false)}
-                        className="w-full bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] hover:bg-[var(--btn-neutral-hover-bg)] text-sm font-semibold rounded-xl px-5 py-2.5 cursor-pointer transition-all sm:w-auto"
+                        className="w-full bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] hover:bg-[var(--btn-neutral-hover-bg)] text-sm font-semibold rounded-xl px-5 py-2.5 cursor-pointer ui-motion sm:w-auto"
                     >
                         {cancelText}
                     </button>
@@ -61,7 +61,7 @@ export function DeleteConfirmDialog({
                         type="button"
                         onClick={onConfirm}
                         disabled={isDeleting}
-                        className={`w-full text-sm font-semibold rounded-xl px-5 py-2.5 border-none flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.98] disabled:opacity-60 sm:w-auto ${
+                        className={`w-full text-sm font-semibold rounded-xl px-5 py-2.5 border-none flex items-center justify-center gap-2 cursor-pointer ui-motion active:scale-[0.98] disabled:opacity-60 sm:w-auto ${
                             confirmVariant === "primary"
                                 ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]"
                                 : confirmVariant === "soft-danger"

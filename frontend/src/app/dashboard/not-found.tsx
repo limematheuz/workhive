@@ -17,7 +17,7 @@ export default function DashboardNotFound() {
             </p>
             <Link
                 href="/dashboard"
-                className="px-6 py-3 bg-accent text-black font-semibold rounded-xl hover:bg-accent/90 transition-all shadow-[0_0_20px_rgba(0,230,118,0.15)]"
+                className="px-6 py-3 bg-accent text-black font-semibold rounded-xl hover:bg-accent/90 ui-motion shadow-[0_0_20px_rgba(0,230,118,0.15)]"
             >
                 {dict.dashboard.not_found_back || "Volver al Dashboard"}
             </Link>

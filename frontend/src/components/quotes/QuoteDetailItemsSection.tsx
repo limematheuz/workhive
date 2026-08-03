@@ -46,9 +46,13 @@ export function QuoteDetailItemsSection({
                             return (
                                 <div
                                     key={item.clientKey}
-                                    className="grid grid-cols-[1fr_75px_100px_100px_36px] gap-3 items-start py-2 hover:bg-[var(--bg-primary)]/10 px-2 rounded-xl transition-all"
+                                    className="grid grid-cols-[1fr_75px_100px_100px_36px] gap-3 items-start py-2 hover:bg-[var(--bg-primary)]/10 px-2 rounded-xl ui-motion"
                                 >
+                                    <label className="sr-only" htmlFor={`quote-detail-item-${item.clientKey}-description`}>
+                                        Concepto
+                                    </label>
                                     <textarea
+                                        id={`quote-detail-item-${item.clientKey}-description`}
                                         value={item.description}
                                         onChange={(e) => onEditItemChange(index, "description", e.target.value)}
                                         placeholder="Descripción detallada de la línea..."
@@ -80,7 +84,7 @@ export function QuoteDetailItemsSection({
                                         type="button"
                                         aria-label="Eliminar línea"
                                         onClick={() => onRemoveEditItem(index)}
-                                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border-soft)] text-[var(--text-muted)] hover:text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] transition-all cursor-pointer bg-transparent mt-0.5"
+                                        className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border-soft)] text-[var(--text-muted)] hover:text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] ui-motion cursor-pointer bg-transparent mt-0.5"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -92,7 +96,7 @@ export function QuoteDetailItemsSection({
                     <button
                         type="button"
                         onClick={onAddEditItem}
-                        className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] transition-all cursor-pointer bg-transparent"
+                        className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] ui-motion cursor-pointer bg-transparent"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         {dict.invoices?.add_concept ?? "Añadir concepto"}

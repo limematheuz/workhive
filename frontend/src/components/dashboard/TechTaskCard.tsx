@@ -83,6 +83,7 @@ export function TechTaskCard({
                 weekday: "short",
                 month: "short",
                 day: "numeric",
+                timeZone: "UTC",
             });
         } catch {
             return "";
@@ -139,7 +140,7 @@ export function TechTaskCard({
                 }
             }}
             className={cn(
-                "surface-glass-card group relative isolate overflow-hidden rounded-3xl p-5 transition-all duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer hover:shadow-lg",
+                "surface-glass-card group relative isolate overflow-hidden rounded-3xl p-5 ui-motion duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer hover:shadow-lg",
                 isOverdue
                     ? "border-red-500/30 [background-color:color-mix(in_srgb,rgb(239_68_68)_6%,var(--surface-card-bg))] hover:border-red-500/50"
                     : isCompleted
@@ -243,7 +244,7 @@ export function TechTaskCard({
                             size="sm"
                             variant="outline"
                             onClick={() => onReject(task.id)}
-                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-transparent px-3.5 text-[9px] font-black uppercase transition-all hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)]"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-transparent px-3.5 text-[9px] font-black uppercase ui-motion hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)]"
                         >
                             <X className="h-3.5 w-3.5 text-red-500" />
                             {dict.tech.btn_reject}
@@ -251,7 +252,7 @@ export function TechTaskCard({
                         <Button
                             size="sm"
                             onClick={() => onAccept(task.id)}
-                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-accent px-4 text-[9px] font-black uppercase text-white shadow-sm transition-all hover:bg-accent-light"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-accent px-4 text-[9px] font-black uppercase text-white shadow-sm ui-motion hover:bg-accent-light"
                         >
                             <Check className="h-3.5 w-3.5" />
                             {dict.tech.btn_accept}
@@ -273,7 +274,7 @@ export function TechTaskCard({
                         <Button
                             size="sm"
                             onClick={() => onViewDetails(task)}
-                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-accent px-4 text-[9px] font-black uppercase text-white shadow-sm transition-all hover:bg-accent-light"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-accent px-4 text-[9px] font-black uppercase text-white shadow-sm ui-motion hover:bg-accent-light"
                         >
                             <Clock className="h-3.5 w-3.5" />
                             {dict.tech?.card_btn_start || "Start"}
@@ -284,7 +285,7 @@ export function TechTaskCard({
                         <Button
                             size="sm"
                             onClick={() => onAccept(task.id)}
-                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-orange-500 px-4 text-[9px] font-black uppercase text-white shadow-sm transition-all hover:bg-orange-600"
+                            className="flex h-8 cursor-pointer items-center gap-1 rounded-xl border-none bg-orange-500 px-4 text-[9px] font-black uppercase text-white shadow-sm ui-motion hover:bg-orange-600"
                         >
                             <Check className="h-3.5 w-3.5" />
                             {dict.tech.btn_reaccept ?? "Re-accept"}

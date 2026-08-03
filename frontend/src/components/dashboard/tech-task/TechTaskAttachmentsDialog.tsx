@@ -40,7 +40,7 @@ export function TechTaskAttachmentsDialog({
                 </DialogHeader>
 
                 <div className="mt-4">
-                    <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-6 transition-all duration-200 hover:border-accent/50">
+                    <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-6 transition-colors duration-200 hover:border-accent/50">
                         <input
                             type="file"
                             accept="image/*"

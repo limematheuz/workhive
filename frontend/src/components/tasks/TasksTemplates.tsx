@@ -94,8 +94,12 @@ export function TasksTemplates({
                     </div>
                     {templates.length > 0 && (
                         <div className="relative w-full md:w-80">
+                            <label className="sr-only" htmlFor="template-search">
+                                Buscar servicio o paso
+                            </label>
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
                             <input
+                                id="template-search"
                                 type="search"
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { getTaskReportCategory, getTaskReportMediaHref } from "@/features/task-reports/task-report-center";
+import { formatTaskReportDate } from "@/features/task-reports/task-report-format";
 import {
     reportActionCluster,
     reportDangerBtn,
@@ -63,7 +64,7 @@ export function TaskReportDetailDialog({
                                 {labels[category]}
                             </Badge>
                             <time className="text-[11px] font-semibold text-[var(--text-muted)]">
-                                {new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(report.created_at))}
+                                {formatTaskReportDate(report.created_at, locale, "detail")}
                             </time>
                         </div>
                         <DialogTitle className="text-lg leading-snug">
@@ -84,6 +85,7 @@ export function TaskReportDetailDialog({
                                     src={mediaHref}
                                     alt={report.title || report.checklist_item_label || copy.view_photo}
                                     fill
+                                    sizes="(max-width: 640px) calc(100vw - 2.5rem), 20rem"
                                     unoptimized
                                     className="object-contain p-2"
                                 />
@@ -118,7 +120,7 @@ export function TaskReportDetailDialog({
                                 <Detail icon={Building2} label={report.reporter_company_name} />
                                 <Detail
                                     icon={CalendarClock}
-                                    label={new Intl.DateTimeFormat(locale, { dateStyle: "full", timeStyle: "short" }).format(new Date(report.created_at))}
+                                    label={formatTaskReportDate(report.created_at, locale, "full")}
                                 />
                                 {report.requesting_company_name && (
                                     <Detail

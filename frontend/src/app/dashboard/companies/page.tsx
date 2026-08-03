@@ -48,7 +48,7 @@ const EMPTY_PROVISION: CompanyProvisionData = {
     trial_days: "14",
 };
 
-export default function CompaniesAdminPage() {
+function useCompaniesAdminController() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const [companies, setCompanies] = useState<Company[]>([]);
@@ -242,7 +242,42 @@ export default function CompaniesAdminPage() {
         ];
     };
 
-    if (userLoading || loading) {
+    return {
+        companies,
+        deleteTarget,
+        dict,
+        expandedCompanyId,
+        formData,
+        getCompanyActions,
+        handleDeleteCompany,
+        handleFormSubmit,
+        handleProvisionSubmit,
+        handleStatusChange,
+        handleToggleMembers,
+        isEditOpen,
+        isProvisionOpen,
+        loading,
+        loadingCompanyId,
+        membersByCompany,
+        provisionData,
+        selectedCompanyRef,
+        setDeleteTarget,
+        setFormData,
+        setIsEditOpen,
+        setIsProvisionOpen,
+        setProvisionData,
+        setStatusTarget,
+        statusTarget,
+        submitting,
+        user,
+        userLoading,
+    };
+}
+
+export default function CompaniesAdminPage() {
+    const controller = useCompaniesAdminController();
+
+    if (controller.userLoading || controller.loading) {
         return (
             <div className="flex h-64 items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></div>
@@ -250,9 +285,45 @@ export default function CompaniesAdminPage() {
         );
     }
 
-    if (!isPlatformSuperadmin(user)) {
+    if (!isPlatformSuperadmin(controller.user)) {
         return null;
     }
+
+    return <CompaniesAdminPageContent controller={controller} />;
+}
+
+function CompaniesAdminPageContent({
+    controller,
+}: {
+    controller: ReturnType<typeof useCompaniesAdminController>;
+}) {
+    const {
+        companies,
+        deleteTarget,
+        dict,
+        expandedCompanyId,
+        formData,
+        getCompanyActions,
+        handleDeleteCompany,
+        handleFormSubmit,
+        handleProvisionSubmit,
+        handleStatusChange,
+        handleToggleMembers,
+        isEditOpen,
+        isProvisionOpen,
+        loadingCompanyId,
+        membersByCompany,
+        provisionData,
+        selectedCompanyRef,
+        setDeleteTarget,
+        setFormData,
+        setIsEditOpen,
+        setIsProvisionOpen,
+        setProvisionData,
+        setStatusTarget,
+        statusTarget,
+        submitting,
+    } = controller;
 
     return (
         <div className="max-w-7xl mx-auto space-y-8 text-[var(--text-main)] px-[3%] py-6 md:p-8">

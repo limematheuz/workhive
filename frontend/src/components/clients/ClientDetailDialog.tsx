@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useEffectEvent } from "react";
 import {
     Dialog,
     DialogContent,
@@ -53,34 +53,47 @@ export function ClientDetailDialog({
     const [taskSearch, setTaskSearch] = useState("");
     const [taskStatusFilter, setTaskStatusFilter] = useState<string>("ALL");
 
+    const finishLoading = useEffectEvent((cancelled: boolean) => {
+        if (!cancelled) {
+            setLoading(false);
+        }
+    });
+
     useEffect(() => {
         if (!client || !open) return;
+        let cancelled = false;
 
         const loadDetails = async () => {
             setLoading(true);
             try {
                 const locData = await LocationService.getLocations(client.id);
+                if (cancelled) return;
                 setLocations(locData);
 
                 const tasksPromises = locData.map(loc =>
                     TaskService.getTaskItems({ locationId: loc.id }).catch(() => [] as TaskItem[])
                 );
                 const tasksArrays = await Promise.all(tasksPromises);
+                if (cancelled) return;
                 setTasks(tasksArrays.flat());
 
                 const usersData = await UserService.getUsers().catch(() => [] as User[]);
                 const filteredUsers = user?.role?.name === "superadmin"
                     ? usersData
                     : usersData.filter(u => u.role?.name !== "superadmin");
+                if (cancelled) return;
                 setUsers(filteredUsers);
             } catch (err) {
                 console.error("Error loading client detailed dashboard", err);
             } finally {
-                setLoading(false);
+                finishLoading(cancelled);
             }
         };
 
-        loadDetails();
+        void loadDetails();
+        return () => {
+            cancelled = true;
+        };
     }, [client, open, user?.role?.name]);
 
     if (!client) return null;

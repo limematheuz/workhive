@@ -95,7 +95,7 @@ export default function SubscriptionPage() {
                         return (
                             <div
                                 key={p.id}
-                                className={`rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 xl:p-7 flex flex-col justify-between relative transition-all duration-300 hover:translate-y-[-4px] hover:shadow-2xl ${
+                                className={`rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 xl:p-7 flex flex-col justify-between relative ui-motion duration-300 hover:translate-y-[-4px] hover:shadow-2xl ${
                                     p.popular ? "ring-2 ring-accent/50 shadow-lg" : ""
                                 }`}
                             >
@@ -149,7 +149,7 @@ export default function SubscriptionPage() {
                                 <div className="mt-6 pt-2 xl:mt-8">
                                     <Link
                                         href={p.link}
-                                        className={`w-full block text-center font-bold rounded-xl py-3 text-xs transition-all tracking-wider uppercase cursor-pointer ${
+                                        className={`w-full block text-center font-bold rounded-xl py-3 text-xs ui-motion tracking-wider uppercase cursor-pointer ${
                                             p.popular
                                                 ? "bg-[var(--text-main)] text-[var(--bg-primary)] hover:opacity-90 shadow-lg shadow-accent/10"
                                                 : "bg-[var(--bg-tertiary)] border border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] text-[var(--text-main)]"

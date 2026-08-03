@@ -36,7 +36,7 @@ export function TasksListPagination({
                     type="button"
                     disabled={safeCurrentPage === 1}
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer font-bold"
+                    className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed ui-motion cursor-pointer font-bold"
                 >
                     {dict.tasks?.prev_page || "Previous"}
                 </button>
@@ -52,7 +52,7 @@ export function TasksListPagination({
                             key={p}
                             type="button"
                             onClick={() => setCurrentPage(p as number)}
-                            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold ${
+                            className={`px-3 py-1.5 rounded-xl border ui-motion cursor-pointer font-bold ${
                                 safeCurrentPage === p
                                     ? "bg-accent border-accent text-white animate-none"
                                     : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]"
@@ -67,7 +67,7 @@ export function TasksListPagination({
                     type="button"
                     disabled={safeCurrentPage === totalPages}
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer font-bold"
+                    className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed ui-motion cursor-pointer font-bold"
                 >
                     {dict.tasks?.next_page || "Next"}
                 </button>

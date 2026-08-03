@@ -1,6 +1,7 @@
 import { Camera, ChevronRight, FileText, MapPin, ShieldAlert, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { formatTaskReportDate } from "@/features/task-reports/task-report-format";
 import { getTaskReportCategory } from "@/features/task-reports/task-report-center";
 import type { TaskReport } from "@/services/task-report.service";
 
@@ -75,7 +76,7 @@ export function TaskReportCard({
                     </span>
                     <span className="flex shrink-0 flex-col items-end gap-1">
                         <time className="text-[10px] font-semibold tabular-nums text-[var(--text-muted)]">
-                            {new Intl.DateTimeFormat(locale, { dateStyle: "short", timeStyle: "short" }).format(new Date(report.created_at))}
+                            {formatTaskReportDate(report.created_at, locale, "card")}
                         </time>
                         {!selectionMode && (
                             <ChevronRight className="h-3.5 w-3.5 text-[var(--text-muted)] transition group-hover:translate-x-0.5 group-hover:text-accent" />

@@ -207,7 +207,7 @@ function TechDashboardInner({
                         ) : (
                             <div className="space-y-6">
                                 {dashboardTasks.tasksByLocation.map(item => (
-                                    <div key={item.location.id} className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-sm transition-all hover:shadow-md">
+                                    <div key={item.location.id} className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-sm ui-motion hover:shadow-md">
                                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3">
                                             <div className="flex items-center gap-2.5">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10 text-[var(--text-main)]">

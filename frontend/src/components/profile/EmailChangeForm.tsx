@@ -103,7 +103,7 @@ export function EmailChangeForm({ user, dict }: EmailChangeFormProps) {
                                 value={newEmail}
                                 onChange={(event) => setNewEmail(event.target.value)}
                                 placeholder={copy.email_change_placeholder}
-                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 pl-10 pr-4 text-sm text-[var(--text-main)] outline-none transition-all focus:border-accent/70 focus:ring-2 focus:ring-accent/10"
+                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 pl-10 pr-4 text-sm text-[var(--text-main)] outline-none ui-motion focus:border-accent/70 focus:ring-2 focus:ring-accent/10"
                             />
                         </div>
                     </div>
@@ -122,7 +122,7 @@ export function EmailChangeForm({ user, dict }: EmailChangeFormProps) {
                                 value={currentPassword}
                                 onChange={(event) => setCurrentPassword(event.target.value)}
                                 placeholder={copy.email_change_password_placeholder}
-                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 pl-10 pr-10 text-sm text-[var(--text-main)] outline-none transition-all focus:border-accent/70 focus:ring-2 focus:ring-accent/10"
+                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 pl-10 pr-10 text-sm text-[var(--text-main)] outline-none ui-motion focus:border-accent/70 focus:ring-2 focus:ring-accent/10"
                             />
                             <button
                                 type="button"

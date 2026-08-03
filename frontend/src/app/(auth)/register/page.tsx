@@ -83,7 +83,7 @@ function RegisterPageContent() {
                 <div className="mt-6 flex flex-col justify-between gap-4 border-t border-[var(--border-soft)] pt-6 sm:flex-row">
                     <Link
                         href="/login"
-                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--btn-secondary-bg)] border border-[var(--btn-secondary-border)] px-5 text-xs font-bold text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)] transition-all uppercase tracking-wider justify-center"
+                        className="inline-flex h-11 items-center gap-2 rounded-xl bg-[var(--btn-secondary-bg)] border border-[var(--btn-secondary-border)] px-5 text-xs font-bold text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)] ui-motion uppercase tracking-wider justify-center"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         {locale === "es" ? "Iniciar Sesión" : "Login"}
@@ -92,13 +92,13 @@ function RegisterPageContent() {
                     <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
                         <Link
                             href="/subscription"
-                            className="inline-flex h-11 items-center justify-center rounded-xl bg-accent dark:bg-accent hover:bg-accent-light dark:hover:bg-accent text-white font-bold px-5 text-xs tracking-wider uppercase transition-all"
+                            className="inline-flex h-11 items-center justify-center rounded-xl bg-accent dark:bg-accent hover:bg-accent-light dark:hover:bg-accent text-white font-bold px-5 text-xs tracking-wider uppercase ui-motion"
                         >
                             {locale === "es" ? "Ver Planes" : "See Plans"}
                         </Link>
                         <Link
                             href="/contact?reason=trial"
-                            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)] font-bold px-5 text-xs tracking-wider uppercase transition-all"
+                            className="inline-flex h-11 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)] font-bold px-5 text-xs tracking-wider uppercase ui-motion"
                         >
                             {locale === "es" ? "Contacto" : "Contact"}
                         </Link>

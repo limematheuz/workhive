@@ -50,7 +50,7 @@ export function ActiveCollaboratorsPanel({
                         return (
                             <article
                                 key={collab.id}
-                                className="border border-[var(--border-soft)] bg-[var(--bg-card)] rounded-3xl p-5 hover:shadow-md hover:translate-y-[-2px] transition-all duration-300 flex flex-col justify-between min-h-[170px]"
+                                className="flex min-h-[170px] flex-col justify-between rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md"
                             >
                                 <div className="space-y-3">
                                     <div className="flex items-start justify-between gap-3">
@@ -94,7 +94,7 @@ export function ActiveCollaboratorsPanel({
                                         variant="outline"
                                         size="sm"
                                         onClick={() => onUnlink(collab)}
-                                        className="gap-1.5 rounded-xl bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] h-8 text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-all"
+                                        className="gap-1.5 rounded-xl bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] h-8 text-[11px] font-semibold uppercase tracking-wider cursor-pointer ui-motion"
                                     >
                                         <XCircle className="w-3.5 h-3.5" /> Desvincular
                                     </Button>

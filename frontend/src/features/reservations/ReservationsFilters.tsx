@@ -94,7 +94,7 @@ export function ReservationsFilters({
                             updateFilter("location", event.target.value)
                         }
                         aria-label="Filtrar por propiedad"
-                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer transition-all"
+                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer ui-motion"
                     >
                         <option value="ALL">
                             {dict.reservations?.filters?.all_locations ||
@@ -229,7 +229,7 @@ export function ReservationsFilters({
                         <button
                             type="button"
                             onClick={onReset}
-                            className="btn-app-secondary inline-flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold shadow-sm transition-all hover:shadow-md"
+                            className="btn-app-secondary inline-flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold shadow-sm ui-motion hover:shadow-md"
                         >
                             <RotateCcw className="w-3.5 h-3.5" />
                             {dict.reservations?.filters?.reset_filters ||
@@ -242,7 +242,7 @@ export function ReservationsFilters({
             <div className="flex bg-[var(--bg-primary)]/40 p-1 border border-[var(--border-soft)] rounded-2xl w-full gap-1 my-4">
                 <button type="button"
                     onClick={() => onViewModeChange("active")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl transition-all cursor-pointer border-none text-xs font-bold uppercase tracking-wider select-none ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl ui-motion cursor-pointer border-none text-xs font-bold uppercase tracking-wider select-none ${
                         viewMode === "active"
                             ? "bg-accent text-white font-black shadow-md dark:bg-accent"
                             : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
@@ -259,7 +259,7 @@ export function ReservationsFilters({
                 </button>
                 <button type="button"
                     onClick={() => onViewModeChange("history")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl transition-all cursor-pointer border-none text-xs font-bold uppercase tracking-wider select-none ${
+                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl ui-motion cursor-pointer border-none text-xs font-bold uppercase tracking-wider select-none ${
                         viewMode === "history"
                             ? "bg-accent text-white font-black shadow-md dark:bg-accent"
                             : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"

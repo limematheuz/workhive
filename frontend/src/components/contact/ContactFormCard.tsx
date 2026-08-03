@@ -4,7 +4,7 @@ import { CheckCircle2, Send } from "lucide-react";
 import type { ContactFormState } from "@/lib/contact-form";
 
 const fieldClassName =
-    "w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] transition-all";
+    "w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion";
 
 type ContactFormCardProps = {
     locale: string;
@@ -169,7 +169,7 @@ export function ContactFormCard({
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg-primary)] hover:opacity-90 font-bold rounded-xl py-3.5 transition-all shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)] cursor-pointer"
+                            className="w-full flex items-center justify-center gap-2 bg-[var(--text-main)] text-[var(--bg-primary)] hover:opacity-90 font-bold rounded-xl py-3.5 ui-motion shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)] cursor-pointer"
                         >
                             <Send className="w-4 h-4" />
                             {submitting
