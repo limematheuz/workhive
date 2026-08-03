@@ -1,0 +1,396 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Regional AWS WAF protection for the WorkHive public Application Load Balancer.",
+  "Parameters": {
+    "ApplicationLoadBalancerArn": {
+      "Type": "String",
+      "Description": "ARN of the public ALB that receives WorkHive traffic."
+    },
+    "PublicWriteRateLimit": {
+      "Type": "Number",
+      "Default": 60,
+      "MinValue": 10,
+      "MaxValue": 10000,
+      "Description": "Maximum public write requests per source IP in 60 seconds."
+    },
+    "ApiRateLimit": {
+      "Type": "Number",
+      "Default": 1200,
+      "MinValue": 10,
+      "MaxValue": 100000,
+      "Description": "Maximum API requests per source IP in 60 seconds."
+    },
+    "SiteRateLimit": {
+      "Type": "Number",
+      "Default": 5000,
+      "MinValue": 10,
+      "MaxValue": 100000,
+      "Description": "Maximum total site requests per source IP in 60 seconds."
+    }
+  },
+  "Resources": {
+    "WorkHiveWebAcl": {
+      "Type": "AWS::WAFv2::WebACL",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-web-acl"
+        },
+        "Description": "Blocks common attacks and high-rate HTTP abuse before it reaches WorkHive.",
+        "Scope": "REGIONAL",
+        "DefaultAction": {
+          "Allow": {}
+        },
+        "CustomResponseBodies": {
+          "RateLimited": {
+            "ContentType": "APPLICATION_JSON",
+            "Content": "{\"detail\":\"Too many requests. Try again later.\"}"
+          }
+        },
+        "Rules": [
+          {
+            "Name": "AWS-Amazon-IP-Reputation",
+            "Priority": 0,
+            "OverrideAction": {
+              "None": {}
+            },
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesAmazonIpReputationList"
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHiveAmazonIpReputation"
+            }
+          },
+          {
+            "Name": "AWS-Core-Rule-Set",
+            "Priority": 1,
+            "OverrideAction": {
+              "None": {}
+            },
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesCommonRuleSet",
+                "RuleActionOverrides": [
+                  {
+                    "Name": "SizeRestrictions_BODY",
+                    "ActionToUse": {
+                      "Count": {}
+                    }
+                  }
+                ]
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHiveCoreRuleSet"
+            }
+          },
+          {
+            "Name": "AWS-Known-Bad-Inputs",
+            "Priority": 2,
+            "OverrideAction": {
+              "None": {}
+            },
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesKnownBadInputsRuleSet"
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHiveKnownBadInputs"
+            }
+          },
+          {
+            "Name": "AWS-SQL-Injection",
+            "Priority": 3,
+            "OverrideAction": {
+              "None": {}
+            },
+            "Statement": {
+              "ManagedRuleGroupStatement": {
+                "VendorName": "AWS",
+                "Name": "AWSManagedRulesSQLiRuleSet"
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHiveSqlInjection"
+            }
+          },
+          {
+            "Name": "Public-Write-Rate-Limit",
+            "Priority": 10,
+            "Action": {
+              "Block": {
+                "CustomResponse": {
+                  "ResponseCode": 429,
+                  "CustomResponseBodyKey": "RateLimited",
+                  "ResponseHeaders": [
+                    {
+                      "Name": "Retry-After",
+                      "Value": "60"
+                    }
+                  ]
+                }
+              }
+            },
+            "Statement": {
+              "RateBasedStatement": {
+                "AggregateKeyType": "IP",
+                "Limit": {
+                  "Ref": "PublicWriteRateLimit"
+                },
+                "EvaluationWindowSec": 60,
+                "ScopeDownStatement": {
+                  "OrStatement": {
+                    "Statements": [
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "EXACTLY",
+                          "SearchString": "/api/v1/auth/login",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "EXACTLY",
+                          "SearchString": "/api/v1/auth/register",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "EXACTLY",
+                          "SearchString": "/api/v1/auth/forgot-password",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "STARTS_WITH",
+                          "SearchString": "/api/v1/contact",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "STARTS_WITH",
+                          "SearchString": "/api/v1/trial-requests",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "EXACTLY",
+                          "SearchString": "/api/v1/user-invitations/accept",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      },
+                      {
+                        "ByteMatchStatement": {
+                          "FieldToMatch": {
+                            "UriPath": {}
+                          },
+                          "PositionalConstraint": "EXACTLY",
+                          "SearchString": "/api/v1/traffic/page-view",
+                          "TextTransformations": [
+                            {
+                              "Priority": 0,
+                              "Type": "NONE"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHivePublicWriteRateLimit"
+            }
+          },
+          {
+            "Name": "API-Rate-Limit",
+            "Priority": 11,
+            "Action": {
+              "Block": {
+                "CustomResponse": {
+                  "ResponseCode": 429,
+                  "CustomResponseBodyKey": "RateLimited",
+                  "ResponseHeaders": [
+                    {
+                      "Name": "Retry-After",
+                      "Value": "60"
+                    }
+                  ]
+                }
+              }
+            },
+            "Statement": {
+              "RateBasedStatement": {
+                "AggregateKeyType": "IP",
+                "Limit": {
+                  "Ref": "ApiRateLimit"
+                },
+                "EvaluationWindowSec": 60,
+                "ScopeDownStatement": {
+                  "ByteMatchStatement": {
+                    "FieldToMatch": {
+                      "UriPath": {}
+                    },
+                    "PositionalConstraint": "STARTS_WITH",
+                    "SearchString": "/api/",
+                    "TextTransformations": [
+                      {
+                        "Priority": 0,
+                        "Type": "NONE"
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHiveApiRateLimit"
+            }
+          },
+          {
+            "Name": "Site-Rate-Limit",
+            "Priority": 12,
+            "Action": {
+              "Block": {
+                "CustomResponse": {
+                  "ResponseCode": 429,
+                  "CustomResponseBodyKey": "RateLimited",
+                  "ResponseHeaders": [
+                    {
+                      "Name": "Retry-After",
+                      "Value": "60"
+                    }
+                  ]
+                }
+              }
+            },
+            "Statement": {
+              "RateBasedStatement": {
+                "AggregateKeyType": "IP",
+                "Limit": {
+                  "Ref": "SiteRateLimit"
+                },
+                "EvaluationWindowSec": 60
+              }
+            },
+            "VisibilityConfig": {
+              "SampledRequestsEnabled": false,
+              "CloudWatchMetricsEnabled": true,
+              "MetricName": "WorkHiveSiteRateLimit"
+            }
+          }
+        ],
+        "VisibilityConfig": {
+          "SampledRequestsEnabled": false,
+          "CloudWatchMetricsEnabled": true,
+          "MetricName": "WorkHiveEdgeWebAcl"
+        },
+        "Tags": [
+          {
+            "Key": "Application",
+            "Value": "WorkHive"
+          },
+          {
+            "Key": "ManagedBy",
+            "Value": "CloudFormation"
+          }
+        ]
+      }
+    },
+    "WebAclAssociation": {
+      "Type": "AWS::WAFv2::WebACLAssociation",
+      "Properties": {
+        "ResourceArn": {
+          "Ref": "ApplicationLoadBalancerArn"
+        },
+        "WebACLArn": {
+          "Fn::GetAtt": [
+            "WorkHiveWebAcl",
+            "Arn"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "WebAclArn": {
+      "Description": "ARN of the regional Web ACL associated with the public ALB.",
+      "Value": {
+        "Fn::GetAtt": [
+          "WorkHiveWebAcl",
+          "Arn"
+        ]
+      }
+    }
+  }
+}

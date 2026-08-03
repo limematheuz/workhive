@@ -1,0 +1,51 @@
+{
+	# Only trust forwarded client information after the EC2 security group accepts
+	# traffic exclusively from the ALB security group.
+	servers {
+		trusted_proxies static private_ranges
+		trusted_proxies_strict
+	}
+}
+
+# TLS terminates at the public ALB. An explicit HTTP site prevents Caddy from
+# redirecting the ALB's origin requests back to HTTPS.
+:80 {
+	encode zstd gzip
+
+	# ALB health checks use the target IP in Host. Keep this route host-agnostic
+	# so the target is considered healthy only when the backend is reachable.
+	handle /health* {
+		reverse_proxy backend:8000 {
+			header_up X-Forwarded-Proto https
+		}
+	}
+
+	@app_host host {$APP_DOMAIN}
+	handle @app_host {
+		handle /api/* {
+			# Keep oversized request bodies out of the application process.
+			request_body {
+				max_size 6MB
+			}
+			reverse_proxy backend:8000 {
+				# Caddy reaches the backend over HTTP; preserve the client-facing HTTPS
+				# scheme so FastAPI's HTTPS enforcement does not redirect in a loop.
+				header_up X-Forwarded-Proto https
+			}
+		}
+
+		handle /uploads/* {
+			reverse_proxy backend:8000 {
+				header_up X-Forwarded-Proto https
+			}
+		}
+
+		handle {
+			reverse_proxy frontend:3000 {
+				header_up X-Forwarded-Proto https
+			}
+		}
+	}
+
+	respond "Misdirected request" 421
+}

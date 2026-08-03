@@ -93,6 +93,35 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r requirements-dev.txt
 
+      - name: Validate edge WAF template
+        working-directory: .
+        env:
+          POSTGRES_PASSWORD: compose-test-password
+          SECRET_KEY: compose-test-secret
+          APP_DOMAIN: example.test
+          BACKEND_IMAGE: registry.example/workhive/backend:v1.2.0
+          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.2.0
+        run: |
+          python ops/security/test_waf_template.py
+          python ops/security/test_edge_configuration.py
+          docker run --rm \
+            -e APP_DOMAIN=example.test \
+            -v "$PWD/ops/security/Caddyfile.alb:/etc/caddy/Caddyfile:ro" \
+            caddy:2.10-alpine \
+            caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.production.yml \
+            -f ops/security/docker-compose.alb.yml \
+            config --format json \
+            | jq -e '
+                any(
+                  .services.caddy.volumes[];
+                  .target == "/etc/caddy/Caddyfile"
+                  and (.source | endswith("/ops/security/Caddyfile.alb"))
+                )
+              '
+
       - name: Apply and verify PostgreSQL migrations
         run: alembic upgrade head
 
