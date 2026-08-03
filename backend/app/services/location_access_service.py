@@ -28,6 +28,11 @@ def _is_direct_company_location(location: Location, company_id: int | None) -> b
     )
 
 
+def _is_service_provider_access(access) -> bool:
+    """Service providers execute work but never administer guest reservations."""
+    return access.relationship_type in {"service_provider", "default_service_provider"}
+
+
 def require_accessible_location(db: Session, current_user: User, location_id: int) -> Location:
     company_id = scoped_company_id(current_user)
     location = location_repo.get_location_by_id(db, location_id, company_id)
@@ -54,7 +59,14 @@ def require_location_capability(
         return location
         
     access = access_repo.get_access(db, location_id, current_user.company_id)
-    if not access or not getattr(access, capability, False):
+    if (
+        not access
+        or not getattr(access, capability, False)
+        or (
+            capability == "can_manage_reservations"
+            and _is_service_provider_access(access)
+        )
+    ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Your company does not have {capability} permission for this location",
@@ -73,7 +85,14 @@ def has_location_capability(
         return True
         
     access = access_repo.get_access(db, location.id, current_user.company_id)
-    if not access or not getattr(access, capability, False):
+    if (
+        not access
+        or not getattr(access, capability, False)
+        or (
+            capability == "can_manage_reservations"
+            and _is_service_provider_access(access)
+        )
+    ):
         return False
     return True
 
@@ -92,6 +111,10 @@ def has_location_capability_loaded(
     return any(
         access.company_id == current_user.company_id
         and bool(getattr(access, capability, False))
+        and not (
+            capability == "can_manage_reservations"
+            and _is_service_provider_access(access)
+        )
         for access in location.company_access
     )
 

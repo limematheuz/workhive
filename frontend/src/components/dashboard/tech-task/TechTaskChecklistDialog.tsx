@@ -126,7 +126,7 @@ function TechTaskChecklistDialogContent({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="dialog-glass-overlay"
-                className={`flex h-[100dvh] w-full max-w-none flex-col gap-0 overflow-hidden rounded-none border-x-0 border-b-0 p-0 !left-0 !right-0 !top-0 !bottom-auto !m-0 sm:!inset-0 sm:m-auto sm:h-auto sm:max-h-[min(88dvh,760px)] sm:max-w-xl sm:rounded-3xl sm:border-x sm:border-b ${scrollHide}`}
+                className={`flex h-[min(92dvh,760px)] w-[calc(100%-2rem)] max-w-xl flex-col gap-0 overflow-hidden rounded-3xl p-0 ${scrollHide}`}
             >
                 <DialogHeader className="shrink-0 space-y-1 border-b border-[var(--border-soft)] px-4 py-3 pr-14 text-left sm:px-5 sm:pr-16">
                     <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">

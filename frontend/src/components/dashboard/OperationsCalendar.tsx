@@ -236,8 +236,6 @@ export function OperationsCalendar({
                 deletingTask={state.isDeletingTask}
                 selectedTask={state.selectedTask}
                 setSelectedTask={state.setSelectedTask}
-                editTitle={state.editTitle}
-                setEditTitle={state.setEditTitle}
                 editNotes={state.editNotes}
                 setEditNotes={state.setEditNotes}
                 editDescription={state.editDescription}

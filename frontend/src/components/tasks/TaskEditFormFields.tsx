@@ -18,7 +18,6 @@ import { resolveTaskEditChecklist } from "@/lib/resolve-task-edit-checklist";
 type TaskEditFormFieldsProps = {
     dict: Dictionary;
     calendarAssigneeName: string;
-    displayTitle: string;
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
@@ -28,7 +27,6 @@ type TaskEditFormFieldsProps = {
     editPriority: TaskPriority;
     editQuantity: string;
     editStatus: TaskStatus;
-    editTitle: string;
     editUnit: string;
     isReceiverCompany: boolean;
     managerEditable: boolean;
@@ -53,7 +51,6 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
     const {
         dict,
         calendarAssigneeName,
-        displayTitle,
         editCreatedAt,
         editDescription,
         editLocationId,
@@ -63,7 +60,6 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         editPriority,
         editQuantity,
         editStatus,
-        editTitle,
         editUnit,
         isReceiverCompany,
         managerEditable,
@@ -103,22 +99,11 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         );
     };
 
-    const labelClass = "text-[10px] font-black uppercase tracking-wider text-[var(--text-muted)]";
-
     return (
         <>
             <div className="space-y-1">
-                <span className={labelClass}>
-                    {dict.tasks?.dialog?.title_label || "Title"}
-                </span>
-                <div className="min-h-10 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm font-semibold text-[var(--text-main)]">
-                    {isReceiverCompany ? displayTitle : editTitle}
-                </div>
-            </div>
-
-            <div className="space-y-1">
                 <label htmlFor="task-edit-description" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
-                    Descripción
+                    Notas internas
                 </label>
                 <textarea
                     id="task-edit-description"
@@ -174,7 +159,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
 
                 <div className="space-y-1">
                     <span className="text-2xs mb-0.5 block font-bold uppercase text-[var(--text-muted)]">
-                        Calendario
+                        Responsable
                     </span>
                     <div className="flex h-9 w-full cursor-not-allowed items-center truncate rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-muted)] opacity-80">
                         {calendarAssigneeName}

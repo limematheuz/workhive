@@ -48,14 +48,14 @@ export function TaskCreateMainFields({
 
                 <div className="space-y-2">
                     <span className="text-2xs uppercase font-black text-[var(--text-main)] flex items-end tracking-wider sm:min-h-[36px] pb-0.5">
-                        <span>Calendario</span>
+                        <span>Responsable</span>
                     </span>
                     <div className="flex h-10 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs font-bold text-[var(--text-main)] shadow-xs">
                         <Lock className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                         <span className="truncate">{calendarOwnerName}</span>
                     </div>
                     <p className="text-[10px] font-semibold leading-snug text-[var(--text-muted)]">
-                        La tarea principal se asigna al calendario sincronizado. Los trabajadores se asignan abajo en el checklist.
+                        Coordina esta tarea. Los trabajadores se asignan abajo, en el checklist.
                     </p>
                 </div>
 

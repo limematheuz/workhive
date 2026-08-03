@@ -8,24 +8,10 @@ import { cleanChecklistDescription } from "@/lib/format";
 import { WorkSessionService } from "@/services/work-session.service";
 import { formatHoursShort } from "@/lib/format-hours";
 import { localizeTaskDescription, taskLocationTitle } from "@/lib/task-display";
-
-const parseChecklist = (desc: string | null | undefined) => {
-    if (!desc) return [];
-    const lines = desc.split("\n");
-    const items: { text: string; checked: boolean; assignedUserId?: number; assignedUserName?: string }[] = [];
-    lines.forEach((line) => {
-        const match = line.match(/^\s*[-*]?\s*\[\s*([xX\s])\s*\]\s*(.+?)(?:\s*\(@\d+.*?\))?$/);
-        if (match) {
-            items.push({
-                text: match[2].trim(),
-                checked: match[1].toLowerCase() === "x",
-                assignedUserId: match[3] ? parseInt(match[3], 10) : undefined,
-                assignedUserName: match[4] || undefined
-            });
-        }
-    });
-    return items;
-};
+import {
+    getCalendarKanbanAssignee,
+    parseCalendarKanbanChecklist,
+} from "./calendar-kanban-card-utils";
 
 interface CalendarKanbanCardProps {
     task: TaskItem;
@@ -51,16 +37,12 @@ export function CalendarKanbanCard({
     canDrag = true,
 }: CalendarKanbanCardProps) {
     const { dict } = useDictionary();
-    const fallbackIdentity = getUserInitials(task.user_id);
-    const displayPersonName = task.accepted_by_name || getUserFullName(task.user_id);
-    const displayInitials = task.accepted_by_name
-        ? task.accepted_by_name
-            .split(/\s+/)
-            .map(part => part[0])
-            .join("")
-            .slice(0, 2)
-            .toUpperCase()
-        : fallbackIdentity.initials;
+    const assignee = getCalendarKanbanAssignee(
+        task,
+        getUserFullName,
+        getUserInitials,
+        dict.tasks?.kanban?.accepted_by || "Aceptada por",
+    );
     const locationName = getLocationName(task.location_id);
     const isCompleted = task.status === "completed";
     const localizedDescription = localizeTaskDescription(task.description);
@@ -101,7 +83,7 @@ export function CalendarKanbanCard({
         return () => { cancelled = true; };
     }, [task.id]);
 
-    const checklist = parseChecklist(localizedDescription);
+    const checklist = parseCalendarKanbanChecklist(localizedDescription);
     const progress = checklist.length > 0
         ? Math.round((checklist.filter(item => item.checked).length / checklist.length) * 100)
         : (task.status === "completed" ? 100 : 18);
@@ -277,15 +259,13 @@ export function CalendarKanbanCard({
             <div className="relative z-10 pointer-events-none px-4 pb-4 pt-1 flex items-center justify-between gap-3">
                 <div className="flex items-center min-w-0">
                     <div
-                        className={`w-7 h-7 rounded-full ${fallbackIdentity.bgColor} flex items-center justify-center text-[10px] font-black text-white shrink-0 ring-2 ring-white/70`}
-                        title={displayPersonName}
+                        className={`w-7 h-7 rounded-full ${assignee.backgroundClass} flex items-center justify-center text-[10px] font-black text-white shrink-0 ring-2 ring-white/70`}
+                        title={assignee.name}
                     >
-                        {displayInitials}
+                        {assignee.initials}
                     </div>
                     <span className="ml-2 text-2xs text-[var(--text-muted)] font-semibold truncate">
-                        {task.accepted_by_name
-                            ? `${dict.tasks?.kanban?.accepted_by || "Aceptada por"} ${displayPersonName}`
-                            : displayPersonName}
+                        {assignee.label}
                     </span>
                 </div>
 

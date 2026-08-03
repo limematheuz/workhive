@@ -86,8 +86,6 @@ export function ReservationsRequestsSection({
                         taskCrud.setSelectedTask(task);
                     }
                 }}
-                editTitle={taskCrud.editTitle}
-                setEditTitle={taskCrud.setEditTitle}
                 editNotes={taskCrud.editNotes}
                 setEditNotes={taskCrud.setEditNotes}
                 editDescription={taskCrud.editDescription}

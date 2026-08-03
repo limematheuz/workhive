@@ -51,14 +51,15 @@ test("next pending action selects first unanswered item and handles completion",
     assert.equal(getFirstPendingChecklistItem(items.map(item => ({ ...item, answer: "yes" as const }))), null);
 });
 
-test("mobile checklist owns one vertical scroll and keeps its translucent footer visible", () => {
+test("checklist requirements open in a centered dialog with one vertical scroll", () => {
     assert.equal(dialogSource.match(/overflow-y-auto/g)?.length, 1);
-    assert.match(dialogSource, /h-\[100dvh\]/);
+    assert.match(dialogSource, /h-\[min\(92dvh,760px\)\]/);
+    assert.match(dialogSource, /w-\[calc\(100%-2rem\)\]/);
     assert.match(dialogSource, /scrollbar-width:none/);
     assert.match(dialogSource, /dialog-glass-chrome/);
     assert.match(dialogSource, /shrink-0/);
-    assert.doesNotMatch(dialogSource, /sm:-translate-x-1\/2/);
-    assert.doesNotMatch(dialogSource, /sm:-translate-y-1\/2/);
+    assert.doesNotMatch(dialogSource, /!left-0/);
+    assert.doesNotMatch(dialogSource, /!top-0/);
 });
 
 test("requirement cards keep compact pill controls in a single action row", () => {
