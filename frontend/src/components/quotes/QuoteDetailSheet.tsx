@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { useRouter } from "next/navigation"
 import { FileText } from "lucide-react"
 import {
     Dialog,
@@ -35,6 +34,7 @@ interface QuoteDetailSheetProps {
     onOpenChange: (open: boolean) => void
     clients: Client[]
     onQuoteUpdated: () => void
+    onEditQuote: (quote: Quote) => void
     companyName?: string
     companyLogo?: string | null
 }
@@ -45,11 +45,11 @@ export function QuoteDetailSheet({
     onOpenChange,
     clients,
     onQuoteUpdated,
+    onEditQuote,
     companyName,
     companyLogo,
 }: QuoteDetailSheetProps) {
     const { dict } = useDictionary()
-    const router = useRouter()
     const [loading, setLoading] = React.useState(false)
     const [showRegisterClientPrompt, setShowRegisterClientPrompt] = React.useState(false)
     const [showEmailDialog, setShowEmailDialog] = React.useState(false)
@@ -169,8 +169,7 @@ export function QuoteDetailSheet({
                             onPrint={handlePrint}
                             onSendEmail={() => setShowEmailDialog(true)}
                             onEdit={() => {
-                                onOpenChange(false)
-                                router.push(`/dashboard/quotes/${quote.id}?edit=true`)
+                                onEditQuote(quote)
                             }}
                             onMarkSent={() => updateStatus("sent")}
                             onMarkAccepted={() => {

@@ -6,7 +6,7 @@ boto3==1.42.70
 certifi==2026.2.25
 cffi==2.0.0
 click==8.3.3
-cryptography==48.0.1
+cryptography==50.0.0
 dnspython==2.8.0
 email-validator==2.3.0
 fastapi==0.137.1
