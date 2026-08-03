@@ -224,6 +224,7 @@ def test_viewer_can_progress_only_own_checklist_until_all_assignees_finish(clien
     )
     assert created.status_code == 201, created.text
     task_id = created.json()["id"]
+    assert created.json()["status"] == "pending"
 
     assert task_id in _task_ids(client.get("/api/v1/task-items/", headers=_headers(first)))
     assert task_id in _task_ids(client.get("/api/v1/task-items/", headers=_headers(second)))
@@ -240,6 +241,13 @@ def test_viewer_can_progress_only_own_checklist_until_all_assignees_finish(clien
         },
     )
     assert illegal_edit.status_code == 403
+
+    activated = client.patch(
+        f"/api/v1/task-items/{task_id}",
+        headers=_headers(admin),
+        json={"status": "progress"},
+    )
+    assert activated.status_code == 200, activated.text
 
     start_first = client.post(
         f"/api/v1/task-items/{task_id}/start-work",

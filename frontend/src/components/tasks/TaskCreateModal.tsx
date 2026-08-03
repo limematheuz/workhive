@@ -17,6 +17,7 @@ import {
 import { TaskCreateMainFields } from "./TaskCreateMainFields";
 import { TaskCreateReservationSection } from "./TaskCreateReservationSection";
 import { TaskCreateHouseChecklistSection } from "./TaskCreateHouseChecklistSection";
+import { canManageLocationReservations } from "@/features/reservations/reservation-helpers";
 import {
     taskDialogBodyClass,
     taskDialogContentClass,
@@ -99,6 +100,13 @@ export function TaskCreateModal({
         || location.managing_company_id === currentCompanyId
         || (!location.owner_company_id && !location.managing_company_id)
     ));
+    const selectedLocation = locations.find(
+        (location) => location.id.toString() === newLocationId,
+    );
+    const canLinkReservations = Boolean(
+        selectedLocation
+        && canManageLocationReservations(selectedLocation, currentCompanyId),
+    );
     const visibleHouseTemplates = React.useMemo(
         () => houseTemplates.filter((houseTemplate) =>
             templates.some((template) => template.id === houseTemplate.template_task_id)
@@ -146,7 +154,7 @@ export function TaskCreateModal({
                             setNewCreatedAt={setNewCreatedAt}
                         />
 
-                        {newLocationId && (
+                        {newLocationId && canLinkReservations && (
                             <TaskCreateReservationSection
                                 loadingReservations={loadingReservations}
                                 availableReservations={availableReservations}

@@ -46,6 +46,7 @@ interface UseTaskCrudParams {
     setTasks: React.Dispatch<React.SetStateAction<TaskItem[]>>;
     users: User[];
     currentUser: User | null;
+    canManageReservationsForLocation: (locationId: number) => boolean;
 }
 
 type HouseTemplateState = {
@@ -74,7 +75,15 @@ const EMPTY_RESERVATIONS: ReservationState = {
     loading: false,
 };
 
-export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, currentUser }: UseTaskCrudParams) {
+export function useTaskCrud({
+    dict,
+    templates,
+    loadTasks,
+    setTasks,
+    users,
+    currentUser,
+    canManageReservationsForLocation,
+}: UseTaskCrudParams) {
     const [isSaving, setIsSaving] = useState<boolean>(false);
     const [isDeletingTask, setIsDeletingTask] = useState<boolean>(false);
     const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
@@ -132,12 +141,14 @@ export function useTaskCrud({ dict, templates, loadTasks, setTasks, users, curre
         setHouseTemplateState({ items: [], selectedIds: [], loading: true });
         setReservationState({ items: [], checkoutId: "", nextId: "", loading: true });
 
+        const canLinkReservations = canManageReservationsForLocation(Number(locationId));
         const result = await loadTaskCreateLocationData(Number(locationId), {
             getLocationTemplates: LocationTemplateService.getTemplates,
-            getReservations: (selectedLocationId) =>
-                ReservationService.getReservations({
+            getReservations: canLinkReservations
+                ? (selectedLocationId) => ReservationService.getReservations({
                     locationId: selectedLocationId,
-                }),
+                })
+                : async () => [],
         });
 
         if (!result.locationTemplatesError) {

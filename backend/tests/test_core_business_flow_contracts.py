@@ -293,6 +293,13 @@ def test_own_company_flow_runs_from_template_to_invoice_for_every_role(db):
             location_id=location.id,
         ),
     )
+    assert task.status == "pending"
+    task_item_service.update_task_item(
+        db,
+        admin,
+        task.id,
+        TaskItemUpdate(status="progress"),
+    )
 
     for worker in (admin, manager, viewer):
         visible_ids = {

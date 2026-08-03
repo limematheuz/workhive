@@ -258,6 +258,16 @@ def create_task_item(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Assigned user not found or does not belong to your company",
             )
+    if (
+        task_item_data.checkout_reservation_id is not None
+        or task_item_data.next_reservation_id is not None
+    ):
+        location_access_service.require_location_capability(
+            db,
+            current_user,
+            task_item_data.location_id,
+            "can_manage_reservations",
+        )
     _validate_reservation_links(
         db,
         task_item_data.location_id,
@@ -269,11 +279,11 @@ def create_task_item(
         current_user.company_id,
         task_item_data.description,
     )
-    # Internal work is approved by the admin/manager creating it. External
-    # company requests are created by the reservation flow and remain requested.
+    # Manual work starts in the pending column. External company requests are
+    # created by the reservation flow and remain requested.
     task_item_data = task_item_data.model_copy(
         update={
-            "status": "accepted",
+            "status": "pending",
             "operational_notes": [],
             "attachments": [],
             "reported_issues": [],

@@ -148,6 +148,7 @@ function ReservationsPageContent() {
         setTasks: setRequestedTasks,
         users,
         currentUser: user,
+        canManageReservationsForLocation: () => false,
     });
 
     const openTaskFromUrl = useEffectEvent((taskId: string | null, tasks: TaskItem[]) => {

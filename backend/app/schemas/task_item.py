@@ -61,7 +61,7 @@ class TaskItemBase(BaseModel):
 
 
 class TaskItemCreate(TaskItemBase):
-    status: TaskStatus = "accepted"
+    status: TaskStatus = "pending"
     created_at: datetime | None = None
 
 

@@ -297,7 +297,7 @@ def test_task_report_payload_size_is_bounded_before_persistence(client, db):
     ).count() == 0
 
 
-def test_assigned_viewer_receives_auto_accepted_internal_task_and_can_start_work(client, db):
+def test_assigned_viewer_receives_pending_internal_task_and_can_start_after_activation(client, db):
     company = _company(db, "VictoriaDelivery")
     admin = _user(db, company, "admin@victoria.test", 1)
     victoria = _user(db, company, "victoria@victoria.test", 3)
@@ -338,7 +338,7 @@ def test_assigned_viewer_receives_auto_accepted_internal_task_and_can_start_work
     )
     assert created.status_code == 201, created.text
     task_id = created.json()["id"]
-    assert created.json()["status"] == "accepted"
+    assert created.json()["status"] == "pending"
 
     first_page = client.get(
         "/api/v1/task-items/?skip=0&limit=100",
@@ -366,6 +366,24 @@ def test_assigned_viewer_receives_auto_accepted_internal_task_and_can_start_work
     assert client.get(
         "/api/v1/notifications/", headers=_headers(other_viewer)
     ).json() == []
+
+    blocked = client.post(
+        f"/api/v1/task-items/{task_id}/start-work",
+        headers=_headers(victoria),
+        json={
+            "start_latitude": 40.4168,
+            "start_longitude": -3.7038,
+            "start_accuracy_meters": 10,
+        },
+    )
+    assert blocked.status_code == 400, blocked.text
+
+    activated = client.patch(
+        f"/api/v1/task-items/{task_id}",
+        headers=_headers(admin),
+        json={"status": "progress"},
+    )
+    assert activated.status_code == 200, activated.text
 
     started = client.post(
         f"/api/v1/task-items/{task_id}/start-work",

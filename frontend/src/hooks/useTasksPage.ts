@@ -26,6 +26,7 @@ import {
 } from "@/domain/access/roles";
 import { buildTaskListFilters } from "@/domain/tasks/task-list";
 import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
+import { canManageLocationReservations } from "@/features/reservations/reservation-helpers";
 
 export type {
     LocationTemplateSummary as HouseTemplate,
@@ -153,6 +154,14 @@ export function useTasksPage() {
 
     useBackgroundPolling(() => loadTasks(true), POLL_INTERVALS.tasks);
 
+    const canManageReservationsForLocation = (locationId: number) => {
+        const location = locations.find((item) => item.id === locationId);
+        return Boolean(
+            location
+            && canManageLocationReservations(location, currentUser?.company_id),
+        );
+    };
+
     const crud = useTaskCrud({
         dict,
         templates,
@@ -160,6 +169,7 @@ export function useTasksPage() {
         setTasks,
         users,
         currentUser,
+        canManageReservationsForLocation,
     });
     const {
         newLocationId,

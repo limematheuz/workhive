@@ -112,10 +112,19 @@ export function CalendarKanbanCard({
         <article
             draggable={canDrag && !task.is_invoiced && !updating}
             onDragStart={(e) => onDragStart(e, task.id)}
+            onClick={() => onClick(task)}
+            onKeyDown={(event) => {
+                if (event.target !== event.currentTarget) return;
+                if (event.key === "Enter" || event.key === " ") {
+                    if (event.key === " ") event.preventDefault();
+                    onClick(task);
+                }
+            }}
+            tabIndex={0}
             className={`rounded-2xl border bg-[var(--bg-card)] shadow-[0_2px_8px_var(--shadow-color)] ui-motion select-none group relative flex flex-col justify-between overflow-hidden ${statusTone.card} ${
                 task.is_invoiced
                     ? "opacity-85 cursor-default hover:border-[var(--border-soft)]"
-                    : canDrag ? "cursor-grab active:cursor-grabbing" : ""
+                    : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
             }`}
         >
             {updating && (
