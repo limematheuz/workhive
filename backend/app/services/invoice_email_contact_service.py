@@ -58,17 +58,25 @@ def remember_invoice_recipients(
     emails: list[str],
     invoice: Invoice,
 ) -> None:
-    normalized_emails = [_normalize_email(email) for email in emails if email.strip()]
-    if not normalized_emails:
-        return
-
-    existing_client_emails = contact_repo.list_client_emails(db, company_id)
     recipient_name = None
     if invoice.recipient_snapshot and invoice.recipient_snapshot.get("name"):
         recipient_name = str(invoice.recipient_snapshot["name"]).strip()
     elif invoice.client and invoice.client.name:
         recipient_name = invoice.client.name.strip()
+    remember_document_recipients(db, company_id, emails, recipient_name)
 
+
+def remember_document_recipients(
+    db: Session,
+    company_id: int,
+    emails: list[str],
+    recipient_name: str | None = None,
+) -> None:
+    normalized_emails = [_normalize_email(email) for email in emails if email.strip()]
+    if not normalized_emails:
+        return
+
+    existing_client_emails = contact_repo.list_client_emails(db, company_id)
     for email in dict.fromkeys(normalized_emails):
         if email in existing_client_emails:
             continue

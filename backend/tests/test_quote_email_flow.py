@@ -1,0 +1,188 @@
+from app.models.invoice_email_contact import InvoiceEmailContact
+from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
+
+
+def _authenticated_company(client, *, email: str, company_name: str, tax_id: str):
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": email,
+            CREDENTIAL_FIELD: TEST_SECRET,
+            "full_name": company_name,
+            "accept_terms": True,
+            "accept_privacy": True,
+            "policy_version": "2026-06-15",
+        },
+    )
+    assert registration.status_code == 201, registration.text
+    login = client.post("/api/v1/auth/login", data=login_form(email, TEST_SECRET))
+    assert login.status_code == 200, login.text
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    company = client.post(
+        "/api/v1/companies/",
+        json={
+            "name": company_name,
+            "tax_id": tax_id,
+            "address": "Calle Principal 1",
+            "phone": "+34600111222",
+            "email": email,
+        },
+        headers=headers,
+    )
+    assert company.status_code == 201, company.text
+    return headers, company.json()["id"]
+
+
+def _quote(client, headers):
+    created = client.post(
+        "/api/v1/quotes/",
+        json={
+            "title": "Presupuesto de limpieza",
+            "custom_recipient_info": "Cliente nuevo\ncliente@example.com",
+            "items": [
+                {
+                    "description": "Limpieza completa",
+                    "quantity": 1,
+                    "unit_price": 120,
+                }
+            ],
+        },
+        headers=headers,
+    )
+    assert created.status_code == 201, created.text
+    return created.json()
+
+
+def test_quote_email_sends_pdf_marks_sent_and_remembers_only_sender_contacts(
+    client, db, monkeypatch
+):
+    sender_headers, sender_company_id = _authenticated_company(
+        client,
+        email="sender-quotes@example.com",
+        company_name="Sender Quotes SL",
+        tax_id="B10000011",
+    )
+    recipient_headers, recipient_company_id = _authenticated_company(
+        client,
+        email="recipient-quotes@example.com",
+        company_name="Recipient Quotes SL",
+        tax_id="B10000012",
+    )
+    quote = _quote(client, sender_headers)
+    delivered = {}
+
+    def capture_document_email(**kwargs):
+        delivered.update(kwargs)
+        delivered["pdf_bytes"] = kwargs["pdf_path"].read_bytes()
+        return True
+
+    monkeypatch.setattr(
+        "app.services.email_service.send_invoice_email",
+        capture_document_email,
+    )
+
+    sent = client.post(
+        f"/api/v1/quotes/{quote['id']}/send-email",
+        headers=sender_headers,
+        json={
+            "recipient_emails": ["external@example.com"],
+            "copy_emails": ["copy@example.com"],
+            "subject": "Tu presupuesto",
+            "message": "Adjuntamos la propuesta.",
+            "send_copy": True,
+            "save_recipients": True,
+        },
+    )
+
+    assert sent.status_code == 200, sent.text
+    assert sent.json() == {
+        "status": "sent",
+        "recipient_email": "external@example.com",
+    }
+    assert delivered["recipient_email"] == ["external@example.com"]
+    assert delivered["copy_emails"] == ["copy@example.com"]
+    assert delivered["document_label"] == "Presupuesto"
+    assert delivered["subject"] == "Tu presupuesto"
+    assert delivered["sender_copy_email"] == "sender-quotes@example.com"
+    assert delivered["pdf_bytes"].startswith(b"%PDF")
+    assert not delivered["pdf_path"].exists()
+    assert client.get(f"/api/v1/quotes/{quote['id']}", headers=sender_headers).json()["status"] == "sent"
+
+    sender_contacts = client.get(
+        "/api/v1/invoice-email-contacts/?q=external", headers=sender_headers
+    )
+    assert [contact["email"] for contact in sender_contacts.json()] == [
+        "external@example.com"
+    ]
+    other_company_contacts = client.get(
+        "/api/v1/invoice-email-contacts/?q=external", headers=recipient_headers
+    )
+    assert other_company_contacts.json() == []
+    assert (
+        db.query(InvoiceEmailContact)
+        .filter(InvoiceEmailContact.company_id == sender_company_id)
+        .count()
+        == 1
+    )
+    assert (
+        db.query(InvoiceEmailContact)
+        .filter(InvoiceEmailContact.company_id == recipient_company_id)
+        .count()
+        == 0
+    )
+
+
+def test_quote_email_is_tenant_scoped_and_does_not_change_status_when_delivery_fails(
+    client, monkeypatch
+):
+    owner_headers, _ = _authenticated_company(
+        client,
+        email="owner-quote-email@example.com",
+        company_name="Owner Quote Email SL",
+        tax_id="B10000013",
+    )
+    outsider_headers, _ = _authenticated_company(
+        client,
+        email="outsider-quote-email@example.com",
+        company_name="Outsider Quote Email SL",
+        tax_id="B10000014",
+    )
+    quote = _quote(client, owner_headers)
+
+    assert client.post(
+        f"/api/v1/quotes/{quote['id']}/send-email",
+        headers=outsider_headers,
+        json={"recipient_emails": ["external@example.com"]},
+    ).status_code == 404
+
+    monkeypatch.setattr(
+        "app.services.email_service.send_invoice_email",
+        lambda **_: False,
+    )
+    failed = client.post(
+        f"/api/v1/quotes/{quote['id']}/send-email",
+        headers=owner_headers,
+        json={"recipient_emails": ["external@example.com"]},
+    )
+
+    assert failed.status_code == 503
+    assert client.get(f"/api/v1/quotes/{quote['id']}", headers=owner_headers).json()["status"] == "draft"
+
+
+def test_quote_email_requires_an_explicit_or_same_company_client_recipient(client):
+    headers, _ = _authenticated_company(
+        client,
+        email="missing-recipient@example.com",
+        company_name="Missing Recipient SL",
+        tax_id="B10000015",
+    )
+    quote = _quote(client, headers)
+
+    response = client.post(
+        f"/api/v1/quotes/{quote['id']}/send-email",
+        headers=headers,
+        json={},
+    )
+
+    assert response.status_code == 422
+    assert "does not have an email" in response.json()["detail"]

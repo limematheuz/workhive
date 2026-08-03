@@ -7,6 +7,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
+from app.schemas.invoice import InvoiceEmailRequest
 
 from app.schemas.client import ClientCreate
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemResponse
@@ -85,6 +86,10 @@ class QuoteAcceptRequest(BaseModel):
         if not self.register_client and self.client is not None:
             raise ValueError("Client details require register_client=true")
         return self
+
+
+class QuoteEmailRequest(InvoiceEmailRequest):
+    pass
 
 
 class QuoteResponse(QuoteBase):

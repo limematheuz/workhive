@@ -68,6 +68,13 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
 
 
 def create_user(db: Session, user_data: UserCreate) -> User:
+    db_user = stage_user(db, user_data)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+
+def stage_user(db: Session, user_data: UserCreate) -> User:
     hashed_password = get_password_hash(user_data.password)
     db_user = User(
         email=user_data.email,
@@ -78,8 +85,7 @@ def create_user(db: Session, user_data: UserCreate) -> User:
         company_id=user_data.company_id,
     )
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+    db.flush()
     return db_user
 
 

@@ -49,6 +49,7 @@ class Settings(BaseSettings):
 
     EMAIL_ENABLED: bool = False
     CONTACT_FORM_ENABLED: bool = False
+    ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED: bool = True
     SMTP_HOST: str | None = None
     SMTP_PORT: int = 587
     SMTP_USERNAME: str | None = None
@@ -57,6 +58,7 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = True
     SMTP_USE_SSL: bool = False
     CONTACT_RECIPIENT_EMAIL: str | None = None
+    ACCOUNT_REQUEST_RECIPIENT_EMAIL: str | None = None
 
     SUBSCRIPTION_ENFORCEMENT_ENABLED: bool = False
     BILLING_ENABLED: bool = False
@@ -185,6 +187,13 @@ class Settings(BaseSettings):
         ):
             raise ValueError(
                 "CONTACT_FORM_ENABLED requires EMAIL_ENABLED and CONTACT_RECIPIENT_EMAIL"
+            )
+
+        if self.ALLOW_PUBLIC_REGISTRATION and self.ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED and (
+            not self.EMAIL_ENABLED or not self.ACCOUNT_REQUEST_RECIPIENT_EMAIL
+        ):
+            raise ValueError(
+                "Public registration requires EMAIL_ENABLED and ACCOUNT_REQUEST_RECIPIENT_EMAIL"
             )
 
         if self.BILLING_ENABLED and not all(

@@ -79,6 +79,7 @@ def isolated_invoice_pdf_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "SMTP_HOST", "smtp.test.local")
     monkeypatch.setattr(settings, "SMTP_FROM_EMAIL", "noreply@workhive.test")
     monkeypatch.setattr(settings, "CONTACT_RECIPIENT_EMAIL", "support@workhive.test")
+    monkeypatch.setattr(settings, "ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED", False)
 
 
 @pytest.fixture(autouse=True)

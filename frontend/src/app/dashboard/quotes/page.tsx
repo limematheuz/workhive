@@ -1,7 +1,7 @@
 "use client";
 
-import { startTransition, useCallback, useRef, useState, useEffect } from "react";
-import { redirect } from "next/navigation";
+import { Suspense, startTransition, useCallback, useRef, useState, useEffect } from "react";
+import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { FileText, Loader2, Plus } from "lucide-react";
 
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
@@ -19,9 +19,20 @@ import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
 
-export default function QuotesPage() {
+function QuotesPageLoading() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />
+            <span className="text-xs text-[var(--text-muted)]">Cargando presupuestos...</span>
+        </div>
+    );
+}
+
+function QuotesPageContent() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
@@ -123,6 +134,40 @@ export default function QuotesPage() {
         setIsDetailOpen(true);
     };
 
+    const handleEditQuote = (quote: Quote) => {
+        setSelectedQuote(null);
+        setIsDetailOpen(false);
+        setQuoteToEdit(quote);
+        setIsCreateOpen(true);
+    };
+
+    useEffect(() => {
+        const quoteId = Number(searchParams.get("quote"));
+        if (!Number.isSafeInteger(quoteId) || quoteId < 1) return;
+
+        let cancelled = false;
+        void QuoteService.getQuote(quoteId)
+            .then((quote) => {
+                if (cancelled) return;
+                if (searchParams.get("edit") === "true") {
+                    handleEditQuote(quote);
+                } else {
+                    setSelectedQuote(quote);
+                    setIsDetailOpen(true);
+                }
+                router.replace("/dashboard/quotes", { scroll: false });
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    toast.error(dict.quotes?.error_load ?? "Presupuesto no encontrado");
+                    router.replace("/dashboard/quotes", { scroll: false });
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [dict.quotes?.error_load, router, searchParams]);
+
     const STATUS_LABELS: Record<string, string> = {
         draft: dict.quotes?.status_draft ?? "Borrador",
         sent: dict.quotes?.status_sent ?? "Enviado",
@@ -194,6 +239,7 @@ export default function QuotesPage() {
                 }}
                 getClientName={getClientName}
                 onViewQuote={handleViewQuote}
+                onEditQuote={handleEditQuote}
                 onDeleteQuote={(quoteId) => {
                     quoteToDeleteIdRef.current = quoteId;
                     setIsDeleteDialogOpen(true);
@@ -220,6 +266,7 @@ export default function QuotesPage() {
                 }}
                 clients={clients}
                 onQuoteUpdated={loadQuotes}
+                onEditQuote={handleEditQuote}
                 companyName={companyName}
                 companyLogo={companyLogo}
             />
@@ -238,5 +285,13 @@ export default function QuotesPage() {
                 cancelText={dict.tasks.cancel}
             />
         </div>
+    );
+}
+
+export default function QuotesPage() {
+    return (
+        <Suspense fallback={<QuotesPageLoading />}>
+            <QuotesPageContent />
+        </Suspense>
     );
 }

@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -5,8 +7,15 @@ from sqlalchemy.orm import Session
 from app.repositories import quote as quote_repo
 from app.repositories import quote_item as quote_item_repo
 from app.repositories import client as client_repo
-from app.schemas.quote import QuoteAcceptRequest, QuoteCreate, QuoteUpdate
+from app.schemas.quote import (
+    QuoteAcceptRequest,
+    QuoteCreate,
+    QuoteEmailRequest,
+    QuoteUpdate,
+)
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate
+from app.services import email_service, invoice_email_contact_service
+from app.services.quote_pdf import generate_quote_email_pdf
 
 VALID_TRANSITIONS: dict[str, list[str]] = {
     "draft": ["sent", "rejected", "expired"],
@@ -15,6 +24,7 @@ VALID_TRANSITIONS: dict[str, list[str]] = {
     "rejected": [],
     "expired": [],
 }
+logger = logging.getLogger(__name__)
 
 
 def _get_quote_or_404(db: Session, company_id: int, quote_id: int):
@@ -47,6 +57,97 @@ def get_quotes(
 
 def get_quote(db: Session, company_id: int, quote_id: int):
     return _get_quote_or_404(db, company_id, quote_id)
+
+
+def _quote_recipient_name(quote) -> str:
+    if quote.client and quote.client.name:
+        return quote.client.name.strip()
+    if quote.custom_recipient_info:
+        first_line = quote.custom_recipient_info.strip().split("\n", 1)[0].strip()
+        if first_line:
+            return first_line
+    return "cliente"
+
+
+def _quote_recipient_emails(quote, data: QuoteEmailRequest) -> list[str]:
+    emails = [str(email).strip() for email in data.recipient_emails or []]
+    if data.recipient_email:
+        emails.append(str(data.recipient_email).strip())
+    if not emails and quote.client and quote.client.email:
+        emails.append(quote.client.email.strip())
+    return list(dict.fromkeys(email.lower() for email in emails if email))
+
+
+def email_quote(
+    db: Session,
+    company_id: int,
+    quote_id: int,
+    data: QuoteEmailRequest,
+    *,
+    sender_email: str | None = None,
+):
+    quote = _get_quote_or_404(db, company_id, quote_id)
+    if quote.status not in {"draft", "sent"}:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Only draft or sent quotes can be emailed",
+        )
+    if not quote.items:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="A quote must contain at least one item before it can be emailed",
+        )
+
+    recipient_emails = _quote_recipient_emails(quote, data)
+    if not recipient_emails:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The quote recipient does not have an email address",
+        )
+
+    pdf_path = generate_quote_email_pdf(quote)
+    try:
+        sent = email_service.send_invoice_email(
+            recipient_email=recipient_emails,
+            recipient_name=_quote_recipient_name(quote),
+            issuer_name=(quote.company.name if quote.company else "WorkHive"),
+            invoice_number=quote.quote_number,
+            pdf_path=pdf_path,
+            subject=data.subject,
+            custom_message=data.message,
+            sender_copy_email=sender_email if data.send_copy else None,
+            copy_emails=[str(email) for email in data.copy_emails or []],
+            document_label="Presupuesto",
+            locale=data.locale,
+        )
+    except Exception:
+        logger.exception("Quote email delivery failed")
+        sent = False
+    finally:
+        pdf_path.unlink(missing_ok=True)
+
+    if not sent:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Quote email delivery is not configured or unavailable",
+        )
+
+    try:
+        if quote.status == "draft":
+            quote.status = "sent"
+            db.add(quote)
+            db.commit()
+        if data.save_recipients:
+            invoice_email_contact_service.remember_document_recipients(
+                db,
+                company_id,
+                recipient_emails,
+                _quote_recipient_name(quote),
+            )
+    except Exception:
+        db.rollback()
+        raise
+    return quote, ", ".join(recipient_emails)
 
 
 def create_quote(db: Session, company_id: int, data: QuoteCreate):

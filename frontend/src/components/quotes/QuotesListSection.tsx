@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Edit3, Eye, FileText, Trash2 } from "lucide-react";
 
 import { ActionPopover } from "@/components/ui/action-popover";
@@ -30,6 +29,7 @@ type QuotesListSectionProps = {
     };
     getClientName: (quote: Quote) => string;
     onViewQuote: (quote: Quote) => void;
+    onEditQuote: (quote: Quote) => void;
     onDeleteQuote: (quoteId: number) => void;
 };
 
@@ -40,19 +40,20 @@ export function QuotesListSection({
     columnLabels,
     getClientName,
     onViewQuote,
+    onEditQuote,
     onDeleteQuote,
 }: QuotesListSectionProps) {
     const getQuoteActions = (quote: Quote) => [
         {
             label: "Ver",
             icon: Eye,
-            href: `/dashboard/quotes/${quote.id}`,
+            onClick: () => onViewQuote(quote),
         },
         ...(quote.status === "draft"
             ? [{
                 label: "Editar",
                 icon: Edit3,
-                href: `/dashboard/quotes/${quote.id}?edit=true`,
+                onClick: () => onEditQuote(quote),
                 variant: "edit" as const,
             }]
             : []),
@@ -142,13 +143,16 @@ export function QuotesListSection({
                                 onClick={() => onViewQuote(quote)}
                             >
                                 <TableCell className="font-semibold">
-                                    <Link
-                                        href={`/dashboard/quotes/${quote.id}`}
-                                        onClick={(e) => e.stopPropagation()}
-                                        className="text-accent hover:underline font-mono"
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            onViewQuote(quote);
+                                        }}
+                                        className="text-accent hover:underline font-mono cursor-pointer"
                                     >
                                         {formatQuoteNumber(quote.quote_number)}
-                                    </Link>
+                                    </button>
                                 </TableCell>
                                 <TableCell className="max-w-[200px] truncate font-medium text-[var(--text-main)]">
                                     {quote.title}

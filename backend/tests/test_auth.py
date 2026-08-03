@@ -37,6 +37,102 @@ def test_register_user(client):
     assert "hashed_password" not in data
 
 
+def test_registration_notifies_the_configured_workhive_inbox(client, monkeypatch):
+    from app.core.config import settings
+
+    delivered = {}
+    monkeypatch.setattr(settings, "ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED", True)
+    monkeypatch.setattr(
+        settings,
+        "ACCOUNT_REQUEST_RECIPIENT_EMAIL",
+        "accounts@workhive.test",
+    )
+    monkeypatch.setattr(
+        "app.services.email_service.send_account_request_notification",
+        lambda **kwargs: delivered.update(kwargs) or True,
+    )
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "new-account-request@example.com",
+            CREDENTIAL_FIELD: TEST_SECRET,
+            "full_name": "New Account Request",
+            "accept_terms": True,
+            "accept_privacy": True,
+            "policy_version": "2026-06-15",
+        },
+    )
+
+    assert response.status_code == 201, response.text
+    assert delivered == {
+        "recipient_email": "accounts@workhive.test",
+        "applicant_name": "New Account Request",
+        "applicant_email": "new-account-request@example.com",
+    }
+
+
+def test_registration_is_not_created_when_account_request_notification_fails(
+    client, db, monkeypatch
+):
+    from app.core.config import settings
+    from app.models.user import User
+
+    monkeypatch.setattr(settings, "ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED", True)
+    monkeypatch.setattr(
+        settings,
+        "ACCOUNT_REQUEST_RECIPIENT_EMAIL",
+        "accounts@workhive.test",
+    )
+    monkeypatch.setattr(
+        "app.services.email_service.send_account_request_notification",
+        lambda **_: False,
+    )
+
+    response = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "undelivered-account-request@example.com",
+            CREDENTIAL_FIELD: TEST_SECRET,
+            "full_name": "Undelivered Account Request",
+            "accept_terms": True,
+            "accept_privacy": True,
+            "policy_version": "2026-06-15",
+        },
+    )
+
+    assert response.status_code == 503
+    assert (
+        db.query(User)
+        .filter(User.email == "undelivered-account-request@example.com")
+        .first()
+        is None
+    )
+
+
+def test_account_request_notification_never_includes_credentials(monkeypatch):
+    from app.services.email_service.access_emails import (
+        send_account_request_notification,
+    )
+
+    captured = {}
+    monkeypatch.setattr(
+        "app.services.email_service.transport.send_email",
+        lambda message: captured.update({"message": message}) or True,
+    )
+
+    assert send_account_request_notification(
+        recipient_email="accounts@workhive.test",
+        applicant_name="New Applicant",
+        applicant_email="new-applicant@example.com",
+    )
+
+    rendered = captured["message"].as_string()
+    assert "new-applicant@example.com" in rendered
+    assert TEST_SECRET not in rendered
+    assert "Password:" not in rendered
+
+
 def test_login_user(client):
     client.post(
         "/api/v1/auth/register",
