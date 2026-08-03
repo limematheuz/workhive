@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, status
 from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.services import template_task_service
 from app.schemas.template_task import (
     TemplateTaskCreate,
@@ -15,8 +16,8 @@ router = APIRouter()
 
 @router.get("/", response_model=list[TemplateTaskResponse])
 async def read_template_tasks(
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):

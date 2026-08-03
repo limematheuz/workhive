@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import FileResponse
 from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.invoice import (
     FacturaeGenerateRequest,
@@ -27,7 +28,7 @@ from app.services import audit_service
 from app.services import facturae_service
 from app.services import company_fiscal_settings_service
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 
 
 router = APIRouter()
@@ -37,8 +38,8 @@ router = APIRouter()
 async def read_invoices(
     client_id: int | None = None,
     invoice_status: str | None = None,
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveAdmin,
 ):
@@ -195,14 +196,12 @@ def send_invoice_email(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    rate_limiter.enforce(
-        rate_limit_key(
-            request,
-            "invoice-email",
-            f"{current_user.id}:{invoice_id}",
-        ),
+    enforce_rate_limit(
+        request,
+        "invoice-email",
         settings.INVOICE_EMAIL_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=f"{current_user.id}:{invoice_id}",
     )
     invoice, recipient_email = invoice_service.email_invoice(
         db,

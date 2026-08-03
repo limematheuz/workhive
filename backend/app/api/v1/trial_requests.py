@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveUser, get_db
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.schemas.trial_request import (
     TrialRequestAccepted,
@@ -30,10 +30,12 @@ def submit_trial_request(
     request: Request,
     db: Session = Depends(get_db),
 ) -> TrialRequestAccepted:
-    rate_limiter.enforce(
-        rate_limit_key(request, "trial-request", payload.email),
+    enforce_rate_limit(
+        request,
+        "trial-request",
         settings.CONTACT_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=payload.email,
     )
     trial_request_service.create_trial_request(db, payload)
     return TrialRequestAccepted(status="accepted")
@@ -45,8 +47,16 @@ def submit_trial_request(
 )
 def verify_trial_request(
     payload: TrialRequestVerify,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> TrialRequestVerifyResponse:
+    enforce_rate_limit(
+        request,
+        "trial-verification",
+        settings.TRIAL_VERIFICATION_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=payload.token,
+    )
     trial_request = trial_request_service.verify_trial_request_email(db, payload.token)
     return TrialRequestVerifyResponse(status=trial_request.status)
 

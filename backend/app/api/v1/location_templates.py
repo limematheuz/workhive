@@ -7,6 +7,7 @@ from app.api.deps import (
     get_async_db,
     get_db,
 )
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.services import location_template_service
 from app.services import location_service
 from app.schemas.location_template import (
@@ -32,8 +33,8 @@ def _get_location_owner_company_id(location) -> int | None:
 @router.get("/{location_id}/templates", response_model=list[LocationTemplateResponse])
 async def read_locations_template(
     location_id: int,
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):

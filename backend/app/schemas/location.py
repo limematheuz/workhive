@@ -1,4 +1,28 @@
-from pydantic import BaseModel, ConfigDict
+from urllib.parse import urlparse
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+ALLOWED_MAP_URL_HOSTS = {
+    "google.com",
+    "www.google.com",
+    "maps.google.com",
+    "maps.app.goo.gl",
+    "waze.com",
+    "www.waze.com",
+}
+
+
+def validate_map_url(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized:
+        return None
+    parsed = urlparse(normalized)
+    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_MAP_URL_HOSTS:
+        raise ValueError("Map URL must be an HTTPS Google Maps or Waze URL")
+    return normalized
 
 
 class RoomSchema(BaseModel):
@@ -17,7 +41,7 @@ class LocationBase(BaseModel):
     photo_url: str | None = None
     latitude: float | None = None
     longitude: float | None = None
-    map_url: str | None = None
+    map_url: str | None = Field(default=None, max_length=2048)
     location_type: str | None = "private"
     num_bathrooms: int | None = 0
     has_garage: bool | None = False
@@ -34,6 +58,11 @@ class LocationBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator("map_url")
+    @classmethod
+    def validate_map_url_value(cls, value: str | None) -> str | None:
+        return validate_map_url(value)
+
 
 class LocationCreate(LocationBase):
     pass
@@ -47,7 +76,7 @@ class LocationUpdate(BaseModel):
     photo_url: str | None = None
     latitude: float | None = None
     longitude: float | None = None
-    map_url: str | None = None
+    map_url: str | None = Field(default=None, max_length=2048)
     location_type: str | None = None
     num_bathrooms: int | None = None
     has_garage: bool | None = None
@@ -59,6 +88,11 @@ class LocationUpdate(BaseModel):
     is_active: bool | None = None
     client_id: int | None = None
     default_service_provider_id: int | None = None
+
+    @field_validator("map_url")
+    @classmethod
+    def validate_map_url_value(cls, value: str | None) -> str | None:
+        return validate_map_url(value)
 
 
 class LocationResponse(LocationBase):

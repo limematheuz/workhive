@@ -15,7 +15,7 @@ from app.services import audit_service, auth_service, email_change_service
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import create_access_token
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.services.request_context import get_request_location_details
 
@@ -53,10 +53,12 @@ def register(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    rate_limiter.enforce(
-        rate_limit_key(request, "register", user_data.email),
-        settings.LOGIN_RATE_LIMIT,
+    enforce_rate_limit(
+        request,
+        "register",
+        settings.REGISTER_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=user_data.email,
     )
     return auth_service.register_user(db, user_data, request)
 
@@ -68,10 +70,12 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
-    rate_limiter.enforce(
-        rate_limit_key(request, "login", form_data.username),
+    enforce_rate_limit(
+        request,
+        "login",
         settings.LOGIN_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=form_data.username,
     )
     user = auth_service.authenticate_user(db, form_data.username, form_data.password)
     access_token = create_access_token(
@@ -154,10 +158,12 @@ def forgot_password(
     request: Request,
     db: Session = Depends(get_db),
 ) -> dict:
-    rate_limiter.enforce(
-        rate_limit_key(request, "forgot-password", reset_data.email),
+    enforce_rate_limit(
+        request,
+        "forgot-password",
         settings.PASSWORD_RESET_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=reset_data.email,
     )
     auth_service.request_password_reset(db, reset_data)
     return {
@@ -172,10 +178,12 @@ def reset_password(
     request: Request,
     db: Session = Depends(get_db),
 ) -> dict:
-    rate_limiter.enforce(
-        rate_limit_key(request, "reset-password"),
+    enforce_rate_limit(
+        request,
+        "reset-password",
         settings.PASSWORD_RESET_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=reset_confirm.token,
     )
     auth_service.verify_and_reset_password(db, reset_confirm)
     return {"status": "success", "message": "Password reset successfully"}
@@ -188,14 +196,12 @@ def request_email_change(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ) -> dict[str, str]:
-    rate_limiter.enforce(
-        rate_limit_key(
-            request,
-            "request-email-change",
-            f"{current_user.id}:{change_request.new_email}",
-        ),
+    enforce_rate_limit(
+        request,
+        "request-email-change",
         settings.PASSWORD_RESET_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=f"{current_user.id}:{change_request.new_email}",
     )
     new_email = email_change_service.request_email_change(
         db,
@@ -225,10 +231,12 @@ def confirm_email_change(
     response: Response,
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
-    rate_limiter.enforce(
-        rate_limit_key(request, "confirm-email-change"),
+    enforce_rate_limit(
+        request,
+        "confirm-email-change",
         settings.PASSWORD_RESET_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=confirmation.token,
     )
     result = email_change_service.confirm_email_change(db, confirmation)
     audit_service.record_event(

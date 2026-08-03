@@ -8,9 +8,10 @@ import { MapPin, Building2, Navigation, Compass, Bath, Car, ChefHat, Sun, Bed, U
 import { useDictionary } from "@/lib/dictionary-context"
 import { resolveApiMediaUrl } from "@/lib/api"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
+import { isSafeLocationMapUrl } from "@/lib/location-map-url"
 
 const getGoogleMapsUrl = (loc: Location) => {
-    if (loc.map_url) {
+    if (isSafeLocationMapUrl(loc.map_url)) {
         return loc.map_url
     }
     if (loc.latitude && loc.longitude) {
@@ -21,7 +22,7 @@ const getGoogleMapsUrl = (loc: Location) => {
 }
 
 const getWazeUrl = (loc: Location) => {
-    if (loc.map_url && loc.map_url.includes("waze")) {
+    if (isSafeLocationMapUrl(loc.map_url) && loc.map_url.includes("waze")) {
         return loc.map_url
     }
     if (loc.latitude && loc.longitude) {

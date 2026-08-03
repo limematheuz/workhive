@@ -8,6 +8,8 @@ from app.api.deps import (
     get_async_db,
     get_db,
 )
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.models.company import Company
 from app.models.user import User
 from app.schemas.billing import CheckoutSessionCreate, HostedBillingUrl, SubscriptionSummary
@@ -68,9 +70,17 @@ def _subscription_summary(db: Session, current_user: User) -> SubscriptionSummar
 @router.post("/checkout", response_model=HostedBillingUrl)
 def create_checkout(
     checkout: CheckoutSessionCreate,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = AuthenticatedAdmin,
 ):
+    enforce_rate_limit(
+        request,
+        "billing-checkout",
+        settings.BILLING_SESSION_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
     company = _current_company(db, current_user)
     return HostedBillingUrl(
         url=billing_service.create_checkout_session(company, checkout.plan)
@@ -79,9 +89,17 @@ def create_checkout(
 
 @router.post("/portal", response_model=HostedBillingUrl)
 def create_portal(
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = AuthenticatedAdmin,
 ):
+    enforce_rate_limit(
+        request,
+        "billing-portal",
+        settings.BILLING_SESSION_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
     company = _current_company(db, current_user)
     return HostedBillingUrl(url=billing_service.create_customer_portal(company))
 

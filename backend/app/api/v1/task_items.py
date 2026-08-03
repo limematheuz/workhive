@@ -4,6 +4,7 @@ from app.api.deps import (
     get_async_db,
 )
 from fastapi import Depends, status, APIRouter, HTTPException, BackgroundTasks
+from app.api.pagination import PaginationLimit, PaginationOffset
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.models.user import User
@@ -28,8 +29,8 @@ router = APIRouter()
 async def read_task_items(
     location_id: int | None = None,
     user_id: int | None = None,
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     task_status: str | None = None,
     current_user: User = AsyncActiveUser,

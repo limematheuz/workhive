@@ -1,6 +1,8 @@
 from io import BytesIO
 
 from PIL import Image
+from app.core.config import settings
+from app.core.rate_limit import rate_limiter
 from app.services.image_service import MAX_IMAGE_BYTES
 from credentials import TEST_SECRET, login_form, CREDENTIAL_FIELD
 
@@ -85,3 +87,24 @@ def test_upload_rejects_payloads_over_the_image_limit(client):
 
     assert response.status_code == 400
     assert response.json()["detail"] == "Image must be 4MB or smaller"
+
+
+def test_upload_is_rate_limited(client, monkeypatch):
+    headers = _company_headers(client, "rate-limit")
+    monkeypatch.setattr(settings, "MEDIA_UPLOAD_RATE_LIMIT", 1)
+    with rate_limiter._lock:
+        rate_limiter._attempts.clear()
+
+    first = client.post(
+        "/api/v1/uploads/?folder=general",
+        headers=headers,
+        files={"file": ("first.png", _png(), "image/png")},
+    )
+    second = client.post(
+        "/api/v1/uploads/?folder=general",
+        headers=headers,
+        files={"file": ("second.png", _png(), "image/png")},
+    )
+
+    assert first.status_code == 201
+    assert second.status_code == 429

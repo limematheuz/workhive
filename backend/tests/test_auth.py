@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import jwt
 
 from app.core.config import settings
+from app.core.rate_limit import rate_limiter
 from app.core.security import get_password_hash
 from app.models.company import Company
 from app.models.user import User
@@ -210,6 +211,24 @@ def test_login_wrong_password(client):
         data=login_form("test@workhive.com", "secret124"),
     )
     assert response.status_code == 401
+
+
+def test_login_limits_identity_rotation_from_one_ip(client, monkeypatch):
+    monkeypatch.setattr(settings, "LOGIN_RATE_LIMIT", 1)
+    with rate_limiter._lock:
+        rate_limiter._attempts.clear()
+
+    first = client.post(
+        "/api/v1/auth/login",
+        data=login_form("first@example.com", TEST_SECRET),
+    )
+    second = client.post(
+        "/api/v1/auth/login",
+        data=login_form("second@example.com", TEST_SECRET),
+    )
+
+    assert first.status_code == 401
+    assert second.status_code == 429
 
 
 def test_registration_rejects_short_and_oversized_passwords(client):

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveManagerOrAdmin, get_db
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.schemas.user_invitation import (
     UserInvitationAccept,
@@ -23,10 +23,12 @@ def invite_worker(
     db: Session = Depends(get_db),
     current_user: User = ActiveManagerOrAdmin,
 ) -> UserInvitationAccepted:
-    rate_limiter.enforce(
-        rate_limit_key(request, "worker-invitation", str(payload.email)),
+    enforce_rate_limit(
+        request,
+        "worker-invitation",
         settings.WORKER_INVITATION_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(payload.email),
     )
     invitation = user_invitation_service.create_invitation(db, payload, current_user)
     audit_service.record_event(
@@ -48,10 +50,12 @@ def accept_worker_invitation(
     request: Request,
     db: Session = Depends(get_db),
 ) -> UserInvitationAccepted:
-    rate_limiter.enforce(
-        rate_limit_key(request, "worker-invitation-accept", payload.token[:16]),
+    enforce_rate_limit(
+        request,
+        "worker-invitation-accept",
         settings.WORKER_INVITATION_MAX_ATTEMPTS,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=payload.token,
     )
     user = user_invitation_service.accept_invitation(db, payload, request)
     audit_service.record_event(
