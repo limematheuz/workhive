@@ -10,7 +10,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/lib/toast"
-import { QuoteService } from "@/services/quote.service"
+import { InvoiceEmailDialog } from "@/components/invoices/InvoiceEmailDialog"
+import { QuoteEmailPayload, QuoteService } from "@/services/quote.service"
 import { formatQuoteNumber } from "@/lib/format"
 import { QUOTE_STATUS_BADGE } from "@/lib/constants"
 import { printQuote } from "@/lib/quote-print"
@@ -51,6 +52,8 @@ export function QuoteDetailSheet({
     const router = useRouter()
     const [loading, setLoading] = React.useState(false)
     const [showRegisterClientPrompt, setShowRegisterClientPrompt] = React.useState(false)
+    const [showEmailDialog, setShowEmailDialog] = React.useState(false)
+    const [isSendingEmail, setIsSendingEmail] = React.useState(false)
 
     if (!quote) return null
 
@@ -112,6 +115,21 @@ export function QuoteDetailSheet({
         })
     }
 
+    const handleSendEmail = async (data: QuoteEmailPayload) => {
+        setIsSendingEmail(true)
+        try {
+            await QuoteService.sendQuoteEmail(quote.id, data)
+            toast.success("Presupuesto enviado por email")
+            onQuoteUpdated()
+            return true
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, "No se pudo enviar el presupuesto"))
+            return false
+        } finally {
+            setIsSendingEmail(false)
+        }
+    }
+
     const clientRegistrationDraft = createQuoteClientRegistrationDraft(quote)
 
     return (
@@ -149,6 +167,7 @@ export function QuoteDetailSheet({
                             dict={dict}
                             loading={loading}
                             onPrint={handlePrint}
+                            onSendEmail={() => setShowEmailDialog(true)}
                             onEdit={() => {
                                 onOpenChange(false)
                                 router.push(`/dashboard/quotes/${quote.id}?edit=true`)
@@ -177,6 +196,21 @@ export function QuoteDetailSheet({
                 onRegisterAndAccept={(clientData) =>
                     updateStatus("accepted", clientData)
                 }
+            />
+
+            <InvoiceEmailDialog
+                open={showEmailDialog}
+                onOpenChange={setShowEmailDialog}
+                invoiceNumber={quote.quote_number}
+                defaultSubject={`Presupuesto ${formatQuoteNumber(quote.quote_number)}`}
+                defaultMessage="Adjuntamos el presupuesto solicitado."
+                documentLabel="presupuesto"
+                submitLabel="Enviar presupuesto"
+                description={`Envía el presupuesto ${formatQuoteNumber(quote.quote_number)} en PDF.`}
+                defaultEmail={quote.client_id ? clients.find((client) => client.id === quote.client_id)?.email ?? "" : ""}
+                fromName={companyName ?? "WorkHive"}
+                isSending={isSendingEmail}
+                onSend={handleSendEmail}
             />
         </>
     )

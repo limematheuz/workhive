@@ -1,6 +1,6 @@
 "use client"
 
-import { Send, Download, Edit3, CheckCircle, XCircle } from "lucide-react"
+import { Send, Download, Edit3, CheckCircle, Mail, XCircle } from "lucide-react"
 import { Quote } from "@/types/quote"
 import type { Dictionary } from "@/lib/dictionary-context"
 
@@ -9,6 +9,7 @@ interface QuoteDetailActionsProps {
     dict: Dictionary
     loading: boolean
     onPrint: () => void
+    onSendEmail: () => void
     onEdit: () => void
     onMarkSent: () => void
     onMarkAccepted: () => void
@@ -21,6 +22,7 @@ export function QuoteDetailActions({
     dict,
     loading,
     onPrint,
+    onSendEmail,
     onEdit,
     onMarkSent,
     onMarkAccepted,
@@ -38,6 +40,18 @@ export function QuoteDetailActions({
                     <Download className="w-3.5 h-3.5" />
                     {dict.quotes?.download_pdf ?? "Descargar PDF"}
                 </button>
+
+                {(quote.status === "draft" || quote.status === "sent") && (
+                    <button
+                        type="button"
+                        disabled={loading}
+                        onClick={onSendEmail}
+                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-accent/10 text-accent border border-accent/30 rounded-xl hover:bg-accent/20 transition-colors cursor-pointer"
+                    >
+                        <Mail className="w-3.5 h-3.5" />
+                        Enviar por email
+                    </button>
+                )}
 
                 {quote.status === "draft" && (
                     <>

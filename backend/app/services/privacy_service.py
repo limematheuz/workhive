@@ -31,6 +31,7 @@ def record_registration_acknowledgements(
     request: Request,
     policy_version: str,
     marketing_consent: bool,
+    commit: bool = True,
 ) -> None:
     common = {
         "user_id": user.id,
@@ -58,7 +59,8 @@ def record_registration_acknowledgements(
             ),
         ]
     )
-    db.commit()
+    if commit:
+        db.commit()
 
 
 def list_consents(db: Session, user: User) -> list[PrivacyConsent]:

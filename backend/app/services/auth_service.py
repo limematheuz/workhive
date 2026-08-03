@@ -54,15 +54,43 @@ def register_user(
         company_id=None,
         is_active=True,
     )
-    created = user_repo.create_user(db, safe_user_data)
-    privacy_service.record_registration_acknowledgements(
-        db,
-        user=created,
-        request=request,
-        policy_version=user_data.policy_version,
-        marketing_consent=user_data.marketing_consent,
-    )
-    return created
+    try:
+        created = user_repo.stage_user(db, safe_user_data)
+        privacy_service.record_registration_acknowledgements(
+            db,
+            user=created,
+            request=request,
+            policy_version=user_data.policy_version,
+            marketing_consent=user_data.marketing_consent,
+            commit=False,
+        )
+        if settings.ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED:
+            recipient_email = settings.ACCOUNT_REQUEST_RECIPIENT_EMAIL
+            if not recipient_email:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Account request notifications are not configured",
+                )
+            try:
+                sent = email_service.send_account_request_notification(
+                    recipient_email=recipient_email,
+                    applicant_name=created.full_name or "",
+                    applicant_email=created.email,
+                )
+            except Exception:
+                logger.exception("Account request notification delivery failed")
+                sent = False
+            if not sent:
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Account request notification delivery is temporarily unavailable",
+                )
+        db.commit()
+        db.refresh(created)
+        return created
+    except Exception:
+        db.rollback()
+        raise
 
 
 def authenticate_user(db: Session, email: str, password: str) -> User:

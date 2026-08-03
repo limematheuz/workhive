@@ -54,6 +54,17 @@ export interface QuoteAcceptRequest {
     client?: QuoteClientRegistrationInput;
 }
 
+export interface QuoteEmailPayload {
+    recipient_email?: string;
+    recipient_emails?: string[];
+    copy_emails?: string[];
+    subject?: string;
+    message?: string;
+    send_copy?: boolean;
+    save_recipients?: boolean;
+    locale?: "es" | "en";
+}
+
 export const QuoteService = {
     getQuotes: async (filters: {
         clientId?: number;
@@ -114,6 +125,18 @@ export const QuoteService = {
             body: JSON.stringify(data),
         })
         await assertApiResponseOk(response, "Error accepting quote")
+        return await response.json()
+    },
+
+    sendQuoteEmail: async (
+        id: number,
+        data: QuoteEmailPayload,
+    ): Promise<{ status: string; recipient_email: string }> => {
+        const response = await apiFetch(`/api/v1/quotes/${id}/send-email`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        })
+        await assertApiResponseOk(response, "Error sending quote email")
         return await response.json()
     },
 

@@ -6,6 +6,7 @@ Public send_* functions are re-exported here so existing imports keep working:
 
 from app.core.config import settings
 from app.services.email_service.access_emails import (
+    send_account_request_notification,
     send_trial_approved_email,
     send_trial_verification_email,
     send_worker_invitation_email,
@@ -45,6 +46,7 @@ __all__ = [
     "send_email_changed_notice",
     "send_contact_email",
     "send_trial_verification_email",
+    "send_account_request_notification",
     "send_trial_approved_email",
     "send_worker_invitation_email",
     "send_erasure_request_received_email",

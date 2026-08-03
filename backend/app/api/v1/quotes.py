@@ -1,17 +1,20 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import Depends, APIRouter, status
+from fastapi import Depends, APIRouter, Request, status
 from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.quote import (
     QuoteAcceptRequest,
     QuoteCreate,
+    QuoteEmailRequest,
     QuoteResponse,
     QuoteUpdate,
 )
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate, QuoteItemResponse
-from app.services import quote_service
+from app.services import audit_service, quote_service
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.services.user_scope import is_platform_superadmin
 
 
@@ -63,6 +66,48 @@ def create_quote(
     current_user: User = ActiveAdmin,
 ):
     return quote_service.create_quote(db, current_user.company_id, quote_data)
+
+
+@router.post("/{quote_id}/send-email")
+def send_quote_email(
+    quote_id: int,
+    data: QuoteEmailRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    enforce_rate_limit(
+        request,
+        "quote-email",
+        settings.INVOICE_EMAIL_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=f"{current_user.id}:{quote_id}",
+    )
+    quote, recipient_email = quote_service.email_quote(
+        db,
+        current_user.company_id,
+        quote_id,
+        data,
+        sender_email=current_user.email,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=quote.company_id,
+        action="quote.emailed",
+        entity_type="quote",
+        entity_id=quote.id,
+        request=request,
+        details={
+            "quote_number": quote.quote_number,
+            "recipient_source": (
+                "override"
+                if data.recipient_email or data.recipient_emails
+                else "quote"
+            ),
+        },
+    )
+    return {"status": "sent", "recipient_email": recipient_email}
 
 
 @router.patch("/{quote_id}", response_model=QuoteResponse)

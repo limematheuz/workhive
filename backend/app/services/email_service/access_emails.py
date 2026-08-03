@@ -54,6 +54,47 @@ def send_trial_verification_email(
     return transport.send_email(message)
 
 
+def send_account_request_notification(
+    *,
+    recipient_email: str,
+    applicant_name: str,
+    applicant_email: str,
+) -> bool:
+    b = _BRAND
+    display_name = " ".join(applicant_name.split()) or "Sin nombre"
+    safe_name = escape(display_name)
+    safe_email = escape(applicant_email, quote=True)
+    html_body = base_layout(
+        f"""
+{heading("Nueva solicitud de cuenta")}
+{lead("Una persona ha solicitado acceso a WorkHive y necesita revisión manual.")}
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;border:1px solid {b["divider"]};border-radius:10px;overflow:hidden;background-color:{b["card"]};">
+<tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:{b["muted"]};width:90px;border-bottom:1px solid {b["divider"]};">Nombre:</td><td style="padding:12px 16px;font-size:14px;color:{b["text"]};border-bottom:1px solid {b["divider"]};">{safe_name}</td></tr>
+<tr><td style="padding:12px 16px;font-size:12px;font-weight:700;color:{b["muted"]};width:90px;">Email:</td><td style="padding:12px 16px;font-size:14px;"><a href="mailto:{safe_email}" style="color:{b["accent"]};font-weight:700;text-decoration:none;">{safe_email}</a></td></tr>
+</table>
+{muted_note("La cuenta queda pendiente de que WorkHive la asigne a una empresa o gestione su alta.")}
+""",
+        preview_text=f"Solicitud de cuenta de {display_name}",
+    )
+    message = EmailMessage()
+    message["Subject"] = f"[WorkHive] Nueva solicitud de cuenta: {display_name}"
+    message["From"] = transport.from_address("Acceso")
+    message["To"] = recipient_email
+    message["Reply-To"] = applicant_email
+    message.set_content(
+        plain_body(
+            [
+                "Nueva solicitud de cuenta en WorkHive.",
+                "",
+                f"Nombre: {display_name}",
+                f"Email: {applicant_email}",
+            ]
+        )
+    )
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)
+
+
 def send_trial_approved_email(
     *,
     recipient_email: str,
