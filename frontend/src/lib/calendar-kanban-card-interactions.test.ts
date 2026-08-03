@@ -7,10 +7,10 @@ const card = readFileSync(
     "utf8",
 );
 
-test("kanban card opens task details from the card surface", () => {
+test("kanban card opens task details from an accessible full-card control", () => {
     assert.match(
         card,
-        /<article[\s\S]*?onClick=\{\(\) => onClick\(task\)\}/,
+        /<button[\s\S]*?onClick=\{\(\) => onClick\(task\)\}/,
     );
-    assert.match(card, /tabIndex=\{0\}/);
+    assert.match(card, /aria-label=\{`Abrir tarea: \$\{task\.title\}`\}/);
 });

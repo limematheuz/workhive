@@ -112,28 +112,25 @@ export function CalendarKanbanCard({
         <article
             draggable={canDrag && !task.is_invoiced && !updating}
             onDragStart={(e) => onDragStart(e, task.id)}
-            onClick={() => onClick(task)}
-            onKeyDown={(event) => {
-                if (event.target !== event.currentTarget) return;
-                if (event.key === "Enter" || event.key === " ") {
-                    if (event.key === " ") event.preventDefault();
-                    onClick(task);
-                }
-            }}
-            tabIndex={0}
             className={`rounded-2xl border bg-[var(--bg-card)] shadow-[0_2px_8px_var(--shadow-color)] ui-motion select-none group relative flex flex-col justify-between overflow-hidden ${statusTone.card} ${
                 task.is_invoiced
                     ? "opacity-85 cursor-default hover:border-[var(--border-soft)]"
                     : canDrag ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
             }`}
         >
+            <button
+                type="button"
+                onClick={() => onClick(task)}
+                aria-label={`Abrir tarea: ${task.title}`}
+                className="absolute inset-0 z-0 rounded-2xl focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            />
             {updating && (
-                <div className="absolute inset-0 bg-[var(--bg-card)]/70 backdrop-blur-xs flex items-center justify-center z-10 rounded-xl">
+                <div className="absolute inset-0 bg-[var(--bg-card)]/70 backdrop-blur-xs flex items-center justify-center z-30 rounded-xl">
                     <Loader2 className="w-4 h-4 text-accent animate-spin" />
                 </div>
             )}
 
-            <div className="p-4 pb-3 space-y-3">
+            <div className="relative z-10 pointer-events-none p-4 pb-3 space-y-3">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
                         {isExternal && (
@@ -163,19 +160,10 @@ export function CalendarKanbanCard({
                 </div>
 
                 <div className="space-y-1">
-                    <h4>
-                        <button
-                            type="button"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onClick(task);
-                            }}
-                            className={`cursor-pointer text-left text-sm font-bold leading-snug text-[var(--text-main)] transition-colors group-hover:text-accent ${
-                                isCompleted ? "line-through text-[var(--text-muted)]" : ""
-                            }`}
-                        >
-                            {displayTitle}
-                        </button>
+                    <h4 className={`text-left text-sm font-bold leading-snug text-[var(--text-main)] transition-colors group-hover:text-accent ${
+                        isCompleted ? "line-through text-[var(--text-muted)]" : ""
+                    }`}>
+                        {displayTitle}
                     </h4>
                     {checklist.length > 0 ? (
                         <div className="space-y-1.5 mt-2 relative pl-4 border-l border-neutral-300 dark:border-neutral-700/60 ml-1.5">
@@ -212,7 +200,7 @@ export function CalendarKanbanCard({
                 </div>
             </div>
 
-            <div className="border-t border-[var(--border-soft)] px-4 py-3 space-y-3">
+            <div className="relative z-10 pointer-events-none border-t border-[var(--border-soft)] px-4 py-3 space-y-3">
                 <div className="flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
                     <span className={`flex items-center gap-1.5 font-bold ${statusTone.icon}`}>
                         <StatusIcon className="w-3.5 h-3.5" />
@@ -229,7 +217,7 @@ export function CalendarKanbanCard({
             </div>
 
             {workSummary && workSummary.total_seconds > 0 && (
-                <div className="px-4 pb-2 space-y-1.5">
+                <div className="relative z-10 pointer-events-none px-4 pb-2 space-y-1.5">
                     {/* Total time badge */}
                     <div className="flex items-center gap-1.5 text-2xs font-bold text-[var(--text-muted)]">
                         <Timer className="w-3.5 h-3.5 text-accent" />
@@ -269,27 +257,24 @@ export function CalendarKanbanCard({
                                     href={mapUrl}
                                     target="_blank"
                                     rel="noreferrer"
-                                    onClick={e => e.stopPropagation()}
-                                    className="hover:opacity-80 transition-opacity"
+                                    className="pointer-events-auto hover:opacity-80 transition-opacity"
                                 >
                                     {badge}
                                 </a>
                             ) : (
-                                <button
-                                    type="button"
+                                <span
                                     key={w.user_id}
-                                    onClick={event => { event.stopPropagation(); onClick(task); }}
-                                    className="cursor-pointer hover:border-accent transition-colors"
+                                    className="hover:border-accent transition-colors"
                                 >
                                     {badge}
-                                </button>
+                                </span>
                             );
                         })}
                     </div>
                 </div>
             )}
 
-            <div className="px-4 pb-4 pt-1 flex items-center justify-between gap-3">
+            <div className="relative z-10 pointer-events-none px-4 pb-4 pt-1 flex items-center justify-between gap-3">
                 <div className="flex items-center min-w-0">
                     <div
                         className={`w-7 h-7 rounded-full ${fallbackIdentity.bgColor} flex items-center justify-center text-[10px] font-black text-white shrink-0 ring-2 ring-white/70`}
@@ -315,7 +300,7 @@ export function CalendarKanbanCard({
                 </span>
             </div>
 
-            <div className="px-4 pb-4 -mt-2 flex flex-wrap gap-2 text-2xs font-semibold text-[var(--text-muted)]">
+            <div className="relative z-10 pointer-events-none px-4 pb-4 -mt-2 flex flex-wrap gap-2 text-2xs font-semibold text-[var(--text-muted)]">
                 <span className="bg-[var(--bg-tertiary)] px-2.5 py-1 rounded-lg border border-[var(--border-soft)] flex items-center gap-1.5">
                     <UserRound className="w-3 h-3 text-accent" />
                     {task.quantity ? `${task.quantity} ${task.unit}` : task.unit}
