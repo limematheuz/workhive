@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useCallback, useRef, useState, useEffect } from "react";
+import { Suspense, startTransition, useCallback, useRef, useState, useEffect } from "react";
 import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { FileText, Loader2, Plus } from "lucide-react";
 
@@ -19,7 +19,16 @@ import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
 
-export default function QuotesPage() {
+function QuotesPageLoading() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />
+            <span className="text-xs text-[var(--text-muted)]">Cargando presupuestos...</span>
+        </div>
+    );
+}
+
+function QuotesPageContent() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
@@ -276,5 +285,13 @@ export default function QuotesPage() {
                 cancelText={dict.tasks.cancel}
             />
         </div>
+    );
+}
+
+export default function QuotesPage() {
+    return (
+        <Suspense fallback={<QuotesPageLoading />}>
+            <QuotesPageContent />
+        </Suspense>
     );
 }
