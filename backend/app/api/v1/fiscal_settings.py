@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.schemas.fiscal_settings import (
     CompanyFiscalSettingsResponse,
@@ -60,11 +62,19 @@ def update_company_fiscal_settings(
     status_code=status.HTTP_201_CREATED,
 )
 def upload_company_fiscal_certificate(
+    request: Request,
     file: UploadFile = File(...),
     password: str = Form(...),
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
+    enforce_rate_limit(
+        request,
+        "fiscal-certificate-upload",
+        settings.MEDIA_UPLOAD_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
     contents = file.file.read(
         company_fiscal_settings_service.MAX_CERTIFICATE_BYTES + 1
     )

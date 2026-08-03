@@ -2,6 +2,11 @@
 	encode zstd gzip
 
 	handle /api/* {
+		# Keep oversized request bodies out of the application process. Individual
+		# endpoints enforce tighter limits for images and certificates.
+		request_body {
+			max_size 6MB
+		}
 		reverse_proxy backend:8000
 	}
 

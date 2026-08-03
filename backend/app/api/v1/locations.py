@@ -9,6 +9,7 @@ from app.api.deps import (
     get_async_db,
     get_db,
 )
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.schemas.location import LocationCreate, LocationUpdate, LocationResponse
 from app.schemas.company import CompanyPartnerResponse
 from app.schemas.user import UserResponse
@@ -23,8 +24,8 @@ router = APIRouter()
 @router.get("/", response_model=list[LocationResponse])
 async def read_locations(
     client_id: int | None = None,
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):

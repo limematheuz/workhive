@@ -8,7 +8,9 @@ from app.models.client import Client
 from app.schemas.company import CompanyPartnerResponse
 from app.schemas.invoice import InvoiceCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate, InvoiceItemUpdate
+from app.schemas.location import LocationCreate
 from app.schemas.quote import QuoteCreate, QuoteUpdate
+from credentials import TEST_SECRET, CREDENTIAL_FIELD, login_form
 from app.services import invoice_item_service, invoice_service, quote_service
 from app.services.request_context import get_client_ip
 from tests.test_reservations import _company
@@ -146,3 +148,47 @@ def test_partner_company_response_excludes_private_billing_fields(db):
     assert "bank_account" not in payload
     assert "default_payment_notes" not in payload
     assert "default_document_terms" not in payload
+
+
+def test_pagination_parameters_are_bounded(client):
+    registration = client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "pagination@example.com",
+            CREDENTIAL_FIELD: TEST_SECRET,
+            "full_name": "Pagination User",
+            "accept_terms": True,
+            "accept_privacy": True,
+            "policy_version": "2026-06-15",
+        },
+    )
+    assert registration.status_code == 201
+    login = client.post(
+        "/api/v1/auth/login",
+        data=login_form("pagination@example.com", TEST_SECRET),
+    )
+
+    response = client.get(
+        "/api/v1/roles/?limit=501",
+        headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_location_map_url_rejects_script_schemes():
+    with pytest.raises(ValueError, match="HTTPS Google Maps or Waze"):
+        LocationCreate(
+            name="Unsafe location",
+            address="Test Street 1",
+            city="Girona",
+            map_url="javascript:alert(1)",
+        )
+
+    location = LocationCreate(
+        name="Safe location",
+        address="Test Street 1",
+        city="Girona",
+        map_url="https://www.google.com/maps?q=Girona",
+    )
+    assert location.map_url == "https://www.google.com/maps?q=Girona"

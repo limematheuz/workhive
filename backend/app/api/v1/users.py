@@ -17,6 +17,9 @@ from app.api.deps import (
     get_async_db,
     get_db,
 )
+from app.api.pagination import PaginationLimit, PaginationOffset
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.schemas.user import UserResponse, UserStatsResponse, UserUpdate
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
@@ -33,8 +36,8 @@ async def read_current_user(current_user: User = AsyncActiveUser):
 
 @router.get("/", response_model=list[UserResponse])
 async def read_all_users(
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveManagerOrAdmin,
 ):
@@ -96,6 +99,13 @@ def upload_user_photo(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
+    enforce_rate_limit(
+        request,
+        "profile-photo-upload",
+        settings.MEDIA_UPLOAD_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
     db_user = user_service.get_user(db, user_id, current_user)
 
     if current_user.id != user_id and current_user.role.name not in ["superadmin", "admin", "manager"]:

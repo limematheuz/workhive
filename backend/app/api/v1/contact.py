@@ -4,7 +4,7 @@ import smtplib
 from fastapi import APIRouter, HTTPException, Request, status
 
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 from app.schemas.contact import ContactRequest
 from app.services import email_service
 
@@ -21,10 +21,12 @@ def submit_contact_message(contact: ContactRequest, request: Request) -> dict[st
             detail="Contact form is not configured",
         )
 
-    rate_limiter.enforce(
-        rate_limit_key(request, "contact", contact.email),
+    enforce_rate_limit(
+        request,
+        "contact",
         settings.CONTACT_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=contact.email,
     )
 
     if contact.website:

@@ -8,6 +8,7 @@ from app.db.base import Base
 from app.api.deps import get_async_db, get_db
 from app.models.role import Role
 from app.core.config import settings
+from app.core.rate_limit import rate_limiter
 
 
 
@@ -78,6 +79,15 @@ def isolated_invoice_pdf_storage(tmp_path, monkeypatch):
     monkeypatch.setattr(settings, "SMTP_HOST", "smtp.test.local")
     monkeypatch.setattr(settings, "SMTP_FROM_EMAIL", "noreply@workhive.test")
     monkeypatch.setattr(settings, "CONTACT_RECIPIENT_EMAIL", "support@workhive.test")
+
+
+@pytest.fixture(autouse=True)
+def isolated_rate_limiter():
+    with rate_limiter._lock:
+        rate_limiter._attempts.clear()
+    yield
+    with rate_limiter._lock:
+        rate_limiter._attempts.clear()
 
 
 @pytest.fixture()

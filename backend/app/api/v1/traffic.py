@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 from app.schemas.traffic import PageViewCreate
 from app.services import audit_service
 from app.services.request_context import get_request_location_details
@@ -18,10 +18,12 @@ def record_page_view(
     request: Request,
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
-    rate_limiter.enforce(
-        rate_limit_key(request, "page-view", payload.visitor_id),
+    enforce_rate_limit(
+        request,
+        "page-view",
         max(settings.CONTACT_RATE_LIMIT, 60),
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=payload.visitor_id,
     )
     audit_service.record_public_event(
         db,

@@ -2,6 +2,7 @@ from fastapi import Depends, APIRouter, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.services import client_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
 from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
@@ -14,8 +15,8 @@ router = APIRouter()
 async def read_clients(
     is_active: bool | None = True,
     include_inactive: bool = False,
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):

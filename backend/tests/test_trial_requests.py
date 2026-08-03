@@ -1,4 +1,6 @@
 from credentials import TEST_SUPER, login_form
+from app.core.config import settings
+from app.core.rate_limit import rate_limiter
 from app.core.security import get_password_hash
 from app.models.trial_request import TrialRequest
 from app.models.user import User
@@ -114,3 +116,21 @@ def test_superadmin_can_approve_verified_trial_request(client, db, monkeypatch):
     assert data["created_company_id"] is not None
     assert data["created_user_id"] is not None
     assert "setup_url" in delivered
+
+
+def test_trial_verification_is_rate_limited(client, monkeypatch):
+    monkeypatch.setattr(settings, "TRIAL_VERIFICATION_RATE_LIMIT", 1)
+    with rate_limiter._lock:
+        rate_limiter._attempts.clear()
+
+    first = client.post(
+        "/api/v1/trial-requests/verify",
+        json={"token": "a" * 32},
+    )
+    second = client.post(
+        "/api/v1/trial-requests/verify",
+        json={"token": "b" * 32},
+    )
+
+    assert first.status_code == 404
+    assert second.status_code == 429

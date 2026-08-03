@@ -7,6 +7,7 @@ import { Location } from "@/types/location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { resolveApiMediaUrl } from "@/lib/api";
 import { buildGoogleMapsEmbedUrl } from "@/lib/google-maps-embed";
+import { isSafeLocationMapUrl } from "@/lib/location-map-url";
 
 interface TechTaskMapAreaProps {
     location: Location | null;
@@ -31,9 +32,10 @@ export function TechTaskMapArea({
         return `${location.address || ""}, ${location.city || ""}`.trim() || location.name;
     }, [location, locationName]);
     const mapEmbedUrl = buildGoogleMapsEmbedUrl(addressQuery);
-    const mapsHref =
-        location?.map_url
-        || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
+    const customMapUrl = location?.map_url;
+    const mapsHref = isSafeLocationMapUrl(customMapUrl)
+        ? customMapUrl
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
 
     return (
         <div className="relative h-56 w-full shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-secondary)] sm:h-60">

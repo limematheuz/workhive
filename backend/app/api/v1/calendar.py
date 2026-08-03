@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveUser, get_db
 from app.core.config import settings
-from app.core.rate_limit import rate_limit_key, rate_limiter
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.schemas.calendar import (
     CalendarConnectionStatus,
@@ -80,10 +80,12 @@ def start_google_calendar_oauth(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
-    rate_limiter.enforce(
-        rate_limit_key(request, "calendar-oauth", str(current_user.id)),
+    enforce_rate_limit(
+        request,
+        "calendar-oauth",
         settings.CALENDAR_OAUTH_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
     )
     return {
         "authorization_url": (
@@ -102,10 +104,12 @@ def request_calendar_ownership(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
-    rate_limiter.enforce(
-        rate_limit_key(request, "calendar-ownership", str(current_user.id)),
+    enforce_rate_limit(
+        request,
+        "calendar-ownership",
         settings.CALENDAR_OWNERSHIP_REQUEST_RATE_LIMIT,
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
     )
     result = calendar_governance_service.request_ownership(db, current_user)
     audit_service.record_event(
@@ -179,9 +183,9 @@ def reject_calendar_ownership(
 @router.get("/google/callback")
 def google_calendar_callback(
     request: Request,
-    code: str | None = Query(default=None),
-    state: str | None = Query(default=None),
-    error: str | None = Query(default=None),
+    code: str | None = Query(default=None, max_length=2048),
+    state: str | None = Query(default=None, max_length=4096),
+    error: str | None = Query(default=None, max_length=256),
     db: Session = Depends(get_db),
 ):
     if error or not code or not state:
@@ -222,6 +226,13 @@ def sync_google_calendar(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
+    enforce_rate_limit(
+        request,
+        "calendar-sync",
+        settings.CALENDAR_SYNC_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
     company_id = calendar_governance_service.require_company_calendar_role(
         current_user,
         calendar_governance_service.COMPANY_CALENDAR_SYNC_ROLES,

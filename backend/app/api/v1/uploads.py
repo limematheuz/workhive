@@ -1,6 +1,8 @@
-from fastapi import APIRouter, File, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, Request, Response, UploadFile, status
 
 from app.api.deps import ActiveUser
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
 from app.services.storage_service import (
@@ -16,10 +18,18 @@ ALLOWED_FOLDERS = {"company", "signature", "profile", "general", "location"}
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def upload_file(
+    request: Request,
     folder: str = "general",
     file: UploadFile = File(...),
     current_user: User = ActiveUser,
 ):
+    enforce_rate_limit(
+        request,
+        "media-upload",
+        settings.MEDIA_UPLOAD_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
     if folder not in ALLOWED_FOLDERS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

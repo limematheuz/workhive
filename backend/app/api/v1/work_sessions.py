@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, status, APIRouter
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.api.deps import (
     ActiveUser,
     AsyncActiveManagerOrAdmin,
@@ -23,8 +24,8 @@ router = APIRouter()
 
 @router.get("/", response_model=list[WorkSessionResponse])
 async def read_work_sessions(
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):

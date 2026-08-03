@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
 from app.services import expense_service
@@ -27,8 +28,8 @@ async def read_expenses(
     category: str | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveAdmin,
 ):

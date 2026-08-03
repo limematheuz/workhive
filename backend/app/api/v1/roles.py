@@ -2,6 +2,7 @@ from fastapi import Depends, APIRouter, status
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import ActiveUser, AsyncActiveUser, get_async_db, get_db
+from app.api.pagination import PaginationLimit, PaginationOffset
 from app.schemas.role import RoleCreate, RoleUpdate, RoleResponse
 from app.services import role_service
 from app.models.user import User
@@ -11,8 +12,8 @@ router = APIRouter()
 
 @router.get("/", response_model=list[RoleResponse])
 async def read_roles(
-    skip: int = 0,
-    limit: int = 100,
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
