@@ -5,7 +5,7 @@ from app.core.build_info import GIT_SHA_PATTERN, SEMVER_PATTERN
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "WorkHive Enterprise"
-    APP_VERSION: str = "1.2.1"
+    APP_VERSION: str = "1.2.2"
     GIT_SHA: str = "unknown"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str
