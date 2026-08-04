@@ -46,7 +46,7 @@ export function CalendarGoogleControls({
                     {calendarDict.primary_admin}: {status.owner_name || status.owner_email}
                 </span>
                 {status.can_connect && (
-                    <Button onClick={onConnect} disabled={connecting || loading} size="sm">
+                    <Button onClick={onConnect} disabled={connecting || loading}>
                         {connecting ? <Loader2 className="animate-spin" /> : <Cloud />}
                         {calendarDict.connect_google}
                     </Button>
@@ -55,8 +55,7 @@ export function CalendarGoogleControls({
                     <Button
                         onClick={onRequestOwnership}
                         disabled={requestingOwnership}
-                        variant="outline"
-                        size="sm"
+                        variant="secondary"
                     >
                         {requestingOwnership
                             ? <Loader2 className="animate-spin" />
@@ -80,7 +79,7 @@ export function CalendarGoogleControls({
                 {status.google_account_email || status.calendar_name}
             </span>
             {status.can_sync && (
-                <Button onClick={onSync} disabled={syncing} size="sm">
+                <Button onClick={onSync} disabled={syncing} variant="secondary">
                     {syncing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                     {calendarDict.sync_now}
                 </Button>
@@ -89,8 +88,7 @@ export function CalendarGoogleControls({
                 <Button
                     onClick={onDisconnectRequest}
                     disabled={disconnecting}
-                    variant="outline"
-                    size="sm"
+                    variant="dangerSoft"
                 >
                     {disconnecting ? <Loader2 className="animate-spin" /> : <CloudOff />}
                     {calendarDict.disconnect}
@@ -100,8 +98,7 @@ export function CalendarGoogleControls({
                 <Button
                     onClick={onRequestOwnership}
                     disabled={requestingOwnership}
-                    variant="outline"
-                    size="sm"
+                    variant="secondary"
                 >
                     {requestingOwnership
                         ? <Loader2 className="animate-spin" />

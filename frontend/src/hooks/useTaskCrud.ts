@@ -38,6 +38,7 @@ import {
 } from "@/domain/tasks/task-create";
 import { canDuplicateTask } from "@/domain/tasks/task-permissions";
 import { loadTaskCreateLocationData } from "@/lib/load-task-create-location-data";
+import { dismissTaskNotification } from "@/components/dashboard/notifications/notification-utils";
 
 interface UseTaskCrudParams {
     dict: Dictionary;
@@ -340,6 +341,7 @@ export function useTaskCrud({
     };
 
     const handleOpenDetail = (task: TaskItem) => {
+        if (currentUser) dismissTaskNotification(currentUser.id, task);
         const values = taskToEditValues(task);
         setSelectedTask(task);
         setEditTitle(values.title);

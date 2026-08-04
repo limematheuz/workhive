@@ -51,7 +51,6 @@ export function CalendarOwnershipRequests({
                         <div className="flex gap-2">
                             <Button
                                 type="button"
-                                size="sm"
                                 disabled={connected || reviewingRequestId !== null}
                                 onClick={() => onReview(request.id, "approve")}
                             >
@@ -62,8 +61,7 @@ export function CalendarOwnershipRequests({
                             </Button>
                             <Button
                                 type="button"
-                                size="sm"
-                                variant="outline"
+                                variant="dangerSoft"
                                 disabled={reviewingRequestId !== null}
                                 onClick={() => onReview(request.id, "reject")}
                             >

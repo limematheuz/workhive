@@ -41,7 +41,26 @@ export const persistDismissedNotificationKeys = (userId: number, keys: string[])
     window.dispatchEvent(new CustomEvent(NOTIFICATIONS_UPDATED_EVENT, { detail: { userId } }));
 };
 
+export const addDismissedNotificationKey = (keys: string[], key: string) => (
+    Array.from(new Set([...keys, key]))
+);
+
 export const getTaskNotificationKey = (task: TaskItem) => `task:${task.id}:${task.status}`;
+
+/**
+ * Opening a task is an acknowledgement of its client-side task alert. Keeping
+ * it here makes every task entry point behave identically and emits the same
+ * event that the notification panel already listens to.
+ */
+export const dismissTaskNotification = (userId: number, task: TaskItem) => {
+    persistDismissedNotificationKeys(
+        userId,
+        addDismissedNotificationKey(
+            getDismissedNotificationKeys(userId),
+            getTaskNotificationKey(task),
+        ),
+    );
+};
 export const getCollaborationNotificationKey = (collaboration: CompanyCollaboration) => `collaboration:${collaboration.id}:${collaboration.status}`;
 export const getReservationNotificationKey = (reservation: Reservation) => (
     reservation.status === "cancelled"

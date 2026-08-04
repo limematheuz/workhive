@@ -25,6 +25,7 @@ import {
 import { useTechDashboardTasks } from "@/hooks/useTechDashboardTasks";
 import { canManageCompanyTasks as canManageTasks } from "@/domain/access/roles";
 import { useTaskWorkSummaries } from "@/hooks/useTaskWorkSummaries";
+import { dismissTaskNotification } from "./notifications/notification-utils";
 
 interface TechDashboardProps {
     currentUser: User;
@@ -75,13 +76,14 @@ function TechDashboardInner({
         return locations.find(loc => loc.id === selectedTask.location_id) || null;
     }, [selectedTask, locations]);
 
-    const openTaskDetail = useCallback((taskId: number) => {
-        setSelectedTaskId(taskId);
+    const openTaskDetail = useCallback((task: TaskItem) => {
+        dismissTaskNotification(currentUser.id, task);
+        setSelectedTaskId(task.id);
         if (!detailHistoryOpenRef.current) {
-            window.history.pushState({ [DETAIL_HISTORY_KEY]: taskId }, "");
+            window.history.pushState({ [DETAIL_HISTORY_KEY]: task.id }, "");
             detailHistoryOpenRef.current = true;
         }
-    }, []);
+    }, [currentUser.id]);
 
     const closeTaskDetail = useCallback(() => {
         setSelectedTaskId(null);
@@ -244,7 +246,7 @@ function TechDashboardInner({
                                                     currentUser={currentUser}
                                                     onAccept={handleAccept}
                                                     onReject={handleReject}
-                                                    onViewDetails={(task) => openTaskDetail(task.id)}
+                                                    onViewDetails={openTaskDetail}
                                                     hideLocationName={true}
                                                     workSummary={workSummaries[task.id]}
                                                 />
@@ -259,7 +261,7 @@ function TechDashboardInner({
                                                     currentUser={currentUser}
                                                     onAccept={handleAccept}
                                                     onReject={handleReject}
-                                                    onViewDetails={(task) => openTaskDetail(task.id)}
+                                                    onViewDetails={openTaskDetail}
                                                     hideLocationName={true}
                                                     workSummary={workSummaries[task.id]}
                                                 />

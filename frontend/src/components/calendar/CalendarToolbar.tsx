@@ -33,11 +33,11 @@ export function CalendarToolbar({
     return (
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="icon" onClick={() => onNavigate("prev")}>
+                <Button variant="outline" size="icon" onClick={() => onNavigate("prev")} aria-label="Semana anterior">
                     <ChevronLeft />
                 </Button>
                 <Button variant="outline" onClick={() => onNavigate("today")}>{calendarDict.today}</Button>
-                <Button variant="outline" size="icon" onClick={() => onNavigate("next")}>
+                <Button variant="outline" size="icon" onClick={() => onNavigate("next")} aria-label="Semana siguiente">
                     <ChevronRight />
                 </Button>
                 <h2 className="ml-0 text-lg font-black capitalize text-[var(--text-main)] sm:ml-2">
@@ -49,7 +49,7 @@ export function CalendarToolbar({
                     value={locationFilter}
                     onChange={(event) => onLocationFilterChange(event.target.value)}
                     aria-label={calendarDict.all_locations}
-                    className="h-9 rounded-xl border border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] px-3 text-xs font-semibold text-[var(--text-main)] outline-none transition focus:border-[var(--accent-color)]"
+                    className="h-10 rounded-xl border border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] px-4 text-xs font-semibold text-[var(--text-main)] outline-none transition focus:border-[var(--accent-color)]"
                 >
                     <option value="">{calendarDict.all_locations}</option>
                     {locations.map((location) => (
@@ -61,7 +61,7 @@ export function CalendarToolbar({
                         value={userFilter}
                         onChange={(event) => onUserFilterChange(event.target.value)}
                         aria-label={calendarDict.all_workers}
-                        className="h-9 rounded-xl border border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] px-3 text-xs font-semibold text-[var(--text-main)] outline-none transition focus:border-[var(--accent-color)]"
+                        className="h-10 rounded-xl border border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] px-4 text-xs font-semibold text-[var(--text-main)] outline-none transition focus:border-[var(--accent-color)]"
                     >
                         <option value="">{calendarDict.all_workers}</option>
                         {users.map((user) => (

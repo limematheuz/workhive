@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     getCollaborationNotificationKey,
+    addDismissedNotificationKey,
     getDismissedNotificationKeys,
     getPrivacyRequestNotificationKey,
     getReservationNotificationKey,
@@ -37,4 +38,17 @@ test("notification recency and server rendering defaults are safe", () => {
     assert.equal(isWithinLastDays("2026-07-12T12:00:00Z", 2, now), true);
     assert.equal(isWithinLastDays("2026-07-10T12:00:00Z", 2, now), false);
     assert.deepEqual(getDismissedNotificationKeys(1), []);
+});
+
+test("opening a task only dismisses its current notification state once", () => {
+    const pendingTaskKey = getTaskNotificationKey({ id: 17, status: "pending" } as never);
+
+    assert.deepEqual(
+        addDismissedNotificationKey(["task:5:pending"], pendingTaskKey),
+        ["task:5:pending", "task:17:pending"],
+    );
+    assert.deepEqual(
+        addDismissedNotificationKey([pendingTaskKey], pendingTaskKey),
+        [pendingTaskKey],
+    );
 });

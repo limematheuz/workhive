@@ -28,6 +28,7 @@ import {
 } from "@/domain/tasks/task-status";
 import { canDuplicateTask, canMoveTaskOnKanban } from "@/domain/tasks/task-permissions";
 import type { KanbanStatus, TaskPriority, TaskStatus } from "@/types/task";
+import { dismissTaskNotification } from "@/components/dashboard/notifications/notification-utils";
 
 export type { KanbanStatus };
 
@@ -233,6 +234,7 @@ export function useOperationsCalendar({
 
     // Open task details modal
     const handleOpenDetail = (task: TaskItem) => {
+        if (currentUser) dismissTaskNotification(currentUser.id, task);
         const values = taskToEditValues(task);
         setSelectedTask(task);
         setEditTitle(values.title);

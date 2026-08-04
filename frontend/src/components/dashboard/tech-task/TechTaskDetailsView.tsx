@@ -54,7 +54,7 @@ export function TechTaskDetailsView({
                 dict={dict}
             />
 
-            <div className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 ${scrollHide}`}>
+            <div className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 pb-24 sm:px-5 sm:py-5 ${scrollHide}`}>
                 <TechTaskHeaderInfo {...headerInfoProps} />
                 <TechTaskModalCounters {...countersProps} />
                 <div className="space-y-3">
