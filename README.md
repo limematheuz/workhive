@@ -128,3 +128,9 @@ cd frontend && pnpm test && pnpm typecheck && pnpm lint
 
 No se versionan contraseñas, tokens, certificados, claves privadas, backups ni
 archivos de entorno reales.
+
+## WIP
+
+- Implementar el flujo de **Solicitar acceso**: debe avisar a
+  `matheus@workhive.es`, pero no crear un usuario activo ni una empresa hasta
+  que un administrador de WorkHive apruebe la solicitud.
