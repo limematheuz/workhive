@@ -8,19 +8,18 @@ import {
     getContactValidationMessages,
     getInitialContactForm,
     prepareContactSubmission,
+    syncContactFormLocale,
 } from "@/lib/contact-form";
-import { AuthTopControls } from "@/components/auth/AuthTopControls";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { ContactFormCard } from "@/components/contact/ContactFormCard";
 import { ContactInfoAside } from "@/components/contact/ContactInfoAside";
-import { useThemeMode } from "@/lib/theme";
 import { ArrowLeft } from "lucide-react";
 import { contactService } from "@/services/contact.service";
 import { TrialRequestService } from "@/services/trial-request.service";
 import { toast } from "sonner";
 
 function ContactPageContent() {
-    const { locale } = useDictionary();
-    const [theme, setTheme] = useThemeMode();
+    const { locale, dict } = useDictionary();
     const searchParams = useSearchParams();
     const reasonParam = searchParams.get("reason");
     const trialVerificationToken = searchParams.get("trial_verification");
@@ -31,9 +30,11 @@ function ContactPageContent() {
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState("");
     const [verificationStatus, setVerificationStatus] = useState("");
-    const supportEmail = process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
     const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_PHONE;
-    const businessLocation = process.env.NEXT_PUBLIC_BUSINESS_LOCATION;
+
+    useEffect(() => {
+        setForm((current) => syncContactFormLocale(current, reasonParam, locale));
+    }, [locale, reasonParam]);
 
     useEffect(() => {
         if (!trialVerificationToken) return;
@@ -50,17 +51,18 @@ function ContactPageContent() {
                 setVerificationStatus(
                     locale === "es"
                         ? "Email verificado. Revisaremos tu solicitud y te avisaremos si el acceso es aprobado."
-                        : "Email verified. We will review your request and notify you if access is approved."
+                        : "Email verified. We will review your request and notify you if access is approved.",
                 );
                 toast.success(locale === "es" ? "Email verificado" : "Email verified");
             })
             .catch((verificationError) => {
                 if (cancelled) return;
-                const message = verificationError instanceof Error
-                    ? verificationError.message
-                    : locale === "es"
-                        ? "No se pudo verificar la solicitud"
-                        : "The request could not be verified";
+                const message =
+                    verificationError instanceof Error
+                        ? verificationError.message
+                        : locale === "es"
+                          ? "No se pudo verificar la solicitud"
+                          : "The request could not be verified";
                 setError(message);
                 toast.error(message);
             });
@@ -98,8 +100,8 @@ function ContactPageContent() {
                         ? "Solicitud enviada. Revisa tu email para verificarla."
                         : "Request sent. Check your email to verify it."
                     : locale === "es"
-                        ? "Mensaje enviado correctamente"
-                        : "Message sent successfully"
+                      ? "Mensaje enviado correctamente"
+                      : "Message sent successfully",
             );
         } catch (submissionError) {
             const message =
@@ -116,46 +118,49 @@ function ContactPageContent() {
     };
 
     return (
-        <main className="relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden bg-[var(--bg-primary)] px-4 pb-8 pt-24 text-[var(--text-main)] transition-colors duration-300 sm:pt-20">
-            <AuthTopControls theme={theme} onThemeChange={setTheme} />
+        <AuthShell wide showFooter={false} contentClassName="py-4 sm:py-8">
+            <Link
+                href="/login"
+                className="group mb-6 inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion sm:mb-8"
+            >
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                {dict.auth.back_to_login}
+            </Link>
 
-            <div className="z-10 w-full min-w-0 max-w-5xl py-4 sm:py-8 lg:py-12">
-                <Link
-                    href="/login"
-                    className="group mb-6 inline-flex items-center gap-2 text-sm text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] sm:mb-8"
-                >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    {locale === "es" ? "Volver al inicio" : "Back to login"}
-                </Link>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                    <ContactInfoAside
-                        locale={locale}
-                        supportEmail={supportEmail}
-                        supportPhone={supportPhone}
-                        businessLocation={businessLocation}
-                    />
-                    <ContactFormCard
-                        locale={locale}
-                        isTrialRequest={isTrialRequest}
-                        form={form}
-                        setForm={setForm}
-                        submitting={submitting}
-                        submitted={submitted}
-                        error={error}
-                        verificationStatus={verificationStatus}
-                        onSubmit={handleSubmit}
-                        onResetSubmitted={() => setSubmitted(false)}
-                    />
-                </div>
+            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+                <ContactInfoAside
+                    dict={dict}
+                    isTrialRequest={isTrialRequest}
+                    supportPhone={supportPhone}
+                />
+                <ContactFormCard
+                    dict={dict}
+                    locale={locale}
+                    isTrialRequest={isTrialRequest}
+                    form={form}
+                    setForm={setForm}
+                    submitting={submitting}
+                    submitted={submitted}
+                    error={error}
+                    verificationStatus={verificationStatus}
+                    onSubmit={handleSubmit}
+                    onResetSubmitted={() => setSubmitted(false)}
+                />
             </div>
-        </main>
+        </AuthShell>
     );
 }
 
 export default function ContactPage() {
+    const { dict } = useDictionary();
     return (
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] text-[var(--text-muted)]">Cargando...</div>}>
+        <Suspense
+            fallback={
+                <div className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] text-[var(--text-muted)]">
+                    {dict.auth.loading}
+                </div>
+            }
+        >
             <ContactPageContent />
         </Suspense>
     );

@@ -103,6 +103,29 @@ export function getInitialContactForm(reason: ContactReason, locale: AuthFormLoc
     };
 }
 
+/** Keep prefilled subject/message in sync when the user switches language. */
+export function syncContactFormLocale(
+    form: ContactFormState,
+    reason: ContactReason,
+    nextLocale: AuthFormLocale,
+): ContactFormState {
+    const otherLocale: AuthFormLocale = nextLocale === "es" ? "en" : "es";
+    const nextDefaults = getInitialContactForm(reason, nextLocale);
+    const otherDefaults = getInitialContactForm(reason, otherLocale);
+
+    return {
+        ...form,
+        subject:
+            form.subject === "" || form.subject === otherDefaults.subject
+                ? nextDefaults.subject
+                : form.subject,
+        message:
+            form.message === "" || form.message === otherDefaults.message
+                ? nextDefaults.message
+                : form.message,
+    };
+}
+
 export function prepareContactSubmission(
     form: ContactFormState,
     isTrialRequest: boolean,

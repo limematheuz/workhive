@@ -19,11 +19,11 @@ test("register fits a mobile viewport and opens the trial contact form", async (
     await page.goto("/register");
 
     await expect(
-        page.getByRole("heading", { name: /Solicitar acceso a WorkHive/i })
+        page.getByRole("heading", { name: /Cómo acceder a WorkHive/i })
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
 
-    await page.getByRole("link", { name: /^Contacto$/i }).click();
+    await page.getByRole("link", { name: /^Contactar$/i }).click();
     await expect(page).toHaveURL(/\/contact\?reason=trial$/);
 });
 
@@ -45,7 +45,7 @@ test("password recovery fits a mobile viewport", async ({ page }) => {
     await page.goto("/forgot-password");
 
     await expect(
-        page.getByRole("heading", { name: /Olvidaste tu contraseña/i })
+        page.getByRole("heading", { name: /Recuperar acceso/i })
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
 });
