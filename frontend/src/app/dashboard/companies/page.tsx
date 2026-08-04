@@ -16,6 +16,7 @@ import { formatDateForInput, isCompanyAccessEnabled } from "@/components/compani
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import type { PopoverOption } from "@/components/ui/action-popover";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
@@ -335,7 +336,7 @@ function CompaniesAdminPageContent({
                 actions={(
                     <Button
                         onClick={() => setIsProvisionOpen(true)}
-                        className="h-11 gap-2 rounded-xl bg-[var(--btn-primary-bg)] px-5 text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]"
+                        className={PAGE_ACTION_BUTTON_PRIMARY}
                     >
                         <Plus className="h-4 w-4" />
                         Nueva empresa

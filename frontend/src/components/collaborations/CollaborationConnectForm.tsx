@@ -3,6 +3,7 @@
 import React from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 type CollaborationConnectFormProps = {
     inputCode: string;
@@ -63,7 +64,7 @@ export function CollaborationConnectForm({
                     <Button
                         type="submit"
                         disabled={sending || loading}
-                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center justify-center gap-1.5 cursor-pointer ui-motion"
+                        className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
                     >
                         {sending && <Loader2 className="w-4 h-4 animate-spin" />}
                         Solicitar vinculación

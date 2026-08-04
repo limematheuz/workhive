@@ -20,6 +20,7 @@ import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/errors";
 import { RoleFormDialogs } from "@/components/roles/RoleFormDialogs";
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
 
 export default function RolesAdminPage() {
@@ -134,7 +135,7 @@ export default function RolesAdminPage() {
                     <button
                         type="button"
                         onClick={handleCreateClick}
-                        className="bg-black text-white hover:bg-neutral-800 font-semibold rounded-xl px-4 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border-none cursor-pointer"
+                        className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
                     >
                         <Plus className="h-4 w-4" />
                         {dict.roles.new_role}

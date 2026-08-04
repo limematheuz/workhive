@@ -185,6 +185,7 @@ export default function LocationsPage() {
 
             {/* Owned and shared property tabs */}
             <PremiumTabs
+                layout="fit"
                 tabs={[
                     { id: "own" as const, label: `${dict.locations?.tabs?.own || "Propias"} (${locations.filter((l) => getOwnerCompanyId(l) == null || getOwnerCompanyId(l) === user?.company_id).length})`, icon: Home },
                     { id: "shared" as const, label: `${dict.locations?.tabs?.shared || "Compartidas"} (${locations.filter((l) => getOwnerCompanyId(l) != null && getOwnerCompanyId(l) !== user?.company_id).length})`, icon: Share2 }

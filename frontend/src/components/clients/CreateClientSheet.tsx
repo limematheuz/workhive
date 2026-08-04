@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "@/lib/toast"
 import { ClientService } from "@/services/client.service"
 import { useDictionary } from "@/lib/dictionary-context"
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button"
 
 interface CreateClientSheetProps {
     onClientCreated?: () => void
@@ -62,8 +63,8 @@ export function CreateClientSheet({ onClientCreated }: CreateClientSheetProps) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs border border-[var(--border-soft)] shadow-sm w-full md:w-auto ui-motion cursor-pointer">
-                    <Plus className="mr-2 h-4 w-4" />
+                <Button className={`${PAGE_ACTION_BUTTON_PRIMARY} w-full md:w-auto cursor-pointer`}>
+                    <Plus className="h-4 w-4" />
                     {dict.clients.form.new_client}
                 </Button>
             </DialogTrigger>

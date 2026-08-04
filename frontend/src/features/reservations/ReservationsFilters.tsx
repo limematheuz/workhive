@@ -2,6 +2,7 @@
 
 import { ArrowUpRight, History, RotateCcw, Search } from "lucide-react";
 
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/types/location";
 
@@ -239,42 +240,24 @@ export function ReservationsFilters({
                 </div>
             </div>
 
-            <div className="flex bg-[var(--bg-primary)]/40 p-1 border border-[var(--border-soft)] rounded-2xl w-full gap-1 my-4">
-                <button type="button"
-                    onClick={() => onViewModeChange("active")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl ui-motion cursor-pointer border-none text-xs font-bold uppercase tracking-wider select-none ${
-                        viewMode === "active"
-                            ? "bg-accent text-white font-black shadow-md dark:bg-accent"
-                            : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
-                    }`}
-                >
-                    <ArrowUpRight
-                        className={`w-3.5 h-3.5 ${
-                            viewMode === "active"
-                                ? "text-white"
-                                : "text-[var(--text-main)]"
-                        }`}
-                    />
-                    {dict.reservations?.view_mode?.active || "Vigentes"}
-                </button>
-                <button type="button"
-                    onClick={() => onViewModeChange("history")}
-                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl ui-motion cursor-pointer border-none text-xs font-bold uppercase tracking-wider select-none ${
-                        viewMode === "history"
-                            ? "bg-accent text-white font-black shadow-md dark:bg-accent"
-                            : "bg-transparent text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]"
-                    }`}
-                >
-                    <History
-                        className={`w-3.5 h-3.5 ${
-                            viewMode === "history"
-                                ? "text-white"
-                                : "text-[var(--text-main)]"
-                        }`}
-                    />
-                    {dict.reservations?.view_mode?.history || "Historial"}
-                </button>
-            </div>
+            <PremiumTabs<ReservationViewMode>
+                layout="fit"
+                className="my-4"
+                tabs={[
+                    {
+                        id: "active",
+                        label: dict.reservations?.view_mode?.active || "Vigentes",
+                        icon: ArrowUpRight,
+                    },
+                    {
+                        id: "history",
+                        label: dict.reservations?.view_mode?.history || "Historial",
+                        icon: History,
+                    },
+                ]}
+                activeTab={viewMode}
+                onChange={onViewModeChange}
+            />
         </>
     );
 }

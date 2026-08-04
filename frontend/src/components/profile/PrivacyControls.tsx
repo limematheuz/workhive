@@ -19,6 +19,7 @@ import {
 } from "@/services/privacy.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
+import { PAGE_ACTION_BUTTON_BASE, PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 
 interface PrivacyControlsProps {
@@ -178,7 +179,7 @@ export function PrivacyControls({
                         type="button"
                         onClick={exportData}
                         disabled={working !== null}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-5 py-2.5 text-xs font-semibold text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                        className={PAGE_ACTION_BUTTON_PRIMARY}
                     >
                         {working === "export"
                             ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -189,7 +190,7 @@ export function PrivacyControls({
                         type="button"
                         onClick={() => setErasureDialogOpen(true)}
                         disabled={working !== null || Boolean(openRequest)}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-500/30 bg-red-500/10 px-5 py-2.5 text-xs font-semibold text-red-600 shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
+                        className={`${PAGE_ACTION_BUTTON_BASE} border-red-500/30 bg-red-500/10 text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white`}
                     >
                         {working === "erasure"
                             ? <Loader2 className="h-4 w-4 animate-spin" />

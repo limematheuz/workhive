@@ -4,6 +4,7 @@ import React, { Suspense } from "react";
 import { Plus, Columns3, ListTodo, Library, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { useTasksPage } from "@/hooks/useTasksPage";
 import { TasksKanban } from "@/components/tasks/TasksKanban";
 import { TasksList } from "@/components/tasks/TasksList";
@@ -27,7 +28,7 @@ function TasksPageContent() {
                         {state.activeTab === "templates" && state.isAdminOrManager && (
                             <Button
                                 onClick={() => state.handleOpenTemplateModal(null)}
-                                className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                                className={PAGE_ACTION_BUTTON_PRIMARY}
                             >
                                 <Plus className="w-4 h-4" />
                                 {state.dict.tasks?.create_template || "Nuevo servicio"}
@@ -37,7 +38,7 @@ function TasksPageContent() {
                     {state.activeTab !== "templates" && state.isAdminOrManager && (
                         <Button
                             onClick={() => state.setIsCreateOpen(true)}
-                            className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                            className={PAGE_ACTION_BUTTON_PRIMARY}
                         >
                             <Plus className="w-4 h-4" />
                             {state.dict.tasks?.new_task || "Nueva Tarea"}
@@ -49,6 +50,7 @@ function TasksPageContent() {
 
             {/* Tab selector (Premium Navigation) */}
             <PremiumTabs
+                layout="fit"
                 tabs={[
                     { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Operaciones", icon: Columns3 },
                     ...(state.isAdminOrManager

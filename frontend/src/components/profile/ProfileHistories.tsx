@@ -50,6 +50,7 @@ export function ProfileHistories({
         <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl shadow-lg overflow-hidden">
             <div className="p-4 border-b border-[var(--border-soft)]">
                 <PremiumTabs
+                    layout="fit"
                     tabs={[
                         { id: "sessions" as const, label: dict.profile?.tabs?.work_history || "Historial de Jornadas" },
                         { id: "tasks" as const, label: dict.profile?.tabs?.task_history || "Historial de Tareas" },

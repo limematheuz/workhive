@@ -194,6 +194,7 @@ function TechDashboardInner({
                 <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
                     <div className="space-y-6 lg:col-span-2">
                         <PremiumTabs
+                            layout="fit"
                             tabs={[
                                 { id: "hoy", label: dict.tech.tab_today, badge: dashboardTasks.countPendingForTab("hoy") },
                                 { id: "manana", label: dict.tech.tab_tomorrow, badge: dashboardTasks.countPendingForTab("manana") },

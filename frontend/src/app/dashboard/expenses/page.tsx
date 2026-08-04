@@ -7,6 +7,7 @@ import { ExpenseFormDialog } from "@/components/expenses/ExpenseFormDialog";
 import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
@@ -164,7 +165,7 @@ export default function ExpensesPage() {
                         <button
                             type="button"
                             onClick={openCreateForm}
-                            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] px-4 text-sm font-semibold text-[var(--btn-primary-text)] transition hover:bg-[var(--btn-primary-hover-bg)]"
+                            className={PAGE_ACTION_BUTTON_PRIMARY}
                         >
                             <Plus className="h-4 w-4" />
                             {text.add_expense}

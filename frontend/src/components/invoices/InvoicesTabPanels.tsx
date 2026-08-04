@@ -31,6 +31,7 @@ export function InvoicesTabPanels({
     return (
         <>
             <PremiumTabs
+                layout="fit"
                 tabs={[
                     { id: "invoices" as const, label: tabLabels.tab_invoices || "Facturas", icon: Receipt },
                     { id: "jobs" as const, label: tabLabels.tab_jobs || "Trabajos hechos", icon: BriefcaseBusiness },

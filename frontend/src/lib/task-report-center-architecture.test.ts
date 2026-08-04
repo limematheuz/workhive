@@ -40,6 +40,11 @@ test("report center reuses the application visual system and keeps details in a 
     assert.match(page, /components\/ui\/input/);
     assert.match(page, /scrollbar-width:none/);
     assert.match(premiumTabs, /layout\?:\s*"scroll"\s*\|\s*"fit"/);
+    assert.match(premiumTabs, /layout\s*=\s*"fit"/);
+    assert.match(premiumTabs, /bg-\[var\(--bg-primary\)\]\/40/);
+    assert.doesNotMatch(premiumTabs, /dialog-control-bg/);
+    assert.doesNotMatch(premiumTabs, /text-\[10px\].*uppercase tracking-wider/);
+    assert.match(premiumTabs, /h-3\.5 w-3\.5/);
     assert.match(premiumTabs, /overflow-hidden/);
     assert.match(reportCard, /components\/ui\/badge/);
     assert.match(reportDialog, /components\/ui\/dialog/);

@@ -3,6 +3,7 @@
 import { Cloud, CloudOff, Loader2, RefreshCw, ShieldQuestion } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { CalendarConnectionStatus } from "@/services/calendar.service";
 
@@ -46,7 +47,7 @@ export function CalendarGoogleControls({
                     {calendarDict.primary_admin}: {status.owner_name || status.owner_email}
                 </span>
                 {status.can_connect && (
-                    <Button onClick={onConnect} disabled={connecting || loading}>
+                    <Button onClick={onConnect} disabled={connecting || loading} className={PAGE_ACTION_BUTTON_PRIMARY}>
                         {connecting ? <Loader2 className="animate-spin" /> : <Cloud />}
                         {calendarDict.connect_google}
                     </Button>

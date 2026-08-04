@@ -126,6 +126,7 @@ export function NotificationPanel() {
                     </div>
 
                     <PremiumTabs
+                        layout="fit"
                         tabs={[
                             {
                                 id: "primary",
