@@ -25,6 +25,6 @@ test("resumen week tab shortens on mobile only", () => {
     assert.equal(es.tech.tab_week_short, "Semana");
     assert.equal(en.tech.tab_week, "This Week");
     assert.equal(en.tech.tab_week_short, "Week");
-    assert.match(dashboard, /hidden sm:inline.*tab_week/s);
-    assert.match(dashboard, /sm:hidden.*tab_week_short/s);
+    assert.match(dashboard, /className="hidden sm:inline">\{dict\.tech\.tab_week\}/);
+    assert.match(dashboard, /className="sm:hidden">\{dict\.tech\.tab_week_short\}/);
 });
