@@ -52,11 +52,11 @@ function TasksPageContent() {
             <PremiumTabs
                 layout="fit"
                 tabs={[
-                    { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Operaciones", icon: Columns3 },
+                    { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Tablero", icon: Columns3 },
                     ...(state.isAdminOrManager
                         ? [
-                            { id: "list" as const, label: state.dict.tasks?.tab_list || "Todas las tareas", icon: ListTodo },
-                            { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Catálogo de servicios", icon: Library }
+                            { id: "list" as const, label: state.dict.tasks?.tab_list || "Lista", icon: ListTodo },
+                            { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Plantillas", icon: Library }
                           ]
                         : [])
                 ]}

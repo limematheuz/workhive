@@ -67,8 +67,8 @@ jobs:
           POSTGRES_PASSWORD: compose-test-password
           SECRET_KEY: compose-test-secret
           APP_DOMAIN: example.test
-          BACKEND_IMAGE: registry.example/workhive/backend:v1.2.7
-          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.2.7
+          BACKEND_IMAGE: registry.example/workhive/backend:v1.2.8
+          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.2.8
         run: |
           docker compose \
             -f docker-compose.yml \
@@ -99,8 +99,8 @@ jobs:
           POSTGRES_PASSWORD: compose-test-password
           SECRET_KEY: compose-test-secret
           APP_DOMAIN: example.test
-          BACKEND_IMAGE: registry.example/workhive/backend:v1.2.7
-          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.2.7
+          BACKEND_IMAGE: registry.example/workhive/backend:v1.2.8
+          FRONTEND_IMAGE: registry.example/workhive/frontend:v1.2.8
         run: |
           python ops/security/test_waf_template.py
           python ops/security/test_edge_configuration.py
