@@ -143,7 +143,7 @@ export function SidebarNavigation({
     };
 
     return (
-        <nav className="relative z-0 flex-1 min-h-0 overflow-y-auto px-2 pb-2 max-lg:pt-6 lg:pt-3.5 space-y-0.5 text-[13px]">
+        <nav className="relative z-0 flex-1 min-h-0 overflow-y-auto px-2 pb-2 max-lg:pt-5 lg:pt-2.5 space-y-0.5 text-[13px]">
             {isOpen ? (
                 <>
                     {plainLinks.map(link => renderNavLink(link))}

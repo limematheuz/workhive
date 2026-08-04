@@ -198,7 +198,16 @@ function TechDashboardInner({
                             tabs={[
                                 { id: "hoy", label: dict.tech.tab_today, badge: dashboardTasks.countPendingForTab("hoy") },
                                 { id: "manana", label: dict.tech.tab_tomorrow, badge: dashboardTasks.countPendingForTab("manana") },
-                                { id: "semana", label: dict.tech.tab_week, badge: dashboardTasks.countPendingForTab("semana") },
+                                {
+                                    id: "semana",
+                                    label: (
+                                        <>
+                                            <span className="hidden sm:inline">{dict.tech.tab_week}</span>
+                                            <span className="sm:hidden">{dict.tech.tab_week_short}</span>
+                                        </>
+                                    ),
+                                    badge: dashboardTasks.countPendingForTab("semana"),
+                                },
                                 { id: "todo", label: dict.tech.tab_all, badge: dashboardTasks.countPendingForTab("todo") },
                             ]}
                             activeTab={activeTab}
