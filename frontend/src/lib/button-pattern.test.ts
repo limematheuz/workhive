@@ -8,7 +8,8 @@ test("shared buttons use the profile export dimensions and semantic palette", ()
     const button = read("../components/ui/button.tsx");
 
     assert.match(button, /rounded-xl text-xs font-semibold/);
-    assert.match(button, /default: "h-10 px-5/);
+    assert.match(button, /default: "px-5 py-2.5/);
+    assert.match(button, /gap-1\.5 rounded-xl text-xs font-semibold/);
     assert.match(button, /dangerSoft:/);
     assert.match(button, /--btn-primary-bg/);
     assert.match(button, /--btn-secondary-bg/);

@@ -173,6 +173,7 @@ export default function LiveWorkPage() {
             )}
 
             <PremiumTabs
+                layout="fit"
                 tabs={[
                     {
                         id: "own",

@@ -4,6 +4,7 @@ import { CalendarDays, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 type ReservationsPageHeaderProps = {
@@ -29,7 +30,7 @@ export function ReservationsPageHeader({
             actions={showCreateButton ? (
                 <Button
                     onClick={onCreate}
-                    className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                    className={PAGE_ACTION_BUTTON_PRIMARY}
                 >
                     <Plus className="w-4 h-4" />
                     {dict.reservations?.new_reservation || "Nueva reserva"}

@@ -6,6 +6,7 @@ import { FileText, Loader2, Plus } from "lucide-react";
 
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { QuoteCreateSheet } from "@/components/quotes/QuoteCreateSheet";
 import { QuoteDetailSheet } from "@/components/quotes/QuoteDetailSheet";
 import { QuotesFiltersSection } from "@/components/quotes/QuotesFiltersSection";
@@ -208,7 +209,7 @@ function QuotesPageContent() {
                     <button
                         type="button"
                         onClick={() => setIsCreateOpen(true)}
-                        className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs flex items-center justify-center gap-2 ui-motion shadow-sm border border-[var(--border-soft)] cursor-pointer"
+                        className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
                     >
                         <Plus className="w-4 h-4" />
                         {dict.quotes?.new_quote ?? "Nuevo Presupuesto"}

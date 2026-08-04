@@ -88,16 +88,6 @@ export function OperationsCalendar({
                 subtitle={state.dict.tasks.kanban?.subtitle || "Planifica, asigna y mueve el trabajo por estados con una vista visual de operaciones."}
                 titleAs="h2"
                 className="border-[var(--border-soft)]"
-                actions={state.isAdminOrManager && onCreateTask ? (
-                    <button
-                        type="button"
-                        onClick={onCreateTask}
-                        className="h-10 px-4 rounded-xl bg-[var(--text-main)] text-[var(--text-inverse)] text-xs font-bold flex items-center gap-2 shrink-0 cursor-pointer"
-                    >
-                        <Plus className="w-4 h-4" />
-                        {state.dict.tasks?.new_task || "Nueva Tarea"}
-                    </button>
-                ) : undefined}
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr_0.8fr] gap-3 bg-[var(--bg-secondary)] border border-[var(--border-soft)] rounded-2xl p-3">

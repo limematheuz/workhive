@@ -14,7 +14,7 @@ interface PremiumTabsProps<T extends string> {
     activeTab: T;
     onChange: (id: T) => void;
     className?: string;
-    /** `fit` keeps every tab visible without horizontal scroll (mobile-safe). */
+    /** `fit` keeps every tab visible without horizontal scroll (mobile-safe). Default for ≤4 tabs. */
     layout?: "scroll" | "fit";
 }
 
@@ -23,13 +23,13 @@ export function PremiumTabs<T extends string>({
     activeTab,
     onChange,
     className = "",
-    layout = "scroll",
+    layout = "fit",
 }: PremiumTabsProps<T>) {
     const fit = layout === "fit";
 
     return (
         <div
-            className={`flex w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--dialog-control-bg)] p-1 ${
+            className={`flex w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
                 fit
                     ? "overflow-hidden"
                     : "snap-x overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
@@ -44,8 +44,10 @@ export function PremiumTabs<T extends string>({
                         key={tab.id}
                         onClick={() => onChange(tab.id)}
                         title={typeof tab.label === "string" ? tab.label : undefined}
-                        className={`flex flex-1 items-center justify-center gap-1 rounded-xl border-none px-1.5 py-2 text-[10px] font-bold uppercase tracking-wider ui-motion cursor-pointer select-none sm:gap-2 sm:px-3 md:text-xs ${
-                            fit ? "min-w-0" : "shrink-0 snap-align-start"
+                        className={`flex flex-1 items-center justify-center rounded-xl border-none py-2 text-xs font-bold uppercase tracking-wider ui-motion cursor-pointer select-none ${
+                            fit
+                                ? "min-w-0 gap-1.5 px-2 sm:gap-2 sm:px-3"
+                                : "shrink-0 snap-align-start gap-2 px-3"
                         } ${
                             isActive
                                 ? "bg-accent font-black text-white shadow-md"
@@ -54,7 +56,7 @@ export function PremiumTabs<T extends string>({
                     >
                         {Icon && (
                             <Icon
-                                className={`h-3.5 w-3.5 shrink-0 transition-colors md:h-4 md:w-4 ${
+                                className={`h-3.5 w-3.5 shrink-0 transition-colors ${
                                     isActive ? "text-white" : "text-[var(--text-main)]"
                                 }`}
                             />

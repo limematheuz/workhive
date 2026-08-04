@@ -26,6 +26,7 @@ function RegisterPageContent() {
                 </div>
 
                 <PremiumTabs
+                    layout="fit"
                     tabs={[
                         { id: "login", label: t.sign_in },
                         { id: "register", label: "Solicitar acceso" }

@@ -72,6 +72,7 @@ export default function LoginPage() {
 
                 <div className="w-full max-w-md lg:w-[450px] order-1 lg:order-2">
                     <PremiumTabs
+                        layout="fit"
                         tabs={[
                             { id: "login", label: t.sign_in },
                             { id: "register", label: "Solicitar acceso" }

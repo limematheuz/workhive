@@ -125,6 +125,7 @@ export function ReservationsPageLayout({
             />
 
             <PremiumTabs
+                layout="fit"
                 tabs={[
                     {
                         id: "reservations" as const,

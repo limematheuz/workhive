@@ -20,6 +20,7 @@ import { Client } from "@/services/client.service"
 import { toast } from "@/lib/toast"
 import { LocationService } from "@/services/location.service"
 import { useDictionary } from "@/lib/dictionary-context"
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button"
 import { CollaborationService } from "@/services/collaboration.service"
 import { Company } from "@/types/company"
 import { LocationFormAccommodationSection } from "./LocationFormAccommodationSection"
@@ -258,8 +259,8 @@ export function CreateLocationSheet({ clients, defaultClientId, onLocationCreate
     return (
         <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
-                <Button className="bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] font-semibold rounded-xl px-5 py-2.5 text-xs border border-[var(--border-soft)] shadow-sm w-full md:w-auto ui-motion cursor-pointer">
-                    <Plus className="mr-2 h-4 w-4" />
+                <Button className={`${PAGE_ACTION_BUTTON_PRIMARY} w-full md:w-auto cursor-pointer`}>
+                    <Plus className="h-4 w-4" />
                     {dict.locations.form.new_location}
                 </Button>
             </DialogTrigger>

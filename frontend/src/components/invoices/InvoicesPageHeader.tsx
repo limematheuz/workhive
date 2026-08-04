@@ -3,6 +3,7 @@
 import { Plus, Receipt } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 type InvoicesPageHeaderProps = {
     title: string;
@@ -27,7 +28,7 @@ export function InvoicesPageHeader({
                 <button
                     type="button"
                     onClick={onCreateInvoice}
-                    className="flex h-11 items-center justify-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-primary-bg)] px-5 text-xs font-black text-[var(--btn-primary-text)] shadow-sm transition hover:bg-[var(--btn-primary-hover-bg)]"
+                    className={PAGE_ACTION_BUTTON_PRIMARY}
                 >
                     <Plus className="h-4 w-4" />
                     {newInvoiceLabel}
