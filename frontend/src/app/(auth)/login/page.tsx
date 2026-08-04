@@ -95,6 +95,7 @@ export default function LoginPage() {
                 locale === "es" ? "No se pudo iniciar la sesión." : "Could not sign in.",
             );
             setAlertMsg({ type: "error", text: message });
+        } finally {
             setSubmitting(false);
         }
     };
