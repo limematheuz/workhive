@@ -91,3 +91,7 @@ def test_production_allows_explicitly_disabled_email_features():
 def test_explicit_null_pool_setting_is_respected():
     assert production_settings(DATABASE_USE_NULL_POOL=True).use_null_pool is True
     assert production_settings(DATABASE_USE_NULL_POOL=False).use_null_pool is False
+
+
+def test_blank_optional_null_pool_setting_is_treated_as_unset():
+    assert production_settings(DATABASE_USE_NULL_POOL="").use_null_pool is False

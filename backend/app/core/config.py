@@ -113,6 +113,13 @@ class Settings(BaseSettings):
             raise ValueError("Only HS256 is supported")
         return value
 
+    @field_validator("DATABASE_USE_NULL_POOL", mode="before")
+    @classmethod
+    def normalize_optional_database_null_pool(cls, value: object) -> object:
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
+
     @field_validator("APP_VERSION")
     @classmethod
     def validate_app_version(cls, value: str) -> str:
