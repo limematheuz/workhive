@@ -1,85 +1,76 @@
 "use client";
 
 import { Mail, Phone, MapPin } from "lucide-react";
+import type { Dictionary } from "@/lib/dictionary-context";
 
 type ContactInfoAsideProps = {
-    locale: string;
-    supportEmail?: string;
+    dict: Dictionary;
+    isTrialRequest?: boolean;
     supportPhone?: string;
-    businessLocation?: string;
 };
 
 export function ContactInfoAside({
-    locale,
-    supportEmail,
+    dict,
+    isTrialRequest = false,
     supportPhone,
-    businessLocation,
 }: ContactInfoAsideProps) {
+    const t = dict.auth;
+
     return (
-        <div className="lg:col-span-5 space-y-6">
+        <div className="space-y-6 lg:col-span-5">
             <div>
-                <h1 className="mb-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
-                    {locale === "es" ? "Contacto & Soporte" : "Contact & Support"}
+                <h1 className="mb-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                    {isTrialRequest ? t.contact_trial_title : t.contact_title}
                 </h1>
-                <p className="text-[var(--text-muted)] text-base">
-                    {locale === "es"
-                        ? "¿Tienes alguna duda sobre los planes de suscripción o la facturación? Estamos aquí para ayudarte."
-                        : "Do you have any questions about subscription plans or invoicing? We are here to help."}
+                <p className="text-base leading-relaxed text-[var(--text-muted)]">
+                    {isTrialRequest ? t.contact_trial_subtitle : t.contact_subtitle}
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-                <div className="p-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] backdrop-blur-md flex gap-4">
-                    <div className="p-3 bg-accent/10 text-accent rounded-xl h-fit">
-                        <Mail className="w-6 h-6" />
+            <div className="grid grid-cols-1 gap-3">
+                <div className="flex gap-4 rounded-2xl border border-[var(--glass-sheet-border)] bg-[var(--glass-sheet-bg)] p-5 shadow-[var(--surface-card-shadow)] backdrop-blur-xl">
+                    <div className="h-fit rounded-xl bg-accent/15 p-3 text-accent">
+                        <Mail className="h-5 w-5" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider">Email</h3>
-                        <p className="text-[var(--text-main)] font-semibold mt-1">
-                            {supportEmail ||
-                                (locale === "es"
-                                    ? "Disponible mediante el formulario"
-                                    : "Available through the form")}
-                        </p>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                            {locale === "es" ? "Canal de soporte y contratación" : "Support and onboarding channel"}
-                        </p>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            Email
+                        </h3>
+                        <a
+                            href={`mailto:${t.contact_support_email}`}
+                            className="mt-1 block font-semibold text-accent hover:underline"
+                        >
+                            {t.contact_support_email}
+                        </a>
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">{t.contact_email_channel}</p>
                     </div>
                 </div>
 
-                <div className="p-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] backdrop-blur-md flex gap-4">
-                    <div className="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl h-fit">
-                        <Phone className="w-6 h-6" />
+                <div className="flex gap-4 rounded-2xl border border-[var(--glass-sheet-border)] bg-[var(--glass-sheet-bg)] p-5 shadow-[var(--surface-card-shadow)] backdrop-blur-xl">
+                    <div className="h-fit rounded-xl bg-accent/15 p-3 text-accent">
+                        <Phone className="h-5 w-5" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider">
-                            {locale === "es" ? "Teléfono" : "Phone"}
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            {t.contact_phone_label}
                         </h3>
-                        <p className="text-[var(--text-main)] font-semibold mt-1">
-                            {supportPhone ||
-                                (locale === "es"
-                                    ? "Pendiente de publicar"
-                                    : "Not published yet")}
+                        <p className="mt-1 font-semibold text-[var(--text-main)]">
+                            {supportPhone || t.contact_phone_pending}
                         </p>
-                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                            {locale === "es" ? "Lunes a Viernes 9:00 - 18:00" : "Monday to Friday 9am - 6pm"}
-                        </p>
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">{t.contact_hours}</p>
                     </div>
                 </div>
 
-                <div className="p-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] backdrop-blur-md flex gap-4">
-                    <div className="p-3 bg-purple-500/10 text-purple-500 rounded-xl h-fit">
-                        <MapPin className="w-6 h-6" />
+                <div className="flex gap-4 rounded-2xl border border-[var(--glass-sheet-border)] bg-[var(--glass-sheet-bg)] p-5 shadow-[var(--surface-card-shadow)] backdrop-blur-xl">
+                    <div className="h-fit rounded-xl bg-accent/15 p-3 text-accent">
+                        <MapPin className="h-5 w-5" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-sm text-[var(--text-muted)] uppercase tracking-wider">
-                            {locale === "es" ? "Oficina Central" : "Headquarters"}
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            {t.contact_location_label}
                         </h3>
-                        <p className="text-[var(--text-main)] font-semibold mt-1">
-                            {businessLocation ||
-                                (locale === "es"
-                                    ? "Pendiente de publicar"
-                                    : "Not published yet")}
+                        <p className="mt-1 font-semibold text-[var(--text-main)]">
+                            {t.contact_location_value}
                         </p>
                     </div>
                 </div>

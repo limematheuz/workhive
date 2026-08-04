@@ -84,7 +84,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                 <button
                     onClick={() => setLocale("en")}
                     type="button"
-                    aria-label="Cambiar idioma a inglés"
+                    aria-label={locale === "es" ? "Cambiar idioma a inglés" : "Switch language to English"}
                     className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs ui-motion ${
                         locale === "en"
                             ? "shadow-sm text-[var(--pill-active-text)]"
@@ -104,7 +104,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                 <button
                     onClick={() => setLocale("es")}
                     type="button"
-                    aria-label="Cambiar idioma a español"
+                    aria-label={locale === "es" ? "Cambiar idioma a español" : "Switch language to Spanish"}
                     className={`flex items-center justify-center w-8 h-8 rounded-full font-semibold text-xs ui-motion ${
                         locale === "es"
                             ? "shadow-sm text-[var(--pill-active-text)]"

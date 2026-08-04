@@ -1,6 +1,5 @@
 "use client";
 
-// Authentication login page
 import { useState, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,11 +11,50 @@ import {
     prepareLoginCredentials,
 } from "@/lib/auth-forms";
 import { useDictionary } from "@/lib/dictionary-context";
-import { AuthTopControls } from "@/components/auth/AuthTopControls";
+import { AuthShell } from "@/components/auth/AuthShell";
+import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
+import {
+    LoginErrorIllustration,
+    LoginSuccessIllustration,
+} from "@/components/auth/AuthStatusIllustrations";
+import { AUTH_FIELD_CLASS, AUTH_LABEL_CLASS } from "@/components/auth/auth-ui";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
-import { Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    ArrowRight,
+    CheckCircle2,
+    Eye,
+    EyeOff,
+    Loader2,
+    LockKeyhole,
+    Mail,
+    ShieldCheck,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
+
+function GoogleGlyph({ className }: { className?: string }) {
+    return (
+        <svg className={className} viewBox="0 0 24 24" aria-hidden>
+            <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
+            />
+            <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            />
+            <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+            />
+            <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            />
+        </svg>
+    );
+}
 
 export default function LoginPage() {
     const router = useRouter();
@@ -27,18 +65,18 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [success, setSuccess] = useState(false);
     const [alertMsg, setAlertMsg] = useState({ type: "", text: "" });
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (submitting) return;
+        if (submitting || success) return;
         setAlertMsg({ type: "", text: "" });
 
         const prepared = prepareLoginCredentials(email, password, getAuthFormMessages(locale));
         if (prepared.error !== null || prepared.credentials === null) {
             const message = prepared.error ?? (locale === "es" ? "Revisa tus credenciales." : "Check your credentials.");
             setAlertMsg({ type: "error", text: message });
-            toast.error(message);
             return;
         }
 
@@ -47,188 +85,231 @@ export default function LoginPage() {
             clearSessionCache();
             await authService.login(prepared.credentials.email, prepared.credentials.password);
             await authService.getMe();
-            setAlertMsg({ type: "success", text: t.success_login });
-            window.location.assign("/dashboard");
+            setSuccess(true);
+            window.setTimeout(() => {
+                window.location.assign("/dashboard");
+            }, 650);
         } catch (err: unknown) {
             const message = getAuthErrorMessage(
                 err,
                 locale === "es" ? "No se pudo iniciar la sesión." : "Could not sign in.",
             );
             setAlertMsg({ type: "error", text: message });
-            toast.error(message);
-        } finally {
             setSubmitting(false);
         }
     };
 
+    const benefits = [t.hero_benefit_1, t.hero_benefit_2, t.hero_benefit_3];
+
     return (
-        <main className="h-screen w-screen max-w-full overflow-y-auto lg:overflow-hidden flex flex-col items-center justify-between p-4 py-6 md:p-8 relative bg-[var(--bg-primary)] text-[var(--text-main)] transition-colors duration-300">
-            <AuthTopControls showThemeToggle={false} />
+        <AuthShell wide contentClassName="justify-center py-4 lg:py-8">
+            <div className="flex w-full flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-12 xl:gap-16">
+                <section className="order-2 w-full flex-1 text-center lg:order-1 lg:max-w-xl lg:text-left">
+                    <AuthLogo className="mx-auto mb-6 hidden w-44 lg:mx-0 lg:block xl:mb-8 xl:w-52" priority />
 
-            <div className="w-full max-w-6xl relative z-10 flex flex-col lg:flex-row items-center gap-8 lg:gap-16 xl:gap-24 py-4 lg:py-0 lg:my-auto">
-                <div className="flex justify-center w-full lg:hidden mb-4">
-                    <AuthLogo className="w-40" priority />
-                </div>
+                    <div className="mb-5 flex flex-wrap justify-center gap-2 lg:justify-start">
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/12 px-3 py-1 text-[11px] font-semibold text-accent">
+                            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+                            {t.feature_tax}
+                        </span>
+                        <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--text-main)]/20 bg-[var(--text-main)]/8 px-3 py-1 text-[11px] font-semibold text-[var(--text-main)]">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-main)]" />
+                            {t.feature_collab}
+                        </span>
+                    </div>
 
-                <div className="w-full max-w-md lg:w-[450px] order-1 lg:order-2">
+                    <h1 className="mb-4 text-3xl font-bold tracking-tight text-[var(--text-main)] sm:text-4xl xl:mb-5 xl:text-5xl xl:leading-[1.08]">
+                        {t.title_hero}{" "}
+                        <span className="text-accent">{t.title_hero_accent}</span>
+                    </h1>
+                    <p className="mx-auto mb-6 max-w-lg text-sm leading-relaxed text-[var(--text-muted)] lg:mx-0 xl:mb-8 xl:text-base">
+                        {t.desc_hero}
+                    </p>
+
+                    <ul className="mx-auto mb-8 max-w-md space-y-3 text-left lg:mx-0">
+                        {benefits.map((benefit) => (
+                            <li key={benefit} className="flex items-start gap-2.5 text-sm">
+                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                                <span className="leading-snug text-[var(--text-muted)]">{benefit}</span>
+                            </li>
+                        ))}
+                    </ul>
+
+                    <Link
+                        href="/subscription"
+                        className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:underline ui-motion"
+                    >
+                        {t.free_trial_link}
+                        <ArrowRight className="h-4 w-4" />
+                    </Link>
+                </section>
+
+                <section className="order-1 w-full max-w-lg lg:order-2 lg:w-[min(100%,34rem)] lg:shrink-0">
+                    <div className="mb-5 flex justify-center lg:hidden">
+                        <AuthLogo className="w-40" priority />
+                    </div>
+
                     <PremiumTabs
                         layout="fit"
                         tabs={[
                             { id: "login", label: t.sign_in },
-                            { id: "register", label: "Solicitar acceso" }
+                            { id: "register", label: t.request_access },
                         ]}
                         activeTab="login"
                         onChange={(id) => {
                             if (id === "register") router.push("/register");
                         }}
-                        className="mb-8"
+                        className="mb-5"
                     />
 
-                    <div className="backdrop-blur-xl bg-[var(--bg-card)] border border-[var(--border-soft)] shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] rounded-3xl p-6 sm:p-8 relative">
-                        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--border-soft)] to-transparent" />
+                    <AuthGlassCard className="border-[var(--border-soft)] p-7 sm:p-9">
+                        <form className="space-y-5" onSubmit={handleSubmit}>
+                            <div className="space-y-1.5 text-center sm:text-left">
+                                <h2 className="text-xl font-bold tracking-tight">{t.login_welcome}</h2>
+                                <p className="text-sm text-[var(--text-muted)]">{t.login_welcome_sub}</p>
+                            </div>
 
-                        <form className="space-y-6" onSubmit={handleSubmit}>
-                            <div>
-                                <label htmlFor="login-email" className="block text-sm font-medium text-[var(--text-muted)] mb-2">
-                                    {t.email_label}
-                                </label>
-                                <input
-                                    id="login-email"
-                                    type="email"
-                                    name="email"
-                                    autoComplete="email"
-                                    inputMode="email"
-                                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
-                                    placeholder={t.email_placeholder}
-                                    required
-                                    value={email}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                                        setEmail(e.target.value)
-                                    }
-                                />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="lg"
+                                className="h-12 w-full rounded-2xl bg-[var(--bg-card)]"
+                                disabled={success || submitting}
+                                onClick={() => toast(t.google_soon)}
+                            >
+                                <GoogleGlyph className="h-4 w-4" />
+                                {t.google_button}
+                            </Button>
+
+                            <div className="relative flex items-center gap-3 py-0.5">
+                                <div className="h-px flex-1 bg-[var(--border-soft)]" />
+                                <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                    {t.or_continue_email}
+                                </span>
+                                <div className="h-px flex-1 bg-[var(--border-soft)]" />
                             </div>
 
                             <div>
-                                <label htmlFor="login-password" className="block text-sm font-medium text-[var(--text-muted)] mb-2">
-                                    {t.password_label}
+                                <label htmlFor="login-email" className={AUTH_LABEL_CLASS}>
+                                    {t.email_label}
                                 </label>
                                 <div className="relative">
+                                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                                    <input
+                                        id="login-email"
+                                        type="email"
+                                        name="email"
+                                        autoComplete="email"
+                                        inputMode="email"
+                                        className={`${AUTH_FIELD_CLASS} rounded-2xl py-3.5 pl-11`}
+                                        placeholder={t.email_placeholder}
+                                        required
+                                        disabled={success || submitting}
+                                        value={email}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <div className="mb-2 flex items-center justify-between gap-3">
+                                    <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                        {t.password_label}
+                                    </label>
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-xs font-semibold text-accent hover:underline ui-motion"
+                                    >
+                                        {t.forgot_password}
+                                    </Link>
+                                </div>
+                                <div className="relative">
+                                    <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                                     <input
                                         id="login-password"
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         autoComplete="current-password"
-                                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-4 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
+                                        className={`${AUTH_FIELD_CLASS} rounded-2xl py-3.5 pl-11 pr-12`}
                                         placeholder={t.password_placeholder}
                                         required
+                                        disabled={success || submitting}
                                         value={password}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                                            setPassword(e.target.value)
-                                        }
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                                     />
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        aria-label={showPassword
-                                            ? (locale === "es" ? "Ocultar contraseña" : "Hide password")
-                                            : (locale === "es" ? "Mostrar contraseña" : "Show password")}
-                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-1 flex items-center justify-center"
+                                        aria-label={showPassword ? t.hide_password : t.show_password}
+                                        disabled={success || submitting}
+                                        className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-xl p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)] ui-motion disabled:opacity-50"
                                     >
-                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-end mt-4">
-                                <Link
-                                    href="/forgot-password"
-                                    className="text-sm text-[var(--text-muted)] hover:text-accent transition-colors"
-                                >
-                                    {t.forgot_password}
-                                </Link>
-                            </div>
-
-                            {alertMsg.text !== "" && (
+                            {success ? (
                                 <div
-                                    className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] ui-motion ${
-                                        alertMsg.type === "error"
-                                            ? "border-red-500/50 text-red-400 bg-red-500/10 shadow-red-500/20"
-                                            : alertMsg.type === "success"
-                                              ? "border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-emerald-500/20"
-                                              : "border-orange-500/50 text-orange-400 bg-orange-500/10 shadow-orange-500/20"
-                                    }`}
+                                    role="status"
+                                    aria-live="polite"
+                                    className="overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)]/70"
                                 >
-                                    {alertMsg.text}
+                                    <div className="flex justify-center px-4 pt-4">
+                                        <LoginSuccessIllustration className="h-20 w-36 text-[var(--text-main)]" />
+                                    </div>
+                                    <div className="space-y-1 px-4 pb-3 text-center">
+                                        <p className="text-sm font-semibold text-[var(--text-main)]">
+                                            {t.success_login}
+                                        </p>
+                                        <p className="text-xs text-[var(--text-muted)]">
+                                            {t.success_login_hint}
+                                        </p>
+                                    </div>
+                                    <div className="mx-auto mb-4 h-[2px] w-28 overflow-hidden rounded-full bg-[var(--border-soft)]" aria-hidden>
+                                        <div className="h-full w-full origin-left scale-x-0 rounded-full bg-[var(--text-main)]/50 animate-[login-progress_0.7s_ease-out_forwards]" />
+                                    </div>
                                 </div>
-                            )}
+                            ) : alertMsg.text !== "" ? (
+                                <div
+                                    role="alert"
+                                    className="overflow-hidden rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)]"
+                                >
+                                    <div className="flex justify-center px-4 pt-4">
+                                        <LoginErrorIllustration className="h-20 w-36 text-[var(--text-main)]" />
+                                    </div>
+                                    <p className="px-4 pb-4 text-center text-sm font-medium leading-snug text-[var(--btn-cancel-text)]">
+                                        {alertMsg.text}
+                                    </p>
+                                </div>
+                            ) : null}
 
-                            <button
+                            <Button
                                 type="submit"
-                                disabled={submitting}
-                                className="w-full bg-[var(--text-main)] text-[var(--bg-primary)] font-semibold rounded-xl py-3 hover:opacity-90 ui-motion mt-6 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)]"
+                                disabled={submitting || success}
+                                size="lg"
+                                className="mt-1 h-12 w-full rounded-2xl"
                             >
-                                {submitting
-                                    ? (locale === "es" ? "Entrando..." : "Signing in...")
-                                    : t.sign_in}
-                            </button>
+                                {submitting || success ? (
+                                    <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        {success ? t.success_login_hint : t.signing_in}
+                                    </>
+                                ) : (
+                                    t.sign_in
+                                )}
+                            </Button>
 
+                            <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-[var(--text-muted)]">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                {locale === "es"
+                                    ? "Conexión cifrada · acceso por roles"
+                                    : "Encrypted connection · role-based access"}
+                            </p>
                         </form>
-                    </div>
-                </div>
-
-                <div className="flex flex-col flex-1 text-[var(--text-main)] order-2 lg:order-1 text-center lg:text-left mt-8 lg:mt-0 pb-12 lg:pb-0">
-                    <AuthLogo className="hidden w-44 self-start lg:block xl:w-52 mb-4 xl:mb-8" priority />
-                    
-                    {/* Curated SaaS-style Feature Pills above title */}
-                    <div className="flex flex-wrap justify-center lg:justify-start items-center gap-3 text-xs font-semibold mb-4 xl:mb-6">
-                        <div className="flex items-center gap-1.5 bg-accent/10 text-accent dark:text-accent rounded-full px-3.5 py-1.5 border border-accent/20 hover:scale-105 transition-transform duration-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-accent" />
-                            {t.feature_tax}
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-full px-3.5 py-1.5 border border-purple-500/20 hover:scale-105 transition-transform duration-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                            {t.feature_collab}
-                        </div>
-                    </div>
-
-                    <h1 className="text-3xl sm:text-4xl lg:text-4xl xl:text-5xl font-bold mb-4 xl:mb-6 tracking-tight leading-tight text-[var(--text-main)]">
-                        {t.title_hero}{" "}
-                        <br className="hidden lg:block" />
-                        <span className="text-accent">{t.title_hero_accent}</span>
-                    </h1>
-                    <p className="text-[var(--text-muted)] text-sm xl:text-base mb-6 xl:mb-8 max-w-lg leading-relaxed mx-auto lg:mx-0">
-                        {t.desc_hero}
-                    </p>
-
-                    {/* Controlled evaluation prompt */}
-                    <div className="mt-2 text-center lg:text-left">
-                        <Link
-                            href="/subscription"
-                            className="inline-flex items-center gap-2 text-sm font-semibold text-accent dark:text-accent hover:text-accent dark:hover:text-accent hover:underline ui-motion"
-                        >
-                            <span>{t.free_trial_link || "Solicitar evaluación de 14 días"}</span>
-                        </Link>
-                    </div>
-                </div>
+                    </AuthGlassCard>
+                </section>
             </div>
-
-            {/* Footer with legal & contact links */}
-            <footer className="w-full max-w-6xl mt-auto pt-4 xl:pt-6 border-t border-[var(--border-soft)] z-10 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-[var(--text-muted)]">
-                <div>
-                    &copy; {new Date().getFullYear()} WorkHive Enterprise. {t.rights_reserved || "Todos los derechos reservados."}
-                </div>
-                <div className="flex gap-6">
-                    <Link href="/contact" className="hover:text-[var(--text-main)] transition-colors">
-                        {t.contact_link || "Contacto y Soporte"}
-                    </Link>
-                    <Link href="/terms" className="hover:text-[var(--text-main)] transition-colors">
-                        {t.terms_link || "Términos y condiciones"}
-                    </Link>
-                    <Link href="/privacy" className="hover:text-[var(--text-main)] transition-colors">
-                        {t.privacy_link || "Política de privacidad"}
-                    </Link>
-                </div>
-            </footer>
-        </main>
+        </AuthShell>
     );
 }

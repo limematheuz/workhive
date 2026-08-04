@@ -1098,6 +1098,15 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
   }
 }
 
+@keyframes login-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 /* Standardize orange colors to amber */
 .text-amber-500 {
   color: var(--color-amber-500) !important;

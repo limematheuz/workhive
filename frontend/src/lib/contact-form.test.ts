@@ -5,6 +5,7 @@ import {
     getContactValidationMessages,
     getInitialContactForm,
     prepareContactSubmission,
+    syncContactFormLocale,
 } from "./contact-form.ts";
 
 const messages = getContactValidationMessages("es");
@@ -19,6 +20,21 @@ test("contact form initializes trial and plan reasons with localized subjects", 
 
     const regular = getInitialContactForm(null, "es");
     assert.equal(regular.subject, "");
+});
+
+test("syncContactFormLocale rewrites default subject and message on language switch", () => {
+    const spanish = getInitialContactForm("trial", "es");
+    const synced = syncContactFormLocale(spanish, "trial", "en");
+    assert.equal(synced.subject, "WorkHive evaluation request");
+    assert.match(synced.message, /14-day assisted evaluation/);
+
+    const customized = syncContactFormLocale(
+        { ...spanish, subject: "Custom subject", message: "Custom note" },
+        "trial",
+        "en",
+    );
+    assert.equal(customized.subject, "Custom subject");
+    assert.equal(customized.message, "Custom note");
 });
 
 test("regular contact payload trims fields and normalizes email", () => {
