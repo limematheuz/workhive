@@ -6,6 +6,7 @@ import type { Dictionary } from "@/lib/dictionary-context";
 
 interface InvoiceAdditionalInfoProps {
     dict: Dictionary;
+    variant?: "invoice" | "quote";
     notesEnabled: boolean;
     setNotesEnabled: (val: boolean) => void;
     notes: string;
@@ -18,6 +19,7 @@ interface InvoiceAdditionalInfoProps {
 
 export function InvoiceAdditionalInfo({
     dict,
+    variant = "invoice",
     notesEnabled,
     setNotesEnabled,
     notes,
@@ -27,6 +29,10 @@ export function InvoiceAdditionalInfo({
     terms,
     setTerms,
 }: InvoiceAdditionalInfoProps) {
+    const isQuote = variant === "quote";
+    const notesLabel = isQuote ? "Observaciones y servicios" : (dict.invoices?.payment_notes || "Notas de pago");
+    const termsLabel = isQuote ? "Condiciones del presupuesto" : (dict.invoices?.terms_conditions || "Términos y condiciones");
+
     return (
         <div className="space-y-4 pt-2 border-t border-[var(--border-soft)]">
             <h3 className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">
@@ -36,14 +42,14 @@ export function InvoiceAdditionalInfo({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs text-[var(--text-main)] font-semibold">{dict.invoices?.payment_notes || "Notas de Pago"}</Label>
+                        <Label className="text-xs text-[var(--text-main)] font-semibold">{notesLabel}</Label>
                         <div className="flex items-center gap-1.5">
                             <span className="text-3xs text-[var(--text-muted)]">{notesEnabled ? (dict.invoices?.yes || "Sí") : (dict.invoices?.no || "No")}</span>
                             <input
                                 type="checkbox"
                                 checked={notesEnabled}
                                 onChange={(e) => setNotesEnabled(e.target.checked)}
-                                aria-label={dict.invoices?.payment_notes || "Notas de Pago"}
+                                aria-label={notesLabel}
                                 className="w-8 h-4 rounded-full bg-[var(--bg-secondary)] border-[var(--border-color)] checked:bg-accent accent-accent cursor-pointer"
                             />
                         </div>
@@ -52,23 +58,24 @@ export function InvoiceAdditionalInfo({
                         <textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            rows={3}
+                            rows={4}
                             aria-label={dict.invoices?.payment_notes || "Notas de Pago"}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors resize-none"
+                            placeholder={isQuote ? "Servicios incluidos, detalles relevantes y observaciones para el cliente" : undefined}
+                            className="min-h-32 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                         />
                     )}
                 </div>
 
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                        <Label className="text-xs text-[var(--text-main)] font-semibold">{dict.invoices?.terms_conditions || "Términos y condiciones"}</Label>
+                        <Label className="text-xs text-[var(--text-main)] font-semibold">{termsLabel}</Label>
                         <div className="flex items-center gap-1.5">
                             <span className="text-3xs text-[var(--text-muted)]">{termsEnabled ? (dict.invoices?.yes || "Sí") : (dict.invoices?.no || "No")}</span>
                             <input
                                 type="checkbox"
                                 checked={termsEnabled}
                                 onChange={(e) => setTermsEnabled(e.target.checked)}
-                                aria-label={dict.invoices?.terms_conditions || "Términos y condiciones"}
+                                aria-label={termsLabel}
                                 className="w-8 h-4 rounded-full bg-[var(--bg-secondary)] border-[var(--border-color)] checked:bg-accent accent-accent cursor-pointer"
                             />
                         </div>
@@ -77,9 +84,10 @@ export function InvoiceAdditionalInfo({
                         <textarea
                             value={terms}
                             onChange={(e) => setTerms(e.target.value)}
-                            rows={3}
+                            rows={4}
                             aria-label={dict.invoices?.terms_conditions || "Términos y condiciones"}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors resize-none"
+                            placeholder={isQuote ? "Validez, forma de pago, horarios y servicios no incluidos" : undefined}
+                            className="min-h-32 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                         />
                     )}
                 </div>

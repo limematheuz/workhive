@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Plus, Shirt, Trash2 } from "lucide-react";
+import { Copy, Plus, Shirt, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useInvoiceForm";
 import type { Dictionary } from "@/lib/dictionary-context";
 
@@ -10,6 +10,7 @@ interface InvoiceConceptsTableProps {
     concepts: ConceptRow[];
     dict: Dictionary;
     handleAddManualRow: () => void;
+    handleDuplicateRow: (id: string) => void;
     handleAddExternalLaundryRow: () => void;
     handleUpdateRow: <Field extends keyof ConceptRow>(
         id: string,
@@ -23,6 +24,7 @@ export function InvoiceConceptsTable({
     concepts,
     dict,
     handleAddManualRow,
+    handleDuplicateRow,
     handleAddExternalLaundryRow,
     handleUpdateRow,
     handleDeleteRow,
@@ -54,7 +56,6 @@ export function InvoiceConceptsTable({
                             <th className="py-2.5 px-2 text-right w-24">{dict.invoices?.col_price || "Precio (€)"}</th>
                             <th className="py-2.5 px-2 text-center w-20">{dict.invoices?.col_qty || "Cantidad"}</th>
                             <th className="py-2.5 px-2 text-right w-24">{dict.invoices?.col_total || "Total"}</th>
-                            <th className="py-2.5 px-2 w-10"></th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border-soft)] text-xs">
@@ -62,18 +63,42 @@ export function InvoiceConceptsTable({
                             concepts.map((row) => (
                                 <tr key={row.id} className="hover:bg-[var(--bg-secondary)]/30">
                                     <td className="py-2 px-3">
-                                        <label className="sr-only" htmlFor={`invoice-concept-${row.id}-description`}>
-                                            {dict.invoices?.col_description || "Descripción"}
-                                        </label>
-                                        <textarea
-                                            id={`invoice-concept-${row.id}-description`}
-                                            value={row.description}
-                                            onChange={(e) => handleUpdateRow(row.id, "description", e.target.value)}
-                                            rows={Math.max(2, Math.min(4, row.description.split("\n").length))}
-                                            className="w-full bg-transparent border-none outline-none focus:ring-0 text-xs text-[var(--text-main)] resize-none leading-relaxed"
-                                            placeholder={dict.invoices?.col_description_placeholder || "Descripción del trabajo..."}
-                                            required
-                                        />
+                                        <div className="flex items-start gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <label className="sr-only" htmlFor={`invoice-concept-${row.id}-description`}>
+                                                    {dict.invoices?.col_description || "Descripción"}
+                                                </label>
+                                                <textarea
+                                                    id={`invoice-concept-${row.id}-description`}
+                                                    value={row.description}
+                                                    onChange={(e) => handleUpdateRow(row.id, "description", e.target.value)}
+                                                    rows={Math.max(2, Math.min(4, row.description.split("\n").length))}
+                                                    className="w-full resize-none border-none bg-transparent text-xs leading-relaxed text-[var(--text-main)] outline-none focus:ring-0"
+                                                    placeholder={dict.invoices?.col_description_placeholder || "Descripción del trabajo..."}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDuplicateRow(row.id)}
+                                                    aria-label="Duplicar línea"
+                                                    title="Duplicar línea"
+                                                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent transition-colors hover:bg-accent hover:text-white"
+                                                >
+                                                    <Copy className="h-3.5 w-3.5" />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteRow(row.id)}
+                                                    aria-label="Eliminar línea"
+                                                    title="Eliminar línea"
+                                                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] transition-colors hover:bg-[var(--btn-cancel-hover-bg)]"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td className="py-2 px-2">
                                         <label className="sr-only" htmlFor={`invoice-concept-${row.id}-price`}>
@@ -108,21 +133,11 @@ export function InvoiceConceptsTable({
                                     <td className="py-2 px-2 text-right font-mono font-semibold text-[var(--text-main)]">
                                         {(row.unitPrice * row.quantity).toFixed(2)} €
                                     </td>
-                                    <td className="py-2 px-2 text-center">
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteRow(row.id)}
-                                            aria-label="Eliminar línea"
-                                            className="text-rose-500 hover:text-rose-700 bg-transparent border-none cursor-pointer flex items-center justify-center mx-auto"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </td>
                                 </tr>
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={5} className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/10">
+                                <td colSpan={4} className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/10">
                                     {dict.invoices?.no_concepts || "No hay conceptos. Selecciona tareas pendientes a la derecha o pulsa \"+ Añadir Concepto\"."}
                                 </td>
                             </tr>
@@ -135,9 +150,9 @@ export function InvoiceConceptsTable({
             <button
                 type="button"
                 onClick={handleAddManualRow}
-                className="w-full flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] ui-motion cursor-pointer bg-transparent"
+                className="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-accent/50 bg-accent/10 py-3 text-sm font-bold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-white ui-motion"
             >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="h-4 w-4" />
                 {dict.invoices?.add_concept || "Añadir Línea"}
             </button>
         </div>

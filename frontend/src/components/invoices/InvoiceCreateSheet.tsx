@@ -75,6 +75,7 @@ export function InvoiceCreateSheet({
         handleToggleTask,
         handleToggleAll,
         handleAddManualRow,
+        handleDuplicateRow,
         handleAddExternalLaundryRow,
         handleUpdateRow,
         handleDeleteRow,
@@ -142,6 +143,7 @@ export function InvoiceCreateSheet({
                                     setShippingAddress={setShippingAddress}
                                     concepts={concepts}
                                     handleAddManualRow={handleAddManualRow}
+                                    handleDuplicateRow={handleDuplicateRow}
                                     handleAddExternalLaundryRow={handleAddExternalLaundryRow}
                                     handleUpdateRow={handleUpdateRow}
                                     handleDeleteRow={handleDeleteRow}

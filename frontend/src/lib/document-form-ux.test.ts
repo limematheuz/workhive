@@ -27,6 +27,9 @@ test("optional document fields are disclosed progressively", () => {
     assert.match(quoteForm, /Opciones avanzadas/);
     assert.match(invoiceForm, /Datos adicionales/);
     assert.match(invoiceSidebar, /Firma opcional/);
+    assert.match(quoteForm, /ChevronDown/);
+    assert.match(invoiceForm, /ChevronDown/);
+    assert.match(invoiceSidebar, /ChevronDown/);
 });
 
 test("quotes and invoices share one document totals component", () => {
@@ -37,4 +40,21 @@ test("quotes and invoices share one document totals component", () => {
     assert.match(invoiceSidebar, /DocumentSummary/);
     assert.doesNotMatch(quoteForm, /QuoteSummary/);
     assert.doesNotMatch(invoiceSidebar, /InvoiceSummary/);
+});
+
+test("document forms keep totals visible and line actions beside their description", () => {
+    const quoteForm = source("../components/quotes/QuoteCreateSheet.tsx");
+    const invoiceSidebar = source("../components/invoices/InvoiceCreateSheetSidebar.tsx");
+    const quoteItems = source("../components/quotes/QuoteItemsTable.tsx");
+    const invoiceItems = source("../components/invoices/InvoiceConceptsTable.tsx");
+
+    assert.match(quoteForm, /lg:sticky/);
+    assert.match(invoiceSidebar, /lg:sticky/);
+
+    for (const itemsSource of [quoteItems, invoiceItems]) {
+        assert.match(itemsSource, /handleDuplicateRow/);
+        assert.match(itemsSource, /bg-accent\/10/);
+        assert.match(itemsSource, /colSpan=\{4\}/);
+        assert.doesNotMatch(itemsSource, /<th className="py-2\.5 px-2 w-10"><\/th>/);
+    }
 });

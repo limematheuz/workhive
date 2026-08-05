@@ -1,6 +1,7 @@
 "use client";
 
 import { Label } from "@/components/ui/label";
+import { ChevronDown } from "lucide-react";
 import { BillingPartyCard, BillingPartyFields } from "@/components/billing/BillingPartyCard";
 import { InvoiceConceptsTable } from "./InvoiceConceptsTable";
 import { InvoiceAdditionalInfo } from "./InvoiceAdditionalInfo";
@@ -28,6 +29,7 @@ interface InvoiceCreateSheetDetailsProps {
     setShippingAddress: (value: string) => void;
     concepts: ConceptRow[];
     handleAddManualRow: () => void;
+    handleDuplicateRow: (id: string) => void;
     handleAddExternalLaundryRow: () => void;
     handleUpdateRow: <Field extends keyof ConceptRow>(
         id: string,
@@ -71,6 +73,7 @@ export function InvoiceCreateSheetDetails({
     setShippingAddress,
     concepts,
     handleAddManualRow,
+    handleDuplicateRow,
     handleAddExternalLaundryRow,
     handleUpdateRow,
     handleDeleteRow,
@@ -180,17 +183,21 @@ export function InvoiceCreateSheetDetails({
                 concepts={concepts}
                 dict={dict}
                 handleAddManualRow={handleAddManualRow}
+                handleDuplicateRow={handleDuplicateRow}
                 handleAddExternalLaundryRow={handleAddExternalLaundryRow}
                 handleUpdateRow={handleUpdateRow}
                 handleDeleteRow={handleDeleteRow}
             />
 
             <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
-                <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
-                    Datos adicionales
-                    <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">
-                        Solo si necesitas modificar los datos fiscales o añadir notas
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
+                    <span>
+                        Datos adicionales
+                        <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">
+                            Solo si necesitas modificar los datos fiscales o añadir notas
+                        </span>
                     </span>
+                    <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform group-open:rotate-180" aria-hidden="true" />
                 </summary>
                 <div className="space-y-5 border-t border-[var(--border-soft)] p-4">
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -22,6 +22,7 @@ import {
     prepareInvoiceTasks,
 } from "@/lib/invoice-task-selection";
 import { validateDocumentLines } from "@/lib/document-line-validation";
+import { duplicateDocumentLine } from "@/lib/document-line-duplication";
 import {
     buildInvoiceDraftPayload,
     createInvoiceConceptRow,
@@ -330,6 +331,14 @@ export function useInvoiceForm({
         setConcepts(prev => [...prev, createInvoiceConceptRow(taxRateGlobal)]);
     };
 
+    const handleDuplicateRow = (id: string) => {
+        setConcepts((previous) => duplicateDocumentLine(previous, id, (source) => ({
+            ...source,
+            id: `manual-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            task_item_id: null,
+        })));
+    };
+
     const handleAddExternalLaundryRow = () => {
         setConcepts(prev => [
             ...prev,
@@ -526,6 +535,7 @@ export function useInvoiceForm({
         handleToggleTask,
         handleToggleAll,
         handleAddManualRow,
+        handleDuplicateRow,
         handleAddExternalLaundryRow,
         handleUpdateRow,
         handleDeleteRow,

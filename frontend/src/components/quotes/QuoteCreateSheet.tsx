@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, FileText } from "lucide-react";
+import { ChevronDown, Loader2, FileText } from "lucide-react";
 import { BillingPartyCard } from "@/components/billing/BillingPartyCard";
 import { DocumentSummary } from "@/components/billing/DocumentSummary";
 import { SignatureUpload } from "@/components/billing/SignatureUpload";
@@ -66,6 +66,7 @@ export function QuoteCreateSheet({
         loadingClients,
         submitting,
         handleAddManualRow,
+        handleDuplicateRow,
         handleUpdateRow,
         handleDeleteRow,
         handleGlobalTaxRateChange,
@@ -173,16 +174,20 @@ export function QuoteCreateSheet({
                                         concepts={concepts}
                                         dict={dict}
                                         handleAddManualRow={handleAddManualRow}
+                                        handleDuplicateRow={handleDuplicateRow}
                                         handleUpdateRow={handleUpdateRow}
                                         handleDeleteRow={handleDeleteRow}
                                     />
 
                                     <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
-                                        <summary className="cursor-pointer list-none px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
-                                            Opciones avanzadas
-                                            <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">
-                                                Datos fiscales, envío, notas y firma
+                                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
+                                            <span>
+                                                Opciones avanzadas
+                                                <span className="ml-2 text-xs font-normal text-[var(--text-muted)]">
+                                                    Datos fiscales, envío, notas y firma
+                                                </span>
                                             </span>
+                                            <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform group-open:rotate-180" aria-hidden="true" />
                                         </summary>
                                         <div className="space-y-5 border-t border-[var(--border-soft)] p-4">
                                             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -218,6 +223,7 @@ export function QuoteCreateSheet({
                                             </div>
                                             <InvoiceAdditionalInfo
                                                 dict={dict}
+                                                variant="quote"
                                                 notesEnabled={notesEnabled}
                                                 setNotesEnabled={setNotesEnabled}
                                                 notes={notes}
@@ -237,7 +243,7 @@ export function QuoteCreateSheet({
                                 </div>
 
                                 {/* Right Side - Task Selection & Summary (Takes 1/3) */}
-                                <div className="space-y-6 lg:border-l lg:border-[var(--border-soft)] lg:pl-6">
+                                <div className="space-y-6 lg:sticky lg:top-1 lg:self-start lg:border-l lg:border-[var(--border-soft)] lg:pl-6">
                                     <DocumentSummary
                                         dict={dict}
                                         subtotal={subtotal}

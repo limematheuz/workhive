@@ -18,6 +18,7 @@ import {
 } from "@/lib/billing-party";
 import { getErrorMessage } from "@/lib/errors";
 import { validateDocumentLines } from "@/lib/document-line-validation";
+import { duplicateDocumentLine } from "@/lib/document-line-duplication";
 import {
     buildQuoteItemsSnapshot,
     buildQuotePayload,
@@ -225,6 +226,13 @@ export function useQuoteForm({
 
     const handleAddManualRow = () => {
         setConcepts(prev => [...prev, createQuoteConceptRow(taxRateGlobal)]);
+    };
+
+    const handleDuplicateRow = (id: string) => {
+        setConcepts((previous) => duplicateDocumentLine(previous, id, (source) => ({
+            ...source,
+            id: `manual-copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        })));
     };
 
     const handleUpdateRow = <Field extends keyof ConceptRow>(
@@ -437,6 +445,7 @@ export function useQuoteForm({
         loadingClients,
         submitting,
         handleAddManualRow,
+        handleDuplicateRow,
         handleUpdateRow,
         handleDeleteRow,
         handleGlobalTaxRateChange,
