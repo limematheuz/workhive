@@ -11,6 +11,7 @@ import type {
 import { useDictionary } from "@/lib/dictionary-context";
 import Link from "next/link";
 import { InstructionList } from "@/components/ui/instruction-list";
+import { ChecklistStepsEditor } from "@/components/tasks/ChecklistStepsEditor";
 import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
 
 interface LocationTemplatesTabProps {
@@ -190,39 +191,48 @@ export function LocationTemplatesTab({
                                                     placeholder={tmpl?.name}
                                                     className="h-9 w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] px-2.5 text-xs text-[var(--text-main)]"
                                                 />
-                                                <textarea
-                                                    value={editingTemplateValues.description}
-                                                    onChange={event => setEditingTemplateValues(values => ({ ...values, description: event.target.value }))}
-                                                    placeholder={tmpl?.description || ""}
-                                                    rows={3}
-                                                    className="w-full resize-y rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] px-2.5 py-2 text-xs text-[var(--text-main)]"
+                                                <ChecklistStepsEditor
+                                                    description={editingTemplateValues.description}
+                                                    onChange={(description) => setEditingTemplateValues((values) => ({ ...values, description }))}
+                                                    contextKey={ht.template_task_id}
+                                                    label="Pasos del servicio"
+                                                    helpText="Los pasos se muestran como checklist al crear y ejecutar una tarea."
+                                                    addLabel="Añadir paso"
                                                 />
+                                                <div className="grid grid-cols-2 gap-2">
+                                                <label className="space-y-1">
+                                                    <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Precio (€)</span>
+                                                    <input
+                                                        type="number"
+                                                        step="0.01"
+                                                        value={editingTemplateValues.price}
+                                                        onChange={event => setEditingTemplateValues(values => ({ ...values, price: event.target.value }))}
+                                                        placeholder={tmpl?.default_price?.toString() || "0.00"}
+                                                        className="h-10 w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 text-sm outline-none focus:border-accent"
+                                                    />
+                                                </label>
+                                                <label className="space-y-1">
+                                                    <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Unidad</span>
+                                                    <input
+                                                        value={editingTemplateValues.unit}
+                                                        onChange={event => setEditingTemplateValues(values => ({ ...values, unit: event.target.value }))}
+                                                        placeholder={tmpl?.unit || "servicio"}
+                                                        className="h-10 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-main)] outline-none focus:border-accent"
+                                                    />
+                                                </label>
+                                                </div>
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                <input
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={editingTemplateValues.price}
-                                                    onChange={event => setEditingTemplateValues(values => ({ ...values, price: event.target.value }))}
-                                                    placeholder={tmpl?.default_price?.toString() || "0.00"}
-                                                    className="h-9 w-28 bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 text-xs"
-                                                />
-                                                <input
-                                                    value={editingTemplateValues.unit}
-                                                    onChange={event => setEditingTemplateValues(values => ({ ...values, unit: event.target.value }))}
-                                                    placeholder={tmpl?.unit || "unit"}
-                                                    className="h-9 w-28 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] px-2.5 text-xs text-[var(--text-main)]"
-                                                />
                                                 <button
                                                     type="button"
                                                     onClick={() => handleUpdateTemplate(ht.template_task_id)}
-                                                    className="h-8 rounded-lg bg-accent hover:bg-accent text-white px-3 py-1 text-xs border-none cursor-pointer"
+                                                    className="h-9 rounded-xl bg-accent px-3.5 py-1 text-xs font-bold text-white hover:bg-[var(--accent-light-color)] border-none cursor-pointer"
                                                 >
                                                     {dict.locations?.form?.price_save || "Save"}
                                                 </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => setEditingTemplateId?.(null)}
-                                                    className="h-8 rounded-lg text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] px-2.5 py-1 text-xs border-none cursor-pointer"
+                                                    className="h-9 rounded-xl px-3 py-1 text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] border-none cursor-pointer"
                                                 >
                                                     {dict.locations?.form?.price_cancel || "Cancel"}
                                                 </button>
@@ -239,7 +249,7 @@ export function LocationTemplatesTab({
                                                             setEditingTemplateId?.(ht.template_task_id);
                                                             setEditingTemplateValues({
                                                                 name: ht.custom_name || "",
-                                                                description: ht.custom_description ?? "",
+                                                                description: ht.custom_description ?? tmpl?.description ?? "",
                                                                 unit: ht.custom_unit || "",
                                                                 price: ht.custom_price?.toString() || "",
                                                             });

@@ -14,6 +14,7 @@ from app.services import (
     reservation_service,
     task_assignment_service,
     task_item_service,
+    user_service,
     work_session_service,
 )
 
@@ -587,6 +588,94 @@ def test_manual_clock_out_resets_unfinished_viewer_assignment_to_pending(db):
         task, worker.id
     ) == "pending"
     assert work_session_service.get_active_session(db, worker.id) is None
+
+
+def test_clock_out_and_resume_preserve_worker_and_external_task_time(db):
+    issuer = _company(db, "IssuerLedger")
+    provider = _company(db, "ProviderLedger")
+    outsider = _company(db, "OutsiderLedger")
+    issuer_admin = _user(db, issuer, "issuer-admin@ledger.test")
+    provider_admin = _user(db, provider, "provider-admin@ledger.test")
+    worker = _user(db, provider, "worker@ledger.test", role_id=3)
+    outsider_admin = _user(db, outsider, "outsider-admin@ledger.test")
+    location = Location(
+        name="Casa con reserva",
+        address="Calle Registro 1",
+        city="Girona",
+        owner_company_id=issuer.id,
+        managing_company_id=issuer.id,
+    )
+    db.add(location)
+    db.flush()
+    reservation = Reservation(
+        location_id=location.id,
+        owner_company_id=issuer.id,
+        assigned_company_id=provider.id,
+        check_in_at=datetime.now(timezone.utc) + timedelta(days=1),
+        check_out_at=datetime.now(timezone.utc) - timedelta(hours=1),
+    )
+    db.add(reservation)
+    db.flush()
+    task = TaskItem(
+        title="Limpieza enviada por inmobiliaria",
+        description=f"[ ] Limpiar entrada (@{worker.id}:Trabajador:pending)",
+        unit="servicio",
+        company_id=provider.id,
+        location_id=location.id,
+        user_id=provider_admin.id,
+        checkout_reservation_id=reservation.id,
+        status="accepted",
+    )
+    db.add(task)
+    db.commit()
+    db.refresh(task)
+
+    _start_task_work(db, worker, task.id, "Primer tramo")
+    first_session = work_session_service.get_active_session(db, worker.id)
+    assert first_session is not None
+    first_session.start_time = datetime.now(timezone.utc) - timedelta(hours=2)
+    db.commit()
+
+    first_closed = work_session_service.end_work_session(db, worker.id)
+    assert first_closed.end_time is not None
+    db.refresh(task)
+    assert task.status == "accepted"
+    assert task_assignment_service.get_user_assignment_status(task, worker.id) == "pending"
+
+    _start_task_work(db, worker, task.id, "Segundo tramo")
+    second_session = work_session_service.get_active_session(db, worker.id)
+    assert second_session is not None
+    assert second_session.id != first_closed.id
+    second_session.start_time = datetime.now(timezone.utc) - timedelta(hours=1)
+    db.commit()
+
+    second_closed = work_session_service.end_work_session(db, worker.id)
+    assert second_closed.end_time is not None
+    assert work_session_service.get_active_session(db, worker.id) is None
+
+    expected_seconds = sum(
+        int((session.end_time - session.start_time).total_seconds())
+        for session in (first_closed, second_closed)
+        if session.end_time is not None
+    )
+    worker_stats = user_service.get_user_stats(db, worker.id, provider_admin)
+    provider_summary = work_session_service.get_task_work_detailed_summary(
+        db, provider_admin, task.id
+    )
+    issuer_summary = work_session_service.get_task_work_detailed_summary(
+        db, issuer_admin, task.id
+    )
+
+    assert provider_summary.session_count == 2
+    assert issuer_summary.session_count == 2
+    assert provider_summary.total_seconds == expected_seconds
+    assert issuer_summary.total_seconds == expected_seconds
+    assert worker_stats.total_hours_worked == round(expected_seconds / 3600, 2)
+    assert [item.user_id for item in issuer_summary.workers] == [worker.id]
+
+    with pytest.raises(HTTPException) as exc_info:
+        work_session_service.get_task_work_detailed_summary(db, outsider_admin, task.id)
+    assert exc_info.value.status_code == 404
 
 
 def test_viewer_cannot_start_before_admin_accepts_task(db):

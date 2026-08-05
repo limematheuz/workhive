@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 import {
     assignTaskChecklistItem,
@@ -17,7 +18,6 @@ import { resolveTaskEditChecklist } from "@/lib/resolve-task-edit-checklist";
 
 type TaskEditFormFieldsProps = {
     dict: Dictionary;
-    calendarAssigneeName: string;
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
@@ -50,7 +50,6 @@ type TaskEditFormFieldsProps = {
 export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
     const {
         dict,
-        calendarAssigneeName,
         editCreatedAt,
         editDescription,
         editLocationId,
@@ -98,23 +97,28 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
             ),
         );
     };
+    const assignWorkerToAllItems = (userId: string) => {
+        const targetUser = users.find((user) => user.id.toString() === userId);
+        setEditDescription(checklist.reduce(
+            (description, item) => assignTaskChecklistItem(description, item.index, userId, targetUser?.full_name || targetUser?.email || ""),
+            editDescription,
+        ));
+    };
 
     return (
         <>
-            <div className="space-y-1">
-                <label htmlFor="task-edit-description" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
-                    Notas internas
-                </label>
+            <details className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/15 p-3" open={Boolean(editNotes)}>
+                <summary className="cursor-pointer text-xs font-black text-[var(--text-main)]">Notas internas <span className="ml-1 font-medium text-[var(--text-muted)]">(opcional)</span></summary>
                 <textarea
                     id="task-edit-description"
                     value={editNotes}
                     onChange={(event) => setEditNotes(event.target.value)}
                     disabled={!managerEditable || isReceiverCompany}
                     rows={3}
-                    placeholder="Añade información interna de la tarea..."
-                    className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    placeholder="Indicaciones internas para el equipo"
+                    className="mt-3 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                 />
-            </div>
+            </details>
 
             <div className="space-y-1.5">
                 {checklist.length > 0 ? (
@@ -133,6 +137,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         canEdit={!immutable && isAdminOrManager}
                         onToggle={toggleChecklistItem}
                         onAssign={assignWorkerToItem}
+                        onAssignAll={assignWorkerToAllItems}
                     />
                 ) : (
                     <textarea
@@ -147,22 +152,15 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                 )}
             </div>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/15 p-3.5">
+            <p className="mb-3 text-xs font-black text-[var(--text-main)]">Planificación</p>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1.4fr)_minmax(10rem,0.8fr)_minmax(8rem,0.65fr)]">
                 <div className="space-y-1">
                     <span className="text-2xs mb-0.5 block font-bold uppercase text-[var(--text-muted)]">
                         {dict.tasks?.dialog?.location_label || "Installation / Location"}
                     </span>
                     <div className="flex h-9 w-full items-center truncate rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-semibold text-[var(--text-main)]">
                         {locations.find((location) => location.id.toString() === editLocationId)?.name || ""}
-                    </div>
-                </div>
-
-                <div className="space-y-1">
-                    <span className="text-2xs mb-0.5 block font-bold uppercase text-[var(--text-muted)]">
-                        Responsable
-                    </span>
-                    <div className="flex h-9 w-full cursor-not-allowed items-center truncate rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-muted)] opacity-80">
-                        {calendarAssigneeName}
                     </div>
                 </div>
 
@@ -198,12 +196,15 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                     />
                 </div>
             </div>
+            </section>
 
             {!isReceiverCompany && (
-                <div className="grid grid-cols-3 gap-3">
+                <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/15 p-3.5">
+                    <p className="mb-3 text-xs font-black text-[var(--text-main)]">Coste del servicio</p>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                     <div className="space-y-1">
                         <label htmlFor="task-edit-price" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
-                            {dict.tasks?.dialog?.price_label || "Price (€)"}
+                            {dict.tasks?.dialog?.price_label || "Precio (€)"}
                         </label>
                         <input
                             id="task-edit-price"
@@ -213,13 +214,13 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             onChange={(event) => setEditPrice(event.target.value)}
                             aria-label={dict.tasks?.dialog?.price_label || "Price (€)"}
                             disabled={!managerEditable}
-                            className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                            className="h-10 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                         />
                     </div>
 
                     <div className="space-y-1">
                         <label htmlFor="task-edit-quantity" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
-                            {dict.tasks?.dialog?.quantity_label || "Quantity"}
+                            {dict.tasks?.dialog?.quantity_label || "Cantidad"}
                         </label>
                         <input
                             id="task-edit-quantity"
@@ -229,14 +230,15 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             onChange={(event) => setEditQuantity(event.target.value)}
                             aria-label={dict.tasks?.dialog?.quantity_label || "Quantity"}
                             disabled={!managerEditable}
-                            className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                            className="h-10 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                         />
                     </div>
 
                     <div className="space-y-1">
                         <label htmlFor="task-edit-unit" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
-                            {dict.tasks?.dialog?.unit_label || "Unit"}
+                            {dict.tasks?.dialog?.unit_label || "Unidad"}
                         </label>
+                        <div className="relative">
                         <select
                             id="task-edit-unit"
                             value={editUnit}
@@ -244,7 +246,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             aria-label={dict.tasks?.dialog?.unit_label || "Unit"}
                             disabled={!managerEditable}
                             required
-                            className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                            className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 pr-10 text-sm font-semibold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {TASK_EDIT_UNIT_OPTIONS.map((option) => (
                                 <option key={option} value={option}>
@@ -252,22 +254,26 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                                 </option>
                             ))}
                         </select>
+                        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                        </div>
                     </div>
                 </div>
+                </section>
             )}
 
-            <div className="grid grid-cols-1 gap-3 border-t border-[var(--border-soft)] pt-2 sm:grid-cols-3">
+            <section className="grid grid-cols-1 gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/15 p-3.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                 <div className="space-y-1">
                     <label htmlFor="task-edit-status" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
-                        {dict.tasks?.dialog?.status_label || "Status"}
+                        {dict.tasks?.dialog?.status_label || "Estado"}
                     </label>
+                    <div className="relative">
                     <select
                         id="task-edit-status"
                         value={editStatus}
                         onChange={(event) => setEditStatus(event.target.value as TaskStatus)}
                         aria-label={dict.tasks?.dialog?.status_label || "Status"}
                         disabled={!managerEditable}
-                        className="h-9 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 pr-10 text-sm font-semibold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <option value="pending">{dict.tasks?.dialog?.status_pending || "Pending"}</option>
                         <option value="accepted">{dict.tech?.status_accepted || "Accepted"}</option>
@@ -276,43 +282,52 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         <option value="review">{dict.tasks?.dialog?.status_review || "In Review"}</option>
                         <option value="completed">{dict.tasks?.dialog?.status_completed || "Completed"}</option>
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                    </div>
                 </div>
 
                 <div className="space-y-1">
                     <label htmlFor="task-edit-priority" className="text-2xs font-bold uppercase text-[var(--text-muted)]">
                         {dict.tasks?.priority_label || "Priority"}
                     </label>
+                    <div className="relative">
                     <select
                         id="task-edit-priority"
                         value={editPriority}
                         onChange={(event) => setEditPriority(event.target.value as TaskPriority)}
                         aria-label={dict.tasks?.priority_label || "Priority"}
                         disabled={!managerEditable || isReceiverCompany}
-                        className="h-9 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        className="h-10 w-full cursor-pointer appearance-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 pr-10 text-sm font-semibold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         <option value="low">{dict.tasks?.priority_low || "Low"}</option>
                         <option value="medium">{dict.tasks?.priority_medium || "Medium"}</option>
                         <option value="high">{dict.tasks?.priority_high || "High"}</option>
                     </select>
+                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                    </div>
                 </div>
 
                 <div className="text-2xs flex flex-col justify-end pb-1 font-mono font-medium text-[var(--text-muted)]">
                     <div>
                         {dict.tasks?.dialog?.created_at || "Created:"}{" "}
-                        {new Date(selectedTask.created_at).toLocaleString("en-US", {
-                            timeZone: "UTC",
+                        {new Date(selectedTask.created_at).toLocaleString("es-ES", {
+                            timeZone: "Europe/Madrid",
+                            dateStyle: "medium",
+                            timeStyle: "short",
                         })}
                     </div>
                     {selectedTask.date_done && (
                         <div className="mt-1">
                             {dict.tasks?.dialog?.finished_at || "Finished:"}{" "}
-                            {new Date(selectedTask.date_done).toLocaleString("en-US", {
-                                timeZone: "UTC",
+                            {new Date(selectedTask.date_done).toLocaleString("es-ES", {
+                                timeZone: "Europe/Madrid",
+                                dateStyle: "medium",
+                                timeStyle: "short",
                             })}
                         </div>
                     )}
                 </div>
-            </div>
+            </section>
         </>
     );
 }

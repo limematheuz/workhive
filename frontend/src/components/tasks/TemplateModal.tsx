@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { Loader2, Plus, Trash2, ListTodo } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { TemplateTask } from "@/hooks/useTasksPage";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { createEditableLineKey } from "@/lib/editable-line-key";
+import { ChecklistStepsEditor } from "./ChecklistStepsEditor";
 import {
     Dialog,
     DialogContent,
@@ -25,36 +25,6 @@ import {
 const UNIT_OPTIONS = [
     "unit", "hour", "m²", "m³", "ml", "kg", "litre", "service", "day", "week", "month"
 ];
-
-interface ChecklistQuestion {
-    id: string;
-    text: string;
-}
-
-const createQuestion = (text = ""): ChecklistQuestion => ({
-    id: createEditableLineKey("template-question"),
-    text,
-});
-
-function parseTemplateQuestions(description: string): ChecklistQuestion[] {
-    if (!description) return [createQuestion()];
-
-    const lines = description.split("\n");
-    const parsedQuestions: string[] = [];
-
-    for (const line of lines) {
-        const match = line.match(/^\s*[-*]?\s*\[\s*[xX\s]?\s*\]\s*(.+)$/);
-        if (match) {
-            parsedQuestions.push(match[1].trim());
-        }
-    }
-
-    if (parsedQuestions.length > 0) {
-        return parsedQuestions.map(createQuestion);
-    }
-
-    return [createQuestion(description.trim())];
-}
 
 interface TemplateModalProps {
     dict: Dictionary;
@@ -89,41 +59,6 @@ export function TemplateModal({
     setTmplUnit,
     handleSaveTemplate,
 }: TemplateModalProps) {
-    const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-    const questionContextKey = isTemplateModalOpen
-        ? `${selectedTemplate?.id ?? "new"}|${tmplDescription}`
-        : "closed";
-    const buildQuestionState = React.useCallback(() => ({
-        contextKey: questionContextKey,
-        questions: parseTemplateQuestions(tmplDescription),
-    }), [questionContextKey, tmplDescription]);
-    const [questionState, setQuestionState] = React.useState(buildQuestionState);
-    const questions = questionState.contextKey === questionContextKey
-        ? questionState.questions
-        : parseTemplateQuestions(tmplDescription);
-    const setQuestions = React.useCallback((nextQuestions: React.SetStateAction<ChecklistQuestion[]>) => {
-        setQuestionState((prev) => {
-            const current = prev.contextKey === questionContextKey
-                ? prev.questions
-                : parseTemplateQuestions(tmplDescription);
-            const resolved = typeof nextQuestions === "function"
-                ? nextQuestions(current)
-                : nextQuestions;
-            return { contextKey: questionContextKey, questions: resolved };
-        });
-    }, [questionContextKey, tmplDescription]);
-
-    const updateChecklistDescription = (updatedQuestions: ChecklistQuestion[]) => {
-        setQuestions(updatedQuestions);
-        const serialized = updatedQuestions
-            .flatMap(q => {
-                const text = q.text.trim();
-                return text !== "" ? [`- [ ] ${text}`] : [];
-            })
-            .join("\n");
-        setTmplDescription(serialized);
-    };
-
     return (
         <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
             <DialogContent
@@ -154,68 +89,14 @@ export function TemplateModal({
                             />
                         </div>
 
-                        <div className="space-y-2.5">
-                            <div className="flex items-center justify-between">
-                                <span className="flex items-center gap-2 text-xs font-bold uppercase text-[var(--text-muted)]">
-                                    <ListTodo className="h-4 w-4 text-accent" />
-                                    Service steps
-                                </span>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        updateChecklistDescription([...questions, createQuestion()]);
-                                        setTimeout(() => {
-                                            if (scrollContainerRef.current) {
-                                                scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
-                                            }
-                                        }, 50);
-                                    }}
-                                    className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-[var(--border-soft)] bg-[var(--btn-secondary-bg)] px-3 py-2 text-xs font-semibold text-[var(--btn-secondary-text)] ui-motion hover:bg-[var(--btn-secondary-hover-bg)]"
-                                >
-                                    <Plus className="h-3.5 w-3.5" />
-                                    Add item
-                                </button>
-                            </div>
-                            <div ref={scrollContainerRef} className="max-h-[180px] space-y-2 overflow-y-auto pr-1">
-                                {questions.map((q, idx) => (
-                                    <div key={q.id} className="flex items-center gap-2">
-                                        <div className="flex h-5 w-5 shrink-0 select-none items-center justify-center rounded-full bg-[var(--btn-primary-bg)] text-[10px] font-black text-[var(--btn-primary-text)]">
-                                            {idx + 1}
-                                        </div>
-                                        <label className="sr-only" htmlFor={`template-question-${q.id}`}>
-                                            Elemento de la lista de comprobación {idx + 1}
-                                        </label>
-                                        <input
-                                            id={`template-question-${q.id}`}
-                                            type="text"
-                                            required={idx === 0}
-                                            value={q.text}
-                                            onChange={(e) => {
-                                                const updated = [...questions];
-                                                updated[idx] = { ...updated[idx], text: e.target.value };
-                                                updateChecklistDescription(updated);
-                                            }}
-                                            placeholder="e.g.: Clean sink, Check switches..."
-                                            className="flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (questions.length > 1) {
-                                                    updateChecklistDescription(questions.filter((_, i) => i !== idx));
-                                                } else {
-                                                    updateChecklistDescription([createQuestion()]);
-                                                }
-                                            }}
-                                            aria-label={`Remove item ${idx + 1}`}
-                                            className="shrink-0 cursor-pointer rounded-lg border-none bg-transparent p-2 text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)]"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <ChecklistStepsEditor
+                            description={tmplDescription}
+                            onChange={setTmplDescription}
+                            contextKey={selectedTemplate?.id ?? "new-template"}
+                            label="Pasos del servicio"
+                            helpText="Añade las comprobaciones que el equipo debe completar."
+                            addLabel="Añadir paso"
+                        />
 
                         <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">

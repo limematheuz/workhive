@@ -35,6 +35,8 @@ interface TaskFormModalsProps {
     handleLinkHouseTemplate: (templateTaskId: number, customPrice: number | null) => Promise<void>;
     newLocationId: string;
     setNewLocationId: (val: string) => void;
+    newUserId: string;
+    setNewUserId: (val: string) => void;
     newCreatedAt: string;
     setNewCreatedAt: (val: string) => void;
     availableReservations: Reservation[];
@@ -62,7 +64,6 @@ interface TaskFormModalsProps {
     setEditUnit: (val: string) => void;
     editLocationId: string;
     setEditLocationId: (val: string) => void;
-    editUserId: string;
     editStatus: TaskStatus;
     setEditStatus: (val: TaskStatus) => void;
     editPriority: TaskPriority;
@@ -115,6 +116,8 @@ interface TaskFormModalsProps {
      handleLinkHouseTemplate,
      newLocationId,
      setNewLocationId,
+     newUserId,
+     setNewUserId,
      newCreatedAt,
      setNewCreatedAt,
      availableReservations,
@@ -141,7 +144,6 @@ interface TaskFormModalsProps {
      setEditUnit,
      editLocationId,
      setEditLocationId,
-     editUserId,
      editStatus,
      setEditStatus,
      editPriority,
@@ -192,6 +194,8 @@ interface TaskFormModalsProps {
                  handleLinkHouseTemplate={handleLinkHouseTemplate}
                  newLocationId={newLocationId}
                  setNewLocationId={setNewLocationId}
+                 newUserId={newUserId}
+                 setNewUserId={setNewUserId}
                  newCreatedAt={newCreatedAt}
                  setNewCreatedAt={setNewCreatedAt}
                  availableReservations={availableReservations}
@@ -227,7 +231,6 @@ interface TaskFormModalsProps {
                  setEditUnit={setEditUnit}
                  editLocationId={editLocationId}
                  setEditLocationId={setEditLocationId}
-                 editUserId={editUserId}
                  editStatus={editStatus}
                  setEditStatus={setEditStatus}
                  editPriority={editPriority}

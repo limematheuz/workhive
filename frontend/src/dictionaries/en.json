@@ -2031,13 +2031,13 @@
       "title": "Notifications",
       "pending_alerts": "{count} alerts pending attention",
       "no_new_notifications": "No new notifications",
-      "clear_all": "Clear all",
+      "clear_all": "Mark as seen",
       "tabs": {
-        "primary": "Primary",
-        "secondary": "Secondary"
+        "primary": "Updates",
+        "secondary": "Alerts"
       },
-      "empty_primary": "No primary alerts.",
-      "empty_secondary": "No secondary alerts.",
+      "empty_primary": "No pending updates.",
+      "empty_secondary": "No pending alerts.",
       "types": {
         "link_request": "Linking Request",
         "collaboration": "Collaboration",
@@ -2046,6 +2046,7 @@
         "new": "New",
         "request": "Request",
         "rejected": "Rejected",
+        "overdue": "Overdue",
         "cancelled": "Cancelled",
         "reservation_cancelled": "Reservation Cancelled"
       },

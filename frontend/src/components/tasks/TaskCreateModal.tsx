@@ -48,6 +48,8 @@ interface TaskCreateModalProps {
     handleLinkHouseTemplate: (templateTaskId: number, customPrice: number | null) => Promise<void>;
     newLocationId: string;
     setNewLocationId: (val: string) => void;
+    newUserId: string;
+    setNewUserId: (val: string) => void;
     newCreatedAt: string;
     setNewCreatedAt: (val: string) => void;
     availableReservations: Reservation[];
@@ -81,6 +83,8 @@ export function TaskCreateModal({
     handleLinkHouseTemplate,
     newLocationId,
     setNewLocationId,
+    newUserId,
+    setNewUserId,
     newCreatedAt,
     setNewCreatedAt,
     availableReservations,
@@ -113,20 +117,6 @@ export function TaskCreateModal({
         ),
         [houseTemplates, templates]
     );
-    const calendarOwnerName = React.useMemo(() => {
-        const preferredAdmin = users.find(user =>
-            user.id === currentUser?.id &&
-            ["admin", "manager", "superadmin"].includes(user.role?.name || "")
-        );
-        const fallbackAdmin = users.find(user =>
-            ["admin", "superadmin"].includes(user.role?.name || "")
-        ) || users.find(user => user.role?.name === "manager");
-        const calendarOwner = preferredAdmin || fallbackAdmin || currentUser;
-        return calendarOwner
-            ? calendarOwner.full_name || calendarOwner.email
-            : "Administrador del calendario";
-    }, [currentUser, users]);
-
     return (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogContent
@@ -147,7 +137,6 @@ export function TaskCreateModal({
                         <TaskCreateMainFields
                             dict={dict}
                             ownLocations={ownLocations}
-                            calendarOwnerName={calendarOwnerName}
                             newLocationId={newLocationId}
                             setNewLocationId={setNewLocationId}
                             newCreatedAt={newCreatedAt}
@@ -182,6 +171,8 @@ export function TaskCreateModal({
                                 handleLinkHouseTemplate={handleLinkHouseTemplate}
                                 fixedChecklistAssignments={fixedChecklistAssignments}
                                 setFixedChecklistAssignments={setFixedChecklistAssignments}
+                                defaultAssigneeId={newUserId}
+                                setDefaultAssigneeId={setNewUserId}
                             />
                         )}
                     </div>

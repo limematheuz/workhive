@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { cleanChecklistDescription } from "@/lib/format";
+import { ChecklistStepsEditor } from "@/components/tasks/ChecklistStepsEditor";
+import { LocationOperationalHistoryTab } from "./LocationOperationalHistoryTab";
 import { TaskItem } from "@/services/task.service";
 import { User } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 interface LocationHistoryTabProps {
+    locationId: number;
     dict: Dictionary;
     tasks: TaskItem[];
     users: User[];
@@ -38,6 +41,7 @@ interface LocationHistoryTabProps {
 }
 
 export function LocationHistoryTab({
+    locationId,
     dict,
     tasks,
     users,
@@ -65,11 +69,11 @@ export function LocationHistoryTab({
 }: LocationHistoryTabProps) {
     const [statusFilter, setStatusFilter] = React.useState<string>("ALL");
 
-    const filteredTasks = tasks.filter(task => {
+    const activeTasks = tasks.filter((task) => !["completed", "rejected"].includes(task.status));
+    const filteredTasks = activeTasks.filter(task => {
         if (statusFilter === "ALL") return true;
         if (statusFilter === "pending") return task.status === "pending";
         if (statusFilter === "progress") return task.status === "progress" || task.status === "in_progress";
-        if (statusFilter === "completed") return task.status === "completed";
         return task.status === statusFilter;
     });
 
@@ -132,17 +136,14 @@ export function LocationHistoryTab({
                                 />
                             </div>
 
-                            <div className="space-y-1">
-                                <label htmlFor="location-history-instructions" className="text-2xs uppercase font-bold text-[var(--text-muted)]">{dict.locations?.sheet?.instructions_label || "Instrucciones"}</label>
-                                <textarea
-                                    id="location-history-instructions"
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    placeholder={dict.locations?.sheet?.instructions_placeholder || "Detalles sobre lo que se debe hacer..."}
-                                    rows={2}
-                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent resize-none"
-                                />
-                            </div>
+                            <ChecklistStepsEditor
+                                description={description}
+                                onChange={setDescription}
+                                contextKey={`location-${locationId}-one-off-task`}
+                                label="Pasos del trabajo"
+                                helpText="Añade pasos claros para la persona asignada. No hace falta escribir código ni Markdown."
+                                addLabel="Añadir paso"
+                            />
 
                             <div className="space-y-1">
                                 <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">Asignar a un trabajador de tu equipo</Label>
@@ -219,26 +220,25 @@ export function LocationHistoryTab({
                 </div>
             )}
 
-            {/* List */}
+            {/* Active jobs live here; completed work is shown once in the operational history below. */}
             {loadingTasks ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-2">
                     <Loader2 className="w-6 h-6 animate-spin text-accent" />
                     <span className="text-2xs text-[var(--text-muted)] font-semibold uppercase">{dict.locations?.sheet?.loading_history || "Cargando historial..."}</span>
                 </div>
-            ) : tasks.length > 0 ? (
+            ) : activeTasks.length > 0 ? (
                 <div className="space-y-3">
-                    {/* Status filter */}
-                    <div className="flex justify-end">
+                    <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Trabajos activos</h4>
                         <select
                             value={statusFilter}
                             onChange={e => setStatusFilter(e.target.value)}
                             aria-label="Filtrar por estado"
-                            className="text-xs bg-[var(--bg-secondary)] border border-[var(--border-soft)] rounded-lg px-2 py-1 outline-none text-[var(--text-main)]"
+                            className="h-9 text-xs bg-[var(--bg-secondary)] border border-[var(--border-soft)] rounded-xl px-2.5 outline-none text-[var(--text-main)]"
                         >
-                            <option value="ALL">{dict.clients?.details?.all_statuses || "Todos los estados"}</option>
+                            <option value="ALL">Trabajos activos</option>
                             <option value="pending">{dict.clients?.details?.status_pending || "Pendientes"}</option>
                             <option value="progress">{dict.clients?.details?.status_in_progress || "En curso"}</option>
-                            <option value="completed">{dict.clients?.details?.status_completed || "Completadas"}</option>
                         </select>
                     </div>
 
@@ -301,9 +301,7 @@ export function LocationHistoryTab({
                                                     : "bg-neutral-500/10 text-[var(--text-muted)] border border-[var(--border-soft)]"
                                             }`}
                                         >
-                                            {task.status === "completed"
-                                                ? (dict.clients?.details?.status_completed || "Completada")
-                                                : task.status === "progress" || task.status === "in_progress"
+                                        {task.status === "progress" || task.status === "in_progress"
                                                 ? (dict.clients?.details?.status_in_progress || "En curso")
                                                 : (dict.clients?.details?.status_pending || "Pendiente")}
                                         </Badge>
@@ -322,9 +320,13 @@ export function LocationHistoryTab({
                 </div>
             ) : (
                 <div className="text-center py-10 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-soft)]">
-                    <p className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">{dict.locations?.sheet?.no_jobs || "Sin trabajos registrados"}</p>
+                    <p className="text-xs text-[var(--text-muted)] font-semibold uppercase tracking-wider">Sin trabajos activos</p>
                 </div>
             )}
+
+            <div className="border-t border-[var(--border-soft)] pt-5">
+                <LocationOperationalHistoryTab locationId={locationId} open />
+            </div>
         </div>
     );
 }

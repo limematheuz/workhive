@@ -27,7 +27,8 @@ test("task dialogs share glass chrome and keep compact checklist controls", () =
     assert.match(createModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(templateModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(requestReview, /taskDialogFooterClass|taskDialogChrome/);
-    assert.match(checklistEditor, /dialog-compact-control/);
+    assert.match(checklistEditor, /appearance-none/);
+    assert.doesNotMatch(checklistEditor, /UserRound/);
     assert.match(globals, /dialog-compact-control/);
     assert.match(globals, /dialog-glass/);
     assert.match(globals, /\[data-slot="dialog-close"\]/);
@@ -125,5 +126,5 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
     assert.doesNotMatch(fields, /title_label/);
     assert.match(fields, /Notas internas/);
-    assert.match(fields, /Responsable/);
+    assert.doesNotMatch(fields, /Administrador del calendario/);
 });

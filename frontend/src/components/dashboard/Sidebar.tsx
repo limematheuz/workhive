@@ -18,10 +18,10 @@ import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
 import { NotificationService } from "@/services/notification.service";
 import {
-    countUnreadTaskNotifications,
     countUnreadTaskReportNotifications,
 } from "@/lib/task-reporting";
 import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
+import { countOperationalPendingTasks } from "@/lib/operational-task-count";
 
 interface SidebarProps {
     isOpen: boolean;
@@ -35,7 +35,7 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     const { user } = useUser();
 
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-    const [taskAlertsCount, setTaskAlertsCount] = useState(0);
+    const [taskPendingCount, setTaskPendingCount] = useState(0);
     const [reportAlertsCount, setReportAlertsCount] = useState(0);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         sales: true,
@@ -55,11 +55,25 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
         }
     }, []);
 
-    const fetchTaskAlerts = useCallback(async () => {
+    const fetchTaskPendingCount = useCallback(async () => {
+        if (!user || userIsPlatformSuperadmin) {
+            setTaskPendingCount(0);
+            return;
+        }
+        try {
+            const tasks = await TaskService.getAllTaskItems();
+            setTaskPendingCount(
+                countOperationalPendingTasks(tasks, user.id, isAdminOrManager),
+            );
+        } catch {
+            // Keep the last known workload during a transient API failure.
+        }
+    }, [isAdminOrManager, user, userIsPlatformSuperadmin]);
+
+    const fetchReportAlerts = useCallback(async () => {
         if (!user) return;
         try {
             const notifications = await NotificationService.listUnread();
-            setTaskAlertsCount(countUnreadTaskNotifications(notifications));
             setReportAlertsCount(countUnreadTaskReportNotifications(notifications));
         } catch {
             // Keep navigation available during transient API failures.
@@ -74,21 +88,36 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     }, [fetchPendingRequests, isAdminOrManager, userIsPlatformSuperadmin]);
 
     useEffect(() => {
-        startTransition(() => { void fetchTaskAlerts(); });
-    }, [fetchTaskAlerts]);
+        startTransition(() => { void fetchTaskPendingCount(); });
+    }, [fetchTaskPendingCount]);
 
     useEffect(() => {
-        const refresh = () => { void fetchTaskAlerts(); };
+        startTransition(() => { void fetchReportAlerts(); });
+    }, [fetchReportAlerts]);
+
+    useEffect(() => {
+        const refresh = () => { void fetchReportAlerts(); };
         window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh);
         return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh);
-    }, [fetchTaskAlerts]);
+    }, [fetchReportAlerts]);
+
+    useEffect(() => {
+        const refresh = () => { void fetchTaskPendingCount(); };
+        window.addEventListener("workhive:tasks-changed", refresh);
+        window.addEventListener("workhive:session-changed", refresh);
+        return () => {
+            window.removeEventListener("workhive:tasks-changed", refresh);
+            window.removeEventListener("workhive:session-changed", refresh);
+        };
+    }, [fetchTaskPendingCount]);
 
     useBackgroundPolling(async () => {
         if (!isAdminOrManager || userIsPlatformSuperadmin) return;
         await fetchPendingRequests();
     }, POLL_INTERVALS.sidebar);
 
-    useBackgroundPolling(fetchTaskAlerts, POLL_INTERVALS.sidebar);
+    useBackgroundPolling(fetchTaskPendingCount, POLL_INTERVALS.sidebarTaskCount);
+    useBackgroundPolling(fetchReportAlerts, POLL_INTERVALS.sidebar);
 
     const { visibleNavLinks, navGroups, plainLinks } = buildSidebarNavLinks(dict, {
         isAdminOrManager,
@@ -112,7 +141,7 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
                 navGroups={navGroups}
                 visibleNavLinks={visibleNavLinks}
                 pendingRequestsCount={pendingRequestsCount}
-                taskAlertsCount={taskAlertsCount}
+                taskPendingCount={taskPendingCount}
                 reportAlertsCount={reportAlertsCount}
                 openGroups={openGroups}
                 onOpenGroupChange={(groupId, open) =>

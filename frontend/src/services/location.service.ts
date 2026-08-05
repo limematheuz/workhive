@@ -5,6 +5,40 @@ import { User } from "@/types/user"
 
 export type { Location };
 
+export type LocationHistoryPeriod = "day" | "week" | "month";
+
+export interface LocationHistoryTask {
+    id: number;
+    title: string;
+    status: string;
+    completed_at: string;
+    scheduled_start_at?: string | null;
+}
+
+export interface LocationHistorySession {
+    id: number;
+    task_item_id?: number | null;
+    task_title?: string | null;
+    user_id: number;
+    user_name: string;
+    started_at: string;
+    ended_at: string;
+    worked_seconds: number;
+}
+
+export interface LocationOperationalHistory {
+    location_id: number;
+    period: LocationHistoryPeriod;
+    period_start: string;
+    period_end: string;
+    completed_tasks: LocationHistoryTask[];
+    sessions: LocationHistorySession[];
+    completed_task_count: number;
+    completed_task_total: number;
+    session_total: number;
+    worked_seconds: number;
+}
+
 export const LocationService = {
     getLocations: async (clientId?: number): Promise<Location[]> => {
         const path = clientId
@@ -87,6 +121,29 @@ export const LocationService = {
             throw new Error("Error fetching location service providers")
         }
         return await response.json()
+    },
+
+    getOperationalHistory: async (
+        locationId: number,
+        period: LocationHistoryPeriod,
+        anchorDate: string,
+        options: { completedOffset?: number; sessionsOffset?: number; limit?: number } = {},
+    ): Promise<LocationOperationalHistory> => {
+        const params = new URLSearchParams({
+            period,
+            anchor_date: anchorDate,
+            completed_offset: String(options.completedOffset ?? 0),
+            sessions_offset: String(options.sessionsOffset ?? 0),
+            limit: String(options.limit ?? 20),
+        });
+        const response = await apiFetch(
+            `/api/v1/locations/${locationId}/operational-history?${params.toString()}`,
+            { method: "GET", cache: "no-store" },
+        );
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error fetching location operational history"));
+        }
+        return await response.json();
     },
 
     deleteLocationAccess: async (locationId: number, companyId: number): Promise<void> => {

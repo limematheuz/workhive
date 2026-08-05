@@ -6,6 +6,7 @@ export interface TabOption<T extends string> {
     label: string | React.ReactNode;
     icon?: LucideIcon;
     badge?: number;
+    badgeTone?: "info" | "danger";
     attention?: boolean;
 }
 
@@ -64,9 +65,15 @@ export function PremiumTabs<T extends string>({
                         <span className={fit ? "min-w-0 truncate" : undefined}>{tab.label}</span>
                         {tab.badge !== undefined && tab.badge > 0 && (
                             <span
-                                className="relative inline-flex min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-sm shadow-red-500/30"
+                                className={`relative inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-sm ${
+                                    tab.badgeTone === "info"
+                                        ? "bg-accent shadow-accent/30"
+                                        : "bg-red-500 shadow-red-500/30"
+                                }`}
                             >
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+                                <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${
+                                    tab.badgeTone === "info" ? "bg-accent/70" : "bg-red-400"
+                                }`} />
                                 <span className="relative">{tab.badge > 99 ? "99+" : tab.badge}</span>
                             </span>
                         )}

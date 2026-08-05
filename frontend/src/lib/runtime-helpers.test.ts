@@ -15,6 +15,7 @@ test("poll intervals stay fast and positive for live dashboard surfaces", () => 
     assert.equal(POLL_INTERVALS.dashboard, 1_000);
     assert.equal(POLL_INTERVALS.tasks, 1_000);
     assert.equal(POLL_INTERVALS.notifications, 1_000);
+    assert.equal(POLL_INTERVALS.sidebarTaskCount, 10_000);
     Object.values(POLL_INTERVALS).forEach((interval) => {
         assert.equal(Number.isInteger(interval), true);
         assert.equal(interval > 0, true);

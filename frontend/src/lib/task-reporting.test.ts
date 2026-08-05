@@ -16,7 +16,7 @@ test("persistent task notification opens linked task tab", () => {
     assert.equal(getPersistentNotificationHref({ href: "/\\evil.test/task" }), "/dashboard");
 });
 
-test("sidebar task badge counts only unread task notifications", () => {
+test("unread task notification helper counts only persistent task notifications", () => {
     assert.equal(countUnreadTaskNotifications([
         { entity_type: "task_item", read_at: null },
         { entity_type: "task_report", read_at: null },
@@ -35,7 +35,7 @@ test("report badge counts only unread task report notifications", () => {
     ]), 1);
 });
 
-test("overview and tasks share the same unread task alert count source", () => {
+test("unread task notification counting is deterministic", () => {
     const notifications = [
         { entity_type: "task_item", read_at: null },
         { entity_type: "task_item", read_at: null },

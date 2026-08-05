@@ -2031,13 +2031,13 @@
       "title": "Notificaciones",
       "pending_alerts": "{count} avisos pendientes de atender",
       "no_new_notifications": "No tienes notificaciones nuevas",
-      "clear_all": "Borrar todas",
+      "clear_all": "Marcar como vistas",
       "tabs": {
-        "primary": "Principal",
-        "secondary": "Secundarias"
+        "primary": "Novedades",
+        "secondary": "Alertas"
       },
-      "empty_primary": "No hay avisos principales.",
-      "empty_secondary": "No hay avisos secundarios.",
+      "empty_primary": "No hay novedades pendientes.",
+      "empty_secondary": "No hay alertas pendientes.",
       "types": {
         "link_request": "Solicitud de vinculación",
         "collaboration": "Colaboración",
@@ -2046,6 +2046,7 @@
         "new": "Nueva",
         "request": "Solicitud",
         "rejected": "Rechazada",
+        "overdue": "Con retraso",
         "cancelled": "Cancelada",
         "reservation_cancelled": "Reserva cancelada"
       },

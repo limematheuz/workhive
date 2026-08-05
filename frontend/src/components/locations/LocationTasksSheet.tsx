@@ -50,9 +50,9 @@ export function LocationTasksSheet({
                     <PremiumTabs
                         tabs={[
                             ...(state.isAdminOrManager
-                                ? [{ id: "templates" as const, label: state.dict.locations?.sheet?.tab_templates || "Servicios fijos" }]
+                                ? [{ id: "templates" as const, label: "Servicios" }]
                                 : []),
-                            { id: "history" as const, label: state.dict.locations?.sheet?.tab_jobs || "Historial de trabajos" },
+                            { id: "history" as const, label: "Registro" },
                         ]}
                         activeTab={state.activeTab}
                         onChange={state.setActiveTab}
@@ -60,8 +60,9 @@ export function LocationTasksSheet({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6">
-                    {state.activeTab === "history" && (
+                    {state.activeTab === "history" && location && (
                         <LocationHistoryTab
+                            locationId={location.id}
                             dict={state.dict}
                             tasks={state.tasks}
                             users={state.users}

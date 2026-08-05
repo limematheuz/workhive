@@ -11,10 +11,12 @@ import type { PersistentNotification } from "@/services/notification.service";
 
 type NotificationType =
     | "persistent"
+    | "persistent-alert"
     | "collaboration"
     | "arrival"
     | "task"
     | "task-rejected"
+    | "task-overdue"
     | "reservation-cancelled"
     | "privacy-request";
 
@@ -75,6 +77,8 @@ export function NotificationItem({
     switch (type) {
         case "persistent":
             return <PersistentNotificationItem notification={data as PersistentNotification} {...sharedProps} />;
+        case "persistent-alert":
+            return <PersistentNotificationItem notification={data as PersistentNotification} danger {...sharedProps} />;
         case "collaboration":
             return <CollaborationNotificationItem collaboration={data as CompanyCollaboration} {...sharedProps} />;
         case "arrival":
@@ -83,6 +87,8 @@ export function NotificationItem({
             return <TaskNotificationItem task={data as TaskItem} {...sharedProps} />;
         case "task-rejected":
             return <RejectedTaskNotificationItem task={data as TaskItem} {...sharedProps} />;
+        case "task-overdue":
+            return <OverdueTaskNotificationItem task={data as TaskItem} {...sharedProps} />;
         case "reservation-cancelled":
             return <CancelledReservationNotificationItem reservation={data as Reservation} {...sharedProps} />;
         case "privacy-request":
@@ -131,7 +137,7 @@ function NotificationBadge({
         <span
             className={danger
                 ? "shrink-0 rounded-lg border border-[var(--btn-cancel-border)] px-2 py-1 text-[10px] font-black uppercase text-[var(--btn-cancel-text)]"
-                : "shrink-0 rounded-lg border border-red-500/30 bg-red-500 px-2 py-1 text-[10px] font-black uppercase text-white shadow-sm shadow-red-500/30"}
+                : "shrink-0 rounded-lg border border-accent/30 bg-accent px-2 py-1 text-[10px] font-black uppercase text-white shadow-sm shadow-accent/30"}
         >
             {children}
         </span>
@@ -140,14 +146,19 @@ function NotificationBadge({
 
 function PersistentNotificationItem({
     notification,
+    danger = false,
     ...props
-}: NotificationContentProps & { notification: PersistentNotification }) {
+}: NotificationContentProps & { notification: PersistentNotification; danger?: boolean }) {
     return (
-        <NotificationButton {...props} className="border border-accent/20 bg-accent/[0.06] hover:bg-accent/10">
+        <NotificationButton {...props} className={danger
+            ? "border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] hover:bg-[var(--bg-tertiary)]"
+            : "border border-accent/20 bg-accent/[0.06] hover:bg-accent/10"}>
             <p className="text-sm font-black text-[var(--text-main)]">{notification.title}</p>
             <p className="mt-1.5 text-xs font-semibold text-[var(--text-muted)]">{notification.message}</p>
-            <p className="mt-2 text-[10px] font-bold uppercase text-accent">
-                {notification.event_type === "task.reported" ? "Reporte de tarea" : "Tarea"}
+            <p className={`mt-2 text-[10px] font-bold uppercase ${danger ? "text-[var(--btn-cancel-text)]" : "text-accent"}`}>
+                {danger
+                    ? (props.dict.notifications?.types?.overdue || "Con retraso")
+                    : notification.event_type === "task.reported" ? "Reporte de tarea" : "Tarea"}
             </p>
         </NotificationButton>
     );
@@ -295,6 +306,27 @@ function RejectedTaskNotificationItem({
                     <p className="mt-1.5 line-clamp-2 text-xs font-semibold leading-relaxed text-[var(--text-muted)]">{previewText}</p>
                 </div>
                 <NotificationBadge danger>{dict.notifications?.types?.rejected || "Rechazada"}</NotificationBadge>
+            </div>
+        </NotificationButton>
+    );
+}
+
+function OverdueTaskNotificationItem({
+    task,
+    locationName,
+    previewText,
+    dict,
+    ...props
+}: NotificationContentProps & { task: TaskItem }) {
+    return (
+        <NotificationButton {...props} className="border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] hover:bg-[var(--bg-tertiary)]">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <p className="truncate text-sm font-black text-[var(--text-main)]">{task.title}</p>
+                    <NotificationLocation locationName={locationName} />
+                    <p className="mt-1.5 line-clamp-2 text-xs font-semibold leading-relaxed text-[var(--text-muted)]">{previewText}</p>
+                </div>
+                <NotificationBadge danger>{dict.notifications?.types?.overdue || "Con retraso"}</NotificationBadge>
             </div>
         </NotificationButton>
     );

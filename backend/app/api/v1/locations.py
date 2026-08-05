@@ -1,4 +1,6 @@
-from fastapi import Depends, APIRouter, status, HTTPException
+from datetime import date
+
+from fastapi import Depends, APIRouter, status, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.api.deps import (
@@ -13,12 +15,41 @@ from app.api.pagination import PaginationLimit, PaginationOffset
 from app.schemas.location import LocationCreate, LocationUpdate, LocationResponse
 from app.schemas.company import CompanyPartnerResponse
 from app.schemas.user import UserResponse
-from app.services import location_service
+from app.schemas.location_history import LocationHistoryPeriod, LocationOperationalHistoryResponse
+from app.services import location_service, location_history_service
 from app.models.user import User
 from app.services import location_access_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
 
 router = APIRouter()
+
+
+@router.get(
+    "/{location_id}/operational-history",
+    response_model=LocationOperationalHistoryResponse,
+)
+async def read_location_operational_history(
+    location_id: int,
+    period: LocationHistoryPeriod = "week",
+    anchor_date: date | None = Query(default=None),
+    completed_offset: int = Query(default=0, ge=0),
+    sessions_offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    return await db.run_sync(
+        lambda sync_db: location_history_service.get_operational_history(
+            sync_db,
+            current_user,
+            location_id=location_id,
+            period=period,
+            anchor_date=anchor_date,
+            completed_offset=completed_offset,
+            sessions_offset=sessions_offset,
+            limit=limit,
+        )
+    )
 
 
 @router.get("/", response_model=list[LocationResponse])

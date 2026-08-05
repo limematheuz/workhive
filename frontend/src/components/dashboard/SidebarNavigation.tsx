@@ -9,6 +9,9 @@ import {
     SIDEBAR_ALERT_LINK_CLASS,
     SIDEBAR_ALERT_PULSE_CLASS,
     SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
+    SIDEBAR_UPDATE_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_UPDATE_PULSE_CLASS,
+    SIDEBAR_UPDATE_TRAILING_BADGE_CLASS,
     formatSidebarAlertCount,
     shouldShowTaskAlertsOnHref,
 } from "@/lib/sidebar-alerts";
@@ -21,16 +24,16 @@ type SidebarNavigationProps = {
     navGroups: NavGroup[];
     visibleNavLinks: NavLink[];
     pendingRequestsCount: number;
-    taskAlertsCount: number;
+    taskPendingCount: number;
     reportAlertsCount: number;
     openGroups: Record<string, boolean>;
     onOpenGroupChange: (groupId: string, open: boolean) => void;
 };
 
-function renderAlertBadge(count: number, className: string) {
+function renderAlertBadge(count: number, className: string, pulseClassName: string) {
     return (
         <span className={className}>
-            <span className={SIDEBAR_ALERT_PULSE_CLASS} aria-hidden="true" />
+            <span className={pulseClassName} aria-hidden="true" />
             <span className="relative z-10">{formatSidebarAlertCount(count)}</span>
         </span>
     );
@@ -43,7 +46,7 @@ export function SidebarNavigation({
     navGroups,
     visibleNavLinks,
     pendingRequestsCount,
-    taskAlertsCount,
+    taskPendingCount,
     reportAlertsCount,
     openGroups,
     onOpenGroupChange,
@@ -55,7 +58,7 @@ export function SidebarNavigation({
         href === "/dashboard/reservations" && pendingRequestsCount > 0;
 
     const showTaskAlerts = (href: string) =>
-        shouldShowTaskAlertsOnHref(href) && taskAlertsCount > 0;
+        shouldShowTaskAlertsOnHref(href) && taskPendingCount > 0;
 
     const showReportAlerts = (href: string) =>
         href === "/dashboard/task-reports" && reportAlertsCount > 0;
@@ -67,10 +70,20 @@ export function SidebarNavigation({
         const alertCount = reservationAlerts
             ? pendingRequestsCount
             : taskAlerts
-                ? taskAlertsCount
+                ? taskPendingCount
                 : reportAlerts
                     ? reportAlertsCount
                 : 0;
+        const isUrgentAlert = reportAlerts;
+        const trailingBadgeClass = isUrgentAlert
+            ? SIDEBAR_ALERT_TRAILING_BADGE_CLASS
+            : SIDEBAR_UPDATE_TRAILING_BADGE_CLASS;
+        const collapsedBadgeClass = isUrgentAlert
+            ? SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS
+            : SIDEBAR_UPDATE_COLLAPSED_BADGE_CLASS;
+        const pulseClass = isUrgentAlert
+            ? SIDEBAR_ALERT_PULSE_CLASS
+            : SIDEBAR_UPDATE_PULSE_CLASS;
         const linkStackClass = alertCount > 0
             ? SIDEBAR_ALERT_LINK_ACTIVE_CLASS
             : SIDEBAR_ALERT_LINK_CLASS;
@@ -101,13 +114,13 @@ export function SidebarNavigation({
                     <span className="relative z-0 flex min-w-0 flex-1 items-center gap-2 overflow-visible">
                         <span className="min-w-0 truncate">{link.label}</span>
                         {alertCount > 0 &&
-                            renderAlertBadge(alertCount, SIDEBAR_ALERT_TRAILING_BADGE_CLASS)}
+                            renderAlertBadge(alertCount, trailingBadgeClass, pulseClass)}
                     </span>
                 )}
                 {!isOpen &&
                     !nested &&
                     alertCount > 0 &&
-                    renderAlertBadge(alertCount, SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS)}
+                    renderAlertBadge(alertCount, collapsedBadgeClass, pulseClass)}
             </Link>
         );
     };

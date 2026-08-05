@@ -11,6 +11,7 @@ import { toast } from "@/lib/toast";
 import { ClientDetailDialog } from "@/components/clients/ClientDetailDialog";
 import { ClientTaskDetailDialog } from "@/components/clients/ClientTaskDetailDialog";
 import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
+import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
 import { Location } from "@/services/location.service";
 import { TaskItem } from "@/services/task.service";
 import { Building2, Search, SlidersHorizontal } from "lucide-react";
@@ -186,6 +187,7 @@ export default function ClientsPage() {
                     setTasksSheetOpen(true);
                 }}
                 onViewTaskDetails={(task) => {
+                    if (user) acknowledgeTaskOpened(user.id, task);
                     setBackToClient(true);
                     setViewingTask(task);
                 }}

@@ -25,7 +25,7 @@ import {
 import { useTechDashboardTasks } from "@/hooks/useTechDashboardTasks";
 import { canManageCompanyTasks as canManageTasks } from "@/domain/access/roles";
 import { useTaskWorkSummaries } from "@/hooks/useTaskWorkSummaries";
-import { dismissTaskNotification } from "./notifications/notification-utils";
+import { acknowledgeTaskOpened } from "./notifications/task-notification-acknowledgement";
 
 interface TechDashboardProps {
     currentUser: User;
@@ -54,6 +54,7 @@ function TechDashboardInner({
     const activeTab = manualTabSelection?.notificationKey === notificationKey ? manualTabSelection.tab : notificationTab;
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
     const detailHistoryOpenRef = useRef(false);
+    const openedNotificationTaskRef = useRef<string | null>(null);
     const dashboardTasks = useTechDashboardTasks({
         activeTab,
         currentUser,
@@ -77,13 +78,31 @@ function TechDashboardInner({
     }, [selectedTask, locations]);
 
     const openTaskDetail = useCallback((task: TaskItem) => {
-        dismissTaskNotification(currentUser.id, task);
+        acknowledgeTaskOpened(currentUser.id, task);
         setSelectedTaskId(task.id);
         if (!detailHistoryOpenRef.current) {
             window.history.pushState({ [DETAIL_HISTORY_KEY]: task.id }, "");
             detailHistoryOpenRef.current = true;
         }
     }, [currentUser.id]);
+
+    useEffect(() => {
+        const taskId = Number(searchParams.get("taskId"));
+        if (!Number.isInteger(taskId) || taskId <= 0 || openedNotificationTaskRef.current === notificationKey) {
+            return;
+        }
+        const task = tasks.find((item) => item.id === taskId);
+        if (!task) return;
+
+        // A notification link is also a task opening. Do not wait for a click
+        // inside the dashboard before acknowledging it.
+        openedNotificationTaskRef.current = notificationKey;
+        const timeoutId = window.setTimeout(() => {
+            acknowledgeTaskOpened(currentUser.id, task);
+            setSelectedTaskId(task.id);
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
+    }, [currentUser.id, notificationKey, searchParams, tasks]);
 
     const closeTaskDetail = useCallback(() => {
         setSelectedTaskId(null);

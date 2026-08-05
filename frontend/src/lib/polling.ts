@@ -7,6 +7,7 @@ export const POLL_INTERVALS = {
     privacy: 1_000,
     reservations: 1_000,
     sidebar: 1_000,
+    sidebarTaskCount: 10_000,
     tasks: 1_000,
     collaborations: 1_000,
     clients: 1_000,

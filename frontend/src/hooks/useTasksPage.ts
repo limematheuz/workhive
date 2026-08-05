@@ -170,9 +170,7 @@ export function useTasksPage() {
     });
     const {
         newLocationId,
-        newUserId,
         setNewLocationId,
-        setNewUserId,
     } = crud;
 
     const applyCreateFormDefaults = () => {
@@ -185,9 +183,6 @@ export function useTasksPage() {
             : locations;
         if (ownLocations.length > 0 && !newLocationId) {
             setNewLocationId(ownLocations[0].id.toString());
-        }
-        if (currentUser && !newUserId) {
-            setNewUserId(currentUser.id.toString());
         }
     };
 

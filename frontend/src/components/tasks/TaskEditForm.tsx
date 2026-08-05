@@ -11,7 +11,6 @@ import { TaskEditFormFields } from "./TaskEditFormFields";
 import { TaskEditFormActions } from "./TaskEditFormActions";
 
 interface TaskEditFormProps {
-    calendarAssigneeName: string;
     currentUser: User | null;
     dict: Dictionary;
     editCreatedAt: string;
@@ -48,7 +47,6 @@ interface TaskEditFormProps {
 }
 
 export function TaskEditForm({
-    calendarAssigneeName,
     currentUser,
     dict,
     editCreatedAt,
@@ -99,7 +97,6 @@ export function TaskEditForm({
 
                 <TaskEditFormFields
                     dict={dict}
-                    calendarAssigneeName={calendarAssigneeName}
                     editCreatedAt={editCreatedAt}
                     editDescription={editDescription}
                     editLocationId={editLocationId}

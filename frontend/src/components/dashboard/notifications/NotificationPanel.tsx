@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Bell, Inbox, Trash2, XCircle, CheckSquare } from "lucide-react";
+import { Bell, Inbox, Trash2, TriangleAlert, CheckSquare } from "lucide-react";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
@@ -18,6 +18,8 @@ import {
 import {
     HEADER_ALERT_BADGE_CLASS,
     SIDEBAR_ALERT_PULSE_CLASS,
+    HEADER_UPDATE_BADGE_CLASS,
+    SIDEBAR_UPDATE_PULSE_CLASS,
     formatSidebarAlertCount,
 } from "@/lib/sidebar-alerts";
 
@@ -31,16 +33,18 @@ export function NotificationPanel() {
 
     const {
         loadNotifications,
-        persistentNotifications,
+        primaryPersistentNotifications,
+        alertPersistentTaskNotifications,
         primaryTaskNotifications,
-        secondaryTaskNotifications,
+        alertTaskNotifications,
         primaryCollaborationNotifications,
         privacyRequestNotifications,
         secondaryReservationNotifications,
         upcomingArrivalNotifications,
         primaryNotificationCount,
-        secondaryNotificationCount,
+        alertNotificationCount,
         totalNotificationCount,
+        hasAlertNotifications,
         openingNotificationKey,
         notificationReferenceTime,
         getNotificationLocationName,
@@ -78,7 +82,13 @@ export function NotificationPanel() {
 
     const activeNotificationCount = activeNotificationTab === "primary"
         ? primaryNotificationCount
-        : secondaryNotificationCount;
+        : alertNotificationCount;
+    const headerBadgeClass = hasAlertNotifications
+        ? HEADER_ALERT_BADGE_CLASS
+        : HEADER_UPDATE_BADGE_CLASS;
+    const headerPulseClass = hasAlertNotifications
+        ? SIDEBAR_ALERT_PULSE_CLASS
+        : SIDEBAR_UPDATE_PULSE_CLASS;
 
     if (!enabled) return null;
 
@@ -93,8 +103,8 @@ export function NotificationPanel() {
                 aria-label="Notifications"
             >
                 {totalNotificationCount > 0 && (
-                    <span className={HEADER_ALERT_BADGE_CLASS}>
-                        <span className={SIDEBAR_ALERT_PULSE_CLASS} />
+                    <span className={headerBadgeClass}>
+                        <span className={headerPulseClass} />
                         <span className="relative">{formatSidebarAlertCount(totalNotificationCount)}</span>
                     </span>
                 )}
@@ -130,15 +140,17 @@ export function NotificationPanel() {
                         tabs={[
                             {
                                 id: "primary",
-                                label: dict.notifications?.tabs?.primary || "Principal",
+                                label: dict.notifications?.tabs?.primary || "Novedades",
                                 icon: Inbox,
                                 badge: primaryNotificationCount,
+                                badgeTone: "info",
                             },
                             {
                                 id: "secondary",
-                                label: dict.notifications?.tabs?.secondary || "Secundarias",
-                                icon: XCircle,
-                                badge: secondaryNotificationCount,
+                                label: dict.notifications?.tabs?.secondary || "Alertas",
+                                icon: TriangleAlert,
+                                badge: alertNotificationCount,
+                                badgeTone: "danger",
                             },
                         ]}
                         activeTab={activeNotificationTab}
@@ -152,15 +164,15 @@ export function NotificationPanel() {
                                 <CheckSquare className="mx-auto mb-2 h-5 w-5 text-[var(--text-main)] opacity-70" />
                                 <p className="text-sm font-semibold text-[var(--text-main)]">
                                     {activeNotificationTab === "primary"
-                                        ? (dict.notifications?.empty_primary || "No hay avisos principales.")
-                                        : (dict.notifications?.empty_secondary || "No hay avisos secundarios.")}
+                                        ? (dict.notifications?.empty_primary || "No hay novedades pendientes.")
+                                        : (dict.notifications?.empty_secondary || "No hay alertas pendientes.")}
                                 </p>
                             </div>
                         ) : (
                             <div className="space-y-2">
                                 {activeNotificationTab === "primary" && (
                                     <>
-                                        {persistentNotifications.map((notification) => (
+                                        {primaryPersistentNotifications.map((notification) => (
                                             <NotificationItem
                                                 key={`persistent:${notification.id}`}
                                                 type="persistent"
@@ -268,12 +280,25 @@ export function NotificationPanel() {
 
                                 {activeNotificationTab === "secondary" && (
                                     <>
-                                        {secondaryTaskNotifications.map((task) => {
+                                        {alertPersistentTaskNotifications.map((notification) => (
+                                            <NotificationItem
+                                                key={`persistent:${notification.id}`}
+                                                type="persistent-alert"
+                                                data={notification}
+                                                notificationKey={`persistent:${notification.id}`}
+                                                openingNotificationKey={openingNotificationKey}
+                                                onClick={() => void handlePersistentNotificationClick(notification)}
+                                                dict={dict}
+                                                locale={locale}
+                                            />
+                                        ))}
+
+                                        {alertTaskNotifications.map((task) => {
                                             const notificationKey = getTaskNotificationKey(task);
                                             return (
                                                 <NotificationItem
                                                     key={notificationKey}
-                                                    type="task-rejected"
+                                                    type={task.status === "rejected" ? "task-rejected" : "task-overdue"}
                                                     data={task}
                                                     notificationKey={notificationKey}
                                                     openingNotificationKey={openingNotificationKey}
