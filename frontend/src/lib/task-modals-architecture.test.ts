@@ -112,18 +112,32 @@ test("modal permissions block duplicate when invoiced and allow managers otherwi
     assert.equal(canDuplicateTask(null, { is_invoiced: false }), false);
 });
 
-test("task edit form keeps checklist editor wiring and sticky glass footer actions", () => {
+test("task create and edit forms share sections, controls and editable owner fields", () => {
+    const createMain = read("../components/tasks/TaskCreateMainFields.tsx");
+    const createReservations = read("../components/tasks/TaskCreateReservationSection.tsx");
+    const createChecklist = read("../components/tasks/TaskCreateHouseChecklistSection.tsx");
     const fields = read("../components/tasks/TaskEditFormFields.tsx");
     const form = read("../components/tasks/TaskEditForm.tsx");
+    const createModal = read("../components/tasks/TaskCreateModal.tsx");
     const actions = read("../components/tasks/TaskEditFormActions.tsx");
+    const layout = read("../components/tasks/taskFormLayout.ts");
 
+    assert.match(layout, /taskFormSectionClass/);
+    assert.match(layout, /taskFormControlClass/);
+    assert.match(createMain, /taskFormSectionClass/);
+    assert.match(createReservations, /taskFormSectionClass/);
+    assert.match(createChecklist, /taskFormSectionClass/);
+    assert.match(fields, /taskFormSectionClass/);
+    assert.match(createModal, /newLocationId && canLinkReservations/);
     assert.match(fields, /resolveTaskEditChecklist|resolve-task-edit-checklist/);
     assert.match(fields, /TaskChecklistEditor/);
+    assert.match(fields, /task-edit-title/);
+    assert.match(fields, /editTitle/);
+    assert.match(form, /setEditTitle/);
     assert.match(form, /overflow-y-auto/);
     assert.match(actions, /canDuplicateTask/);
     assert.match(actions, /taskDialogPrimaryBtnClass|btn-primary/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
-    assert.doesNotMatch(fields, /title_label/);
-    assert.match(fields, /Notas internas/);
-    assert.match(fields, /Responsable/);
+    assert.match(fields, /title_label/);
+    assert.match(fields, /calendar_owner/);
 });

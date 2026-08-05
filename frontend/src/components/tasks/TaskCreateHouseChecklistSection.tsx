@@ -7,6 +7,12 @@ import { getEffectiveLocationTemplate } from "@/domain/locations/location-templa
 import type { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
 import type { User } from "@/types/user";
 import { ALL_WORKERS_VALUE, parseChecklist } from "./taskCreateChecklist";
+import {
+    taskFormSectionClass,
+    taskFormSectionHeaderClass,
+    taskFormSectionHintClass,
+    taskFormSectionTitleClass,
+} from "./taskFormLayout";
 
 type TaskCreateHouseChecklistSectionProps = {
     dict: Dictionary;
@@ -63,13 +69,21 @@ export function TaskCreateHouseChecklistSection({
     const selectedHouseTemplateIdSet = new Set(selectedHouseTemplateIds);
 
     return (
-        <div className="space-y-2.5">
-            <div className="flex items-center justify-between border-b border-[var(--border-soft)] pb-1.5">
-                <span className="text-2xs uppercase font-black text-[var(--text-main)] flex items-center gap-1.5">
+        <section className={taskFormSectionClass}>
+            <div className={taskFormSectionHeaderClass}>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-1">
+                        <h3 className={`${taskFormSectionTitleClass} flex items-center gap-1.5`}>
                     <ListTodo className="w-4 h-4 text-accent" />
-                    {dict.tasks?.create_dialog?.fixed_tasks?.replace("{count}", visibleHouseTemplates.length.toString()) || `Default Location Tasks (${visibleHouseTemplates.length})`}
-                </span>
-                <div className="flex items-center gap-3">
+                            {dict.tasks?.create_dialog?.services_section
+                                || "Services and checklist"}
+                        </h3>
+                        <p className={taskFormSectionHintClass}>
+                            {dict.tasks?.create_dialog?.services_section_hint
+                                || "Select fixed work, review steps and assign owners."}
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
                     {isAdminOrManager && availableTemplates.length > 0 && (
                         <button
                             type="button"
@@ -95,6 +109,7 @@ export function TaskCreateHouseChecklistSection({
                             </label>
                         </div>
                     )}
+                </div>
                 </div>
             </div>
 
@@ -283,6 +298,6 @@ export function TaskCreateHouseChecklistSection({
                     </div>
                 </div>
             )}
-        </div>
+        </section>
     );
 }

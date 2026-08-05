@@ -244,6 +244,8 @@ export function OperationsCalendar({
                 editUserId={state.editUserId}
                 editStatus={state.editStatus}
                 setEditStatus={state.setEditStatus}
+                editTitle={state.editTitle}
+                setEditTitle={state.setEditTitle}
                 editPriority={state.editPriority}
                 setEditPriority={state.setEditPriority}
                 editCreatedAt={state.editCreatedAt}

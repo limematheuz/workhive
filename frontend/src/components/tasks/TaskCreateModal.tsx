@@ -156,6 +156,7 @@ export function TaskCreateModal({
 
                         {newLocationId && canLinkReservations && (
                             <TaskCreateReservationSection
+                                dict={dict}
                                 loadingReservations={loadingReservations}
                                 availableReservations={availableReservations}
                                 newCheckoutReservationId={newCheckoutReservationId}

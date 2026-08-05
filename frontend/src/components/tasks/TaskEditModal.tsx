@@ -52,6 +52,8 @@ interface TaskEditModalProps {
     editUserId: string;
     editStatus: TaskStatus;
     setEditStatus: (val: TaskStatus) => void;
+    editTitle: string;
+    setEditTitle: (val: string) => void;
     editPriority: TaskPriority;
     setEditPriority: (val: TaskPriority) => void;
     handleSaveTaskDetails: (e: React.FormEvent) => void;
@@ -91,6 +93,8 @@ export function TaskEditModal({
     editUserId,
     editStatus,
     setEditStatus,
+    editTitle,
+    setEditTitle,
     editPriority,
     setEditPriority,
     handleSaveTaskDetails,
@@ -188,6 +192,7 @@ export function TaskEditModal({
                             editPriority={editPriority}
                             editQuantity={editQuantity}
                             editStatus={editStatus}
+                            editTitle={editTitle}
                             editUnit={editUnit}
                             handleDeleteTask={handleDeleteTask}
                             handleDuplicateTask={handleDuplicateTask}
@@ -208,6 +213,7 @@ export function TaskEditModal({
                             setEditPriority={setEditPriority}
                             setEditQuantity={setEditQuantity}
                             setEditStatus={setEditStatus}
+                            setEditTitle={setEditTitle}
                             setEditUnit={setEditUnit}
                             users={users}
                         />
