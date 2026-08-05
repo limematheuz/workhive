@@ -1059,6 +1059,18 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
     radial-gradient(circle at 48% 86%, color-mix(in srgb, var(--accent-color) 12%, transparent), transparent 42%);
 }
 
+/* One native vertical scroll owner per screen prevents mobile browsers from
+ * having to arbitrate a gesture between nested scroll containers. */
+.app-touch-scroll {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y pinch-zoom;
+}
+
+.dashboard-page-content {
+  min-height: 100%;
+}
+
 .light-mode .dashboard-shell-backlight {
   opacity: 0.48;
   background:

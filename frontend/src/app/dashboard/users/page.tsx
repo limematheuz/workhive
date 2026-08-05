@@ -126,7 +126,7 @@ export default function TeamPage() {
     };
 
     return (
-        <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
+        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={Users}
                 title={dict.users.list_title}

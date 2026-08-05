@@ -89,7 +89,7 @@ export default function InvoiceDetailPage() {
     const formattedInvoiceNumber = formatInvoiceNumber(invoice.invoice_number);
 
     return (
-        <div className="h-full overflow-x-hidden overflow-y-auto px-2 py-3 print:overflow-visible print:bg-white print:p-0 print:text-black sm:px-4 lg:px-5">
+        <div className="dashboard-page-content overflow-x-hidden px-2 py-3 print:overflow-visible print:bg-white print:p-0 print:text-black sm:px-4 lg:px-5">
             <InvoiceDetailActionBar
                 dict={dict}
                 invoice={invoice}

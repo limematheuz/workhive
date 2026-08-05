@@ -17,7 +17,7 @@ function TasksPageContent() {
     const state = useTasksPage();
 
     return (
-        <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto overflow-x-hidden max-w-full">
+        <div className="dashboard-page-content max-w-full overflow-x-hidden px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={ListTodo}
                 title={state.dict.tasks?.page_title || "Tareas y Operaciones"}

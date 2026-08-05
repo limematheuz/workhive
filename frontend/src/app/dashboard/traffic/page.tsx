@@ -223,7 +223,7 @@ export default function TrafficPage() {
     }
 
     return (
-        <div className="h-full overflow-y-auto px-2 py-2 sm:px-3 lg:px-4">
+        <div className="dashboard-page-content px-2 py-2 sm:px-3 lg:px-4">
             <div className="mx-auto max-w-none space-y-3">
                 <TrafficAnalyticsPanel
                     traffic={traffic}

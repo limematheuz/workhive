@@ -67,7 +67,7 @@ export default function CalendarPage() {
     const canView = canViewCompanyCalendar(currentUser);
     if (!canView) {
         return (
-            <main className="h-full overflow-y-auto px-[3%] py-6 md:p-8">
+            <main className="dashboard-page-content px-[3%] py-6 md:p-8">
                 <section className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center shadow-sm">
                     <ShieldAlert className="mx-auto h-10 w-10 text-amber-500" />
                     <h1 className="mt-3 text-lg font-black text-[var(--text-main)]">Calendario restringido</h1>
@@ -80,7 +80,7 @@ export default function CalendarPage() {
     }
 
     return (
-        <main className="h-full overflow-y-auto px-[3%] py-6 md:p-8">
+        <main className="dashboard-page-content px-[3%] py-6 md:p-8">
             <CompanyCalendar
                 tasks={tasks}
                 locations={locations}

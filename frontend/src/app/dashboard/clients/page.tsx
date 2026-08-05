@@ -124,7 +124,7 @@ export default function ClientsPage() {
     const filteredClients = filterClients(clients, searchTerm, statusFilter);
 
     return (
-        <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
+        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={Building2}
                 title={dict.clients.title}

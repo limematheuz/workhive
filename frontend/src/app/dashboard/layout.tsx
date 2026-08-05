@@ -94,7 +94,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     if (loading || !user) {
         return (
-            <div className="flex h-screen items-center justify-center bg-[var(--bg-primary)]">
+            <div className="flex h-dvh items-center justify-center bg-[var(--bg-primary)]">
                 <div className="text-center">
                     <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-accent border-b-transparent" />
                     <p className="text-sm text-[var(--text-muted)]">
@@ -106,7 +106,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="h-screen bg-[var(--bg-primary)] flex text-[var(--text-main)] font-sans transition-colors duration-300 overflow-hidden">
+        <div className="flex h-dvh overflow-hidden bg-[var(--bg-primary)] font-sans text-[var(--text-main)] transition-colors duration-300">
 
             {/* Mobile overlay */}
             {isSidebarOpen && (
@@ -124,7 +124,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 onThemeChange={setTheme}
             />
 
-            <div className="flex-1 h-screen overflow-hidden p-0 lg:py-4 lg:pr-4 lg:pl-0 transition-colors duration-300">
+            <div className="h-dvh flex-1 overflow-hidden p-0 transition-colors duration-300 lg:py-4 lg:pl-0 lg:pr-4">
                 <div className="relative flex flex-col h-full bg-[var(--bg-primary)] rounded-none lg:rounded-3xl border-0 lg:border border-[var(--border-soft)] overflow-hidden">
                     <div className="dashboard-shell-backlight" />
                     <DashboardHeader
@@ -133,7 +133,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                         onLogout={handleLogout}
                     />
 
-                    <main className="relative z-[var(--z-dashboard-content)] flex-1 overflow-auto p-0 min-h-0">
+                    <main className="app-touch-scroll dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-0">
                         {children}
                     </main>
                 </div>

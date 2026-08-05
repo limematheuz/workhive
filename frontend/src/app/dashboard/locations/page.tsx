@@ -174,7 +174,7 @@ export default function LocationsPage() {
     }, [locations, user, ownerFilter]);
 
     return (
-        <div className="px-[3%] py-6 md:p-8 h-full overflow-y-auto">
+        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={MapPin}
                 title={dict.locations.title}

@@ -148,7 +148,7 @@ export default function TaskReportsPage() {
     }
 
     return (
-        <div className={`h-full overflow-y-auto px-[3%] py-5 md:px-7 md:py-6 ${scrollHide}`}>
+        <div className={`dashboard-page-content px-[3%] py-5 md:px-7 md:py-6 ${scrollHide}`}>
             <div className="mx-auto w-full max-w-6xl space-y-4">
                 <PageHeader
                     icon={ShieldAlert}
