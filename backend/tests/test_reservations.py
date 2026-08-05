@@ -4,11 +4,14 @@ import pytest
 from fastapi import HTTPException
 
 from app.models.client import Client
+from app.models.calendar_sync_job import CalendarSyncJob
 from app.models.company import Company
 from app.models.company_collaboration import CompanyCollaboration
+from app.models.google_calendar_connection import GoogleCalendarConnection
 from app.models.location import Location
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.location_template import LocationTemplate
+from app.models.task_item import TaskItem
 from app.models.template_task import TemplateTask
 from app.models.user import User
 from app.schemas.reservation import ReservationCreate
@@ -21,6 +24,7 @@ from app.schemas.task_item import (
 )
 from app.schemas.template_task import TemplateTaskCreate, TemplateTaskUpdate
 from app.services import (
+    calendar_sync_service,
     collaboration_service,
     location_access_service,
     location_service,
@@ -311,8 +315,6 @@ def test_consecutive_external_reservations_create_independent_requests(db):
         db, issuer_admin, second
     )
 
-    from app.models.task_item import TaskItem
-
     requests = (
         db.query(TaskItem)
         .filter(
@@ -393,6 +395,59 @@ def test_consecutive_external_reservations_create_independent_requests(db):
             TaskItemUpdate(title="Título cambiado por el receptor"),
         )
     assert source_field_error.value.status_code == 403
+
+
+def test_external_reservation_task_syncs_only_to_receiver_calendar(db):
+    issuer = _company(db, "Inmobiliaria", "INMOCALENDAR")
+    receiver = _company(db, "Ownet", "OWNETCALENDAR")
+    location = _location(db, issuer)
+    issuer_admin = _user(db, issuer, role_id=1, email="admin@inmocalendar.test")
+    receiver_admin = _user(db, receiver, role_id=1, email="admin@ownetcalendar.test")
+    db.add_all(
+        [
+            LocationCompanyAccess(
+                location_id=location.id,
+                company_id=receiver.id,
+                relationship_type="service_provider",
+                can_manage_reservations=False,
+                can_manage_tasks=True,
+            ),
+            GoogleCalendarConnection(
+                company_id=receiver.id,
+                connected_by_user_id=receiver_admin.id,
+                owner_user_id=receiver_admin.id,
+                calendar_id="workhive-ownet-calendar",
+                calendar_name="WorkHive - Ownet",
+                access_token_encrypted="encrypted-access-token",
+            ),
+        ]
+    )
+    db.commit()
+
+    reservation = reservation_service.create_reservation(
+        db,
+        issuer_admin,
+        ReservationCreate(
+            location_id=location.id,
+            check_in_at=datetime(2026, 7, 7, 16, 0, tzinfo=timezone.utc),
+            check_out_at=datetime(2026, 7, 9, 11, 0, tzinfo=timezone.utc),
+            guest_count=3,
+            cleaning_required=True,
+            assigned_company_id=receiver.id,
+        ),
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+
+    calendar_sync_service.enqueue_task_sync(db, task)
+
+    jobs = db.query(CalendarSyncJob).filter_by(task_id=task.id).all()
+    assert [(job.company_id, job.user_id, job.operation) for job in jobs] == [
+        (receiver.id, receiver_admin.id, "upsert")
+    ]
+    assert not db.query(CalendarSyncJob).filter_by(
+        company_id=issuer.id,
+        task_id=task.id,
+    ).count()
 
 
 def test_internal_reservation_does_not_create_self_provider_access(db):
@@ -571,7 +626,6 @@ def test_create_reservation_with_assigned_task(db):
     assert reservation.id is not None
     assert reservation.owner_company_id == company.id
 
-    from app.models.task_item import TaskItem
     task = db.query(TaskItem).filter(TaskItem.checkout_reservation_id == reservation.id).first()
     assert task is not None
     assert task.user_id == admin.id
