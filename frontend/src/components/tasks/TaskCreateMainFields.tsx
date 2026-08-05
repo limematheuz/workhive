@@ -4,6 +4,15 @@ import { Lock } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/services/location.service";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
+import {
+    taskFormControlClass,
+    taskFormLabelClass,
+    taskFormReadOnlyClass,
+    taskFormSectionClass,
+    taskFormSectionHeaderClass,
+    taskFormSectionHintClass,
+    taskFormSectionTitleClass,
+} from "./taskFormLayout";
 
 type TaskCreateMainFieldsProps = {
     dict: Dictionary;
@@ -25,10 +34,19 @@ export function TaskCreateMainFields({
     setNewCreatedAt,
 }: TaskCreateMainFieldsProps) {
     return (
-        <div className="bg-[var(--bg-secondary)] p-5 border border-[var(--border-soft)] rounded-2xl space-y-4">
+        <section className={taskFormSectionClass}>
+            <div className={taskFormSectionHeaderClass}>
+                <h3 className={taskFormSectionTitleClass}>
+                    {dict.tasks?.create_dialog?.planning_section || "Planning"}
+                </h3>
+                <p className={taskFormSectionHintClass}>
+                    {dict.tasks?.create_dialog?.planning_section_hint
+                        || "Choose the location and date. Assign workers in the checklist."}
+                </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
                 <div className="space-y-2">
-                    <label htmlFor="task-create-location" className="text-2xs uppercase font-black text-[var(--text-main)] flex items-end tracking-wider sm:min-h-[36px] pb-0.5">
+                    <label htmlFor="task-create-location" className={taskFormLabelClass}>
                         <span>{dict.tasks?.create_dialog?.select_location || "Select Location *"}</span>
                     </label>
                     <select
@@ -37,7 +55,7 @@ export function TaskCreateMainFields({
                         onChange={(e) => setNewLocationId(e.target.value)}
                         aria-label={dict.tasks?.create_dialog?.select_location || "Select Location *"}
                         required
-                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent ui-motion cursor-pointer h-10 shadow-xs"
+                        className={`${taskFormControlClass} cursor-pointer shadow-xs`}
                     >
                         <option value="" disabled>{dict.tasks?.create_dialog?.select_location_placeholder || "-- Select a location --"}</option>
                         {ownLocations.map(loc => (
@@ -47,20 +65,21 @@ export function TaskCreateMainFields({
                 </div>
 
                 <div className="space-y-2">
-                    <span className="text-2xs uppercase font-black text-[var(--text-main)] flex items-end tracking-wider sm:min-h-[36px] pb-0.5">
-                        <span>Responsable</span>
+                    <span className={taskFormLabelClass}>
+                        <span>{dict.tasks?.create_dialog?.calendar_owner || "Company calendar"}</span>
                     </span>
-                    <div className="flex h-10 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs font-bold text-[var(--text-main)] shadow-xs">
+                    <div className={taskFormReadOnlyClass}>
                         <Lock className="h-3.5 w-3.5 text-[var(--text-muted)]" />
                         <span className="truncate">{calendarOwnerName}</span>
                     </div>
-                    <p className="text-[10px] font-semibold leading-snug text-[var(--text-muted)]">
-                        Coordina esta tarea. Los trabajadores se asignan abajo, en el checklist.
+                    <p className="text-2xs font-semibold leading-snug text-[var(--text-muted)]">
+                        {dict.tasks?.create_dialog?.calendar_owner_hint
+                            || "This task syncs to the company’s connected calendar."}
                     </p>
                 </div>
 
                 <div className="space-y-2">
-                    <label htmlFor="task-create-date" className="text-2xs uppercase font-black text-[var(--text-main)] flex items-end tracking-wider sm:min-h-[36px] pb-0.5">
+                    <label htmlFor="task-create-date" className={taskFormLabelClass}>
                         <span>{dict.tasks?.create_dialog?.date || "Planning Date"}</span>
                     </label>
                     <input
@@ -70,10 +89,10 @@ export function TaskCreateMainFields({
                         min={getDefaultTaskDate()}
                         onChange={(e) => setNewCreatedAt(e.target.value)}
                         aria-label={dict.tasks?.create_dialog?.date || "Planning Date"}
-                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent focus:ring-1 focus:ring-accent ui-motion cursor-pointer h-10 shadow-xs"
+                        className={`${taskFormControlClass} cursor-pointer shadow-xs`}
                     />
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

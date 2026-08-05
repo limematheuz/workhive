@@ -65,6 +65,8 @@ interface TaskFormModalsProps {
     editUserId: string;
     editStatus: TaskStatus;
     setEditStatus: (val: TaskStatus) => void;
+    editTitle: string;
+    setEditTitle: (val: string) => void;
     editPriority: TaskPriority;
     setEditPriority: (val: TaskPriority) => void;
     editCreatedAt: string;
@@ -142,8 +144,10 @@ interface TaskFormModalsProps {
      editLocationId,
      setEditLocationId,
      editUserId,
-     editStatus,
-     setEditStatus,
+    editStatus,
+    setEditStatus,
+    editTitle,
+    setEditTitle,
      editPriority,
      setEditPriority,
      editCreatedAt,
@@ -230,6 +234,8 @@ interface TaskFormModalsProps {
                  editUserId={editUserId}
                  editStatus={editStatus}
                  setEditStatus={setEditStatus}
+                 editTitle={editTitle}
+                 setEditTitle={setEditTitle}
                  editPriority={editPriority}
                  setEditPriority={setEditPriority}
                  editCreatedAt={editCreatedAt}

@@ -101,6 +101,8 @@ export function ReservationsRequestsSection({
                 editUserId={taskCrud.editUserId}
                 editStatus={taskCrud.editStatus}
                 setEditStatus={taskCrud.setEditStatus}
+                editTitle={taskCrud.editTitle}
+                setEditTitle={taskCrud.setEditTitle}
                 editPriority={taskCrud.editPriority}
                 setEditPriority={taskCrud.setEditPriority}
                 editCreatedAt={taskCrud.editCreatedAt}

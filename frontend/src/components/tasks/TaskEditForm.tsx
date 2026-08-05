@@ -23,6 +23,7 @@ interface TaskEditFormProps {
     editPriority: TaskPriority;
     editQuantity: string;
     editStatus: TaskStatus;
+    editTitle: string;
     editUnit: string;
     handleDeleteTask: (task: TaskItem) => void;
     handleDuplicateTask: (task: TaskItem) => Promise<void>;
@@ -43,6 +44,7 @@ interface TaskEditFormProps {
     setEditPriority: (value: TaskPriority) => void;
     setEditQuantity: (value: string) => void;
     setEditStatus: (value: TaskStatus) => void;
+    setEditTitle: (value: string) => void;
     setEditUnit: (value: string) => void;
     users: User[];
 }
@@ -60,6 +62,7 @@ export function TaskEditForm({
     editPriority,
     editQuantity,
     editStatus,
+    editTitle,
     editUnit,
     handleDeleteTask,
     handleDuplicateTask,
@@ -79,6 +82,7 @@ export function TaskEditForm({
     setEditPriority,
     setEditQuantity,
     setEditStatus,
+    setEditTitle,
     setEditUnit,
     users,
 }: TaskEditFormProps) {
@@ -109,6 +113,7 @@ export function TaskEditForm({
                     editPriority={editPriority}
                     editQuantity={editQuantity}
                     editStatus={editStatus}
+                    editTitle={editTitle}
                     editUnit={editUnit}
                     isReceiverCompany={receiverCompany}
                     managerEditable={managerEditable}
@@ -123,6 +128,7 @@ export function TaskEditForm({
                     setEditPriority={setEditPriority}
                     setEditQuantity={setEditQuantity}
                     setEditStatus={setEditStatus}
+                    setEditTitle={setEditTitle}
                     setEditUnit={setEditUnit}
                     users={users}
                     isAdminOrManager={adminOrManager}
