@@ -26,6 +26,7 @@ class Company(Base):
     subscription_status = Column(String(30), nullable=False, default="inactive", index=True)
     trial_started_at = Column(DateTime(timezone=True), nullable=True)
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
+    trial_expiry_notice_sent_at = Column(DateTime(timezone=True), nullable=True)
     stripe_customer_id = Column(String(100), unique=True, nullable=True, index=True)
     stripe_subscription_id = Column(String(100), unique=True, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

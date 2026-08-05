@@ -8,6 +8,8 @@ from app.core.config import settings
 from app.services.email_service.access_emails import (
     send_account_request_notification,
     send_trial_approved_email,
+    send_trial_expiring_email,
+    send_trial_expiring_superadmin_email,
     send_trial_verification_email,
     send_worker_invitation_email,
 )
@@ -48,6 +50,8 @@ __all__ = [
     "send_trial_verification_email",
     "send_account_request_notification",
     "send_trial_approved_email",
+    "send_trial_expiring_email",
+    "send_trial_expiring_superadmin_email",
     "send_worker_invitation_email",
     "send_erasure_request_received_email",
     "send_erasure_request_resolved_email",

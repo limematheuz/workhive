@@ -142,6 +142,78 @@ def send_trial_approved_email(
     return transport.send_email(message)
 
 
+def send_trial_expiring_email(
+    *,
+    recipient_email: str,
+    recipient_name: str,
+    company_name: str,
+    trial_ends_at: datetime,
+) -> bool:
+    b = _BRAND
+    safe_name = escape(recipient_name)
+    safe_company = escape(company_name)
+    end_date = trial_ends_at.date().isoformat()
+    html_body = base_layout(
+        f"""
+{heading("Tu prueba termina en 3 días")}
+{lead(f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>, la prueba de <strong style="color:{b["text"]};">{safe_company}</strong> termina el {end_date}.')}
+{muted_note("Revisa las opciones de tu cuenta o contacta con WorkHive para mantener el acceso.")}
+""",
+        preview_text=f"La prueba de {company_name} termina el {end_date}",
+    )
+    message = EmailMessage()
+    message["Subject"] = "Tu prueba de WorkHive termina en 3 días"
+    message["From"] = transport.from_address("Cuenta")
+    message["To"] = recipient_email
+    message.set_content(
+        plain_body(
+            [
+                f"Hola {recipient_name},",
+                "",
+                f"La prueba de {company_name} termina el {end_date}.",
+                "Contacta con WorkHive para mantener el acceso.",
+            ]
+        )
+    )
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)
+
+
+def send_trial_expiring_superadmin_email(
+    *,
+    recipient_email: str,
+    company_name: str,
+    trial_ends_at: datetime,
+) -> bool:
+    safe_company = escape(company_name)
+    end_date = trial_ends_at.date().isoformat()
+    html_body = base_layout(
+        f"""
+{heading("Prueba próxima a terminar")}
+{lead(f'La prueba de <strong>{safe_company}</strong> termina el {end_date}.')}
+{muted_note("El administrador de la empresa ha recibido el mismo aviso. Revisa la solicitud comercial si procede.")}
+""",
+        preview_text=f"La prueba de {company_name} termina en 3 días",
+    )
+    message = EmailMessage()
+    message["Subject"] = f"[WorkHive] Prueba termina en 3 días: {company_name}"
+    message["From"] = transport.from_address("Cuenta")
+    message["To"] = recipient_email
+    message.set_content(
+        plain_body(
+            [
+                "Prueba próxima a terminar.",
+                "",
+                f"Empresa: {company_name}",
+                f"Fecha de fin: {end_date}",
+                "El administrador de la empresa ha recibido el mismo aviso.",
+            ]
+        )
+    )
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)
+
+
 def send_worker_invitation_email(
     *,
     recipient_email: str,

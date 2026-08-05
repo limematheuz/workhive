@@ -59,6 +59,41 @@ def test_trial_approved_email_pro_mode_without_trial_date(monkeypatch):
     assert "Tu acceso Pro ya está activo." in plain
 
 
+def test_trial_expiry_warning_emails_use_shared_professional_layout(monkeypatch):
+    delivered = capture_send(monkeypatch)
+    ends_at = datetime(2026, 9, 1, 9, tzinfo=timezone.utc)
+
+    assert access_emails.send_trial_expiring_email(
+        recipient_email="owner@example.com",
+        recipient_name="<Owner>",
+        company_name="<Acme>",
+        trial_ends_at=ends_at,
+    )
+
+    message = delivered["message"]
+    assert message["Subject"] == "Tu prueba de WorkHive termina en 3 días"
+    assert "&lt;Owner&gt;" in html_body(message)
+    assert "&lt;Acme&gt;" in html_body(message)
+    assert "2026-09-01" in plain_body(message)
+    assert "email-card" in html_body(message)
+
+
+def test_trial_expiry_superadmin_email_has_company_context(monkeypatch):
+    delivered = capture_send(monkeypatch)
+    ends_at = datetime(2026, 9, 1, 9, tzinfo=timezone.utc)
+
+    assert access_emails.send_trial_expiring_superadmin_email(
+        recipient_email="platform@example.com",
+        company_name="<Acme>",
+        trial_ends_at=ends_at,
+    )
+
+    message = delivered["message"]
+    assert message["Subject"] == "[WorkHive] Prueba termina en 3 días: <Acme>"
+    assert "&lt;Acme&gt;" in html_body(message)
+    assert "2026-09-01" in plain_body(message)
+
+
 def test_worker_invitation_email_includes_code_and_expiry(monkeypatch):
     delivered = capture_send(monkeypatch)
     expires_at = datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc)

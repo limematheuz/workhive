@@ -21,6 +21,7 @@ from app.db import base as _models  # noqa: F401 - registers SQLAlchemy models
 from app.db.async_session import async_engine
 from app.services.health_service import readiness_checks
 from app.services.calendar_background_service import periodic_calendar_sync
+from app.services.trial_expiry_notification_service import periodic_trial_expiry_notification_check
 from sqlalchemy.orm import Session
 
 
@@ -30,16 +31,17 @@ logger = logging.getLogger("workhive.http")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    task = (
-        asyncio.create_task(periodic_calendar_sync())
-        if settings.RUN_CALENDAR_BACKGROUND_SYNC
-        else None
-    )
+    tasks = []
+    if settings.RUN_CALENDAR_BACKGROUND_SYNC:
+        tasks.append(asyncio.create_task(periodic_calendar_sync()))
+    if settings.TRIAL_EXPIRY_REMINDERS_ENABLED:
+        tasks.append(asyncio.create_task(periodic_trial_expiry_notification_check()))
     try:
         yield
     finally:
-        if task is not None:
+        for task in tasks:
             task.cancel()
+        for task in tasks:
             try:
                 await task
             except asyncio.CancelledError:

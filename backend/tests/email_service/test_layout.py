@@ -4,6 +4,8 @@ from pathlib import Path
 from app.services.email_service import layout
 from app.services.email_service.access_emails import (
     send_trial_approved_email,
+    send_trial_expiring_email,
+    send_trial_expiring_superadmin_email,
     send_trial_verification_email,
     send_worker_invitation_email,
 )
@@ -136,6 +138,8 @@ def test_all_transactional_email_builders_use_shared_base_layout():
         send_email_changed_notice,
         send_trial_verification_email,
         send_trial_approved_email,
+        send_trial_expiring_email,
+        send_trial_expiring_superadmin_email,
         send_worker_invitation_email,
         send_contact_email,
         send_invoice_email,
@@ -154,4 +158,4 @@ def test_all_transactional_email_builders_use_shared_base_layout():
         assert "from app.services.email_service.layout import" in source
 
     # Keep the public builder list intentional so new emails stay on the shared shell.
-    assert len(builders) == 10
+    assert len(builders) == 12

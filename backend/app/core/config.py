@@ -5,7 +5,7 @@ from app.core.build_info import GIT_SHA_PATTERN, SEMVER_PATTERN
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "WorkHive Enterprise"
-    APP_VERSION: str = "1.2.10"
+    APP_VERSION: str = "1.2.11"
     GIT_SHA: str = "unknown"
     API_V1_STR: str = "/api/v1"
     DATABASE_URL: str
@@ -46,6 +46,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_JSON: bool = False
     RUN_CALENDAR_BACKGROUND_SYNC: bool = False
+    TRIAL_EXPIRY_REMINDERS_ENABLED: bool = True
+    TRIAL_EXPIRY_REMINDER_INTERVAL_SECONDS: int = 3600
 
     EMAIL_ENABLED: bool = False
     CONTACT_FORM_ENABLED: bool = False
