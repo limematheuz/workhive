@@ -35,10 +35,16 @@ export const getDismissedNotificationKeys = (userId: number): string[] => {
     }
 };
 
-export const persistDismissedNotificationKeys = (userId: number, keys: string[]) => {
+export const persistDismissedNotificationKeys = (
+    userId: number,
+    keys: string[],
+    detail?: { taskItemId?: number },
+) => {
     if (typeof window === "undefined") return;
     localStorage.setItem(getNotificationDismissedKey(userId), JSON.stringify(Array.from(new Set(keys))));
-    window.dispatchEvent(new CustomEvent(NOTIFICATIONS_UPDATED_EVENT, { detail: { userId } }));
+    window.dispatchEvent(new CustomEvent(NOTIFICATIONS_UPDATED_EVENT, {
+        detail: { userId, ...detail },
+    }));
 };
 
 export const addDismissedNotificationKey = (keys: string[], key: string) => (
@@ -59,6 +65,7 @@ export const dismissTaskNotification = (userId: number, task: TaskItem) => {
             getDismissedNotificationKeys(userId),
             getTaskNotificationKey(task),
         ),
+        { taskItemId: task.id },
     );
 };
 export const getCollaborationNotificationKey = (collaboration: CompanyCollaboration) => `collaboration:${collaboration.id}:${collaboration.status}`;

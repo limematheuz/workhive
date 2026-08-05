@@ -3,10 +3,12 @@ from datetime import datetime, timedelta, timezone
 from app.core.security import create_access_token
 from app.models.company import Company
 from app.models.location import Location
+from app.models.location_company_access import LocationCompanyAccess
 from app.models.notification import Notification
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.user import User
+from app.models.work_session import WorkSession
 from app.services import task_assignment_service
 
 
@@ -273,6 +275,190 @@ def test_notification_api_is_user_scoped_and_marks_only_owned_notification(clien
     ).json() == []
     db.refresh(foreign)
     assert foreign.read_at is None
+
+
+def test_opening_task_acknowledges_all_of_its_unread_events_for_current_user(client, db):
+    users = _external_task(db)
+    task = users["task"]
+    recipient = users["receiver_admin"]
+    other_recipient = users["second_receiver_admin"]
+    first = Notification(
+        user_id=recipient.id,
+        company_id=recipient.company_id,
+        event_type="task.assigned",
+        title="Nueva tarea",
+        message="Asignada",
+        entity_type="task_item",
+        entity_id=task.id,
+        href=f"/dashboard?taskId={task.id}",
+    )
+    second = Notification(
+        user_id=recipient.id,
+        company_id=recipient.company_id,
+        event_type="task.reported",
+        title="Nuevo reporte",
+        message="Reporte recibido",
+        entity_type="task_item",
+        entity_id=task.id,
+        href=f"/dashboard?taskId={task.id}",
+    )
+    foreign = Notification(
+        user_id=other_recipient.id,
+        company_id=other_recipient.company_id,
+        event_type="task.assigned",
+        title="Nueva tarea",
+        message="Asignada",
+        entity_type="task_item",
+        entity_id=task.id,
+        href=f"/dashboard?taskId={task.id}",
+    )
+    unrelated = Notification(
+        user_id=recipient.id,
+        company_id=recipient.company_id,
+        event_type="task.assigned",
+        title="Otra tarea",
+        message="Debe continuar pendiente",
+        entity_type="task_item",
+        entity_id=task.id + 1,
+        href=f"/dashboard?taskId={task.id + 1}",
+    )
+    db.add_all([first, second, foreign, unrelated])
+    db.commit()
+
+    response = client.patch(
+        f"/api/v1/notifications/task-items/{task.id}/read",
+        headers=_headers(recipient),
+    )
+    assert response.status_code == 204, response.text
+
+    db.refresh(first)
+    db.refresh(second)
+    db.refresh(foreign)
+    db.refresh(unrelated)
+    assert first.read_at is not None
+    assert second.read_at is not None
+    assert foreign.read_at is None
+    assert unrelated.read_at is None
+
+
+def test_location_operational_history_is_period_scoped_and_tenant_safe(client, db):
+    users = _external_task(db)
+    task = users["task"]
+    now = datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+    task.status = "completed"
+    task.date_done = now - timedelta(hours=1)
+    db.add(LocationCompanyAccess(
+        location_id=task.location_id,
+        company_id=users["receiver_admin"].company_id,
+        relationship_type="service_provider",
+        can_manage_tasks=True,
+    ))
+    db.add_all([
+        WorkSession(
+            user_id=users["receiver_admin"].id,
+            location_id=task.location_id,
+            task_item_id=task.id,
+            start_time=now - timedelta(hours=3),
+            end_time=now - timedelta(hours=2),
+        ),
+        WorkSession(
+            user_id=users["receiver_admin"].id,
+            location_id=task.location_id,
+            task_item_id=task.id,
+            start_time=now - timedelta(days=2, hours=3),
+            end_time=now - timedelta(days=2, hours=2),
+        ),
+    ])
+    db.commit()
+
+    day = now.date().isoformat()
+    issuer_history = client.get(
+        f"/api/v1/locations/{task.location_id}/operational-history?period=day&anchor_date={day}",
+        headers=_headers(users["owner_admin"]),
+    )
+    assert issuer_history.status_code == 200, issuer_history.text
+    payload = issuer_history.json()
+    assert payload["period"] == "day"
+    assert payload["completed_task_count"] == 1
+    assert [item["id"] for item in payload["completed_tasks"]] == [task.id]
+    assert payload["worked_seconds"] == 3600
+    assert [item["task_item_id"] for item in payload["sessions"]] == [task.id]
+
+    provider_history = client.get(
+        f"/api/v1/locations/{task.location_id}/operational-history?period=week&anchor_date={day}",
+        headers=_headers(users["receiver_admin"]),
+    )
+    assert provider_history.status_code == 200, provider_history.text
+    assert provider_history.json()["completed_task_count"] == 1
+    assert provider_history.json()["worked_seconds"] == 7200
+
+    forbidden = client.get(
+        f"/api/v1/locations/{task.location_id}/operational-history?period=month&anchor_date={day}",
+        headers=_headers(users["unrelated_admin"]),
+    )
+    assert forbidden.status_code == 404
+
+
+def test_location_operational_history_paginates_completed_tasks_and_sessions(client, db):
+    users = _external_task(db)
+    first_task = users["task"]
+    now = datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+    first_task.status = "completed"
+    first_task.date_done = now - timedelta(hours=1)
+    second_task = TaskItem(
+        title="Segunda limpieza terminada",
+        description="- [ ] Revisar terraza",
+        unit="servicio",
+        company_id=users["receiver_admin"].company_id,
+        location_id=first_task.location_id,
+        checkout_reservation_id=first_task.checkout_reservation_id,
+        user_id=users["receiver_admin"].id,
+        status="completed",
+        date_done=now - timedelta(hours=2),
+    )
+    db.add(second_task)
+    db.flush()
+    db.add_all([
+        WorkSession(
+            user_id=users["receiver_admin"].id,
+            location_id=first_task.location_id,
+            task_item_id=first_task.id,
+            start_time=now - timedelta(hours=3),
+            end_time=now - timedelta(hours=2),
+        ),
+        WorkSession(
+            user_id=users["receiver_admin"].id,
+            location_id=first_task.location_id,
+            task_item_id=second_task.id,
+            start_time=now - timedelta(hours=2),
+            end_time=now - timedelta(hours=1),
+        ),
+    ])
+    db.commit()
+
+    history = client.get(
+        f"/api/v1/locations/{first_task.location_id}/operational-history"
+        f"?period=day&anchor_date={now.date().isoformat()}&limit=1",
+        headers=_headers(users["owner_admin"]),
+    )
+    assert history.status_code == 200, history.text
+    payload = history.json()
+    assert payload["completed_task_count"] == 2
+    assert payload["completed_task_total"] == 2
+    assert payload["session_total"] == 2
+    assert payload["worked_seconds"] == 7200
+    assert len(payload["completed_tasks"]) == 1
+    assert len(payload["sessions"]) == 1
+
+    second_page = client.get(
+        f"/api/v1/locations/{first_task.location_id}/operational-history"
+        f"?period=day&anchor_date={now.date().isoformat()}&limit=1"
+        "&completed_offset=1&sessions_offset=1",
+        headers=_headers(users["owner_admin"]),
+    )
+    assert second_page.status_code == 200, second_page.text
+    assert second_page.json()["completed_tasks"][0]["id"] != payload["completed_tasks"][0]["id"]
+    assert second_page.json()["sessions"][0]["id"] != payload["sessions"][0]["id"]
 
 
 def test_task_report_payload_size_is_bounded_before_persistence(client, db):

@@ -22,6 +22,27 @@ async def read_notifications(
     )
 
 
+@router.patch("/read-all", status_code=status.HTTP_204_NO_CONTENT)
+async def mark_all_notifications_read(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    await notification_service.mark_all_read_async(db, current_user)
+
+
+@router.patch("/task-items/{task_item_id}/read", status_code=status.HTTP_204_NO_CONTENT)
+async def mark_task_item_notifications_read(
+    task_item_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    await notification_service.mark_task_item_read_async(
+        db,
+        current_user,
+        task_item_id=task_item_id,
+    )
+
+
 @router.patch("/{notification_id}/read", response_model=NotificationResponse)
 async def mark_notification_read(
     notification_id: int,
@@ -37,11 +58,3 @@ async def mark_notification_read(
             detail="Notification not found",
         )
     return notification
-
-
-@router.patch("/read-all", status_code=status.HTTP_204_NO_CONTENT)
-async def mark_all_notifications_read(
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveUser,
-):
-    await notification_service.mark_all_read_async(db, current_user)

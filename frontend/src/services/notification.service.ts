@@ -38,4 +38,13 @@ export const NotificationService = {
             throw new Error(await extractErrorMessage(response, "Could not clear notifications"));
         }
     },
+
+    markTaskItemRead: async (taskItemId: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/notifications/task-items/${taskItemId}/read`, {
+            method: "PATCH",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Could not acknowledge task notifications"));
+        }
+    },
 };

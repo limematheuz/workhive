@@ -76,7 +76,8 @@ test("task create hook uses the safe loader without logging handled load errors"
     assert.match(modal, /canLinkTaskReservations/);
     assert.match(modal, /newLocationId && canLinkReservations/);
     assert.doesNotMatch(modal, /canManageLocationReservations/);
-    assert.match(tasksPage, /if \(currentUser && !newUserId\)/);
+    assert.doesNotMatch(tasksPage, /if \(currentUser && !newUserId\)/);
+    assert.match(modal, /defaultAssigneeId=\{newUserId\}/);
     assert.doesNotMatch(hook, /console\.error\("Error fetching house templates"/);
     assert.doesNotMatch(hook, /console\.error\("Error loading location reservations"/);
 });

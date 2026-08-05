@@ -49,7 +49,7 @@ interface TaskEditModalProps {
     setEditUnit: (val: string) => void;
     editLocationId: string;
     setEditLocationId: (val: string) => void;
-    editUserId: string;
+    editUserId?: string;
     editStatus: TaskStatus;
     setEditStatus: (val: TaskStatus) => void;
     editTitle: string;
@@ -90,7 +90,6 @@ export function TaskEditModal({
     setEditUnit,
     editLocationId,
     setEditLocationId,
-    editUserId,
     editStatus,
     setEditStatus,
     editTitle,
@@ -128,10 +127,6 @@ export function TaskEditModal({
     const displayTitle = selectedTask
         ? taskLocationTitle(selectedTask, selectedLocation?.name || "")
         : "";
-    const calendarAssigneeName = editUserId
-        ? getAssigneeName(parseInt(editUserId, 10))
-        : "Administrador del calendario";
-
     return (
         <Dialog open={!!selectedTask} onOpenChange={(open) => { if (!open) setSelectedTask(null); }}>
             <DialogContent
@@ -180,7 +175,6 @@ export function TaskEditModal({
                         />
                     ) : (
                         <TaskEditForm
-                            calendarAssigneeName={calendarAssigneeName}
                             currentUser={currentUser}
                             dict={dict}
                             editCreatedAt={editCreatedAt}

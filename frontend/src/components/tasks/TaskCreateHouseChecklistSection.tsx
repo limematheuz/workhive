@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, ChevronDown, ListTodo, Loader2 } from "lucide-react";
+import { Check, ChevronDown, ListTodo, Loader2, UsersRound } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
 import type { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
@@ -30,6 +30,8 @@ type TaskCreateHouseChecklistSectionProps = {
     handleLinkHouseTemplate: (templateTaskId: number, customPrice: number | null) => Promise<void>;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    defaultAssigneeId: string;
+    setDefaultAssigneeId: (value: string) => void;
 };
 
 export function TaskCreateHouseChecklistSection({
@@ -47,6 +49,8 @@ export function TaskCreateHouseChecklistSection({
     handleLinkHouseTemplate,
     fixedChecklistAssignments,
     setFixedChecklistAssignments,
+    defaultAssigneeId,
+    setDefaultAssigneeId,
 }: TaskCreateHouseChecklistSectionProps) {
     const [selectedTmplId, setSelectedTmplId] = useState("");
     const [customPriceVal, setCustomPriceVal] = useState("");
@@ -119,7 +123,34 @@ export function TaskCreateHouseChecklistSection({
                     <span className="text-2xs text-[var(--text-muted)] font-semibold">{dict.tasks?.create_dialog?.searching_fixed_tasks || "Searching default tasks..."}</span>
                 </div>
             ) : visibleHouseTemplates.length > 0 ? (
-                <div className={`space-y-1.5 transition-opacity ${useHouseChecklist ? "opacity-100" : "opacity-40"}`}>
+                <div className={`space-y-3 transition-opacity ${useHouseChecklist ? "opacity-100" : "opacity-40"}`}>
+                    <div className="rounded-2xl border border-accent/20 bg-accent/5 p-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
+                        <div className="flex items-start gap-2">
+                            <UsersRound className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                            <div>
+                                <p className="text-xs font-black text-[var(--text-main)]">Asignación rápida</p>
+                                <p className="mt-0.5 text-2xs leading-relaxed text-[var(--text-muted)]">
+                                    Se aplica a todos los pasos. Puedes cambiar una persona concreta al desplegar el servicio.
+                                </p>
+                            </div>
+                        </div>
+                        <label className="mt-3 block shrink-0 sm:mt-0 sm:w-52" htmlFor="task-create-default-assignee">
+                            <span className="sr-only">Asignar todos los pasos a</span>
+                            <select
+                                id="task-create-default-assignee"
+                                value={defaultAssigneeId}
+                                disabled={!useHouseChecklist}
+                                onChange={(event) => setDefaultAssigneeId(event.target.value)}
+                                className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs font-bold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed"
+                            >
+                                <option value="">Sin asignar por defecto</option>
+                                <option value={ALL_WORKERS_VALUE}>Todo el equipo</option>
+                                {users.map((user) => (
+                                    <option key={user.id} value={user.id.toString()}>{user.full_name || user.email}</option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
                     {visibleHouseTemplates.map(ht => {
                         const tmpl = templates.find(t => t.id === ht.template_task_id);
                         const effective = getEffectiveLocationTemplate(ht, tmpl);

@@ -226,6 +226,34 @@ async def mark_all_read_async(db: AsyncSession, user: User) -> None:
     await db.commit()
 
 
+async def mark_task_item_read_async(
+    db: AsyncSession,
+    user: User,
+    *,
+    task_item_id: int,
+) -> int:
+    """Acknowledge every unread event for one task, for its recipient only.
+
+    A task can produce more than one notification (assignment, report, status
+    change). Opening that task is an acknowledgement of the whole event group,
+    not only of the row the user happened to click. The user filter is kept in
+    the write query so a caller can never mark another user's notifications.
+    """
+    statement = (
+        update(Notification)
+        .where(
+            Notification.user_id == user.id,
+            Notification.entity_type == "task_item",
+            Notification.entity_id == task_item_id,
+            Notification.read_at.is_(None),
+        )
+        .values(read_at=datetime.now(timezone.utc))
+    )
+    result = await db.execute(statement)
+    await db.commit()
+    return result.rowcount or 0
+
+
 async def mark_event_read_async(
     db: AsyncSession,
     user: User,

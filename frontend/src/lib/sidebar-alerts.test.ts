@@ -8,6 +8,10 @@ import {
     SIDEBAR_ALERT_LINK_CLASS,
     SIDEBAR_ALERT_PULSE_CLASS,
     SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
+    HEADER_UPDATE_BADGE_CLASS,
+    SIDEBAR_UPDATE_COLLAPSED_BADGE_CLASS,
+    SIDEBAR_UPDATE_PULSE_CLASS,
+    SIDEBAR_UPDATE_TRAILING_BADGE_CLASS,
     formatSidebarAlertCount,
     shouldShowTaskAlertsOnHref,
 } from "./sidebar-alerts.ts";
@@ -34,6 +38,9 @@ test("sidebar and header alert badges are fully round and have no white outer ri
         SIDEBAR_ALERT_TRAILING_BADGE_CLASS,
         SIDEBAR_ALERT_COLLAPSED_BADGE_CLASS,
         HEADER_ALERT_BADGE_CLASS,
+        SIDEBAR_UPDATE_TRAILING_BADGE_CLASS,
+        SIDEBAR_UPDATE_COLLAPSED_BADGE_CLASS,
+        HEADER_UPDATE_BADGE_CLASS,
     ]) {
         assert.match(className, /\brounded-full\b/);
         assert.match(className, /\bh-5\b/);
@@ -44,6 +51,14 @@ test("sidebar and header alert badges are fully round and have no white outer ri
         assert.doesNotMatch(className, /\bmin-h-\S+\b/);
         assert.doesNotMatch(className, /\bmin-w-\S+\b/);
     }
+});
+
+test("new-work badges are blue while the alert tokens stay red", () => {
+    assert.match(SIDEBAR_UPDATE_TRAILING_BADGE_CLASS, /bg-accent/);
+    assert.match(HEADER_UPDATE_BADGE_CLASS, /bg-accent/);
+    assert.match(SIDEBAR_ALERT_TRAILING_BADGE_CLASS, /bg-red-500/);
+    assert.match(HEADER_ALERT_BADGE_CLASS, /bg-red-500/);
+    assert.match(SIDEBAR_UPDATE_PULSE_CLASS, /bg-accent/);
 });
 
 test("open sidebar keeps alerts only on the trailing right badge", () => {

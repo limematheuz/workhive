@@ -37,6 +37,8 @@ interface TaskFormModalsProps {
     setNewLocationId: (val: string) => void;
     newCreatedAt: string;
     setNewCreatedAt: (val: string) => void;
+    newUserId: string;
+    setNewUserId: (val: string) => void;
     availableReservations: Reservation[];
     loadingReservations: boolean;
     newCheckoutReservationId: string;
@@ -119,6 +121,8 @@ interface TaskFormModalsProps {
      setNewLocationId,
      newCreatedAt,
      setNewCreatedAt,
+     newUserId,
+     setNewUserId,
      availableReservations,
      loadingReservations,
      newCheckoutReservationId,
@@ -198,6 +202,8 @@ interface TaskFormModalsProps {
                  setNewLocationId={setNewLocationId}
                  newCreatedAt={newCreatedAt}
                  setNewCreatedAt={setNewCreatedAt}
+                 newUserId={newUserId}
+                 setNewUserId={setNewUserId}
                  availableReservations={availableReservations}
                  loadingReservations={loadingReservations}
                  newCheckoutReservationId={newCheckoutReservationId}

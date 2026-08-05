@@ -33,6 +33,7 @@ import { CalendarUnscheduledSection } from "./CalendarUnscheduledSection";
 import { CalendarBoard } from "./CalendarBoard";
 import { buildCalendarEvents, resolveTaskWorkerNames } from "./buildCalendarEvents";
 import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
+import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
 
 interface CompanyCalendarProps {
     tasks: TaskItem[];
@@ -179,7 +180,10 @@ export function CompanyCalendar({
 
     const handleEventClick = (eventInfo: EventClickArg) => {
         eventInfo.jsEvent.preventDefault();
-        setSelectedTaskId(Number(eventInfo.event.id));
+        const taskId = Number(eventInfo.event.id);
+        const task = tasks.find((item) => item.id === taskId);
+        if (task && currentUser) acknowledgeTaskOpened(currentUser.id, task);
+        setSelectedTaskId(taskId);
     };
 
     if (!canView) {

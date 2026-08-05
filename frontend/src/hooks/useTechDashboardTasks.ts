@@ -14,6 +14,7 @@ import {
     normalizeTaskStatus,
 } from "@/domain/tasks/task-status";
 import { getUserTaskStatus } from "@/lib/format";
+import { isTaskPendingInOperationalOverview } from "@/lib/operational-task-count";
 import type { Location } from "@/types/location";
 import type { TaskStatus } from "@/types/task";
 import type { TaskItem, User } from "@/types/user";
@@ -62,10 +63,10 @@ export function useTechDashboardTasks({
         [tasks],
     );
     const activeTasks = useMemo(
-        () => operationalTasks.filter(
-            (task) => getEffectiveStatus(task) !== "completed",
-        ),
-        [getEffectiveStatus, operationalTasks],
+        () => operationalTasks.filter((task) => (
+            isTaskPendingInOperationalOverview(task, currentUser.id, canManage)
+        )),
+        [canManage, currentUser.id, operationalTasks],
     );
     const tasksByTab = useMemo(() => {
         const now = new Date();

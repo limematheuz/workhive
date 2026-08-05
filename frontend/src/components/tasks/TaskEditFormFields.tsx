@@ -27,7 +27,6 @@ import {
 
 type TaskEditFormFieldsProps = {
     dict: Dictionary;
-    calendarAssigneeName: string;
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
@@ -62,7 +61,6 @@ type TaskEditFormFieldsProps = {
 export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
     const {
         dict,
-        calendarAssigneeName,
         editCreatedAt,
         editDescription,
         editLocationId,
@@ -113,6 +111,17 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         );
     };
 
+    const assignWorkerToAllItems = (userId: string) => {
+        const targetUser = users.find((user) => user.id.toString() === userId);
+        const assignedName = targetUser?.full_name || targetUser?.email || "";
+        setEditDescription(
+            checklist.reduce(
+                (description, item) => assignTaskChecklistItem(description, item.index, userId, assignedName),
+                editDescription,
+            ),
+        );
+    };
+
     return (
         <>
             <section className={taskFormSectionClass}>
@@ -145,12 +154,6 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         <div className={taskFormReadOnlyClass}>
                             {locations.find((location) => location.id.toString() === editLocationId)?.name || ""}
                         </div>
-                    </div>
-                    <div className="space-y-1.5">
-                        <span className={taskFormLabelClass}>
-                            {dict.tasks?.create_dialog?.calendar_owner || "Company calendar"}
-                        </span>
-                        <div className={taskFormReadOnlyClass}>{calendarAssigneeName}</div>
                     </div>
                     <div className="space-y-1.5">
                         <label htmlFor="task-edit-date" className={taskFormLabelClass}>
@@ -200,6 +203,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         canEdit={!immutable && isAdminOrManager}
                         onToggle={toggleChecklistItem}
                         onAssign={assignWorkerToItem}
+                        onAssignAll={assignWorkerToAllItems}
                     />
                 ) : (
                     <textarea

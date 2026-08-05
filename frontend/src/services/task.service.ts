@@ -62,6 +62,12 @@ export interface TaskItemFilters {
     limit?: number;
 }
 
+function notifyTasksChanged() {
+    if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("workhive:tasks-changed"));
+    }
+}
+
 export const TaskService = {
     getTaskItems: async (filters: TaskItemFilters = {}): Promise<TaskItem[]> => {
         const queryParams = new URLSearchParams()
@@ -104,7 +110,9 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error creating task item")
             throw new Error(errMsg)
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     },
 
     updateTaskItem: async (id: number, data: TaskItemUpdate): Promise<TaskItem> => {
@@ -116,7 +124,9 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error updating task item")
             throw new Error(errMsg)
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     },
 
     updateChecklistItem: async (
@@ -136,7 +146,9 @@ export const TaskService = {
                 await extractErrorMessage(response, "Error updating checklist item")
             )
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     },
 
     deleteTaskItem: async (id: number): Promise<void> => {
@@ -152,6 +164,7 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error deleting task item")
             throw new Error(errMsg)
         }
+        notifyTasksChanged()
     },
 
     acceptTaskItem: async (id: number, scheduledStartAt?: string): Promise<TaskItem> => {
@@ -165,7 +178,9 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error accepting task")
             throw new Error(errMsg)
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     },
 
     rejectTaskItem: async (id: number): Promise<TaskItem> => {
@@ -176,7 +191,9 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error rejecting task")
             throw new Error(errMsg)
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     },
 
     startTaskWork: async (
@@ -195,7 +212,9 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error starting task work")
             throw new Error(errMsg)
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     },
 
     finishTaskWork: async (id: number): Promise<TaskItem> => {
@@ -206,6 +225,8 @@ export const TaskService = {
             const errMsg = await extractErrorMessage(response, "Error finishing task work")
             throw new Error(errMsg)
         }
-        return await response.json()
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
     }
 }
