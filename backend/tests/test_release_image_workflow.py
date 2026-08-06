@@ -6,6 +6,11 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "publish-release-images.yml"
+REQUIRED_CHECK_WORKFLOWS = (
+    ROOT / ".github" / "workflows" / "ci.yml",
+    ROOT / ".github" / "workflows" / "security.yml",
+    ROOT / ".github" / "workflows" / "react-doctor.yml",
+)
 COMMIT_SHA_PATTERN = re.compile(r"^[^@]+@[0-9a-f]{40}$")
 
 
@@ -61,6 +66,12 @@ def test_release_requires_existing_ci_frontend_security_and_react_checks():
         "release-metadata",
         "verified-checks",
     ]
+
+
+def test_release_required_checks_can_be_re_run_manually_for_the_release_commit():
+    for workflow_path in REQUIRED_CHECK_WORKFLOWS:
+        workflow = yaml.load(workflow_path.read_text(encoding="utf-8"), Loader=yaml.BaseLoader)
+        assert "workflow_dispatch" in workflow["on"], workflow_path.name
 
 
 def test_aws_credentials_are_short_lived_and_static_keys_are_not_used():
