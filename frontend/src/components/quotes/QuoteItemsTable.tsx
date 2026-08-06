@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useQuoteForm";
@@ -71,7 +72,7 @@ export function QuoteItemsTable({
                                                     onClick={() => handleDuplicateRow(row.id)}
                                                     aria-label="Duplicar línea"
                                                     title="Duplicar línea"
-                                                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent transition-colors hover:bg-accent hover:text-white"
+                                                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
                                                 >
                                                     <Copy className="h-3.5 w-3.5" />
                                                 </button>
@@ -134,14 +135,16 @@ export function QuoteItemsTable({
             </div>
 
             {/* Full-width add line button below the table */}
-            <button
+            <Button
                 type="button"
+                variant="select"
+                size="lg"
                 onClick={handleAddManualRow}
-                className="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-accent/50 bg-accent/10 py-3 text-sm font-bold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-white ui-motion"
+                className="w-full border-dashed shadow-none hover:translate-y-0 hover:shadow-none"
             >
                 <Plus className="h-4 w-4" />
                 {dict.quotes?.add_concept || dict.invoices?.add_concept || "Añadir Línea"}
-            </button>
+            </Button>
         </div>
     );
 }

@@ -19,7 +19,7 @@ export function InvoiceDetailTotalsSection({ dict, invoice }: InvoiceDetailTotal
     const retentionAmount = invoice.base_amount * ((invoice.retention || 0) / 100.0);
 
     return (
-        <div className="mt-7 flex justify-end border-t border-[var(--border-soft)] pt-5 print:border-neutral-300">
+        <div className="mt-7 flex justify-end pt-5">
             <div className="w-full max-w-72 space-y-1.5 text-[11px]">
                 {invoice.discount > 0 && (
                     <>
@@ -53,7 +53,7 @@ export function InvoiceDetailTotalsSection({ dict, invoice }: InvoiceDetailTotal
                         <span className="font-mono">-{formatCurrency(retentionAmount)}</span>
                     </div>
                 )}
-                <div className="mt-2 flex justify-between rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-4 py-3 text-sm font-black text-[var(--text-main)] print:border-neutral-300 print:bg-neutral-50 print:text-black">
+                <div className="mt-2 flex justify-between rounded-2xl bg-[color-mix(in_srgb,var(--accent-color)_12%,var(--bg-secondary))] px-4 py-3 text-sm font-semibold text-[var(--text-main)] print:bg-neutral-50 print:text-black">
                     <span>{dict.invoices.total_amount}:</span>
                     <span className="font-mono text-lg">{formatCurrency(invoice.total_amount)}</span>
                 </div>

@@ -111,7 +111,7 @@ export function InvoiceDetailFiscalPanel({
         return (
             <>
                 {(invoice.invoice_hash || fiscalRecord || facturaeReadiness) && (
-                    <section className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-4 text-xs leading-5">
+                    <section className="rounded-[22px] bg-[var(--bg-tertiary)] p-4 text-xs leading-5">
                         <p className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)]">
                             {dict.invoices.fiscal_summary}
                         </p>
@@ -156,10 +156,10 @@ export function InvoiceDetailFiscalPanel({
         <>
             {noticeCount > 0 && (
                 <>
-                    <details className="mx-auto mb-3 w-full max-w-[112rem] rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-3 print:hidden md:hidden">
+                    <details className="mx-auto mb-3 w-full max-w-[112rem] rounded-2xl bg-[var(--bg-tertiary)] p-3 print:hidden md:hidden">
                         <summary className="flex cursor-pointer list-none items-center justify-between text-[12px] font-black text-[var(--text-main)]">
                             {dict.invoices.invoice_notices}
-                            <span className="rounded-full bg-[var(--bg-secondary)] px-2 py-1 text-[10px] text-[var(--text-muted)]">
+                            <span className="rounded-full bg-[var(--bg-tertiary)] px-2 py-1 text-[10px] text-[var(--text-muted)]">
                                 {noticeCount}
                             </span>
                         </summary>

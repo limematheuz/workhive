@@ -1,6 +1,7 @@
 import { Plus, Trash2 } from "lucide-react";
 
 import { TaxRateSelect } from "@/components/billing/BillingSelectors";
+import { Button } from "@/components/ui/button";
 import type { EditBillingTotals } from "@/components/invoices/invoice-detail-document-types";
 import type { EditingInvoiceItem } from "@/hooks/useInvoiceDetail";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -31,8 +32,15 @@ export function InvoiceDetailItemsSection({
     return (
         <div className="mt-5">
             {isEditMode ? (
-                <div className="space-y-2 overflow-x-auto">
-                    <div className="grid min-w-[720px] grid-cols-[1fr_60px_90px_60px_80px_36px] gap-2 border-b border-[var(--border-soft)] pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                <div className="rounded-2xl bg-[var(--bg-secondary)] p-3 sm:p-4">
+                    <div className="mb-3 flex items-start justify-between gap-3">
+                        <div>
+                            <h2 className="text-sm font-semibold text-[var(--text-main)]">Conceptos de la factura</h2>
+                            <p className="mt-1 text-xs text-[var(--text-muted)]">Edita las líneas antes de emitir la factura fiscal.</p>
+                        </div>
+                    </div>
+                    <div className="space-y-2 overflow-x-auto">
+                    <div className="grid min-w-[720px] grid-cols-[1fr_60px_90px_60px_80px_36px] gap-2 bg-[color-mix(in_srgb,var(--accent-color)_12%,var(--bg-tertiary))] px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         <span className="px-1">{dict.invoices.concept}</span>
                         <span className="text-center">{dict.invoices.quantity}</span>
                         <span className="text-right">{dict.invoices.price}</span>
@@ -46,7 +54,7 @@ export function InvoiceDetailItemsSection({
                         return (
                             <div
                                 key={item.clientKey}
-                                className="grid min-w-[720px] grid-cols-[1fr_60px_90px_60px_80px_36px] items-center gap-2 py-1"
+                                className="grid min-w-[720px] grid-cols-[1fr_60px_90px_60px_80px_36px] items-center gap-2 rounded-xl bg-[var(--bg-tertiary)]/70 px-2 py-2"
                             >
                                 <input
                                     type="text"
@@ -81,28 +89,31 @@ export function InvoiceDetailItemsSection({
                                 <span className="text-xs text-right font-semibold text-[var(--text-main)] font-mono">
                                     {formatCurrency(lineSubtotal)}
                                 </span>
-                                <button
+                                <Button
                                     type="button"
                                     aria-label="Eliminar línea"
                                     onClick={() => onRemoveEditItem(index)}
-                                    className="w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--border-soft)] text-[var(--text-muted)] hover:text-[var(--text-main)] hover:border-[var(--border-color)] ui-motion cursor-pointer bg-transparent"
+                                    variant="dangerSoft"
+                                    size="icon-xs"
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
-                                </button>
+                                </Button>
                             </div>
                         );
                     })}
 
-                    <button
+                    <Button
                         type="button"
                         onClick={onAddEditItem}
-                        className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border border-dashed border-[var(--border-color)] rounded-xl hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] ui-motion cursor-pointer bg-transparent"
+                        variant="select"
+                        size="lg"
+                        className="mt-2 w-full border-dashed shadow-none hover:translate-y-0 hover:shadow-none"
                     >
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="h-4 w-4" />
                         {dict.invoices.add_concept}
-                    </button>
+                    </Button>
 
-                    <div className="mt-6 border-t border-[var(--border-soft)] pt-4 flex justify-end">
+                    <div className="mt-6 flex justify-end pt-2">
                         <div className="w-64 space-y-1.5 text-xs">
                             {editBillingTotals && editBillingTotals.discountAmount > 0 && (
                                 <div className="flex justify-between text-[var(--text-muted)]">
@@ -130,36 +141,38 @@ export function InvoiceDetailItemsSection({
                                     <span className="font-mono">-{formatCurrency(editBillingTotals?.retentionAmount ?? 0)}</span>
                                 </div>
                             )}
-                            <div className="flex justify-between text-base font-bold text-[var(--text-main)] border border-[var(--border-soft)] pt-3 pb-3 px-4 rounded-2xl bg-[var(--bg-secondary)]">
-                                <span className="font-extrabold">{dict.invoices.total_amount}:</span>
-                                <span className="font-mono font-black text-xl">{formatCurrency(editBillingTotals?.totalAmount ?? 0)}</span>
+                            <div className="flex justify-between rounded-2xl bg-[color-mix(in_srgb,var(--accent-color)_12%,var(--bg-tertiary))] px-4 py-3 text-base font-semibold text-[var(--text-main)]">
+                                <span className="font-semibold">{dict.invoices.total_amount}:</span>
+                                <span className="font-mono font-semibold text-lg">{formatCurrency(editBillingTotals?.totalAmount ?? 0)}</span>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             ) : (
                 <div className="-mx-2 overflow-x-auto px-2">
-                    <table className="min-w-[620px] w-full table-fixed border-collapse text-left text-[11px]">
+                    <div className="min-w-[620px] overflow-hidden rounded-2xl bg-[var(--bg-tertiary)]/65">
+                    <table className="w-full table-fixed border-collapse text-left text-[11px]">
                         <thead>
-                            <tr className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[9px] font-black uppercase tracking-wider text-[var(--text-muted)] print:border-neutral-300 print:bg-neutral-100 print:text-neutral-600">
-                                <th className="rounded-l-xl px-3 py-2">{dict.invoices.concept}</th>
+                            <tr className="bg-[color-mix(in_srgb,var(--accent-color)_16%,var(--bg-secondary))] text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)] print:bg-neutral-100 print:text-neutral-600">
+                                <th className="px-3 py-2.5">{dict.invoices.concept}</th>
                                 <th className="w-14 px-2 py-2 text-center">{dict.invoices.quantity}</th>
                                 <th className="w-24 px-2 py-2 text-right">{dict.invoices.price}</th>
                                 <th className="w-14 px-2 py-2 text-center">{dict.invoices.tax}</th>
-                                <th className="w-28 rounded-r-xl px-3 py-2 text-right">{dict.invoices.subtotal}</th>
+                                <th className="w-28 px-3 py-2.5 text-right">{dict.invoices.subtotal}</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[var(--border-soft)]/30 print:divide-neutral-200">
+                        <tbody className="divide-y divide-white/35 print:divide-neutral-200">
                             {invoice.items && invoice.items.length > 0 ? (
                                 invoice.items.map((item, idx) => (
                                     <tr
                                         key={item.id}
-                                        className={`transition-colors hover:bg-[var(--bg-tertiary)] print:text-black ${
-                                            idx % 2 === 0 ? "bg-transparent" : "bg-[var(--bg-secondary)]/35 print:bg-neutral-50"
+                                        className={`transition-colors hover:bg-[var(--bg-secondary)] print:text-black ${
+                                            idx % 2 === 0 ? "bg-[var(--bg-secondary)]/65" : "bg-[var(--bg-tertiary)]/85 print:bg-neutral-50"
                                         }`}
                                     >
-                                        <td className="px-3 py-2.5 font-semibold leading-5 text-[var(--text-main)] print:text-black">
-                                            {item.description}
+                                        <td className="px-3 py-3 font-semibold leading-5 text-[var(--text-main)] print:text-black">
+                                            <span className="block border-l-2 border-[var(--accent-color)] pl-2.5">{item.description}</span>
                                         </td>
                                         <td className="px-2 py-2.5 text-center font-mono font-semibold text-[var(--text-muted)] print:text-black">
                                             {item.quantity}
@@ -170,7 +183,7 @@ export function InvoiceDetailItemsSection({
                                         <td className="px-2 py-2.5 text-center font-mono text-[var(--text-muted)] print:text-black">
                                             {(item.tax_rate * 100).toFixed(0)}%
                                         </td>
-                                        <td className="px-3 py-2.5 text-right font-mono font-black text-[var(--text-main)] print:text-black">
+                                        <td className="px-3 py-2.5 text-right font-mono font-semibold text-[var(--text-main)] print:text-black">
                                             {formatCurrency(item.subtotal)}
                                         </td>
                                     </tr>
@@ -184,6 +197,7 @@ export function InvoiceDetailItemsSection({
                             )}
                         </tbody>
                     </table>
+                    </div>
                 </div>
             )}
         </div>

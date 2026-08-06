@@ -133,7 +133,7 @@ function OpenRegisterClientDialog({
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl ui-motion cursor-pointer"
+                            className="px-4 py-2 text-xs font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] rounded-xl ui-motion cursor-pointer"
                         >
                             Registrar y aceptar
                         </button>

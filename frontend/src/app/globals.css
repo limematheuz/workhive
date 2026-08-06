@@ -135,6 +135,12 @@
   --btn-secondary-border: var(--brand-blue-border);
   --btn-secondary-hover-bg: rgba(37, 99, 235, 0.18);
 
+  /* Solid blue is reserved for selecting a view, option, or assignment. */
+  --btn-select-bg: var(--brand-blue);
+  --btn-select-text: #ffffff;
+  --btn-select-border: var(--brand-blue);
+  --btn-select-hover-bg: var(--brand-blue-hover);
+
   /* Neutral Button (grey/add) - Dark mode */
   --btn-neutral-bg: rgba(255, 255, 255, 0.06);
   --btn-neutral-text: #a1a1aa;
@@ -346,11 +352,17 @@
   --btn-secondary-border: rgba(37, 99, 235, 0.18);
   --btn-secondary-hover-bg: rgba(37, 99, 235, 0.16);
 
+  /* Solid blue is reserved for selecting a view, option, or assignment. */
+  --btn-select-bg: var(--brand-blue);
+  --btn-select-text: #ffffff;
+  --btn-select-border: var(--brand-blue);
+  --btn-select-hover-bg: var(--brand-blue-hover);
+
   /* Neutral Button (grey/add) - Light mode */
-  --btn-neutral-bg: rgba(0, 0, 0, 0.04);
-  --btn-neutral-text: #52525b;
-  --btn-neutral-border: rgba(0, 0, 0, 0.08);
-  --btn-neutral-hover-bg: rgba(0, 0, 0, 0.08);
+  --btn-neutral-bg: rgba(241, 245, 248, 0.58);
+  --btn-neutral-text: #3f4c5a;
+  --btn-neutral-border: rgba(255, 255, 255, 0.72);
+  --btn-neutral-hover-bg: rgba(250, 252, 253, 0.72);
 
   /* Warning Alert - Light mode */
   --alert-warning-bg: rgba(217, 119, 6, 0.08);
@@ -495,6 +507,27 @@
   border-color: var(--brand-blue-border);
 }
 
+/* Billing uses neutral paper surfaces without adding a wrapper behind the page. */
+.billing-surface {
+  background-color: var(--surface-card-bg);
+  box-shadow: var(--surface-card-shadow);
+}
+
+.light-mode .billing-surface {
+  background-color: rgba(213, 224, 231, 0.54);
+  box-shadow: 0 10px 26px rgba(52, 74, 94, 0.1);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+@media print {
+  .billing-surface {
+    background: #ffffff !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
 /* Compact icon/control chips — replaces scattered zinc light/dark pairs */
 .surface-control-btn {
   background-color: var(--dialog-control-bg);
@@ -562,6 +595,17 @@
   .btn-app-secondary:hover {
     background-color: var(--btn-secondary-hover-bg) !important;
     color: var(--btn-secondary-text) !important;
+  }
+
+  .btn-app-select {
+    background-color: var(--btn-select-bg) !important;
+    border-color: var(--btn-select-border) !important;
+    color: var(--btn-select-text) !important;
+  }
+
+  .btn-app-select:hover {
+    background-color: var(--btn-select-hover-bg) !important;
+    color: var(--btn-select-text) !important;
   }
 
   .btn-app-danger-soft {
@@ -1063,7 +1107,6 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
  * having to arbitrate a gesture between nested scroll containers. */
 .app-touch-scroll {
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
   touch-action: pan-y pinch-zoom;
 }
 

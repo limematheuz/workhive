@@ -30,8 +30,14 @@ export function InvoiceDetailEditModePanel({
     onEditRecipientFieldChange,
 }: InvoiceDetailEditModePanelProps) {
     return (
-        <div className="mx-auto mb-4 max-w-[112rem] rounded-[24px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-5 print:hidden">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+        <section className="mx-auto mb-4 max-w-[112rem] rounded-[24px] bg-[color-mix(in_srgb,var(--btn-secondary-bg)_55%,var(--bg-secondary))] p-4 print:hidden sm:p-5">
+            <header className="mb-4 flex flex-col gap-1 pb-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                    <h2 className="text-sm font-black text-[var(--text-main)]">{dict.invoices.edit_draft}</h2>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">Revisa los datos y los conceptos antes de emitir la factura fiscal.</p>
+                </div>
+            </header>
+            <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="space-y-1">
                     <label htmlFor="invoice-edit-final-number" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.final_number}
@@ -43,7 +49,7 @@ export function InvoiceDetailEditModePanel({
                         onChange={(event) => onEditingInvoiceNumberChange(event.target.value)}
                         placeholder={dict.invoices.optional_final_number_placeholder}
                         maxLength={50}
-                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors font-mono"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 font-mono text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
                 </div>
                 <div className="space-y-1">
@@ -57,7 +63,7 @@ export function InvoiceDetailEditModePanel({
                         value={editingIssueDate}
                         onChange={(event) => onEditingIssueDateChange(event.target.value)}
                         required
-                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
                 </div>
                 <div className="space-y-1">
@@ -70,11 +76,11 @@ export function InvoiceDetailEditModePanel({
                         aria-label={dict.invoices.due_date}
                         value={editingDueDate}
                         onChange={(event) => onEditingDueDateChange(event.target.value)}
-                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
                 </div>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <BillingPartyCard
                     type="issuer"
                     dict={dict}
@@ -94,6 +100,6 @@ export function InvoiceDetailEditModePanel({
                     onChangeField={onEditRecipientFieldChange}
                 />
             </div>
-        </div>
+        </section>
     );
 }

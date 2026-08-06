@@ -59,7 +59,7 @@ export function InvoiceCreateSheetSidebar({
     setSignatureUrl,
 }: InvoiceCreateSheetSidebarProps) {
     return (
-        <div className="space-y-6 lg:sticky lg:top-1 lg:self-start lg:border-l lg:border-[var(--border-soft)] lg:pl-6">
+        <div className="space-y-6">
             <InvoiceTaskSelector
                 dict={dict}
                 availableTasks={availableTasks}

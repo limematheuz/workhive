@@ -11,7 +11,7 @@ export function InvoiceDetailShippingAddress({ dict, shippingAddress }: InvoiceD
     }
 
     return (
-        <div className="mt-4 bg-[var(--bg-primary)]/20 border border-[var(--border-soft)] rounded-2xl p-4 text-xs text-[var(--text-muted)] print:text-neutral-600 print:bg-neutral-50 print:border-neutral-200">
+        <div className="mt-4 rounded-2xl bg-[var(--bg-secondary)] p-4 text-xs text-[var(--text-muted)] print:bg-neutral-50 print:text-neutral-600">
             <span className="font-bold text-[var(--text-main)] print:text-black block mb-1">{dict.invoices.shipping_address}:</span>
             <div className="whitespace-pre-line">{shippingAddress}</div>
         </div>

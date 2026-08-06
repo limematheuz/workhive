@@ -23,10 +23,14 @@ test("optional document fields are disclosed progressively", () => {
     const quoteForm = source("../components/quotes/QuoteCreateSheet.tsx");
     const invoiceForm = source("../components/invoices/InvoiceCreateSheetDetails.tsx");
     const invoiceSidebar = source("../components/invoices/InvoiceCreateSheetSidebar.tsx");
+    const sharedSection = source("../components/billing/DocumentFormSection.tsx");
 
     assert.match(quoteForm, /Opciones avanzadas/);
     assert.match(invoiceForm, /Datos adicionales/);
     assert.match(invoiceSidebar, /Firma opcional/);
+    assert.match(quoteForm, /DocumentFormSection/);
+    assert.match(invoiceForm, /DocumentFormSection/);
+    assert.match(sharedSection, /rounded-\[22px\]/);
     assert.match(quoteForm, /ChevronDown/);
     assert.match(invoiceForm, /ChevronDown/);
     assert.match(invoiceSidebar, /ChevronDown/);
@@ -45,15 +49,17 @@ test("quotes and invoices share one document totals component", () => {
 test("document forms keep totals visible and line actions beside their description", () => {
     const quoteForm = source("../components/quotes/QuoteCreateSheet.tsx");
     const invoiceSidebar = source("../components/invoices/InvoiceCreateSheetSidebar.tsx");
+    const sharedShell = source("../components/billing/DocumentFormDialog.tsx");
     const quoteItems = source("../components/quotes/QuoteItemsTable.tsx");
     const invoiceItems = source("../components/invoices/InvoiceConceptsTable.tsx");
 
-    assert.match(quoteForm, /lg:sticky/);
-    assert.match(invoiceSidebar, /lg:sticky/);
+    assert.match(quoteForm, /DocumentFormDialog/);
+    assert.match(sharedShell, /lg:sticky/);
+    assert.match(sharedShell, /max-w-\[1280px\]/);
 
     for (const itemsSource of [quoteItems, invoiceItems]) {
         assert.match(itemsSource, /handleDuplicateRow/);
-        assert.match(itemsSource, /bg-accent\/10/);
+        assert.match(itemsSource, /btn-secondary/);
         assert.match(itemsSource, /colSpan=\{4\}/);
         assert.doesNotMatch(itemsSource, /<th className="py-2\.5 px-2 w-10"><\/th>/);
     }

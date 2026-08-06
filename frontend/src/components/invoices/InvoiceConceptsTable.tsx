@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Copy, Plus, Shirt, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useInvoiceForm";
@@ -30,25 +31,30 @@ export function InvoiceConceptsTable({
     handleDeleteRow,
 }: InvoiceConceptsTableProps) {
     return (
-        <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">
-                    {dict.invoices?.concepts_title || "Conceptos de la Factura"}
-                </Label>
+        <section className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <Label className="text-sm font-black text-[var(--text-main)]">
+                        Conceptos facturados
+                    </Label>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">Añade servicios manuales o utiliza los trabajos terminados del cliente.</p>
+                </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                    <button
+                    <Button
                         type="button"
+                        variant="outline"
+                        size="sm"
                         onClick={handleAddExternalLaundryRow}
-                        className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-main)] transition-colors px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-soft)] cursor-pointer"
+                        className="text-[11px]"
                         title="Añadir una línea facturable de lavandería hecha por una empresa externa"
                     >
                         <Shirt className="w-3.5 h-3.5" />
                         Lavandería externa
-                    </button>
+                    </Button>
                 </div>
             </div>
 
-            <div className="border border-[var(--border-soft)] rounded-2xl overflow-hidden bg-[var(--bg-primary)]/50">
+            <div className="overflow-hidden rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]">
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border-soft)] text-3xs uppercase font-bold tracking-wider text-[var(--text-muted)] select-none">
@@ -61,7 +67,7 @@ export function InvoiceConceptsTable({
                     <tbody className="divide-y divide-[var(--border-soft)] text-xs">
                         {concepts.length > 0 ? (
                             concepts.map((row) => (
-                                <tr key={row.id} className="hover:bg-[var(--bg-secondary)]/30">
+                                <tr key={row.id} className="odd:bg-[var(--bg-secondary)]/15 hover:bg-[var(--btn-secondary-bg)]/40">
                                     <td className="py-2 px-3">
                                         <div className="flex items-start gap-2">
                                             <div className="min-w-0 flex-1">
@@ -84,7 +90,7 @@ export function InvoiceConceptsTable({
                                                     onClick={() => handleDuplicateRow(row.id)}
                                                     aria-label="Duplicar línea"
                                                     title="Duplicar línea"
-                                                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-accent/30 bg-accent/10 text-accent transition-colors hover:bg-accent hover:text-white"
+                                                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
                                                 >
                                                     <Copy className="h-3.5 w-3.5" />
                                                 </button>
@@ -147,14 +153,16 @@ export function InvoiceConceptsTable({
             </div>
 
             {/* Full-width add line button below the table */}
-            <button
+            <Button
                 type="button"
+                variant="select"
+                size="lg"
                 onClick={handleAddManualRow}
-                className="w-full flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-accent/50 bg-accent/10 py-3 text-sm font-bold text-accent transition-colors hover:border-accent hover:bg-accent hover:text-white ui-motion"
+                className="w-full border-dashed shadow-none hover:translate-y-0 hover:shadow-none"
             >
                 <Plus className="h-4 w-4" />
                 {dict.invoices?.add_concept || "Añadir Línea"}
-            </button>
-        </div>
+            </Button>
+        </section>
     );
 }
