@@ -7,6 +7,7 @@
 name: React Doctor
 
 on:
+  workflow_dispatch:
   # Scans the PR's changed files and posts a sticky summary comment listing only the new issues introduced relative to the merge base of the target branch.
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
