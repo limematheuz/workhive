@@ -5,6 +5,7 @@ import {
     RetentionSelect,
     TaxRateSelect,
 } from "@/components/billing/BillingSelectors";
+import { ChevronDown } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 interface DocumentSummaryProps {
@@ -43,12 +44,17 @@ export function DocumentSummary({
     totalGeneral,
 }: DocumentSummaryProps) {
     return (
-        <section className="space-y-3 border-t border-[var(--border-soft)] pt-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">
-                {dict.invoices?.summary_title || "Resumen"}
-            </h3>
+        <section className="overflow-hidden rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-secondary)]/25">
+            <div className="flex items-center justify-between border-b border-[var(--border-soft)] px-4 py-3">
+                <div>
+                    <h3 className="text-sm font-black text-[var(--text-main)]">
+                        {dict.invoices?.summary_title || "Resumen"}
+                    </h3>
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">Importes actualizados al momento</p>
+                </div>
+            </div>
 
-            <div className="space-y-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30 p-4 text-xs">
+            <div className="space-y-3 p-4 text-xs">
                 <div className="flex justify-between font-medium">
                     <span className="text-[var(--text-muted)]">
                         {dict.invoices?.subtotal_desc || "Subtotal"}
@@ -68,9 +74,10 @@ export function DocumentSummary({
                     />
                 </div>
 
-                <details className="group rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/50">
-                    <summary className="cursor-pointer list-none px-3 py-2 font-semibold text-[var(--text-muted)] marker:hidden">
+                <details className="group rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 font-semibold text-[var(--text-main)] marker:hidden">
                         Ajustes fiscales avanzados
+                        <ChevronDown className="h-4 w-4 text-[var(--text-muted)] transition-transform group-open:rotate-180" aria-hidden="true" />
                     </summary>
                     <div className="space-y-3 border-t border-[var(--border-soft)] px-3 py-3">
                         <div className="flex items-center justify-between gap-4">
@@ -140,7 +147,7 @@ export function DocumentSummary({
                     )}
                 </div>
 
-                <div className="mt-2 flex items-center justify-between rounded-xl bg-[var(--text-main)] p-3 text-white shadow-sm dark:bg-white dark:text-black">
+                <div className="mt-2 flex items-center justify-between rounded-xl bg-[var(--btn-primary-bg)] p-3 text-[var(--btn-primary-text)] shadow-sm">
                     <span className="text-xs font-bold uppercase tracking-wider">
                         {dict.invoices?.total_general || "Total"}
                     </span>

@@ -71,7 +71,7 @@ export function InvoiceDetailDocument({
 
             <div className="relative isolate mx-auto grid w-full max-w-[112rem] gap-4 print:block xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_20rem]">
                 <div className="invoice-detail-backlight print:hidden" />
-                <div className="relative z-10 min-w-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-4 print:border-none print:bg-white print:p-0 print:text-black print:shadow-none sm:p-5 lg:p-6">
+                <div className="billing-surface relative z-10 min-w-0 overflow-hidden rounded-[24px] p-4 print:border-none print:bg-white print:p-0 print:text-black print:shadow-none sm:p-5 lg:p-6">
                     <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent print:left-0 print:right-0 print:top-0 print:h-1 print:rounded-none" />
 
                     <InvoiceDetailHeaderSection

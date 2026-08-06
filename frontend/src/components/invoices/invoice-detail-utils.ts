@@ -64,7 +64,7 @@ export function getInvoiceStatusMeta(status: string, dict: Dictionary) {
     if (status === "paid") {
         return {
             label: dict.invoices.status_paid || "Pagada",
-            className: "border-[color-mix(in_srgb,var(--color-green-500)_34%,transparent)] bg-[color-mix(in_srgb,var(--color-green-500)_14%,transparent)] text-[var(--color-green-700)]",
+            className: "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--text-main)]",
         };
     }
     if (status === "overdue") {
@@ -89,13 +89,13 @@ export function statusActionMeta(state: string, dict: Dictionary) {
     if (state === "issued") {
         return {
             label: dict.invoices.issue_fiscal_invoice,
-            className: "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:border-[var(--btn-secondary-border)] hover:bg-[var(--btn-secondary-hover-bg)]",
+            className: "border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
         };
     }
     if (state === "paid") {
         return {
             label: dict.invoices.status_paid,
-            className: "border-[color-mix(in_srgb,var(--color-green-500)_36%,transparent)] bg-[color-mix(in_srgb,var(--color-green-500)_10%,transparent)] text-[var(--color-green-700)] hover:border-[var(--color-green-600)] hover:bg-[color-mix(in_srgb,var(--color-green-500)_18%,transparent)]",
+            className: "border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
         };
     }
     if (state === "cancelled") {
@@ -116,11 +116,12 @@ export function statusActionMeta(state: string, dict: Dictionary) {
     };
 }
 
-export function actionButtonClass(tone: "primary" | "neutral" | "danger" | "disabled" = "neutral") {
+export function actionButtonClass(tone: "primary" | "secondary" | "neutral" | "danger" | "disabled" = "neutral") {
     return cn(
-        "inline-flex min-h-10 max-w-full items-center justify-center gap-2 rounded-2xl border px-3.5 text-center text-[12px] font-black leading-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[8.5rem]",
+        "inline-flex min-h-10 max-w-full items-center justify-center gap-2 rounded-2xl border px-3.5 text-center text-[12px] font-semibold leading-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[8.5rem]",
         tone === "primary" && "border-[var(--border-soft)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
-        tone === "neutral" && "border-[var(--btn-neutral-border)] bg-[var(--bg-card-solid)] text-[var(--text-main)] hover:border-[var(--border-color)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-main)]",
+        tone === "secondary" && "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)]",
+        tone === "neutral" && "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_8px_18px_rgba(52,74,94,0.08)] backdrop-blur-xl hover:border-[var(--border-color)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]",
         tone === "danger" && "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
         tone === "disabled" && "cursor-not-allowed border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]",
     );

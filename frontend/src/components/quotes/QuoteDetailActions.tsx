@@ -59,7 +59,7 @@ export function QuoteDetailActions({
                             type="button"
                             disabled={loading}
                             onClick={onEdit}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-accent/10 text-accent border border-accent/30 rounded-xl hover:bg-accent/20 transition-colors cursor-pointer"
+                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] rounded-xl hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
                         >
                             <Edit3 className="w-3.5 h-3.5" />
                             {dict.quotes?.edit_quote ?? "Editar"}
@@ -68,7 +68,7 @@ export function QuoteDetailActions({
                             type="button"
                             disabled={loading}
                             onClick={onMarkSent}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-amber-500/10 text-amber-600 border border-amber-500/30 rounded-xl hover:bg-amber-500/20 transition-colors cursor-pointer"
+                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] rounded-xl hover:bg-[var(--btn-primary-hover-bg)] transition-colors cursor-pointer"
                         >
                             <Send className="w-3.5 h-3.5" />
                             {dict.quotes?.mark_sent ?? "Marcar enviado"}
@@ -81,7 +81,7 @@ export function QuoteDetailActions({
                             type="button"
                             disabled={loading}
                             onClick={onMarkAccepted}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-emerald-500/10 text-emerald-600 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/20 transition-colors cursor-pointer"
+                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] rounded-xl hover:bg-[var(--btn-primary-hover-bg)] transition-colors cursor-pointer"
                         >
                             <CheckCircle className="w-3.5 h-3.5" />
                             {dict.quotes?.mark_accepted ?? "Marcar aceptado"}
@@ -101,7 +101,7 @@ export function QuoteDetailActions({
                 <button
                     type="button"
                     onClick={onClose}
-                    className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent rounded-xl ui-motion cursor-pointer"
+                    className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] rounded-xl ui-motion cursor-pointer"
                 >
                     {dict.clients?.form.cancel ?? "Cerrar"}
                 </button>

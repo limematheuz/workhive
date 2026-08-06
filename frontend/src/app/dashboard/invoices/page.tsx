@@ -219,7 +219,7 @@ export default function InvoicesPage() {
 
     return (
         <div className="dashboard-page-content px-3 py-4 sm:px-5 lg:px-7">
-            <div className="mx-auto max-w-7xl space-y-5">
+            <div className="mx-auto max-w-[90rem] space-y-5">
                 <InvoicesPageHeader
                     title={dict.invoices.list_title}
                     subtitle={dict.invoices?.list_subtitle || "Crea, gestiona y descarga borradores y facturas de tus trabajos."}
@@ -246,6 +246,11 @@ export default function InvoicesPage() {
                         onClientChange: setSelectedClientId,
                         selectedStatus,
                         onStatusChange: setSelectedStatus,
+                        onReset: () => {
+                            setInvoiceSearch("")
+                            setSelectedClientId("")
+                            setSelectedStatus("")
+                        },
                         clients,
                         labels: dict.invoices,
                     }}

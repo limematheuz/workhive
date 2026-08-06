@@ -19,6 +19,8 @@ const buttonVariants = cva(
           "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]",
         secondary:
           "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)]",
+        select:
+          "border-[var(--btn-select-border)] bg-[var(--btn-select-bg)] text-[var(--btn-select-text)] hover:bg-[var(--btn-select-hover-bg)]",
         ghost:
           "text-[var(--text-main)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)]",
         link: "text-accent underline-offset-4 hover:underline",

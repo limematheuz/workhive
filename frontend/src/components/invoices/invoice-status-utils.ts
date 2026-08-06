@@ -3,7 +3,7 @@ import type { Invoice } from "@/types/invoice";
 export const getStatusBadgeClass = (status: Invoice["status"]) => {
     switch (status) {
         case "paid":
-            return "border border-[color-mix(in_srgb,var(--color-green-500)_44%,transparent)] bg-[color-mix(in_srgb,var(--color-green-500)_16%,transparent)] text-[var(--color-green-700)]";
+            return "border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--text-main)]";
         case "overdue":
         case "cancelled":
             return "border border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_42%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_10%,transparent)] text-[var(--btn-cancel-hover-bg)]";

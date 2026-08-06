@@ -3,14 +3,8 @@
 import { useQuoteForm } from "@/hooks/useQuoteForm";
 import { Client } from "@/services/client.service";
 import { Quote } from "@/types/quote";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { DocumentFormDialog } from "@/components/billing/DocumentFormDialog";
+import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { Label } from "@/components/ui/label";
 import { ChevronDown, Loader2, FileText } from "lucide-react";
 import { BillingPartyCard } from "@/components/billing/BillingPartyCard";
@@ -94,31 +88,53 @@ export function QuoteCreateSheet({
         quoteToEdit,
     });
 
-    return (
-        <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="sm:max-w-5xl w-full max-h-[95vh] flex flex-col p-0 overflow-hidden rounded-[28px] border-[var(--border-soft)]">
-                <form onSubmit={handleCreateQuote} className="flex flex-col flex-1 overflow-hidden">
-                    <DialogHeader className="p-6 border-b border-[var(--border-soft)] flex-shrink-0">
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2 text-[var(--text-main)]">
-                            <FileText className="w-5 h-5 text-[var(--text-main)]" />
-                            {quoteToEdit ? (dict.quotes?.edit_title || "Editar Presupuesto") : (dict.quotes?.create_title || "Nuevo Presupuesto")}
-                        </DialogTitle>
-                        <DialogDescription className="text-sm text-[var(--text-muted)]">
-                            {quoteToEdit ? (dict.quotes?.edit_description || "Edita los detalles y conceptos del presupuesto.") : (dict.quotes?.create_description || "Diseña y edita un presupuesto detallado. Rellena los datos a continuación.")}
-                        </DialogDescription>
-                    </DialogHeader>
+    const sidebar = (
+        <DocumentSummary
+            dict={dict}
+            subtotal={subtotal}
+            discount={discount}
+            setDiscount={setDiscount}
+            taxRateGlobal={taxRateGlobal}
+            handleGlobalTaxRateChange={handleGlobalTaxRateChange}
+            equivalenceSurcharge={equivalenceSurcharge}
+            setEquivalenceSurcharge={setEquivalenceSurcharge}
+            retention={retention}
+            setRetention={setRetention}
+            baseAmount={baseAmount}
+            taxAmount={taxAmount}
+            surchargeAmount={surchargeAmount}
+            retentionAmount={retentionAmount}
+            totalGeneral={totalGeneral}
+        />
+    );
 
-                    {/* Scrollable Layout */}
-                    <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {loadingClients ? (
-                            <div className="lg:col-span-3 flex justify-center py-12 items-center min-h-[250px]">
-                                <Loader2 className="w-6 h-6 text-accent animate-spin" />
-                            </div>
-                        ) : (
-                            <>
-                                {/* Left Side - Fields & Concepts (Takes 2/3) */}
-                                <div className="lg:col-span-2 space-y-6">
-                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    return (
+        <DocumentFormDialog
+            open={open}
+            onOpenChange={handleClose}
+            onSubmit={handleCreateQuote}
+            icon={<FileText className="h-5 w-5" />}
+            title={quoteToEdit ? (dict.quotes?.edit_title || "Editar presupuesto") : (dict.quotes?.create_title || "Nuevo presupuesto")}
+            description={quoteToEdit ? (dict.quotes?.edit_description || "Actualiza los detalles y conceptos del presupuesto.") : (dict.quotes?.create_description || "Crea un presupuesto claro, con sus conceptos y condiciones comerciales.")}
+            cancelLabel={dict.clients?.form?.cancel || "Cancelar"}
+            submitLabel={quoteToEdit ? (dict.quotes?.save_changes || "Guardar cambios") : (dict.quotes?.save || "Crear presupuesto")}
+            submittingLabel={dict.quotes?.saving || "Guardando..."}
+            submitting={submitting}
+            submitDisabled={concepts.length === 0 || loadingClients}
+            onCancel={handleClose}
+            sidebar={sidebar}
+        >
+            {loadingClients ? (
+                <div className="flex min-h-[250px] items-center justify-center py-12">
+                    <Loader2 className="h-6 w-6 animate-spin text-accent" />
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    <DocumentFormSection
+                        title="Datos del presupuesto"
+                        description="Define qué se ofrece y hasta cuándo se mantiene la propuesta."
+                    >
+                        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                         <div className="space-y-1">
                                             <Label className="text-xs font-medium text-[var(--text-muted)]">
                                                 {dict.quotes?.title_label || "Título *"}
@@ -130,7 +146,7 @@ export function QuoteCreateSheet({
                                                 required
                                                 maxLength={255}
                                                 placeholder={dict.quotes?.title_placeholder || "Ej: Limpieza de apartamento turístico"}
-                                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                                             />
                                         </div>
                                         <div className="space-y-1">
@@ -142,13 +158,17 @@ export function QuoteCreateSheet({
                                                 value={validUntil}
                                                 onChange={(event) => setValidUntil(event.target.value)}
                                                 aria-label={dict.quotes?.valid_until_label || "Válido hasta"}
-                                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                                             />
                                         </div>
-                                    </div>
+                        </div>
+                    </DocumentFormSection>
 
-                                    {/* Client Selection */}
-                                    <div className="space-y-1">
+                    <DocumentFormSection
+                        title="Cliente"
+                        description="Selecciona un cliente guardado o crea el presupuesto sin asociarlo todavía."
+                    >
+                        <div className="space-y-1">
                                         <Label className="text-xs text-[var(--text-muted)] font-medium">
                                             {dict.quotes?.client_label || "Cliente *"}
                                         </Label>
@@ -156,7 +176,7 @@ export function QuoteCreateSheet({
                                             value={selectedClientId}
                                             onChange={(e) => setSelectedClientId(e.target.value)}
                                             aria-label={dict.quotes?.client_label || "Cliente"}
-                                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
+                                            className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                                         >
                                             <option value="">
                                                 {dict.quotes?.new_unregistered_client || "-- Nuevo Cliente / No registrado --"}
@@ -167,19 +187,19 @@ export function QuoteCreateSheet({
                                                 </option>
                                             ))}
                                         </select>
-                                    </div>
+                        </div>
+                    </DocumentFormSection>
 
-                                    {/* Concepts Table Section */}
-                                    <QuoteItemsTable
-                                        concepts={concepts}
-                                        dict={dict}
-                                        handleAddManualRow={handleAddManualRow}
-                                        handleDuplicateRow={handleDuplicateRow}
-                                        handleUpdateRow={handleUpdateRow}
-                                        handleDeleteRow={handleDeleteRow}
-                                    />
+                    <QuoteItemsTable
+                        concepts={concepts}
+                        dict={dict}
+                        handleAddManualRow={handleAddManualRow}
+                        handleDuplicateRow={handleDuplicateRow}
+                        handleUpdateRow={handleUpdateRow}
+                        handleDeleteRow={handleDeleteRow}
+                    />
 
-                                    <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
+                    <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
                                         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
                                             <span>
                                                 Opciones avanzadas
@@ -239,61 +259,10 @@ export function QuoteCreateSheet({
                                                 dict={dict}
                                             />
                                         </div>
-                                    </details>
-                                </div>
+                    </details>
+                </div>
 
-                                {/* Right Side - Task Selection & Summary (Takes 1/3) */}
-                                <div className="space-y-6 lg:sticky lg:top-1 lg:self-start lg:border-l lg:border-[var(--border-soft)] lg:pl-6">
-                                    <DocumentSummary
-                                        dict={dict}
-                                        subtotal={subtotal}
-                                        discount={discount}
-                                        setDiscount={setDiscount}
-                                        taxRateGlobal={taxRateGlobal}
-                                        handleGlobalTaxRateChange={handleGlobalTaxRateChange}
-                                        equivalenceSurcharge={equivalenceSurcharge}
-                                        setEquivalenceSurcharge={setEquivalenceSurcharge}
-                                        retention={retention}
-                                        setRetention={setRetention}
-                                        baseAmount={baseAmount}
-                                        taxAmount={taxAmount}
-                                        surchargeAmount={surchargeAmount}
-                                        retentionAmount={retentionAmount}
-                                        totalGeneral={totalGeneral}
-                                    />
-
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Bottom Actions footer */}
-                    <div className="dialog-glass-chrome p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] flex-shrink-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={handleClose}
-                            className="w-1/2 bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent text-xs font-semibold rounded-xl px-5 py-2.5 cursor-pointer ui-motion"
-                        >
-                            {dict.clients?.form?.cancel || "Cancelar"}
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={submitting || concepts.length === 0}
-                            className="w-1/2 bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] text-xs font-semibold rounded-xl px-5 py-2.5 border border-[var(--border-soft)] flex items-center justify-center gap-1.5 cursor-pointer ui-motion"
-                        >
-                            {submitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                    {quoteToEdit ? (dict.quotes?.saving || "Guardando...") : (dict.quotes?.saving || "Generando...")}
-                                </>
-                            ) : (
-                                quoteToEdit ? (dict.quotes?.save_changes || "Guardar Cambios") : (dict.quotes?.save || "Crear Presupuesto")
-                            )}
-                        </Button>
-                    </div>
-                </form>
-            </DialogContent>
-        </Dialog>
+            )}
+        </DocumentFormDialog>
     );
 }

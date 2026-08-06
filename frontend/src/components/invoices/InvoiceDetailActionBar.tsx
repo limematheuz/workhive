@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import {
-    ArrowLeft,
     Check,
     CloudUpload,
     Download,
@@ -100,7 +98,7 @@ export function InvoiceDetailActionBar({
                     onClick={() => onStatusChange(state)}
                     disabled={updatingStatus}
                     className={cn(
-                        "min-h-10 rounded-xl border px-3.5 text-center text-[12px] font-black leading-tight transition disabled:cursor-not-allowed disabled:opacity-70",
+                        "min-h-10 rounded-xl border px-3.5 text-center text-[12px] font-semibold leading-tight transition disabled:cursor-not-allowed disabled:opacity-70",
                         meta.className,
                     )}
                 >
@@ -116,7 +114,7 @@ export function InvoiceDetailActionBar({
                 <button
                     type="button"
                     onClick={onEnterEditMode}
-                    className={cn(actionButtonClass("neutral"), "w-full sm:w-auto")}
+                    className={cn(actionButtonClass("secondary"), "w-full sm:w-auto")}
                 >
                     <Pencil className="h-4 w-4" />
                     {dict.invoices.edit_draft}
@@ -129,7 +127,7 @@ export function InvoiceDetailActionBar({
                         type="button"
                         onClick={onDiscardEdit}
                         disabled={savingDraft}
-                        className={cn(actionButtonClass("neutral"), "w-full sm:w-auto")}
+                        className={cn(actionButtonClass("secondary"), "w-full sm:w-auto")}
                     >
                         <X className="h-4 w-4" />
                         {dict.invoices.discard}
@@ -154,7 +152,7 @@ export function InvoiceDetailActionBar({
                 <button
                     type="button"
                     onClick={onOpenRectification}
-                    className={cn(actionButtonClass("danger"), "w-full sm:w-auto")}
+                    className={cn(actionButtonClass("primary"), "w-full sm:w-auto")}
                 >
                     <FileX2 className="h-4 w-4" />
                     {dict.invoices.create_rectification}
@@ -220,34 +218,25 @@ export function InvoiceDetailActionBar({
     );
 
     return (
-        <div className="mx-auto mb-3 w-full max-w-[112rem] rounded-[24px] border border-[var(--border-color)] bg-[var(--bg-card-solid)] p-3 print:hidden">
-            <header className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-                <div className="flex min-w-0 gap-3">
-                    <Link
-                        href="/dashboard/invoices"
-                        aria-label={dict.invoices.back_to_list}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-main)] transition hover:border-[var(--btn-secondary-border)] hover:bg-[var(--bg-tertiary)]"
-                    >
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                    <div className="min-w-0">
+        <section className="billing-surface mx-auto mb-3 w-full max-w-[112rem] rounded-[24px] p-4 print:hidden sm:p-5">
+            <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-sm font-black text-[var(--text-main)]">
+                            <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
                                 {dict.invoices.title}
                             </span>
-                            <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-black uppercase leading-none", invoiceStatusMeta.className)}>
+                            <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none", invoiceStatusMeta.className)}>
                                 {invoiceStatusMeta.label}
                             </span>
                             {invoice.is_rectification && (
-                                <span className="rounded-full border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-2.5 py-1 text-[10px] font-black uppercase leading-none text-[var(--btn-cancel-text)]">
+                                <span className="rounded-full border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-2.5 py-1 text-[10px] font-semibold uppercase leading-none text-[var(--btn-cancel-text)]">
                                     {dict.invoices.rectification}
                                 </span>
                             )}
                         </div>
-                        <h1 className="mt-1 max-w-full text-[clamp(1.45rem,2.25vw,2.25rem)] font-black leading-none tracking-tight text-[var(--text-main)] [overflow-wrap:anywhere]">
+                        <h1 className="mt-1 max-w-full text-[clamp(1.35rem,1.8vw,1.9rem)] font-bold leading-none tracking-tight text-[var(--text-main)] [overflow-wrap:anywhere]">
                             {formattedInvoiceNumber}
                         </h1>
-                    </div>
                 </div>
 
                 <button
@@ -269,7 +258,7 @@ export function InvoiceDetailActionBar({
                 </button>
             </header>
 
-            <section className="mt-3 grid gap-2.5 md:grid-cols-2 xl:grid-cols-4">
+            <section className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
                 {[
                     { label: dict.invoices.total_amount, value: formatCurrency(invoice.total_amount), mono: true },
                     { label: dict.invoices.client, value: recipientName, mono: false },
@@ -280,9 +269,9 @@ export function InvoiceDetailActionBar({
                         mono: true,
                     },
                 ].map((card) => (
-                    <div key={card.label} className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3">
-                        <p className="truncate text-[11px] font-black uppercase tracking-wide text-[var(--text-muted)]">{card.label}</p>
-                        <p className={cn("mt-2 truncate text-lg font-black text-[var(--text-main)]", card.mono && "font-mono")}>
+                    <div key={card.label} className="min-w-0 rounded-xl bg-[var(--bg-tertiary)] px-3 py-2.5">
+                        <p className="truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">{card.label}</p>
+                        <p className={cn("mt-1.5 truncate text-base font-semibold text-[var(--text-main)]", card.mono && "font-mono")}>
                             {card.value}
                         </p>
                     </div>
@@ -290,26 +279,24 @@ export function InvoiceDetailActionBar({
             </section>
 
             {(nextStates.length > 0 || actionButtonsVisible) && (
-                <section className="mt-3 border-t border-[var(--border-soft)] pt-3">
-                    <div className="flex flex-col gap-2 xl:flex-row xl:items-start xl:justify-between">
+                <section className="mt-4 pt-4">
+                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                         {nextStates.length > 0 && (
-                            <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2">
-                                <p className="mb-2 px-1 text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)]">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <p className="mr-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
                                     {dict.invoices.change_status}
                                 </p>
-                                <div className="flex flex-wrap gap-2">
-                                    {renderStatusButtons()}
-                                </div>
+                                {renderStatusButtons()}
                             </div>
                         )}
                         {actionButtonsVisible && (
-                            <div className="flex flex-wrap gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2">
+                            <div className="flex flex-wrap gap-2 xl:justify-end">
                                 {renderActionButtons()}
                             </div>
                         )}
                     </div>
                 </section>
             )}
-        </div>
+        </section>
     );
 }

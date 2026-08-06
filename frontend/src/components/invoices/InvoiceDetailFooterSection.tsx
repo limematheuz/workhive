@@ -17,24 +17,24 @@ export function InvoiceDetailFooterSection({ dict, invoice, company }: InvoiceDe
     }
 
     return (
-        <div className="mt-8 space-y-5 border-t border-dashed border-[var(--border-soft)] pt-5 print:border-neutral-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <section className="mt-6 space-y-4 pt-5">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {invoice.notes && (
-                    <div className="space-y-1 text-2xs text-[var(--text-muted)] print:text-neutral-600">
-                        <p className="font-semibold text-[var(--text-main)] print:text-black uppercase tracking-wider text-3xs">{dict.invoices.payment_notes}</p>
-                        <p className="whitespace-pre-line">{invoice.notes}</p>
-                    </div>
+                    <section className="rounded-2xl bg-[var(--bg-tertiary)] p-3.5 text-2xs text-[var(--text-muted)] print:bg-white print:text-neutral-600">
+                        <p className="text-3xs font-semibold uppercase tracking-wider text-[var(--text-main)] print:text-black">{dict.invoices.payment_notes}</p>
+                        <p className="mt-2 whitespace-pre-line leading-5">{invoice.notes}</p>
+                    </section>
                 )}
 
                 {invoice.terms && (
-                    <div className="space-y-1 text-2xs text-[var(--text-muted)] print:text-neutral-600">
-                        <p className="font-semibold text-[var(--text-main)] print:text-black uppercase tracking-wider text-3xs">{dict.invoices.payment_terms}</p>
-                        <p className="whitespace-pre-line">{invoice.terms}</p>
-                    </div>
+                    <section className="rounded-2xl bg-[var(--bg-tertiary)] p-3.5 text-2xs text-[var(--text-muted)] print:bg-white print:text-neutral-600">
+                        <p className="text-3xs font-semibold uppercase tracking-wider text-[var(--text-main)] print:text-black">{dict.invoices.payment_terms}</p>
+                        <p className="mt-2 whitespace-pre-line leading-5">{invoice.terms}</p>
+                    </section>
                 )}
             </div>
 
-            <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 pt-4 border-t border-[var(--border-soft)] border-dotted print:border-neutral-200">
+            <div className="flex flex-col gap-4 pt-1 md:flex-row md:items-end md:justify-between">
                 {company?.bank_account && (
                     <div className="text-[10px] text-[var(--text-muted)] print:text-neutral-600">
                         <p className="font-semibold text-[var(--text-main)] print:text-black">{dict.invoices.payment_info}:</p>
@@ -49,12 +49,12 @@ export function InvoiceDetailFooterSection({ dict, invoice, company }: InvoiceDe
                             alt="Firma"
                             width={160}
                             height={64}
-                            className="max-h-16 object-contain border border-[var(--border-soft)] rounded p-1 print:border-neutral-300"
+                            className="max-h-16 rounded bg-[var(--bg-secondary)] p-1 object-contain"
                             unoptimized
                         />
                     </div>
                 )}
             </div>
-        </div>
+        </section>
     );
 }

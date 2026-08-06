@@ -3,6 +3,7 @@
 import { Label } from "@/components/ui/label";
 import { ChevronDown } from "lucide-react";
 import { BillingPartyCard, BillingPartyFields } from "@/components/billing/BillingPartyCard";
+import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { InvoiceConceptsTable } from "./InvoiceConceptsTable";
 import { InvoiceAdditionalInfo } from "./InvoiceAdditionalInfo";
 import type { Client } from "@/services/client.service";
@@ -95,8 +96,12 @@ export function InvoiceCreateSheetDetails({
     handleUpdateRecipientField,
 }: InvoiceCreateSheetDetailsProps) {
     return (
-        <div className="lg:col-span-2 space-y-6">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+        <div className="space-y-6">
+            <DocumentFormSection
+                title="Datos de la factura"
+                description="Selecciona el cliente y las fechas. El número puede generarse automáticamente."
+            >
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="space-y-1">
                     <Label htmlFor="invoice-number" className="text-xs font-medium text-[var(--text-muted)]">
                         {dict.invoices?.invoice_number_label || "Número de factura"}
@@ -106,9 +111,9 @@ export function InvoiceCreateSheetDetails({
                         type="text"
                         value={invoiceNumber}
                         onChange={(event) => setInvoiceNumber(event.target.value)}
-                        placeholder="Automático si se deja vacío"
+                        placeholder="Opcional"
                         maxLength={50}
-                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 font-mono text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 font-mono text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
                 </div>
                 <div className="space-y-1">
@@ -121,7 +126,7 @@ export function InvoiceCreateSheetDetails({
                         onChange={(event) => setIssueDate(event.target.value)}
                         required
                         aria-label={dict.invoices?.issue_date}
-                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
                 </div>
                 <div className="space-y-1">
@@ -134,18 +139,22 @@ export function InvoiceCreateSheetDetails({
                         onChange={(event) => setDueDate(event.target.value)}
                         max={maxDueDate}
                         aria-label={dict.invoices?.due_date}
-                        className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
                 </div>
-            </div>
+                </div>
+            </DocumentFormSection>
 
-            {/* Client Selection */}
-            <div className="space-y-1">
+            <DocumentFormSection
+                title="Cliente facturado"
+                description="Las tareas disponibles se ajustarán a este cliente."
+            >
+                <div className="space-y-1">
                 <Label className="text-xs text-[var(--text-muted)] font-medium">
                     {dict.invoices?.client_select} *
                 </Label>
                 {isClientLocked ? (
-                    <div className="w-full bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm">
+                    <div className="flex h-11 items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)]">
                         {(() => {
                             const client = clients.find(
                                 item => item.id.toString() === selectedClientId
@@ -164,7 +173,7 @@ export function InvoiceCreateSheetDetails({
                         onChange={(e) => setSelectedClientId(e.target.value)}
                         required
                         aria-label={dict.invoices?.client_select}
-                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-sm outline-none focus:border-accent transition-colors"
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     >
                         <option value="" disabled>
                             {dict.invoices?.client_select_placeholder || "-- Selecciona un cliente --"}
@@ -176,7 +185,8 @@ export function InvoiceCreateSheetDetails({
                         ))}
                     </select>
                 )}
-            </div>
+                </div>
+            </DocumentFormSection>
 
             {/* Concepts Table Section */}
             <InvoiceConceptsTable

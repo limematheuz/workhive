@@ -16,6 +16,7 @@ test("mobile screens have one explicit native vertical scroll owner", () => {
     assert.match(authShell, /app-touch-scroll/);
     assert.match(authShell, /overflow-y-auto/);
     assert.match(css, /\.app-touch-scroll\s*\{[\s\S]*touch-action: pan-y pinch-zoom;/);
+    assert.doesNotMatch(css, /\.app-touch-scroll\s*\{[\s\S]*overscroll-behavior-y:/);
 });
 
 test("dashboard pages do not create competing vertical scroll containers", () => {
