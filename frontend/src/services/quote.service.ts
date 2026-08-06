@@ -62,6 +62,7 @@ export interface QuoteEmailPayload {
     message?: string;
     send_copy?: boolean;
     save_recipients?: boolean;
+    save_recipient_to_client_id?: number;
     locale?: "es" | "en";
 }
 

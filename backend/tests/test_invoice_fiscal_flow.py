@@ -457,6 +457,43 @@ def test_invoice_email_allows_external_recipient_and_sender_copy(
     assert all(contact.use_count == 1 for contact in saved_contacts)
 
 
+def test_invoice_email_updates_client_email_only_when_explicitly_requested(
+    db, monkeypatch
+):
+    company = _company(db, "Saved Invoice Recipient SL", "A99887770")
+    billing_client = _billing_client(db, company, legal_number="B99887770")
+    draft = invoice_service.create_invoice_draft(
+        db, company.id, _draft_payload(billing_client.id)
+    )
+    issued = invoice_service.issue_invoice(db, company.id, draft.id)
+    monkeypatch.setattr(
+        "app.services.email_service.send_invoice_email",
+        lambda **_: True,
+    )
+
+    invoice_service.email_invoice(
+        db,
+        company.id,
+        issued.id,
+        InvoiceEmailRequest(
+            recipient_emails=["confirmed-invoice-client@example.com"],
+            save_recipient_to_client_id=billing_client.id,
+        ),
+    )
+
+    db.refresh(billing_client)
+    assert billing_client.email == "confirmed-invoice-client@example.com"
+    assert (
+        db.query(InvoiceEmailContact)
+        .filter(
+            InvoiceEmailContact.company_id == company.id,
+            InvoiceEmailContact.email == "confirmed-invoice-client@example.com",
+        )
+        .first()
+        is None
+    )
+
+
 def test_invoice_email_api_allows_external_recipient(client, db, monkeypatch):
     company = _company(db, "Email API Issuer SL", "A99887769")
     company.subscription_plan = "pro"
@@ -520,6 +557,8 @@ def test_invoice_email_api_allows_external_recipient(client, db, monkeypatch):
         headers={"Authorization": f"Bearer {token}"},
     )
     assert contacts.status_code == 200, contacts.text
-    assert [contact["email"] for contact in contacts.json()] == [
+    saved_contacts = contacts.json()
+    assert [contact["email"] for contact in saved_contacts] == [
         "external@example.com",
     ]
+    assert saved_contacts[0]["name"] is None

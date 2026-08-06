@@ -78,6 +78,26 @@ def test_invoice_email_supports_custom_subject_and_sender_copy(tmp_path, monkeyp
     assert "Custom message" in plain_body(message)
 
 
+def test_invoice_email_never_repeats_primary_recipients_in_cc(tmp_path, monkeypatch):
+    pdf_path = tmp_path / "invoice.pdf"
+    pdf_path.write_bytes(b"%PDF-test")
+    delivered = capture_send(monkeypatch)
+
+    assert billing_emails.send_invoice_email(
+        recipient_email=["client@example.com", "other@example.com"],
+        recipient_name="Client",
+        issuer_name="Issuer",
+        invoice_number="INV-2026-0003",
+        pdf_path=pdf_path,
+        copy_emails=["CLIENT@example.com", "copy@example.com", "copy@example.com"],
+        sender_copy_email="other@example.com",
+    )
+
+    message = delivered["message"]
+    assert message["To"] == "client@example.com, other@example.com"
+    assert message["Cc"] == "copy@example.com"
+
+
 def test_invoice_email_english_locale(tmp_path, monkeypatch):
     pdf_path = tmp_path / "invoice.pdf"
     pdf_path.write_bytes(b"%PDF-test")

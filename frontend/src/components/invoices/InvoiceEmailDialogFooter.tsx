@@ -1,7 +1,8 @@
+import type { ReactNode } from "react";
 import { Loader2, Send } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type InvoiceEmailDialogFooterProps = {
     sendCopy: boolean;
@@ -9,6 +10,9 @@ type InvoiceEmailDialogFooterProps = {
     saveRecipients: boolean;
     onSaveRecipientsChange: (checked: boolean) => void;
     showSaveRecipients: boolean;
+    saveRecipientToClient: boolean;
+    onSaveRecipientToClientChange: (checked: boolean) => void;
+    saveRecipientToClientLabel?: string;
     canSend: boolean;
     isSending: boolean;
     onCancel: () => void;
@@ -22,12 +26,53 @@ type InvoiceEmailDialogFooterProps = {
     };
 };
 
+type EmailOptionProps = {
+    id: string;
+    checked: boolean;
+    onCheckedChange: (checked: boolean) => void;
+    children: ReactNode;
+    highlighted?: boolean;
+};
+
+function EmailOption({
+    id,
+    checked,
+    onCheckedChange,
+    children,
+    highlighted = false,
+}: EmailOptionProps) {
+    return (
+        <div
+            className={`flex min-h-11 shrink-0 items-center gap-2.5 rounded-xl border px-3 ${
+                highlighted
+                    ? "border-accent/20 bg-accent/5"
+                    : "border-[var(--border-soft)] bg-[var(--bg-secondary)]"
+            }`}
+        >
+            <Checkbox
+                id={id}
+                checked={checked}
+                onCheckedChange={(value) => onCheckedChange(value === true)}
+            />
+            <label
+                htmlFor={id}
+                className="cursor-pointer select-none text-sm font-semibold leading-none text-[var(--text-main)]"
+            >
+                {children}
+            </label>
+        </div>
+    );
+}
+
 export function InvoiceEmailDialogFooter({
     sendCopy,
     onSendCopyChange,
     saveRecipients,
     onSaveRecipientsChange,
     showSaveRecipients,
+    saveRecipientToClient,
+    onSaveRecipientToClientChange,
+    saveRecipientToClientLabel,
     canSend,
     isSending,
     onCancel,
@@ -36,35 +81,43 @@ export function InvoiceEmailDialogFooter({
     invoiceText,
 }: InvoiceEmailDialogFooterProps) {
     return (
-        <DialogFooter className="dialog-glass-chrome items-center justify-between gap-3 border-t border-[var(--border-soft)] px-5 py-4 sm:flex-row">
-            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
-                <label className="flex w-full items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-sm font-semibold text-[var(--text-main)] sm:w-auto">
-                    <input
-                        type="checkbox"
-                        checked={sendCopy}
-                        onChange={(event) => onSendCopyChange(event.target.checked)}
-                        className="h-4 w-4 accent-[var(--accent-color)]"
-                    />
+        <footer className="dialog-glass-chrome grid gap-4 border-t border-[var(--border-soft)] px-5 py-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <EmailOption
+                    id="document-email-send-copy"
+                    checked={sendCopy}
+                    onCheckedChange={onSendCopyChange}
+                >
                     {invoiceText.email_send_copy}
-                </label>
+                </EmailOption>
                 {showSaveRecipients && (
-                    <label className="flex w-full items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 px-3 py-2 text-sm font-semibold text-[var(--text-main)] sm:w-auto">
-                        <input
-                            type="checkbox"
-                            checked={saveRecipients}
-                            onChange={(event) => onSaveRecipientsChange(event.target.checked)}
-                            className="h-4 w-4 accent-[var(--accent-color)]"
-                        />
+                    <EmailOption
+                        id="document-email-save-suggestion"
+                        checked={saveRecipients}
+                        onCheckedChange={onSaveRecipientsChange}
+                        highlighted
+                    >
                         {invoiceText.email_save_new}
-                    </label>
+                    </EmailOption>
                 )}
+                {saveRecipientToClientLabel ? (
+                    <EmailOption
+                        id="document-email-save-client"
+                        checked={saveRecipientToClient}
+                        onCheckedChange={onSaveRecipientToClientChange}
+                        highlighted
+                    >
+                        {saveRecipientToClientLabel}
+                    </EmailOption>
+                ) : null}
             </div>
-            <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-self-end">
                 <Button
                     type="button"
-                    variant="outline"
+                    variant="dangerSoft"
                     onClick={onCancel}
                     disabled={isSending}
+                    className="min-h-11 px-5"
                 >
                     {invoiceText.cancel}
                 </Button>
@@ -72,7 +125,7 @@ export function InvoiceEmailDialogFooter({
                     type="button"
                     onClick={onSend}
                     disabled={!canSend}
-                    className="gap-2"
+                    className="min-h-11 gap-2 px-5"
                 >
                     {isSending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -82,6 +135,6 @@ export function InvoiceEmailDialogFooter({
                     {submitLabel || invoiceText.send_email}
                 </Button>
             </div>
-        </DialogFooter>
+        </footer>
     );
 }

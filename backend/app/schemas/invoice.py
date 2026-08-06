@@ -135,6 +135,7 @@ class InvoiceEmailRequest(BaseModel):
     message: str | None = Field(default=None, max_length=2000)
     send_copy: bool = False
     save_recipients: bool = False
+    save_recipient_to_client_id: int | None = Field(default=None, gt=0)
     locale: Literal["es", "en"] = "es"
 
 

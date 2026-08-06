@@ -77,14 +77,14 @@ export function InvoiceEmailFormSection({
     invoiceText,
 }: InvoiceEmailFormSectionProps) {
     return (
-        <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] shadow-sm">
-            <div className="divide-y divide-[var(--border-soft)]">
-                <div className="grid gap-2 px-4 py-3 sm:grid-cols-[5rem_minmax(0,1fr)] sm:items-center">
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] shadow-lg shadow-black/[0.03]">
+            <div className="border-b border-[var(--border-soft)] bg-[linear-gradient(135deg,var(--bg-secondary)_0%,var(--bg-card)_72%)] px-4 py-3.5 sm:px-5">
+                <div className="grid gap-2 sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
                     <span className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {invoiceText.email_from_label}
                     </span>
                     <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-black text-accent">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-xs font-black text-accent ring-1 ring-accent/15">
                             {initials(fromName)}
                         </span>
                         <span className="min-w-0">
@@ -99,9 +99,11 @@ export function InvoiceEmailFormSection({
                         </span>
                     </div>
                 </div>
+            </div>
 
-                <div className="grid gap-2 px-4 py-3 sm:grid-cols-[5rem_minmax(0,1fr)] sm:items-start">
-                    <span className="pt-2 text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
+            <div className="space-y-3 p-4 sm:p-5">
+                <div className="grid gap-2 rounded-2xl bg-[var(--bg-secondary)]/70 p-3 ring-1 ring-[var(--border-soft)] sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-start">
+                    <span className="pt-2 text-xs font-black uppercase tracking-wider text-accent">
                         {invoiceText.email_to_label}
                     </span>
                     <InvoiceEmailRecipientField
@@ -125,11 +127,11 @@ export function InvoiceEmailFormSection({
                     />
                 </div>
 
-                <div className="grid gap-2 px-4 py-3 sm:grid-cols-[5rem_minmax(0,1fr)] sm:items-start">
+                <div className="grid gap-2 rounded-2xl bg-[var(--bg-secondary)]/40 p-3 ring-1 ring-[var(--border-soft)] sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-start">
                     <span className="pt-2 text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {invoiceText.email_cc_label}
                     </span>
-                    <div className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-xl bg-[var(--bg-secondary)] px-3 py-2 ring-1 ring-[var(--border-soft)] transition-with-transform focus-within:bg-[var(--bg-card)] focus-within:ring-2 focus-within:ring-accent/50">
+                    <div className="flex min-h-12 w-full flex-wrap items-center gap-2 rounded-xl bg-[var(--bg-card)] px-3 py-2 ring-1 ring-[var(--border-soft)] transition focus-within:ring-2 focus-within:ring-accent/50">
                         {copyRecipients.map((email) => (
                             <InvoiceEmailChip
                                 key={email}
@@ -141,6 +143,10 @@ export function InvoiceEmailFormSection({
                         ))}
                         <input
                             type="email"
+                            id="document-email-cc"
+                            name="document-email-cc"
+                            autoComplete="off"
+                            inputMode="email"
                             value={copySearch}
                             onChange={(event) => onCopySearchChange(event.target.value)}
                             onKeyDown={onCopyKeyDown}
@@ -151,7 +157,7 @@ export function InvoiceEmailFormSection({
                     </div>
                 </div>
 
-                <div className="!grid gap-2 px-4 py-3 sm:grid-cols-[5rem_minmax(0,1fr)] sm:items-center">
+                <div className="grid gap-2 rounded-2xl bg-[var(--bg-secondary)]/40 p-3 ring-1 ring-[var(--border-soft)] sm:grid-cols-[4.5rem_minmax(0,1fr)] sm:items-center">
                     <span className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {invoiceText.email_subject_label}
                     </span>
@@ -160,7 +166,7 @@ export function InvoiceEmailFormSection({
                         onChange={(event) => onSubjectChange(event.target.value)}
                         maxLength={200}
                         aria-label={invoiceText.email_subject_label}
-                        className="h-11 w-full min-w-0 rounded-xl bg-[var(--bg-secondary)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none ring-1 ring-[var(--border-soft)] transition focus:bg-[var(--bg-card)] focus:ring-2 focus:ring-accent/50"
+                        className="h-12 w-full min-w-0 rounded-xl bg-[var(--bg-card)] px-3.5 text-sm font-bold text-[var(--text-main)] outline-none ring-1 ring-[var(--border-soft)] transition focus:ring-2 focus:ring-accent/50"
                     />
                 </div>
             </div>
@@ -170,12 +176,12 @@ export function InvoiceEmailFormSection({
                 onChange={(event) => onMessageChange(event.target.value)}
                 maxLength={2000}
                 aria-label="Mensaje"
-                className="invoice-email-message-field h-72 w-full resize-y border-0 bg-[var(--bg-card)] px-5 py-5 text-sm leading-7 text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)] lg:h-80"
+                className="invoice-email-message-field h-64 w-full resize-y border-0 border-t border-[var(--border-soft)] bg-[var(--bg-card)] px-5 py-5 text-sm leading-7 text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)] lg:h-72"
             />
 
-            <div className="border-t border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 p-4">
-                <div className="flex items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] px-4 py-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
+            <div className="border-t border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 px-4 py-3.5 sm:px-5">
+                <div className="flex items-center gap-3 rounded-2xl border border-accent/15 bg-accent/[0.035] px-4 py-3">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent ring-1 ring-accent/15">
                         <FileText className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">

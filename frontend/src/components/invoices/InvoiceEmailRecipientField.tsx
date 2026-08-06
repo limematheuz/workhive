@@ -46,7 +46,7 @@ export function InvoiceEmailRecipientField({
 }: InvoiceEmailRecipientFieldProps) {
     return (
         <div className="relative min-w-0">
-            <div className="flex min-h-11 w-full flex-wrap items-center gap-2 rounded-xl border border-transparent bg-[var(--bg-secondary)] px-3 py-2 ring-1 ring-[var(--border-soft)] transition-with-transform focus-within:bg-[var(--bg-card)] focus-within:ring-2 focus-within:ring-accent/50">
+            <div className="flex min-h-12 w-full flex-wrap items-center gap-2 rounded-xl border border-transparent bg-[var(--bg-card)] px-3 py-2 ring-1 ring-[var(--border-soft)] transition focus-within:ring-2 focus-within:ring-accent/50">
                 {recipients.map((email) => (
                     <InvoiceEmailChip
                         key={email}
@@ -57,6 +57,10 @@ export function InvoiceEmailRecipientField({
                 ))}
                 <input
                     type="email"
+                    id="document-email-to"
+                    name="document-email-to"
+                    autoComplete="off"
+                    inputMode="email"
                     value={search}
                     onFocus={onSearchFocus}
                     onChange={(event) => onSearchChange(event.target.value)}
@@ -116,9 +120,11 @@ export function InvoiceEmailRecipientField({
                                 <span className="block truncate text-sm font-bold text-[var(--text-main)]">
                                     {suggestion.name}
                                 </span>
-                                <span className="block truncate text-xs text-[var(--text-muted)]">
-                                    {suggestion.email}
-                                </span>
+                                {suggestion.name !== suggestion.email ? (
+                                    <span className="block truncate text-xs text-[var(--text-muted)]">
+                                        {suggestion.email}
+                                    </span>
+                                ) : null}
                             </span>
                             <span className="hidden shrink-0 rounded-full bg-[var(--bg-secondary)] px-2 py-1 text-[10px] font-bold text-[var(--text-muted)] sm:inline-flex">
                                 {suggestion.meta}

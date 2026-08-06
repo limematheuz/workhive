@@ -112,6 +112,7 @@ export interface InvoiceEmailPayload {
     message?: string;
     send_copy?: boolean;
     save_recipients?: boolean;
+    save_recipient_to_client_id?: number;
     locale?: "en" | "es";
 }
 

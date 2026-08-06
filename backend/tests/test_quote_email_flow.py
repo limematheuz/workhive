@@ -111,9 +111,11 @@ def test_quote_email_sends_pdf_marks_sent_and_remembers_only_sender_contacts(
     sender_contacts = client.get(
         "/api/v1/invoice-email-contacts/?q=external", headers=sender_headers
     )
-    assert [contact["email"] for contact in sender_contacts.json()] == [
+    saved_contacts = sender_contacts.json()
+    assert [contact["email"] for contact in saved_contacts] == [
         "external@example.com"
     ]
+    assert saved_contacts[0]["name"] is None
     other_company_contacts = client.get(
         "/api/v1/invoice-email-contacts/?q=external", headers=recipient_headers
     )
@@ -130,6 +132,125 @@ def test_quote_email_sends_pdf_marks_sent_and_remembers_only_sender_contacts(
         .count()
         == 0
     )
+
+
+def test_quote_email_updates_client_email_only_when_explicitly_requested(
+    client, monkeypatch
+):
+    headers, _ = _authenticated_company(
+        client,
+        email="quote-client-email-owner@example.com",
+        company_name="Quote Client Email Owner SL",
+        tax_id="B10000017",
+    )
+    billing_client = client.post(
+        "/api/v1/clients/",
+        headers=headers,
+        json={
+            "name": "Recipient Company",
+            "client_type": "business",
+            "address": "Calle Cliente 1",
+            "city": "Girona",
+            "postal_code": "17001",
+            "country": "España",
+        },
+    )
+    assert billing_client.status_code == 201, billing_client.text
+    quote = client.post(
+        "/api/v1/quotes/",
+        headers=headers,
+        json={
+            "client_id": billing_client.json()["id"],
+            "title": "Presupuesto con cliente",
+            "items": [{"description": "Servicio", "quantity": 1, "unit_price": 120}],
+        },
+    )
+    assert quote.status_code == 201, quote.text
+    monkeypatch.setattr(
+        "app.services.email_service.send_invoice_email",
+        lambda **_: True,
+    )
+
+    sent = client.post(
+        f"/api/v1/quotes/{quote.json()['id']}/send-email",
+        headers=headers,
+        json={
+            "recipient_emails": ["confirmed-client-email@example.com"],
+            "save_recipient_to_client_id": billing_client.json()["id"],
+        },
+    )
+
+    assert sent.status_code == 200, sent.text
+    updated_client = client.get(
+        f"/api/v1/clients/{billing_client.json()['id']}", headers=headers
+    )
+    assert updated_client.json()["email"] == "confirmed-client-email@example.com"
+    assert client.get(
+        "/api/v1/invoice-email-contacts/?q=confirmed-client-email",
+        headers=headers,
+    ).json() == []
+
+
+def test_saved_email_contacts_are_ordered_by_use_and_can_only_be_deleted_by_owner(
+    client, db
+):
+    owner_headers, owner_company_id = _authenticated_company(
+        client,
+        email="saved-contact-owner@example.com",
+        company_name="Saved Contact Owner SL",
+        tax_id="B10000015",
+    )
+    outsider_headers, outsider_company_id = _authenticated_company(
+        client,
+        email="saved-contact-outsider@example.com",
+        company_name="Saved Contact Outsider SL",
+        tax_id="B10000016",
+    )
+    low_use = InvoiceEmailContact(
+        company_id=owner_company_id,
+        email="low-use@example.com",
+        use_count=1,
+    )
+    high_use = InvoiceEmailContact(
+        company_id=owner_company_id,
+        email="high-use@example.com",
+        use_count=8,
+    )
+    outsider_contact = InvoiceEmailContact(
+        company_id=outsider_company_id,
+        email="other-company@example.com",
+        use_count=5,
+    )
+    db.add_all([low_use, high_use, outsider_contact])
+    db.commit()
+    db.refresh(low_use)
+    db.refresh(high_use)
+    db.refresh(outsider_contact)
+
+    listed = client.get("/api/v1/invoice-email-contacts/", headers=owner_headers)
+    assert listed.status_code == 200, listed.text
+    assert [contact["email"] for contact in listed.json()] == [
+        "high-use@example.com",
+        "low-use@example.com",
+    ]
+
+    deleted = client.delete(
+        f"/api/v1/invoice-email-contacts/{low_use.id}",
+        headers=owner_headers,
+    )
+    assert deleted.status_code == 204, deleted.text
+    assert db.get(InvoiceEmailContact, low_use.id) is None
+
+    cross_tenant_delete = client.delete(
+        f"/api/v1/invoice-email-contacts/{outsider_contact.id}",
+        headers=owner_headers,
+    )
+    assert cross_tenant_delete.status_code == 404, cross_tenant_delete.text
+    assert db.get(InvoiceEmailContact, outsider_contact.id) is not None
+
+    assert client.get(
+        "/api/v1/invoice-email-contacts/", headers=outsider_headers
+    ).json()[0]["email"] == "other-company@example.com"
 
 
 def test_quote_email_is_tenant_scoped_and_does_not_change_status_when_delivery_fails(

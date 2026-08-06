@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 import { InvoiceDetailActionBar } from "@/components/invoices/InvoiceDetailActionBar";
 import { InvoiceDetailDocument } from "@/components/invoices/InvoiceDetailDocument";
 import { InvoiceDetailFiscalPanel } from "@/components/invoices/InvoiceDetailFiscalPanel";
-import { InvoiceEmailDialog } from "@/components/invoices/InvoiceEmailDialog";
+import { DocumentEmailDialog } from "@/components/billing/DocumentEmailDialog";
 import { RectificationModal } from "@/components/invoices/RectificationSheet";
 import { buildDefaultInvoiceEmailMessage } from "@/components/invoices/invoice-detail-utils";
 import { useInvoiceDetail } from "@/hooks/useInvoiceDetail";
@@ -19,7 +19,7 @@ export default function InvoiceDetailPage() {
     const invoiceId = parseInt(id as string, 10);
     const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
     const {
-        dict, user, userLoading, invoice, company, loading, updatingStatus,
+        dict, user, userLoading, invoice, client, company, loading, updatingStatus,
         isRectificationOpen, setIsRectificationOpen, isEditMode, editingItems,
         editingInvoiceNumber, setEditingInvoiceNumber,
         editingIssueDate, setEditingIssueDate, editingDueDate, setEditingDueDate,
@@ -170,7 +170,7 @@ export default function InvoiceDetailPage() {
                 onAddEditItem={handleAddEditItem}
             />
 
-            <InvoiceEmailDialog
+            <DocumentEmailDialog
                 open={isEmailDialogOpen}
                 onOpenChange={setIsEmailDialogOpen}
                 invoiceNumber={formattedInvoiceNumber}
@@ -190,6 +190,7 @@ export default function InvoiceDetailPage() {
                 defaultEmail={recipientEmail}
                 fromName={issuerName}
                 fromEmail={issuerEmail}
+                recipientClient={client}
                 isSending={isSendingEmail}
                 onSend={handleSendEmail}
             />

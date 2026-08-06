@@ -20,6 +20,21 @@ def get_contact_by_email(
     )
 
 
+def get_contact_by_id(
+    db: Session,
+    company_id: int,
+    contact_id: int,
+) -> InvoiceEmailContact | None:
+    return (
+        db.query(InvoiceEmailContact)
+        .filter(
+            InvoiceEmailContact.id == contact_id,
+            InvoiceEmailContact.company_id == company_id,
+        )
+        .first()
+    )
+
+
 def list_contacts(
     db: Session,
     company_id: int,
@@ -41,8 +56,8 @@ def list_contacts(
         )
     return (
         contacts.order_by(
-            InvoiceEmailContact.last_used_at.desc(),
             InvoiceEmailContact.use_count.desc(),
+            InvoiceEmailContact.last_used_at.desc(),
             InvoiceEmailContact.email.asc(),
         )
         .limit(max(1, min(limit, 100)))

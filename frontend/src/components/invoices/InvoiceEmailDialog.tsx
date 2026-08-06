@@ -11,6 +11,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useDictionary } from "@/lib/dictionary-context";
+import { toast } from "@/lib/toast";
 import { Client, ClientService } from "@/services/client.service";
 import {
     InvoiceEmailContact,
@@ -27,6 +28,8 @@ import {
     isValidEmail,
     normalized,
     splitEmailInput,
+    uniqueEmails,
+    withoutRecipientDuplicates,
 } from "./invoice-email-utils";
 
 interface InvoiceEmailDialogProps {
@@ -41,6 +44,7 @@ interface InvoiceEmailDialogProps {
     defaultEmail?: string;
     fromName?: string;
     fromEmail?: string;
+    recipientClient?: Pick<Client, "id" | "name" | "email"> | null;
     isSending: boolean;
     onSend: (data: InvoiceEmailPayload) => Promise<boolean>;
 }
@@ -58,6 +62,7 @@ function InvoiceEmailDialogBody({
     defaultEmail = "",
     fromName = "WorkHive",
     fromEmail = "",
+    recipientClient = null,
     isSending,
     onSend,
 }: InvoiceEmailDialogBodyProps) {
@@ -78,7 +83,8 @@ function InvoiceEmailDialogBody({
     const [subject, setSubject] = useState(defaultSubject);
     const [message, setMessage] = useState(defaultMessage);
     const [sendCopy, setSendCopy] = useState(false);
-    const [saveRecipients, setSaveRecipients] = useState(true);
+    const [saveRecipients, setSaveRecipients] = useState(false);
+    const [saveRecipientToClient, setSaveRecipientToClient] = useState(false);
     const [isRecipientMenuOpen, setIsRecipientMenuOpen] = useState(false);
 
     useEffect(() => {
@@ -111,15 +117,30 @@ function InvoiceEmailDialogBody({
     const { clients, savedContacts, isLoadingClients } = directory;
 
     const addRecipients = (emails: string[]) => {
-        addEmailValues(setRecipients, emails, () => setSearch(""));
+        const nextRecipients = uniqueEmails(recipients, emails);
+        if (nextRecipients.length === recipients.length) {
+            setSearch("");
+            return;
+        }
+        setRecipients(nextRecipients);
+        setCopyRecipients((current) =>
+            withoutRecipientDuplicates(current, nextRecipients),
+        );
+        setSaveRecipientToClient(false);
+        setSearch("");
     };
 
     const addCopyRecipients = (emails: string[]) => {
-        addEmailValues(setCopyRecipients, emails, () => setCopySearch(""));
+        addEmailValues(
+            setCopyRecipients,
+            withoutRecipientDuplicates(emails, recipients),
+            () => setCopySearch(""),
+        );
     };
 
     const removeRecipient = (email: string) => {
         setRecipients((current) => current.filter((item) => item !== email));
+        setSaveRecipientToClient(false);
     };
 
     const removeCopyRecipient = (email: string) => {
@@ -151,6 +172,14 @@ function InvoiceEmailDialogBody({
     const newExternalRecipients = recipients.filter(
         (email) => !knownRecipientEmails.has(normalized(email)),
     );
+    const canSaveRecipientToClient = Boolean(
+        recipientClient
+        && recipients.length === 1
+        && normalized(recipientClient.email) !== normalized(recipients[0]),
+    );
+    const saveRecipientToClientLabel = canSaveRecipientToClient
+        ? invoiceText.email_save_to_client.replace("{client}", recipientClient!.name)
+        : undefined;
 
     const handleRecipientKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
         if (!["Enter", "Tab", ","].includes(event.key) || !canAddTypedEmails) return;
@@ -168,15 +197,36 @@ function InvoiceEmailDialogBody({
         if (!canSend) return;
         const sent = await onSend({
             recipient_emails: recipients,
-            copy_emails: copyRecipients,
+            copy_emails: withoutRecipientDuplicates(copyRecipients, recipients),
             subject: subject.trim() || undefined,
             message: message.trim() || undefined,
             send_copy: sendCopy,
-            save_recipients: saveRecipients && newExternalRecipients.length > 0,
+            save_recipients: (
+                saveRecipients
+                && newExternalRecipients.length > 0
+                && !canSaveRecipientToClient
+            ),
+            save_recipient_to_client_id: (
+                saveRecipientToClient && canSaveRecipientToClient
+                    ? recipientClient!.id
+                    : undefined
+            ),
             locale,
         });
         if (sent) {
             onOpenChange(false);
+        }
+    };
+
+    const handleDeleteSavedContact = async (contactId: number) => {
+        try {
+            await InvoiceEmailContactService.deleteContact(contactId);
+            setDirectory((current) => ({
+                ...current,
+                savedContacts: current.savedContacts.filter((contact) => contact.id !== contactId),
+            }));
+        } catch {
+            toast.error(invoiceText.email_remove_saved_error);
         }
     };
 
@@ -239,6 +289,7 @@ function InvoiceEmailDialogBody({
                     validTypedEmails={validTypedEmails}
                     emailSuggestions={emailSuggestions}
                     onAddRecipients={addRecipients}
+                    onDeleteSavedContact={handleDeleteSavedContact}
                     invoiceText={invoiceText}
                 />
             </div>
@@ -248,7 +299,10 @@ function InvoiceEmailDialogBody({
                 onSendCopyChange={setSendCopy}
                 saveRecipients={saveRecipients}
                 onSaveRecipientsChange={setSaveRecipients}
-                showSaveRecipients={newExternalRecipients.length > 0}
+                showSaveRecipients={newExternalRecipients.length > 0 && !canSaveRecipientToClient}
+                saveRecipientToClient={saveRecipientToClient}
+                onSaveRecipientToClientChange={setSaveRecipientToClient}
+                saveRecipientToClientLabel={saveRecipientToClientLabel}
                 canSend={canSend}
                 isSending={isSending}
                 onCancel={() => onOpenChange(false)}
@@ -272,6 +326,7 @@ export function InvoiceEmailDialog({
     defaultEmail = "",
     fromName = "WorkHive",
     fromEmail = "",
+    recipientClient = null,
     isSending,
     onSend,
 }: InvoiceEmailDialogProps) {
@@ -291,6 +346,7 @@ export function InvoiceEmailDialog({
                         defaultEmail={defaultEmail}
                         fromName={fromName}
                         fromEmail={fromEmail}
+                        recipientClient={recipientClient}
                         isSending={isSending}
                         onSend={onSend}
                     />

@@ -25,4 +25,12 @@ export const InvoiceEmailContactService = {
         }
         return await response.json();
     },
+    deleteContact: async (id: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/invoice-email-contacts/${id}`, {
+            method: "DELETE",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error removing saved email"));
+        }
+    },
 };

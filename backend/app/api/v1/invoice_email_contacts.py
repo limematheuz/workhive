@@ -45,3 +45,16 @@ def create_invoice_email_contact(
         current_user.company_id,
         data,
     )
+
+
+@router.delete("/{contact_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_invoice_email_contact(
+    contact_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    invoice_email_contact_service.delete_contact(
+        db,
+        current_user.company_id,
+        contact_id,
+    )

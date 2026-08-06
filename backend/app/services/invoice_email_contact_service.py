@@ -1,8 +1,9 @@
+from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.invoice import Invoice
 from app.models.invoice_email_contact import InvoiceEmailContact
+from app.repositories import client as client_repo
 from app.repositories import invoice_email_contact as contact_repo
 from app.schemas.invoice_email_contact import InvoiceEmailContactCreate
 
@@ -52,27 +53,52 @@ def save_contact(
     return contact
 
 
-def remember_invoice_recipients(
+def delete_contact(db: Session, company_id: int, contact_id: int) -> None:
+    contact = contact_repo.get_contact_by_id(db, company_id, contact_id)
+    if not contact:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Saved email contact not found",
+        )
+    db.delete(contact)
+    db.commit()
+
+
+def save_email_to_client(
     db: Session,
     company_id: int,
-    emails: list[str],
-    invoice: Invoice,
+    client_id: int,
+    recipient_emails: list[str],
 ) -> None:
-    recipient_name = None
-    if invoice.recipient_snapshot and invoice.recipient_snapshot.get("name"):
-        recipient_name = str(invoice.recipient_snapshot["name"]).strip()
-    elif invoice.client and invoice.client.name:
-        recipient_name = invoice.client.name.strip()
-    remember_document_recipients(db, company_id, emails, recipient_name)
+    if len(recipient_emails) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Select exactly one recipient before saving it to a client",
+        )
+    client = client_repo.get_client_by_id(db, client_id, company_id)
+    if not client:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Client not found",
+        )
+
+    email = _normalize_email(recipient_emails[0])
+    client.email = email
+    saved_contact = contact_repo.get_contact_by_email(db, company_id, email)
+    if saved_contact:
+        db.delete(saved_contact)
+    db.add(client)
+    db.commit()
 
 
 def remember_document_recipients(
     db: Session,
     company_id: int,
     emails: list[str],
-    recipient_name: str | None = None,
 ) -> None:
-    normalized_emails = [_normalize_email(email) for email in emails if email.strip()]
+    normalized_emails = [
+        _normalize_email(email) for email in emails if email.strip()
+    ]
     if not normalized_emails:
         return
 
@@ -83,14 +109,11 @@ def remember_document_recipients(
         contact = contact_repo.get_contact_by_email(db, company_id, email)
         if contact:
             contact.use_count += 1
-            if recipient_name and not contact.name:
-                contact.name = recipient_name
         else:
             contact = contact_repo.create_contact(
                 db,
                 company_id=company_id,
                 email=email,
-                name=recipient_name,
                 use_count=1,
             )
         contact.last_used_at = db.query(func.now()).scalar()

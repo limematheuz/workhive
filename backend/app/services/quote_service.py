@@ -104,6 +104,19 @@ def email_quote(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="The quote recipient does not have an email address",
         )
+    if (
+        data.save_recipient_to_client_id is not None
+        and data.save_recipient_to_client_id != quote.client_id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The email can only be saved to this quote's client",
+        )
+    if data.save_recipient_to_client_id is not None and len(recipient_emails) != 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Select exactly one recipient before saving it to a client",
+        )
 
     pdf_path = generate_quote_email_pdf(quote)
     try:
@@ -137,12 +150,18 @@ def email_quote(
             quote.status = "sent"
             db.add(quote)
             db.commit()
+        if data.save_recipient_to_client_id is not None:
+            invoice_email_contact_service.save_email_to_client(
+                db,
+                company_id,
+                data.save_recipient_to_client_id,
+                recipient_emails,
+            )
         if data.save_recipients:
             invoice_email_contact_service.remember_document_recipients(
                 db,
                 company_id,
                 recipient_emails,
-                _quote_recipient_name(quote),
             )
     except Exception:
         db.rollback()

@@ -9,7 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/lib/toast"
-import { InvoiceEmailDialog } from "@/components/invoices/InvoiceEmailDialog"
+import { DocumentEmailDialog } from "@/components/billing/DocumentEmailDialog"
 import { QuoteEmailPayload, QuoteService } from "@/services/quote.service"
 import { formatQuoteNumber } from "@/lib/format"
 import { QUOTE_STATUS_BADGE } from "@/lib/constants"
@@ -131,6 +131,9 @@ export function QuoteDetailSheet({
     }
 
     const clientRegistrationDraft = createQuoteClientRegistrationDraft(quote)
+    const documentClient = quote.client_id
+        ? clients.find((client) => client.id === quote.client_id) ?? null
+        : null
 
     return (
         <>
@@ -197,16 +200,17 @@ export function QuoteDetailSheet({
                 }
             />
 
-            <InvoiceEmailDialog
+            <DocumentEmailDialog
                 open={showEmailDialog}
                 onOpenChange={setShowEmailDialog}
                 invoiceNumber={quote.quote_number}
-                defaultSubject={`Presupuesto ${formatQuoteNumber(quote.quote_number)}`}
+                defaultSubject={quote.title}
                 defaultMessage="Adjuntamos el presupuesto solicitado."
                 documentLabel="presupuesto"
                 submitLabel="Enviar presupuesto"
                 description={`Envía el presupuesto ${formatQuoteNumber(quote.quote_number)} en PDF.`}
-                defaultEmail={quote.client_id ? clients.find((client) => client.id === quote.client_id)?.email ?? "" : ""}
+                defaultEmail={documentClient?.email ?? ""}
+                recipientClient={documentClient}
                 fromName={companyName ?? "WorkHive"}
                 isSending={isSendingEmail}
                 onSend={handleSendEmail}

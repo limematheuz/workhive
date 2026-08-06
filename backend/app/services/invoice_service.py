@@ -294,6 +294,23 @@ def email_invoice(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="The invoice recipient does not have an email address",
         )
+    if (
+        data.save_recipient_to_client_id is not None
+        and data.save_recipient_to_client_id != invoice.client_id
+    ):
+        if preview_pdf_path:
+            preview_pdf_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The email can only be saved to this invoice's client",
+        )
+    if data.save_recipient_to_client_id is not None and len(recipient_emails) != 1:
+        if preview_pdf_path:
+            preview_pdf_path.unlink(missing_ok=True)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Select exactly one recipient before saving it to a client",
+        )
     try:
         sent = email_service.send_invoice_email(
             recipient_email=recipient_emails,
@@ -320,12 +337,18 @@ def email_invoice(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Invoice email delivery is not configured or unavailable",
         )
+    if data.save_recipient_to_client_id is not None:
+        invoice_email_contact_service.save_email_to_client(
+            db,
+            company_id,
+            data.save_recipient_to_client_id,
+            recipient_emails,
+        )
     if data.save_recipients:
-        invoice_email_contact_service.remember_invoice_recipients(
+        invoice_email_contact_service.remember_document_recipients(
             db,
             company_id,
             recipient_emails,
-            invoice,
         )
     return invoice, ", ".join(recipient_emails)
 

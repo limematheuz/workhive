@@ -7,6 +7,24 @@ from app.services.email_service import transport
 from app.services.email_service.layout import _BRAND, base_layout, plain_body
 
 
+def _distinct_copy_recipients(
+    recipients: Sequence[str],
+    copy_emails: Sequence[str] | None,
+    sender_copy_email: str | None,
+) -> list[str]:
+    seen = {email.casefold() for email in recipients}
+    result: list[str] = []
+    candidates = [*(copy_emails or []), sender_copy_email]
+    for candidate in candidates:
+        email = str(candidate or "").strip()
+        normalized_email = email.casefold()
+        if not email or normalized_email in seen:
+            continue
+        seen.add(normalized_email)
+        result.append(email)
+    return result
+
+
 def send_invoice_email(
     *,
     recipient_email: str | Sequence[str],
@@ -57,6 +75,11 @@ def send_invoice_email(
         [recipient_email]
         if isinstance(recipient_email, str)
         else [email for email in recipient_email if email]
+    )
+    recipients = list(
+        dict.fromkeys(
+            str(email).strip() for email in recipients if str(email).strip()
+        )
     )
     if not recipients:
         return False
@@ -147,10 +170,11 @@ def send_invoice_email(
     )
     message["From"] = transport.from_address(copy["from_concept"])
     message["To"] = ", ".join(recipients)
-    cc_recipients = list(copy_emails or [])
-    if sender_copy_email:
-        cc_recipients.append(sender_copy_email)
-    cc_recipients = list(dict.fromkeys(email for email in cc_recipients if email))
+    cc_recipients = _distinct_copy_recipients(
+        recipients,
+        copy_emails,
+        sender_copy_email,
+    )
     if cc_recipients:
         message["Cc"] = ", ".join(cc_recipients)
     message.set_content(plain_text)

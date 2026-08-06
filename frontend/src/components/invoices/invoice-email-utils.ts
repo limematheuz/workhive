@@ -11,6 +11,7 @@ export type EmailSuggestion = {
     email: string;
     meta: string;
     source: "client" | "contact";
+    savedContactId?: number;
 };
 
 export const isValidEmail = (value: string) =>
@@ -34,6 +35,16 @@ export const uniqueEmails = (current: string[], emails: string[]) => {
         next.set(normalized(trimmed), trimmed);
     }
     return Array.from(next.values());
+};
+
+export const withoutRecipientDuplicates = (
+    emails: string[],
+    recipientEmails: string[],
+) => {
+    const recipientSet = new Set(recipientEmails.map(normalized));
+    return uniqueEmails([], emails).filter(
+        (email) => !recipientSet.has(normalized(email)),
+    );
 };
 
 export const addEmailValues = (
@@ -77,6 +88,39 @@ export const buildEmailSuggestions = ({
     const seen = new Set<string>();
     const selected = new Set(recipients.map(normalized));
     const term = normalized(search);
+    const contactSuggestions = [...savedContacts]
+        .sort((left, right) => (
+            right.use_count - left.use_count
+            || String(right.last_used_at || "").localeCompare(String(left.last_used_at || ""))
+            || left.email.localeCompare(right.email)
+        ))
+        .flatMap((contact) => {
+        const email = String(contact.email || "");
+        const normalizedEmail = normalized(email);
+        if (seen.has(normalizedEmail) || selected.has(normalizedEmail)) {
+            return [];
+        }
+        if (term) {
+            const matches = [
+                contact.email,
+            ].some((value) => normalized(value).includes(term));
+            if (!matches) return [];
+        }
+        seen.add(normalizedEmail);
+        return [{
+            key: `contact-${contact.id}-${contact.email}`,
+            // A saved address is a standalone suggestion.  It is not a client
+            // relationship, so a typed test address can never be presented as
+            // that client's email later on.
+            name: contact.email,
+            email: contact.email,
+            meta: contact.use_count > 1
+                ? invoiceText.email_saved_meta_with_count.replace("{count}", contact.use_count.toString())
+                : invoiceText.email_saved_meta,
+            source: "contact" as const,
+            savedContactId: contact.id,
+        }];
+    });
     const clientSuggestions = clients.flatMap((client) => {
         if (!client.email) return [];
         const email = String(client.email || "");
@@ -84,7 +128,6 @@ export const buildEmailSuggestions = ({
         if (seen.has(normalizedEmail) || selected.has(normalizedEmail)) {
             return [];
         }
-        seen.add(normalizedEmail);
         if (term) {
             const matches = [
                 client.name,
@@ -93,6 +136,7 @@ export const buildEmailSuggestions = ({
             ].some((value) => normalized(value).includes(term));
             if (!matches) return [];
         }
+        seen.add(normalizedEmail);
         return [{
             key: `client-${client.id}-${client.email}`,
             name: client.name,
@@ -101,31 +145,7 @@ export const buildEmailSuggestions = ({
             source: "client" as const,
         }];
     });
-    const contactSuggestions = savedContacts.flatMap((contact) => {
-        const email = String(contact.email || "");
-        const normalizedEmail = normalized(email);
-        if (seen.has(normalizedEmail) || selected.has(normalizedEmail)) {
-            return [];
-        }
-        seen.add(normalizedEmail);
-        if (term) {
-            const matches = [
-                contact.name,
-                contact.email,
-            ].some((value) => normalized(value).includes(term));
-            if (!matches) return [];
-        }
-        return [{
-            key: `contact-${contact.id}-${contact.email}`,
-            name: contact.name || contact.email,
-            email: contact.email,
-            meta: contact.use_count > 1
-                ? invoiceText.email_saved_meta_with_count.replace("{count}", contact.use_count.toString())
-                : invoiceText.email_saved_meta,
-            source: "contact" as const,
-        }];
-    });
-    return [...clientSuggestions, ...contactSuggestions].slice(0, 12);
+    return [...contactSuggestions, ...clientSuggestions].slice(0, 12);
 };
 
 export const getKnownRecipientEmails = (

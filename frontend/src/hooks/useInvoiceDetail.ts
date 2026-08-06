@@ -645,6 +645,7 @@ export function useInvoiceDetail(invoiceId: number) {
         user,
         userLoading,
         invoice,
+        client,
         company,
         loading,
         updatingStatus,
