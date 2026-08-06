@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.services.health_service import required_schema_is_ready
 
 
@@ -12,8 +13,8 @@ def test_health_and_readiness_include_request_id(client):
     assert health.headers["X-Request-ID"] == "health-check-1"
     assert health.json()["status"] == "ok"
     assert health.json()["build"] == {
-        "version": "1.2.13",
-        "revision": "unknown",
+        "version": settings.APP_VERSION,
+        "revision": settings.GIT_SHA,
     }
 
     readiness = client.get("/health/ready")

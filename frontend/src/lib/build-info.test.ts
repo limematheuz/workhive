@@ -54,11 +54,11 @@ test("Docker and sidebar keep version and revision metadata wired", () => {
         "utf8",
     );
 
-    assert.match(compose, /APP_VERSION: \$\{APP_VERSION:-1\.2\.13\}/);
+    assert.match(compose, /APP_VERSION: \$\{APP_VERSION:-1\.2\.14\}/);
     assert.match(compose, /GIT_SHA: \$\{GIT_SHA:-unknown\}/);
-    assert.match(backendDockerfile, /ARG APP_VERSION=1\.2\.13/);
+    assert.match(backendDockerfile, /ARG APP_VERSION=1\.2\.14/);
     assert.match(backendDockerfile, /ARG GIT_SHA=unknown/);
-    assert.match(frontendDockerfile, /ARG NEXT_PUBLIC_APP_VERSION="1\.2\.13"/);
+    assert.match(frontendDockerfile, /ARG NEXT_PUBLIC_APP_VERSION="1\.2\.14"/);
     assert.match(frontendDockerfile, /ARG NEXT_PUBLIC_GIT_SHA="unknown"/);
     assert.match(sidebarFooter, /publicBuildInfo\.label/);
 });

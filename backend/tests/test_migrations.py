@@ -41,6 +41,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
         company_columns = {
             column["name"] for column in inspector.get_columns("companies")
         }
+        quote_columns = {
+            column["name"]: column for column in inspector.get_columns("quotes")
+        }
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
         invitation_columns = {
             column["name"] for column in inspector.get_columns("user_invitations")
@@ -91,6 +94,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
     script = ScriptDirectory.from_config(Config("alembic.ini"))
     assert applied_revisions == set(script.get_heads())
     assert "operating_model" in company_columns
+    assert quote_columns["client_id"]["nullable"] is True
     assert "paid_at" in invoice_columns
     assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns
     assert "reported_issues" in task_columns
