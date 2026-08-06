@@ -59,6 +59,20 @@ def get_quote(db: Session, company_id: int, quote_id: int):
     return _get_quote_or_404(db, company_id, quote_id)
 
 
+def get_quote_pdf(
+    db: Session,
+    company_id: int,
+    quote_id: int,
+):
+    quote = _get_quote_or_404(db, company_id, quote_id)
+    if not quote.items:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="A quote must contain at least one item before it can be downloaded",
+        )
+    return quote, generate_quote_email_pdf(quote)
+
+
 def _quote_recipient_name(quote) -> str:
     if quote.client and quote.client.name:
         return quote.client.name.strip()

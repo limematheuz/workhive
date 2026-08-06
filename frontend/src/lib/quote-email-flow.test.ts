@@ -29,3 +29,10 @@ test("quotes expose a dedicated email action through the shared safe email dialo
     assert.match(invoicePage, /DocumentEmailDialog/);
     assert.match(sharedEmailDialog, /InvoiceEmailDialog as DocumentEmailDialog/);
 });
+
+test("quote downloads use the same tenant-protected backend PDF as email attachments", () => {
+    assert.match(quoteService, /downloadQuotePdf: async/);
+    assert.match(quoteService, /\/api\/v1\/quotes\/\$\{id\}\/pdf/);
+    assert.match(quoteDetail, /QuoteService\.downloadQuotePdf\(quote\.id\)/);
+    assert.doesNotMatch(quoteDetail, /printQuote/);
+});

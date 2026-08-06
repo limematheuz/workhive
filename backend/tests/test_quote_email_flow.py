@@ -1,4 +1,5 @@
 from app.models.invoice_email_contact import InvoiceEmailContact
+from app.services.quote_pdf import _details_without_repeated_name
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
 
 
@@ -307,3 +308,43 @@ def test_quote_email_requires_an_explicit_or_same_company_client_recipient(clien
 
     assert response.status_code == 422
     assert "does not have an email" in response.json()["detail"]
+
+
+def test_quote_download_uses_the_same_branded_pdf_and_tenant_scope(client):
+    owner_headers, _ = _authenticated_company(
+        client,
+        email="quote-pdf-owner@example.com",
+        company_name="Quote PDF Owner SL",
+        tax_id="B10000018",
+    )
+    outsider_headers, _ = _authenticated_company(
+        client,
+        email="quote-pdf-outsider@example.com",
+        company_name="Quote PDF Outsider SL",
+        tax_id="B10000019",
+    )
+    quote = _quote(client, owner_headers)
+
+    downloaded = client.get(
+        f"/api/v1/quotes/{quote['id']}/pdf",
+        headers=owner_headers,
+    )
+
+    assert downloaded.status_code == 200, downloaded.text
+    assert downloaded.headers["content-type"].startswith("application/pdf")
+    assert downloaded.content.startswith(b"%PDF")
+    assert quote["quote_number"] in downloaded.headers["content-disposition"]
+    assert client.get(
+        f"/api/v1/quotes/{quote['id']}/pdf",
+        headers=outsider_headers,
+    ).status_code == 404
+
+
+def test_quote_party_details_do_not_repeat_the_party_name():
+    details = _details_without_repeated_name(
+        "TAS Girona, SL",
+        "TAS Girona, SL\nNIF/CIF: B55370720\nEmail: info@example.com",
+    )
+
+    assert "TAS Girona" not in details
+    assert "NIF/CIF: B55370720" in details

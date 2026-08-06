@@ -96,6 +96,14 @@ export const QuoteService = {
         return await response.json()
     },
 
+    downloadQuotePdf: async (id: number): Promise<Blob> => {
+        const response = await apiFetch(`/api/v1/quotes/${id}/pdf`, {
+            method: "GET",
+        })
+        await assertApiResponseOk(response, "Error downloading quote PDF")
+        return await response.blob()
+    },
+
     createQuote: async (data: QuoteCreate): Promise<Quote> => {
         const response = await apiFetch("/api/v1/quotes/", {
             method: "POST",

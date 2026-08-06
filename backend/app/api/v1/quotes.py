@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, Request, status
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
@@ -56,6 +58,25 @@ async def read_quote(
             current_user.company_id,
             quote_id,
         )
+    )
+
+
+@router.get("/{quote_id}/pdf", response_class=FileResponse)
+def download_quote_pdf(
+    quote_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    quote, path = quote_service.get_quote_pdf(
+        db,
+        current_user.company_id,
+        quote_id,
+    )
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        filename=f"{quote.quote_number}.pdf",
+        background=BackgroundTask(path.unlink, missing_ok=True),
     )
 
 

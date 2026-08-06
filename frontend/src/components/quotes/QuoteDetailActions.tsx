@@ -8,7 +8,7 @@ interface QuoteDetailActionsProps {
     quote: Quote
     dict: Dictionary
     loading: boolean
-    onPrint: () => void
+    onDownload: () => void
     onSendEmail: () => void
     onEdit: () => void
     onMarkSent: () => void
@@ -21,7 +21,7 @@ export function QuoteDetailActions({
     quote,
     dict,
     loading,
-    onPrint,
+    onDownload,
     onSendEmail,
     onEdit,
     onMarkSent,
@@ -34,7 +34,7 @@ export function QuoteDetailActions({
             <div className="flex flex-wrap gap-2">
                 <button
                     type="button"
-                    onClick={onPrint}
+                    onClick={onDownload}
                     className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-black text-white rounded-xl hover:bg-neutral-800 transition-colors border-none cursor-pointer"
                 >
                     <Download className="w-3.5 h-3.5" />

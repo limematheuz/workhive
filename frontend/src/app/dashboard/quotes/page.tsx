@@ -44,7 +44,6 @@ function QuotesPageContent() {
     const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [companyName, setCompanyName] = useState<string | undefined>(undefined);
-    const [companyLogo, setCompanyLogo] = useState<string | null>(null);
     const [quoteToEdit, setQuoteToEdit] = useState<Quote | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -68,7 +67,6 @@ function QuotesPageContent() {
                     const company = await CompanyService.getCompany(user.company_id);
                     if (cancelled) return;
                     setCompanyName(company.name);
-                    setCompanyLogo(company.logo ?? null);
                 }
             } catch (err) {
                 console.error(err);
@@ -93,7 +91,6 @@ function QuotesPageContent() {
             if (user.company_id) {
                 const company = await CompanyService.getCompany(user.company_id);
                 setCompanyName(company.name);
-                setCompanyLogo(company.logo ?? null);
             }
         } catch {
             toast.error(dict.quotes?.error_load ?? "Error al cargar presupuestos");
@@ -269,7 +266,6 @@ function QuotesPageContent() {
                 onQuoteUpdated={loadQuotes}
                 onEditQuote={handleEditQuote}
                 companyName={companyName}
-                companyLogo={companyLogo}
             />
 
             <DeleteConfirmDialog

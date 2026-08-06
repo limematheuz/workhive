@@ -13,7 +13,6 @@ import { DocumentEmailDialog } from "@/components/billing/DocumentEmailDialog"
 import { QuoteEmailPayload, QuoteService } from "@/services/quote.service"
 import { formatQuoteNumber } from "@/lib/format"
 import { QUOTE_STATUS_BADGE } from "@/lib/constants"
-import { printQuote } from "@/lib/quote-print"
 import { Quote } from "@/types/quote"
 import { useDictionary } from "@/lib/dictionary-context"
 import type { Client } from "@/services/client.service"
@@ -36,7 +35,6 @@ interface QuoteDetailSheetProps {
     onQuoteUpdated: () => void
     onEditQuote: (quote: Quote) => void
     companyName?: string
-    companyLogo?: string | null
 }
 
 export function QuoteDetailSheet({
@@ -47,7 +45,6 @@ export function QuoteDetailSheet({
     onQuoteUpdated,
     onEditQuote,
     companyName,
-    companyLogo,
 }: QuoteDetailSheetProps) {
     const { dict } = useDictionary()
     const [loading, setLoading] = React.useState(false)
@@ -103,16 +100,23 @@ export function QuoteDetailSheet({
         }
     }
 
-    const handlePrint = () => {
-        const client = quote.client_id ? clients.find((c) => c.id === quote.client_id) : undefined
-        printQuote({
-            quote,
-            clientName: getClientName(quote.client_id),
-            client,
-            companyName,
-            companyLogo,
-            getStatusLabel,
-        })
+    const handleDownloadPdf = async () => {
+        setLoading(true)
+        try {
+            const blob = await QuoteService.downloadQuotePdf(quote.id)
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement("a")
+            link.href = url
+            link.download = `${quote.quote_number}.pdf`
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            URL.revokeObjectURL(url)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, "No se pudo descargar el presupuesto"))
+        } finally {
+            setLoading(false)
+        }
     }
 
     const handleSendEmail = async (data: QuoteEmailPayload) => {
@@ -169,7 +173,7 @@ export function QuoteDetailSheet({
                             quote={quote}
                             dict={dict}
                             loading={loading}
-                            onPrint={handlePrint}
+                            onDownload={handleDownloadPdf}
                             onSendEmail={() => setShowEmailDialog(true)}
                             onEdit={() => {
                                 onEditQuote(quote)
