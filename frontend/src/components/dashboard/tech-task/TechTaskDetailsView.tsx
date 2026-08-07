@@ -17,8 +17,6 @@ import { TechTaskWorkControls } from "./TechTaskWorkControls";
 type TechTaskDetailsViewProps = {
     location: Location | null;
     locationName: string;
-    viewMode: "map" | "photo";
-    setViewMode: (mode: "map" | "photo") => void;
     dict: Dictionary;
     headerInfoProps: ComponentProps<typeof TechTaskHeaderInfo>;
     countersProps: ComponentProps<typeof TechTaskModalCounters>;
@@ -34,8 +32,6 @@ const scrollHide =
 export function TechTaskDetailsView({
     location,
     locationName,
-    viewMode,
-    setViewMode,
     dict,
     headerInfoProps,
     countersProps,
@@ -49,18 +45,19 @@ export function TechTaskDetailsView({
             <TechTaskMapArea
                 location={location}
                 locationName={locationName}
-                viewMode={viewMode}
-                setViewMode={setViewMode}
                 dict={dict}
             />
 
-            <div className={`min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 pb-24 sm:px-5 sm:py-5 ${scrollHide}`}>
+            <div className={`tech-task-details-scroll min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 ${scrollHide}`}>
                 <TechTaskHeaderInfo {...headerInfoProps} />
                 <TechTaskModalCounters {...countersProps} />
-                <div className="space-y-3">
+                <div className="space-y-4">
                     <TechTaskReservationContext {...reservationProps} />
                     <TechTaskPropertyPanels {...propertyPanelsProps} />
                 </div>
+            </div>
+
+            <div className="tech-task-details-footer shrink-0 border-t border-[var(--border-soft)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
                 <TechTaskWorkControls {...workControlsProps} />
             </div>
 

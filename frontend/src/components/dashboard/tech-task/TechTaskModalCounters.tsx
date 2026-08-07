@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
 import { CheckCircle2, Paperclip, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TechTaskModalCountersProps {
     locale: string;
@@ -11,6 +11,9 @@ interface TechTaskModalCountersProps {
     onOpenAdjuntos: () => void;
     onOpenComentarios: () => void;
 }
+
+const tileClass =
+    "billing-block flex min-h-[4.75rem] cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-center outline-none transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_10%,var(--bg-tertiary))] focus-visible:ring-2 focus-visible:ring-accent/40 active:scale-[0.98]";
 
 export function TechTaskModalCounters({
     locale,
@@ -22,38 +25,28 @@ export function TechTaskModalCounters({
 }: TechTaskModalCountersProps) {
     return (
         <div className="grid grid-cols-3 gap-2">
-            <button
-                type="button"
-                onClick={onOpenRequisitos}
-                className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-2 py-2.5 text-center transition hover:border-accent/35 hover:bg-[var(--bg-secondary)] cursor-pointer"
-            >
+            <button type="button" onClick={onOpenRequisitos} className={tileClass}>
                 <CheckCircle2 className="h-4 w-4 text-accent" />
-                <span className="mt-1 text-xs font-black text-[var(--text-main)]">{completedCount}/{totalCount}</span>
-                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+                <span className="text-sm font-semibold tabular-nums text-[var(--text-main)]">
+                    {completedCount}/{totalCount}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     {locale === "es" ? "Requisitos" : "Requirements"}
                 </span>
             </button>
 
-            <button
-                type="button"
-                onClick={onOpenAdjuntos}
-                className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-2 py-2.5 text-center transition hover:border-accent/35 hover:bg-[var(--bg-secondary)] cursor-pointer"
-            >
+            <button type="button" onClick={onOpenAdjuntos} className={cn(tileClass)}>
                 <Paperclip className="h-4 w-4 text-accent" />
-                <span className="mt-1 text-xs font-black text-[var(--text-main)]">+</span>
-                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+                <span className="text-sm font-semibold text-[var(--text-main)]">+</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     {locale === "es" ? "Enviar foto" : "Send photo"}
                 </span>
             </button>
 
-            <button
-                type="button"
-                onClick={onOpenComentarios}
-                className="flex flex-col items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-2 py-2.5 text-center transition hover:border-accent/35 hover:bg-[var(--bg-secondary)] cursor-pointer"
-            >
+            <button type="button" onClick={onOpenComentarios} className={cn(tileClass)}>
                 <MessageSquare className="h-4 w-4 text-accent" />
-                <span className="mt-1 text-xs font-black text-[var(--text-main)]">+</span>
-                <span className="text-[9px] font-extrabold uppercase tracking-wider text-[var(--text-muted)]">
+                <span className="text-sm font-semibold text-[var(--text-main)]">+</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     {locale === "es" ? "Enviar nota" : "Send note"}
                 </span>
             </button>

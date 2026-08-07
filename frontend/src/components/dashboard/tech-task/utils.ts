@@ -1,9 +1,23 @@
+import type { Dictionary } from "@/lib/dictionary-context";
+
 export interface PropertyFeatures {
     rooms: number;
     bathrooms: number;
     kitchens: number;
     hasTerrace: boolean;
     hasGarage: boolean;
+}
+
+/** Same brand gradients used by location cards when no property photo exists. */
+export function getLocationHeroFallbackGradient(name: string): string {
+    const gradients = [
+        "linear-gradient(160deg, var(--brand-blue-sky) 0%, var(--brand-blue-mid) 100%)",
+        "linear-gradient(160deg, var(--brand-blue-sky-deep) 0%, var(--brand-blue) 100%)",
+        "linear-gradient(160deg, var(--brand-blue-mist) 0%, var(--brand-blue-bright) 100%)",
+        "linear-gradient(160deg, var(--brand-blue-sky) 0%, var(--brand-blue) 100%)",
+    ];
+    const seed = name?.charCodeAt(0) || 0;
+    return gradients[seed % gradients.length];
 }
 
 function getTechLabel(dict: Dictionary | undefined, key: string): string | undefined {
@@ -109,4 +123,3 @@ export function getPriorityBadge(
         };
     }
 }
-import type { Dictionary } from "@/lib/dictionary-context";

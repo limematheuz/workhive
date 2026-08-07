@@ -18,6 +18,10 @@ const dialogSource = readFileSync(
     new URL("../components/dashboard/tech-task/TechTaskChecklistDialog.tsx", import.meta.url),
     "utf8",
 );
+const checklistHookSource = readFileSync(
+    new URL("../components/dashboard/tech-task/hooks/useTechTaskChecklist.ts", import.meta.url),
+    "utf8",
+);
 
 test("checklist progress treats both yes and no as answered requirements", () => {
     assert.deepEqual(getChecklistProgress(items), {
@@ -62,7 +66,24 @@ test("checklist requirements open in a centered dialog with one vertical scroll"
     assert.doesNotMatch(dialogSource, /!top-0/);
 });
 
-test("requirement cards keep compact pill controls in a single action row", () => {
+test("checklist dialog reuses billing-surface primitives and shadcn controls", () => {
+    assert.match(dialogSource, /billing-block/);
+    assert.match(dialogSource, /from "@\/components\/ui\/checkbox"/);
+    assert.match(dialogSource, /from "@\/components\/ui\/label"/);
+    assert.match(dialogSource, /from "@\/components\/ui\/badge"/);
+    assert.match(dialogSource, /btn-cancel-muted/);
+    assert.match(dialogSource, /border-none/);
+    assert.match(dialogSource, /bg-accent/);
+    assert.doesNotMatch(dialogSource, /absolute left-4 right-4 top-3(?: z-10)? h-1\.5 rounded-full bg-accent/);
+    assert.doesNotMatch(dialogSource, /mb-2\.5 h-1 w-full rounded-full bg-accent/);
+    // `relative` on DialogContent would twMerge-away the shared `fixed` position and hide the modal.
+    assert.doesNotMatch(
+        dialogSource,
+        /DialogContent[\s\S]{0,400}className=\{cn\(\s*(?:\/\/[^\n]*\n\s*)*"relative /,
+    );
+});
+
+test("requirement cards keep compact answer controls in a single action row", () => {
     assert.match(dialogSource, /fieldset className="mt-2\.5 flex items-center justify-between/);
     assert.match(dialogSource, /dict\.tech\.yes_label/);
     assert.match(dialogSource, /dict\.tech\.no_label/);
@@ -71,9 +92,17 @@ test("requirement cards keep compact pill controls in a single action row", () =
     assert.match(dialogSource, /Pencil/);
     assert.match(dialogSource, /Camera/);
     assert.doesNotMatch(dialogSource, /hover:border-red-500/);
+    assert.doesNotMatch(dialogSource, /rounded-full border/);
 });
 
 test("checklist categories use the shared app tabs", () => {
     assert.match(dialogSource, /<PremiumTabs/);
     assert.match(dialogSource, /activeTab=\{activeCategory\}/);
+});
+
+test("a failed checklist save rolls the optimistic answer back instead of faking completion", () => {
+    assert.match(checklistHookSource, /const restoreFailedAnswer/);
+    assert.match(checklistHookSource, /setChecklist\(checklist\)/);
+    assert.match(checklistHookSource, /No se pudo guardar el requisito/);
+    assert.equal((checklistHookSource.match(/restoreFailedAnswer\(\)/g) || []).length, 2);
 });

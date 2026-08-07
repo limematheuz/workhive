@@ -1,5 +1,5 @@
 import React from "react";
-import { Clock, MapPin, Check, X, Calendar, Flag, AlertCircle, Timer } from "lucide-react";
+import { ArrowDownLeft, Clock, MapPin, Check, X, Calendar, Flag, AlertCircle, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TaskItem, User, TaskWorkDetailedSummary } from "@/types/user";
@@ -9,6 +9,10 @@ import { formatHoursShort } from "@/lib/format-hours";
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import { getTaskScheduleDate } from "@/domain/tasks/task-schedule";
 import { canStartTaskWork, isTaskWorkInProgress } from "@/domain/tasks/task-status";
+import { getTaskChecklistProgress } from "@/lib/task-checklist-completion";
+import { isExternalTaskForCompany } from "@/lib/task-display";
+import { getOperationalTaskStatus } from "@/lib/operational-task-count";
+import { TaskProgressBar } from "@/components/tasks/TaskProgressBar";
 
 interface TechTaskCardProps {
     task: TaskItem;
@@ -40,7 +44,14 @@ export function TechTaskCard({
         if (!currentUser) return task.status;
         return getUserTaskStatus(task, currentUser.id);
     }, [task, currentUser]);
-    const displayStatus = canAcceptAssignments ? task.status : userStatus;
+    const displayStatus = getOperationalTaskStatus(
+        task,
+        currentUser?.id ?? 0,
+        canAcceptAssignments,
+    );
+    const checklistProgress = getTaskChecklistProgress(task);
+    const isExternal = isExternalTaskForCompany(task, currentUser?.company_id);
+    const externalSource = task.checkout_reservation?.owner_company_name;
 
     const isCompleted = displayStatus === "completed";
     const isProgress = isTaskWorkInProgress(displayStatus);
@@ -48,7 +59,7 @@ export function TechTaskCard({
     const isRejected = displayStatus === "rejected";
     const isPending = displayStatus === "pending";
     const canStartWork = currentUser
-        ? canStartTaskWork(
+        ? !isCompleted && canStartTaskWork(
             task.status,
             userStatus,
             isTaskAssignedToUser(task, currentUser.id),
@@ -138,9 +149,17 @@ export function TechTaskCard({
                     ? "opacity-60 grayscale-[0.2]"
                     : isProgress
                     ? "border-accent/40 shadow-[0_12px_32px_color-mix(in_srgb,var(--accent)_14%,transparent)]"
+                    : isExternal
+                    ? "border-dashed border-accent/40 bg-accent/[0.045] hover:border-accent/60"
                     : "hover:border-accent/30"
             )}
         >
+            {isExternal && (
+                <span
+                    className="absolute inset-y-5 left-0 w-1 rounded-r-full bg-accent"
+                    aria-hidden="true"
+                />
+            )}
             {/* Top Bar info */}
             <div className="flex items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3 mb-3 text-[10px] font-extrabold uppercase tracking-wider">
                 <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
@@ -186,6 +205,26 @@ export function TechTaskCard({
                 <p className="text-xs text-[var(--text-main)] font-semibold mt-3">
                     {task.title}
                 </p>
+
+                {isExternal && (
+                    <div
+                        className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-accent/20 bg-accent/10 px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-accent"
+                        title={externalSource ? `Servicio enviado por ${externalSource}` : "Servicio enviado por una empresa colaboradora"}
+                    >
+                        <ArrowDownLeft className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">
+                            {externalSource ? `Externo · ${externalSource}` : "Servicio externo"}
+                        </span>
+                    </div>
+                )}
+
+                {checklistProgress.total > 0 && (
+                    <TaskProgressBar
+                        completed={checklistProgress.completed}
+                        total={checklistProgress.total}
+                        className="mt-2.5 max-w-[24rem]"
+                    />
+                )}
 
                 {workSummary && workSummary.total_seconds > 0 && (
                     <div className="mt-2 flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>

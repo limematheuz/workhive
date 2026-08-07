@@ -295,6 +295,7 @@ def create_task_item(
         task_item_data,
     )
     task_structure_service.sync_from_description(db, task)
+    _complete_task_when_checklist_is_done(db, task)
     db.commit()
     db.refresh(task)
     _notify_new_task_assignees(

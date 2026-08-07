@@ -51,7 +51,6 @@ export function useTechTaskDetailsController({
     onStatusUpdate,
 }: UseTechTaskDetailsControllerParams) {
     const { dict, locale } = useDictionary();
-    const [viewMode, setViewMode] = useState<"map" | "photo">("map");
     const [expandedReservation, setExpandedReservation] = useState<"checkout" | "next" | null>(null);
     const [expandedPanels, setExpandedPanels] = useState<Record<string, boolean>>(DEFAULT_EXPANDED_PANELS);
     const [requisitosOpen, setRequisitosOpen] = useState(false);
@@ -118,13 +117,9 @@ export function useTechTaskDetailsController({
     return {
         location,
         locationName,
-        viewMode,
-        setViewMode,
         dict,
         headerInfoProps: {
             task,
-            location,
-            locationName,
             locationTypeLabel,
             serviceContextLabel,
             priorityBadge,

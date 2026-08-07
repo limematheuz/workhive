@@ -101,6 +101,7 @@ def test_create_backfills_structured_checklist_and_assignments(client, db):
         "answer": "no",
         "note": "Revisar cocina",
     }
+    assert payload["status"] == "completed"
 
 
 def test_foreign_assignee_metadata_is_rejected_without_partial_write(client, db):

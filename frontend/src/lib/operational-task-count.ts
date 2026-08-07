@@ -3,6 +3,8 @@ import {
     isOperationalStatus,
     normalizeTaskStatus,
 } from "../domain/tasks/task-status.ts";
+import { isTaskChecklistComplete, taskHasChecklist } from "./task-checklist-completion.ts";
+import type { TaskStatus } from "../types/task.ts";
 import type { TaskItem } from "../types/user.ts";
 
 /**
@@ -10,6 +12,30 @@ import type { TaskItem } from "../types/user.ts";
  * Notifications are deliberately excluded: they are acknowledgements, not
  * open work, and remain represented by the bell.
  */
+export function getOperationalTaskStatus(
+    task: TaskItem,
+    userId: number,
+    canManageCompanyTasks: boolean,
+): TaskStatus {
+    const effectiveStatus = canManageCompanyTasks
+        ? normalizeTaskStatus(task.status)
+        : getUserTaskStatus(task, userId);
+
+    if (effectiveStatus === "completed") return "completed";
+
+    // The server promotes the task to completed as soon as every requirement
+    // is answered. Keep the dashboard correct during the refresh window too.
+    if (
+        isOperationalStatus(task.status)
+        && taskHasChecklist(task)
+        && isTaskChecklistComplete(task)
+    ) {
+        return "completed";
+    }
+
+    return effectiveStatus;
+}
+
 export function isTaskPendingInOperationalOverview(
     task: TaskItem,
     userId: number,
@@ -17,11 +43,7 @@ export function isTaskPendingInOperationalOverview(
 ): boolean {
     if (!isOperationalStatus(task.status)) return false;
 
-    const effectiveStatus = canManageCompanyTasks
-        ? normalizeTaskStatus(task.status)
-        : getUserTaskStatus(task, userId);
-
-    return effectiveStatus !== "completed";
+    return getOperationalTaskStatus(task, userId, canManageCompanyTasks) !== "completed";
 }
 
 export function countOperationalPendingTasks(

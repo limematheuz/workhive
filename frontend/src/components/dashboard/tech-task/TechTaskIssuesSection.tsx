@@ -54,21 +54,23 @@ export function TechTaskIssuesSection({
     const { dict } = useDictionary();
 
     return (
-        <div className="border border-[var(--border-soft)] rounded-2xl overflow-hidden">
+        <div className="billing-block overflow-hidden rounded-2xl">
             <button type="button"
                 onClick={onToggle}
-                className="w-full flex items-center justify-between p-3.5 bg-[var(--bg-card)] hover:bg-[var(--bg-primary)]/10 transition-colors border-none cursor-pointer text-left"
+                className="flex w-full cursor-pointer items-center justify-between border-none px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
             >
                 <div className="flex items-center gap-3">
-                    <ShieldAlert className="w-5 h-5 text-amber-500" />
-                    <span className="text-xs font-bold text-[var(--text-main)]">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                        <ShieldAlert className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-semibold text-[var(--text-main)]">
                         {dict.tech.issues_title}
                     </span>
                 </div>
-                {expanded ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
+                {expanded ? <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" /> : <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />}
             </button>
             {expanded && (
-                <div className="p-4 bg-[var(--bg-primary)]/5 border-t border-[var(--border-soft)] space-y-4">
+                <div className="space-y-4 border-t border-[var(--border-soft)] px-3.5 py-3.5">
                     {/* Action Header */}
                     {!showNewIssueForm ? (
                         <div className="flex justify-between items-center">

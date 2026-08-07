@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { countOperationalPendingTasks } from "./operational-task-count.ts";
+import {
+    countOperationalPendingTasks,
+    getOperationalTaskStatus,
+} from "./operational-task-count.ts";
 import type { TaskItem } from "../types/user.ts";
 
 function task(overrides: Partial<TaskItem>): TaskItem {
@@ -48,4 +51,17 @@ test("worker count uses the worker assignment status, not a stale global status"
     ];
 
     assert.equal(countOperationalPendingTasks(tasks, 7, false), 1);
+});
+
+test("a fully answered checklist is resolved even during a stale task-status refresh", () => {
+    const staleCompletedTask = task({
+        status: "progress",
+        checklist_items: [
+            { id: 11, position: 1, text: "Suelo", completed: true, assignments: [] },
+            { id: 12, position: 2, text: "Baño", completed: true, assignments: [] },
+        ],
+    });
+
+    assert.equal(getOperationalTaskStatus(staleCompletedTask, 7, true), "completed");
+    assert.equal(countOperationalPendingTasks([staleCompletedTask], 7, true), 0);
 });

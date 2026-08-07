@@ -11,10 +11,11 @@ import {
 } from "@/domain/tasks/task-schedule";
 import {
     isOperationalStatus,
-    normalizeTaskStatus,
 } from "@/domain/tasks/task-status";
-import { getUserTaskStatus } from "@/lib/format";
-import { isTaskPendingInOperationalOverview } from "@/lib/operational-task-count";
+import {
+    getOperationalTaskStatus,
+    isTaskPendingInOperationalOverview,
+} from "@/lib/operational-task-count";
 import type { Location } from "@/types/location";
 import type { TaskStatus } from "@/types/task";
 import type { TaskItem, User } from "@/types/user";
@@ -51,9 +52,7 @@ export function useTechDashboardTasks({
     );
     const getEffectiveStatus = useCallback(
         (task: TaskItem): TaskStatus => (
-            canManage
-                ? normalizeTaskStatus(task.status)
-                : getUserTaskStatus(task, currentUser.id)
+            getOperationalTaskStatus(task, currentUser.id, canManage)
         ),
         [canManage, currentUser.id],
     );
@@ -83,11 +82,14 @@ export function useTechDashboardTasks({
         const overdue: TaskItem[] = [];
         const standard: TaskItem[] = [];
         sortTasksByOperationalPriority(visibleTasks).forEach((task) => {
-            if (isTaskOverdue(task)) overdue.push(task);
+            if (
+                isTaskOverdue(task)
+                && getEffectiveStatus(task) !== "completed"
+            ) overdue.push(task);
             else standard.push(task);
         });
         return { overdueTasks: overdue, standardTasks: standard };
-    }, [visibleTasks]);
+    }, [getEffectiveStatus, visibleTasks]);
 
     const tasksByLocation = useMemo(() => {
         const grouped = new Map<number, TasksByLocation>();
