@@ -32,7 +32,8 @@ test("mobile task work action floats above the bottom safe area", () => {
     const controls = read("../components/dashboard/tech-task/TechTaskWorkControls.tsx");
     const view = read("../components/dashboard/tech-task/TechTaskDetailsView.tsx");
 
-    assert.match(controls, /fixed inset-x-4 bottom-\[max\(1rem,env\(safe-area-inset-bottom\)\)\] z-50 sm:static/);
-    assert.match(controls, /h-12 w-full rounded-xl/);
-    assert.match(view, /py-4 pb-24 sm:px-5 sm:py-5/);
+    assert.match(controls, /h-11 w-full rounded-xl/);
+    assert.match(view, /tech-task-details-footer/);
+    assert.match(view, /pb-\[max\(0\.75rem,env\(safe-area-inset-bottom\)\)\]/);
+    assert.match(view, /py-4 sm:px-5 sm:py-5/);
 });
