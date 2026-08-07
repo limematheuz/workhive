@@ -35,9 +35,9 @@ export function InvoiceDetailSummaryAside({
     const invoiceStatusMeta = getInvoiceStatusMeta(invoice.status, dict);
 
     return (
-        <aside className="relative z-10 hidden space-y-3 print:hidden xl:sticky xl:top-4 xl:block">
-            <section className="billing-surface rounded-[22px] p-4">
-                <div className="mb-4 h-1.5 w-full rounded-full bg-accent" />
+        <aside className="relative z-10 hidden space-y-3 print:hidden xl:sticky xl:top-0 xl:block xl:self-start">
+            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 pt-6">
+                <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" />
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                     {dict.invoices.dashboard_summary}
                 </p>

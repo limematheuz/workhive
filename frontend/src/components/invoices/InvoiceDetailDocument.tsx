@@ -69,67 +69,69 @@ export function InvoiceDetailDocument({
                 />
             )}
 
-            <div className="relative isolate mx-auto grid w-full max-w-[112rem] gap-4 print:block xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_20rem]">
-                <div className="invoice-detail-backlight print:hidden" />
-                <div className="billing-surface relative z-10 min-w-0 overflow-hidden rounded-[24px] p-4 print:border-none print:bg-white print:p-0 print:text-black print:shadow-none sm:p-5 lg:p-6">
-                    <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent print:left-0 print:right-0 print:top-0 print:h-1 print:rounded-none" />
+            <div className="relative isolate mx-auto w-full max-w-[112rem]">
+                <div className="invoice-detail-backlight print:hidden" aria-hidden="true" />
+                <div className="relative z-10 grid gap-4 print:block xl:grid-cols-[minmax(0,1fr)_18rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_20rem]">
+                    <div className="billing-surface relative min-w-0 overflow-hidden rounded-[24px] p-4 print:border-none print:bg-white print:p-0 print:text-black print:shadow-none sm:p-5 lg:p-6">
+                        <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent print:left-0 print:right-0 print:top-0 print:h-1 print:rounded-none" />
 
-                    <InvoiceDetailHeaderSection
+                        <InvoiceDetailHeaderSection
+                            dict={dict}
+                            invoice={invoice}
+                            formatDate={formatDate}
+                            issuerName={issuerName}
+                            issuerTaxId={issuerTaxId}
+                            issuerAddress={issuerAddress}
+                            issuerEmail={issuerEmail}
+                            issuerLogo={issuerLogo}
+                            recipientName={recipientName}
+                            recipientTaxId={recipientTaxId}
+                            recipientAddress={recipientAddress}
+                            recipientPostalCode={recipientPostalCode}
+                            recipientCity={recipientCity}
+                            recipientCountry={recipientCountry}
+                        />
+
+                        <InvoiceDetailShippingAddress
+                            dict={dict}
+                            shippingAddress={invoice.shipping_address}
+                        />
+
+                        <InvoiceDetailRectificationBanner dict={dict} invoice={invoice} />
+
+                        <InvoiceDetailItemsSection
+                            dict={dict}
+                            invoice={invoice}
+                            isEditMode={isEditMode}
+                            editingItems={editingItems}
+                            editBillingTotals={editBillingTotals}
+                            onEditItemChange={onEditItemChange}
+                            onRemoveEditItem={onRemoveEditItem}
+                            onAddEditItem={onAddEditItem}
+                        />
+
+                        {!isEditMode && (
+                            <InvoiceDetailTotalsSection dict={dict} invoice={invoice} />
+                        )}
+
+                        <InvoiceDetailFooterSection
+                            dict={dict}
+                            invoice={invoice}
+                            company={company}
+                        />
+                    </div>
+
+                    <InvoiceDetailSummaryAside
                         dict={dict}
                         invoice={invoice}
-                        formatDate={formatDate}
-                        issuerName={issuerName}
-                        issuerTaxId={issuerTaxId}
-                        issuerAddress={issuerAddress}
-                        issuerEmail={issuerEmail}
-                        issuerLogo={issuerLogo}
-                        recipientName={recipientName}
-                        recipientTaxId={recipientTaxId}
-                        recipientAddress={recipientAddress}
-                        recipientPostalCode={recipientPostalCode}
-                        recipientCity={recipientCity}
-                        recipientCountry={recipientCountry}
-                    />
-
-                    <InvoiceDetailShippingAddress
-                        dict={dict}
-                        shippingAddress={invoice.shipping_address}
-                    />
-
-                    <InvoiceDetailRectificationBanner dict={dict} invoice={invoice} />
-
-                    <InvoiceDetailItemsSection
-                        dict={dict}
-                        invoice={invoice}
-                        isEditMode={isEditMode}
-                        editingItems={editingItems}
-                        editBillingTotals={editBillingTotals}
-                        onEditItemChange={onEditItemChange}
-                        onRemoveEditItem={onRemoveEditItem}
-                        onAddEditItem={onAddEditItem}
-                    />
-
-                    {!isEditMode && (
-                        <InvoiceDetailTotalsSection dict={dict} invoice={invoice} />
-                    )}
-
-                    <InvoiceDetailFooterSection
-                        dict={dict}
-                        invoice={invoice}
-                        company={company}
+                        noticeCount={noticeCount}
+                        draftFiscalPreview={draftFiscalPreview}
+                        fiscalRecord={fiscalRecord}
+                        fiscalReadiness={fiscalReadiness}
+                        facturaeReadiness={facturaeReadiness}
+                        onSettingsChanged={onSettingsChanged}
                     />
                 </div>
-
-                <InvoiceDetailSummaryAside
-                    dict={dict}
-                    invoice={invoice}
-                    noticeCount={noticeCount}
-                    draftFiscalPreview={draftFiscalPreview}
-                    fiscalRecord={fiscalRecord}
-                    fiscalReadiness={fiscalReadiness}
-                    facturaeReadiness={facturaeReadiness}
-                    onSettingsChanged={onSettingsChanged}
-                />
             </div>
         </>
     );

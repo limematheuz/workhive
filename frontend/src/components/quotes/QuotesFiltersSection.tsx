@@ -1,7 +1,8 @@
 "use client";
 
-import { Filter } from "lucide-react";
+import { Filter, RotateCcw } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import type { Client } from "@/services/client.service";
 
 type QuotesFiltersSectionProps = {
@@ -21,38 +22,62 @@ export function QuotesFiltersSection({
     onStatusChange,
     statusLabels,
 }: QuotesFiltersSectionProps) {
+    const hasFilters = Boolean(selectedClientId || selectedStatus);
+
     return (
-        <div className="surface-glass-card rounded-2xl p-5 mb-6 flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex items-center gap-2 text-[var(--text-muted)] self-start md:self-center">
-                <Filter className="w-4 h-4" />
-                <span className="text-xs font-semibold uppercase tracking-wider">Filtros</span>
+        <section className="billing-surface mb-4 rounded-[22px] p-3 sm:p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                    <Filter className="h-4 w-4 text-[var(--btn-secondary-text)]" aria-hidden="true" />
+                    Filtros
+                </div>
+                {hasFilters && (
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        size="xs"
+                        onClick={() => {
+                            onClientChange("");
+                            onStatusChange("");
+                        }}
+                    >
+                        <RotateCcw />
+                        Restablecer
+                    </Button>
+                )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
-                <select
-                    aria-label="Todos los clientes"
-                    value={selectedClientId || "all"}
-                    onChange={(e) => onClientChange(e.target.value === "all" ? "" : e.target.value)}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent cursor-pointer h-10 shadow-xs"
-                >
-                    <option value="all">Todos los clientes</option>
-                    {clients.map((c) => (
-                        <option key={c.id} value={c.id.toString()}>{c.name}</option>
-                    ))}
-                </select>
-                <select
-                    aria-label="Todos los estados"
-                    value={selectedStatus || "all"}
-                    onChange={(e) => onStatusChange(e.target.value === "all" ? "" : e.target.value)}
-                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent cursor-pointer h-10 shadow-xs"
-                >
-                    <option value="all">Todos los estados</option>
-                    <option value="draft">{statusLabels.draft}</option>
-                    <option value="sent">{statusLabels.sent}</option>
-                    <option value="accepted">{statusLabels.accepted}</option>
-                    <option value="rejected">{statusLabels.rejected}</option>
-                    <option value="expired">{statusLabels.expired}</option>
-                </select>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="block">
+                    <span className="sr-only">Todos los clientes</span>
+                    <select
+                        aria-label="Todos los clientes"
+                        value={selectedClientId || "all"}
+                        onChange={(e) => onClientChange(e.target.value === "all" ? "" : e.target.value)}
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                    >
+                        <option value="all">Todos los clientes</option>
+                        {clients.map((c) => (
+                            <option key={c.id} value={c.id.toString()}>{c.name}</option>
+                        ))}
+                    </select>
+                </label>
+                <label className="block">
+                    <span className="sr-only">Todos los estados</span>
+                    <select
+                        aria-label="Todos los estados"
+                        value={selectedStatus || "all"}
+                        onChange={(e) => onStatusChange(e.target.value === "all" ? "" : e.target.value)}
+                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                    >
+                        <option value="all">Todos los estados</option>
+                        <option value="draft">{statusLabels.draft}</option>
+                        <option value="sent">{statusLabels.sent}</option>
+                        <option value="accepted">{statusLabels.accepted}</option>
+                        <option value="rejected">{statusLabels.rejected}</option>
+                        <option value="expired">{statusLabels.expired}</option>
+                    </select>
+                </label>
             </div>
-        </div>
+        </section>
     );
 }

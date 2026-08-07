@@ -105,7 +105,7 @@ export function InvoiceDetailItemsSection({
                     <Button
                         type="button"
                         onClick={onAddEditItem}
-                        variant="select"
+                        variant="secondary"
                         size="lg"
                         className="mt-2 w-full border-dashed shadow-none hover:translate-y-0 hover:shadow-none"
                     >

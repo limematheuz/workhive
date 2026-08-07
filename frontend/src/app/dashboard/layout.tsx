@@ -106,7 +106,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <div className="flex h-dvh overflow-hidden bg-[var(--bg-primary)] font-sans text-[var(--text-main)] transition-colors duration-300">
+        <div className="flex min-h-dvh bg-[var(--bg-primary)] font-sans text-[var(--text-main)] transition-colors duration-300 lg:h-dvh lg:overflow-hidden">
 
             {/* Mobile overlay */}
             {isSidebarOpen && (
@@ -124,8 +124,8 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 onThemeChange={setTheme}
             />
 
-            <div className="h-dvh flex-1 overflow-hidden p-0 transition-colors duration-300 lg:py-4 lg:pl-0 lg:pr-4">
-                <div className="relative flex flex-col h-full bg-[var(--bg-primary)] rounded-none lg:rounded-3xl border-0 lg:border border-[var(--border-soft)] overflow-hidden">
+            <div className="min-h-dvh flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:py-4 lg:pl-0 lg:pr-4">
+                <div className="relative flex min-h-dvh flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:rounded-3xl lg:border lg:border-[var(--border-soft)]">
                     <div className="dashboard-shell-backlight" />
                     <DashboardHeader
                         isSidebarOpen={isSidebarOpen}
@@ -133,7 +133,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                         onLogout={handleLogout}
                     />
 
-                    <main className="app-touch-scroll dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-0">
+                    <main className="dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 flex-1 overflow-x-hidden p-0 lg:overflow-y-auto">
                         {children}
                     </main>
                 </div>

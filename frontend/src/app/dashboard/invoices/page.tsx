@@ -21,9 +21,11 @@ import {
     mergeInvoiceableTasksIfChanged,
 } from "@/components/invoices/invoice-page-utils"
 import { getInvoiceStatusText } from "@/components/invoices/invoice-status-utils"
+import { InvoiceDetailView } from "@/components/invoices/InvoiceDetailView"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { useDictionary } from "@/lib/dictionary-context"
 import { useUser } from "@/lib/user-context"
-import { redirect, useRouter } from "next/navigation"
+import { redirect } from "next/navigation"
 import { toast } from "@/lib/toast"
 import { Loader2 } from "lucide-react"
 
@@ -46,7 +48,6 @@ const EMPTY_CREATE_SHEET: CreateSheetState = {
 export default function InvoicesPage() {
     const { dict } = useDictionary()
     const { user, loading: userLoading } = useUser()
-    const router = useRouter()
 
     const [invoices, setInvoices] = useState<Invoice[]>([])
     const [clients, setClients] = useState<Client[]>([])
@@ -64,6 +65,7 @@ export default function InvoicesPage() {
     const [jobSearch, setJobSearch] = useState<string>("")
     const [jobDateFrom, setJobDateFrom] = useState<string>("")
     const [jobDateTo, setJobDateTo] = useState<string>("")
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null)
 
     const isAdmin = isInvoicesAdmin(user?.role?.name)
 
@@ -296,7 +298,7 @@ export default function InvoicesPage() {
                         emptyLabel: dict.invoices.empty,
                         getClientName,
                         getStatusText,
-                        onOpenInvoice: (invoiceId: number) => router.push(`/dashboard/invoices/${invoiceId}`),
+                        onOpenInvoice: setSelectedInvoiceId,
                         labels: dict.invoices,
                     }}
                 />
@@ -320,6 +322,25 @@ export default function InvoicesPage() {
                     initialTaskIds={createSheet.taskIds}
                     initialTasks={createSheet.tasks}
                 />
+
+                <Dialog open={selectedInvoiceId !== null} onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedInvoiceId(null)
+                        void loadInvoices()
+                    }
+                }}>
+                    <DialogContent className="flex h-[min(94vh,calc(100%-1rem))] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl lg:max-w-7xl">
+                        <DialogTitle className="sr-only">Detalle de factura</DialogTitle>
+                        {selectedInvoiceId !== null && (
+                            <InvoiceDetailView
+                                invoiceId={selectedInvoiceId}
+                                embedded
+                                onChanged={() => void loadInvoices()}
+                            />
+                        )}
+                    </DialogContent>
+                </Dialog>
+
             </div>
         </div>
     )

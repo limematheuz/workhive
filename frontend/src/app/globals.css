@@ -520,8 +520,24 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
+/* Offset content below absolute accent bar (top-3 + h-1.5 ≈ 18px). */
+.billing-surface-accent-pad {
+  @apply p-4 pt-10 sm:px-5 sm:pb-5 sm:pt-10;
+}
+
+/* Nested content chips — same solid paper as invoice “Facturado a” blocks. */
+.billing-block {
+  background-color: var(--bg-tertiary);
+}
+
+.light-mode .billing-block {
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
 @media print {
-  .billing-surface {
+  .billing-surface,
+  .billing-block {
     background: #ffffff !important;
     border: 0 !important;
     box-shadow: none !important;
@@ -617,6 +633,53 @@
   .btn-app-danger-soft:hover {
     background-color: var(--btn-cancel-hover-bg) !important;
     color: var(--btn-cancel-hover-text) !important;
+  }
+
+  /*
+   * Soft muted gray cancel / dismiss — solid bluish-grey pill, no border ring.
+   * Account Settings "Cerrar Editor" + form "Cancelar".
+   */
+  .btn-cancel-muted {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    border-radius: 0.75rem;
+    border: none !important;
+    background-color: var(--bg-tertiary) !important;
+    color: var(--text-muted) !important;
+    padding: 0.5rem 0.875rem !important;
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-color) 28%, transparent) !important;
+    transform: none !important;
+    outline: none !important;
+    cursor: pointer;
+    transition-property: color, background-color, border-color, opacity, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+  }
+
+  .btn-cancel-muted:hover {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-main) !important;
+    border: none !important;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-color) 36%, transparent) !important;
+    transform: none !important;
+  }
+
+  .btn-cancel-muted:focus,
+  .btn-cancel-muted:focus-visible {
+    outline: none !important;
+    border: none !important;
+    box-shadow: 0 1px 3px color-mix(in srgb, var(--shadow-color) 28%, transparent) !important;
+  }
+
+  .btn-cancel-muted:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 
@@ -1066,10 +1129,7 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 .invoice-detail-backlight {
   pointer-events: none;
   position: absolute;
-  bottom: -3rem;
-  left: 0;
-  right: 0;
-  top: -3rem;
+  inset: -3rem 0;
   z-index: 0;
   border-radius: 2.5rem;
   opacity: 0.42;
@@ -1101,13 +1161,6 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
     radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 34%),
     radial-gradient(circle at 78% 26%, color-mix(in srgb, var(--accent-color) 14%, transparent), transparent 38%),
     radial-gradient(circle at 48% 86%, color-mix(in srgb, var(--accent-color) 12%, transparent), transparent 42%);
-}
-
-/* One native vertical scroll owner per screen prevents mobile browsers from
- * having to arbitrate a gesture between nested scroll containers. */
-.app-touch-scroll {
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y pinch-zoom;
 }
 
 .dashboard-page-content {

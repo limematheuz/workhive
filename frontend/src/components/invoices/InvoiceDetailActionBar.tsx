@@ -8,7 +8,6 @@ import {
     FileX2,
     Loader2,
     Mail,
-    Pencil,
     Printer,
     X,
 } from "lucide-react";
@@ -49,7 +48,6 @@ type InvoiceDetailActionBarProps = {
     facturaeReadiness: FacturaeReadiness | null;
     onPdfAction: () => void;
     onStatusChange: (state: string) => void;
-    onEnterEditMode: () => void;
     onDiscardEdit: () => void;
     onSaveDraft: () => void;
     onOpenRectification: () => void;
@@ -78,7 +76,6 @@ export function InvoiceDetailActionBar({
     facturaeReadiness,
     onPdfAction,
     onStatusChange,
-    onEnterEditMode,
     onDiscardEdit,
     onSaveDraft,
     onOpenRectification,
@@ -110,17 +107,6 @@ export function InvoiceDetailActionBar({
 
     const renderActionButtons = () => (
         <>
-            {invoice.status === "draft" && !editMode && (
-                <button
-                    type="button"
-                    onClick={onEnterEditMode}
-                    className={cn(actionButtonClass("secondary"), "w-full sm:w-auto")}
-                >
-                    <Pencil className="h-4 w-4" />
-                    {dict.invoices.edit_draft}
-                </button>
-            )}
-
             {editMode && (
                 <>
                     <button
@@ -164,7 +150,10 @@ export function InvoiceDetailActionBar({
                     type="button"
                     onClick={onOpenEmailDialog}
                     disabled={sendingEmail}
-                    className={cn(actionButtonClass("neutral"), "w-full sm:w-auto")}
+                    className={cn(
+                        actionButtonClass(invoice.status === "draft" ? "select" : "neutral"),
+                        "w-full sm:w-auto",
+                    )}
                 >
                     {sendingEmail ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -221,22 +210,22 @@ export function InvoiceDetailActionBar({
         <section className="billing-surface mx-auto mb-3 w-full max-w-[112rem] rounded-[24px] p-4 print:hidden sm:p-5">
             <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                 <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
-                                {dict.invoices.title}
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
+                            {dict.invoices.title}
+                        </span>
+                        <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none", invoiceStatusMeta.className)}>
+                            {invoiceStatusMeta.label}
+                        </span>
+                        {invoice.is_rectification && (
+                            <span className="rounded-full border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-2.5 py-1 text-[10px] font-semibold uppercase leading-none text-[var(--btn-cancel-text)]">
+                                {dict.invoices.rectification}
                             </span>
-                            <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none", invoiceStatusMeta.className)}>
-                                {invoiceStatusMeta.label}
-                            </span>
-                            {invoice.is_rectification && (
-                                <span className="rounded-full border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-2.5 py-1 text-[10px] font-semibold uppercase leading-none text-[var(--btn-cancel-text)]">
-                                    {dict.invoices.rectification}
-                                </span>
-                            )}
-                        </div>
-                        <h1 className="mt-1 max-w-full text-[clamp(1.35rem,1.8vw,1.9rem)] font-bold leading-none tracking-tight text-[var(--text-main)] [overflow-wrap:anywhere]">
-                            {formattedInvoiceNumber}
-                        </h1>
+                        )}
+                    </div>
+                    <h1 className="mt-1 max-w-full text-[clamp(1.35rem,1.8vw,1.9rem)] font-bold leading-none tracking-tight text-[var(--text-main)] [overflow-wrap:anywhere]">
+                        {formattedInvoiceNumber}
+                    </h1>
                 </div>
 
                 <button

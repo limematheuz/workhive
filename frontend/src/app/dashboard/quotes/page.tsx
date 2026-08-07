@@ -264,7 +264,6 @@ function QuotesPageContent() {
                 }}
                 clients={clients}
                 onQuoteUpdated={loadQuotes}
-                onEditQuote={handleEditQuote}
                 companyName={companyName}
             />
 

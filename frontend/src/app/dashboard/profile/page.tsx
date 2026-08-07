@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Briefcase, Loader2, AlertCircle, Building, Edit3, Sparkles } from "lucide-react";
+import { Mail, Briefcase, Loader2, AlertCircle, Building, Copy, Edit3, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { useProfile } from "@/hooks/useProfile";
@@ -18,6 +19,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 export default function ProfilePage() {
     const state = useProfile();
@@ -51,115 +53,134 @@ export default function ProfilePage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 pb-12 text-[var(--text-main)] animate-fade-in px-[3%] py-6 md:p-8">
-            
-            {/* Header and Profile */}
-            <div className="relative overflow-hidden bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-6 md:p-8 shadow-xl">
-                <div className="absolute top-0 right-0 w-80 h-80 bg-accent/5 rounded-full filter blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="mx-auto max-w-7xl animate-fade-in space-y-5 px-[3%] py-6 pb-12 text-[var(--text-main)] md:p-8">
+            {/* Identity hero */}
+            <section className="billing-surface billing-surface-accent-pad relative overflow-hidden rounded-[24px]">
+                <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
 
-                <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start justify-between relative z-10">
-                    <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center text-center md:text-left">
+                <div className="relative z-10 flex flex-col items-center justify-between gap-6 lg:flex-row lg:items-start">
+                    <div className="flex flex-col items-center gap-5 text-center md:flex-row md:gap-6 md:text-left">
                         <UserAvatar
                             name={state.user?.full_name}
                             email={state.user?.email}
                             photoUrl={state.user?.photo_url}
-                            className="w-24 h-24 md:w-28 md:h-28 rounded-full border-2 border-accent/30 flex-shrink-0 text-xl md:text-2xl shadow-lg"
+                            className="h-20 w-20 shrink-0 rounded-full border border-accent/25 text-xl shadow-sm md:h-24 md:w-24 md:text-2xl"
                             textClassName="text-xl md:text-2xl"
                         />
 
-                        <div className="space-y-3">
+                        <div className="min-w-0 space-y-3">
                             <div>
-                                <h2 className="text-2xl md:text-3xl font-black tracking-tight">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                                    {state.dict.profile?.title || "Perfil"}
+                                </p>
+                                <h1 className="mt-1 text-[clamp(1.35rem,1.8vw,1.9rem)] font-bold leading-none tracking-tight text-[var(--text-main)]">
                                     {state.user?.full_name || "Usuario"}
-                                </h2>
-                                <p className="text-sm text-[var(--text-muted)] flex items-center justify-center md:justify-start gap-2 mt-1 font-medium">
-                                    <Mail className="h-4 w-4 text-accent/70" />
-                                    {state.user?.email}
+                                </h1>
+                                <p className="mt-2 flex items-center justify-center gap-2 text-sm text-[var(--text-muted)] md:justify-start">
+                                    <Mail className="h-4 w-4 text-accent" aria-hidden="true" />
+                                    <span className="truncate">{state.user?.email}</span>
                                 </p>
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-1">
-                                <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-3.5 py-1.5 rounded-full border border-accent/10">
-                                    <Briefcase className="h-3.5 w-3.5" />
+                            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
+                                <Badge
+                                    variant="outline"
+                                    className="border-accent/25 bg-accent/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-accent"
+                                >
+                                    <Briefcase className="h-3 w-3" aria-hidden="true" />
                                     {state.user?.role?.name || "Sin Rol"}
-                                </span>
+                                </Badge>
                                 {state.user?.company_id && (
-                                    <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-main)] bg-[var(--bg-secondary)] px-3.5 py-1.5 rounded-full border border-[var(--border-color)]">
-                                        <Building className="h-3.5 w-3.5 text-[var(--text-main)]/80" />
+                                    <Badge
+                                        variant="secondary"
+                                        className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide"
+                                    >
+                                        <Building className="h-3 w-3" aria-hidden="true" />
                                         {state.companyName || `#${state.user.company_id}`}
-                                    </span>
+                                    </Badge>
                                 )}
                                 {state.partnerCode && (
-                                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--text-main)] bg-[var(--bg-secondary)] px-3.5 py-1.5 rounded-full border border-[var(--border-color)]">
-                                        <span>Código Partner: <span className="text-accent select-all font-mono font-bold">{state.partnerCode}</span></span>
-                                        <button type="button" 
+                                    <Badge
+                                        variant="outline"
+                                        className="gap-1.5 border-accent/20 bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-main)]"
+                                    >
+                                        <span>
+                                            {state.locale === "es" ? "Código Partner" : "Partner Code"}:{" "}
+                                            <span className="select-all font-mono font-bold text-accent">
+                                                {state.partnerCode}
+                                            </span>
+                                        </span>
+                                        <button
+                                            type="button"
                                             onClick={() => {
                                                 navigator.clipboard.writeText(state.partnerCode);
-                                                toast.success("Código de partner copiado");
+                                                toast.success(
+                                                    state.locale === "es"
+                                                        ? "Código de partner copiado"
+                                                        : "Partner code copied",
+                                                );
                                             }}
-                                            className="hover:text-[var(--text-main)] transition-colors ml-1 cursor-pointer flex items-center justify-center"
-                                            title="Copiar Código"
-                                            aria-label="Copiar Código"
+                                            className="inline-flex cursor-pointer items-center justify-center text-accent transition-colors hover:text-[var(--text-main)]"
+                                            title={state.locale === "es" ? "Copiar Código" : "Copy code"}
+                                            aria-label={state.locale === "es" ? "Copiar Código" : "Copy code"}
                                         >
-                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                            </svg>
+                                            <Copy className="h-3.5 w-3.5" />
                                         </button>
-                                    </div>
+                                    </Badge>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Profile Actions */}
-                    <div className="flex flex-wrap gap-3 items-center">
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 lg:justify-end">
                         {state.isAdminOrSuperadmin && (
                             <Button
+                                type="button"
                                 onClick={() => setShowResetConfirm(true)}
                                 variant="outline"
-                                className="border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold flex items-center gap-2 cursor-pointer rounded-xl px-4 py-2"
                             >
-                                <Sparkles className="w-3.5 h-3.5" />
+                                <Sparkles className="h-3.5 w-3.5" />
                                 {state.dict.profile?.repeat_onboarding ?? "Repetir Onboarding"}
                             </Button>
                         )}
                         <Button
+                            type="button"
                             onClick={() => state.setIsEditing(!state.isEditing)}
                             variant="outline"
-                            className="border border-[var(--border-color)] bg-[var(--bg-tertiary)] hover:bg-[var(--bg-card)] text-[var(--text-main)] text-xs font-semibold flex items-center gap-2 cursor-pointer rounded-xl px-4 py-2"
                         >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            {state.isEditing ? (state.locale === "es" ? "Ver Datos" : "View Details") : (state.locale === "es" ? "Editar Datos" : "Edit Details")}
+                            <Edit3 className="h-3.5 w-3.5" />
+                            {state.isEditing
+                                ? (state.locale === "es" ? "Ver Datos" : "View Details")
+                                : (state.locale === "es" ? "Editar Datos" : "Edit Details")}
                         </Button>
                     </div>
                 </div>
+            </section>
 
-            </div>
-
-            {/* SELF PROFILE EDIT FORM - Separated into its own premium module card */}
             {state.isEditing && state.user && (
-                <div className="relative overflow-hidden bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-6 md:p-8 shadow-xl animate-fade-in w-full">
-                    <div className="absolute top-0 right-0 w-80 h-80 bg-accent/5 rounded-full filter blur-3xl pointer-events-none -mr-20 -mt-20" />
-                    
-                    <div className="relative z-10 space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border-soft)] pb-4">
+                <section className="billing-surface billing-surface-accent-pad relative w-full animate-fade-in overflow-hidden rounded-[24px]">
+                    <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
+
+                    <div className="relative z-10 space-y-5">
+                        <header className="flex flex-col justify-between gap-3 border-b border-[var(--border-soft)] pb-4 sm:flex-row sm:items-center">
                             <div>
-                                <h3 className="text-lg font-black tracking-tight">
+                                <h2 className="text-base font-semibold text-[var(--text-main)]">
                                     {state.locale === "es" ? "Configuración de Cuenta" : "Account Settings"}
-                                </h3>
-                                <p className="text-xs text-[var(--text-muted)] mt-1 font-medium">
-                                    {state.locale === "es" 
-                                        ? "Gestiona tus datos personales, información de la empresa y credenciales de acceso." 
+                                </h2>
+                                <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+                                    {state.locale === "es"
+                                        ? "Gestiona tus datos personales, información de la empresa y credenciales de acceso."
                                         : "Manage your personal details, corporate info, and security credentials."}
                                 </p>
                             </div>
-                            <button type="button"
+                            <button
+                                type="button"
                                 onClick={() => state.setIsEditing(false)}
-                                className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] px-3.5 py-2 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] ui-motion border border-[var(--border-color)]/30 cursor-pointer self-start sm:self-auto"
+                                className="btn-cancel-muted self-start sm:self-auto"
                             >
                                 {state.locale === "es" ? "Cerrar Editor" : "Close Editor"}
                             </button>
-                        </div>
+                        </header>
 
                         <ProfileEditForm
                             user={state.user}
@@ -172,7 +193,7 @@ export default function ProfilePage() {
                             }}
                         />
                     </div>
-                </div>
+                </section>
             )}
 
             <PrivacyControls
@@ -180,7 +201,6 @@ export default function ProfilePage() {
                 canManageRequests={state.isAdminOrSuperadmin}
             />
 
-            {/* Statistics Bento Grid */}
             <ProfileStats
                 stats={state.stats}
                 dict={state.dict}
@@ -189,7 +209,6 @@ export default function ProfilePage() {
                 formatTime={state.formatTime}
             />
 
-            {/* History Tabs and Tables */}
             <ProfileHistories
                 activeTab={state.activeTab}
                 setActiveTab={state.setActiveTab}
@@ -234,7 +253,7 @@ export default function ProfilePage() {
                                 localStorage.setItem(`workhive_onboarding_forced_${state.user?.id}`, "true");
                                 window.location.href = "/dashboard";
                             }}
-                            className="bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-xs font-semibold rounded-xl px-5 py-2.5 border-none cursor-pointer"
+                            className={PAGE_ACTION_BUTTON_PRIMARY}
                         >
                             {state.locale === "es" ? "Aceptar" : "Accept"}
                         </Button>

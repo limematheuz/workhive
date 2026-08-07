@@ -12,6 +12,7 @@ import { createEditableLineKey } from "@/lib/editable-line-key";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { buildQuoteItemsSnapshot } from "@/lib/quote-form";
+import { isQuoteContentEditable } from "@/lib/quote-editability";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import {
@@ -195,7 +196,7 @@ export function useQuoteDetail(quoteId: number) {
         if (loading || !quote) return;
 
         const queryParams = new URLSearchParams(window.location.search);
-        if (queryParams.get("edit") === "true" && quote.status === "draft") {
+        if (queryParams.get("edit") === "true" && isQuoteContentEditable(quote.status)) {
             startTransition(handleEnterEditMode);
             window.history.replaceState(null, "", `/dashboard/quotes/${quote.id}`);
         }

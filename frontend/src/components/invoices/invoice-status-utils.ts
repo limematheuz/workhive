@@ -3,14 +3,16 @@ import type { Invoice } from "@/types/invoice";
 export const getStatusBadgeClass = (status: Invoice["status"]) => {
     switch (status) {
         case "paid":
-            return "border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--text-main)]";
-        case "overdue":
-        case "cancelled":
-            return "border border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_42%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_10%,transparent)] text-[var(--btn-cancel-hover-bg)]";
-        case "issued":
-            return "border border-[color-mix(in_srgb,var(--accent-color)_34%,transparent)] bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] text-accent";
+            // Blue — cobrada
+            return "border border-[color-mix(in_srgb,var(--accent-color)_34%,transparent)] bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent";
         case "draft":
+            // Orange — borrador
             return "border border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]";
+        case "issued":
+        case "overdue":
+            // Red — emitida / no pagada / vencida
+            return "border border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_42%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_10%,transparent)] text-[var(--btn-cancel-hover-bg)]";
+        case "cancelled":
         case "rectified":
             return "border border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_42%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_10%,transparent)] text-[var(--btn-cancel-hover-bg)]";
         default:

@@ -1,8 +1,8 @@
 "use client";
 
 import { SignatureUpload } from "@/components/billing/SignatureUpload";
+import { DocumentFormAdvancedPanel } from "@/components/billing/DocumentFormAdvancedPanel";
 import { DocumentSummary } from "@/components/billing/DocumentSummary";
-import { ChevronDown } from "lucide-react";
 import { InvoiceTaskSelector } from "./InvoiceTaskSelector";
 import type { TaskItem } from "@/services/task.service";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -87,19 +87,13 @@ export function InvoiceCreateSheetSidebar({
                 totalGeneral={totalGeneral}
             />
 
-            <details className="group rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/30">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-bold text-[var(--text-main)] marker:hidden">
-                    <span>Firma opcional</span>
-                    <ChevronDown className="h-4 w-4 shrink-0 text-[var(--text-muted)] transition-transform group-open:rotate-180" aria-hidden="true" />
-                </summary>
-                <div className="border-t border-[var(--border-soft)] p-4">
-                    <SignatureUpload
-                        signatureUrl={signatureUrl}
-                        onSignatureChange={setSignatureUrl}
-                        dict={dict}
-                    />
-                </div>
-            </details>
+            <DocumentFormAdvancedPanel title="Firma opcional" description="Añade una firma al PDF si la necesitas">
+                <SignatureUpload
+                    signatureUrl={signatureUrl}
+                    onSignatureChange={setSignatureUrl}
+                    dict={dict}
+                />
+            </DocumentFormAdvancedPanel>
         </div>
     );
 }

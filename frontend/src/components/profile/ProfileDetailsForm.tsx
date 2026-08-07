@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 interface ProfileDetailsFormProps {
     user: User;
@@ -195,22 +196,21 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
 
             {/* Action buttons */}
             <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-soft)]">
-                <Button
+                <button
                     type="button"
-                    variant="ghost"
                     onClick={() => {
                         setProfileName(user.full_name || "");
                         setProfilePhotoUrl(user.photo_url || "");
                         onCancel();
                     }}
-                    className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border-none cursor-pointer"
+                    className="btn-cancel-muted"
                 >
                     {dict.locations.form.cancel || "Cancel"}
-                </Button>
+                </button>
                 <Button
                     type="submit"
                     disabled={updating}
-                    className="bg-[var(--text-main)] text-[var(--text-inverse)] hover:opacity-90 text-xs font-semibold px-6 border-none cursor-pointer"
+                    className={PAGE_ACTION_BUTTON_PRIMARY}
                 >
                     {updating ? (dict.companies.saving || "Saving...") : (dict.locations.form.save || "Save")}
                 </Button>

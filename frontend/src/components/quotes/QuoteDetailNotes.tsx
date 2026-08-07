@@ -1,62 +1,73 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { resolveApiMediaUrl } from "@/lib/api"
-import { Quote } from "@/types/quote"
-import type { Dictionary } from "@/lib/dictionary-context"
+import Image from "next/image";
 
-interface QuoteDetailNotesProps {
-    quote: Quote
-    dict: Dictionary
-}
+import { resolveApiMediaUrl } from "@/lib/api";
+import type { Dictionary } from "@/lib/dictionary-context";
+import type { Quote } from "@/types/quote";
+
+type QuoteDetailNotesProps = {
+    quote: Quote;
+    dict: Dictionary;
+};
 
 export function QuoteDetailNotes({ quote, dict }: QuoteDetailNotesProps) {
-    const hasNotes = Boolean(quote.notes)
-    const hasTerms = Boolean(quote.terms)
-    const hasSignature = Boolean(quote.signature_url)
+    const hasNotes = Boolean(quote.notes);
+    const hasTerms = Boolean(quote.terms);
+    const hasSignature = Boolean(quote.signature_url);
+    const hasShipping = Boolean(quote.shipping_address);
 
-    if (!hasNotes && !hasTerms && !hasSignature) {
-        return null
+    if (!hasNotes && !hasTerms && !hasSignature && !hasShipping) {
+        return null;
     }
 
     return (
-        <>
+        <section className="mt-6 space-y-3 pt-5">
+            {hasShipping && (
+                <div className="rounded-2xl bg-[var(--bg-tertiary)] p-3.5 text-xs text-[var(--text-muted)]">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-main)]">
+                        {dict.invoices?.shipping_address || "Dirección de envío"}
+                    </p>
+                    <p className="mt-2 whitespace-pre-line leading-5">{quote.shipping_address}</p>
+                </div>
+            )}
+
             {(hasNotes || hasTerms) && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                     {quote.notes && (
-                        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border-soft)] rounded-xl p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+                        <section className="rounded-2xl bg-[var(--bg-tertiary)] p-3.5 text-xs text-[var(--text-muted)]">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-main)]">
                                 {dict.quotes?.notes_label || "Notas"}
                             </p>
-                            <p className="text-sm text-[var(--text-main)] whitespace-pre-wrap">{quote.notes}</p>
-                        </div>
+                            <p className="mt-2 whitespace-pre-line leading-5">{quote.notes}</p>
+                        </section>
                     )}
                     {quote.terms && (
-                        <div className="bg-[var(--bg-primary)]/30 border border-[var(--border-soft)] rounded-xl p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+                        <section className="rounded-2xl bg-[var(--bg-tertiary)] p-3.5 text-xs text-[var(--text-muted)]">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-main)]">
                                 {dict.invoices?.terms_conditions || "Términos y condiciones"}
                             </p>
-                            <p className="text-sm text-[var(--text-main)] whitespace-pre-wrap">{quote.terms}</p>
-                        </div>
+                            <p className="mt-2 whitespace-pre-line leading-5">{quote.terms}</p>
+                        </section>
                     )}
                 </div>
             )}
 
             {quote.signature_url && (
-                <div className="bg-[var(--bg-primary)]/30 border border-[var(--border-soft)] rounded-xl p-4 max-w-xs">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2">
+                <div className="flex flex-col items-start gap-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices?.issuer_signature || "Firma del Emisor"}
-                    </p>
+                    </span>
                     <Image
                         src={resolveApiMediaUrl(quote.signature_url) || ""}
                         alt="Firma"
                         width={160}
-                        height={60}
-                        className="max-h-[60px] object-contain"
+                        height={64}
+                        className="max-h-16 rounded-xl bg-[var(--bg-tertiary)] p-1 object-contain"
                         unoptimized
                     />
                 </div>
             )}
-        </>
-    )
+        </section>
+    );
 }

@@ -1,18 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { FileText } from "lucide-react"
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "@/lib/toast"
 import { DocumentEmailDialog } from "@/components/billing/DocumentEmailDialog"
 import { QuoteEmailPayload, QuoteService } from "@/services/quote.service"
 import { formatQuoteNumber } from "@/lib/format"
-import { QUOTE_STATUS_BADGE } from "@/lib/constants"
 import { Quote } from "@/types/quote"
 import { useDictionary } from "@/lib/dictionary-context"
 import type { Client } from "@/services/client.service"
@@ -25,6 +22,7 @@ import { QuoteDetailMeta } from "./QuoteDetailMeta"
 import { QuoteDetailItems } from "./QuoteDetailItems"
 import { QuoteDetailNotes } from "./QuoteDetailNotes"
 import { QuoteDetailActions } from "./QuoteDetailActions"
+import { QuoteDetailSummaryAside } from "./QuoteDetailSummaryAside"
 import { getErrorMessage } from "@/lib/errors"
 
 interface QuoteDetailSheetProps {
@@ -33,7 +31,6 @@ interface QuoteDetailSheetProps {
     onOpenChange: (open: boolean) => void
     clients: Client[]
     onQuoteUpdated: () => void
-    onEditQuote: (quote: Quote) => void
     companyName?: string
 }
 
@@ -43,7 +40,6 @@ export function QuoteDetailSheet({
     onOpenChange,
     clients,
     onQuoteUpdated,
-    onEditQuote,
     companyName,
 }: QuoteDetailSheetProps) {
     const { dict } = useDictionary()
@@ -138,57 +134,62 @@ export function QuoteDetailSheet({
     const documentClient = quote.client_id
         ? clients.find((client) => client.id === quote.client_id) ?? null
         : null
+    const clientName = getClientName(quote.client_id)
+    const statusLabel = getStatusLabel(quote.status)
 
     return (
         <>
             <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-h-[92vh] flex flex-col p-0 overflow-hidden sm:max-w-2xl">
-                    <div className="flex flex-col flex-1 overflow-hidden">
-                        <DialogHeader className="p-6 pr-14 border-b border-[var(--border-soft)] flex-shrink-0">
-                            <div className="flex items-start justify-between gap-4 w-full">
-                                <div className="flex-1 min-w-0">
-                                    <DialogTitle className="flex items-center gap-2 text-xl font-black">
-                                        <FileText className="w-5 h-5 text-[var(--text-main)] flex-shrink-0" />
-                                        {formatQuoteNumber(quote.quote_number)}
-                                    </DialogTitle>
-                                    <p className="text-sm text-[var(--text-muted)] mt-0.5 truncate">{quote.title}</p>
-                                </div>
-                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${QUOTE_STATUS_BADGE[quote.status] ?? QUOTE_STATUS_BADGE.draft}`}>
-                                    {getStatusLabel(quote.status)}
-                                </span>
-                            </div>
-                        </DialogHeader>
+                <DialogContent className="flex max-h-[min(94vh,calc(100%-1rem))] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl lg:max-w-7xl">
+                    <DialogTitle className="sr-only">
+                        {formatQuoteNumber(quote.quote_number)} — {quote.title}
+                    </DialogTitle>
 
-                        <div className="p-6 overflow-y-auto flex-1 space-y-5">
-                            <QuoteDetailMeta
+                    <div className="flex flex-1 flex-col overflow-hidden">
+                        <div className="flex-shrink-0 space-y-3 border-b border-[var(--border-soft)] p-3 sm:p-4">
+                            <QuoteDetailActions
                                 quote={quote}
                                 dict={dict}
-                                clientName={getClientName(quote.client_id)}
+                                loading={loading}
+                                clientName={clientName}
+                                statusLabel={statusLabel}
+                                onDownload={handleDownloadPdf}
+                                onSendEmail={() => setShowEmailDialog(true)}
+                                onMarkSent={() => updateStatus("sent")}
+                                onMarkAccepted={() => {
+                                    if (quote.client_id === null) {
+                                        setShowRegisterClientPrompt(true)
+                                    } else {
+                                        updateStatus("accepted")
+                                    }
+                                }}
+                                onMarkRejected={() => updateStatus("rejected")}
                             />
-                            <QuoteDetailItems quote={quote} dict={dict} />
-                            <QuoteDetailNotes quote={quote} dict={dict} />
                         </div>
 
-                        <QuoteDetailActions
-                            quote={quote}
-                            dict={dict}
-                            loading={loading}
-                            onDownload={handleDownloadPdf}
-                            onSendEmail={() => setShowEmailDialog(true)}
-                            onEdit={() => {
-                                onEditQuote(quote)
-                            }}
-                            onMarkSent={() => updateStatus("sent")}
-                            onMarkAccepted={() => {
-                                if (quote.client_id === null) {
-                                    setShowRegisterClientPrompt(true)
-                                } else {
-                                    updateStatus("accepted")
-                                }
-                            }}
-                            onMarkRejected={() => updateStatus("rejected")}
-                            onClose={() => onOpenChange(false)}
-                        />
+                        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+                            <div className="relative isolate grid gap-4 lg:grid-cols-[minmax(0,1fr)_16rem] lg:items-start">
+                                <div className="billing-surface relative z-10 min-w-0 overflow-hidden rounded-[24px] p-4 sm:p-5 lg:p-6">
+                                    <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" />
+
+                                    <QuoteDetailMeta
+                                        quote={quote}
+                                        dict={dict}
+                                        clientName={clientName}
+                                        companyName={companyName}
+                                        statusLabel={statusLabel}
+                                    />
+                                    <QuoteDetailItems quote={quote} dict={dict} />
+                                    <QuoteDetailNotes quote={quote} dict={dict} />
+                                </div>
+
+                                <QuoteDetailSummaryAside
+                                    quote={quote}
+                                    dict={dict}
+                                    statusLabel={statusLabel}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </DialogContent>
             </Dialog>

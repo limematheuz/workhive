@@ -443,6 +443,19 @@ export function useInvoiceDetail(invoiceId: number) {
         setIsEditMode(true);
     };
 
+    const openEditFromQueryEvent = useEffectEvent(() => {
+        if (!invoice || invoice.status !== "draft" || isEditMode) return;
+        const queryParams = new URLSearchParams(window.location.search);
+        if (queryParams.get("edit") !== "true") return;
+        handleEnterEditMode();
+        window.history.replaceState(null, "", `/dashboard/invoices/${invoice.id}`);
+    });
+
+    useEffect(() => {
+        if (loading || !invoice) return;
+        openEditFromQueryEvent();
+    }, [invoice, loading]);
+
     const handleDiscardEdit = () => {
         setIsEditMode(false);
         setEditingInvoiceNumber("");

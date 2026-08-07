@@ -1,16 +1,9 @@
 "use client";
 
-import { Edit2, Trash2 } from "lucide-react";
+import { Edit2, Trash2, Users } from "lucide-react";
 
 import { ActionPopover } from "@/components/ui/action-popover";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { DataListTable } from "@/components/ui/data-list-table";
 import type { User } from "@/types/user";
 
 import { getRoleRank, getRoleText } from "./user-role-utils";
@@ -38,6 +31,9 @@ type TeamListSectionProps = {
     onDelete: (user: User) => void;
 };
 
+const GRID =
+    "grid-cols-[minmax(10rem,1.25fr)_minmax(12rem,1.4fr)_minmax(9rem,1fr)_7.5rem_5.5rem]";
+
 export function TeamListSection({
     team,
     currentUser,
@@ -52,14 +48,6 @@ export function TeamListSection({
         role_installer: labels.role_installer,
         role_viewer: labels.role_viewer,
     };
-
-    if (team.length === 0) {
-        return (
-            <div className="text-center py-20 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-soft)]">
-                <p className="text-sm text-[var(--text-muted)]">{labels.empty}</p>
-            </div>
-        );
-    }
 
     const canManageUser = (worker: User) =>
         worker.id !== currentUser?.id
@@ -80,107 +68,98 @@ export function TeamListSection({
         },
     ];
 
-    return (
-        <>
-            <div className="lg:hidden space-y-3">
-                {team.map((worker) => (
-                    <div
-                        key={worker.id}
-                        className="surface-glass-card rounded-2xl p-4 space-y-3"
-                    >
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-black text-[var(--text-main)]">
-                                        {worker.full_name || "-"}
-                                    </span>
-                                    {worker.id === currentUser?.id && (
-                                        <span className="bg-accent/10 text-accent text-3xs font-bold px-1.5 py-0.5 rounded uppercase tracking-wide border border-accent/20">
-                                            {labels.you || "Tú"}
-                                        </span>
-                                    )}
-                                    {(worker.is_active ?? true) ? (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                            {labels.status_active}
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase bg-neutral-500/10 text-[var(--text-muted)] border border-[var(--border-soft)]">
-                                            {labels.status_inactive}
-                                        </span>
-                                    )}
-                                </div>
-                                <span className="text-2xs text-[var(--text-muted)] font-medium mt-0.5 block">
-                                    {getRoleText(worker.role?.name || "", roleLabels)}
-                                </span>
-                            </div>
-                            {canManageUser(worker) && (
-                                <ActionPopover align="end" options={actionOptions(worker)} />
-                            )}
-                        </div>
-                        <div className="pt-2 border-t border-[var(--border-soft)]/50">
-                            <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
-                                <span className="truncate">{worker.email}</span>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
+    const statusBadge = (worker: User) => (
+        (worker.is_active ?? true) ? (
+            <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-500">
+                {labels.status_active}
+            </span>
+        ) : (
+            <span className="inline-flex items-center rounded-full border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-2.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--text-muted)]">
+                {labels.status_inactive}
+            </span>
+        )
+    );
 
-            <div className="hidden lg:block surface-glass-card rounded-2xl overflow-hidden">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{labels.full_name}</TableHead>
-                            <TableHead>{labels.email}</TableHead>
-                            <TableHead>{labels.role}</TableHead>
-                            <TableHead className="text-center">{labels.status}</TableHead>
-                            <TableHead className="text-center">{labels.actions}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {team.map((worker) => (
-                            <TableRow key={worker.id}>
-                                <TableCell className="font-semibold text-[var(--text-main)]">
+    return (
+        <DataListTable
+            items={team}
+            getRowKey={(worker) => worker.id}
+            gridClassName={GRID}
+            desktopFrom="lg"
+            header={{
+                title: "Equipo",
+                subtitle: "Gestiona roles y acceso de los miembros.",
+                countLabel: `${team.length} ${team.length === 1 ? "miembro" : "miembros"}`,
+            }}
+            columns={[
+                { key: "name", label: labels.full_name },
+                { key: "email", label: labels.email },
+                { key: "role", label: labels.role },
+                { key: "status", label: labels.status },
+                { key: "actions", label: labels.actions, className: "text-right" },
+            ]}
+            empty={(
+                <>
+                    <Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{labels.empty}</p>
+                </>
+            )}
+            renderCompactRow={(worker) => (
+                <>
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-semibold text-[var(--text-main)]">
                                     {worker.full_name || "-"}
-                                    {worker.id === currentUser?.id && (
-                                        <span className="ml-2 bg-accent/10 text-accent text-3xs font-bold px-1.5 py-0.5 rounded uppercase tracking-wide border border-accent/20">
-                                            {labels.you || "Tú"}
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell className="text-[var(--text-muted)]">{worker.email}</TableCell>
-                                <TableCell className="text-[var(--text-muted)] font-medium">
-                                    {getRoleText(worker.role?.name || "", roleLabels)}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    {(worker.is_active ?? true) ? (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                            {labels.status_active}
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neutral-500/10 text-[var(--text-muted)] border border-[var(--border-soft)]">
-                                            {labels.status_inactive}
-                                        </span>
-                                    )}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    {worker.id !== currentUser?.id ? (
-                                        canManageUser(worker) ? (
-                                            <div className="flex justify-center">
-                                                <ActionPopover align="end" options={actionOptions(worker)} />
-                                            </div>
-                                        ) : (
-                                            <span className="text-xs text-[var(--text-muted)] font-medium">-</span>
-                                        )
-                                    ) : (
-                                        <span className="text-xs text-[var(--text-muted)] font-medium">Tú</span>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </>
+                                </span>
+                                {worker.id === currentUser?.id && (
+                                    <span className="rounded border border-accent/20 bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                                        {labels.you || "Tú"}
+                                    </span>
+                                )}
+                                {statusBadge(worker)}
+                            </div>
+                            <span className="mt-0.5 block text-[11px] font-medium text-[var(--text-muted)]">
+                                {getRoleText(worker.role?.name || "", roleLabels)}
+                            </span>
+                        </div>
+                        {canManageUser(worker) && (
+                            <ActionPopover align="end" options={actionOptions(worker)} />
+                        )}
+                    </div>
+                    <div className="mt-2.5 border-t border-[var(--border-soft)] pt-2.5">
+                        <p className="truncate text-xs text-[var(--text-muted)]">{worker.email}</p>
+                    </div>
+                </>
+            )}
+            renderDesktopRow={(worker) => (
+                <>
+                    <p className="min-w-0 truncate text-sm font-semibold text-[var(--text-main)]">
+                        {worker.full_name || "-"}
+                        {worker.id === currentUser?.id && (
+                            <span className="ml-2 rounded border border-accent/20 bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                                {labels.you || "Tú"}
+                            </span>
+                        )}
+                    </p>
+                    <p className="min-w-0 truncate text-sm text-[var(--text-muted)]">{worker.email}</p>
+                    <p className="min-w-0 truncate text-sm font-medium text-[var(--text-muted)]">
+                        {getRoleText(worker.role?.name || "", roleLabels)}
+                    </p>
+                    <div className="flex items-center">{statusBadge(worker)}</div>
+                    <div className="flex items-center justify-end">
+                        {worker.id !== currentUser?.id ? (
+                            canManageUser(worker) ? (
+                                <ActionPopover align="end" options={actionOptions(worker)} />
+                            ) : (
+                                <span className="text-xs font-medium text-[var(--text-muted)]">-</span>
+                            )
+                        ) : (
+                            <span className="text-xs font-medium text-[var(--text-muted)]">Tú</span>
+                        )}
+                    </div>
+                </>
+            )}
+        />
     );
 }

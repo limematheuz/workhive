@@ -1,111 +1,150 @@
-"use client"
+"use client";
 
-import { Send, Download, Edit3, CheckCircle, Mail, XCircle } from "lucide-react"
-import { Quote } from "@/types/quote"
-import type { Dictionary } from "@/lib/dictionary-context"
+import {
+    CheckCircle,
+    Download,
+    Loader2,
+    Mail,
+    Send,
+    XCircle,
+} from "lucide-react";
 
-interface QuoteDetailActionsProps {
-    quote: Quote
-    dict: Dictionary
-    loading: boolean
-    onDownload: () => void
-    onSendEmail: () => void
-    onEdit: () => void
-    onMarkSent: () => void
-    onMarkAccepted: () => void
-    onMarkRejected: () => void
-    onClose: () => void
-}
+import { Button } from "@/components/ui/button";
+import { QUOTE_STATUS_BADGE } from "@/lib/constants";
+import type { Dictionary } from "@/lib/dictionary-context";
+import { formatCurrency, formatDate, formatQuoteNumber } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import type { Quote } from "@/types/quote";
+
+type QuoteDetailActionsProps = {
+    quote: Quote;
+    dict: Dictionary;
+    loading: boolean;
+    clientName: string;
+    statusLabel: string;
+    onDownload: () => void;
+    onSendEmail: () => void;
+    onMarkSent: () => void;
+    onMarkAccepted: () => void;
+    onMarkRejected: () => void;
+};
 
 export function QuoteDetailActions({
     quote,
     dict,
     loading,
+    clientName,
+    statusLabel,
     onDownload,
     onSendEmail,
-    onEdit,
     onMarkSent,
     onMarkAccepted,
     onMarkRejected,
-    onClose,
 }: QuoteDetailActionsProps) {
+    const summaryCards = [
+        {
+            label: dict.invoices?.total_amount || "Total",
+            value: formatCurrency(quote.total_amount),
+            mono: true,
+        },
+        {
+            label: dict.quotes?.client_label || "Cliente",
+            value: clientName,
+            mono: false,
+        },
+        {
+            label: dict.quotes?.created_label || "Fecha",
+            value: formatDate(quote.created_at),
+            mono: true,
+        },
+        {
+            label: quote.valid_until
+                ? (dict.quotes?.valid_until_label || "Válido hasta")
+                : (dict.quotes?.col_status || "Estado"),
+            value: quote.valid_until ? formatDate(quote.valid_until) : statusLabel,
+            mono: Boolean(quote.valid_until),
+        },
+    ];
+
+    const showEmail = quote.status === "draft" || quote.status === "sent";
+    const showDraftActions = quote.status === "draft";
+    const showSentActions = quote.status === "sent";
+
     return (
-        <div className="dialog-glass-chrome p-5 border-t border-[var(--border-soft)] flex-shrink-0">
-            <div className="flex flex-wrap gap-2">
-                <button
+        <section className="billing-surface rounded-[24px] p-4 sm:p-5">
+            <header className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
+                            {dict.quotes?.title || "Presupuesto"}
+                        </span>
+                        <span
+                            className={cn(
+                                "rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase leading-none",
+                                QUOTE_STATUS_BADGE[quote.status] ?? QUOTE_STATUS_BADGE.draft,
+                            )}
+                        >
+                            {statusLabel}
+                        </span>
+                    </div>
+                    <h1 className="mt-1 max-w-full text-[clamp(1.25rem,1.8vw,1.75rem)] font-bold leading-none tracking-tight text-[var(--text-main)] [overflow-wrap:anywhere]">
+                        {formatQuoteNumber(quote.quote_number)}
+                    </h1>
+                    <p className="mt-2 truncate text-sm text-[var(--text-muted)]">{quote.title}</p>
+                </div>
+
+                <Button
                     type="button"
                     onClick={onDownload}
-                    className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-black text-white rounded-xl hover:bg-neutral-800 transition-colors border-none cursor-pointer"
+                    disabled={loading}
+                    className="w-full xl:w-auto xl:min-w-[13rem]"
                 >
-                    <Download className="w-3.5 h-3.5" />
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                     {dict.quotes?.download_pdf ?? "Descargar PDF"}
-                </button>
+                </Button>
+            </header>
 
-                {(quote.status === "draft" || quote.status === "sent") && (
-                    <button
-                        type="button"
-                        disabled={loading}
-                        onClick={onSendEmail}
-                        className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-accent/10 text-accent border border-accent/30 rounded-xl hover:bg-accent/20 transition-colors cursor-pointer"
-                    >
-                        <Mail className="w-3.5 h-3.5" />
-                        Enviar por email
-                    </button>
-                )}
+            <section className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                {summaryCards.map((card) => (
+                    <div key={card.label} className="billing-block min-w-0 rounded-xl px-3 py-2.5">
+                        <p className="truncate text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
+                            {card.label}
+                        </p>
+                        <p className={cn("mt-1.5 truncate text-base font-semibold text-[var(--text-main)]", card.mono && "font-mono")}>
+                            {card.value}
+                        </p>
+                    </div>
+                ))}
+            </section>
 
-                {quote.status === "draft" && (
-                    <>
-                        <button
-                            type="button"
-                            disabled={loading}
-                            onClick={onEdit}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] rounded-xl hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] transition-colors cursor-pointer"
-                        >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            {dict.quotes?.edit_quote ?? "Editar"}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={loading}
-                            onClick={onMarkSent}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] rounded-xl hover:bg-[var(--btn-primary-hover-bg)] transition-colors cursor-pointer"
-                        >
-                            <Send className="w-3.5 h-3.5" />
+            {(showEmail || showDraftActions || showSentActions) && (
+                <section className="mt-4 flex flex-wrap gap-2 border-t border-[var(--border-soft)] pt-4">
+                    {showEmail && (
+                        <Button type="button" variant="secondary" disabled={loading} onClick={onSendEmail}>
+                            <Mail className="h-4 w-4" />
+                            Enviar por email
+                        </Button>
+                    )}
+                    {showDraftActions && (
+                        <Button type="button" disabled={loading} onClick={onMarkSent}>
+                            <Send className="h-4 w-4" />
                             {dict.quotes?.mark_sent ?? "Marcar enviado"}
-                        </button>
-                    </>
-                )}
-                {quote.status === "sent" && (
-                    <>
-                        <button
-                            type="button"
-                            disabled={loading}
-                            onClick={onMarkAccepted}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] border border-[var(--btn-primary-bg)] rounded-xl hover:bg-[var(--btn-primary-hover-bg)] transition-colors cursor-pointer"
-                        >
-                            <CheckCircle className="w-3.5 h-3.5" />
-                            {dict.quotes?.mark_accepted ?? "Marcar aceptado"}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={loading}
-                            onClick={onMarkRejected}
-                            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] rounded-xl hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] transition-colors cursor-pointer"
-                        >
-                            <XCircle className="w-3.5 h-3.5" />
-                            {dict.quotes?.mark_rejected ?? "Marcar rechazado"}
-                        </button>
-                    </>
-                )}
-
-                <button
-                    type="button"
-                    onClick={onClose}
-                    className="ml-auto flex items-center gap-1.5 px-4 py-2 text-xs font-semibold bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] rounded-xl ui-motion cursor-pointer"
-                >
-                    {dict.clients?.form.cancel ?? "Cerrar"}
-                </button>
-            </div>
-        </div>
-    )
+                        </Button>
+                    )}
+                    {showSentActions && (
+                        <>
+                            <Button type="button" disabled={loading} onClick={onMarkAccepted}>
+                                <CheckCircle className="h-4 w-4" />
+                                {dict.quotes?.mark_accepted ?? "Marcar aceptado"}
+                            </Button>
+                            <Button type="button" variant="dangerSoft" disabled={loading} onClick={onMarkRejected}>
+                                <XCircle className="h-4 w-4" />
+                                {dict.quotes?.mark_rejected ?? "Marcar rechazado"}
+                            </Button>
+                        </>
+                    )}
+                </section>
+            )}
+        </section>
+    );
 }

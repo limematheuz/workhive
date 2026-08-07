@@ -155,7 +155,7 @@ export function InvoiceConceptsTable({
             {/* Full-width add line button below the table */}
             <Button
                 type="button"
-                variant="select"
+                variant="secondary"
                 size="lg"
                 onClick={handleAddManualRow}
                 className="w-full border-dashed shadow-none hover:translate-y-0 hover:shadow-none"

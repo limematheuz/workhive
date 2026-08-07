@@ -31,7 +31,7 @@ export function AuthShell({
     return (
         <main
             className={cn(
-                "app-touch-scroll relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] px-4 pb-6 pt-20 text-[var(--text-main)] transition-colors duration-300 sm:px-6 sm:pt-16 md:px-8",
+                "relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden bg-[var(--bg-primary)] px-4 pb-6 pt-20 text-[var(--text-main)] transition-colors duration-300 sm:px-6 sm:pt-16 md:px-8",
                 className,
             )}
         >

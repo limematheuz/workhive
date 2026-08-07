@@ -10,8 +10,8 @@ const quoteDetail = readFileSync(
     new URL("../components/quotes/QuoteDetailSheet.tsx", import.meta.url),
     "utf8",
 );
-const invoicePage = readFileSync(
-    new URL("../app/dashboard/invoices/[id]/page.tsx", import.meta.url),
+const invoiceDetail = readFileSync(
+    new URL("../components/invoices/InvoiceDetailView.tsx", import.meta.url),
     "utf8",
 );
 const sharedEmailDialog = readFileSync(
@@ -26,7 +26,7 @@ test("quotes expose a dedicated email action through the shared safe email dialo
     assert.match(quoteDetail, /QuoteService\.sendQuoteEmail/);
     assert.match(quoteDetail, /documentLabel="presupuesto"/);
     assert.match(quoteDetail, /defaultSubject=\{quote\.title\}/);
-    assert.match(invoicePage, /DocumentEmailDialog/);
+    assert.match(invoiceDetail, /DocumentEmailDialog/);
     assert.match(sharedEmailDialog, /InvoiceEmailDialog as DocumentEmailDialog/);
 });
 

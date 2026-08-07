@@ -179,6 +179,71 @@ def test_quote_update_replaces_the_draft_item_snapshot_atomically(db):
     assert updated.base_amount == 80
 
 
+def test_sent_quote_content_remains_editable_after_email_transition(db):
+    company = _company(db, "Sent quote edit", "SENTQUOTE")
+    quote = quote_service.create_quote(
+        db,
+        company.id,
+        QuoteCreate(title="Enviado", items=_quote_items("Línea A")),
+    )
+    quote_service.update_quote(
+        db,
+        company.id,
+        quote.id,
+        QuoteUpdate(status="sent"),
+    )
+
+    updated = quote_service.update_quote(
+        db,
+        company.id,
+        quote.id,
+        QuoteUpdate(
+            title="Enviado y corregido",
+            items=[
+                QuoteItemCreate(
+                    description="Línea corregida",
+                    quantity=3,
+                    unit_price=10,
+                )
+            ],
+        ),
+    )
+
+    assert updated.status == "sent"
+    assert updated.title == "Enviado y corregido"
+    assert [item.description for item in updated.items] == ["Línea corregida"]
+    assert updated.base_amount == 30
+
+
+def test_accepted_quote_content_is_locked(db):
+    company = _company(db, "Accepted quote lock", "ACCQUOTE")
+    quote = quote_service.create_quote(
+        db,
+        company.id,
+        QuoteCreate(title="Cerrado", items=_quote_items("Línea")),
+    )
+    quote_service.update_quote(
+        db,
+        company.id,
+        quote.id,
+        QuoteUpdate(status="sent"),
+    )
+    quote.status = "accepted"
+    db.add(quote)
+    db.commit()
+
+    with pytest.raises(HTTPException) as exc_info:
+        quote_service.update_quote(
+            db,
+            company.id,
+            quote.id,
+            QuoteUpdate(title="No debería"),
+        )
+
+    assert exc_info.value.status_code == 400
+    assert "accepted" in str(exc_info.value.detail).lower()
+
+
 def test_incomplete_task_cannot_be_invoiced(db):
     company, _, location, task = _task(db, completed=False, client_suffix="OPEN")
 

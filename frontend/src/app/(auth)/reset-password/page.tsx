@@ -86,7 +86,7 @@ function ResetPasswordContent() {
     };
 
     return (
-        <main className="relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden overflow-y-auto bg-[var(--bg-primary)] px-4 pb-6 pt-24 text-[var(--text-main)] transition-colors duration-300 sm:pt-20 md:p-8">
+        <main className="relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden bg-[var(--bg-primary)] px-4 pb-6 pt-24 text-[var(--text-main)] transition-colors duration-300 sm:pt-20 md:p-8">
             <AuthTopControls showThemeToggle={true} theme={theme} onThemeChange={setTheme} />
 
             <div className="relative z-10 my-auto flex w-full min-w-0 max-w-md flex-col justify-center">

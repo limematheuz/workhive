@@ -58,13 +58,13 @@ export function getInvoiceStatusMeta(status: string, dict: Dictionary) {
     if (status === "issued") {
         return {
             label: dict.invoices.status_issued || "Emitida",
-            className: "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]",
+            className: "border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_35%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_8%,transparent)] text-[var(--btn-cancel-hover-bg)]",
         };
     }
     if (status === "paid") {
         return {
             label: dict.invoices.status_paid || "Pagada",
-            className: "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--text-main)]",
+            className: "border-[color-mix(in_srgb,var(--accent-color)_34%,transparent)] bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent",
         };
     }
     if (status === "overdue") {
@@ -86,41 +86,47 @@ export function getInvoiceStatusMeta(status: string, dict: Dictionary) {
 }
 
 export function statusActionMeta(state: string, dict: Dictionary) {
+    const grayAction =
+        "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] hover:border-[var(--border-color)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]";
+
     if (state === "issued") {
         return {
             label: dict.invoices.issue_fiscal_invoice,
-            className: "border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
+            className: grayAction,
         };
     }
     if (state === "paid") {
         return {
             label: dict.invoices.status_paid,
-            className: "border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
+            className: grayAction,
         };
     }
     if (state === "cancelled") {
         return {
             label: dict.invoices.status_cancelled,
-            className: "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
+            className: grayAction,
         };
     }
     if (state === "overdue") {
         return {
             label: dict.invoices.status_overdue,
-            className: "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
+            className: grayAction,
         };
     }
     return {
         label: state,
-        className: "border-[var(--border-soft)] bg-[var(--bg-card)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]",
+        className: grayAction,
     };
 }
 
-export function actionButtonClass(tone: "primary" | "secondary" | "neutral" | "danger" | "disabled" = "neutral") {
+export function actionButtonClass(
+    tone: "primary" | "secondary" | "neutral" | "danger" | "disabled" | "select" = "neutral",
+) {
     return cn(
         "inline-flex min-h-10 max-w-full items-center justify-center gap-2 rounded-2xl border px-3.5 text-center text-[12px] font-semibold leading-tight transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/35 disabled:cursor-not-allowed disabled:opacity-70 sm:min-w-[8.5rem]",
         tone === "primary" && "border-[var(--border-soft)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
         tone === "secondary" && "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)]",
+        tone === "select" && "border-[var(--btn-select-border)] bg-[var(--btn-select-bg)] text-[var(--btn-select-text)] hover:bg-[var(--btn-select-hover-bg)]",
         tone === "neutral" && "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_8px_18px_rgba(52,74,94,0.08)] backdrop-blur-xl hover:border-[var(--border-color)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]",
         tone === "danger" && "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:border-[var(--btn-cancel-border)] hover:bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_14%,transparent)]",
         tone === "disabled" && "cursor-not-allowed border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]",

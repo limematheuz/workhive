@@ -24,7 +24,17 @@ VALID_TRANSITIONS: dict[str, list[str]] = {
     "rejected": [],
     "expired": [],
 }
+# Email moves draft → sent; commercial content remains editable until accepted/closed.
+CONTENT_EDITABLE_STATUSES = frozenset({"draft", "sent"})
 logger = logging.getLogger(__name__)
+
+
+def _assert_quote_content_editable(quote) -> None:
+    if quote.status not in CONTENT_EDITABLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot edit content of an accepted, rejected, or expired quote",
+        )
 
 
 def _get_quote_or_404(db: Session, company_id: int, quote_id: int):
@@ -241,11 +251,9 @@ def _validate_quote_update(
                 detail=f"Cannot transition quote from '{quote.status}' to '{data.status}'",
             )
 
-    if data.items is not None and quote.status != "draft":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot replace items of a non-draft quote",
-        )
+    content_fields = data.model_fields_set - {"status"}
+    if content_fields:
+        _assert_quote_content_editable(quote)
 
 
 def _replace_quote_items(db: Session, quote, items: list[QuoteItemCreate]) -> None:
@@ -368,11 +376,7 @@ def create_quote_item(
     db: Session, company_id: int, quote_id: int, data: QuoteItemCreate
 ):
     quote = _get_quote_or_404(db, company_id, quote_id)
-    if quote.status != "draft":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot add items to a non-draft quote",
-        )
+    _assert_quote_content_editable(quote)
     try:
         item = quote_item_repo.create_quote_item(
             db,
@@ -394,11 +398,7 @@ def update_quote_item(
     db: Session, company_id: int, quote_id: int, item_id: int, data: QuoteItemUpdate
 ):
     quote = _get_quote_or_404(db, company_id, quote_id)
-    if quote.status != "draft":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot edit items of a non-draft quote",
-        )
+    _assert_quote_content_editable(quote)
     # Find the item
     item = next((i for i in quote.items if i.id == item_id), None)
     if not item:
@@ -421,11 +421,7 @@ def delete_quote_item(
     db: Session, company_id: int, quote_id: int, item_id: int
 ) -> None:
     quote = _get_quote_or_404(db, company_id, quote_id)
-    if quote.status != "draft":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot delete items from a non-draft quote",
-        )
+    _assert_quote_content_editable(quote)
     item = next((i for i in quote.items if i.id == item_id), None)
     if not item:
         raise HTTPException(

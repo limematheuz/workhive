@@ -270,15 +270,15 @@ function FinanceTrendCard({
     ];
 
     return (
-        <article className="relative overflow-hidden rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-4">
+        <article className="billing-surface relative overflow-hidden rounded-[22px] p-4">
             <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <div className="flex items-center gap-3">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] text-accent">
-                            <Activity className="h-3.5 w-3.5" />
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
+                            <Activity className="h-3.5 w-3.5" aria-hidden="true" />
                         </span>
                         <div>
-                            <h2 className="text-base font-black text-[var(--text-main)]">{text.trend_title}</h2>
+                            <h2 className="text-base font-semibold text-[var(--text-main)]">{text.trend_title}</h2>
                             <p className="text-xs text-[var(--text-muted)]">{text.trend_subtitle}</p>
                         </div>
                     </div>
@@ -293,13 +293,18 @@ function FinanceTrendCard({
                         ))}
                     </div>
                 </div>
-                <div className="flex rounded-full border border-[var(--border-soft)] bg-[var(--bg-secondary)]/75 p-1">
+                <div
+                    className="flex rounded-full bg-[var(--bg-tertiary)] p-1"
+                    role="group"
+                    aria-label={text.trend_title}
+                >
                     {PERIODS.map((item) => (
                         <button
                             key={item}
                             type="button"
                             onClick={() => setPeriod(item)}
-                            className={`h-7 rounded-full px-3 text-xs font-black transition ${
+                            aria-pressed={period === item}
+                            className={`h-8 min-w-10 rounded-full px-3 text-xs font-semibold transition ${
                                 period === item
                                     ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
                                     : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
@@ -311,6 +316,7 @@ function FinanceTrendCard({
                 </div>
             </div>
 
+            {/* Chart plot background stays on InteractiveLineChart for line contrast. */}
             <FinanceLineChart series={series} text={text} />
         </article>
     );
@@ -351,39 +357,39 @@ function ExpenseBreakdownCard({
     totalExpenses: number;
 }) {
     return (
-        <article className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/82 p-4 backdrop-blur-xl">
+        <article className="billing-surface rounded-[22px] p-4">
             <div className="mb-4 flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] text-accent">
-                    <PieChart className="h-4 w-4" />
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
+                    <PieChart className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <div>
-                    <h2 className="text-base font-black text-[var(--text-main)]">{text.categories_title}</h2>
+                    <h2 className="text-base font-semibold text-[var(--text-main)]">{text.categories_title}</h2>
                     <p className="text-xs text-[var(--text-muted)]">{text.categories_subtitle}</p>
                 </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5">
                 {categoryTotals.map((item) => {
                     const percent = totalExpenses > 0 ? Math.round((item.total / totalExpenses) * 100) : 0;
                     return (
-                        <div key={item.category} className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 p-3">
+                        <div key={item.category} className="billing-block rounded-2xl p-3">
                             <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                                <span className="font-black text-[var(--text-main)]">
+                                <span className="font-semibold text-[var(--text-main)]">
                                     {categoryLabels[item.category] || item.category}
                                 </span>
-                                <span className="font-black text-[var(--text-main)]">{formatCurrency(item.total)}</span>
+                                <span className="font-semibold text-[var(--text-main)]">{formatCurrency(item.total)}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                                <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--bg-card-solid)]/80">
+                                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-card-solid)]">
                                     <div className="h-full rounded-full bg-accent/55" style={{ width: `${percent}%` }} />
                                 </div>
-                                <span className="w-10 text-right text-xs font-black text-[var(--text-muted)]">{percent}%</span>
+                                <span className="w-10 text-right text-xs font-semibold text-[var(--text-muted)]">{percent}%</span>
                             </div>
                         </div>
                     );
                 })}
                 {categoryTotals.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] p-6 text-center text-sm text-[var(--text-muted)]">
+                    <div className="billing-block rounded-2xl p-6 text-center text-sm text-[var(--text-muted)]">
                         {text.empty_categories}
                     </div>
                 )}
@@ -405,7 +411,7 @@ function OperationsDashboard({
 }) {
     if (loading) {
         return (
-            <div className="rounded-[28px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/88 p-8 text-sm font-bold text-[var(--text-muted)]">
+            <div className="billing-surface rounded-[28px] p-8 text-sm font-semibold text-[var(--text-muted)]">
                 {text.loading}
             </div>
         );
@@ -440,30 +446,35 @@ function OperationsDashboard({
 
     return (
         <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.62fr)]">
-            <article className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-4">
+            <article className="billing-surface rounded-[22px] p-4">
                 <div className="mb-4 flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] text-accent">
-                        <BarChart3 className="h-3.5 w-3.5" />
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
+                        <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
                     </span>
                     <div>
-                        <h2 className="text-base font-black text-[var(--text-main)]">{dict.analytics.services_flow_title}</h2>
+                        <h2 className="text-base font-semibold text-[var(--text-main)]">{dict.analytics.services_flow_title}</h2>
                         <p className="text-xs text-[var(--text-muted)]">{dict.analytics.services_flow_subtitle}</p>
                     </div>
                 </div>
+                {/* Chart plot background stays on InteractiveLineChart for line contrast. */}
                 <OperationsLineChart stats={stats} dict={dict} />
             </article>
 
-            <article className="rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/82 p-4 backdrop-blur-xl">
-                <p className="text-[11px] font-black uppercase tracking-wide text-accent">{dict.analytics.services_flow_badge}</p>
-                <h2 className="mt-1 text-base font-black text-[var(--text-main)]">{dict.analytics.ops_inspection}</h2>
+            <article className="billing-surface rounded-[22px] p-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-accent">{dict.analytics.services_flow_badge}</p>
+                <h2 className="mt-1 text-base font-semibold text-[var(--text-main)]">{dict.analytics.ops_inspection}</h2>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                     {summary.map((item) => (
-                        <div key={item.label} className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 p-3">
-                            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)]/70" style={{ color: item.color }}>
+                        <div key={item.label} className="billing-block rounded-2xl p-3">
+                            <span
+                                className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)]"
+                                style={{ color: item.color }}
+                                aria-hidden="true"
+                            >
                                 {item.icon}
                             </span>
-                            <p className="mt-3 text-xl font-black text-[var(--text-main)]">{item.value}</p>
-                            <p className="mt-1 text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)]">{item.label}</p>
+                            <p className="mt-3 text-xl font-semibold text-[var(--text-main)]">{item.value}</p>
+                            <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{item.label}</p>
                         </div>
                     ))}
                 </div>
@@ -511,8 +522,8 @@ function FinanceTotal({
     color: string;
 }) {
     return (
-        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--border-soft)] bg-[var(--bg-secondary)]/70 px-3 py-1.5 text-xs font-black text-[var(--text-muted)]">
-            <span className="h-2 w-2 rounded-full" style={{ background: color }} />
+        <span className="billing-block inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-[var(--text-muted)]">
+            <span className="h-2 w-2 rounded-full" style={{ background: color }} aria-hidden="true" />
             <span>{label}</span>
             <span className="text-[var(--text-main)]">{formatCurrency(value)}</span>
         </span>
@@ -534,15 +545,19 @@ function MetricCard({
     const toneColor = "var(--accent-color)";
 
     return (
-        <article className="rounded-[18px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/74 p-3 backdrop-blur-xl">
+        <article className="billing-block rounded-[18px] p-3.5">
             <div className="flex items-start justify-between gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--accent-color)_8%,var(--bg-secondary))]" style={{ color: toneColor }}>
+                <span
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)]"
+                    style={{ color: toneColor }}
+                    aria-hidden="true"
+                >
                     {icon}
                 </span>
                 <DeltaBadge current={value} previous={previous} />
             </div>
-            <p className="mt-3 text-[9px] font-black uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">{label}</p>
-            <p className="mt-1 text-xl font-black text-[var(--text-main)] sm:text-2xl">{formatCurrency(value)}</p>
+            <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">{label}</p>
+            <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">{formatCurrency(value)}</p>
         </article>
     );
 }

@@ -18,6 +18,8 @@ interface QuoteItemsTableProps {
         value: ConceptRow[Field]
     ) => void;
     handleDeleteRow: (id: string) => void;
+    /** When true, parent section owns title/surface — table only. */
+    embedded?: boolean;
 }
 
 export function QuoteItemsTable({
@@ -27,23 +29,26 @@ export function QuoteItemsTable({
     handleDuplicateRow,
     handleUpdateRow,
     handleDeleteRow,
+    embedded = false,
 }: QuoteItemsTableProps) {
     return (
-        <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-                <Label className="text-xs font-bold text-[var(--text-main)] uppercase tracking-wider">
-                    {dict.quotes?.concepts_title || "Conceptos del Presupuesto"}
-                </Label>
-            </div>
+        <div className={embedded ? "space-y-3" : "space-y-3 pt-2"}>
+            {!embedded && (
+                <div className="flex items-center justify-between">
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[var(--text-main)]">
+                        {dict.quotes?.concepts_title || "Conceptos del Presupuesto"}
+                    </Label>
+                </div>
+            )}
 
-            <div className="border border-[var(--border-soft)] rounded-2xl overflow-hidden bg-[var(--bg-primary)]/50">
-                <table className="w-full text-left border-collapse">
+            <div className={embedded ? "overflow-x-auto rounded-2xl bg-[var(--bg-tertiary)]/65" : "billing-surface overflow-hidden rounded-[24px]"}>
+                <table className="w-full min-w-[32rem] border-collapse text-left">
                     <thead>
-                        <tr className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border-soft)] text-3xs uppercase font-bold tracking-wider text-[var(--text-muted)] select-none">
-                            <th className="py-2.5 px-3">{dict.invoices?.col_description || "Descripción"}</th>
-                            <th className="py-2.5 px-2 text-right w-24">{dict.invoices?.col_price || "Precio (€)"}</th>
-                            <th className="py-2.5 px-2 text-center w-20">{dict.invoices?.col_qty || "Cantidad"}</th>
-                            <th className="py-2.5 px-2 text-right w-24">{dict.invoices?.col_total || "Total"}</th>
+                        <tr className="border-b border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-3xs font-bold uppercase tracking-wider text-[var(--text-muted)] select-none">
+                            <th className="px-3 py-2.5">{dict.invoices?.col_description || "Descripción"}</th>
+                            <th className="w-24 px-2 py-2.5 text-right">{dict.invoices?.col_price || "Precio (€)"}</th>
+                            <th className="w-20 px-2 py-2.5 text-center">{dict.invoices?.col_qty || "Cantidad"}</th>
+                            <th className="w-24 px-2 py-2.5 text-right">{dict.invoices?.col_total || "Total"}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border-soft)] text-xs">
@@ -137,7 +142,7 @@ export function QuoteItemsTable({
             {/* Full-width add line button below the table */}
             <Button
                 type="button"
-                variant="select"
+                variant="secondary"
                 size="lg"
                 onClick={handleAddManualRow}
                 className="w-full border-dashed shadow-none hover:translate-y-0 hover:shadow-none"

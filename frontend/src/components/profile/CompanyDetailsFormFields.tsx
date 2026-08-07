@@ -5,6 +5,7 @@ import { Building2, Mail, Phone, MapPin, CreditCard, Upload } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { resolveApiMediaUrl } from "@/lib/api";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 type CompanyDetailsFormFieldsProps = {
     dict: Dictionary;
@@ -275,18 +276,17 @@ export function CompanyDetailsFormFields({
             </div>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-soft)]">
-                <Button
+                <button
                     type="button"
-                    variant="ghost"
                     onClick={onCancel}
-                    className="text-xs font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] border-none cursor-pointer"
+                    className="btn-cancel-muted"
                 >
                     {dict.locations?.form?.cancel || "Cancel"}
-                </Button>
+                </button>
                 <Button
                     type="submit"
                     disabled={updating}
-                    className="bg-[var(--text-main)] text-[var(--text-inverse)] hover:opacity-90 text-xs font-semibold px-6 border-none cursor-pointer"
+                    className={PAGE_ACTION_BUTTON_PRIMARY}
                 >
                     {updating ? "Saving..." : (dict.locations?.form?.save || "Save")}
                 </Button>

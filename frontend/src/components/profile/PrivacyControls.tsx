@@ -152,20 +152,25 @@ export function PrivacyControls({
     );
 
     return (
-        <section className="relative overflow-hidden bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-3xl p-6 md:p-8 shadow-xl">
-            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+        <section className="billing-surface billing-surface-accent-pad relative overflow-hidden rounded-[24px]">
+            <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
+            <div className="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-start">
                 <div className="max-w-2xl">
-                    <div className="flex items-center gap-2 mb-2">
-                        <ShieldCheck className="h-5 w-5 text-accent" />
-                        <h3 className="text-lg font-black tracking-tight">
-                            {isSpanish ? "Privacidad y tus datos" : "Privacy and your data"}
-                        </h3>
+                    <div className="flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
+                            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                            <h3 className="text-base font-semibold text-[var(--text-main)]">
+                                {isSpanish ? "Privacidad y tus datos" : "Privacy and your data"}
+                            </h3>
+                            <p className="mt-0.5 text-xs leading-5 text-[var(--text-muted)]">
+                                {isSpanish
+                                    ? "Descarga una copia portable de tus datos o ejerce tus derechos RGPD. Las solicitudes quedan registradas y auditadas."
+                                    : "Download a portable copy of your data or exercise your GDPR rights. Requests are recorded and audited."}
+                            </p>
+                        </div>
                     </div>
-                    <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-                        {isSpanish
-                            ? "Descarga una copia portable de tus datos o ejerce tus derechos RGPD. Las solicitudes quedan registradas y auditadas."
-                            : "Download a portable copy of your data or exercise your GDPR rights. Requests are recorded and audited."}
-                    </p>
                     {!loading && openRequest && (
                         <p className="mt-3 text-xs font-semibold text-amber-600 dark:text-amber-400">
                             {isSpanish
@@ -174,7 +179,7 @@ export function PrivacyControls({
                         </p>
                     )}
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row">
                     <button
                         type="button"
                         onClick={exportData}
@@ -200,23 +205,23 @@ export function PrivacyControls({
                 </div>
             </div>
             {canManageRequests && pendingCompanyRequests.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-[var(--border-soft)]">
-                    <h4 className="text-sm font-black mb-3">
+                <div className="relative z-10 mt-5 border-t border-[var(--border-soft)] pt-5">
+                    <h4 className="mb-3 text-sm font-semibold text-[var(--text-main)]">
                         {isSpanish
                             ? "Solicitudes pendientes de la empresa"
                             : "Pending company requests"}
                     </h4>
-                    <div className="space-y-3">
+                    <div className="space-y-2.5">
                         {pendingCompanyRequests.map((request) => (
                             <div
                                 key={request.id}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] p-4"
+                                className="billing-block flex flex-col justify-between gap-3 rounded-xl p-3.5 sm:flex-row sm:items-center"
                             >
                                 <div>
-                                    <p className="text-xs font-bold uppercase">
+                                    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
                                         {request.request_type} #{request.id}
                                     </p>
-                                    <p className="text-xs text-[var(--text-muted)] mt-1">
+                                    <p className="mt-1 text-xs text-[var(--text-muted)]">
                                         {new Date(request.requested_at).toLocaleString(
                                             isSpanish ? "es-ES" : "en-US",
                                             { timeZone: "UTC" },

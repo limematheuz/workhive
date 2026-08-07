@@ -1,20 +1,14 @@
-"use client"
+"use client";
 
-import { Client } from "@/services/client.service";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { Mail, Pencil, Phone, Power, Trash2, Users } from "lucide-react";
+import * as React from "react";
+
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Power, Trash2, Mail, Phone } from "lucide-react";
+import { ActionPopover } from "@/components/ui/action-popover";
+import { DataListTable } from "@/components/ui/data-list-table";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
-import { ActionPopover } from "@/components/ui/action-popover";
-import * as React from "react";
+import { Client } from "@/services/client.service";
 
 interface ClientsTableProps {
     clients: Client[];
@@ -28,22 +22,16 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
     const { dict } = useDictionary();
     const { user } = useUser();
     const isReadOnly = user?.role?.name === "viewer" || user?.role?.name === "manager";
-
-
-    if (!clients || clients.length === 0) {
-        return (
-            <div className="flex flex-col items-center justify-center p-12 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-soft)]">
-                <p className="text-[var(--text-muted)] text-lg">{dict.clients.table.empty}</p>
-            </div>
-        );
-    }
+    const gridClassName = isReadOnly
+        ? "grid-cols-[minmax(12rem,1.3fr)_minmax(7rem,.8fr)_minmax(10rem,1.1fr)_minmax(7rem,.8fr)_7.5rem]"
+        : "grid-cols-[minmax(12rem,1.3fr)_minmax(7rem,.8fr)_minmax(10rem,1.1fr)_minmax(7rem,.8fr)_7.5rem_5.5rem]";
 
     const statusBadge = (client: Client) => (
         <Badge
             variant={client.is_active ? "default" : "secondary"}
             className={client.is_active
-                ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-bold uppercase"
-                : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-soft)] text-[9px] font-bold uppercase"}
+                ? "border border-emerald-500/20 bg-emerald-500/10 text-[9px] font-semibold uppercase text-emerald-500"
+                : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[9px] font-semibold uppercase text-[var(--text-muted)]"}
         >
             {client.is_active ? dict.clients.table.active : dict.clients.table.inactive}
         </Badge>
@@ -58,7 +46,7 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
             );
         }
         return (
-            <Badge className="border border-accent/20 bg-accent/10 text-[9px] font-bold uppercase text-accent">
+            <Badge className="border border-accent/20 bg-accent/10 text-[9px] font-semibold uppercase text-accent">
                 {client.client_type === "business"
                     ? (dict.clients.table.company || "Empresa")
                     : (dict.clients.table.individual || "Particular")}
@@ -77,9 +65,7 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
                     variant: "edit" as const,
                 },
                 {
-                    label: client.is_active
-                        ? "Desactivar"
-                        : "Activar",
+                    label: client.is_active ? "Desactivar" : "Activar",
                     icon: Power,
                     onClick: () => onToggleActive(client),
                     variant: "deactivate" as const,
@@ -95,101 +81,82 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
     );
 
     return (
-        <>
-            {/* ── Mobile & Tablet: Cards ── */}
-            <div className="lg:hidden space-y-3">
-                {clients.map((client) => (
-                    <div
-                        key={client.id}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={client.name}
-                        onClick={() => onDetails(client)}
-                        onKeyDown={(event) => {
-                            // Only handle keys on the card itself, not on nested interactive elements
-                            if (event.target !== event.currentTarget) return;
-                            if (event.key === "Enter" || event.key === " ") {
-                                if (event.key === " ") event.preventDefault();
-                                onDetails(client);
-                            }
-                        }}
-                        className="surface-glass-card rounded-2xl p-4 space-y-3 cursor-pointer hover:border-[var(--border-color)] transition-colors active:scale-[0.99]"
-                    >
-                        {/* Header: Name + Status + Menu */}
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-black text-[var(--text-main)]">{client.name}</span>
-                                    {typeBadge(client)}
-                                    {statusBadge(client)}
-                                </div>
-                                <span className="text-2xs font-mono text-[var(--text-muted)] mt-0.5 block">
-                                    {client.legal_number || "Sin NIF/CIF"}
-                                </span>
+        <DataListTable
+            items={clients}
+            getRowKey={(client) => client.id}
+            gridClassName={gridClassName}
+            desktopFrom="lg"
+            onRowClick={onDetails}
+            rowAriaLabel={(client) => client.name}
+            header={{
+                title: "Clientes registrados",
+                subtitle: "Pulsa una fila para ver el detalle del cliente.",
+                countLabel: `${clients.length} ${clients.length === 1 ? "cliente" : "clientes"}`,
+            }}
+            columns={[
+                { key: "name", label: dict.clients.table.name },
+                { key: "legal", label: dict.clients.table.legal_number },
+                { key: "email", label: dict.clients.table.email },
+                { key: "phone", label: dict.clients.table.phone },
+                { key: "status", label: dict.clients.table.status },
+                ...(isReadOnly
+                    ? []
+                    : [{ key: "actions", label: dict.clients.table.actions, className: "text-right" }]),
+            ]}
+            empty={(
+                <>
+                    <Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{dict.clients.table.empty}</p>
+                </>
+            )}
+            renderCompactRow={(client) => (
+                <>
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-semibold text-[var(--text-main)]">{client.name}</span>
+                                {typeBadge(client)}
+                                {statusBadge(client)}
                             </div>
-                            {!isReadOnly && (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    {renderActionPopover(client)}
-                                </div>
-                            )}
+                            <span className="mt-0.5 block font-mono text-[11px] text-[var(--text-muted)]">
+                                {client.legal_number || "Sin NIF/CIF"}
+                            </span>
                         </div>
-
-                        {/* Info rows */}
-                        <div className="space-y-1.5 pt-2 border-t border-[var(--border-soft)]/50">
-                            <div className="flex items-center gap-2 text-xs">
-                                <Mail className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
-                                <span className="text-[var(--text-muted)] truncate">{client.email || "Sin email"}</span>
+                        {!isReadOnly && (
+                            <div onClick={(e) => e.stopPropagation()}>
+                                {renderActionPopover(client)}
                             </div>
-                            <div className="flex items-center gap-2 text-xs">
-                                <Phone className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
-                                <span className="text-[var(--text-muted)]">{client.phone || "Sin teléfono"}</span>
-                            </div>
+                        )}
+                    </div>
+                    <div className="mt-2.5 space-y-1.5 border-t border-[var(--border-soft)] pt-2.5">
+                        <div className="flex items-center gap-2 text-xs">
+                            <Mail className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />
+                            <span className="truncate text-[var(--text-muted)]">{client.email || "Sin email"}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                            <Phone className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />
+                            <span className="text-[var(--text-muted)]">{client.phone || "Sin teléfono"}</span>
                         </div>
                     </div>
-                ))}
-            </div>
-
-            {/* ── Desktop: Table ── */}
-            <div className="hidden lg:block surface-glass-card rounded-2xl overflow-hidden w-full">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{dict.clients.table.name}</TableHead>
-                            <TableHead>{dict.clients.table.legal_number}</TableHead>
-                            <TableHead>{dict.clients.table.email}</TableHead>
-                            <TableHead>{dict.clients.table.phone}</TableHead>
-                            <TableHead>{dict.clients.table.status}</TableHead>
-                            {!isReadOnly && <TableHead className="text-right">{dict.clients.table.actions}</TableHead>}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {clients.map((client) => (
-                            <TableRow
-                                key={client.id}
-                                onClick={() => onDetails(client)}
-                                className="cursor-pointer transition-colors duration-150 hover:bg-[var(--bg-secondary)]/40"
-                            >
-                                <TableCell className="font-semibold">
-                                    <div className="flex items-center gap-2">
-                                        {client.name}
-                                        {typeBadge(client)}
-                                    </div>
-                                </TableCell>
-                                <TableCell className="font-mono text-xs">{client.legal_number || "—"}</TableCell>
-                                <TableCell className="text-[var(--text-muted)]">{client.email || "—"}</TableCell>
-                                <TableCell className="text-[var(--text-muted)]">{client.phone || "—"}</TableCell>
-                                <TableCell>{statusBadge(client)}</TableCell>
-                                {!isReadOnly && (
-                                    <TableCell className="text-right">
-                                        {renderActionPopover(client)}
-                                    </TableCell>
-                                )}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-
-        </>
+                </>
+            )}
+            renderDesktopRow={(client) => (
+                <>
+                    <div className="flex min-w-0 items-center gap-2 font-semibold text-[var(--text-main)]">
+                        <span className="truncate">{client.name}</span>
+                        {typeBadge(client)}
+                    </div>
+                    <p className="font-mono text-xs text-[var(--text-muted)]">{client.legal_number || "—"}</p>
+                    <p className="truncate text-sm text-[var(--text-muted)]">{client.email || "—"}</p>
+                    <p className="text-sm text-[var(--text-muted)]">{client.phone || "—"}</p>
+                    <div>{statusBadge(client)}</div>
+                    {!isReadOnly && (
+                        <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                            {renderActionPopover(client)}
+                        </div>
+                    )}
+                </>
+            )}
+        />
     );
 }

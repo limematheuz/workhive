@@ -1,18 +1,12 @@
 "use client";
 
-import { BriefcaseBusiness, CheckSquare, Loader2, Receipt, Search } from "lucide-react";
+import { BriefcaseBusiness, CheckSquare, Loader2, Receipt, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import type { InvoiceableTask as InvoiceableJob } from "@/services/invoice.service";
 import type { Client } from "@/services/client.service";
 import { formatCurrency, formatDate } from "@/lib/format";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 export type InvoiceableTask = InvoiceableJob & {
     clientId: number;
@@ -63,6 +57,109 @@ type InvoiceableJobsSectionProps = {
     };
 };
 
+function JobRow({
+    task,
+    selected,
+    disabled,
+    onToggle,
+    labels,
+    compact = false,
+}: {
+    task: InvoiceableTask;
+    selected: boolean;
+    disabled: boolean;
+    onToggle: () => void;
+    labels: InvoiceableJobsSectionProps["labels"];
+    compact?: boolean;
+}) {
+    return (
+        <button
+            type="button"
+            disabled={disabled}
+            onClick={onToggle}
+            aria-pressed={selected}
+            aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
+            className={cn(
+                "billing-block w-full rounded-2xl text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+                selected && "ring-2 ring-accent/45",
+                disabled ? "cursor-not-allowed opacity-55" : "cursor-pointer hover:brightness-[0.985] active:scale-[0.995]",
+                compact ? "p-4" : "grid grid-cols-[2.25rem_minmax(12rem,1.4fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)] items-center gap-3 px-3.5 py-3.5",
+            )}
+        >
+            {compact ? (
+                <>
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p>
+                            <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">{task.clientName}</p>
+                        </div>
+                        <span
+                            className={cn(
+                                "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
+                                selected
+                                    ? "border-accent bg-accent text-white"
+                                    : "border-[var(--border-color)] bg-[var(--bg-card-solid)]",
+                            )}
+                            aria-hidden="true"
+                        >
+                            {selected && <CheckSquare className="h-3.5 w-3.5" />}
+                        </span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] pt-3 text-xs text-[var(--text-muted)]">
+                        <span className="truncate">{task.locationName}</span>
+                        <span className="text-right">{formatDate(task.date_done || task.created_at)}</span>
+                        <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
+                            task.is_invoiced
+                                ? "bg-accent/10 text-accent"
+                                : "bg-[var(--bg-card-solid)] text-[var(--text-muted)]"
+                        }`}>
+                            {task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}
+                        </span>
+                        <span className="text-right font-semibold text-[var(--text-main)]">
+                            {formatCurrency((task.price || 0) * (task.quantity || 1))}
+                        </span>
+                    </div>
+                </>
+            ) : (
+                <>
+                    <span
+                        className={cn(
+                            "flex h-5 w-5 items-center justify-center rounded-md border",
+                            selected
+                                ? "border-accent bg-accent text-white"
+                                : "border-[var(--border-color)] bg-[var(--bg-card-solid)]",
+                        )}
+                        aria-hidden="true"
+                    >
+                        {selected && <CheckSquare className="h-3 w-3" />}
+                    </span>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p>
+                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
+                            {labels.quantity || "Cant."} {task.quantity || 1} {task.unit}
+                        </p>
+                    </div>
+                    <p className="truncate text-sm text-[var(--text-muted)]">{task.clientName}</p>
+                    <p className="truncate text-sm text-[var(--text-muted)]">{task.locationName}</p>
+                    <p className="text-sm text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</p>
+                    <p className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">
+                        {formatCurrency((task.price || 0) * (task.quantity || 1))}
+                    </p>
+                    <div className="text-center">
+                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${
+                            task.is_invoiced
+                                ? "bg-accent/10 text-accent"
+                                : "bg-[var(--bg-card-solid)] text-[var(--text-muted)]"
+                        }`}>
+                            {task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}
+                        </span>
+                    </div>
+                </>
+            )}
+        </button>
+    );
+}
+
 export function InvoiceableJobsSection({
     tasks,
     loading,
@@ -85,203 +182,179 @@ export function InvoiceableJobsSection({
 }: InvoiceableJobsSectionProps) {
     const selectedJobIdSet = new Set(selectedJobIds);
     const selectedCount = selectedJobIds.length;
+    const hasFilters = Boolean(search || partyFilter || invoiceFilter !== "pending" || dateFrom || dateTo);
+
+    const resetFilters = () => {
+        onSearchChange("");
+        onPartyFilterChange("");
+        onInvoiceFilterChange("pending");
+        onDateFromChange("");
+        onDateToChange("");
+    };
 
     return (
-        <div className="space-y-5">
-            <div className="billing-surface rounded-[22px] p-5 space-y-4">
-                <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+        <div className="space-y-4">
+            <section className="billing-surface rounded-[22px] p-4 sm:p-5">
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div>
-                        <h2 className="text-lg font-black text-[var(--text-main)] flex items-center gap-2">
-                            <BriefcaseBusiness className="w-5 h-5" />
+                        <h2 className="flex items-center gap-2 text-lg font-semibold text-[var(--text-main)]">
+                            <BriefcaseBusiness className="h-5 w-5" aria-hidden="true" />
                             {labels.jobs_title || "Trabajos completados"}
                         </h2>
-                        <p className="text-xs text-[var(--text-muted)] mt-1 font-medium">
+                        <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">
                             {labels.jobs_subtitle || "Selecciona varios trabajos del mismo cliente y genera una única factura."}
                         </p>
                     </div>
-                    <button
+                    <Button
                         type="button"
                         disabled={selectedCount === 0}
                         onClick={onCreateInvoice}
-                        className="h-10 px-4 rounded-xl bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] disabled:opacity-50 disabled:cursor-not-allowed text-xs font-bold flex items-center justify-center gap-2 border border-[var(--border-soft)] cursor-pointer"
+                        size="lg"
+                        className="w-full sm:w-auto"
                     >
-                        <Receipt className="w-4 h-4" />
+                        <Receipt className="h-4 w-4" />
                         {labels.create_invoice_with_count
                             ? labels.create_invoice_with_count.replace("{count}", selectedCount.toString())
                             : `Crear factura con ${selectedCount}`}
-                    </button>
+                    </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                    <div className="relative md:col-span-2">
-                        <Search className="absolute left-3 top-2.5 w-4 h-4 text-[var(--text-muted)]" />
-                        <input
-                            value={search}
-                            onChange={(e) => onSearchChange(e.target.value)}
-                            placeholder={labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl pl-9 pr-3 py-2 text-xs outline-none focus:border-accent transition-colors"
-                        />
-                    </div>
-                    <select
-                        aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"}
-                        value={partyFilter}
-                        onChange={(e) => onPartyFilterChange(e.target.value)}
-                        className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
-                    >
-                        <option value="">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</option>
-                        <optgroup label={labels.clients_group || "Clientes"}>
-                            {clients.map((c) => (
-                                <option key={c.id} value={`client:${c.id}`}>{c.name}</option>
-                            ))}
-                        </optgroup>
-                        {collaboratorOptions.length > 0 && (
-                            <optgroup label={labels.collaborators_group || "Colaboradores"}>
-                                {collaboratorOptions.map(([id, name]) => (
-                                    <option key={id} value={`collaborator:${id}`}>{name}</option>
-                                ))}
-                            </optgroup>
+                <div className="mt-4 space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                            <SlidersHorizontal className="h-4 w-4 text-[var(--btn-secondary-text)]" aria-hidden="true" />
+                            Buscar y filtrar
+                        </div>
+                        {hasFilters && (
+                            <Button type="button" variant="secondary" size="xs" onClick={resetFilters}>
+                                <RotateCcw />
+                                Restablecer
+                            </Button>
                         )}
-                    </select>
-                    <select
-                        aria-label="Filtrar por estado de facturación"
-                        value={invoiceFilter}
-                        onChange={(e) => onInvoiceFilterChange(e.target.value as "all" | "pending" | "invoiced")}
-                        className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
-                    >
-                        <option value="pending">{labels.filter_uninvoiced_jobs || "Pendientes de facturar"}</option>
-                        <option value="invoiced">{labels.filter_invoiced_jobs || "Ya facturados"}</option>
-                        <option value="all">{labels.filter_all_jobs || "Todos"}</option>
-                    </select>
-                    <div className="grid grid-cols-2 gap-2">
-                        <input
-                            type="date"
-                            aria-label="Fecha desde"
-                            value={dateFrom}
-                            onChange={(e) => onDateFromChange(e.target.value)}
-                            className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors min-w-0"
-                        />
-                        <input
-                            type="date"
-                            aria-label="Fecha hasta"
-                            value={dateTo}
-                            onChange={(e) => onDateToChange(e.target.value)}
-                            className="bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors min-w-0"
-                        />
+                    </div>
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
+                        <label className="relative block md:col-span-2">
+                            <span className="sr-only">{labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}</span>
+                            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
+                            <input
+                                value={search}
+                                onChange={(e) => onSearchChange(e.target.value)}
+                                placeholder={labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}
+                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] pl-10 pr-3 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                            />
+                        </label>
+                        <label className="block">
+                            <span className="sr-only">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</span>
+                            <select
+                                aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"}
+                                value={partyFilter}
+                                onChange={(e) => onPartyFilterChange(e.target.value)}
+                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                            >
+                                <option value="">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</option>
+                                <optgroup label={labels.clients_group || "Clientes"}>
+                                    {clients.map((c) => (
+                                        <option key={c.id} value={`client:${c.id}`}>{c.name}</option>
+                                    ))}
+                                </optgroup>
+                                {collaboratorOptions.length > 0 && (
+                                    <optgroup label={labels.collaborators_group || "Colaboradores"}>
+                                        {collaboratorOptions.map(([id, name]) => (
+                                            <option key={id} value={`collaborator:${id}`}>{name}</option>
+                                        ))}
+                                    </optgroup>
+                                )}
+                            </select>
+                        </label>
+                        <label className="block">
+                            <span className="sr-only">Filtrar por estado de facturación</span>
+                            <select
+                                aria-label="Filtrar por estado de facturación"
+                                value={invoiceFilter}
+                                onChange={(e) => onInvoiceFilterChange(e.target.value as "all" | "pending" | "invoiced")}
+                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                            >
+                                <option value="pending">{labels.filter_uninvoiced_jobs || "Pendientes de facturar"}</option>
+                                <option value="invoiced">{labels.filter_invoiced_jobs || "Ya facturados"}</option>
+                                <option value="all">{labels.filter_all_jobs || "Todos"}</option>
+                            </select>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <label className="block min-w-0">
+                                <span className="sr-only">Fecha desde</span>
+                                <input
+                                    type="date"
+                                    aria-label="Fecha desde"
+                                    value={dateFrom}
+                                    onChange={(e) => onDateFromChange(e.target.value)}
+                                    className="h-11 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-2 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                                />
+                            </label>
+                            <label className="block min-w-0">
+                                <span className="sr-only">Fecha hasta</span>
+                                <input
+                                    type="date"
+                                    aria-label="Fecha hasta"
+                                    value={dateTo}
+                                    onChange={(e) => onDateToChange(e.target.value)}
+                                    className="h-11 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-2 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                                />
+                            </label>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div className="billing-surface w-full rounded-[22px]">
+            <section className="billing-surface w-full overflow-hidden rounded-[22px]">
                 {loading ? (
-                    <div className="flex items-center justify-center py-20 gap-3">
-                        <Loader2 className="w-6 h-6 text-accent animate-spin" />
+                    <div className="flex items-center justify-center gap-3 py-20">
+                        <Loader2 className="h-6 w-6 animate-spin text-accent" />
                         <span className="text-xs text-[var(--text-muted)]">{labels.jobs_loading || "Loading jobs..."}</span>
                     </div>
                 ) : tasks.length === 0 ? (
-                    <div className="text-center py-16">
-                        <p className="text-sm text-[var(--text-muted)]">{labels.empty_jobs || "No jobs found with these filters."}</p>
+                    <div className="px-5 py-16 text-center">
+                        <BriefcaseBusiness className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
+                        <p className="mt-3 text-sm text-[var(--text-muted)]">{labels.empty_jobs || "No jobs found with these filters."}</p>
                     </div>
                 ) : (
                     <>
-                        <div className="grid gap-3 p-3 md:hidden">
-                            {tasks.map((task) => {
-                                const isSelected = selectedJobIdSet.has(task.id);
-                                const disabled = task.is_invoiced;
-                                return (
-                                    <button
-                                        type="button"
-                                        key={task.id}
-                                        disabled={disabled}
-                                        onClick={() => onToggleJob(task)}
-                                        className={`rounded-2xl border p-4 text-left transition ${
-                                            isSelected
-                                                ? "border-accent bg-accent/5"
-                                                : "border-[var(--border-soft)] bg-[var(--bg-primary)]"
-                                        } ${disabled ? "opacity-55" : "cursor-pointer"}`}
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <p className="truncate text-sm font-black text-[var(--text-main)]">{task.title}</p>
-                                                <p className="mt-1 text-xs font-semibold text-[var(--text-muted)]">{task.clientName}</p>
-                                            </div>
-                                            <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
-                                                isSelected
-                                                    ? "border-accent bg-accent text-white"
-                                                    : "border-[var(--border-color)]"
-                                            }`}>
-                                                {isSelected && <CheckSquare className="h-3.5 w-3.5" />}
-                                            </div>
-                                        </div>
-                                        <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] pt-3 text-xs text-[var(--text-muted)]">
-                                            <span className="truncate">{task.locationName}</span>
-                                            <span className="text-right">{formatDate(task.date_done || task.created_at)}</span>
-                                            <span>{task.collaborator_company_name || task.clientName}</span>
-                                            <span className="text-right font-black text-[var(--text-main)]">
-                                                {formatCurrency((task.price || 0) * (task.quantity || 1))}
-                                            </span>
-                                        </div>
-                                    </button>
-                                );
-                            })}
+                        <div className="space-y-2.5 p-3 md:hidden">
+                            {tasks.map((task) => (
+                                <JobRow
+                                    key={task.id}
+                                    compact
+                                    task={task}
+                                    selected={selectedJobIdSet.has(task.id)}
+                                    disabled={task.is_invoiced}
+                                    onToggle={() => onToggleJob(task)}
+                                    labels={labels}
+                                />
+                            ))}
                         </div>
-                        <div className="hidden overflow-x-auto md:block">
-                            <Table className="w-full min-w-max">
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead className="w-10"></TableHead>
-                                        <TableHead>{labels.task_title || "Trabajo"}</TableHead>
-                                        <TableHead>{labels.client || "Cliente"}</TableHead>
-                                        <TableHead>{labels.location_label || "Casa / ubicación"}</TableHead>
-                                        <TableHead>{labels.col_date || "Fecha"}</TableHead>
-                                        <TableHead className="text-right">{labels.price || "Importe"}</TableHead>
-                                        <TableHead className="text-center">{labels.title || "Factura"}</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {tasks.map((task) => {
-                                        const isSelected = selectedJobIdSet.has(task.id);
-                                        const disabled = task.is_invoiced;
-                                        return (
-                                            <TableRow
-                                                key={task.id}
-                                                onClick={() => onToggleJob(task)}
-                                                className={`${disabled ? "opacity-55" : "cursor-pointer"} ${isSelected ? "bg-accent/5" : ""}`}
-                                            >
-                                                <TableCell>
-                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                                                        isSelected
-                                                            ? "bg-accent border-accent text-white"
-                                                            : "border-[var(--border-color)] bg-[var(--bg-primary)]"
-                                                    }`}>
-                                                        {isSelected && <CheckSquare className="w-3 h-3" />}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="font-bold text-[var(--text-main)] text-xs">{task.title}</div>
-                                                    <div className="text-2xs text-[var(--text-muted)]">{labels.quantity || "Cant."} {task.quantity || 1} {task.unit}</div>
-                                                </TableCell>
-                                                <TableCell className="text-xs text-[var(--text-muted)] font-medium">{task.clientName}</TableCell>
-                                                <TableCell className="text-xs text-[var(--text-muted)]">{task.locationName}</TableCell>
-                                                <TableCell className="text-xs text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</TableCell>
-                                                <TableCell className="text-right text-xs font-black text-[var(--text-main)]">{formatCurrency((task.price || 0) * (task.quantity || 1))}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-2xs font-black uppercase ${
-                                                        task.is_invoiced
-                                                            ? "bg-accent/10 text-accent border border-accent/20"
-                                                            : "bg-neutral-500/10 text-[var(--text-muted)] border border-[var(--border-soft)]"
-                                                    }`}>
-                                                        {task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}
-                                                    </span>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
+                        <div className="hidden space-y-2.5 p-3 md:block">
+                            <div className="grid grid-cols-[2.25rem_minmax(12rem,1.4fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)] gap-3 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                                <span aria-hidden="true" />
+                                <span>{labels.task_title || "Trabajo"}</span>
+                                <span>{labels.client || "Cliente"}</span>
+                                <span>{labels.location_label || "Casa / ubicación"}</span>
+                                <span>{labels.col_date || "Fecha"}</span>
+                                <span className="text-right">{labels.price || "Importe"}</span>
+                                <span className="text-center">{labels.title || "Factura"}</span>
+                            </div>
+                            {tasks.map((task) => (
+                                <JobRow
+                                    key={task.id}
+                                    task={task}
+                                    selected={selectedJobIdSet.has(task.id)}
+                                    disabled={task.is_invoiced}
+                                    onToggle={() => onToggleJob(task)}
+                                    labels={labels}
+                                />
+                            ))}
                         </div>
                     </>
                 )}
-            </div>
+            </section>
         </div>
     );
 }

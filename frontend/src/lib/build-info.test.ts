@@ -37,6 +37,10 @@ test("build info does not expose malformed environment values", () => {
 
 
 test("Docker and sidebar keep version and revision metadata wired", () => {
+    const releaseVersion = readFileSync(
+        new URL("../../../VERSION", import.meta.url),
+        "utf8",
+    ).trim().replaceAll(".", "\\.");
     const compose = readFileSync(
         new URL("../../../docker-compose.yml", import.meta.url),
         "utf8",
@@ -54,11 +58,11 @@ test("Docker and sidebar keep version and revision metadata wired", () => {
         "utf8",
     );
 
-    assert.match(compose, /APP_VERSION: \$\{APP_VERSION:-1\.2\.16\}/);
+    assert.match(compose, new RegExp(`APP_VERSION: \\$\\{APP_VERSION:-${releaseVersion}\\}`));
     assert.match(compose, /GIT_SHA: \$\{GIT_SHA:-unknown\}/);
-    assert.match(backendDockerfile, /ARG APP_VERSION=1\.2\.16/);
+    assert.match(backendDockerfile, new RegExp(`ARG APP_VERSION=${releaseVersion}`));
     assert.match(backendDockerfile, /ARG GIT_SHA=unknown/);
-    assert.match(frontendDockerfile, /ARG NEXT_PUBLIC_APP_VERSION="1\.2\.16"/);
+    assert.match(frontendDockerfile, new RegExp(`ARG NEXT_PUBLIC_APP_VERSION="${releaseVersion}"`));
     assert.match(frontendDockerfile, /ARG NEXT_PUBLIC_GIT_SHA="unknown"/);
     assert.match(sidebarFooter, /publicBuildInfo\.label/);
 });

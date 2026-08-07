@@ -4,6 +4,7 @@ import React from "react";
 import { Clock, CheckCircle2, MapPin, Play, AlertCircle } from "lucide-react";
 import { UserStatsResponse, WorkSession } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { cn } from "@/lib/utils";
 
 interface ProfileStatsProps {
     stats: UserStatsResponse | null;
@@ -20,137 +21,133 @@ export function ProfileStats({
     activeSessionTime,
     formatTime,
 }: ProfileStatsProps) {
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Hours worked */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs transition-transform duration-300 hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        {dict.profile?.stats?.hours_worked || "Horas Trabajadas"}
-                    </span>
-                    <div className="w-8 h-8 rounded-lg bg-accent/5 border border-accent/10 flex items-center justify-center text-accent">
-                        <Clock className="h-4 w-4" />
-                    </div>
-                </div>
-                <div className="space-y-1.5">
-                    <h3 className="text-2xl font-black tracking-tight">
-                        {stats?.total_hours_worked != null ? stats.total_hours_worked.toFixed(1) : "0.0"}
-                    </h3>
-                    <p className="text-2xs text-[var(--text-muted)] font-medium">
-                        {dict.profile?.stats?.hours_count
-                            ? dict.profile.stats.hours_count.replace(
-                                "{hours}",
-                                stats?.total_hours_worked != null ? stats.total_hours_worked.toFixed(1) : "0"
-                              )
-                            : ""}
-                    </p>
-                </div>
-            </div>
+    const hoursValue =
+        stats?.total_hours_worked != null ? stats.total_hours_worked.toFixed(1) : "0.0";
+    const hoursDetail = dict.profile?.stats?.hours_count
+        ? dict.profile.stats.hours_count.replace(
+              "{hours}",
+              stats?.total_hours_worked != null ? stats.total_hours_worked.toFixed(1) : "0",
+          )
+        : "";
+    const tasksCompleted = stats?.tasks_completed || 0;
+    const tasksTotal = stats?.total_tasks || 0;
+    const tasksDetail = dict.profile?.stats?.tasks_count
+        ? dict.profile.stats.tasks_count
+              .replace("{completed}", tasksCompleted.toString())
+              .replace("{total}", tasksTotal.toString())
+        : "";
+    const locationsValue = stats?.locations_worked_count || 0;
+    const locationsDetail = dict.profile?.stats?.locations_count
+        ? dict.profile.stats.locations_count.replace("{count}", locationsValue.toString())
+        : "";
+    const progress =
+        tasksTotal > 0 ? Math.min(100, (tasksCompleted / tasksTotal) * 100) : 0;
 
-            {/* Completed tasks */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs transition-transform duration-300 hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        {dict.profile?.stats?.tasks_completed || "Tareas Completadas"}
-                    </span>
-                    <div className="w-8 h-8 rounded-lg bg-accent/5 border border-accent/10 flex items-center justify-center text-accent">
-                        <CheckCircle2 className="h-4 w-4" />
-                    </div>
-                </div>
-                <div className="space-y-1.5">
-                    <h3 className="text-2xl font-black tracking-tight">
-                        {stats?.tasks_completed || "0"}
-                    </h3>
-                    <p className="text-2xs text-[var(--text-muted)] font-medium">
-                        {dict.profile?.stats?.tasks_count
-                             ? dict.profile.stats.tasks_count
-                                 .replace("{completed}", (stats?.tasks_completed || 0).toString())
-                                 .replace("{total}", (stats?.total_tasks || 0).toString())
-                             : ""}
-                    </p>
-                </div>
-                <div className="w-full bg-[var(--bg-tertiary)] rounded-full h-1.5 mt-4 overflow-hidden">
+    return (
+        <section
+            className="grid grid-cols-2 gap-2.5 lg:grid-cols-4"
+            aria-label={dict.profile?.stats?.hours_worked || "Estadísticas"}
+        >
+            <article className="billing-block rounded-[18px] p-3.5">
+                <span
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent"
+                    aria-hidden="true"
+                >
+                    <Clock className="h-4 w-4" />
+                </span>
+                <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
+                    {dict.profile?.stats?.hours_worked || "Horas Trabajadas"}
+                </p>
+                <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">
+                    {hoursValue}
+                </p>
+                {hoursDetail ? (
+                    <p className="mt-1.5 text-[11px] font-medium text-[var(--text-muted)]">{hoursDetail}</p>
+                ) : null}
+            </article>
+
+            <article className="billing-block rounded-[18px] p-3.5">
+                <span
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent"
+                    aria-hidden="true"
+                >
+                    <CheckCircle2 className="h-4 w-4" />
+                </span>
+                <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
+                    {dict.profile?.stats?.tasks_completed || "Tareas Completadas"}
+                </p>
+                <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">
+                    {tasksCompleted}
+                </p>
+                {tasksDetail ? (
+                    <p className="mt-1.5 text-[11px] font-medium text-[var(--text-muted)]">{tasksDetail}</p>
+                ) : null}
+                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-card-solid)]">
                     <div
-                        className="bg-green-500 h-1.5 rounded-full transition-[width] duration-500"
-                        style={{
-                            width: `${
-                                stats?.total_tasks
-                                    ? (stats.tasks_completed / stats.total_tasks) * 100
-                                    : 0
-                            }%`,
-                        }}
+                        className="h-1.5 rounded-full bg-[var(--color-green-500)] transition-[width] duration-500"
+                        style={{ width: `${progress}%` }}
                     />
                 </div>
-            </div>
+            </article>
 
-            {/* Locations visited */}
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-xs transition-transform duration-300 hover:-translate-y-1">
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        {dict.profile?.stats?.locations_visited || "Ubicaciones Visitadas"}
-                    </span>
-                    <div className="w-8 h-8 rounded-lg bg-accent/5 border border-accent/10 flex items-center justify-center text-accent">
-                        <MapPin className="h-4 w-4" />
-                    </div>
-                </div>
-                <div className="space-y-1.5">
-                    <h3 className="text-2xl font-black tracking-tight">
-                        {stats?.locations_worked_count || "0"}
-                    </h3>
-                    <p className="text-2xs text-[var(--text-muted)] font-medium">
-                        {dict.profile?.stats?.locations_count
-                            ? dict.profile.stats.locations_count.replace(
-                                "{count}",
-                                (stats?.locations_worked_count || 0).toString()
-                              )
-                            : ""}
+            <article className="billing-block rounded-[18px] p-3.5">
+                <span
+                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent"
+                    aria-hidden="true"
+                >
+                    <MapPin className="h-4 w-4" />
+                </span>
+                <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
+                    {dict.profile?.stats?.locations_visited || "Ubicaciones Visitadas"}
+                </p>
+                <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">
+                    {locationsValue}
+                </p>
+                {locationsDetail ? (
+                    <p className="mt-1.5 text-[11px] font-medium text-[var(--text-muted)]">
+                        {locationsDetail}
                     </p>
-                </div>
-            </div>
+                ) : null}
+            </article>
 
-            {/* Active clock-in or shift */}
-            <div
-                className={`border rounded-2xl p-6 shadow-xs transition-transform duration-300 ${
-                    activeSession
-                        ? "bg-accent/5 border-accent/20"
-                        : "bg-[var(--bg-card)] border-[var(--border-soft)] hover:-translate-y-1"
-                }`}
+            <article
+                className={cn(
+                    "billing-block rounded-[18px] p-3.5",
+                    activeSession && "ring-1 ring-accent/25",
+                )}
             >
-                <div className="flex items-center justify-between mb-4">
-                    <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        {dict.profile?.stats?.active_shift || "Jornada Activa"}
-                    </span>
-                    <div
-                        className={`w-8 h-8 rounded-lg border flex items-center justify-center text-accent ${
-                            activeSession
-                                ? "bg-accent/20 border-accent/30 animate-pulse"
-                                : "bg-accent/5 border-accent/10"
-                        }`}
-                    >
-                        {activeSession ? (
-                            <Play className="h-4 w-4 fill-accent" />
-                        ) : (
-                            <AlertCircle className="h-4 w-4" />
-                        )}
-                    </div>
-                </div>
-                <div className="space-y-1.5">
-                    <h3 className="text-2xl font-black font-mono tracking-tight">
-                        {activeSession ? activeSessionTime : "--:--:--"}
-                    </h3>
-                    <p className="text-2xs font-semibold mt-0.5">
-                        {activeSession ? (
-                            <span className="text-accent">
-                                {dict.profile?.stats?.session_started_at || "Sesión iniciada a las"} {formatTime(activeSession.start_time)}
-                            </span>
-                        ) : (
-                            <span className="text-[var(--text-muted)] font-medium">
-                                {dict.profile?.stats?.no_active_shift || "Sin Jornada Activa"}
-                            </span>
-                        )}
-                    </p>
-                </div>
-            </div>
-        </div>
+                <span
+                    className={cn(
+                        "flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent",
+                        activeSession && "animate-pulse",
+                    )}
+                    aria-hidden="true"
+                >
+                    {activeSession ? (
+                        <Play className="h-4 w-4 fill-accent" />
+                    ) : (
+                        <AlertCircle className="h-4 w-4" />
+                    )}
+                </span>
+                <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
+                    {dict.profile?.stats?.active_shift || "Jornada Activa"}
+                </p>
+                <p className="mt-1 font-mono text-xl font-semibold text-[var(--text-main)] sm:text-2xl">
+                    {activeSession ? activeSessionTime : "--:--:--"}
+                </p>
+                <p className="mt-1.5 text-[11px] font-medium">
+                    {activeSession ? (
+                        <span className="text-accent">
+                            {dict.profile?.stats?.session_started_at || "Sesión iniciada a las"}{" "}
+                            {formatTime(activeSession.start_time)}
+                        </span>
+                    ) : (
+                        <span className="text-[var(--text-muted)]">
+                            {dict.profile?.stats?.no_active_shift || "Sin Jornada Activa"}
+                        </span>
+                    )}
+                </p>
+            </article>
+        </section>
     );
 }
