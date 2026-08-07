@@ -270,7 +270,13 @@ def user_checklist_is_complete(task: TaskItem, user_id: int) -> bool:
 
 def all_task_checklist_items_are_complete(task: TaskItem) -> bool:
     if task.checklist_items:
-        return all(item.completed for item in task.checklist_items)
+        evidence = task.checklist_evidence or {}
+        return all(
+            item.completed
+            or (evidence.get(f"item_{item.id}") or {}).get("answer")
+            in {"yes", "no"}
+            for item in task.checklist_items
+        )
     return checklist_snapshot_is_complete(
         task.description,
         task.checklist_evidence,

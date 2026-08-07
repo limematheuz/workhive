@@ -279,6 +279,20 @@ def test_task_structure_migration_backfills_valid_assignments_only():
                 ),
                 {"task_id": task_id},
             ).scalar_one()
+            first_item_completed = connection.execute(
+                text(
+                    """
+                    SELECT completed
+                    FROM task_checklist_items
+                    WHERE id = :item_id
+                    """
+                ),
+                {"item_id": first_item_id},
+            ).scalar_one()
+            migrated_task_status = connection.execute(
+                text("SELECT status FROM task_items WHERE id = :task_id"),
+                {"task_id": task_id},
+            ).scalar_one()
             migrated_report = connection.execute(
                 text(
                     """
@@ -297,6 +311,8 @@ def test_task_structure_migration_backfills_valid_assignments_only():
             "answer": "no",
             "note": "legacy",
         }
+        assert first_item_completed is True
+        assert migrated_task_status == "completed"
         assert dict(migrated_report) == {
             "report_type": "checklist_note",
             "description": "legacy",

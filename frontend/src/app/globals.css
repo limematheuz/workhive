@@ -460,6 +460,100 @@
   will-change: backdrop-filter;
 }
 
+/*
+ * Task details contain an independently scrolling operational view. Keep this
+ * dialog's compositing layers opaque and stable so its scroll never repaints
+ * the dashboard behind it.
+ */
+[data-slot="dialog-content"].tech-task-details-dialog {
+  background-color: color-mix(in srgb, var(--bg-card-solid) 76%, var(--bg-primary)) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  /* layout only — paint containment drops hero filter:blur compositing */
+  contain: layout;
+  will-change: auto;
+}
+
+.tech-task-details-overlay {
+  background-color: rgba(15, 23, 42, 0.54) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  will-change: auto;
+}
+
+.tech-task-details-scroll {
+  contain: layout paint;
+  isolation: isolate;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.tech-task-map-area {
+  /*
+   * Do not use contain:paint here — paint containment often drops descendant
+   * filter:blur compositing inside overflow-clipped dialog sheets, leaving a
+   * sharp photo. isolation still gives a clean stacking context for layers.
+   */
+  isolation: isolate;
+}
+
+.tech-task-hero-media {
+  pointer-events: none;
+}
+
+/*
+ * Blur + scale live on a dedicated absolute wrapper (not the Next/Image node).
+ * Scale hides soft edges from blur; media overflow clips them.
+ */
+.tech-task-hero-photo,
+.tech-task-hero-fallback {
+  position: absolute;
+  inset: 0;
+  transform: scale(1.1);
+  transform-origin: center;
+}
+
+.tech-task-hero-photo {
+  filter: blur(3px);
+  -webkit-filter: blur(3px);
+}
+
+.tech-task-hero-fallback {
+  filter: blur(3px);
+  -webkit-filter: blur(3px);
+}
+
+/*
+ * Soft vertical scrim only (no solid base). A stacked background-color +
+ * gradient previously compounded to ~0.7–0.9 and hid the blurred photo.
+ * Heavier at the bottom where copy sits; lighter at the top so the house
+ * remains recognizable.
+ */
+.tech-task-hero-scrim {
+  pointer-events: none;
+  background-color: transparent;
+  background-image: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.18) 0%,
+    rgba(15, 23, 42, 0.38) 50%,
+    rgba(15, 23, 42, 0.76) 100%
+  );
+}
+
+.light-mode .tech-task-hero-scrim {
+  background-color: transparent;
+  background-image: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.22) 0%,
+    rgba(15, 23, 42, 0.42) 50%,
+    rgba(15, 23, 42, 0.8) 100%
+  );
+}
+
+.tech-task-details-footer {
+  background-color: color-mix(in srgb, var(--bg-card-solid) 88%, transparent);
+}
+
 /* High-contrast dialog close control (default theme = dark) */
 [data-slot="dialog-close"] {
   background-color: var(--glass-close-bg) !important;

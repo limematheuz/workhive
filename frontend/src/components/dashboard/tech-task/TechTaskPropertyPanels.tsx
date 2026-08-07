@@ -18,11 +18,13 @@ export function TechTaskPropertyPanels({
 }: TechTaskPropertyPanelsProps) {
     return (
         <div className="space-y-2">
-            <h3 className="text-xs font-black text-[var(--text-main)] uppercase tracking-wider">
+            <h3 className="px-0.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 {locale === "es" ? "Propiedad" : "Property"}
             </h3>
-            <TechTaskIssuesSection {...issuesProps} />
-            <TechTaskPropertySection {...propertyProps} />
+            <div className="space-y-2">
+                <TechTaskIssuesSection {...issuesProps} />
+                <TechTaskPropertySection {...propertyProps} />
+            </div>
         </div>
     );
 }

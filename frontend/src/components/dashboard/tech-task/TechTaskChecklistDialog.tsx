@@ -10,7 +10,10 @@ import {
     Plus,
     RotateCcw,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { User } from "@/types/user";
 import {
@@ -24,6 +27,7 @@ import {
     getChecklistProgress,
     getFirstPendingChecklistItem,
 } from "@/lib/task-checklist-view";
+import { cn } from "@/lib/utils";
 import { ChecklistItem } from "./hooks/useTechTaskChecklist";
 import type { Dictionary } from "@/lib/dictionary-context";
 
@@ -126,42 +130,47 @@ function TechTaskChecklistDialogContent({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
                 overlayClassName="dialog-glass-overlay"
-                className={`flex h-[min(92dvh,760px)] w-[calc(100%-2rem)] max-w-xl flex-col gap-0 overflow-hidden rounded-3xl p-0 ${scrollHide}`}
+                className={cn(
+                    // Do not add `relative` here: cn/tailwind-merge would override DialogContent's
+                    // required `fixed` positioning and the modal would not appear on screen.
+                    "flex h-[min(92dvh,760px)] w-[calc(100%-2rem)] max-w-xl flex-col gap-0 overflow-hidden rounded-[28px] border-[var(--border-soft)] p-0",
+                    scrollHide,
+                )}
             >
                 <DialogHeader className="shrink-0 space-y-1 border-b border-[var(--border-soft)] px-4 py-3 pr-14 text-left sm:px-5 sm:pr-16">
-                    <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <DialogTitle className="flex items-center gap-2.5 text-base font-semibold tracking-tight text-[var(--text-main)] sm:text-lg">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]">
                             <ClipboardCheck className="h-4 w-4" />
                         </span>
                         {dict.tech.requirements_title}
                     </DialogTitle>
-                    <DialogDescription className="text-[11px] sm:text-xs">
+                    <DialogDescription className="text-xs leading-5 text-[var(--text-muted)] sm:text-sm">
                         {dict.tech.requirements_subtitle}
                     </DialogDescription>
                 </DialogHeader>
 
-                <main className={`min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:px-5 ${scrollHide}`}>
+                <main className={cn("min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 sm:px-5", scrollHide)}>
                     <section
                         aria-labelledby="checklist-progress-title"
-                        className="rounded-xl bg-[var(--bg-secondary)]/70 px-3 py-2.5"
+                        className="billing-block relative overflow-hidden rounded-2xl px-3.5 py-3"
                     >
                         <div className="mb-2 flex items-center justify-between gap-3">
-                            <div>
-                                <p id="checklist-progress-title" className="text-xs font-black text-[var(--text-main)]">
+                            <div className="min-w-0">
+                                <p id="checklist-progress-title" className="text-sm font-semibold text-[var(--text-main)]">
                                     {dict.tech.requirements_progress}
                                 </p>
-                                <p className="mt-0.5 text-[10px] font-semibold text-[var(--text-muted)]" aria-live="polite">
+                                <p className="mt-0.5 text-xs text-[var(--text-muted)]" aria-live="polite">
                                     {progress.pending === 0
                                         ? dict.tech.requirements_all_done
                                         : dict.tech.requirements_pending.replace("{count}", String(progress.pending))}
                                 </p>
                             </div>
-                            <strong className="shrink-0 text-xs text-accent">
+                            <strong className="shrink-0 text-sm font-semibold tabular-nums text-accent">
                                 {progress.completed}/{progress.total}
                             </strong>
                         </div>
                         <div
-                            className="h-1.5 overflow-hidden rounded-full bg-[var(--border-soft)]"
+                            className="h-1.5 overflow-hidden rounded-full bg-[color-mix(in_srgb,var(--border-soft)_80%,transparent)]"
                             role="progressbar"
                             aria-valuemin={0}
                             aria-valuemax={progress.total}
@@ -179,7 +188,6 @@ function TechTaskChecklistDialogContent({
                         <PremiumTabs
                             activeTab={activeCategory}
                             onChange={setActiveCategory}
-                            className="rounded-xl"
                             tabs={CATEGORIES.map(cat => {
                                 const itemsInCategory = checklist.filter(item => getCategoryForItem(item.question) === cat);
                                 const completed = itemsInCategory.filter(item => item.answer !== null).length;
@@ -198,35 +206,41 @@ function TechTaskChecklistDialogContent({
                     </nav>
 
                     {isCurrentTaskSessionActive && (
-                        <details className="group rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/40">
-                            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-black marker:hidden">
+                        <details className="billing-block group overflow-hidden rounded-2xl">
+                            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 text-xs font-semibold text-[var(--text-main)] marker:hidden">
                                 <span className="flex items-center gap-2">
                                     <Plus className="h-4 w-4 text-accent" />
                                     {dict.tech.add_checklist_item}
                                 </span>
-                                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+                                <ChevronDown className="h-4 w-4 text-[var(--text-muted)] transition-transform group-open:rotate-180" />
                             </summary>
-                            <form onSubmit={onAddChecklistItem} className="grid gap-2 border-t border-[var(--border-soft)] p-3 sm:grid-cols-[1fr_11rem_auto]">
+                            <form
+                                onSubmit={onAddChecklistItem}
+                                className="grid gap-2 border-t border-[var(--border-soft)] p-3.5 sm:grid-cols-[1fr_11rem_auto]"
+                            >
                                 <input
                                     type="text"
                                     name="question"
                                     placeholder={dict.tech.checklist_item_placeholder}
                                     required
-                                    className="min-h-10 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                                    className="min-h-10 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs text-[var(--text-main)] outline-none focus:border-accent"
                                 />
                                 <select
                                     name="assignee_id"
                                     defaultValue=""
                                     required
                                     aria-label={dict.tech.assign_to_placeholder}
-                                    className="min-h-10 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                                    className="min-h-10 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs text-[var(--text-main)] outline-none focus:border-accent"
                                 >
                                     <option value="" disabled>{dict.tech.assign_to_placeholder}</option>
                                     {availableAssignees.map(user => (
                                         <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
                                     ))}
                                 </select>
-                                <Button type="submit" className="min-h-10 rounded-lg bg-accent px-4 text-xs font-black text-white hover:bg-accent-light">
+                                <Button
+                                    type="submit"
+                                    className="min-h-10 border-none bg-accent px-4 text-xs font-semibold text-white shadow-sm hover:bg-accent-light hover:shadow-sm"
+                                >
                                     {dict.tech.btn_add}
                                 </Button>
                             </form>
@@ -249,28 +263,39 @@ function TechTaskChecklistDialogContent({
                     <button
                         type="button"
                         onClick={onResetChecklist}
-                        className="flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-black uppercase tracking-wide text-[var(--btn-cancel-text)] transition-colors hover:bg-red-500/5"
+                        className="btn-cancel-muted w-full"
                     >
-                        <RotateCcw className="h-4 w-4" />
+                        <RotateCcw className="h-3.5 w-3.5" />
                         {dict.tech.reset_checklist}
                     </button>
                 </main>
 
-                <footer className="dialog-glass-chrome flex shrink-0 items-center gap-2 border-t border-[var(--border-soft)] px-3 py-2.5 sm:px-5">
-                    <label className="flex min-h-10 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-xl px-1 text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)] sm:text-xs">
-                        <input
-                            type="checkbox"
+                <footer className="dialog-glass-chrome flex shrink-0 items-center gap-3 border-t border-[var(--border-soft)] px-3 py-3 sm:px-5">
+                    <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <Checkbox
+                            id="checklist-hide-completed"
                             checked={hideCompleted}
-                            onChange={event => setHideCompleted(event.target.checked)}
-                            className="!m-0 !h-4 !min-h-0 !w-4 shrink-0 cursor-pointer rounded border-[var(--border-color)] accent-accent"
+                            onCheckedChange={checked => setHideCompleted(checked === true)}
+                            aria-label={dict.tech.hide_completed}
+                            className="border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] shadow-sm data-[state=unchecked]:border-[var(--border-color)]"
                         />
-                        <span className="truncate">{dict.tech.hide_completed}</span>
-                    </label>
+                        <Label
+                            htmlFor="checklist-hide-completed"
+                            className="cursor-pointer truncate text-xs font-medium text-[var(--text-muted)]"
+                        >
+                            {dict.tech.hide_completed}
+                        </Label>
+                    </div>
                     <Button
                         type="button"
                         onClick={goToFirstPending}
                         disabled={!firstPendingItem}
-                        className="min-h-10 shrink-0 rounded-xl bg-accent px-3 text-[10px] font-black text-white hover:bg-accent-light disabled:bg-emerald-600 disabled:opacity-100 sm:px-4 sm:text-xs"
+                        className={cn(
+                            "min-h-10 shrink-0 border-none px-3.5 text-xs font-semibold shadow-sm hover:shadow-sm sm:px-4",
+                            firstPendingItem
+                                ? "bg-accent text-white hover:bg-accent-light"
+                                : "bg-emerald-600 text-white hover:bg-emerald-600 disabled:opacity-100",
+                        )}
                     >
                         {firstPendingItem ? dict.tech.requirements_next_pending : dict.tech.requirements_all_done}
                     </Button>
@@ -308,7 +333,7 @@ function ChecklistRequirementsList({
     return (
         <section aria-label={dict.tech.requirements_list} className="space-y-2">
             {categoryItems.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border-soft)] px-4 py-8 text-center text-sm font-semibold text-[var(--text-muted)]">
+                <div className="billing-block rounded-2xl px-4 py-8 text-center text-sm font-medium text-[var(--text-muted)]">
                     {hideCompleted ? dict.tech.requirements_hidden_done : dict.tech.requirements_empty}
                 </div>
             ) : (
@@ -365,25 +390,37 @@ function ChecklistRequirementItem({
         <article
             id={`checklist-requirement-${item.id}`}
             tabIndex={-1}
-            className={`scroll-mt-24 rounded-xl border px-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent ${
-                answered ? "border-accent/25 bg-accent/[0.04]" : "border-[var(--border-soft)] bg-[var(--bg-card)]"
-            }`}
+            className={cn(
+                "billing-block scroll-mt-24 rounded-2xl px-3.5 py-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-accent/40",
+                answered && "ring-1 ring-accent/20",
+            )}
         >
             <div className="flex items-start gap-2.5">
-                <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black ${
-                    answered ? "bg-accent text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-                }`}>
+                <span
+                    className={cn(
+                        "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-semibold",
+                        answered
+                            ? "bg-accent text-white"
+                            : "bg-[color-mix(in_srgb,var(--bg-secondary)_70%,transparent)] text-[var(--text-muted)]",
+                    )}
+                >
                     {answered ? <CheckCircle2 className="h-3.5 w-3.5" /> : index + 1}
                 </span>
                 <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 flex-1 text-[13px] font-bold leading-snug text-[var(--text-main)]">{label}</p>
+                        <p className="min-w-0 flex-1 text-[13px] font-semibold leading-snug text-[var(--text-main)]">
+                            {label}
+                        </p>
                         {item.assignedUserId && (
-                            <p className="inline-flex max-w-[45%] shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-accent">
+                            <Badge
+                                variant="secondary"
+                                className="max-w-[45%] truncate border-accent/20 bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent"
+                            >
                                 <span className="truncate">
-                                    {dict.tech.requirements_assign_to} {item.assignedUserName || `ID: ${item.assignedUserId}`}
+                                    {dict.tech.requirements_assign_to}{" "}
+                                    {item.assignedUserName || `ID: ${item.assignedUserId}`}
                                 </span>
-                            </p>
+                            </Badge>
                         )}
                     </div>
                 </div>
@@ -392,10 +429,19 @@ function ChecklistRequirementItem({
             <fieldset className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-2.5">
                 <legend className="sr-only">{dict.tech.requirements_answer}</legend>
                 <div className="flex items-center gap-1.5">
-                    <ChecklistAnswerButton active={item.answer === "yes"} label={dict.tech.yes_label} onClick={() => onAnswer(item.id, "yes")} />
-                    <ChecklistAnswerButton active={item.answer === "no"} danger label={dict.tech.no_label} onClick={() => onAnswer(item.id, "no")} />
+                    <ChecklistAnswerButton
+                        active={item.answer === "yes"}
+                        label={dict.tech.yes_label}
+                        onClick={() => onAnswer(item.id, "yes")}
+                    />
+                    <ChecklistAnswerButton
+                        active={item.answer === "no"}
+                        danger
+                        label={dict.tech.no_label}
+                        onClick={() => onAnswer(item.id, "no")}
+                    />
                 </div>
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex shrink-0 items-center gap-1">
                     <input
                         id={photoInputId}
                         type="file"
@@ -424,9 +470,12 @@ function ChecklistRequirementItem({
 
             {expanded && (
                 <div className="mt-2.5 space-y-1.5 border-t border-dashed border-[var(--border-soft)] pt-2.5">
-                    <label htmlFor={`tech-checklist-note-${item.id}`} className="text-[10px] font-black uppercase tracking-wide text-[var(--text-muted)]">
+                    <Label
+                        htmlFor={`tech-checklist-note-${item.id}`}
+                        className="text-[11px] font-medium text-[var(--text-muted)]"
+                    >
                         {dict.tech.ops_notes_label}
-                    </label>
+                    </Label>
                     <textarea
                         id={`tech-checklist-note-${item.id}`}
                         value={item.note}
@@ -434,7 +483,7 @@ function ChecklistRequirementItem({
                         onBlur={event => onPersistNote(item.id, event.target.value)}
                         placeholder={dict.tech.notes_placeholder}
                         rows={2}
-                        className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
+                        className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
                     />
                 </div>
             )}
@@ -453,15 +502,19 @@ function ChecklistAnswerButton({
     label: string;
     onClick: () => void;
 }) {
-    const activeClassName = danger ? "border-red-600 bg-red-600 text-white" : "border-accent bg-accent text-white";
     return (
         <button
             type="button"
             aria-pressed={active}
             onClick={onClick}
-            className={`min-h-8 min-w-14 rounded-full border px-3 text-[10px] font-black transition-colors ${
-                active ? activeClassName : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]/80"
-            }`}
+            className={cn(
+                "min-h-8 min-w-14 rounded-lg border-none px-3 text-[11px] font-semibold shadow-sm transition-colors",
+                active
+                    ? danger
+                        ? "bg-red-600 text-white"
+                        : "bg-accent text-white"
+                    : "bg-[var(--bg-secondary)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]/80",
+            )}
         >
             {label}
         </button>
@@ -491,11 +544,14 @@ function ChecklistIconButton({
             aria-expanded={expanded}
             disabled={disabled}
             onClick={onClick}
-            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors ${
-                active
-                    ? "border-accent bg-accent/10 text-accent"
-                    : "border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-muted)] hover:text-[var(--text-main)]"
-            }`}
+            className={cn(
+                "flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-lg border transition-colors",
+                "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]",
+                "hover:border-[var(--btn-select-border)] hover:bg-[var(--btn-select-bg)] hover:text-[var(--btn-select-text)]",
+                active && "border-[var(--btn-select-border)] bg-[var(--btn-select-bg)] text-[var(--btn-select-text)]",
+                "disabled:cursor-not-allowed disabled:opacity-50",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+            )}
         >
             {icon}
         </button>

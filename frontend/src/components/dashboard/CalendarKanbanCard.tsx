@@ -7,6 +7,8 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { cleanChecklistDescription } from "@/lib/format";
 import { formatHoursShort } from "@/lib/format-hours";
 import { localizeTaskDescription, taskLocationTitle } from "@/lib/task-display";
+import { getTaskChecklistProgress } from "@/lib/task-checklist-completion";
+import { TaskProgressBar } from "@/components/tasks/TaskProgressBar";
 import {
     getCalendarKanbanAssignee,
     parseCalendarKanbanChecklist,
@@ -75,9 +77,13 @@ export function CalendarKanbanCard({
     const StatusIcon = statusTone.Icon;
 
     const checklist = parseCalendarKanbanChecklist(localizedDescription);
-    const progress = checklist.length > 0
-        ? Math.round((checklist.filter(item => item.checked).length / checklist.length) * 100)
-        : (task.status === "completed" ? 100 : 18);
+    const checklistProgress = getTaskChecklistProgress(task);
+    const progress = checklistProgress.total > 0
+        ? checklistProgress
+        : {
+            completed: task.status === "completed" ? 1 : 0,
+            total: 1,
+        };
 
     const computedPriority = task.priority || "medium";
 
@@ -179,14 +185,12 @@ export function CalendarKanbanCard({
                         <StatusIcon className="w-3.5 h-3.5" />
                         {statusTone.label}
                     </span>
-                    <span className="font-semibold">{progress}%</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-slate-200/70 overflow-hidden">
-                    <div
-                        className={`h-full rounded-full ${statusTone.bar}`}
-                        style={{ width: `${progress}%` }}
-                    />
-                </div>
+                <TaskProgressBar
+                    completed={progress.completed}
+                    total={progress.total}
+                    barClassName={statusTone.bar}
+                />
             </div>
 
             {workSummary && workSummary.total_seconds > 0 && (

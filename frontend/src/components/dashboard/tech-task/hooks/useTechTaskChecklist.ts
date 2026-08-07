@@ -145,13 +145,24 @@ export function useTechTaskChecklist({
     }, [canAssignTeam, currentUser]);
 
     const parseDescriptionChecklist = useCallback((): ChecklistItem[] | null => {
+        const usesStructuredChecklist = Boolean(task.checklist_items?.length);
         const items = parseTaskChecklistItems(task).map((item, index) => {
             const itemId = item.structuredId ? `item_${item.structuredId}` : `parsed_${index + 1}`;
+            const recordedAnswer = task.checklist_evidence?.[itemId]?.answer ?? null;
             return {
                 id: itemId,
                 category: "General" as const,
                 question: item.text,
-                answer: task.checklist_evidence?.[itemId]?.answer ?? (item.checked ? "yes" as const : null),
+                // Structured rows and their evidence are both persisted task
+                // state. A legacy answer is still a valid completed step until
+                // the database migration materialises it in `completed`.
+                answer: item.checked
+                    ? "yes" as const
+                    : usesStructuredChecklist
+                        ? (recordedAnswer === "yes" || recordedAnswer === "no"
+                            ? recordedAnswer as "yes" | "no"
+                            : null)
+                        : recordedAnswer,
                 note: task.checklist_evidence?.[itemId]?.note || "",
                 photoAttached: Boolean(task.checklist_evidence?.[itemId]?.photoUrl),
                 assignedUserId: item.assignedUserId,
@@ -242,6 +253,14 @@ export function useTechTaskChecklist({
             item.id === itemId ? { ...item, answer } : item
         );
         setChecklist(updated);
+        const restoreFailedAnswer = () => {
+            // Never present an optimistic answer as completed when the API
+            // rejected it: that would make the task modal disagree with the
+            // operational dashboard and with the persisted task state.
+            setChecklist(checklist);
+            onStatusUpdate();
+            toast.error("No se pudo guardar el requisito. Inténtalo de nuevo.");
+        };
 
         const isStructured = itemId.startsWith("item_");
         if (isStructured) {
@@ -254,7 +273,7 @@ export function useTechTaskChecklist({
                 onStatusUpdate();
             } catch (error) {
                 console.error("Error updating structured checklist answer", error);
-                onStatusUpdate();
+                restoreFailedAnswer();
             }
             return;
         }
@@ -292,6 +311,7 @@ export function useTechTaskChecklist({
                 onStatusUpdate();
             } catch (error) {
                 console.error("Error updating parsed checklist answer in backend", error);
+                restoreFailedAnswer();
             }
         } else {
             localStorage.setItem(`workhive_checklist_task_${task.id}`, JSON.stringify(updated));

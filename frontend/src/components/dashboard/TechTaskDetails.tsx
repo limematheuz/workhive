@@ -46,8 +46,8 @@ export function TechTaskDetails({
             }}
         >
             <DialogContent
-                overlayClassName="dialog-glass-overlay"
-                className="flex max-h-[min(92vh,880px)] w-[min(100%-1.25rem,42rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
+                overlayClassName="tech-task-details-overlay"
+                className="tech-task-details-dialog flex max-h-[min(92vh,880px)] w-[min(100%-1.25rem,42rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl"
             >
                 <DialogTitle className="sr-only">{task.title}</DialogTitle>
                 <DialogDescription className="sr-only">

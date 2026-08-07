@@ -14,6 +14,10 @@ const operationsCalendar = readFileSync(
     new URL("../components/dashboard/OperationsCalendar.tsx", import.meta.url),
     "utf8",
 );
+const techTaskCard = readFileSync(
+    new URL("../components/dashboard/TechTaskCard.tsx", import.meta.url),
+    "utf8",
+);
 
 test("kanban card opens task details from an accessible full-card control", () => {
     assert.match(
@@ -59,4 +63,12 @@ test("kanban loads work summaries in a batch instead of one request per card", (
     assert.doesNotMatch(card, /getTaskDetailedSummary\(task\.id\)/);
     assert.match(operationsCalendar, /useTaskWorkSummaries\(tasks\)/);
     assert.match(operationsCalendar, /workSummary=\{workSummaries\[task\.id\]\}/);
+});
+
+test("summary cards share the kanban progress component and identify external work", () => {
+    assert.match(card, /TaskProgressBar/);
+    assert.match(techTaskCard, /TaskProgressBar/);
+    assert.match(techTaskCard, /getOperationalTaskStatus/);
+    assert.match(techTaskCard, /isExternalTaskForCompany/);
+    assert.match(techTaskCard, /Servicio externo|Externo/);
 });

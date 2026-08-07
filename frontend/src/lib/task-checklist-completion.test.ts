@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     canMarkTaskCompleted,
+    getTaskChecklistProgress,
     isTaskChecklistComplete,
     taskHasChecklist,
 } from "./task-checklist-completion.ts";
@@ -68,4 +69,34 @@ test("parsed checklist accepts completed worker assignments like the backend", (
         }),
         false,
     );
+});
+
+test("checklist progress counts no answers as resolved requirements", () => {
+    assert.deepEqual(
+        getTaskChecklistProgress({
+            description: "- [ ] Cocina\n- [ ] Baño",
+            checklist_evidence: {
+                parsed_1: { answer: "yes" },
+                parsed_2: { answer: "no" },
+            },
+        }),
+        { completed: 2, total: 2 },
+    );
+});
+
+test("structured checklist honours recorded legacy answers until rows are repaired", () => {
+    const task = {
+        description: "- [ ] Cocina\n- [ ] Baño",
+        checklist_items: [
+            { id: 41, completed: false },
+            { id: 42, completed: false },
+        ],
+        checklist_evidence: {
+            item_41: { answer: "yes" as const },
+            item_42: { answer: "no" as const },
+        },
+    };
+
+    assert.deepEqual(getTaskChecklistProgress(task), { completed: 2, total: 2 });
+    assert.equal(isTaskChecklistComplete(task), true);
 });
