@@ -37,7 +37,7 @@ export function PasswordStrengthChecklist({ password, locale = "es" }: PasswordS
                     <div
                         key={check.label}
                         className={`flex items-center gap-2 text-sm font-semibold ${
-                            check.valid ? "text-emerald-500" : "text-[var(--text-muted)]"
+                            check.valid ? "text-accent" : "text-[var(--text-muted)]"
                         }`}
                     >
                         {check.valid ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}

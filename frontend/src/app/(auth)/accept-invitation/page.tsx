@@ -95,7 +95,7 @@ function AcceptInvitationContent() {
                 <div className="mb-6 flex justify-center"><AuthLogo className="w-32 sm:w-40" priority /></div>
                 {accepted ? (
                     <div className="space-y-3 py-6 text-center">
-                        <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
+                        <CheckCircle2 className="mx-auto h-12 w-12 text-accent" />
                         <h1 className="text-2xl font-black">{text.successTitle}</h1>
                         <p className="text-sm text-[var(--text-muted)]">{text.success}</p>
                     </div>

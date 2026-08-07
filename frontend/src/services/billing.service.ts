@@ -1,6 +1,6 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api";
 
-export type BillingPlan = "business" | "pro";
+export type BillingPlan = "business" | "pro" | "lifetime";
 
 export const billingService = {
     createCheckout: async (plan: BillingPlan): Promise<string> => {

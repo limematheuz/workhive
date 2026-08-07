@@ -57,8 +57,8 @@ export function getPasswordStrength(password: string, locale: string = "es"): Pa
     return {
         score,
         label: locale === "es" ? "Alta" : "High",
-        colorClass: "text-emerald-500",
-        fillClass: "bg-emerald-500",
+        colorClass: "text-accent",
+        fillClass: "bg-accent",
     };
 }
 

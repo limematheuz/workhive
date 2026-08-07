@@ -13,6 +13,7 @@ PLAN_ACTIVE_USER_LIMITS = {
     "free": 3,
     "trial": 5,
     "pro": 25,
+    "lifetime": 25,
 }
 
 PAYMENT_BLOCKED_STATUSES = {

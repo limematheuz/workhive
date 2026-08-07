@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: str | None = None
     STRIPE_BUSINESS_PRICE_ID: str | None = None
     STRIPE_PRO_PRICE_ID: str | None = None
+    STRIPE_LIFETIME_PRICE_ID: str | None = None
 
     VERIFACTU_ENABLED: bool = False
     VERIFACTU_ENVIRONMENT: str = "test"
@@ -295,6 +296,7 @@ class Settings(BaseSettings):
         prices = {
             "business": self.STRIPE_BUSINESS_PRICE_ID,
             "pro": self.STRIPE_PRO_PRICE_ID,
+            "lifetime": self.STRIPE_LIFETIME_PRICE_ID,
         }
         return {key: value for key, value in prices.items() if value}
 

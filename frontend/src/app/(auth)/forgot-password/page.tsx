@@ -65,7 +65,7 @@ export default function ForgotPasswordPage() {
             <AuthGlassCard>
                 {submitted ? (
                     <div className="space-y-4 py-4 text-center">
-                        <div className="mb-2 inline-flex rounded-full bg-emerald-500/10 p-4 text-emerald-500">
+                        <div className="mb-2 inline-flex rounded-full bg-accent/10 p-4 text-accent">
                             <CheckCircle2 className="h-10 w-10" />
                         </div>
                         <h2 className="text-2xl font-bold tracking-tight">{t.forgot_sent_title}</h2>

@@ -17,8 +17,18 @@ function CheckoutContent() {
     const { dict } = useDictionary();
     const t = dict.auth;
     const requestedPlan = searchParams.get("plan");
-    const plan: BillingPlan = requestedPlan === "pro" ? "pro" : "business";
-    const planName = plan === "pro" ? t.plan_pro_name : "Business";
+    const plan: BillingPlan =
+        requestedPlan === "pro"
+            ? "pro"
+            : requestedPlan === "lifetime"
+              ? "lifetime"
+              : "business";
+    const planName =
+        plan === "pro"
+            ? t.plan_pro_name
+            : plan === "lifetime"
+              ? t.plan_lifetime_name
+              : "Business";
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [error, setError] = useState("");
 

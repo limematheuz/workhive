@@ -78,8 +78,8 @@ export function getInitialContactForm(reason: ContactReason, locale: AuthFormLoc
             phone: "",
             subject: locale === "es" ? "Solicitud de evaluación de WorkHive" : "WorkHive evaluation request",
             message: locale === "es"
-                ? "Hola equipo de WorkHive,\n\nMe gustaría solicitar una evaluación asistida de 14 días para mi empresa.\n\nGracias."
-                : "Hello WorkHive Team,\n\nI would like to request a 14-day assisted evaluation for my company.\n\nThank you.",
+                ? "Hola equipo de WorkHive,\n\nMe gustaría solicitar el producto completo durante 14 días con evaluación asistida para mi empresa.\n\nGracias."
+                : "Hello WorkHive Team,\n\nI would like to request full product access for 14 days with assisted evaluation for my company.\n\nThank you.",
         };
     }
     if (reason?.startsWith("plan-")) {

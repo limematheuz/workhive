@@ -118,22 +118,24 @@ function ContactPageContent() {
     };
 
     return (
-        <AuthShell wide showFooter={false} contentClassName="py-4 sm:py-8">
+        <AuthShell wide showFooter={false} contentClassName="py-2 sm:py-6 lg:py-8">
             <Link
                 href="/login"
-                className="group mb-6 inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion sm:mb-8"
+                className="group mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion sm:mb-6"
             >
                 <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
                 {dict.auth.back_to_login}
             </Link>
 
-            <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+            <div className="grid grid-cols-1 items-start gap-5 sm:gap-6 lg:grid-cols-12 lg:gap-8">
                 <ContactInfoAside
+                    className="order-2 lg:order-1"
                     dict={dict}
                     isTrialRequest={isTrialRequest}
                     supportPhone={supportPhone}
                 />
                 <ContactFormCard
+                    className="order-1 lg:order-2"
                     dict={dict}
                     locale={locale}
                     isTrialRequest={isTrialRequest}

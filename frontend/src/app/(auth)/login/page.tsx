@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/services/auth.service";
@@ -10,17 +10,20 @@ import {
     getAuthFormMessages,
     prepareLoginCredentials,
 } from "@/lib/auth-forms";
+import {
+    loginStatusRedirectDelayMs,
+    resolveLoginStatusPhrases,
+} from "@/lib/login-status";
 import { useDictionary } from "@/lib/dictionary-context";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
-import {
-    LoginErrorIllustration,
-    LoginSuccessIllustration,
-} from "@/components/auth/AuthStatusIllustrations";
+import { LoginStatusFeedback } from "@/components/auth/LoginStatusFeedback";
 import { AUTH_FIELD_CLASS, AUTH_LABEL_CLASS } from "@/components/auth/auth-ui";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     ArrowRight,
     CheckCircle2,
@@ -56,6 +59,11 @@ function GoogleGlyph({ className }: { className?: string }) {
     );
 }
 
+type LoginOutcome =
+    | { kind: "idle" }
+    | { kind: "error"; message: string }
+    | { kind: "success" };
+
 export default function LoginPage() {
     const router = useRouter();
     const { dict, locale } = useDictionary();
@@ -65,18 +73,40 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [alertMsg, setAlertMsg] = useState({ type: "", text: "" });
+    const [outcome, setOutcome] = useState<LoginOutcome>({ kind: "idle" });
 
-    const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (submitting || success) return;
-        setAlertMsg({ type: "", text: "" });
+    const successPhrases = resolveLoginStatusPhrases(
+        "success",
+        t.login_success_phrases,
+        t.success_login_hint,
+    );
+    const failPhrases = resolveLoginStatusPhrases(
+        "error",
+        t.login_fail_phrases,
+        locale === "es" ? "Inténtalo de nuevo." : "Please try again.",
+    );
+    const locked = submitting || outcome.kind === "success";
+
+    useEffect(() => {
+        if (outcome.kind !== "success") return;
+        const delay = loginStatusRedirectDelayMs(successPhrases.length);
+        const timer = window.setTimeout(() => {
+            window.location.assign("/dashboard");
+        }, delay);
+        return () => window.clearTimeout(timer);
+    }, [outcome.kind, successPhrases.length]);
+
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (locked) return;
+        setOutcome({ kind: "idle" });
 
         const prepared = prepareLoginCredentials(email, password, getAuthFormMessages(locale));
         if (prepared.error !== null || prepared.credentials === null) {
-            const message = prepared.error ?? (locale === "es" ? "Revisa tus credenciales." : "Check your credentials.");
-            setAlertMsg({ type: "error", text: message });
+            const message =
+                prepared.error ??
+                (locale === "es" ? "Revisa tus credenciales." : "Check your credentials.");
+            setOutcome({ kind: "error", message });
             return;
         }
 
@@ -85,16 +115,13 @@ export default function LoginPage() {
             clearSessionCache();
             await authService.login(prepared.credentials.email, prepared.credentials.password);
             await authService.getMe();
-            setSuccess(true);
-            window.setTimeout(() => {
-                window.location.assign("/dashboard");
-            }, 650);
+            setOutcome({ kind: "success" });
         } catch (err: unknown) {
             const message = getAuthErrorMessage(
                 err,
                 locale === "es" ? "No se pudo iniciar la sesión." : "Could not sign in.",
             );
-            setAlertMsg({ type: "error", text: message });
+            setOutcome({ kind: "error", message });
         } finally {
             setSubmitting(false);
         }
@@ -103,12 +130,16 @@ export default function LoginPage() {
     const benefits = [t.hero_benefit_1, t.hero_benefit_2, t.hero_benefit_3];
 
     return (
-        <AuthShell wide contentClassName="justify-center py-4 lg:py-8">
-            <div className="flex w-full flex-col items-center gap-10 lg:flex-row lg:items-center lg:gap-12 xl:gap-16">
-                <section className="order-2 w-full flex-1 text-center lg:order-1 lg:max-w-xl lg:text-left">
-                    <AuthLogo className="mx-auto mb-6 hidden w-44 lg:mx-0 lg:block xl:mb-8 xl:w-52" priority />
+        <AuthShell
+            wide
+            contentClassName="justify-start sm:justify-center py-2 sm:py-6 lg:py-8"
+        >
+            <div className="flex w-full min-w-0 flex-col gap-6 lg:flex-row lg:items-center lg:gap-12 xl:gap-16">
+                {/* Marketing — desktop primary; compact strip on mobile after form */}
+                <section className="order-2 hidden min-w-0 flex-1 text-left lg:order-1 lg:block lg:max-w-xl">
+                    <AuthLogo className="mb-8 w-44 xl:w-52" priority />
 
-                    <div className="mb-5 flex flex-wrap justify-center gap-2 lg:justify-start">
+                    <div className="mb-5 flex flex-wrap gap-2">
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/12 px-3 py-1 text-[11px] font-semibold text-accent">
                             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                             {t.feature_tax}
@@ -119,15 +150,14 @@ export default function LoginPage() {
                         </span>
                     </div>
 
-                    <h1 className="mb-4 text-3xl font-bold tracking-tight text-[var(--text-main)] sm:text-4xl xl:mb-5 xl:text-5xl xl:leading-[1.08]">
-                        {t.title_hero}{" "}
-                        <span className="text-accent">{t.title_hero_accent}</span>
+                    <h1 className="mb-4 text-4xl font-bold tracking-tight text-[var(--text-main)] xl:mb-5 xl:text-5xl xl:leading-[1.08]">
+                        {t.title_hero} <span className="text-accent">{t.title_hero_accent}</span>
                     </h1>
-                    <p className="mx-auto mb-6 max-w-lg text-sm leading-relaxed text-[var(--text-muted)] lg:mx-0 xl:mb-8 xl:text-base">
+                    <p className="mb-8 max-w-lg text-base leading-relaxed text-[var(--text-muted)]">
                         {t.desc_hero}
                     </p>
 
-                    <ul className="mx-auto mb-8 max-w-md space-y-3 text-left lg:mx-0">
+                    <ul className="mb-8 max-w-md space-y-3">
                         {benefits.map((benefit) => (
                             <li key={benefit} className="flex items-start gap-2.5 text-sm">
                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
@@ -145,9 +175,13 @@ export default function LoginPage() {
                     </Link>
                 </section>
 
-                <section className="order-1 w-full max-w-lg lg:order-2 lg:w-[min(100%,34rem)] lg:shrink-0">
-                    <div className="mb-5 flex justify-center lg:hidden">
-                        <AuthLogo className="w-40" priority />
+                {/* Auth column — mobile-first single stack */}
+                <section className="order-1 w-full min-w-0 lg:order-2 lg:w-[min(100%,26rem)] lg:shrink-0">
+                    <div className="mb-4 flex flex-col items-center gap-3 lg:mb-5 lg:items-stretch">
+                        <AuthLogo className="w-[9.5rem] sm:w-40 lg:hidden" priority />
+                        <p className="max-w-[18rem] text-center text-sm leading-snug text-[var(--text-muted)] lg:hidden">
+                            {t.login_welcome_sub}
+                        </p>
                     </div>
 
                     <PremiumTabs
@@ -160,13 +194,15 @@ export default function LoginPage() {
                         onChange={(id) => {
                             if (id === "register") router.push("/register");
                         }}
-                        className="mb-5"
+                        className="mb-4"
                     />
 
-                    <AuthGlassCard className="border-[var(--border-soft)] p-7 sm:p-9">
-                        <form className="space-y-5" onSubmit={handleSubmit}>
-                            <div className="space-y-1.5 text-center sm:text-left">
-                                <h2 className="text-xl font-bold tracking-tight">{t.login_welcome}</h2>
+                    <AuthGlassCard className="billing-surface border-[var(--border-soft)] p-5 sm:p-7">
+                        <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
+                            <div className="hidden space-y-1 sm:block sm:text-left">
+                                <h2 className="text-xl font-bold tracking-tight text-[var(--text-main)]">
+                                    {t.login_welcome}
+                                </h2>
                                 <p className="text-sm text-[var(--text-muted)]">{t.login_welcome_sub}</p>
                             </div>
 
@@ -174,8 +210,8 @@ export default function LoginPage() {
                                 type="button"
                                 variant="outline"
                                 size="lg"
-                                className="h-12 w-full rounded-2xl bg-[var(--bg-card)]"
-                                disabled={success || submitting}
+                                className="h-12 w-full rounded-2xl bg-[var(--bg-tertiary)]/80"
+                                disabled={locked}
                                 onClick={() => toast(t.google_soon)}
                             >
                                 <GoogleGlyph className="h-4 w-4" />
@@ -190,125 +226,129 @@ export default function LoginPage() {
                                 <div className="h-px flex-1 bg-[var(--border-soft)]" />
                             </div>
 
-                            <div>
-                                <label htmlFor="login-email" className={AUTH_LABEL_CLASS}>
+                            <div className="min-w-0 space-y-2">
+                                <Label htmlFor="login-email" className={AUTH_LABEL_CLASS}>
                                     {t.email_label}
-                                </label>
-                                <div className="relative">
+                                </Label>
+                                <div className="relative min-w-0">
                                     <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                                    <input
+                                    <Input
                                         id="login-email"
                                         type="email"
                                         name="email"
                                         autoComplete="email"
                                         inputMode="email"
-                                        className={`${AUTH_FIELD_CLASS} rounded-2xl py-3.5 pl-11`}
+                                        enterKeyHint="next"
+                                        className={`${AUTH_FIELD_CLASS} h-12 rounded-2xl py-3.5 pl-11`}
                                         placeholder={t.email_placeholder}
                                         required
-                                        disabled={success || submitting}
+                                        disabled={locked}
                                         value={email}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                                            setEmail(e.target.value)
+                                        }
                                     />
                                 </div>
                             </div>
 
-                            <div>
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                    <label htmlFor="login-password" className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                            <div className="min-w-0 space-y-2">
+                                <div className="flex items-center justify-between gap-3">
+                                    <Label htmlFor="login-password" className={AUTH_LABEL_CLASS + " mb-0"}>
                                         {t.password_label}
-                                    </label>
+                                    </Label>
                                     <Link
                                         href="/forgot-password"
-                                        className="text-xs font-semibold text-accent hover:underline ui-motion"
+                                        className="shrink-0 text-xs font-semibold text-accent hover:underline ui-motion"
                                     >
                                         {t.forgot_password}
                                     </Link>
                                 </div>
-                                <div className="relative">
+                                <div className="relative min-w-0">
                                     <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                                    <input
+                                    <Input
                                         id="login-password"
                                         type={showPassword ? "text" : "password"}
                                         name="password"
                                         autoComplete="current-password"
-                                        className={`${AUTH_FIELD_CLASS} rounded-2xl py-3.5 pl-11 pr-12`}
+                                        enterKeyHint="go"
+                                        className={`${AUTH_FIELD_CLASS} h-12 rounded-2xl py-3.5 pl-11 pr-12`}
                                         placeholder={t.password_placeholder}
                                         required
-                                        disabled={success || submitting}
+                                        disabled={locked}
                                         value={password}
-                                        onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+                                        onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                                            setPassword(e.target.value)
+                                        }
                                     />
                                     <button
                                         type="button"
-                                        onClick={() => setShowPassword(!showPassword)}
+                                        onClick={() => setShowPassword((value) => !value)}
                                         aria-label={showPassword ? t.hide_password : t.show_password}
-                                        disabled={success || submitting}
-                                        className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center justify-center rounded-xl p-1.5 text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)] ui-motion disabled:opacity-50"
+                                        disabled={locked}
+                                        className="absolute right-2.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)] ui-motion disabled:opacity-50"
                                     >
-                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
                                     </button>
                                 </div>
                             </div>
 
-                            {success ? (
-                                <div
-                                    role="status"
-                                    aria-live="polite"
-                                    className="overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)]/70"
-                                >
-                                    <div className="flex justify-center px-4 pt-4">
-                                        <LoginSuccessIllustration className="h-20 w-36 text-[var(--text-main)]" />
-                                    </div>
-                                    <div className="space-y-1 px-4 pb-3 text-center">
-                                        <p className="text-sm font-semibold text-[var(--text-main)]">
-                                            {t.success_login}
-                                        </p>
-                                        <p className="text-xs text-[var(--text-muted)]">
-                                            {t.success_login_hint}
-                                        </p>
-                                    </div>
-                                    <div className="mx-auto mb-4 h-[2px] w-28 overflow-hidden rounded-full bg-[var(--border-soft)]" aria-hidden>
-                                        <div className="h-full w-full origin-left scale-x-0 rounded-full bg-[var(--text-main)]/50 animate-[login-progress_0.7s_ease-out_forwards]" />
-                                    </div>
-                                </div>
-                            ) : alertMsg.text !== "" ? (
-                                <div
-                                    role="alert"
-                                    className="overflow-hidden rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)]"
-                                >
-                                    <div className="flex justify-center px-4 pt-4">
-                                        <LoginErrorIllustration className="h-20 w-36 text-[var(--text-main)]" />
-                                    </div>
-                                    <p className="px-4 pb-4 text-center text-sm font-medium leading-snug text-[var(--btn-cancel-text)]">
-                                        {alertMsg.text}
-                                    </p>
-                                </div>
+                            {outcome.kind === "success" ? (
+                                <LoginStatusFeedback
+                                    variant="success"
+                                    title={t.success_login}
+                                    phrases={successPhrases}
+                                />
+                            ) : outcome.kind === "error" ? (
+                                <LoginStatusFeedback
+                                    variant="error"
+                                    title={outcome.message}
+                                    phrases={failPhrases}
+                                />
                             ) : null}
 
                             <Button
                                 type="submit"
-                                disabled={submitting || success}
+                                disabled={locked}
                                 size="lg"
-                                className="mt-1 h-12 w-full rounded-2xl"
+                                className="h-12 w-full rounded-2xl"
                             >
-                                {submitting || success ? (
+                                {locked ? (
                                     <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        {success ? t.success_login_hint : t.signing_in}
+                                        {outcome.kind === "success"
+                                            ? t.success_login_hint
+                                            : t.signing_in}
                                     </>
                                 ) : (
                                     t.sign_in
                                 )}
                             </Button>
 
-                            <p className="flex items-center justify-center gap-1.5 pt-1 text-[11px] text-[var(--text-muted)]">
-                                <ShieldCheck className="h-3.5 w-3.5" />
-                                {locale === "es"
-                                    ? "Conexión cifrada · acceso por roles"
-                                    : "Encrypted connection · role-based access"}
+                            <p className="flex items-center justify-center gap-1.5 pt-0.5 text-[11px] text-[var(--text-muted)]">
+                                <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                                <span>{t.secure_connection}</span>
                             </p>
                         </form>
                     </AuthGlassCard>
+
+                    {/* Mobile-only compact brand footer — keeps first viewport form-focused */}
+                    <div className="mt-5 space-y-3 text-center lg:hidden">
+                        <h1 className="text-balance text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
+                            {t.title_hero}{" "}
+                            <span className="text-accent">{t.title_hero_accent}</span>
+                        </h1>
+                        <Link
+                            href="/subscription"
+                            className="inline-flex min-h-11 items-center justify-center gap-1.5 px-2 text-sm font-semibold text-accent hover:underline ui-motion"
+                        >
+                            {t.free_trial_link}
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
                 </section>
             </div>
         </AuthShell>

@@ -49,3 +49,15 @@ test("password recovery fits a mobile viewport", async ({ page }) => {
     ).toBeVisible();
     await expectNoHorizontalOverflow(page);
 });
+
+test("login fits a mobile viewport with full-width controls", async ({ page }) => {
+    await page.goto("/login");
+
+    await expect(page.getByRole("button", { name: /Iniciar sesión/i })).toBeVisible();
+    await expect(page.locator("#login-email")).toBeVisible();
+    await expect(page.locator("#login-password")).toBeVisible();
+    await expectNoHorizontalOverflow(page);
+
+    const emailBox = await page.locator("#login-email").boundingBox();
+    expect(emailBox?.width ?? 0).toBeGreaterThan(280);
+});

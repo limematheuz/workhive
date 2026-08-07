@@ -9,7 +9,7 @@ import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Building2, User } from "lucide-react";
+import { ArrowLeft, ArrowRight, Building2, User } from "lucide-react";
 
 function RegisterPageContent() {
     const router = useRouter();
@@ -18,9 +18,9 @@ function RegisterPageContent() {
 
     return (
         <AuthShell contentClassName="my-auto w-full max-w-xl">
-            <AuthGlassCard>
-                <div className="mb-6">
-                    <AuthLogo className="w-32 sm:w-40" priority />
+            <AuthGlassCard className="billing-surface border-[var(--border-soft)] p-5 sm:p-6">
+                <div className="mb-4">
+                    <AuthLogo className="w-28 sm:w-36" priority />
                 </div>
 
                 <PremiumTabs
@@ -33,19 +33,19 @@ function RegisterPageContent() {
                     onChange={(id) => {
                         if (id === "login") router.push("/login");
                     }}
-                    className="mb-6"
+                    className="mb-4"
                 />
 
-                <h1 className="mb-2 text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
+                <h1 className="mb-1.5 text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
                     {t.register_title}
                 </h1>
-                <p className="mb-6 text-sm leading-relaxed text-[var(--text-muted)]">
+                <p className="mb-4 text-sm leading-relaxed text-[var(--text-muted)]">
                     {t.register_subtitle}
                 </p>
 
-                <div className="space-y-3 border-t border-[var(--border-soft)] pt-6">
-                    <div className="flex min-w-0 gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-card-bg)] p-4 sm:gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                <div className="space-y-2.5 border-t border-[var(--border-soft)] pt-4">
+                    <div className="billing-block flex min-w-0 gap-3 rounded-2xl border border-[var(--border-soft)] p-3.5 sm:gap-3.5 sm:p-4">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
                             <User className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 space-y-1">
@@ -58,33 +58,37 @@ function RegisterPageContent() {
                         </div>
                     </div>
 
-                    <div className="flex min-w-0 gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-card-bg)] p-4 sm:gap-4">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <Link
+                        href="/contact?reason=trial"
+                        className="billing-block group flex min-w-0 gap-3 rounded-2xl border border-[var(--border-soft)] p-3.5 ui-motion hover:border-accent/35 sm:gap-3.5 sm:p-4"
+                    >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
                             <Building2 className="h-5 w-5" />
                         </div>
-                        <div className="min-w-0 space-y-1">
-                            <h3 className="text-sm font-semibold text-[var(--text-main)]">
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <h3 className="flex items-center gap-1.5 text-sm font-semibold text-[var(--text-main)]">
                                 {t.register_company_title}
+                                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-accent opacity-70 transition-transform group-hover:translate-x-0.5" />
                             </h3>
                             <p className="text-xs leading-relaxed text-[var(--text-muted)]">
                                 {t.register_company_desc}
                             </p>
                         </div>
-                    </div>
+                    </Link>
                 </div>
 
-                <div className="mt-6 flex flex-col gap-3 border-t border-[var(--border-soft)] pt-6 sm:flex-row sm:items-center sm:justify-between">
-                    <Button asChild variant="secondary" size="lg" className="w-full sm:w-auto">
+                <div className="mt-4 flex flex-col gap-2.5 border-t border-[var(--border-soft)] pt-4 sm:mt-5 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                    <Button asChild variant="secondary" size="lg" className="h-12 w-full rounded-2xl sm:h-11 sm:w-auto">
                         <Link href="/login">
                             <ArrowLeft className="h-4 w-4" />
                             {t.sign_in}
                         </Link>
                     </Button>
-                    <div className="flex min-w-0 flex-col gap-3 sm:flex-row">
-                        <Button asChild size="lg" className="w-full sm:w-auto">
+                    <div className="flex min-w-0 flex-col gap-2.5 sm:flex-row sm:gap-3">
+                        <Button asChild size="lg" className="h-12 w-full rounded-2xl sm:h-11 sm:w-auto">
                             <Link href="/subscription">{t.see_plans}</Link>
                         </Button>
-                        <Button asChild variant="secondary" size="lg" className="w-full sm:w-auto">
+                        <Button asChild variant="secondary" size="lg" className="h-12 w-full rounded-2xl sm:h-11 sm:w-auto">
                             <Link href="/contact?reason=trial">{t.contact_cta}</Link>
                         </Button>
                     </div>

@@ -31,7 +31,7 @@ export function AuthShell({
     return (
         <main
             className={cn(
-                "relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden bg-[var(--bg-primary)] px-4 pb-6 pt-20 text-[var(--text-main)] transition-colors duration-300 sm:px-6 sm:pt-16 md:px-8",
+                "relative flex min-h-dvh w-full min-w-0 flex-col items-center overflow-x-hidden bg-[var(--bg-primary)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))] text-[var(--text-main)] transition-colors duration-300 sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pt-[max(4rem,calc(env(safe-area-inset-top)+2.5rem))] md:pl-[max(2rem,env(safe-area-inset-left))] md:pr-[max(2rem,env(safe-area-inset-right))]",
                 className,
             )}
         >
@@ -45,7 +45,7 @@ export function AuthShell({
             {showFooter && (
                 <footer
                     className={cn(
-                        "relative z-10 mt-8 flex w-full flex-col items-center justify-between gap-4 border-t border-[var(--border-soft)]/80 pt-5 text-center text-xs text-[var(--text-muted)] sm:flex-row sm:text-left",
+                        "relative z-10 mt-6 flex w-full flex-col items-center justify-between gap-4 border-t border-[var(--border-soft)]/80 pt-4 text-center text-xs text-[var(--text-muted)] sm:mt-8 sm:flex-row sm:pt-5 sm:text-left",
                         maxWidth,
                     )}
                 >

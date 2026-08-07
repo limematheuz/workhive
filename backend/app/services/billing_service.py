@@ -58,8 +58,9 @@ def create_checkout_session(company: Company, plan: str) -> str:
         )
 
     frontend_url = settings.FRONTEND_URL.rstrip("/")
+    is_one_time = plan == "lifetime"
     payload = {
-        "mode": "subscription",
+        "mode": "payment" if is_one_time else "subscription",
         "line_items[0][price]": price_id,
         "line_items[0][quantity]": "1",
         "success_url": f"{frontend_url}/dashboard/profile?billing=success",
@@ -68,10 +69,11 @@ def create_checkout_session(company: Company, plan: str) -> str:
         "customer_email": company.email,
         "metadata[company_id]": str(company.id),
         "metadata[plan]": plan,
-        "subscription_data[metadata][company_id]": str(company.id),
-        "subscription_data[metadata][plan]": plan,
         "allow_promotion_codes": "true",
     }
+    if not is_one_time:
+        payload["subscription_data[metadata][company_id]"] = str(company.id)
+        payload["subscription_data[metadata][plan]"] = plan
     session = _stripe_post("/checkout/sessions", payload)
     checkout_url = session.get("url")
     if not checkout_url:
@@ -227,8 +229,13 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
         company.stripe_customer_id = stripe_object.get("customer")
         company.stripe_subscription_id = stripe_object.get("subscription")
         metadata = stripe_object.get("metadata") or {}
-        company.subscription_plan = metadata.get("plan", company.subscription_plan)
-        company.subscription_status = "pending"
+        plan = metadata.get("plan", company.subscription_plan)
+        company.subscription_plan = plan
+        # One-time lifetime purchases have no subscription invoices to mark active.
+        if plan == "lifetime" or stripe_object.get("mode") == "payment":
+            company.subscription_status = "active"
+        else:
+            company.subscription_status = "pending"
     elif event_type.startswith("customer.subscription."):
         company.stripe_customer_id = stripe_object.get("customer")
         company.stripe_subscription_id = stripe_object.get("id")
