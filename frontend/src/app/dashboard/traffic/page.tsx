@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Shield } from "lucide-react";
+import { Activity, Loader2, Shield } from "lucide-react";
 
 import { TrafficAnalyticsPanel } from "@/components/traffic/TrafficAnalyticsPanel";
 import { TrafficEventsTable } from "@/components/traffic/TrafficEventsTable";
+import { PageHeader } from "@/components/ui/page-header";
 import { useDictionary } from "@/lib/dictionary-context";
 import { authService } from "@/services/auth.service";
 import { AuditLogService } from "@/services/audit-log.service";
@@ -203,8 +204,8 @@ export default function TrafficPage() {
 
     if (loading) {
         return (
-            <div className="flex h-full items-center justify-center gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-accent" />
+            <div className="flex min-h-[60vh] items-center justify-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
                 <span className="text-sm text-[var(--text-muted)]">{traffic.loading}</span>
             </div>
         );
@@ -212,10 +213,10 @@ export default function TrafficPage() {
 
     if (!isPlatformSuperadmin(currentUser)) {
         return (
-            <div className="p-8">
-                <div className="rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center">
+            <div className="dashboard-page-content px-[3%] py-6 md:p-8">
+                <div className="billing-block rounded-2xl border border-[var(--border-soft)] px-5 py-10 text-center">
                     <Shield className="mx-auto h-8 w-8 text-[var(--text-muted)]" />
-                    <h1 className="mt-3 text-xl font-black text-[var(--text-main)]">{traffic.restricted_title}</h1>
+                    <h1 className="mt-4 text-lg font-bold text-[var(--text-main)]">{traffic.restricted_title}</h1>
                     <p className="mt-2 text-sm text-[var(--text-muted)]">{traffic.restricted_desc}</p>
                 </div>
             </div>
@@ -223,35 +224,44 @@ export default function TrafficPage() {
     }
 
     return (
-        <div className="dashboard-page-content px-2 py-2 sm:px-3 lg:px-4">
-            <div className="mx-auto max-w-none space-y-3">
-                <TrafficAnalyticsPanel
-                    traffic={traffic}
-                    locale={locale}
-                    stats={stats}
-                    loginEventCount={loginEvents.length}
-                    anonymousUrlEventCount={anonymousUrlEvents.length}
-                    latestEvent={events[0]}
-                    mapPoints={mapPoints}
-                    trend={trend}
-                    platformStats={platformStats}
-                    heatmap={heatmap}
-                />
+        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
+            <PageHeader
+                icon={Activity}
+                title={traffic.title}
+                subtitle={traffic.subtitle}
+                className="mb-6"
+            />
 
-                <TrafficEventsTable
-                    traffic={traffic}
-                    locale={locale}
-                    activeTab={activeTab}
-                    onTabChange={handleTabChange}
-                    loginEventCount={loginEvents.length}
-                    anonymousUrlEventCount={anonymousUrlEvents.length}
-                    paginatedEvents={paginatedEvents}
-                    visibleEventCount={visibleEvents.length}
-                    currentPage={currentPage}
-                    visiblePageCount={visiblePageCount}
-                    onPageChange={handlePageChange}
-                />
-            </div>
+            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
+                <div className="space-y-4">
+                    <TrafficAnalyticsPanel
+                        traffic={traffic}
+                        locale={locale}
+                        stats={stats}
+                        loginEventCount={loginEvents.length}
+                        anonymousUrlEventCount={anonymousUrlEvents.length}
+                        latestEvent={events[0]}
+                        mapPoints={mapPoints}
+                        trend={trend}
+                        platformStats={platformStats}
+                        heatmap={heatmap}
+                    />
+
+                    <TrafficEventsTable
+                        traffic={traffic}
+                        locale={locale}
+                        activeTab={activeTab}
+                        onTabChange={handleTabChange}
+                        loginEventCount={loginEvents.length}
+                        anonymousUrlEventCount={anonymousUrlEvents.length}
+                        paginatedEvents={paginatedEvents}
+                        visibleEventCount={visibleEvents.length}
+                        currentPage={currentPage}
+                        visiblePageCount={visiblePageCount}
+                        onPageChange={handlePageChange}
+                    />
+                </div>
+            </section>
         </div>
     );
 }

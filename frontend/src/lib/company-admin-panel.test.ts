@@ -77,6 +77,7 @@ test("companies UI renders contact_email and uses platform scope checks", () => 
     );
 
     assert.match(list, /getCompanyContactEmail\(company\)/);
+    assert.match(list, /DataListTable/);
     assert.doesNotMatch(list, /\{company\.email \|\| ["']—["']\}/);
     assert.match(page, /isPlatformSuperadmin\(user\)/);
     assert.match(requests, /isPlatformSuperadmin\(user\)/);

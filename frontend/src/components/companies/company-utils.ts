@@ -31,7 +31,7 @@ export function getCompanyAccessLabel(
 }
 
 export function getCompanyAccessBadgeClass(company: Company): string {
-    const base = "border text-[9px] font-bold uppercase";
+    const base = "border text-[9px] font-semibold uppercase tracking-wide";
     if (!isCompanyAccessEnabled(company)) {
         return `${base} bg-[var(--bg-tertiary)] text-[var(--text-muted)] border-[var(--border-soft)]`;
     }
@@ -39,9 +39,9 @@ export function getCompanyAccessBadgeClass(company: Company): string {
         return `${base} border-accent/20 bg-accent/10 text-accent`;
     }
     if (company.subscription_plan === "pro") {
-        return `${base} border-violet-500/20 bg-violet-500/10 text-violet-600`;
+        return `${base} border-accent/25 bg-accent/10 text-accent`;
     }
-    return `${base} border-emerald-500/20 bg-emerald-500/10 text-emerald-500`;
+    return `${base} border-accent/25 bg-accent/10 text-accent`;
 }
 
 export function formatDateForInput(value?: string | null): string {

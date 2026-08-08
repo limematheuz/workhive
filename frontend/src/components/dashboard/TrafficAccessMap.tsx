@@ -153,12 +153,12 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
     return (
         <div className="mt-1 overflow-hidden">
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_16rem]">
-                <div className="relative overflow-hidden rounded-2xl bg-[var(--bg-card-solid)]">
-                    <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full border border-[var(--accent-color)]/45 bg-[var(--bg-card-solid)]/95 p-1 shadow-sm backdrop-blur">
+                <div className="relative overflow-hidden rounded-[18px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]">
+                    <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/95 p-1 shadow-sm backdrop-blur">
                         <button
                             type="button"
                             onClick={() => zoomBy(1.22)}
-                            className="h-9 w-9 rounded-full bg-[var(--accent-color)] text-sm font-black text-white transition hover:bg-[var(--brand-blue-hover)]"
+                            className="h-8 w-8 rounded-lg bg-accent text-sm font-semibold text-white transition hover:bg-[var(--brand-blue-hover)]"
                             aria-label="Zoom in"
                         >
                             +
@@ -166,7 +166,7 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
                         <button
                             type="button"
                             onClick={() => zoomBy(0.82)}
-                            className="h-9 w-9 rounded-full bg-[color-mix(in_srgb,var(--text-main)_14%,var(--bg-card-solid)_86%)] text-sm font-black text-[var(--text-main)] transition hover:bg-[color-mix(in_srgb,var(--accent-color)_18%,var(--bg-card-solid)_82%)]"
+                            className="h-8 w-8 rounded-lg bg-[color-mix(in_srgb,var(--text-main)_10%,var(--bg-card-solid)_90%)] text-sm font-semibold text-[var(--text-main)] transition hover:bg-[color-mix(in_srgb,var(--accent-color)_14%,var(--bg-card-solid)_86%)]"
                             aria-label="Zoom out"
                         >
                             -
@@ -245,23 +245,29 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
 
                 </div>
 
-                <aside className="rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] p-3 text-sm">
-                    <p className="font-mono text-2xl font-black text-[var(--text-main)]">
+                <aside className="billing-block rounded-[18px] border border-[var(--border-soft)] p-3.5 text-sm">
+                    <p className="font-mono text-2xl font-semibold text-[var(--text-main)]">
                         {total.toLocaleString()}
                     </p>
-                    <p className="mt-1 text-[12px] font-bold text-[var(--text-muted)]">{activeLocationsLabel}</p>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                        {activeLocationsLabel}
+                    </p>
 
-                    <div className="mt-5 grid gap-3">
+                    <div className="mt-4 grid gap-2.5">
                         {regions.length > 0 ? (
                             regions.slice(0, 6).map((region) => {
                                 const percent = total > 0 ? Math.max(8, Math.round((region.count / total) * 100)) : 0;
                                 return (
                                     <div key={region.id}>
                                         <div className="flex items-center justify-between gap-3">
-                                            <p className="min-w-0 truncate text-[14px] font-black text-[var(--text-main)]">{region.location}</p>
-                                            <span className="font-mono text-xs font-black text-[var(--text-muted)]">{region.count}</span>
+                                            <p className="min-w-0 truncate text-sm font-semibold text-[var(--text-main)]">
+                                                {region.location}
+                                            </p>
+                                            <span className="font-mono text-xs font-semibold text-[var(--text-muted)]">
+                                                {region.count}
+                                            </span>
                                         </div>
-                                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--border-color)]">
+                                        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--border-soft)]">
                                             <div className="h-full rounded-full bg-accent" style={{ width: `${percent}%` }} />
                                         </div>
                                     </div>

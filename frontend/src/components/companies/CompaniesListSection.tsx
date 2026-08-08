@@ -1,32 +1,28 @@
 "use client";
 
-import { Fragment } from "react";
-import { Building2, ChevronDown, Loader2, MoreVertical, Users } from "lucide-react";
+import { Building2, ChevronDown, Loader2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
+import { DataListTable } from "@/components/ui/data-list-table";
 import type { Company } from "@/services/company.service";
+
 import type { CompanyMember } from "./company-members";
 import { CompanyMembersPanel } from "./CompanyMembersPanel";
-
 import {
-    getCompanyContactEmail,
     getCompanyAccessBadgeClass,
     getCompanyAccessLabel,
+    getCompanyContactEmail,
 } from "./company-utils";
 
 type CompaniesListSectionProps = {
     companies: Company[];
     emptyLabel: string;
     labels: {
+        listTitle: string;
+        listSubtitle: string;
+        countOne: string;
+        countMany: string;
         name: string;
         cif: string;
         email: string;
@@ -49,6 +45,9 @@ type CompaniesListSectionProps = {
     onToggleMembers: (company: Company) => void;
 };
 
+const GRID =
+    "grid-cols-[minmax(10rem,1.2fr)_minmax(7rem,.7fr)_minmax(11rem,1.2fr)_minmax(8rem,.75fr)_6.5rem_4.5rem]";
+
 export function CompaniesListSection({
     companies,
     emptyLabel,
@@ -59,170 +58,143 @@ export function CompaniesListSection({
     membersByCompany,
     onToggleMembers,
 }: CompaniesListSectionProps) {
-    if (companies.length === 0) {
+    const membersLabels = {
+        admins: labels.admins,
+        workers: labels.workers,
+        noAdmins: labels.noAdmins,
+        noWorkers: labels.noWorkers,
+        inactive: labels.memberInactive,
+    };
+
+    const statusBadge = (company: Company) => (
+        <Badge className={getCompanyAccessBadgeClass(company)}>
+            {getCompanyAccessLabel(company, labels.active, labels.inactive)}
+        </Badge>
+    );
+
+    const nameCell = (company: Company) => {
+        const expanded = expandedCompanyId === company.id;
         return (
-            <div className="surface-glass-card flex flex-col items-center justify-center rounded-2xl p-12 text-center">
-                <Building2 className="mb-4 h-12 w-12 text-[var(--text-muted)]" />
-                <p className="text-sm text-[var(--text-muted)]">{emptyLabel}</p>
+            <button
+                type="button"
+                onClick={() => onToggleMembers(company)}
+                aria-expanded={expanded}
+                title={labels.viewTeam}
+                className="flex min-w-0 items-center gap-2 text-left"
+            >
+                {loadingCompanyId === company.id ? (
+                    <Loader2 className="h-4 w-4 shrink-0 animate-spin text-accent" aria-hidden="true" />
+                ) : (
+                    <ChevronDown
+                        className={`h-4 w-4 shrink-0 text-accent transition ${expanded ? "rotate-180" : ""}`}
+                        aria-hidden="true"
+                    />
+                )}
+                <Building2 className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                <span className="truncate text-sm font-semibold text-[var(--text-main)]">
+                    {company.name}
+                </span>
+            </button>
+        );
+    };
+
+    const expandedPanel = (company: Company) => {
+        if (expandedCompanyId !== company.id) return null;
+        return (
+            <div className="col-span-full border-t border-[var(--border-soft)] pt-2.5">
+                <CompanyMembersPanel
+                    members={membersByCompany[company.id] || []}
+                    labels={membersLabels}
+                />
             </div>
         );
-    }
+    };
 
     return (
-        <>
-            <div className="lg:hidden space-y-3">
-                {companies.map((company) => (
-                    <div
-                        key={company.id}
-                        className="surface-glass-card space-y-3 rounded-2xl p-4"
-                    >
-                        <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="text-sm font-black text-[var(--text-main)] flex items-center gap-1.5">
-                                        <Building2 className="h-4 w-4 text-accent shrink-0" />
-                                        {company.name}
-                                    </span>
-                                    <Badge className={getCompanyAccessBadgeClass(company)}>
-                                        {getCompanyAccessLabel(company, labels.active, labels.inactive)}
-                                    </Badge>
-                                </div>
-                                <span className="text-2xs font-mono text-[var(--text-muted)] mt-0.5 block">
-                                    {company.tax_id || company.cif || "—"}
-                                </span>
+        <DataListTable
+            items={companies}
+            getRowKey={(company) => company.id}
+            gridClassName={GRID}
+            desktopFrom="lg"
+            header={{
+                title: labels.listTitle,
+                subtitle: labels.listSubtitle,
+                countLabel: `${companies.length} ${companies.length === 1 ? labels.countOne : labels.countMany}`,
+            }}
+            columns={[
+                { key: "name", label: labels.name },
+                { key: "cif", label: labels.cif },
+                { key: "email", label: labels.email },
+                { key: "phone", label: labels.phone },
+                { key: "status", label: labels.status },
+                { key: "actions", label: labels.actions, className: "text-right" },
+            ]}
+            empty={(
+                <>
+                    <Building2 className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{emptyLabel}</p>
+                </>
+            )}
+            renderCompactRow={(company) => (
+                <>
+                    <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {nameCell(company)}
+                                {statusBadge(company)}
                             </div>
-                            <ActionPopover
-                                options={getCompanyActions(company)}
-                                trigger={
-                                    <button
-                                        type="button"
-                                        aria-label={`Acciones de ${company.name}`}
-                                        className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)]"
-                                    >
-                                        <MoreVertical className="h-4 w-4" />
-                                    </button>
-                                }
-                            />
-                        </div>
-
-                        <div className="space-y-1.5 pt-2 border-t border-[var(--border-soft)]/50 text-xs text-[var(--text-muted)]">
-                            {getCompanyContactEmail(company) && (
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[var(--text-main)]">{labels.email}:</span>
-                                    <span className="truncate">{getCompanyContactEmail(company)}</span>
-                                </div>
-                            )}
-                            {company.phone && (
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[var(--text-main)]">Teléfono:</span>
-                                    <span>{company.phone}</span>
-                                </div>
-                            )}
-                            {company.address && (
-                                <div className="flex items-center gap-1.5">
-                                    <span className="font-semibold text-[var(--text-main)]">Dirección:</span>
-                                    <span className="truncate">{company.address}</span>
-                                </div>
-                            )}
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => onToggleMembers(company)}
-                            aria-expanded={expandedCompanyId === company.id}
-                            className="flex w-full items-center justify-between rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-bold text-[var(--text-main)]"
-                        >
-                            <span className="flex items-center gap-2">
-                                <Users className="h-4 w-4 text-accent" />
-                                {labels.viewTeam}
+                            <span className="block font-mono text-[11px] text-[var(--text-muted)]">
+                                {company.tax_id || company.cif || "—"}
                             </span>
-                            {loadingCompanyId === company.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <ChevronDown className={`h-4 w-4 transition ${expandedCompanyId === company.id ? "rotate-180" : ""}`} />
-                            )}
-                        </button>
-                        {expandedCompanyId === company.id && (
-                            <CompanyMembersPanel
-                                members={membersByCompany[company.id] || []}
-                                labels={{
-                                    admins: labels.admins,
-                                    workers: labels.workers,
-                                    noAdmins: labels.noAdmins,
-                                    noWorkers: labels.noWorkers,
-                                    inactive: labels.memberInactive,
-                                }}
-                            />
+                        </div>
+                        <ActionPopover
+                            align="end"
+                            options={getCompanyActions(company)}
+                        />
+                    </div>
+                    <div className="mt-2.5 space-y-1 border-t border-[var(--border-soft)] pt-2.5 text-xs text-[var(--text-muted)]">
+                        {getCompanyContactEmail(company) && (
+                            <p className="truncate">
+                                <span className="font-medium text-[var(--text-main)]">{labels.email}: </span>
+                                {getCompanyContactEmail(company)}
+                            </p>
+                        )}
+                        {company.phone && (
+                            <p>
+                                <span className="font-medium text-[var(--text-main)]">{labels.phone}: </span>
+                                {company.phone}
+                            </p>
                         )}
                     </div>
-                ))}
-            </div>
-
-            <div className="surface-glass-card hidden w-full overflow-hidden rounded-2xl lg:block">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>{labels.name}</TableHead>
-                            <TableHead>{labels.cif}</TableHead>
-                            <TableHead className="hidden md:table-cell">{labels.email}</TableHead>
-                            <TableHead className="hidden md:table-cell">{labels.phone}</TableHead>
-                            <TableHead>{labels.status}</TableHead>
-                            <TableHead className="text-right">{labels.actions}</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {companies.map((company) => (
-                            <Fragment key={company.id}>
-                            <TableRow>
-                                <TableCell className="font-semibold">
-                                    <button
-                                        type="button"
-                                        onClick={() => onToggleMembers(company)}
-                                        aria-expanded={expandedCompanyId === company.id}
-                                        className="flex items-center gap-2 text-left"
-                                        title={labels.viewTeam}
-                                    >
-                                        {loadingCompanyId === company.id ? (
-                                            <Loader2 className="h-4 w-4 animate-spin text-accent" />
-                                        ) : (
-                                            <ChevronDown className={`h-4 w-4 text-accent transition ${expandedCompanyId === company.id ? "rotate-180" : ""}`} />
-                                        )}
-                                        <Building2 className="h-4 w-4 text-accent" />
-                                        {company.name}
-                                    </button>
-                                </TableCell>
-                                <TableCell className="font-mono text-xs">{company.tax_id || company.cif || "—"}</TableCell>
-                                <TableCell className="hidden md:table-cell text-[var(--text-muted)]">{getCompanyContactEmail(company) || "—"}</TableCell>
-                                <TableCell className="hidden md:table-cell text-[var(--text-muted)]">{company.phone || "—"}</TableCell>
-                                <TableCell>
-                                    <Badge className={getCompanyAccessBadgeClass(company)}>
-                                        {getCompanyAccessLabel(company, labels.active, labels.inactive)}
-                                    </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <ActionPopover options={getCompanyActions(company)} />
-                                </TableCell>
-                            </TableRow>
-                            {expandedCompanyId === company.id && (
-                                <TableRow>
-                                    <TableCell colSpan={6} className="p-3">
-                                        <CompanyMembersPanel
-                                            members={membersByCompany[company.id] || []}
-                                            labels={{
-                                                admins: labels.admins,
-                                                workers: labels.workers,
-                                                noAdmins: labels.noAdmins,
-                                                noWorkers: labels.noWorkers,
-                                                inactive: labels.memberInactive,
-                                            }}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            </Fragment>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
-        </>
+                    {expandedCompanyId === company.id && (
+                        <div className="mt-2.5 border-t border-[var(--border-soft)] pt-2.5">
+                            <CompanyMembersPanel
+                                members={membersByCompany[company.id] || []}
+                                labels={membersLabels}
+                            />
+                        </div>
+                    )}
+                </>
+            )}
+            renderDesktopRow={(company) => (
+                <>
+                    {nameCell(company)}
+                    <p className="min-w-0 truncate font-mono text-xs text-[var(--text-muted)]">
+                        {company.tax_id || company.cif || "—"}
+                    </p>
+                    <p className="min-w-0 truncate text-sm text-[var(--text-muted)]">
+                        {getCompanyContactEmail(company) || "—"}
+                    </p>
+                    <p className="min-w-0 truncate text-sm text-[var(--text-muted)]">
+                        {company.phone || "—"}
+                    </p>
+                    <div className="flex items-center">{statusBadge(company)}</div>
+                    <div className="flex items-center justify-end">
+                        <ActionPopover align="end" options={getCompanyActions(company)} />
+                    </div>
+                    {expandedPanel(company)}
+                </>
+            )}
+        />
     );
 }

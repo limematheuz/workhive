@@ -17,20 +17,20 @@ export function CompanyMembersPanel({ members, labels }: CompanyMembersPanelProp
     const { admins, workers } = groupCompanyMembers(members);
 
     return (
-        <div className="glass-panel grid gap-4 rounded-xl p-4 md:grid-cols-2">
+        <div className="billing-block grid gap-3 rounded-2xl border border-[var(--border-soft)] p-3.5 md:grid-cols-2">
             <MemberGroup
                 title={labels.admins}
                 members={admins}
                 emptyLabel={labels.noAdmins}
                 inactiveLabel={labels.inactive}
-                icon={<ShieldCheck className="h-4 w-4 text-accent" />}
+                icon={<ShieldCheck className="h-3.5 w-3.5 text-accent" />}
             />
             <MemberGroup
                 title={labels.workers}
                 members={workers}
                 emptyLabel={labels.noWorkers}
                 inactiveLabel={labels.inactive}
-                icon={<UserRound className="h-4 w-4 text-accent" />}
+                icon={<UserRound className="h-3.5 w-3.5 text-accent" />}
             />
         </div>
     );
@@ -51,7 +51,7 @@ function MemberGroup({
 }) {
     return (
         <section>
-            <h3 className="mb-2 flex items-center gap-2 text-xs font-black uppercase tracking-wide text-[var(--text-main)]">
+            <h3 className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                 {icon}
                 {title} ({members.length})
             </h3>

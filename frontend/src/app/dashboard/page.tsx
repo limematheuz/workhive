@@ -1,11 +1,10 @@
 "use client";
 
 import React, { startTransition, useCallback, useEffect, useState, Suspense } from "react";
-import { AlertCircle, Building2, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { TechDashboard } from "@/components/dashboard/TechDashboard";
+import { SuperadminDashboard } from "@/components/dashboard/superadmin/SuperadminDashboard";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
-import { PageHeader } from "@/components/ui/page-header";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { LocationService, Location } from "@/services/location.service";
@@ -138,26 +137,7 @@ function DashboardOverviewContent() {
     }
 
     if (userIsPlatformSuperadmin) {
-        return (
-            <div className="mx-auto max-w-5xl space-y-6 p-8">
-                <PageHeader
-                    icon={Building2}
-                    title="Administración de WorkHive"
-                    subtitle={dict.dashboard.companies}
-                />
-                <div className="grid gap-4 md:grid-cols-3">
-                    {[
-                        ["/dashboard/companies", dict.dashboard.companies],
-                        ["/dashboard/users", dict.users.title],
-                        ["/dashboard/roles", dict.dashboard.roles],
-                    ].map(([href, label]) => (
-                        <Link key={href} href={href} className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 text-sm font-bold text-[var(--text-main)] hover:border-accent">
-                            {label}
-                        </Link>
-                    ))}
-                </div>
-            </div>
-        );
+        return <SuperadminDashboard />;
     }
 
     return (

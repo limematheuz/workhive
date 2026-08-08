@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
@@ -16,22 +17,6 @@ import {
     TrialRequestApprove,
     TrialRequestService,
 } from "@/services/trial-request.service";
-
-const STATUS_LABELS: Record<string, string> = {
-    pending_email_verification: "Pendiente de email",
-    email_verified: "Email verificado",
-    approved: "Aprobada",
-    rejected: "Rechazada",
-    expired: "Expirada",
-};
-
-const STATUS_STYLES: Record<string, string> = {
-    pending_email_verification: "bg-amber-500/10 text-amber-600 border border-amber-500/20",
-    email_verified: "bg-accent/10 text-accent border border-accent/20",
-    approved: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20",
-    rejected: "bg-red-500/10 text-red-600 border border-red-500/20",
-    expired: "bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-color)]",
-};
 
 type ApprovalForm = TrialRequestApprove;
 
@@ -47,6 +32,8 @@ const defaultApprovalForm = (request: TrialRequest | null): ApprovalForm => ({
 });
 
 export function TrialRequestsPanel() {
+    const { dict } = useDictionary();
+    const t = dict.companies;
     const { user } = useUser();
     const [requests, setRequests] = useState<TrialRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -55,6 +42,22 @@ export function TrialRequestsPanel() {
     const [rejectTarget, setRejectTarget] = useState<TrialRequest | null>(null);
     const [rejectNote, setRejectNote] = useState("");
     const [submitting, setSubmitting] = useState(false);
+
+    const statusLabels: Record<string, string> = {
+        pending_email_verification: t.request_status_pending_email,
+        email_verified: t.request_status_email_verified,
+        approved: t.request_status_approved,
+        rejected: t.request_status_rejected,
+        expired: t.request_status_expired,
+    };
+
+    const statusStyles: Record<string, string> = {
+        pending_email_verification: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+        email_verified: "border-accent/25 bg-accent/10 text-accent",
+        approved: "border-accent/25 bg-accent/10 text-accent",
+        rejected: "border-red-500/20 bg-red-500/10 text-red-600",
+        expired: "border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
+    };
 
     const pendingCount = useMemo(
         () => requests.filter((request) => request.status === "email_verified").length,
@@ -70,11 +73,11 @@ export function TrialRequestsPanel() {
             const data = await TrialRequestService.list();
             setRequests(data);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudieron cargar las solicitudes");
+            toast.error(error instanceof Error ? error.message : t.requests_load_error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [t.requests_load_error]);
 
     useEffect(() => {
         if (!isPlatformSuperadmin(user)) {
@@ -103,9 +106,9 @@ export function TrialRequestsPanel() {
             const updated = await TrialRequestService.approve(selectedRequest.id, approvalForm);
             setRequests((prev) => prev.filter((request) => request.id !== updated.id));
             setSelectedRequest(null);
-            toast.success("Solicitud aprobada y acceso enviado por email");
+            toast.success(t.request_approve_success);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo aprobar la solicitud");
+            toast.error(error instanceof Error ? error.message : t.request_approve_error);
         } finally {
             setSubmitting(false);
         }
@@ -119,57 +122,69 @@ export function TrialRequestsPanel() {
             setRequests((prev) => prev.filter((request) => request.id !== updated.id));
             setRejectTarget(null);
             setRejectNote("");
-            toast.success("Solicitud rechazada");
+            toast.success(t.request_reject_success);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo rechazar la solicitud");
+            toast.error(error instanceof Error ? error.message : t.request_reject_error);
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <section className="surface-glass-card rounded-2xl p-5">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h3 className="flex items-center gap-2 text-lg font-black">
-                        <ShieldCheck className="h-5 w-5 text-accent" />
-                        Solicitudes de acceso
-                    </h3>
-                    <p className="text-sm text-[var(--text-muted)]">
-                        Verificación de email, aprobación manual y duración de prueba.
-                    </p>
+        <section className="billing-surface relative overflow-hidden rounded-[24px] p-3.5 sm:p-4">
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent">
+                        <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <div>
+                        <h3 className="text-sm font-semibold text-[var(--text-main)]">
+                            {t.requests_title}
+                        </h3>
+                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                            {t.requests_subtitle}
+                        </p>
+                    </div>
                 </div>
-                <Badge className="w-fit border border-accent/20 bg-accent/10 text-accent">
-                    {pendingCount} listas para revisar
+                <Badge
+                    variant="outline"
+                    className="w-fit border-accent/25 bg-accent/10 px-2.5 py-1 text-[10px] font-semibold text-accent"
+                >
+                    {t.requests_ready.replace("{count}", String(pendingCount))}
                 </Badge>
             </div>
 
             {loading ? (
-                <p className="text-sm text-[var(--text-muted)]">Cargando solicitudes...</p>
+                <p className="py-4 text-center text-xs text-[var(--text-muted)]">{t.requests_loading}</p>
             ) : visibleRequests.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-[var(--border-soft)] p-6 text-sm text-[var(--text-muted)]">
-                    No hay solicitudes todavía.
+                <div className="billing-block rounded-2xl px-4 py-6 text-center">
+                    <p className="text-sm text-[var(--text-muted)]">{t.requests_empty}</p>
                 </div>
             ) : (
-                <div className="grid gap-3">
+                <div className="space-y-2">
                     {visibleRequests.slice(0, 8).map((request) => (
                         <article
                             key={request.id}
-                            className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4"
+                            className="billing-block rounded-2xl border border-[var(--border-soft)] p-3.5"
                         >
                             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="min-w-0">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h4 className="font-black">{request.company_name}</h4>
-                                        <Badge className={`${STATUS_STYLES[request.status] || STATUS_STYLES.expired} text-[10px] font-black uppercase`}>
-                                            {STATUS_LABELS[request.status] || request.status}
+                                        <h4 className="text-sm font-semibold text-[var(--text-main)]">
+                                            {request.company_name}
+                                        </h4>
+                                        <Badge
+                                            variant="outline"
+                                            className={`${statusStyles[request.status] || statusStyles.expired} text-[10px] font-semibold uppercase`}
+                                        >
+                                            {statusLabels[request.status] || request.status}
                                         </Badge>
                                     </div>
-                                    <p className="mt-1 text-sm text-[var(--text-muted)]">
+                                    <p className="mt-1 text-xs text-[var(--text-muted)]">
                                         {request.full_name} · {request.email}
                                     </p>
-                                    <p className="mt-1 flex items-center gap-1 text-xs text-[var(--text-muted)]">
-                                        <Clock className="h-3.5 w-3.5" />
+                                    <p className="mt-1 flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
+                                        <Clock className="h-3.5 w-3.5" aria-hidden="true" />
                                         {new Date(request.created_at).toLocaleString("es-ES", {
                                             timeZone: "UTC",
                                         })}
@@ -180,20 +195,18 @@ export function TrialRequestsPanel() {
                                         size="sm"
                                         disabled={request.status !== "email_verified"}
                                         onClick={() => openApproval(request)}
-                                        className="gap-2 rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                                     >
                                         <CheckCircle2 className="h-4 w-4" />
-                                        Aprobar
+                                        {t.request_approve}
                                     </Button>
                                     <Button
                                         size="sm"
-                                        variant="ghost"
+                                        variant="dangerSoft"
                                         disabled={request.status === "approved" || request.status === "rejected"}
                                         onClick={() => setRejectTarget(request)}
-                                        className="gap-2 rounded-xl border border-red-500/30 bg-red-500/10 text-red-600 shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0"
                                     >
                                         <XCircle className="h-4 w-4" />
-                                        Rechazar
+                                        {t.request_reject}
                                     </Button>
                                 </div>
                             </div>
@@ -206,16 +219,16 @@ export function TrialRequestsPanel() {
                 <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
                     <form onSubmit={handleApprove} className="space-y-5">
                         <DialogHeader>
-                            <DialogTitle>Aprobar acceso</DialogTitle>
+                            <DialogTitle>{t.request_approve_title}</DialogTitle>
                             <p className="text-sm text-[var(--text-muted)]">
                                 {selectedRequest?.company_name} · {selectedRequest?.email}
                             </p>
                         </DialogHeader>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="space-y-2">
-                                <Label>Tipo de acceso</Label>
+                                <Label>{t.request_access_mode}</Label>
                                 <select
-                                    aria-label="Tipo de acceso"
+                                    aria-label={t.request_access_mode}
                                     value={approvalForm.access_mode}
                                     onChange={(event) => setApprovalForm({
                                         ...approvalForm,
@@ -223,38 +236,33 @@ export function TrialRequestsPanel() {
                                     })}
                                     className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 text-sm"
                                 >
-                                    <option value="trial">Prueba</option>
-                                    <option value="pro">Pro</option>
+                                    <option value="trial">{t.request_access_trial}</option>
+                                    <option value="pro">{t.request_access_pro}</option>
                                 </select>
                             </div>
                             <TrialInput
-                                label="Días de prueba"
+                                label={t.request_trial_days}
                                 type="number"
                                 disabled={approvalForm.access_mode !== "trial"}
                                 value={approvalForm.trial_days?.toString() || ""}
                                 onChange={(value) => setApprovalForm({ ...approvalForm, trial_days: Number(value) || 14 })}
                             />
-                            <TrialInput label="NIF/CIF" value={approvalForm.tax_id} onChange={(tax_id) => setApprovalForm({ ...approvalForm, tax_id })} />
-                            <TrialInput label="Teléfono" value={approvalForm.phone} onChange={(phone) => setApprovalForm({ ...approvalForm, phone })} />
-                            <TrialInput label="Email empresa" type="email" value={approvalForm.company_email || ""} onChange={(company_email) => setApprovalForm({ ...approvalForm, company_email })} />
-                            <TrialInput label="Admin" value={approvalForm.owner_full_name || ""} onChange={(owner_full_name) => setApprovalForm({ ...approvalForm, owner_full_name })} />
-                            <TrialInput label="Dirección fiscal" value={approvalForm.address} onChange={(address) => setApprovalForm({ ...approvalForm, address })} wide />
+                            <TrialInput label={t.cif} value={approvalForm.tax_id} onChange={(tax_id) => setApprovalForm({ ...approvalForm, tax_id })} />
+                            <TrialInput label={t.phone} value={approvalForm.phone} onChange={(phone) => setApprovalForm({ ...approvalForm, phone })} />
+                            <TrialInput label={t.email_label} type="email" value={approvalForm.company_email || ""} onChange={(company_email) => setApprovalForm({ ...approvalForm, company_email })} />
+                            <TrialInput label={t.request_owner} value={approvalForm.owner_full_name || ""} onChange={(owner_full_name) => setApprovalForm({ ...approvalForm, owner_full_name })} />
+                            <TrialInput label={t.address_label} value={approvalForm.address} onChange={(address) => setApprovalForm({ ...approvalForm, address })} wide />
                         </div>
                         <DialogFooter>
                             <Button
                                 type="button"
-                                variant="ghost"
+                                variant="secondary"
                                 onClick={() => setSelectedRequest(null)}
-                                className="rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
                             >
-                                Cancelar
+                                {t.cancel}
                             </Button>
-                            <Button
-                                type="submit"
-                                disabled={submitting}
-                                className="rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0"
-                            >
-                                {submitting ? "Aprobando..." : "Aprobar y enviar acceso"}
+                            <Button type="submit" disabled={submitting}>
+                                {submitting ? t.request_approving : t.request_approve_submit}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -264,26 +272,25 @@ export function TrialRequestsPanel() {
             <Dialog open={Boolean(rejectTarget)} onOpenChange={(open) => !open && setRejectTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Rechazar solicitud</DialogTitle>
+                        <DialogTitle>{t.request_reject_title}</DialogTitle>
                     </DialogHeader>
                     <label className="sr-only" htmlFor="trial-rejection-note">
-                        Motivo interno opcional
+                        {t.request_reject_note}
                     </label>
                     <textarea
                         id="trial-rejection-note"
                         value={rejectNote}
                         onChange={(event) => setRejectNote(event.target.value)}
                         className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm"
-                        placeholder="Motivo interno opcional"
+                        placeholder={t.request_reject_note}
                     />
                     <DialogFooter>
                         <Button
                             type="button"
-                            variant="ghost"
+                            variant="secondary"
                             onClick={() => setRejectTarget(null)}
-                            className="rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
                         >
-                            Cancelar
+                            {t.cancel}
                         </Button>
                         <Button
                             type="button"
@@ -291,7 +298,7 @@ export function TrialRequestsPanel() {
                             onClick={handleReject}
                             className="rounded-xl border border-red-600 bg-red-600 text-white shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-700 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40"
                         >
-                            Rechazar
+                            {t.request_reject}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

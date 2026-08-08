@@ -327,19 +327,20 @@ function CompaniesAdminPageContent({
     } = controller;
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 text-[var(--text-main)] px-[3%] py-6 md:p-8">
+        <div className="mx-auto max-w-7xl space-y-4 px-[3%] py-6 text-[var(--text-main)] md:p-8">
             <PageHeader
                 icon={Building2}
                 title={dict.companies.title}
                 subtitle={dict.companies.subtitle}
                 titleAs="h2"
+                className="mb-0"
                 actions={(
                     <Button
                         onClick={() => setIsProvisionOpen(true)}
                         className={PAGE_ACTION_BUTTON_PRIMARY}
                     >
                         <Plus className="h-4 w-4" />
-                        Nueva empresa
+                        {dict.companies.new_company}
                     </Button>
                 )}
             />
@@ -350,6 +351,10 @@ function CompaniesAdminPageContent({
                 companies={companies}
                 emptyLabel={dict.companies.empty}
                 labels={{
+                    listTitle: dict.companies.list_title,
+                    listSubtitle: dict.companies.list_subtitle,
+                    countOne: dict.companies.count_one,
+                    countMany: dict.companies.count_many,
                     name: dict.companies.name,
                     cif: dict.companies.cif,
                     email: dict.companies.email,
