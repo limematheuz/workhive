@@ -17,6 +17,9 @@ class TaskItem(Base):
     price = Column(Float, nullable=True)
     quantity = Column(Float, nullable=True)
     unit = Column(String(50), nullable=False)
+    # fixed: price × quantity. hourly: price is €/h × worked_seconds_snapshot.
+    pricing_mode = Column(String(20), nullable=False, default="fixed")
+    worked_seconds_snapshot = Column(Integer, nullable=True)
     status = Column(String(20), default="accepted", nullable=False)
     priority = Column(String(20), default="medium", nullable=False)
     scheduled_start_at = Column(DateTime(timezone=True), nullable=True)

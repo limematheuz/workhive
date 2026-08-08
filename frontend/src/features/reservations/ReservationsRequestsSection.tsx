@@ -92,6 +92,8 @@ export function ReservationsRequestsSection({
                 setEditDescription={taskCrud.setEditDescription}
                 editPrice={taskCrud.editPrice}
                 setEditPrice={taskCrud.setEditPrice}
+                editPricingMode={taskCrud.editPricingMode}
+                setEditPricingMode={taskCrud.setEditPricingMode}
                 editQuantity={taskCrud.editQuantity}
                 setEditQuantity={taskCrud.setEditQuantity}
                 editUnit={taskCrud.editUnit}

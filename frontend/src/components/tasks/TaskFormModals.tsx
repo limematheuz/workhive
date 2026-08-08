@@ -11,6 +11,7 @@ import { TaskEditModal } from "./TaskEditModal";
 import { TemplateModal } from "./TemplateModal";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { TaskPriority, TaskStatus } from "@/types/task";
+import type { TaskPricingMode } from "@/domain/tasks/task-edit";
 
 interface TaskFormModalsProps {
     dict: Dictionary;
@@ -58,6 +59,8 @@ interface TaskFormModalsProps {
     setEditDescription: (val: string) => void;
     editPrice: string;
     setEditPrice: (val: string) => void;
+    editPricingMode: TaskPricingMode;
+    setEditPricingMode: (val: TaskPricingMode) => void;
     editQuantity: string;
     setEditQuantity: (val: string) => void;
     editUnit: string;
@@ -141,6 +144,8 @@ interface TaskFormModalsProps {
      setEditDescription,
      editPrice,
      setEditPrice,
+     editPricingMode,
+     setEditPricingMode,
      editQuantity,
      setEditQuantity,
      editUnit,
@@ -231,6 +236,8 @@ interface TaskFormModalsProps {
                  setEditDescription={setEditDescription}
                  editPrice={editPrice}
                  setEditPrice={setEditPrice}
+                 editPricingMode={editPricingMode}
+                 setEditPricingMode={setEditPricingMode}
                  editQuantity={editQuantity}
                  setEditQuantity={setEditQuantity}
                  editUnit={editUnit}

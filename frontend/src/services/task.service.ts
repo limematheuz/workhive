@@ -17,6 +17,7 @@ export interface TaskItemCreate {
     price?: number | null;
     quantity?: number | null;
     unit: string;
+    pricing_mode?: "fixed" | "hourly";
     template_task_id?: number | null;
     location_id: number;
     user_id?: number | null;
@@ -40,6 +41,7 @@ export interface TaskItemUpdate {
     price?: number | null;
     quantity?: number | null;
     unit?: string | null;
+    pricing_mode?: "fixed" | "hourly" | null;
     status?: TaskStatus | null;
     template_task_id?: number | null;
     location_id?: number | null;

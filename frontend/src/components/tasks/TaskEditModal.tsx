@@ -21,6 +21,7 @@ import {
     taskLocationTitle,
 } from "@/lib/task-display";
 import type { TaskPriority, TaskStatus } from "@/types/task";
+import type { TaskPricingMode } from "@/domain/tasks/task-edit";
 import {
     taskDialogContentClass,
     taskDialogHeaderClass,
@@ -43,6 +44,8 @@ interface TaskEditModalProps {
     setEditDescription: (val: string) => void;
     editPrice: string;
     setEditPrice: (val: string) => void;
+    editPricingMode: TaskPricingMode;
+    setEditPricingMode: (val: TaskPricingMode) => void;
     editQuantity: string;
     setEditQuantity: (val: string) => void;
     editUnit: string;
@@ -84,6 +87,8 @@ export function TaskEditModal({
     setEditDescription,
     editPrice,
     setEditPrice,
+    editPricingMode,
+    setEditPricingMode,
     editQuantity,
     setEditQuantity,
     editUnit,
@@ -183,6 +188,7 @@ export function TaskEditModal({
                             editNotes={editNotes}
                             editPlanningTime={editPlanningTime}
                             editPrice={editPrice}
+                            editPricingMode={editPricingMode}
                             editPriority={editPriority}
                             editQuantity={editQuantity}
                             editStatus={editStatus}
@@ -204,6 +210,7 @@ export function TaskEditModal({
                             setEditNotes={setEditNotes}
                             setEditPlanningTime={setEditPlanningTime}
                             setEditPrice={setEditPrice}
+                            setEditPricingMode={setEditPricingMode}
                             setEditPriority={setEditPriority}
                             setEditQuantity={setEditQuantity}
                             setEditStatus={setEditStatus}

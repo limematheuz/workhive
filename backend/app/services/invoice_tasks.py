@@ -7,8 +7,14 @@ from app.models.location import Location
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.repositories import client as client_repo
-from app.schemas.task_item import InvoiceableTaskResponse, TaskItemResponse
+from app.repositories import work_session as work_session_repo
+from app.schemas.task_item import (
+    InvoiceableTaskResponse,
+    InvoiceableWorkerHours,
+    TaskItemResponse,
+)
 from app.services.company_client_service import find_company_client
+from app.services import task_billing_service
 
 
 def resolve_invoice_client_for_task(
@@ -151,6 +157,16 @@ def get_invoiceable_completed_tasks(
     )
 
     responses: list[InvoiceableTaskResponse] = []
+    sessions_by_task: dict[int, list] = {task.id: [] for task in tasks}
+    if sessions_by_task:
+        for session in work_session_repo.get_sessions_by_tasks(
+            db,
+            list(sessions_by_task.keys()),
+        ):
+            if session.task_item_id in sessions_by_task:
+                sessions_by_task[session.task_item_id].append(session)
+
+    needs_commit = False
     for task in tasks:
         client, billing_source, collaborator = resolve_invoice_client_for_task(
             db,
@@ -159,7 +175,17 @@ def get_invoiceable_completed_tasks(
         )
         if client is None:
             continue
+        had_snapshot = task.worked_seconds_snapshot is not None
+        worked_seconds, worker_rows = task_billing_service.resolve_invoiceable_work(
+            task,
+            sessions_by_task.get(task.id, []),
+        )
+        if not had_snapshot and task.worked_seconds_snapshot is not None:
+            needs_commit = True
         base = TaskItemResponse.model_validate(task)
+        worked_hours = float(
+            task_billing_service.billable_hours_from_seconds(worked_seconds)
+        )
         responses.append(
             InvoiceableTaskResponse(
                 **base.model_dump(),
@@ -177,6 +203,26 @@ def get_invoiceable_completed_tasks(
                 collaborator_company_name=(
                     collaborator.name if collaborator else None
                 ),
+                worked_seconds=worked_seconds,
+                worked_hours=worked_hours,
+                workers=[
+                    InvoiceableWorkerHours(**row) for row in worker_rows
+                ],
             )
         )
+    if needs_commit:
+        db.commit()
     return responses
+
+
+def apply_task_amounts_to_invoice_item(task: TaskItem, item_data):
+    """Override client quantity/rate with backend-authoritative task billing."""
+    quantity, unit_price = task_billing_service.resolve_task_invoice_quantity_and_rate(
+        task
+    )
+    return item_data.model_copy(
+        update={
+            "quantity": float(quantity),
+            "unit_price": float(unit_price),
+        }
+    )

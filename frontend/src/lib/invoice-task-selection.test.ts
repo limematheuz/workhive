@@ -91,3 +91,73 @@ test("selected jobs become invoice concepts with price quantity and tax", () => 
         ],
     );
 });
+
+test("hourly jobs become invoice concepts from person-hours times rate", () => {
+    const hourlyTask = {
+        id: 9,
+        title: "Limpieza horaria",
+        client_id: 25,
+        client_name: "Port Blanc",
+        location_name: "Casa Horas",
+        billing_source: "own" as const,
+        is_invoiced: false,
+        pricing_mode: "hourly" as const,
+        price: 20,
+        quantity: 1,
+        worked_hours: 2.5,
+        worked_seconds: 9000,
+        date_done: "2026-08-08T12:00:00Z",
+        created_at: "2026-08-08T08:00:00Z",
+        unit: "hour",
+        workers: [
+            { user_id: 1, user_name: "Ana", worked_seconds: 2400, worked_hours: 0.6667 },
+            { user_id: 2, user_name: "Bea", worked_seconds: 3600, worked_hours: 1 },
+            { user_id: 3, user_name: "Carla", worked_seconds: 1800, worked_hours: 0.5 },
+            { user_id: 4, user_name: "Diana", worked_seconds: 1200, worked_hours: 0.3333 },
+        ],
+    };
+    const concepts = buildInvoiceTaskConcepts(
+        [hourlyTask as never],
+        [9],
+        0.21,
+    );
+
+    assert.equal(concepts.length, 1);
+    assert.equal(concepts[0]?.unitPrice, 20);
+    assert.equal(concepts[0]?.quantity, 2.5);
+    assert.match(concepts[0]?.description || "", /Horas-persona: 2h 30m/);
+    assert.match(concepts[0]?.description || "", /Ana 40m/);
+    assert.match(concepts[0]?.description || "", /2\.5 h × 20 €\/h/);
+});
+
+test("fixed-price jobs still expose recorded person-hours in the concept", () => {
+    const fixedTask = {
+        id: 11,
+        title: "Limpieza fija",
+        client_id: 25,
+        client_name: "Port Blanc",
+        location_name: "Casa Fija",
+        billing_source: "own" as const,
+        is_invoiced: false,
+        pricing_mode: "fixed" as const,
+        price: 165,
+        quantity: 1,
+        worked_seconds: 7200,
+        worked_hours: 2,
+        unit: "service",
+        workers: [
+            { user_id: 1, user_name: "Ana", worked_seconds: 3600, worked_hours: 1 },
+            { user_id: 2, user_name: "Bea", worked_seconds: 3600, worked_hours: 1 },
+        ],
+    };
+    const concepts = buildInvoiceTaskConcepts(
+        [fixedTask as never],
+        [11],
+        0.21,
+    );
+
+    assert.equal(concepts[0]?.unitPrice, 165);
+    assert.equal(concepts[0]?.quantity, 1);
+    assert.match(concepts[0]?.description || "", /Horas-persona: 2h/);
+    assert.match(concepts[0]?.description || "", /Ana 1h · Bea 1h/);
+});

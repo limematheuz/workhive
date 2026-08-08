@@ -1,4 +1,9 @@
 import type { InvoiceableTask } from "@/services/invoice.service";
+import { formatHoursShort } from "./format-hours.ts";
+import {
+    buildTaskWorkSummaryLines,
+    resolveTaskInvoiceBilling,
+} from "./task-invoice-billing.ts";
 
 export type InvoiceTaskWithLocation = InvoiceableTask & {
     clientId?: number;
@@ -83,15 +88,18 @@ export function buildInvoiceTaskConcepts(
                 { day: "2-digit", month: "2-digit" },
             )
             : "";
+        const billing = resolveTaskInvoiceBilling(task);
+        const workLines = buildTaskWorkSummaryLines(task, formatHoursShort);
         return [{
             id: `task-${task.id}`,
             description: [
                 task.title,
                 task.locationName,
                 formattedDate,
+                ...workLines,
             ].filter(Boolean).join("\n"),
-            unitPrice: task.price ?? 0,
-            quantity: task.quantity ?? 1,
+            unitPrice: billing.unitPrice,
+            quantity: billing.quantity,
             taxRate,
             task_item_id: task.id,
         }];

@@ -22,6 +22,7 @@ from app.services import (
     calendar_sync_service,
     notification_service,
     task_assignment_service,
+    task_billing_service,
     task_lifecycle_notification_service,
     task_structure_service,
 )
@@ -30,24 +31,21 @@ from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 
 
-def _close_active_task_sessions(
+def _mark_task_completed(
     db: Session,
-    task_id: int,
-    end_time: datetime,
-) -> None:
-    sessions = [
-        session
-        for session in work_session_repo.get_sessions_by_task(db, task_id)
-        if session.end_time is None
-    ]
-    newest_by_user: dict[int, WorkSession] = {}
-    for session in sorted(sessions, key=lambda item: item.id, reverse=True):
-        if session.user_id not in newest_by_user:
-            newest_by_user[session.user_id] = session
-            session.end_time = end_time
-        else:
-            session.end_time = session.start_time
-        db.add(session)
+    task: TaskItem,
+    *,
+    completed_at: datetime | None = None,
+) -> datetime:
+    stamped_at = completed_at or datetime.now(timezone.utc)
+    task.status = "completed"
+    task.date_done = stamped_at
+    task_billing_service.capture_completed_work_snapshot(
+        db,
+        task,
+        completed_at=stamped_at,
+    )
+    return stamped_at
 
 
 def _complete_task_when_checklist_is_done(
@@ -59,10 +57,7 @@ def _complete_task_when_checklist_is_done(
     if not task_assignment_service.all_task_checklist_items_are_complete(task):
         return False
 
-    completed_at = datetime.now(timezone.utc)
-    task.status = "completed"
-    task.date_done = completed_at
-    _close_active_task_sessions(db, task.id, completed_at)
+    _mark_task_completed(db, task)
     return True
 
 
@@ -281,9 +276,18 @@ def create_task_item(
     )
     # Manual work starts in the pending column. External company requests are
     # created by the reservation flow and remain requested.
+    pricing_mode = task_billing_service.normalize_pricing_mode(
+        task_item_data.pricing_mode
+    )
     task_item_data = task_item_data.model_copy(
         update={
             "status": "pending",
+            "pricing_mode": pricing_mode,
+            "unit": (
+                "hour"
+                if pricing_mode == task_billing_service.PRICING_MODE_HOURLY
+                else task_item_data.unit
+            ),
             "operational_notes": [],
             "attachments": [],
             "reported_issues": [],
@@ -515,6 +519,25 @@ def _normalize_task_completion(
     return task_data
 
 
+def _apply_completion_side_effects(
+    db: Session,
+    task: TaskItem,
+    *,
+    was_completed: bool,
+) -> None:
+    if not was_completed and task.status == "completed":
+        completed_at = task.date_done or datetime.now(timezone.utc)
+        task.date_done = completed_at
+        task_billing_service.capture_completed_work_snapshot(
+            db,
+            task,
+            completed_at=completed_at,
+        )
+        return
+    if was_completed and task.status != "completed":
+        task_billing_service.clear_work_snapshot_on_reopen(task)
+
+
 def _should_freeze_external_snapshot(
     task: TaskItem,
     task_data: TaskItemUpdate,
@@ -550,6 +573,12 @@ def update_task_item(
         task_data,
     )
     task_data = _normalize_task_completion(db_task_item, task_data)
+    if "pricing_mode" in task_data.model_fields_set and task_data.pricing_mode is not None:
+        mode = task_billing_service.normalize_pricing_mode(task_data.pricing_mode)
+        updates = {"pricing_mode": mode}
+        if mode == task_billing_service.PRICING_MODE_HOURLY:
+            updates["unit"] = "hour"
+        task_data = task_data.model_copy(update=updates)
 
     if _should_freeze_external_snapshot(
         db_task_item,
@@ -565,6 +594,11 @@ def update_task_item(
     ):
         task_structure_service.sync_from_description(db, updated_task)
     _complete_task_when_checklist_is_done(db, updated_task)
+    _apply_completion_side_effects(
+        db,
+        updated_task,
+        was_completed=was_completed,
+    )
     db.commit()
     db.refresh(updated_task)
     _notify_new_task_assignees(
@@ -871,7 +905,7 @@ def _complete_user_assignment(task: TaskItem, user_id: int) -> None:
     task_structure_service.set_user_status(task, user_id, "completed")
 
 
-def _set_task_status_after_user_finish(task: TaskItem) -> None:
+def _set_task_status_after_user_finish(db: Session, task: TaskItem) -> None:
     checklist_complete = task_assignment_service.all_task_checklist_items_are_complete(
         task
     )
@@ -879,11 +913,11 @@ def _set_task_status_after_user_finish(task: TaskItem) -> None:
         task.description
     )
     if checklist_complete or not has_explicit_assignments:
-        task.status = "completed"
-        task.date_done = datetime.now(timezone.utc)
+        _mark_task_completed(db, task)
         return
     task.status = "progress"
     task.date_done = None
+    task_billing_service.clear_work_snapshot_on_reopen(task)
 
 
 def _close_user_task_sessions(
@@ -915,8 +949,8 @@ def finish_task_work(
         return _finish_without_active_session(task, current_user.id)
 
     _complete_user_assignment(task, current_user.id)
-    _set_task_status_after_user_finish(task)
     _close_user_task_sessions(db, active_sessions)
+    _set_task_status_after_user_finish(db, task)
     db.add(task)
     db.commit()
     db.refresh(task)

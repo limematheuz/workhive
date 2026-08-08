@@ -12,6 +12,8 @@ import {
     toTaskPlanningTimeInput,
 } from "./task-schedule";
 
+export type TaskPricingMode = "fixed" | "hourly";
+
 export interface TaskEditValues {
     title: string;
     notes: string;
@@ -19,6 +21,7 @@ export interface TaskEditValues {
     price: string;
     quantity: string;
     unit: string;
+    pricingMode: TaskPricingMode;
     locationId: string;
     userId: string;
     status: TaskStatus;
@@ -44,6 +47,7 @@ export function taskToEditValues(task: TaskItem): TaskEditValues {
         price: task.price?.toString() || "",
         quantity: task.quantity?.toString() || "",
         unit: task.unit || "unidad",
+        pricingMode: task.pricing_mode === "hourly" ? "hourly" : "fixed",
         locationId: String(task.location_id),
         userId: task.user_id?.toString() || "",
         status: task.status === "requested"
@@ -86,7 +90,8 @@ export function buildTaskUpdatePayload(
         notes: values.notes || null,
         price: optionalNumber(values.price),
         quantity: optionalNumber(values.quantity),
-        unit: values.unit,
+        unit: values.pricingMode === "hourly" ? "hour" : values.unit,
+        pricing_mode: values.pricingMode,
         location_id: Number.parseInt(values.locationId, 10),
         user_id: values.userId ? Number.parseInt(values.userId, 10) : null,
         status: values.status,

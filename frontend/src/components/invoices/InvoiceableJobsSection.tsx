@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button";
 import type { InvoiceableTask as InvoiceableJob } from "@/services/invoice.service";
 import type { Client } from "@/services/client.service";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { formatHoursShort } from "@/lib/format-hours";
+import {
+    formatWorkerHoursLine,
+    resolveTaskInvoiceAmount,
+    resolveTaskInvoiceBilling,
+    resolveTaskPersonSeconds,
+} from "@/lib/task-invoice-billing";
 import { cn } from "@/lib/utils";
 
 export type InvoiceableTask = InvoiceableJob & {
@@ -72,6 +79,17 @@ function JobRow({
     labels: InvoiceableJobsSectionProps["labels"];
     compact?: boolean;
 }) {
+    const billing = resolveTaskInvoiceBilling(task);
+    const amount = resolveTaskInvoiceAmount(task);
+    const personSeconds = resolveTaskPersonSeconds(task);
+    const workersLine = formatWorkerHoursLine(task.workers, formatHoursShort);
+    const quantityLabel = task.pricing_mode === "hourly"
+        ? `${formatHoursShort(personSeconds)} × ${formatCurrency(billing.unitPrice)}/h`
+        : `${labels.quantity || "Cant."} ${billing.quantity} ${task.unit}`;
+    const hoursLabel = personSeconds > 0
+        ? `Horas-persona ${formatHoursShort(personSeconds)}`
+        : null;
+
     return (
         <button
             type="button"
@@ -116,8 +134,14 @@ function JobRow({
                             {task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}
                         </span>
                         <span className="text-right font-semibold text-[var(--text-main)]">
-                            {formatCurrency((task.price || 0) * (task.quantity || 1))}
+                            {formatCurrency(amount)}
                         </span>
+                        {hoursLabel && (
+                            <span className="col-span-2 font-medium text-[var(--text-main)]">
+                                {hoursLabel}
+                                {workersLine ? ` · ${workersLine}` : ""}
+                            </span>
+                        )}
                     </div>
                 </>
             ) : (
@@ -136,14 +160,20 @@ function JobRow({
                     <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p>
                         <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-                            {labels.quantity || "Cant."} {task.quantity || 1} {task.unit}
+                            {quantityLabel}
+                            {hoursLabel ? ` · ${hoursLabel}` : ""}
                         </p>
+                        {workersLine && (
+                            <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">
+                                {workersLine}
+                            </p>
+                        )}
                     </div>
                     <p className="truncate text-sm text-[var(--text-muted)]">{task.clientName}</p>
                     <p className="truncate text-sm text-[var(--text-muted)]">{task.locationName}</p>
                     <p className="text-sm text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</p>
                     <p className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">
-                        {formatCurrency((task.price || 0) * (task.quantity || 1))}
+                        {formatCurrency(amount)}
                     </p>
                     <div className="text-center">
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${

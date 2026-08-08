@@ -3,16 +3,24 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Loader2, Check, Package } from "lucide-react";
-import { TaskItem } from "@/services/task.service";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { formatHoursShort } from "@/lib/format-hours";
+import {
+    formatWorkerHoursLine,
+    resolveTaskInvoiceBilling,
+    resolveTaskPersonSeconds,
+} from "@/lib/task-invoice-billing";
+import type { InvoiceableTask } from "@/services/invoice.service";
+
+type SelectableInvoiceTask = InvoiceableTask & { locationName: string };
 
 interface InvoiceTaskSelectorProps {
     dict: Dictionary;
-    availableTasks: (TaskItem & { locationName: string })[];
+    availableTasks: SelectableInvoiceTask[];
     selectedTaskIds: number[];
     loadingTasks: boolean;
     handleToggleAll: () => void;
-    handleToggleTask: (task: TaskItem & { locationName: string }) => void;
+    handleToggleTask: (task: SelectableInvoiceTask) => void;
 }
 
 export function InvoiceTaskSelector({
@@ -49,9 +57,12 @@ export function InvoiceTaskSelector({
                     <span className="text-xs text-[var(--text-muted)]">{dict.invoices?.searching_tasks || "Buscando tareas..."}</span>
                 </div>
             ) : availableTasks.length > 0 ? (
-                <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
                     {availableTasks.map(task => {
                         const isChecked = selectedTaskIdSet.has(task.id);
+                        const billing = resolveTaskInvoiceBilling(task);
+                        const personSeconds = resolveTaskPersonSeconds(task);
+                        const workersLine = formatWorkerHoursLine(task.workers, formatHoursShort);
                         return (
                             <div
                                 key={task.id}
@@ -89,20 +100,39 @@ export function InvoiceTaskSelector({
                                     </p>
                                     <p className="text-3xs text-[var(--text-muted)] truncate">
                                         {[
-                                            "client_name" in task
-                                                ? String(task.client_name || "")
-                                                : "",
+                                            task.client_name || "",
                                             task.locationName,
                                         ].filter(Boolean).join(" · ")}
                                     </p>
-                                    <div className="flex items-center gap-1.5 mt-0.5 text-3xs text-[var(--text-muted)] font-mono">
-                                        <span>{task.price || 0} €</span>
-                                        <span>•</span>
-                                        <span className="inline-flex items-center gap-0.5">
-                                            <Package className="h-2.5 w-2.5" />
-                                            Cant. {task.quantity || 1}
-                                        </span>
+                                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-3xs font-mono text-[var(--text-muted)]">
+                                        {task.pricing_mode === "hourly" ? (
+                                            <span>
+                                                {formatHoursShort(personSeconds)} × {billing.unitPrice} €/h
+                                            </span>
+                                        ) : (
+                                            <>
+                                                <span>{billing.unitPrice} €</span>
+                                                <span>•</span>
+                                                <span className="inline-flex items-center gap-0.5">
+                                                    <Package className="h-2.5 w-2.5" />
+                                                    Cant. {billing.quantity}
+                                                </span>
+                                            </>
+                                        )}
+                                        {personSeconds > 0 && (
+                                            <>
+                                                <span>•</span>
+                                                <span className="font-semibold text-[var(--text-main)]">
+                                                    Horas-persona {formatHoursShort(personSeconds)}
+                                                </span>
+                                            </>
+                                        )}
                                     </div>
+                                    {workersLine && (
+                                        <p className="mt-0.5 truncate text-3xs text-[var(--text-muted)]">
+                                            {workersLine}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         );

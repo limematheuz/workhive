@@ -6,10 +6,12 @@ import {
     toggleTaskChecklistItem,
 } from "@/lib/task-checklist";
 import { localizeTaskDescription } from "@/lib/task-display";
+import { formatHoursShort } from "@/lib/format-hours";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/user";
+import type { TaskPricingMode } from "@/domain/tasks/task-edit";
 import { TaskChecklistEditor } from "./TaskChecklistEditor";
 import { TASK_EDIT_UNIT_OPTIONS } from "./taskEditFormOptions";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
@@ -33,6 +35,7 @@ type TaskEditFormFieldsProps = {
     editNotes: string;
     editPlanningTime: string;
     editPrice: string;
+    editPricingMode: TaskPricingMode;
     editPriority: TaskPriority;
     editQuantity: string;
     editStatus: TaskStatus;
@@ -48,6 +51,7 @@ type TaskEditFormFieldsProps = {
     setEditNotes: (value: string) => void;
     setEditPlanningTime: (value: string) => void;
     setEditPrice: (value: string) => void;
+    setEditPricingMode: (value: TaskPricingMode) => void;
     setEditPriority: (value: TaskPriority) => void;
     setEditQuantity: (value: string) => void;
     setEditStatus: (value: TaskStatus) => void;
@@ -67,6 +71,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         editNotes,
         editPlanningTime,
         editPrice,
+        editPricingMode,
         editPriority,
         editQuantity,
         editStatus,
@@ -82,6 +87,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         setEditNotes,
         setEditPlanningTime,
         setEditPrice,
+        setEditPricingMode,
         setEditPriority,
         setEditQuantity,
         setEditStatus,
@@ -94,6 +100,8 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
 
     const localizedDescription = localizeTaskDescription(editDescription) || "";
     const checklist = resolveTaskEditChecklist(localizedDescription, selectedTask);
+    const isHourly = editPricingMode === "hourly";
+    const snapshotSeconds = selectedTask.worked_seconds_snapshot;
 
     const toggleChecklistItem = (itemIndex: number) => {
         setEditDescription(toggleTaskChecklistItem(editDescription, itemIndex));
@@ -120,6 +128,13 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                 editDescription,
             ),
         );
+    };
+
+    const handlePricingModeChange = (mode: TaskPricingMode) => {
+        setEditPricingMode(mode);
+        if (mode === "hourly") {
+            setEditUnit("hour");
+        }
     };
 
     return (
@@ -225,8 +240,8 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             {dict.tasks?.create_dialog?.internal_notes || "Internal notes"}
                         </h3>
                         <p className={taskFormSectionHintClass}>
-                            {dict.tasks?.create_dialog?.task_details_section_hint
-                                || "Review planning, instructions and internal details before saving."}
+                            {dict.tasks?.dialog?.pricing_mode_hint
+                                || "Fixed price bills the configured amount. Hourly bills frozen person-hours × rate."}
                         </p>
                     </div>
                     <div className="space-y-1.5">
@@ -243,10 +258,43 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             className={taskFormTextAreaClass}
                         />
                     </div>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <label htmlFor="task-edit-pricing-mode" className={taskFormLabelClass}>
+                                {dict.tasks?.dialog?.pricing_mode_label || "Billing mode"}
+                            </label>
+                            <select
+                                id="task-edit-pricing-mode"
+                                value={editPricingMode}
+                                onChange={(event) => handlePricingModeChange(event.target.value as TaskPricingMode)}
+                                disabled={!managerEditable}
+                                className={taskFormControlClass}
+                            >
+                                <option value="fixed">
+                                    {dict.tasks?.dialog?.pricing_mode_fixed || "Fixed price"}
+                                </option>
+                                <option value="hourly">
+                                    {dict.tasks?.dialog?.pricing_mode_hourly || "Hourly (person-hours)"}
+                                </option>
+                            </select>
+                        </div>
+                        {typeof snapshotSeconds === "number" && (
+                            <div className="space-y-1.5">
+                                <span className={taskFormLabelClass}>
+                                    {dict.tasks?.dialog?.worked_hours_snapshot_label || "Recorded person-hours"}
+                                </span>
+                                <div className={taskFormReadOnlyClass}>
+                                    {formatHoursShort(snapshotSeconds)}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div className="space-y-1.5">
                             <label htmlFor="task-edit-price" className={taskFormLabelClass}>
-                                {dict.tasks?.dialog?.price_label || "Price (€)"}
+                                {isHourly
+                                    ? (dict.tasks?.dialog?.hourly_rate_label || "Hourly rate (€/h)")
+                                    : (dict.tasks?.dialog?.price_label || "Price (€)")}
                             </label>
                             <input
                                 id="task-edit-price"
@@ -260,15 +308,21 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         </div>
                         <div className="space-y-1.5">
                             <label htmlFor="task-edit-quantity" className={taskFormLabelClass}>
-                                {dict.tasks?.dialog?.quantity_label || "Quantity"}
+                                {isHourly
+                                    ? (dict.tasks?.dialog?.hours_from_sessions_label || "Hours (from sessions)")
+                                    : (dict.tasks?.dialog?.quantity_label || "Quantity")}
                             </label>
                             <input
                                 id="task-edit-quantity"
                                 type="number"
                                 step="0.1"
-                                value={editQuantity}
+                                value={isHourly
+                                    ? (typeof snapshotSeconds === "number"
+                                        ? (snapshotSeconds / 3600).toFixed(4)
+                                        : "")
+                                    : editQuantity}
                                 onChange={(event) => setEditQuantity(event.target.value)}
-                                disabled={!managerEditable}
+                                disabled={!managerEditable || isHourly}
                                 className={`${taskFormControlClass} font-mono`}
                             />
                         </div>
@@ -278,9 +332,9 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             </label>
                             <select
                                 id="task-edit-unit"
-                                value={editUnit}
+                                value={isHourly ? "hour" : editUnit}
                                 onChange={(event) => setEditUnit(event.target.value)}
-                                disabled={!managerEditable}
+                                disabled={!managerEditable || isHourly}
                                 required
                                 className={taskFormControlClass}
                             >

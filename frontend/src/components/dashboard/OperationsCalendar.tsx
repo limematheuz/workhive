@@ -235,6 +235,8 @@ export function OperationsCalendar({
                 setEditDescription={state.setEditDescription}
                 editPrice={state.editPrice}
                 setEditPrice={state.setEditPrice}
+                editPricingMode={state.editPricingMode}
+                setEditPricingMode={state.setEditPricingMode}
                 editQuantity={state.editQuantity}
                 setEditQuantity={state.setEditQuantity}
                 editUnit={state.editUnit}
