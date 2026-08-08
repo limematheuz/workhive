@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+    applyConceptBillingMode,
     buildInvoiceTaskDescription,
     composeInvoiceConceptDescription,
     parseInvoiceConceptDescription,
@@ -145,4 +146,26 @@ test("composeInvoiceConceptDescription round-trips structured parts", () => {
             extras: [],
         },
     );
+});
+
+test("applyConceptBillingMode converts fixed price to hours times rate", () => {
+    const hourly = applyConceptBillingMode(
+        {
+            unitPrice: 180,
+            quantity: 1,
+            pricing_mode: "fixed" as const,
+            worked_seconds: 4260,
+        },
+        "hourly",
+        { hourlyRate: 20 },
+    );
+    assert.equal(hourly.pricing_mode, "hourly");
+    assert.equal(hourly.unitPrice, 20);
+    assert.equal(hourly.quantity, 1.1833);
+    assert.equal(Number((hourly.unitPrice * hourly.quantity).toFixed(2)), 23.67);
+
+    const fixed = applyConceptBillingMode(hourly, "fixed");
+    assert.equal(fixed.pricing_mode, "fixed");
+    assert.equal(fixed.quantity, 1);
+    assert.equal(fixed.unitPrice, 23.67);
 });

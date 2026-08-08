@@ -215,7 +215,7 @@ export function InvoiceConceptDescriptionField({
                             Equipo {parsed.teamTime}
                         </span>
                     )}
-                    {parsed.workers.map((worker) => (
+                    {parsed.workers.filter((worker) => worker.time !== "0m").map((worker) => (
                         <WorkerChip key={`${worker.name}-${worker.time}`} name={worker.name} time={worker.time} />
                     ))}
                     {parsed.charge && (

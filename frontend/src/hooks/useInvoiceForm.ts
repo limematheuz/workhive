@@ -2,7 +2,7 @@
 
 import { startTransition, useState, useEffect, useRef, useCallback, useEffectEvent, useMemo } from "react";
 import { ClientService, Client } from "@/services/client.service";
-import { TaskItem } from "@/services/task.service";
+import { TaskItem, TaskService } from "@/services/task.service";
 import { InvoiceService, InvoiceableTask } from "@/services/invoice.service";
 import { CompanyService } from "@/services/company.service";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -21,6 +21,7 @@ import {
     buildInvoiceTaskConcepts,
     prepareInvoiceTasks,
 } from "@/lib/invoice-task-selection";
+import { applyConceptBillingMode } from "@/lib/task-invoice-billing";
 import { validateDocumentLines } from "@/lib/document-line-validation";
 import { duplicateDocumentLine } from "@/lib/document-line-duplication";
 import {
@@ -359,6 +360,34 @@ export function useInvoiceForm({
         }));
     };
 
+    const handleConceptBillingMode = async (
+        id: string,
+        mode: "fixed" | "hourly",
+        hourlyRate?: number,
+    ) => {
+        const current = concepts.find((row) => row.id === id);
+        if (!current?.task_item_id) return;
+
+        const next = applyConceptBillingMode(current, mode, { hourlyRate });
+        setConcepts((prev) => prev.map((row) => (row.id === id ? next : row)));
+
+        if (mode === "hourly" && next.unitPrice <= 0) {
+            toast.info("Pon la tarifa en €/h (por ejemplo 20) y el total se calcula con las horas registradas.");
+        }
+
+        try {
+            await TaskService.updateTaskItem(current.task_item_id, {
+                pricing_mode: mode,
+                price: next.unitPrice,
+                unit: mode === "hourly" ? "hour" : "service",
+                quantity: mode === "fixed" ? 1 : next.quantity,
+            });
+        } catch (error: unknown) {
+            console.error("Error syncing task billing mode", error);
+            toast.error(getErrorMessage(error, "No se pudo actualizar el modo de cobro de la tarea."));
+        }
+    };
+
     const handleDeleteRow = (id: string) => {
         const row = concepts.find(c => c.id === id);
         if (row?.task_item_id) {
@@ -417,8 +446,25 @@ export function useInvoiceForm({
             toast.error(messages[lineError]);
             return;
         }
+        const hourlyWithoutRate = concepts.find(
+            (concept) => concept.pricing_mode === "hourly" && concept.unitPrice <= 0,
+        );
+        if (hourlyWithoutRate) {
+            toast.error("Indica la tarifa €/h en los conceptos cobrados por horas.");
+            return;
+        }
         try {
             setSubmitting(true);
+
+            for (const concept of concepts) {
+                if (!concept.task_item_id || !concept.pricing_mode) continue;
+                await TaskService.updateTaskItem(concept.task_item_id, {
+                    pricing_mode: concept.pricing_mode,
+                    price: concept.unitPrice,
+                    unit: concept.pricing_mode === "hourly" ? "hour" : "service",
+                    quantity: concept.pricing_mode === "fixed" ? 1 : concept.quantity,
+                });
+            }
 
             await InvoiceService.createInvoiceDraft(buildInvoiceDraftPayload({
                 selectedClientId,
@@ -538,6 +584,7 @@ export function useInvoiceForm({
         handleDuplicateRow,
         handleAddExternalLaundryRow,
         handleUpdateRow,
+        handleConceptBillingMode,
         handleDeleteRow,
         handleGlobalTaxRateChange,
         subtotal,

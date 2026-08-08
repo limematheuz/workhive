@@ -3,6 +3,7 @@ import { formatHoursShort } from "./format-hours.ts";
 import {
     buildInvoiceTaskDescription,
     resolveTaskInvoiceBilling,
+    resolveTaskPersonSeconds,
 } from "./task-invoice-billing.ts";
 
 export type InvoiceTaskWithLocation = InvoiceableTask & {
@@ -17,6 +18,8 @@ export type InvoiceTaskConcept = {
     quantity: number;
     taxRate: number;
     task_item_id: number;
+    pricing_mode: "fixed" | "hourly";
+    worked_seconds: number;
 };
 
 type PrepareInvoiceTasksParams = {
@@ -93,6 +96,7 @@ export function buildInvoiceTaskConcepts(
             task.locationName
             || task.location_name
             || "";
+        const workedSeconds = resolveTaskPersonSeconds(task);
         return [{
             id: `task-${task.id}`,
             description: buildInvoiceTaskDescription({
@@ -106,6 +110,8 @@ export function buildInvoiceTaskConcepts(
             quantity: billing.quantity,
             taxRate,
             task_item_id: task.id,
+            pricing_mode: task.pricing_mode === "hourly" ? "hourly" : "fixed",
+            worked_seconds: workedSeconds,
         }];
     });
 }
