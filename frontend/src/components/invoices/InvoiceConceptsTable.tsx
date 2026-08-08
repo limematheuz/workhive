@@ -69,7 +69,7 @@ export function InvoiceConceptsTable({
                         {concepts.length > 0 ? (
                             concepts.map((row) => (
                                 <tr key={row.id} className="odd:bg-[var(--bg-secondary)]/15 hover:bg-[var(--btn-secondary-bg)]/40">
-                                    <td className="py-3 px-3 align-top">
+                                    <td className="px-3 py-2.5 align-middle">
                                         <div className="flex items-start gap-2">
                                             <div className="min-w-0 flex-1">
                                                 <InvoiceConceptDescriptionField
@@ -80,13 +80,13 @@ export function InvoiceConceptsTable({
                                                     placeholder={dict.invoices?.col_description_placeholder || "Descripción del trabajo..."}
                                                 />
                                             </div>
-                                            <div className="flex shrink-0 items-center gap-1 pt-0.5">
+                                            <div className="flex shrink-0 items-center gap-1">
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDuplicateRow(row.id)}
                                                     aria-label="Duplicar línea"
                                                     title="Duplicar línea"
-                                                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
+                                                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
                                                 >
                                                     <Copy className="h-3.5 w-3.5" />
                                                 </button>
@@ -102,7 +102,7 @@ export function InvoiceConceptsTable({
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="py-2 px-2">
+                                    <td className="px-2 py-2.5 align-middle">
                                         <label className="sr-only" htmlFor={`invoice-concept-${row.id}-price`}>
                                             {dict.invoices?.col_price || "Precio (€)"}
                                         </label>
@@ -112,12 +112,12 @@ export function InvoiceConceptsTable({
                                             step="0.01"
                                             value={row.unitPrice || ""}
                                             onChange={(e) => handleUpdateRow(row.id, "unitPrice", parseFloat(e.target.value) || 0)}
-                                            className="w-full bg-transparent border-none outline-none text-right focus:ring-0 text-xs font-mono text-[var(--text-main)]"
+                                            className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-right font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent"
                                             placeholder="0.00"
                                             required
                                         />
                                     </td>
-                                    <td className="py-2 px-2">
+                                    <td className="px-2 py-2.5 align-middle">
                                         <label className="sr-only" htmlFor={`invoice-concept-${row.id}-quantity`}>
                                             {dict.invoices?.col_qty || "Cantidad"}
                                         </label>
@@ -127,12 +127,12 @@ export function InvoiceConceptsTable({
                                             step="any"
                                             value={row.quantity || ""}
                                             onChange={(e) => handleUpdateRow(row.id, "quantity", parseFloat(e.target.value) || 0)}
-                                            className="w-full bg-transparent border-none outline-none text-center focus:ring-0 text-xs font-mono text-[var(--text-main)]"
+                                            className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-center font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent"
                                             placeholder="1"
                                             required
                                         />
                                     </td>
-                                    <td className="py-2 px-2 text-right font-mono font-semibold text-[var(--text-main)]">
+                                    <td className="px-2 py-2.5 align-middle text-right font-mono text-sm font-semibold text-[var(--text-main)]">
                                         {(row.unitPrice * row.quantity).toFixed(2)} €
                                     </td>
                                 </tr>

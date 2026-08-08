@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     buildInvoiceTaskDescription,
+    composeInvoiceConceptDescription,
     parseInvoiceConceptDescription,
     resolveTaskInvoiceAmount,
     resolveTaskInvoiceBilling,
@@ -79,33 +80,69 @@ test("invoice description keeps a clear hierarchy for the client", () => {
         description,
         [
             "Limpieza de cambios",
-            "Casa Anastasia · 08/08/2026",
+            "Casa Anastasia",
+            "08/08/2026",
             "",
             "Tiempo del equipo: 1h 11m",
-            "Andrea 1h 2m · Ownet 8m",
+            "Andrea: 1h 2m",
+            "Ownet: 8m",
         ].join("\n"),
     );
     assert.doesNotMatch(description, /Victoria/);
 });
 
-test("parseInvoiceConceptDescription separates title meta and details", () => {
+test("parseInvoiceConceptDescription separates title location date and workers", () => {
     assert.deepEqual(
         parseInvoiceConceptDescription(
             [
                 "Limpieza de cambios",
-                "Casa Anastasia · 08/08/2026",
+                "Casa Anastasia",
+                "08/08/2026",
                 "",
                 "Tiempo del equipo: 1h 11m",
-                "Andrea 1h 2m · Ownet 8m",
+                "Andrea: 1h 2m",
+                "Ownet: 8m",
             ].join("\n"),
         ),
         {
             title: "Limpieza de cambios",
-            meta: "Casa Anastasia · 08/08/2026",
-            details: [
-                "Tiempo del equipo: 1h 11m",
-                "Andrea 1h 2m · Ownet 8m",
+            location: "Casa Anastasia",
+            date: "08/08/2026",
+            teamTime: "1h 11m",
+            workers: [
+                { name: "Andrea", time: "1h 2m" },
+                { name: "Ownet", time: "8m" },
             ],
+            charge: null,
+            extras: [],
+        },
+    );
+});
+
+test("composeInvoiceConceptDescription round-trips structured parts", () => {
+    const composed = composeInvoiceConceptDescription({
+        title: "Limpieza de cambios",
+        location: "Casa Anastasia",
+        date: "08/08/2026",
+        teamTime: "1h 11m",
+        workers: [
+            { name: "Andrea", time: "1h 2m" },
+            { name: "Ownet", time: "8m" },
+        ],
+    });
+    assert.deepEqual(
+        parseInvoiceConceptDescription(composed),
+        {
+            title: "Limpieza de cambios",
+            location: "Casa Anastasia",
+            date: "08/08/2026",
+            teamTime: "1h 11m",
+            workers: [
+                { name: "Andrea", time: "1h 2m" },
+                { name: "Ownet", time: "8m" },
+            ],
+            charge: null,
+            extras: [],
         },
     );
 });

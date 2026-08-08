@@ -18,11 +18,25 @@ export type TaskBillingSource = {
     workers?: InvoiceableWorkerHours[] | null;
 };
 
+export type InvoiceConceptWorkerPart = {
+    name: string;
+    time: string;
+};
+
 export type InvoiceConceptDescriptionParts = {
     title: string;
-    meta: string | null;
-    details: string[];
+    location: string | null;
+    date: string | null;
+    teamTime: string | null;
+    workers: InvoiceConceptWorkerPart[];
+    charge: string | null;
+    extras: string[];
 };
+
+const TEAM_TIME_RE = /^(?:tiempo del equipo|horas-persona):\s*(.+)$/i;
+const CHARGE_RE = /^cobro:\s*(.+)$/i;
+const WORKER_RE = /^([^:]+):\s*(\d+h(?:\s*\d+m)?|\d+m)$/i;
+const DATE_RE = /^\d{1,2}\/\d{1,2}(?:\/\d{2,4})?$/;
 
 /** Preview billing for UI. Backend remains authoritative on invoice create/update. */
 export function resolveTaskInvoiceBilling(task: TaskBillingSource): {
@@ -66,8 +80,43 @@ export function formatWorkerHoursLine(
     const active = (workers || []).filter((worker) => worker.worked_seconds > 0);
     if (!active.length) return null;
     return active
-        .map((worker) => `${worker.user_name} ${formatHours(worker.worked_seconds)}`)
-        .join(" · ");
+        .map((worker) => `${worker.user_name}: ${formatHours(worker.worked_seconds)}`)
+        .join("\n");
+}
+
+export function composeInvoiceConceptDescription(parts: {
+    title: string;
+    location?: string | null;
+    date?: string | null;
+    teamTime?: string | null;
+    workers?: InvoiceConceptWorkerPart[];
+    charge?: string | null;
+    extras?: string[];
+}): string {
+    const lines = [parts.title.trim()].filter(Boolean);
+    if (parts.location?.trim()) lines.push(parts.location.trim());
+    if (parts.date?.trim()) lines.push(parts.date.trim());
+    lines.push("");
+
+    if (parts.teamTime?.trim()) {
+        lines.push(`Tiempo del equipo: ${parts.teamTime.trim()}`);
+    }
+    for (const worker of parts.workers || []) {
+        if (!worker.name.trim() || !worker.time.trim()) continue;
+        lines.push(`${worker.name.trim()}: ${worker.time.trim()}`);
+    }
+    if (parts.charge?.trim()) {
+        lines.push(
+            parts.charge.trim().toLowerCase().startsWith("cobro:")
+                ? parts.charge.trim()
+                : `Cobro: ${parts.charge.trim()}`,
+        );
+    }
+    for (const extra of parts.extras || []) {
+        if (extra.trim()) lines.push(extra.trim());
+    }
+
+    return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 export function buildInvoiceTaskDescription(params: {
@@ -77,72 +126,134 @@ export function buildInvoiceTaskDescription(params: {
     task: TaskBillingSource;
     formatHours: (seconds: number) => string;
 }): string {
-    const meta = [params.locationName, params.dateLabel].filter(Boolean).join(" · ");
     const seconds = resolveTaskPersonSeconds(params.task);
-    const workersLine = formatWorkerHoursLine(params.task.workers, params.formatHours);
-    const lines = [params.title.trim()];
+    const workers = (params.task.workers || [])
+        .filter((worker) => worker.worked_seconds > 0)
+        .map((worker) => ({
+            name: worker.user_name,
+            time: params.formatHours(worker.worked_seconds),
+        }));
 
-    if (meta) lines.push(meta);
-    lines.push("");
-
-    if (seconds > 0) {
-        lines.push(`Tiempo del equipo: ${params.formatHours(seconds)}`);
-    }
-    if (workersLine) {
-        lines.push(workersLine);
-    }
+    let charge: string | null = null;
     if (params.task.pricing_mode === "hourly") {
         const billing = resolveTaskInvoiceBilling(params.task);
         if (billing.quantity > 0) {
             const hoursLabel = Number.isInteger(billing.quantity)
                 ? String(billing.quantity)
                 : billing.quantity.toFixed(2).replace(/\.?0+$/, "");
-            lines.push(`Cobro: ${hoursLabel} h × ${billing.unitPrice} €/h`);
+            charge = `${hoursLabel} h × ${billing.unitPrice} €/h`;
         }
     }
 
-    return lines
-        .join("\n")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
+    return composeInvoiceConceptDescription({
+        title: params.title,
+        location: params.locationName,
+        date: params.dateLabel,
+        teamTime: seconds > 0 ? params.formatHours(seconds) : null,
+        workers,
+        charge,
+    });
 }
 
-/** Split a stored concept description into title / meta / detail lines for UI hierarchy. */
+function splitLegacyMeta(meta: string): { location: string | null; date: string | null } {
+    if (DATE_RE.test(meta)) {
+        return { location: null, date: meta };
+    }
+    const separator = meta.includes(" · ") ? " · " : meta.includes("•") ? "•" : null;
+    if (!separator) {
+        return { location: meta, date: null };
+    }
+    const [location, ...rest] = meta.split(separator).map((part) => part.trim());
+    const maybeDate = rest.join(separator).trim();
+    if (DATE_RE.test(maybeDate)) {
+        return { location: location || null, date: maybeDate };
+    }
+    return { location: meta, date: null };
+}
+
+/** Split a stored concept description into structured parts for compact UI. */
 export function parseInvoiceConceptDescription(
     description: string,
 ): InvoiceConceptDescriptionParts {
     const rawLines = description.replace(/\r\n/g, "\n").split("\n");
-    const nonEmptyIndexes = rawLines
-        .map((line, index) => ({ line: line.trim(), index }))
-        .filter((entry) => entry.line.length > 0);
+    const lines = rawLines.map((line) => line.trim()).filter(Boolean);
 
-    if (!nonEmptyIndexes.length) {
-        return { title: "", meta: null, details: [] };
+    if (!lines.length) {
+        return {
+            title: "",
+            location: null,
+            date: null,
+            teamTime: null,
+            workers: [],
+            charge: null,
+            extras: [],
+        };
     }
 
-    const title = nonEmptyIndexes[0]?.line || "";
-    const second = nonEmptyIndexes[1];
-    const blankAfterTitle = rawLines.findIndex(
-        (line, index) => index > (nonEmptyIndexes[0]?.index ?? 0) && line.trim() === "",
-    );
-    const looksLikeMeta = Boolean(
-        second
-        && (
-            blankAfterTitle === -1
-            || second.index < blankAfterTitle
-        )
-        && !/^(tiempo del equipo|horas-persona|cobro):/i.test(second.line)
-    );
+    const title = lines[0] || "";
+    let index = 1;
+    let location: string | null = null;
+    let date: string | null = null;
 
-    const meta = looksLikeMeta ? second.line : null;
-    const detailStartIndex = looksLikeMeta
-        ? (second?.index ?? 0) + 1
-        : (nonEmptyIndexes[0]?.index ?? 0) + 1;
+    if (lines[index] && !TEAM_TIME_RE.test(lines[index]) && !CHARGE_RE.test(lines[index]) && !WORKER_RE.test(lines[index])) {
+        const first = lines[index];
+        if (DATE_RE.test(first)) {
+            date = first;
+            index += 1;
+        } else if (first.includes(" · ") || first.includes("•")) {
+            const split = splitLegacyMeta(first);
+            location = split.location;
+            date = split.date;
+            index += 1;
+        } else {
+            location = first;
+            index += 1;
+            if (lines[index] && DATE_RE.test(lines[index])) {
+                date = lines[index];
+                index += 1;
+            }
+        }
+    }
 
-    const details = rawLines
-        .slice(detailStartIndex)
-        .map((line) => line.trim())
-        .filter(Boolean);
+    let teamTime: string | null = null;
+    let charge: string | null = null;
+    const workers: InvoiceConceptWorkerPart[] = [];
+    const extras: string[] = [];
 
-    return { title, meta, details };
+    for (; index < lines.length; index += 1) {
+        const line = lines[index];
+        const teamMatch = line.match(TEAM_TIME_RE);
+        if (teamMatch) {
+            teamTime = teamMatch[1]?.trim() || null;
+            continue;
+        }
+        const chargeMatch = line.match(CHARGE_RE);
+        if (chargeMatch) {
+            charge = chargeMatch[1]?.trim() || null;
+            continue;
+        }
+        const workerMatch = line.match(WORKER_RE);
+        if (workerMatch) {
+            workers.push({
+                name: workerMatch[1]?.trim() || "",
+                time: workerMatch[2]?.trim() || "",
+            });
+            continue;
+        }
+        if (line.includes(" · ")) {
+            // Legacy single-line worker dump: "Ana 40m · Bea 1h"
+            for (const chunk of line.split(" · ")) {
+                const parts = chunk.trim().match(/^(.+?)\s+(\d+h(?:\s*\d+m)?|\d+m)$/i);
+                if (parts) {
+                    workers.push({ name: parts[1], time: parts[2] });
+                } else if (chunk.trim()) {
+                    extras.push(chunk.trim());
+                }
+            }
+            continue;
+        }
+        extras.push(line);
+    }
+
+    return { title, location, date, teamTime, workers, charge, extras };
 }
