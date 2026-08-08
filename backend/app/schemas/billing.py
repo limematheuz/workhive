@@ -4,7 +4,7 @@ from pydantic import BaseModel, HttpUrl
 
 
 class CheckoutSessionCreate(BaseModel):
-    plan: Literal["business", "pro"]
+    plan: Literal["business", "pro", "lifetime"]
 
 
 class HostedBillingUrl(BaseModel):

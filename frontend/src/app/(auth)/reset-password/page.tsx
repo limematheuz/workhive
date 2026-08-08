@@ -99,7 +99,7 @@ function ResetPasswordContent() {
 
                     {submitted ? (
                         <div className="text-center py-6 space-y-4">
-                            <div className="inline-flex p-4 rounded-full bg-emerald-500/10 text-emerald-500 mb-2">
+                            <div className="inline-flex p-4 rounded-full bg-accent/10 text-accent mb-2">
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
                             <h2 className="text-2xl font-black">
@@ -216,7 +216,7 @@ function ResetPasswordContent() {
                                     className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] ui-motion ${
                                         alertMsg.type === "error"
                                             ? "border-red-500/50 text-red-400 bg-red-500/10 shadow-red-500/20"
-                                            : "border-emerald-500/50 text-emerald-400 bg-emerald-500/10 shadow-emerald-500/20"
+                                            : "border-accent/50 text-accent bg-accent/10 shadow-accent/20"
                                     }`}
                                 >
                                     {alertMsg.text}

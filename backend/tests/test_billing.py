@@ -201,6 +201,89 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
     )
 
 
+def test_lifetime_checkout_uses_payment_mode(db, monkeypatch):
+    company = Company(
+        name="Lifetime Billing Company",
+        tax_id="BILLING-LIFETIME",
+        address="Test address",
+        phone="000000009",
+        email="lifetime@example.com",
+    )
+    db.add(company)
+    db.commit()
+
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_LIFETIME_PRICE_ID", "price_lifetime")
+
+    captured: dict[str, str] = {}
+
+    def fake_stripe_post(path: str, data: dict[str, str]):
+        captured.update(data)
+        return {"url": "https://checkout.stripe.com/lifetime-session"}
+
+    monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
+
+    assert (
+        billing_service.create_checkout_session(company, "lifetime")
+        == "https://checkout.stripe.com/lifetime-session"
+    )
+    assert captured["mode"] == "payment"
+    assert captured["line_items[0][price]"] == "price_lifetime"
+    assert captured["metadata[plan]"] == "lifetime"
+    assert "subscription_data[metadata][plan]" not in captured
+
+
+def test_lifetime_checkout_webhook_activates_company(db, monkeypatch):
+    company = Company(
+        name="Lifetime Webhook Company",
+        tax_id="BILLING-LIFETIME-2",
+        address="Test address",
+        phone="000000010",
+        email="lifetime-webhook@example.com",
+        subscription_plan="none",
+        subscription_status="inactive",
+    )
+    db.add(company)
+    db.commit()
+    db.refresh(company)
+
+    secret = "whsec_test_secret"
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", secret)
+    event = {
+        "id": "evt_lifetime_checkout",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_lifetime",
+                "mode": "payment",
+                "customer": "cus_lifetime",
+                "subscription": None,
+                "client_reference_id": str(company.id),
+                "metadata": {
+                    "company_id": str(company.id),
+                    "plan": "lifetime",
+                },
+            }
+        },
+    }
+    payload = json.dumps(event, separators=(",", ":")).encode()
+    timestamp = int(time.time())
+
+    event_type = billing_service.process_webhook(
+        db,
+        payload,
+        stripe_signature(payload, secret, timestamp),
+    )
+
+    db.refresh(company)
+    assert event_type == "checkout.session.completed"
+    assert company.subscription_plan == "lifetime"
+    assert company.subscription_status == "active"
+    assert company.stripe_customer_id == "cus_lifetime"
+
+
 def test_subscription_access_policy_and_plan_limit(db, monkeypatch):
     company = Company(
         name="Trial Company",

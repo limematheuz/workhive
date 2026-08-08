@@ -12,7 +12,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
     const { locale, setLocale } = useDictionary();
 
     return (
-        <div className="absolute right-3 top-3 z-20 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 sm:right-6 sm:top-6 sm:gap-3">
+        <div className="absolute right-[max(0.75rem,env(safe-area-inset-right))] top-[max(0.75rem,env(safe-area-inset-top))] z-20 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center justify-end gap-2 sm:right-[max(1.5rem,env(safe-area-inset-right))] sm:top-[max(1.5rem,env(safe-area-inset-top))] sm:gap-3">
             {/* Theme toggle */}
             {showThemeToggle && theme && onThemeChange && (
                 <div

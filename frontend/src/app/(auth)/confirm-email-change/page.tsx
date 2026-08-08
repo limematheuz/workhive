@@ -77,7 +77,7 @@ function ConfirmEmailChangeContent() {
                 <section className="relative rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] backdrop-blur-xl sm:p-8">
                     {confirmed ? (
                         <div className="space-y-4 py-4 text-center">
-                            <div className="inline-flex rounded-full bg-emerald-500/10 p-4 text-emerald-500">
+                            <div className="inline-flex rounded-full bg-accent/10 p-4 text-accent">
                                 <CheckCircle2 className="h-11 w-11" />
                             </div>
                             <h1 className="text-2xl font-black">

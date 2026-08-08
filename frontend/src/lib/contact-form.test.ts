@@ -13,7 +13,7 @@ const messages = getContactValidationMessages("es");
 test("contact form initializes trial and plan reasons with localized subjects", () => {
     const trial = getInitialContactForm("trial", "es");
     assert.equal(trial.subject, "Solicitud de evaluación de WorkHive");
-    assert.match(trial.message, /evaluación asistida de 14 días/);
+    assert.match(trial.message, /producto completo durante 14 días/);
 
     const plan = getInitialContactForm("plan-pro", "en");
     assert.equal(plan.subject, "pro plan onboarding");
@@ -26,7 +26,7 @@ test("syncContactFormLocale rewrites default subject and message on language swi
     const spanish = getInitialContactForm("trial", "es");
     const synced = syncContactFormLocale(spanish, "trial", "en");
     assert.equal(synced.subject, "WorkHive evaluation request");
-    assert.match(synced.message, /14-day assisted evaluation/);
+    assert.match(synced.message, /full product access for 14 days/);
 
     const customized = syncContactFormLocale(
         { ...spanish, subject: "Custom subject", message: "Custom note" },
