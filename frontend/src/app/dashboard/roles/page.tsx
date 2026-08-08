@@ -5,20 +5,11 @@ import { redirect } from "next/navigation";
 import { useUser } from "@/lib/user-context";
 import { useDictionary } from "@/lib/dictionary-context";
 import { RoleService, Role } from "@/services/role.service";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Pencil, Plus, ShieldCheck } from "lucide-react";
+import { Plus, ShieldCheck } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/errors";
 import { RoleFormDialogs } from "@/components/roles/RoleFormDialogs";
+import { RolesListSection } from "@/components/roles/RolesListSection";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
@@ -121,11 +112,11 @@ export default function RolesAdminPage() {
     }
 
     if (!isPlatformSuperadmin(user)) {
-        return null; // The useEffect hook handles the redirect.
+        return null;
     }
 
     return (
-        <div className="max-w-7xl mx-auto space-y-8 text-[var(--text-main)] px-[3%] py-6 md:p-8">
+        <div className="mx-auto max-w-7xl space-y-5 px-[3%] py-6 text-[var(--text-main)] md:p-8">
             <PageHeader
                 icon={ShieldCheck}
                 title={dict.roles.title}
@@ -143,100 +134,24 @@ export default function RolesAdminPage() {
                 )}
             />
 
-            {roles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-soft)]">
-                    <ShieldCheck className="h-12 w-12 text-[var(--text-muted)] mb-4" />
-                    <p className="text-[var(--text-muted)] text-lg">{dict.roles.empty}</p>
-                </div>
-            ) : (
-                <>
-                    {/* ── Mobile & Tablet: Cards ── */}
-                    <div className="lg:hidden space-y-3">
-                        {roles.map((role) => (
-                            <div
-                                key={role.id}
-                                className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-4 space-y-3 shadow-sm"
-                            >
-                                {/* Header: Name + Status + Edit button */}
-                                <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-sm font-black text-[var(--text-main)] flex items-center gap-1.5 uppercase tracking-wide">
-                                                <ShieldCheck className="h-4 w-4 text-accent shrink-0" />
-                                                {role.name}
-                                            </span>
-                                            <Badge
-                                                className={role.is_active
-                                                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-bold uppercase"
-                                                    : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-soft)] text-[9px] font-bold uppercase"}
-                                            >
-                                                {role.is_active ? dict.roles.active : dict.roles.inactive}
-                                            </Badge>
-                                        </div>
-                                    </div>
-                                    <button type="button"
-                                        onClick={() => handleEditClick(role)}
-                                        aria-label={`${dict.roles.edit} ${role.name}`}
-                                        className="p-1.5 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-accent transition-colors border-none bg-transparent cursor-pointer"
-                                    >
-                                        <Pencil className="w-4 h-4" />
-                                    </button>
-                                </div>
-
-                                {/* Description */}
-                                <div className="pt-2 border-t border-[var(--border-soft)]/50 text-xs text-[var(--text-muted)] leading-relaxed">
-                                    {role.description || "—"}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* ── Desktop: Table ── */}
-                    <div className="hidden lg:block bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl overflow-hidden shadow-sm w-full">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>{dict.roles.role_name}</TableHead>
-                                    <TableHead>{dict.roles.description}</TableHead>
-                                    <TableHead>{dict.roles.status}</TableHead>
-                                    <TableHead className="text-right">{dict.roles.actions}</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {roles.map((role) => (
-                                    <TableRow key={role.id}>
-                                        <TableCell className="font-semibold flex items-center gap-2">
-                                            <ShieldCheck className="h-4 w-4 text-accent" />
-                                            {role.name}
-                                        </TableCell>
-                                        <TableCell className="text-[var(--text-muted)]">{role.description || "—"}</TableCell>
-                                        <TableCell>
-                                            <Badge
-                                                className={role.is_active
-                                                    ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 text-[9px] font-bold uppercase"
-                                                    : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border-soft)] text-[9px] font-bold uppercase"}
-                                            >
-                                                {role.is_active ? dict.roles.active : dict.roles.inactive}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={() => handleEditClick(role)}
-                                                className="text-[var(--text-muted)] hover:text-accent hover:bg-[var(--bg-primary)] gap-1.5"
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                                {dict.roles.edit}
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </>
-            )}
+            <RolesListSection
+                roles={roles}
+                labels={{
+                    listTitle: dict.roles.list_title,
+                    listSubtitle: dict.roles.list_subtitle,
+                    roleName: dict.roles.role_name,
+                    description: dict.roles.description,
+                    status: dict.roles.status,
+                    actions: dict.roles.actions,
+                    active: dict.roles.active,
+                    inactive: dict.roles.inactive,
+                    edit: dict.roles.edit,
+                    empty: dict.roles.empty,
+                    countOne: dict.roles.count_one,
+                    countMany: dict.roles.count_many,
+                }}
+                onEdit={handleEditClick}
+            />
 
             <RoleFormDialogs
                 copy={{

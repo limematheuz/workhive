@@ -6,7 +6,7 @@ function source(path: string): string {
     return readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-test("shared DataListTable powers invoice, quote, client, expense, user, profile and service catalog lists", () => {
+test("shared DataListTable powers invoice, quote, client, expense, user, profile, service catalog, roles, companies and traffic lists", () => {
     const table = source("../components/ui/data-list-table.tsx");
     const invoices = source("../components/invoices/InvoicesListSection.tsx");
     const quotes = source("../components/quotes/QuotesListSection.tsx");
@@ -15,6 +15,10 @@ test("shared DataListTable powers invoice, quote, client, expense, user, profile
     const users = source("../components/users/TeamListSection.tsx");
     const profile = source("../components/profile/ProfileHistories.tsx");
     const templates = source("../components/tasks/TasksTemplates.tsx");
+    const roles = source("../components/roles/RolesListSection.tsx");
+    const companies = source("../components/companies/CompaniesListSection.tsx");
+    const integrations = source("../components/integrations/PlatformCalendarOverview.tsx");
+    const traffic = source("../components/traffic/TrafficEventsTable.tsx");
 
     assert.match(table, /export function DataListTable/);
     assert.match(table, /export function DataListRow/);
@@ -28,6 +32,9 @@ test("shared DataListTable powers invoice, quote, client, expense, user, profile
         ["expenses", expenses],
         ["users", users],
         ["templates", templates],
+        ["roles", roles],
+        ["companies", companies],
+        ["traffic", traffic],
     ] as const) {
         assert.match(file, /DataListTable/, `${name} should use DataListTable`);
         assert.doesNotMatch(file, /from "@\/components\/ui\/table"/, `${name} should not use legacy Table`);
@@ -43,4 +50,7 @@ test("shared DataListTable powers invoice, quote, client, expense, user, profile
     assert.match(templates, /toolbar=/);
     assert.doesNotMatch(templates, /surface-glass-card/);
     assert.doesNotMatch(templates, /<table className="w-full text-left border-collapse/);
+
+    assert.match(integrations, /DataListTable/);
+    assert.doesNotMatch(integrations, /surface-glass-card/);
 });
