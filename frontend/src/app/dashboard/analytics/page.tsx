@@ -51,7 +51,7 @@ const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 const FINANCE_LINES = [
     { key: "revenue", color: "var(--accent-color)", labelKey: "revenue" },
     { key: "expenses", color: "var(--btn-cancel-hover-bg)", labelKey: "expenses" },
-    { key: "profit", color: "var(--color-green-400)", labelKey: "profit" },
+    { key: "profit", color: "var(--brand-blue-bright)", labelKey: "profit" },
 ] as const;
 
 export default function FinanceAnalyticsPage() {
@@ -422,7 +422,7 @@ function OperationsDashboard({
             label: dict.analytics.completed,
             value: stats.completed.reduce((sum, value) => sum + value, 0),
             icon: <CheckCircle2 className="h-4 w-4" />,
-            color: "var(--color-green-400)",
+            color: "var(--accent-color)",
         },
         {
             label: dict.analytics.pending,
@@ -491,7 +491,7 @@ function OperationsLineChart({
     dict: { analytics: Record<string, string> };
 }) {
     const lines = [
-        { label: dict.analytics.completed, data: stats.completed, color: "var(--color-green-400)" },
+        { label: dict.analytics.completed, data: stats.completed, color: "var(--accent-color)" },
         { label: dict.analytics.pending, data: stats.pending, color: "var(--color-amber-500)" },
         { label: dict.analytics.requests, data: stats.requested || [], color: "var(--accent-color)" },
     ];
@@ -574,7 +574,7 @@ function DeltaBadge({
     return (
         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${
             positive
-                ? "bg-[color-mix(in_srgb,var(--color-green-500)_10%,transparent)] text-[color-mix(in_srgb,var(--color-green-700)_78%,var(--text-muted))]"
+                ? "bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] text-accent"
                 : "bg-[color-mix(in_srgb,var(--btn-cancel-bg)_80%,transparent)] text-[color-mix(in_srgb,var(--btn-cancel-text)_78%,var(--text-muted))]"
         }`}>
             {delta > 0 ? <ArrowUpRight className="h-3 w-3" /> : delta < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}

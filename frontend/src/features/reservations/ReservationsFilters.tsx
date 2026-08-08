@@ -2,10 +2,17 @@
 
 import { ArrowUpRight, History, RotateCcw, Search } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/types/location";
 
+import {
+    reservationFilterSearchClass,
+    reservationFilterSelectClass,
+} from "./reservation-filter-styles";
 import type {
     ReservationFiltersState,
     ReservationProviderOption,
@@ -47,10 +54,10 @@ export function ReservationsFilters({
 
     return (
         <>
-            <div className="bg-[var(--bg-card)] border border-[var(--border-soft)] p-4 rounded-3xl shadow-sm space-y-3">
+            <div className="billing-block space-y-2.5 rounded-2xl border border-[var(--border-soft)] p-3 sm:p-3.5">
                 <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
-                    <input
+                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                    <Input
                         type="search"
                         value={filters.search}
                         onChange={(event) =>
@@ -60,27 +67,30 @@ export function ReservationsFilters({
                             dict.reservations?.filters?.search_placeholder ||
                             "Buscar propiedad, dirección, proveedor o nota"
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent/50"
+                        className={reservationFilterSearchClass}
                     />
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-6">
+
+                <div className="flex flex-wrap gap-2">
                     <select
                         value={filters.year}
                         onChange={(event) => updateFilter("year", event.target.value)}
                         aria-label="Filtrar por año"
-                        className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer"
+                        className={reservationFilterSelectClass}
                     >
                         <option value="ALL">{dict.reservations?.filters?.all_years || "Todos los años"}</option>
-                        {years.map(year => <option key={year} value={year}>{year}</option>)}
+                        {years.map((year) => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
                     </select>
                     <select
                         value={filters.month}
                         onChange={(event) => updateFilter("month", event.target.value)}
                         aria-label="Filtrar por mes"
-                        className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer"
+                        className={reservationFilterSelectClass}
                     >
                         <option value="ALL">{dict.reservations?.filters?.all_months || "Todos los meses"}</option>
-                        {months.map(month => (
+                        {months.map((month) => (
                             <option key={month} value={month}>
                                 {new Date(Date.UTC(2026, month - 1, 1)).toLocaleDateString(
                                     dict.reservations?.filters?.all_months === "All months" ? "en-US" : "es-ES",
@@ -95,7 +105,7 @@ export function ReservationsFilters({
                             updateFilter("location", event.target.value)
                         }
                         aria-label="Filtrar por propiedad"
-                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer ui-motion"
+                        className={reservationFilterSelectClass}
                     >
                         <option value="ALL">
                             {dict.reservations?.filters?.all_locations ||
@@ -113,7 +123,7 @@ export function ReservationsFilters({
                             updateFilter("provider", event.target.value)
                         }
                         aria-label="Filtrar por proveedor"
-                        className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer"
+                        className={reservationFilterSelectClass}
                     >
                         <option value="ALL">
                             {dict.reservations?.filters?.all_providers ||
@@ -135,7 +145,7 @@ export function ReservationsFilters({
                             updateFilter("cleaning", event.target.value)
                         }
                         aria-label="Filtrar por estado de limpieza"
-                        className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer"
+                        className={reservationFilterSelectClass}
                     >
                         <option value="ALL">
                             {dict.reservations?.filters?.any_cleaning ||
@@ -170,14 +180,14 @@ export function ReservationsFilters({
                                 "Sin limpieza"}
                         </option>
                     </select>
-                    {viewMode === "active" && (
+                    {viewMode === "active" ? (
                         <select
                             value={filters.date}
                             onChange={(event) =>
                                 updateFilter("date", event.target.value)
                             }
                             aria-label="Filtrar por fecha"
-                            className="bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer"
+                            className={reservationFilterSelectClass}
                         >
                             <option value="UPCOMING">
                                 {dict.reservations?.filters?.status_upcoming ||
@@ -200,26 +210,26 @@ export function ReservationsFilters({
                                     "Todas las fechas"}
                             </option>
                         </select>
-                    )}
+                    ) : null}
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-                    <label className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] cursor-pointer select-none">
-                        <input
-                            type="checkbox"
+
+                <div className="flex flex-wrap items-center justify-between gap-2.5 pt-0.5">
+                    <label className="flex cursor-pointer select-none items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                        <Checkbox
                             checked={filters.showCancelled}
-                            onChange={(event) =>
-                                updateFilter(
-                                    "showCancelled",
-                                    event.target.checked
-                                )
+                            onCheckedChange={(checked) =>
+                                updateFilter("showCancelled", checked === true)
                             }
-                            className="w-4 h-4 rounded border-[var(--border-color)] bg-[var(--bg-card)] text-accent focus:ring-accent accent-accent cursor-pointer"
+                            aria-label={
+                                dict.reservations?.filters?.show_cancelled ||
+                                "Mostrar canceladas"
+                            }
                         />
                         {dict.reservations?.filters?.show_cancelled ||
                             "Mostrar canceladas"}
                     </label>
-                    <div className="flex items-center gap-3">
-                        <span className="text-xs font-semibold text-[var(--text-muted)]">
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-[11px] font-semibold text-[var(--text-muted)]">
                             {dict.reservations?.filters?.results_count
                                 ? dict.reservations.filters.results_count.replace(
                                       "{count}",
@@ -227,22 +237,22 @@ export function ReservationsFilters({
                                   )
                                 : `${resultCount} resultados`}
                         </span>
-                        <button
+                        <Button
                             type="button"
+                            variant="secondary"
+                            size="xs"
                             onClick={onReset}
-                            className="btn-app-secondary inline-flex h-9 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold shadow-sm ui-motion hover:shadow-md"
                         >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            <RotateCcw className="h-3.5 w-3.5" />
                             {dict.reservations?.filters?.reset_filters ||
                                 "Restablecer"}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>
 
             <PremiumTabs<ReservationViewMode>
                 layout="fit"
-                className="my-4"
                 tabs={[
                     {
                         id: "active",

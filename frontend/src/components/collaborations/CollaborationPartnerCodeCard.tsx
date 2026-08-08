@@ -15,39 +15,42 @@ export function CollaborationPartnerCodeCard({
     onCopy,
 }: CollaborationPartnerCodeCardProps) {
     return (
-        <div className="surface-glass-card rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full filter blur-2xl pointer-events-none -mr-10 -mt-10" />
-
-            <div className="space-y-4 relative z-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-accent/5 border border-accent/10 flex items-center justify-center text-accent">
-                        <Building className="h-5 w-5" />
-                    </div>
-                    <div>
-                        <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">Código de mi empresa</h3>
-                        <p className="text-2xs text-[var(--text-muted)] font-medium">Comparte este código con tus clientes o proveedores para que soliciten la vinculación.</p>
-                    </div>
+        <section className="billing-block flex h-full flex-col justify-between rounded-2xl p-3.5 sm:p-4">
+            <header className="mb-3 flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-color)_12%,var(--bg-card))] text-accent">
+                    <Building className="h-4 w-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-[var(--text-main)]">
+                        Código de mi empresa
+                    </h3>
+                    <p className="mt-0.5 text-xs leading-5 text-[var(--text-muted)]">
+                        Comparte este código con tus clientes o proveedores para que soliciten la vinculación.
+                    </p>
                 </div>
+            </header>
 
-                {loading ? (
-                    <div className="h-14 flex items-center">
-                        <Loader2 className="h-5 w-5 animate-spin text-accent" />
-                    </div>
-                ) : (
-                    <div className="flex items-center justify-between bg-[var(--bg-tertiary)] border border-[var(--border-soft)] px-5 py-3 rounded-2xl">
-                        <span className="font-mono text-base font-black tracking-wider text-accent select-all">
-                            {partnerCode || "Cargando..."}
-                        </span>
-                        <Button
-                            onClick={onCopy}
-                            variant="ghost"
-                            className="p-2.5 h-auto text-[var(--text-muted)] hover:text-[var(--text-main)] cursor-pointer"
-                        >
-                            <Copy className="h-4.5 w-4.5" />
-                        </Button>
-                    </div>
-                )}
-            </div>
-        </div>
+            {loading ? (
+                <div className="flex h-11 items-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-accent" />
+                </div>
+            ) : (
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3.5 py-2.5">
+                    <span className="select-all font-mono text-sm font-bold tracking-wider text-accent sm:text-base">
+                        {partnerCode || "Cargando..."}
+                    </span>
+                    <Button
+                        type="button"
+                        onClick={onCopy}
+                        variant="outline"
+                        size="icon-sm"
+                        aria-label="Copiar código de partner"
+                        title="Copiar código"
+                    >
+                        <Copy className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+        </section>
     );
 }

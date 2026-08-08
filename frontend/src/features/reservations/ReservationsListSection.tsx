@@ -49,7 +49,7 @@ export function ReservationsListSection({
     onCancel,
 }: ReservationsListSectionProps) {
     return (
-        <>
+        <div className="space-y-4">
             <ReservationsFilters
                 dict={dict}
                 filters={filters}
@@ -71,6 +71,6 @@ export function ReservationsListSection({
                 onEdit={onEdit}
                 onCancel={onCancel}
             />
-        </>
+        </div>
     );
 }

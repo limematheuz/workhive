@@ -1,12 +1,17 @@
 "use client";
 
 import React from "react";
-import { Loader2 } from "lucide-react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { cleanChecklistDescription } from "@/lib/format";
 import { TaskItem } from "@/services/task.service";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
     filterTasksForGeneralList,
     paginateTaskListPage,
@@ -60,6 +65,7 @@ export function TasksList({
     const [searchQuery, setSearchQuery] = React.useState("");
     const [dateScope, setDateScope] = React.useState<TaskListDateScope>("ALL");
     const [selectedPriority, setSelectedPriority] = React.useState("");
+    const [completedOpen, setCompletedOpen] = React.useState(false);
     const pageContextKey = `${selectedLocationId}|${selectedUserId}|${selectedStatus}|${selectedPriority}|${searchQuery}|${dateScope}`;
     const [pageState, setPageState] = React.useState({ contextKey: pageContextKey, page: 1 });
     const currentPage = pageState.contextKey === pageContextKey ? pageState.page : 1;
@@ -104,6 +110,7 @@ export function TasksList({
         TASK_LIST_PAGE_SIZE,
     );
     const totalItems = visibleTasks.length;
+    const completedPreview = completed.slice(0, TASK_LIST_PAGE_SIZE);
 
     const getPageNumbers = () => {
         const pages: (number | string)[] = [];
@@ -141,7 +148,7 @@ export function TasksList({
     }
 
     return (
-        <div>
+        <div className="space-y-4">
             <TasksListFilters
                 dict={dict}
                 totalItems={totalItems}
@@ -172,15 +179,15 @@ export function TasksList({
                     {!showOnlyCompleted && (
                         <section className="space-y-2.5">
                             {selectedStatus === "" && (
-                                <h2 className="text-[10px] font-black uppercase tracking-wider text-[color-mix(in_srgb,var(--text-muted)_45%,var(--text-main))]">
+                                <h2 className="text-[11px] font-black uppercase tracking-wider text-accent">
                                     {dict.tasks?.section_active || "Activas"}
-                                    <span className="ml-2 tabular-nums text-accent">{active.length}</span>
+                                    <span className="ml-2 tabular-nums">{active.length}</span>
                                 </h2>
                             )}
                             {paginatedPrimary.length > 0 ? (
                                 renderCards(paginatedPrimary)
                             ) : (
-                                <div className="surface-glass-card rounded-2xl border border-dashed px-4 py-8 text-center text-sm text-[var(--text-muted)]">
+                                <div className="billing-block rounded-2xl border border-dashed border-[var(--border-soft)] px-4 py-8 text-center text-sm text-[var(--text-muted)]">
                                     {dict.tasks?.no_active_tasks || "No hay tareas activas con estos filtros."}
                                 </div>
                             )}
@@ -189,7 +196,7 @@ export function TasksList({
 
                     {showOnlyCompleted && (
                         <section className="space-y-2.5">
-                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[color-mix(in_srgb,var(--text-muted)_45%,var(--text-main))]">
+                            <h2 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                                 {dict.tasks?.section_completed || "Completadas"}
                                 <span className="ml-2 tabular-nums text-accent">{completed.length}</span>
                             </h2>
@@ -198,20 +205,34 @@ export function TasksList({
                     )}
 
                     {showCompletedSection && (
-                        <section className="space-y-2.5 border-t border-[var(--border-soft)] pt-4">
-                            <h2 className="text-[10px] font-black uppercase tracking-wider text-[color-mix(in_srgb,var(--text-muted)_45%,var(--text-main))]">
-                                {dict.tasks?.section_completed || "Completadas"}
-                                <span className="ml-2 tabular-nums">{completed.length}</span>
-                            </h2>
-                            {renderCards(completed.slice(0, TASK_LIST_PAGE_SIZE), true)}
-                            {completed.length > TASK_LIST_PAGE_SIZE && (
-                                <p className="text-[11px] font-medium text-[var(--text-muted)]">
-                                    {(dict.tasks?.completed_preview || "Mostrando {count} de {total}. Filtra por Completadas para ver el resto.")
-                                        .replace("{count}", String(TASK_LIST_PAGE_SIZE))
-                                        .replace("{total}", String(completed.length))}
-                                </p>
-                            )}
-                        </section>
+                        <Collapsible
+                            open={completedOpen}
+                            onOpenChange={setCompletedOpen}
+                            className="group border-t border-[var(--border-soft)] pt-3"
+                        >
+                            <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl px-1 py-1.5 text-left transition-colors hover:bg-[var(--bg-secondary)]/40">
+                                <h2 className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                    {dict.tasks?.section_completed || "Completadas"}
+                                    <span className="ml-2 tabular-nums">{completed.length}</span>
+                                </h2>
+                                <ChevronDown
+                                    className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)] transition-transform group-data-[state=open]:rotate-180"
+                                    aria-hidden="true"
+                                />
+                            </CollapsibleTrigger>
+                            <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-none">
+                                <div className="space-y-2.5 pt-2.5">
+                                    {renderCards(completedPreview, true)}
+                                    {completed.length > TASK_LIST_PAGE_SIZE && (
+                                        <p className="text-[11px] font-medium text-[var(--text-muted)]">
+                                            {(dict.tasks?.completed_preview || "Mostrando {count} de {total}. Filtra por Completadas para ver el resto.")
+                                                .replace("{count}", String(TASK_LIST_PAGE_SIZE))
+                                                .replace("{total}", String(completed.length))}
+                                        </p>
+                                    )}
+                                </div>
+                            </CollapsibleContent>
+                        </Collapsible>
                     )}
 
                     <TasksListPagination
@@ -226,7 +247,7 @@ export function TasksList({
                     />
                 </div>
             ) : (
-                <div className="surface-glass-card rounded-2xl py-20 text-center">
+                <div className="billing-block rounded-2xl border border-dashed border-[var(--border-soft)] px-5 py-14 text-center">
                     <p className="text-sm font-medium text-[var(--text-muted)]">
                         {dict.tasks?.no_tasks_found || "No tasks found in the general list."}
                     </p>

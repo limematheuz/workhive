@@ -178,13 +178,6 @@
   --color-orange-700: var(--color-amber-500);
   --color-orange-800: var(--color-amber-500);
 
-  /* Status greens with enough contrast in dark mode */
-  --color-green-300: #86efac;
-  --color-green-400: #4ade80;
-  --color-green-500: #22c55e;
-  --color-green-600: #16a34a;
-  --color-green-700: #86efac;
-  --color-green-800: #bbf7d0;
 }
 
 /* Custom sidebar background for mobile viewports */
@@ -237,21 +230,6 @@
   --accent-light-color: var(--brand-blue-hover);
   --accent-toast-color: rgba(37, 99, 235, 0.15);
 
-  /* Override Tailwind green/emerald colors in light mode for a vibrant but accessible contrast */
-  --color-emerald-300: #10b981;
-  --color-emerald-400: #059669;
-  --color-emerald-500: #047857; /* Vibrant emerald with excellent contrast (4.8:1) */
-  --color-emerald-600: #047857;
-  --color-emerald-700: #065f46;
-  --color-emerald-800: #064e3b;
-
-  --color-green-300: #4ade80;
-  --color-green-400: #22c55e;
-  --color-green-500: #15803d; /* Vibrant green with great contrast (5.4:1) */
-  --color-green-600: #166534;
-  --color-green-700: #166534;
-  --color-green-800: #14532d;
-
   /* Standardized amber and orange colors in light mode */
   --color-amber-500: #e78a08; /* Vibrant, accessible golden amber-orange intermediate */
   --color-orange-300: var(--color-amber-500);
@@ -297,9 +275,9 @@
   --surface-card-border: var(--glass-sheet-border);
   --surface-card-shadow: 0 12px 32px rgba(52, 74, 94, 0.12);
 
-  /* Floating menus (light) — opaque fill, frosted rim */
-  --popover-surface-bg: #f4f8fb;
-  --popover-surface-border: rgba(255, 255, 255, 0.85);
+  /* Floating menus (light) — cool gray-blue paper (never pure / near-white) */
+  --popover-surface-bg: #d8e2e9;
+  --popover-surface-border: rgba(255, 255, 255, 0.72);
   --popover-surface-blur: 18px;
   --popover-surface-shadow: 0 18px 48px rgba(52, 74, 94, 0.22);
 
@@ -514,13 +492,13 @@
 }
 
 .tech-task-hero-photo {
-  filter: blur(3px);
-  -webkit-filter: blur(3px);
+  filter: blur(5px);
+  -webkit-filter: blur(5px);
 }
 
 .tech-task-hero-fallback {
-  filter: blur(3px);
-  -webkit-filter: blur(3px);
+  filter: blur(5px);
+  -webkit-filter: blur(5px);
 }
 
 /*
@@ -673,6 +651,31 @@
 /* Profile + notifications: above main panel, below mobile sidebar overlay */
 .header-popover-layer {
   z-index: var(--z-header-popover);
+}
+
+/*
+ * Header floating shells use billing-surface language with an opaque cool tint.
+ * Translucent page billing-surface would bleed dashboard content through; these
+ * menus must stay readable while matching the gray-blue atmosphere (no #fff).
+ */
+.billing-surface.header-popover-layer {
+  isolation: isolate;
+  opacity: 1;
+  border: 1px solid var(--border-soft);
+  box-shadow:
+    var(--popover-surface-shadow),
+    inset 0 1px 0 var(--glass-sheet-highlight);
+}
+
+.light-mode .billing-surface.header-popover-layer {
+  background-color: color-mix(in srgb, #d5e0e7 90%, #cbd4db);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+:root:not(.light-mode) .billing-surface.header-popover-layer,
+html:not(.light-mode) .billing-surface.header-popover-layer {
+  background-color: color-mix(in srgb, var(--surface-card-bg) 88%, #1c1c20);
 }
 
 
@@ -972,8 +975,8 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 .workhive-fullcalendar .workhive-calendar-event-completed {
-  --workhive-event-accent: #0f766e;
-  background-color: color-mix(in srgb, #0f766e 14%, var(--bg-card)) !important;
+  --workhive-event-accent: var(--brand-blue);
+  background-color: color-mix(in srgb, var(--brand-blue) 14%, var(--bg-card)) !important;
   color: var(--text-main) !important;
 }
 
@@ -1309,11 +1312,6 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
   }
 }
 
-/* Standardize orange colors to amber */
-.text-amber-500 {
-  color: var(--color-amber-500) !important;
-}
-
 @keyframes login-status-in {
   from {
     opacity: 0;
@@ -1344,3 +1342,14 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
   animation: login-status-phrase 0.28s ease-out both;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .login-status-panel,
+  .login-status-phrase {
+    animation: none;
+  }
+}
+
+/* Standardize orange colors to amber */
+.text-amber-500 {
+  color: var(--color-amber-500) !important;
+}

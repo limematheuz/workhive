@@ -54,9 +54,9 @@ export function CalendarKanbanCard({
     const statusTone = isCompleted
         ? {
             Icon: CheckCircle2,
-            card: "border-emerald-500/35 bg-emerald-500/5 hover:border-emerald-500/55 hover:shadow-[0_18px_38px_rgba(5,150,105,0.14)]",
-            bar: "bg-emerald-500",
-            icon: "text-emerald-600",
+            card: "border-accent/35 bg-accent/5 hover:border-accent/55 hover:shadow-[0_18px_38px_rgba(37,99,235,0.14)]",
+            bar: "bg-accent",
+            icon: "text-accent",
             label: dict.tasks?.dialog?.status_completed || "Completada",
         }
         : isActiveStatus

@@ -7,6 +7,8 @@ import { LogOut, User } from "lucide-react";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { UserAvatar } from "@/components/ui/user-avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { NotificationPanel } from "./notifications/NotificationPanel";
 
 interface DashboardHeaderProps {
@@ -103,67 +105,76 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                     </button>
                     {isProfileOpen && user && (
                         <div
-                            className="surface-popover header-popover-layer fixed left-3 right-3 top-20 max-w-[calc(100vw-1.5rem)] rounded-3xl p-4 ui-motion sm:left-auto sm:right-8 sm:w-[min(25rem,calc(100vw-2rem))]"
+                            className="billing-surface header-popover-layer fixed left-3 right-3 top-20 max-w-[calc(100vw-1.5rem)] rounded-[24px] p-3 ui-motion sm:left-auto sm:right-8 sm:w-[min(25rem,calc(100vw-2rem))]"
                             role="menu"
                             aria-label="Menú de perfil"
                         >
-                            <div className="flex items-start justify-between gap-4 pb-3">
-                                <div className="min-w-0">
-                                    <p className="truncate text-sm font-black text-[var(--text-main)]">
-                                        {dict.dashboard.profile || "Perfil"}
-                                    </p>
-                                    <p className="mt-0.5 text-xs font-semibold text-[var(--text-muted)]">
-                                        {user.full_name || dict.dashboard.default_user_name || "Usuario"}
-                                    </p>
-                                </div>
+                            <div className="min-w-0 pb-2">
+                                <p className="truncate text-sm font-semibold text-[var(--text-main)]">
+                                    {dict.dashboard.profile || "Perfil"}
+                                </p>
+                                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">
+                                    {user.full_name || dict.dashboard.default_user_name || "Usuario"}
+                                </p>
                             </div>
 
-                            <div className="rounded-2xl border border-accent/20 bg-accent/[0.06] p-3">
-                                <div className="flex items-center gap-3">
+                            <div className="billing-block rounded-xl border border-[var(--border-soft)] p-2.5">
+                                <div className="flex items-center gap-2.5">
                                     <UserAvatar
                                         name={user.full_name}
                                         email={user.email}
                                         photoUrl={user.photo_url}
-                                        className="h-11 w-11 shrink-0 border border-accent/20 text-xs"
-                                        textClassName="text-xs"
+                                        className="h-9 w-9 shrink-0 border border-[var(--border-soft)] text-[11px]"
+                                        textClassName="text-[11px]"
                                     />
                                     <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-black text-[var(--text-main)]">
+                                        <p className="truncate text-sm font-semibold text-[var(--text-main)]">
                                             {user.full_name || dict.dashboard.default_user_name || "Usuario"}
                                         </p>
-                                        <p className="mt-0.5 truncate text-xs font-semibold text-[var(--text-muted)]">
+                                        <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">
                                             {user.email}
                                         </p>
-                                        <p className="mt-2 text-[10px] font-bold uppercase tracking-wide text-accent">
+                                        <Badge
+                                            variant="secondary"
+                                            className="mt-1 text-[10px] font-bold uppercase tracking-wide"
+                                        >
                                             {user.role?.name || dict.dashboard.no_role || "Sin Rol"}
-                                        </p>
+                                        </Badge>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="mt-3 flex flex-col gap-2">
-                                <Link
-                                    href="/dashboard/profile"
-                                    onClick={() => setIsProfileOpen(false)}
-                                    role="menuitem"
-                                    className="inline-flex w-full items-center gap-2 rounded-2xl border border-[var(--border-soft)] bg-[var(--btn-neutral-bg)] px-3 py-3 text-sm font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]"
+                            <div className="mt-2 flex flex-col gap-1.5">
+                                <Button
+                                    asChild
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full justify-start hover:translate-y-0"
                                 >
-                                    <User className="h-4 w-4 shrink-0" aria-hidden="true" />
-                                    {dict.dashboard.view_profile}
-                                </Link>
-                                <button
+                                    <Link
+                                        href="/dashboard/profile"
+                                        onClick={() => setIsProfileOpen(false)}
+                                        role="menuitem"
+                                    >
+                                        <User className="h-4 w-4 shrink-0" aria-hidden="true" />
+                                        {dict.dashboard.view_profile}
+                                    </Link>
+                                </Button>
+                                <Button
                                     type="button"
                                     role="menuitem"
+                                    variant="dangerSoft"
+                                    size="sm"
                                     aria-label={dict.dashboard.logout}
+                                    className="w-full justify-start hover:translate-y-0"
                                     onClick={() => {
                                         setIsProfileOpen(false);
                                         onLogout();
                                     }}
-                                    className="inline-flex w-full items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-3 py-3 text-left text-sm font-bold text-red-500 transition-colors hover:bg-red-500/15"
                                 >
                                     <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
                                     {dict.dashboard.logout}
-                                </button>
+                                </Button>
                             </div>
                         </div>
                     )}

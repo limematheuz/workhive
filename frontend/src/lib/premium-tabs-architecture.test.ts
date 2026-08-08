@@ -24,6 +24,7 @@ test("ReservationsFilters reuses PremiumTabs for Vigentes/Historial", () => {
     assert.match(source, /layout="fit"/);
     assert.match(source, /ArrowUpRight/);
     assert.match(source, /History/);
+    assert.match(source, /billing-block/);
     assert.doesNotMatch(source, /flex bg-\[var\(--bg-primary\)\]\/40 p-1 border/);
 });
 

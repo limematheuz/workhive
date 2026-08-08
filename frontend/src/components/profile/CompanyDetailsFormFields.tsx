@@ -1,8 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { Building2, Mail, Phone, MapPin, CreditCard, Upload } from "lucide-react";
+import { Building2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+    DocumentFormInput,
+    DocumentFormTextarea,
+} from "@/components/billing/DocumentFormControls";
+import { DocumentFormField } from "@/components/billing/DocumentFormField";
+import { ProfileFormSection } from "@/components/profile/ProfileFormSection";
 import { resolveApiMediaUrl } from "@/lib/api";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
@@ -69,170 +75,149 @@ export function CompanyDetailsFormFields({
     onSubmit,
 }: CompanyDetailsFormFieldsProps) {
     return (
-        <form onSubmit={onSubmit} className="space-y-6 w-full relative z-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                        <Building2 className="w-4 h-4" />
-                        Company Details
-                    </h3>
+        <form onSubmit={onSubmit} className="relative z-10 w-full space-y-4">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(14rem,0.75fr)] lg:gap-4 lg:items-start">
+                <ProfileFormSection
+                    title="Company Details"
+                    description="Fiscal and contact details shown on invoices and quotes."
+                    headerExtra={<Building2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />}
+                >
+                    <div className="flex w-full min-w-0 flex-col gap-3">
+                        <DocumentFormField id="company-name" label="Company Name *">
+                            <DocumentFormInput
+                                id="company-name"
+                                type="text"
+                                required
+                                value={companyName}
+                                onChange={(e) => setCompanyName(e.target.value)}
+                            />
+                        </DocumentFormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="company-name" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                            Company Name *
-                        </label>
-                        <input
-                            id="company-name"
-                            type="text"
-                            required
-                            value={companyName}
-                            onChange={(e) => setCompanyName(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                        />
-                    </div>
+                        <DocumentFormField id="company-tax-id" label="CIF / NIF (Issuer NIF) *">
+                            <DocumentFormInput
+                                id="company-tax-id"
+                                type="text"
+                                required
+                                value={taxId}
+                                onChange={(e) => setTaxId(e.target.value)}
+                                className="font-mono"
+                            />
+                        </DocumentFormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="company-tax-id" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                            CIF / NIF (Issuer NIF) *
-                        </label>
-                        <input
-                            id="company-tax-id"
-                            type="text"
-                            required
-                            value={taxId}
-                            onChange={(e) => setTaxId(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] font-mono"
-                        />
-                    </div>
+                        <DocumentFormField id="company-address" label="Fiscal Address *">
+                            <DocumentFormInput
+                                id="company-address"
+                                type="text"
+                                required
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                            />
+                        </DocumentFormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="company-address" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-[var(--text-muted)]" /> Fiscal Address *
-                        </label>
-                        <input
-                            id="company-address"
-                            type="text"
-                            required
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div className="space-y-1.5">
-                            <label htmlFor="company-postal-code" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                {dict.profile.company_fields.postal_code} *
-                            </label>
-                            <input
+                        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-3">
+                            <DocumentFormField
                                 id="company-postal-code"
-                                type="text"
-                                required
-                                inputMode="numeric"
-                                pattern="[0-9]{5}"
-                                value={postalCode}
-                                onChange={(e) => setPostalCode(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label htmlFor="company-city" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                {dict.profile.company_fields.city} *
-                            </label>
-                            <input
+                                label={`${dict.profile.company_fields.postal_code} *`}
+                            >
+                                <DocumentFormInput
+                                    id="company-postal-code"
+                                    type="text"
+                                    required
+                                    inputMode="numeric"
+                                    pattern="[0-9]{5}"
+                                    value={postalCode}
+                                    onChange={(e) => setPostalCode(e.target.value)}
+                                />
+                            </DocumentFormField>
+                            <DocumentFormField
                                 id="company-city"
-                                type="text"
-                                required
-                                value={city}
-                                onChange={(e) => setCity(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label htmlFor="company-province" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                                {dict.profile.company_fields.province} *
-                            </label>
-                            <input
+                                label={`${dict.profile.company_fields.city} *`}
+                            >
+                                <DocumentFormInput
+                                    id="company-city"
+                                    type="text"
+                                    required
+                                    value={city}
+                                    onChange={(e) => setCity(e.target.value)}
+                                />
+                            </DocumentFormField>
+                            <DocumentFormField
                                 id="company-province"
+                                label={`${dict.profile.company_fields.province} *`}
+                            >
+                                <DocumentFormInput
+                                    id="company-province"
+                                    type="text"
+                                    required
+                                    value={province}
+                                    onChange={(e) => setProvince(e.target.value)}
+                                />
+                            </DocumentFormField>
+                        </div>
+
+                        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                            <DocumentFormField id="company-phone" label="Phone">
+                                <DocumentFormInput
+                                    id="company-phone"
+                                    type="text"
+                                    required
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                />
+                            </DocumentFormField>
+                            <DocumentFormField id="company-email" label="Email">
+                                <DocumentFormInput
+                                    id="company-email"
+                                    type="email"
+                                    required
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </DocumentFormField>
+                        </div>
+
+                        <DocumentFormField id="company-bank-account" label="Account Number / IBAN">
+                            <DocumentFormInput
+                                id="company-bank-account"
                                 type="text"
-                                required
-                                value={province}
-                                onChange={(e) => setProvince(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70"
+                                value={bankAccount}
+                                onChange={(e) => setBankAccount(e.target.value)}
+                                placeholder="ES00 0000 0000 0000 0000 0000"
+                                className="font-mono"
                             />
-                        </div>
+                        </DocumentFormField>
                     </div>
+                </ProfileFormSection>
 
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                            <label htmlFor="company-phone" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-[var(--text-muted)]" /> Phone
-                            </label>
-                            <input
-                                id="company-phone"
-                                type="text"
-                                required
-                                value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label htmlFor="company-email" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
-                                <Mail className="w-3 h-3 text-[var(--text-muted)]" /> Email
-                            </label>
-                            <input
-                                id="company-email"
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                            />
-                        </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label htmlFor="company-bank-account" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1">
-                            <CreditCard className="w-3.5 h-3.5 text-[var(--text-muted)]" /> Account Number / IBAN
-                        </label>
-                        <input
-                            id="company-bank-account"
-                            type="text"
-                            value={bankAccount}
-                            onChange={(e) => setBankAccount(e.target.value)}
-                            placeholder="ES00 0000 0000 0000 0000 0000"
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)] font-mono"
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider flex items-center gap-1.5">
-                        <Upload className="w-4 h-4" />
-                        Corporate Logo
-                    </h3>
-
-                    <div className="border border-dashed border-[var(--border-color)] rounded-2xl p-6 bg-[var(--bg-tertiary)]/40 flex flex-col items-center justify-center min-h-[220px] relative overflow-hidden group hover:border-accent hover:bg-accent/5 ui-motion">
+                <ProfileFormSection
+                    title="Corporate Logo"
+                    description="Shown on invoices and quotes."
+                    headerExtra={<Upload className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />}
+                >
+                    <div className="relative flex min-h-[10.5rem] flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-card-solid)]/40 p-4 transition-colors hover:border-accent hover:bg-accent/5 group">
                         {logoUrl ? (
-                            <div className="text-center space-y-4">
+                            <div className="space-y-2 text-center">
                                 <Image
                                     src={resolveApiMediaUrl(logoUrl) || ""}
                                     alt="Logo"
-                                    width={240}
-                                    height={144}
-                                    className="max-h-36 max-w-full object-contain mx-auto rounded"
+                                    width={200}
+                                    height={112}
+                                    className="mx-auto max-h-28 max-w-full rounded object-contain"
                                     unoptimized
                                 />
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="text-white text-xs font-semibold">Change logo</span>
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                                    <span className="text-xs font-semibold text-white">Change logo</span>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center space-y-2">
-                                <Building2 className="w-10 h-10 text-accent/40 mx-auto" />
-                                <span className="text-xs font-semibold text-[var(--text-main)] block">Upload your company logo</span>
-                                <span className="text-3xs text-[var(--text-muted)]">The logo will appear on invoices and quotes.</span>
+                            <div className="space-y-1.5 text-center">
+                                <Building2 className="mx-auto h-8 w-8 text-accent/40" />
+                                <span className="block text-xs font-semibold text-[var(--text-main)]">
+                                    Upload your company logo
+                                </span>
+                                <span className="text-2xs text-[var(--text-muted)]">
+                                    The logo will appear on invoices and quotes.
+                                </span>
                             </div>
                         )}
                         <input
@@ -240,42 +225,45 @@ export function CompanyDetailsFormFields({
                             aria-label="Upload company logo"
                             accept="image/*"
                             onChange={onLogoChange}
-                            className="absolute inset-0 opacity-0 cursor-pointer"
+                            className="absolute inset-0 cursor-pointer opacity-0"
                         />
                     </div>
-                </div>
+                </ProfileFormSection>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[var(--border-soft)] pt-5">
-                <div className="space-y-1.5">
-                    <label htmlFor="company-default-payment-notes" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        {dict.profile.company_fields.default_payment_notes}
-                    </label>
-                    <textarea
+            <ProfileFormSection
+                title="Notes & terms"
+                description="Defaults applied when creating invoices and quotes."
+            >
+                <div className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
+                    <DocumentFormField
                         id="company-default-payment-notes"
-                        value={defaultPaymentNotes}
-                        onChange={(event) => setDefaultPaymentNotes(event.target.value)}
-                        rows={5}
-                        placeholder={dict.profile.company_fields.default_payment_notes_placeholder}
-                        className="w-full resize-y rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70"
-                    />
-                </div>
-                <div className="space-y-1.5">
-                    <label htmlFor="company-default-document-terms" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        {dict.profile.company_fields.default_document_terms}
-                    </label>
-                    <textarea
+                        label={dict.profile.company_fields.default_payment_notes}
+                    >
+                        <DocumentFormTextarea
+                            id="company-default-payment-notes"
+                            value={defaultPaymentNotes}
+                            onChange={(event) => setDefaultPaymentNotes(event.target.value)}
+                            rows={4}
+                            placeholder={dict.profile.company_fields.default_payment_notes_placeholder}
+                        />
+                    </DocumentFormField>
+                    <DocumentFormField
                         id="company-default-document-terms"
-                        value={defaultDocumentTerms}
-                        onChange={(event) => setDefaultDocumentTerms(event.target.value)}
-                        rows={5}
-                        placeholder={dict.profile.company_fields.default_document_terms_placeholder}
-                        className="w-full resize-y rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70"
-                    />
+                        label={dict.profile.company_fields.default_document_terms}
+                    >
+                        <DocumentFormTextarea
+                            id="company-default-document-terms"
+                            value={defaultDocumentTerms}
+                            onChange={(event) => setDefaultDocumentTerms(event.target.value)}
+                            rows={4}
+                            placeholder={dict.profile.company_fields.default_document_terms_placeholder}
+                        />
+                    </DocumentFormField>
                 </div>
-            </div>
+            </ProfileFormSection>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-soft)]">
+            <div className="flex justify-end gap-2.5 border-t border-[var(--border-soft)] pt-3">
                 <button
                     type="button"
                     onClick={onCancel}

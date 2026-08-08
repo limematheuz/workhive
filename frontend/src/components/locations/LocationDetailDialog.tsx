@@ -86,8 +86,8 @@ export function LocationDetailDialog({
                                 variant={location.is_active ? "default" : "secondary"}
                                 className={
                                     location.is_active
-                                        ? "border-0 bg-emerald-500/90 text-xs text-white shadow-sm"
-                                        : "border-0 bg-black/40 text-xs text-white/80 shadow-sm backdrop-blur-sm"
+                                        ? "border-0 bg-accent/90 text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
+                                        : "border-0 bg-black/40 text-xs font-semibold uppercase tracking-wide text-white/80 shadow-sm backdrop-blur-sm"
                                 }
                             >
                                 {location.is_active ? activeLabel : inactiveLabel}
@@ -113,8 +113,8 @@ export function LocationDetailDialog({
                                 variant={location.is_active ? "default" : "secondary"}
                                 className={
                                     location.is_active
-                                        ? "border-0 bg-emerald-500/90 text-xs text-white shadow-sm"
-                                        : "border-0 bg-black/40 text-xs text-white/80 shadow-sm backdrop-blur-sm"
+                                        ? "border-0 bg-accent/90 text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
+                                        : "border-0 bg-black/40 text-xs font-semibold uppercase tracking-wide text-white/80 shadow-sm backdrop-blur-sm"
                                 }
                             >
                                 {location.is_active ? activeLabel : inactiveLabel}

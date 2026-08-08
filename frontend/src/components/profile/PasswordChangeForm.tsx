@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { User } from "@/types/user";
 import { UserService } from "@/services/user.service";
 import { toast } from "@/lib/toast";
-import { Lock, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DocumentFormInput } from "@/components/billing/DocumentFormControls";
+import { DocumentFormField } from "@/components/billing/DocumentFormField";
+import { ProfileFormSection } from "@/components/profile/ProfileFormSection";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
@@ -67,115 +70,103 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
     };
 
     return (
-        <form onSubmit={handleUpdatePassword} className="space-y-6 w-full relative z-10">
-            <div className="space-y-4">
-                <h3 className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    Cambio de Contraseña de Seguridad
-                </h3>
+        <form onSubmit={handleUpdatePassword} className="relative z-10 w-full">
+            <ProfileFormSection
+                title="Cambio de Contraseña de Seguridad"
+                description="Introduce tu clave actual y define una nueva de al menos 6 caracteres."
+            >
+                <div className="flex w-full min-w-0 flex-col gap-3">
+                    <DocumentFormField id="password-old" label="Contraseña Actual">
+                        <div className="relative">
+                            <DocumentFormInput
+                                id="password-old"
+                                type={showOldPassword ? "text" : "password"}
+                                required
+                                value={profileOldPassword}
+                                onChange={(e) => setProfileOldPassword(e.target.value)}
+                                placeholder="Introduce tu clave actual"
+                                className="pr-10"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowOldPassword(!showOldPassword)}
+                                aria-label={showOldPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] focus:outline-none"
+                            >
+                                {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                        </div>
+                    </DocumentFormField>
 
-                <div className="space-y-1.5">
-                    <label htmlFor="password-old" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                        Contraseña Actual
-                    </label>
-                    <div className="relative">
-                        <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--text-muted)]" />
-                        <input
-                            id="password-old"
-                            type={showOldPassword ? "text" : "password"}
-                            required
-                            value={profileOldPassword}
-                            onChange={(e) => setProfileOldPassword(e.target.value)}
-                            placeholder="Introduce tu clave actual"
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                        />
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                        <DocumentFormField id="password-new" label="Nueva Contraseña">
+                            <div className="relative">
+                                <DocumentFormInput
+                                    id="password-new"
+                                    type={showPassword ? "text" : "password"}
+                                    required
+                                    value={profilePassword}
+                                    onChange={(e) => setProfilePassword(e.target.value)}
+                                    placeholder="Mín. 6 caracteres"
+                                    className="pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] focus:outline-none"
+                                >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </DocumentFormField>
+
+                        <DocumentFormField id="password-confirm" label="Confirmar Nueva Contraseña">
+                            <div className="relative">
+                                <DocumentFormInput
+                                    id="password-confirm"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    required
+                                    value={profileConfirmPassword}
+                                    onChange={(e) => setProfileConfirmPassword(e.target.value)}
+                                    placeholder="Repite la clave"
+                                    className="pr-10"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] focus:outline-none"
+                                >
+                                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </DocumentFormField>
+                    </div>
+
+                    <div className="flex justify-end gap-2.5 border-t border-[var(--border-soft)] pt-3">
                         <button
                             type="button"
-                            onClick={() => setShowOldPassword(!showOldPassword)}
-                            aria-label={showOldPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                            className="absolute right-3 top-3.5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-0.5"
+                            onClick={() => {
+                                setProfilePassword("");
+                                setProfileOldPassword("");
+                                setProfileConfirmPassword("");
+                                onCancel();
+                            }}
+                            className="btn-cancel-muted"
                         >
-                            {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            Cancelar
                         </button>
+                        <Button
+                            type="submit"
+                            disabled={updating}
+                            className={PAGE_ACTION_BUTTON_PRIMARY}
+                        >
+                            {updating ? "Guardando..." : "Actualizar Contraseña"}
+                        </Button>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label htmlFor="password-new" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                            Nueva Contraseña
-                        </label>
-                        <div className="relative">
-                            <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--text-muted)]" />
-                            <input
-                                id="password-new"
-                                type={showPassword ? "text" : "password"}
-                                required
-                                value={profilePassword}
-                                onChange={(e) => setProfilePassword(e.target.value)}
-                                placeholder="Mín. 6 caracteres"
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                className="absolute right-3 top-3.5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-0.5"
-                            >
-                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label htmlFor="password-confirm" className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                            Confirmar Nueva Contraseña
-                        </label>
-                        <div className="relative">
-                            <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-[var(--text-muted)]" />
-                            <input
-                                id="password-confirm"
-                                type={showConfirmPassword ? "text" : "password"}
-                                required
-                                value={profileConfirmPassword}
-                                onChange={(e) => setProfileConfirmPassword(e.target.value)}
-                                placeholder="Repite la clave"
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] rounded-xl pl-10 pr-10 py-3 text-sm text-[var(--text-main)] outline-none focus:border-accent/70 focus:ring-2 focus:ring-accent/10 focus:bg-[var(--bg-card-solid)] ui-motion shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                className="absolute right-3 top-3.5 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-0.5"
-                            >
-                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border-soft)]">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setProfilePassword("");
-                        setProfileOldPassword("");
-                        setProfileConfirmPassword("");
-                        onCancel();
-                    }}
-                    className="btn-cancel-muted"
-                >
-                    Cancelar
-                </button>
-                <Button
-                    type="submit"
-                    disabled={updating}
-                    className={PAGE_ACTION_BUTTON_PRIMARY}
-                >
-                    {updating ? "Guardando..." : "Actualizar Contraseña"}
-                </Button>
-            </div>
+            </ProfileFormSection>
         </form>
     );
 }

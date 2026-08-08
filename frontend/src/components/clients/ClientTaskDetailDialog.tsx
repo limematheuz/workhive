@@ -21,7 +21,7 @@ function getSubTaskBadge(item: ParsedChecklistItem) {
 
     if (status === "completed") {
         statusLabel = "Completada";
-        statusClass = "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20";
+        statusClass = "bg-accent/10 text-accent border border-accent/25";
     } else if (status === "progress") {
         statusLabel = "En progreso";
         statusClass = "bg-accent/10 text-accent border border-accent/20";
@@ -121,7 +121,7 @@ export function ClientTaskDetailDialog({
                                 <div>
                                     <Badge className={`uppercase text-[9px] font-bold rounded-full px-2 py-0.5 ${
                                         task.status === "completed"
-                                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                                            ? "bg-accent/10 text-accent border border-accent/25"
                                             : task.status === "progress"
                                             ? "bg-accent/10 text-accent border border-accent/20"
                                             : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"

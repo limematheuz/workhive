@@ -19,7 +19,7 @@ test("dashboard logout is exposed from the profile menu and wired to the layout 
     assert.doesNotMatch(sidebarFooter, /onLogout|logoutLabel/);
 });
 
-test("profile popover mirrors notification panel shell and action cards", () => {
+test("profile popover mirrors notification panel shell and billing action language", () => {
     const header = read("../components/dashboard/DashboardHeader.tsx");
     const notifications = read(
         "../components/dashboard/notifications/NotificationPanel.tsx",
@@ -28,18 +28,19 @@ test("profile popover mirrors notification panel shell and action cards", () => 
     assert.match(header, /import\s*\{\s*LogOut,\s*User\s*\}\s*from\s*"lucide-react"/);
     assert.match(
         header,
-        /surface-popover header-popover-layer fixed left-3 right-3 top-20[\s\S]*?rounded-3xl p-4/,
+        /billing-surface header-popover-layer fixed left-3 right-3 top-20[\s\S]*?rounded-\[24px\] p-3/,
     );
     assert.match(header, /sm:w-\[min\(25rem,calc\(100vw-2rem\)\)\]/);
     assert.match(notifications, /sm:w-\[min\(25rem,calc\(100vw-2rem\)\)\]/);
-    assert.match(header, /font-black text-\[var\(--text-main\)\]/);
-    assert.match(header, /font-semibold text-\[var\(--text-muted\)\]/);
-    assert.match(header, /border border-accent\/20 bg-accent\/\[0\.06\]/);
-    assert.match(header, /text-\[10px\] font-bold uppercase[\s\S]*?text-accent/);
+    assert.match(header, /billing-block/);
+    assert.match(header, /from "@\/components\/ui\/button"/);
+    assert.match(header, /from "@\/components\/ui\/badge"/);
+    assert.match(header, /variant="dangerSoft"/);
     assert.match(header, /href="\/dashboard\/profile"/);
-    assert.match(header, /bg-\[var\(--btn-neutral-bg\)\]/);
-    assert.match(header, /bg-red-500\/10[\s\S]*?text-red-500/);
     assert.match(header, /<LogOut[\s\S]*?aria-hidden="true"/);
     assert.match(header, /aria-label="Abrir menú de perfil"/);
     assert.match(header, /aria-label="Menú de perfil"/);
+    assert.doesNotMatch(header, /border-accent\/20 bg-accent\/\[0\.06\]/);
+    assert.doesNotMatch(header, /bg-red-500\/10|text-red-500|emerald|text-green-|bg-green-/);
+    assert.doesNotMatch(header, /btn-cancel-muted/);
 });

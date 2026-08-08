@@ -70,7 +70,7 @@ export function TeamListSection({
 
     const statusBadge = (worker: User) => (
         (worker.is_active ?? true) ? (
-            <span className="inline-flex items-center rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-500">
+            <span className="inline-flex items-center rounded-full border border-accent/25 bg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase text-accent">
                 {labels.status_active}
             </span>
         ) : (

@@ -135,7 +135,7 @@ export function useOperationsCalendar({
 
         const colors = [
             "bg-accent", "bg-purple-500", "bg-indigo-500",
-            "bg-teal-500", "bg-emerald-500", "bg-pink-500", "bg-violet-500"
+            "bg-sky-500", "bg-blue-500", "bg-pink-500", "bg-violet-500"
         ];
         const colorIdx = userId % colors.length;
         return { initials, bgColor: colors[colorIdx] };
