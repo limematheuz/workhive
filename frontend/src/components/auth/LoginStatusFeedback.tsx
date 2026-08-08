@@ -33,7 +33,10 @@ export function LoginStatusFeedback({
     const [phraseIndex, setPhraseIndex] = useState(0);
     const isSuccess = variant === "success";
     const activePhrases = useMemo(() => {
-        const cleaned = phrases.map((phrase) => phrase.trim()).filter(Boolean);
+        const cleaned = phrases.flatMap((phrase) => {
+            const trimmed = phrase.trim();
+            return trimmed ? [trimmed] : [];
+        });
         if (cleaned.length > 0) return cleaned;
         return title?.trim() ? [title.trim()] : [];
     }, [phrases, title]);
