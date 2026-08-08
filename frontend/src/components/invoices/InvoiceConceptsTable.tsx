@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Copy, Plus, Shirt, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useInvoiceForm";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { InvoiceConceptDescriptionField } from "./InvoiceConceptDescription";
 
 interface InvoiceConceptsTableProps {
     concepts: ConceptRow[];
@@ -68,20 +69,15 @@ export function InvoiceConceptsTable({
                         {concepts.length > 0 ? (
                             concepts.map((row) => (
                                 <tr key={row.id} className="odd:bg-[var(--bg-secondary)]/15 hover:bg-[var(--btn-secondary-bg)]/40">
-                                    <td className="py-2 px-3">
+                                    <td className="py-3 px-3 align-top">
                                         <div className="flex items-start gap-2">
                                             <div className="min-w-0 flex-1">
-                                                <label className="sr-only" htmlFor={`invoice-concept-${row.id}-description`}>
-                                                    {dict.invoices?.col_description || "Descripción"}
-                                                </label>
-                                                <textarea
+                                                <InvoiceConceptDescriptionField
                                                     id={`invoice-concept-${row.id}-description`}
+                                                    label={dict.invoices?.col_description || "Descripción"}
                                                     value={row.description}
-                                                    onChange={(e) => handleUpdateRow(row.id, "description", e.target.value)}
-                                                    rows={Math.max(2, Math.min(4, row.description.split("\n").length))}
-                                                    className="w-full resize-none border-none bg-transparent text-xs leading-relaxed text-[var(--text-main)] outline-none focus:ring-0"
+                                                    onChange={(value) => handleUpdateRow(row.id, "description", value)}
                                                     placeholder={dict.invoices?.col_description_placeholder || "Descripción del trabajo..."}
-                                                    required
                                                 />
                                             </div>
                                             <div className="flex shrink-0 items-center gap-1 pt-0.5">

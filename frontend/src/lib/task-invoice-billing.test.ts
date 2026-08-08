@@ -2,10 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-    buildTaskWorkSummaryLines,
+    buildInvoiceTaskDescription,
+    parseInvoiceConceptDescription,
     resolveTaskInvoiceAmount,
     resolveTaskInvoiceBilling,
 } from "./task-invoice-billing.ts";
+
+function formatHours(seconds: number): string {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h`;
+    return `${minutes}m`;
+}
 
 test("fixed mode uses configured quantity and price", () => {
     assert.deepEqual(
@@ -47,29 +56,56 @@ test("hourly mode uses person-hours snapshot for quantity", () => {
     );
 });
 
-test("work summary lines always include person-hours and workers", () => {
-    const lines = buildTaskWorkSummaryLines(
-        {
+test("invoice description keeps a clear hierarchy for the client", () => {
+    const description = buildInvoiceTaskDescription({
+        title: "Limpieza de cambios",
+        locationName: "Casa Anastasia",
+        dateLabel: "08/08/2026",
+        task: {
             pricing_mode: "fixed",
-            price: 165,
+            price: 180,
             quantity: 1,
-            worked_seconds: 9000,
+            worked_seconds: 4260,
             workers: [
-                { user_id: 1, user_name: "Ana", worked_seconds: 2400, worked_hours: 0.6667 },
-                { user_id: 2, user_name: "Bea", worked_seconds: 6600, worked_hours: 1.8333 },
+                { user_id: 1, user_name: "Andrea", worked_seconds: 3720, worked_hours: 1.0333 },
+                { user_id: 2, user_name: "Ownet", worked_seconds: 480, worked_hours: 0.1333 },
+                { user_id: 3, user_name: "Victoria", worked_seconds: 0, worked_hours: 0 },
             ],
         },
-        (seconds) => {
-            const hours = Math.floor(seconds / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-            if (hours > 0 && minutes > 0) return `${hours}h ${minutes}m`;
-            if (hours > 0) return `${hours}h`;
-            return `${minutes}m`;
+        formatHours,
+    });
+
+    assert.equal(
+        description,
+        [
+            "Limpieza de cambios",
+            "Casa Anastasia · 08/08/2026",
+            "",
+            "Tiempo del equipo: 1h 11m",
+            "Andrea 1h 2m · Ownet 8m",
+        ].join("\n"),
+    );
+    assert.doesNotMatch(description, /Victoria/);
+});
+
+test("parseInvoiceConceptDescription separates title meta and details", () => {
+    assert.deepEqual(
+        parseInvoiceConceptDescription(
+            [
+                "Limpieza de cambios",
+                "Casa Anastasia · 08/08/2026",
+                "",
+                "Tiempo del equipo: 1h 11m",
+                "Andrea 1h 2m · Ownet 8m",
+            ].join("\n"),
+        ),
+        {
+            title: "Limpieza de cambios",
+            meta: "Casa Anastasia · 08/08/2026",
+            details: [
+                "Tiempo del equipo: 1h 11m",
+                "Andrea 1h 2m · Ownet 8m",
+            ],
         },
     );
-
-    assert.deepEqual(lines, [
-        "Horas-persona: 2h 30m",
-        "Ana 40m · Bea 1h 50m",
-    ]);
 });
