@@ -56,7 +56,7 @@ export function SuperadminStatsCards({ stats, loading = false }: SuperadminStats
     ];
 
     return (
-        <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-6">
             {cards.map((card) => (
                 <SummaryCard
                     key={card.label}
@@ -79,17 +79,17 @@ function SummaryCard({
     icon: ReactNode;
 }) {
     return (
-        <article className="billing-block rounded-[18px] border border-[var(--border-soft)] p-3.5">
+        <article className="billing-block min-w-0 rounded-[18px] border border-[var(--border-soft)] p-3 sm:p-3.5">
             <span
                 className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent"
                 aria-hidden="true"
             >
                 {icon}
             </span>
-            <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
+            <p className="mt-3 truncate text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
                 {label}
             </p>
-            <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">
+            <p className="mt-1 truncate text-xl font-semibold text-[var(--text-main)] sm:text-2xl">
                 {value}
             </p>
         </article>

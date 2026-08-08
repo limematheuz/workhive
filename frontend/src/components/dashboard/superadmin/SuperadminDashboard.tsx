@@ -86,7 +86,7 @@ export function SuperadminDashboard() {
     );
 
     return (
-        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
+        <div className="dashboard-page-content w-full min-w-0 max-w-full px-[max(3%,env(safe-area-inset-left))] pr-[max(3%,env(safe-area-inset-right))] py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:p-8">
             <PageHeader
                 icon={Building2}
                 title={text.title}
@@ -94,8 +94,8 @@ export function SuperadminDashboard() {
                 className="mb-6"
             />
 
-            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
-                <div className="space-y-5">
+            <section className="billing-surface relative w-full min-w-0 max-w-full overflow-hidden rounded-[24px] p-3 sm:p-5">
+                <div className="min-w-0 space-y-5">
                     {loading && companies.length === 0 ? (
                         <div className="flex flex-col items-center justify-center gap-3 py-10">
                             <Loader2 className="h-7 w-7 animate-spin text-accent" />

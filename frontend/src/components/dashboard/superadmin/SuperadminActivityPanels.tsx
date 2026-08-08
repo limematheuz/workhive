@@ -26,11 +26,11 @@ export function SuperadminActivityPanels({
     const text = dict.superadmin;
 
     return (
-        <div className="grid gap-2.5 lg:grid-cols-2">
-            <section className="billing-block rounded-[18px] border border-[var(--border-soft)] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="grid min-w-0 grid-cols-1 gap-2.5 lg:grid-cols-2">
+            <section className="billing-block min-w-0 rounded-[18px] border border-[var(--border-soft)] p-3 sm:p-4">
+                <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent">
                             <ClipboardList className="h-4 w-4" />
                         </span>
                         <h2 className="truncate text-sm font-bold text-[var(--text-main)]">
@@ -80,10 +80,10 @@ export function SuperadminActivityPanels({
                 )}
             </section>
 
-            <section className="billing-block rounded-[18px] border border-[var(--border-soft)] p-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
+            <section className="billing-block min-w-0 rounded-[18px] border border-[var(--border-soft)] p-3 sm:p-4">
+                <div className="mb-3 flex min-w-0 items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent">
                             <Building2 className="h-4 w-4" />
                         </span>
                         <h2 className="truncate text-sm font-bold text-[var(--text-main)]">

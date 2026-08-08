@@ -196,22 +196,22 @@ function TechDashboardInner({
 
     return (
         <>
-            <div className="mx-auto flex max-w-7xl animate-fade-in flex-col gap-8 p-4 pb-24 text-[var(--text-main)] sm:p-6 md:pb-6">
+            <div className="mx-auto flex w-full min-w-0 max-w-7xl animate-fade-in flex-col gap-6 p-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] text-[var(--text-main)] sm:gap-8 sm:p-6 md:pb-6">
                 <PageHeader
                     icon={LayoutDashboard}
                     title={dict.tech.portal_title}
                     subtitle={dict.tech.portal_subtitle}
                     actions={(
-                        <div className="flex items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                        <div className="flex max-w-full flex-wrap items-center gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 px-3 py-1.5 text-2xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
                             <span>{dict.tech.pending}: {dashboardTasks.pendingCount}</span>
-                            <span>•</span>
+                            <span aria-hidden>•</span>
                             <span className="text-accent">{dict.tech.resolved}: {dashboardTasks.resolvedCount}</span>
                         </div>
                     )}
                 />
 
-                <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-3">
-                    <div className="space-y-6 lg:col-span-2">
+                <div className="grid min-w-0 grid-cols-1 items-start gap-6 sm:gap-8 lg:grid-cols-3">
+                    <div className="min-w-0 space-y-6 lg:col-span-2">
                         <PremiumTabs
                             layout="fit"
                             tabs={[
@@ -241,31 +241,31 @@ function TechDashboardInner({
                                 </p>
                             </div>
                         ) : (
-                            <div className="space-y-6">
+                            <div className="min-w-0 space-y-6">
                                 {dashboardTasks.tasksByLocation.map(item => (
-                                    <div key={item.location.id} className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-sm ui-motion hover:shadow-md">
-                                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3">
-                                            <div className="flex items-center gap-2.5">
+                                    <div key={item.location.id} className="min-w-0 space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm ui-motion hover:shadow-md sm:p-6">
+                                        <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3">
+                                            <div className="flex min-w-0 items-center gap-2.5">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10 text-[var(--text-main)]">
                                                     <MapPin className="h-4 w-4 text-[var(--text-main)]" />
                                                 </div>
-                                                <div>
-                                                    <h3 className="text-sm font-black text-[var(--text-main)]">
+                                                <div className="min-w-0">
+                                                    <h3 className="truncate text-sm font-black text-[var(--text-main)]">
                                                         {item.location.name}
                                                     </h3>
                                                     {item.location.address && (
-                                                        <p className="mt-0.5 text-3xs font-medium text-[var(--text-muted)]">
+                                                        <p className="mt-0.5 truncate text-3xs font-medium text-[var(--text-muted)]">
                                                             {item.location.address}
                                                         </p>
                                                     )}
                                                 </div>
                                             </div>
-                                            <span className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-0.5 text-3xs font-bold text-[var(--text-muted)]">
+                                            <span className="shrink-0 rounded-md border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-0.5 text-3xs font-bold text-[var(--text-muted)]">
                                                 {getTasksCountLabel(item.overdue.length + item.standard.length)}
                                             </span>
                                         </div>
 
-                                        <div className="space-y-3">
+                                        <div className="min-w-0 space-y-3">
                                             {item.overdue.map(task => (
                                                 <TechTaskCard
                                                     key={task.id}
@@ -302,11 +302,11 @@ function TechDashboardInner({
                         )}
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 shadow-sm">
+                    <div className="min-w-0 space-y-6">
+                        <div className="min-w-0 space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
                             <div className="flex items-center gap-2.5 border-b border-[var(--border-soft)] pb-2">
-                                <Calendar className="h-4.5 w-4.5 text-[var(--text-main)]" />
-                                <h3 className="text-sm font-bold text-[var(--text-main)]">{dict.tech.shift_clock}</h3>
+                                <Calendar className="h-4.5 w-4.5 shrink-0 text-[var(--text-main)]" />
+                                <h3 className="min-w-0 truncate text-sm font-bold text-[var(--text-main)]">{dict.tech.shift_clock}</h3>
                             </div>
                             <WorkSessionWidget allowedLocations={dashboardTasks.activeLocations} />
                         </div>

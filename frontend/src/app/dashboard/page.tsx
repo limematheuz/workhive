@@ -143,10 +143,10 @@ function DashboardOverviewContent() {
     return (
         <>
             {error && (
-                <div className="max-w-7xl mx-auto px-[3%] md:px-8 pt-6">
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-500 px-4 py-3 rounded-xl text-xs font-semibold flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        {error}
+                <div className="mx-auto w-full min-w-0 max-w-7xl px-[max(3%,env(safe-area-inset-left))] pr-[max(3%,env(safe-area-inset-right))] pt-6 md:px-8">
+                    <div className="flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-500">
+                        <AlertCircle className="h-4 w-4 shrink-0" />
+                        <span className="min-w-0 [overflow-wrap:anywhere]">{error}</span>
                     </div>
                 </div>
             )}
