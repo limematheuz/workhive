@@ -55,7 +55,8 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
 
     assert.match(locationCard, /surface-glass-card/);
     assert.match(taskCard, /surface-glass-card/);
-    assert.match(companies, /surface-glass-card/);
+    assert.match(companies, /DataListTable/);
+    assert.doesNotMatch(companies, /surface-glass-card/);
     assert.match(header, /surface-popover/);
     assert.match(header, /header-popover-layer/);
     assert.match(notifications, /surface-popover/);

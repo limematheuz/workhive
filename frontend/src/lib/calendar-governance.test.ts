@@ -16,10 +16,10 @@ test("platform calendar panel is superadmin-scoped and never reads secrets", () 
     assert.match(page, /isPlatformSuperadmin\(user\)/);
     assert.match(page, /CalendarService\.getPlatformStatus\(\)/);
     assert.match(service, /\/api\/v1\/calendar\/platform\/status/);
-    assert.match(overview, /surface-glass-card/);
-    assert.match(overview, /rounded-md/);
-    assert.match(overview, /border-\[var\(--brand-blue-border\)\]/);
-    assert.match(overview, /border-\[var\(--border-color\)\]/);
+    assert.match(overview, /billing-surface/);
+    assert.match(overview, /billing-block/);
+    assert.match(overview, /DataListTable/);
+    assert.doesNotMatch(overview, /surface-glass-card/);
     assert.doesNotMatch(overview, /BrandIconWell|icon-well/);
     assert.doesNotMatch(overview, /emerald-|amber-/);
     assert.match(overview, /<Button/);

@@ -4,15 +4,18 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("companies admin surfaces use frosted glass without changing dashboard backlight", () => {
+test("companies admin surfaces use billing shells without changing dashboard backlight", () => {
     const list = read("../components/companies/CompaniesListSection.tsx");
     const members = read("../components/companies/CompanyMembersPanel.tsx");
     const trials = read("../components/companies/TrialRequestsPanel.tsx");
     const globals = read("../app/globals.css");
 
-    assert.match(list, /surface-glass-card/);
-    assert.match(members, /glass-panel/);
-    assert.match(trials, /surface-glass-card/);
+    assert.match(list, /DataListTable/);
+    assert.doesNotMatch(list, /surface-glass-card/);
+    assert.match(members, /billing-block/);
+    assert.doesNotMatch(members, /glass-panel/);
+    assert.match(trials, /billing-surface/);
+    assert.doesNotMatch(trials, /surface-glass-card/);
     assert.match(globals, /\.surface-glass-card/);
     assert.match(globals, /--surface-card-bg:\s*rgba\(44,\s*44,\s*48,\s*0\.88\)/);
 
