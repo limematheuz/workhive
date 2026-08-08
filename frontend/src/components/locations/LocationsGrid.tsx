@@ -45,21 +45,18 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete, onT
 
     if (!locations || locations.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center p-16 bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-soft)]">
-                <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 opacity-40"
-                    style={{ background: "var(--sidebar-active-bg)" }}
-                >
-                    <MapPin className="w-8 h-8" style={{ color: "var(--sidebar-active-text)" }} />
+            <div className="billing-block flex flex-col items-center justify-center rounded-2xl px-5 py-12 text-center">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                    <MapPin className="h-6 w-6" />
                 </div>
-                <p className="text-[var(--text-muted)] text-lg font-medium">{dict.locations.table.empty}</p>
+                <p className="text-sm font-medium text-[var(--text-muted)]">{dict.locations.table.empty}</p>
             </div>
         )
     }
 
     return (
         <>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
                 {locations.map((loc) => {
                     const locTasks = tasks ? tasks.filter(t => t.location_id === loc.id) : [];
                     const pending = locTasks.filter(t => t.status !== "completed").length;

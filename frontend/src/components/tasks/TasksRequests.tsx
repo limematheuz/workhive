@@ -109,9 +109,9 @@ export function TasksRequests({
 
     if (requests.length === 0) {
         return (
-            <div className="text-center py-20 bg-[var(--bg-card-solid)] rounded-3xl border border-[var(--border-soft)]">
-                <Inbox className="w-8 h-8 mx-auto text-[var(--text-muted)] mb-3" />
-                <p className="text-xs font-black text-[var(--text-muted)] uppercase tracking-wider">
+            <div className="billing-block rounded-2xl border border-dashed border-[var(--border-soft)] px-5 py-14 text-center">
+                <Inbox className="mx-auto mb-3 h-7 w-7 text-[var(--text-muted)]" />
+                <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     No tienes solicitudes de limpieza pendientes
                 </p>
             </div>
@@ -119,7 +119,7 @@ export function TasksRequests({
     }
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4">
             <TasksRequestsFilters
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -133,19 +133,17 @@ export function TasksRequests({
                 issuers={issuers}
             />
 
-            <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-semibold text-[var(--text-muted)]">
-                    {filteredRequests.length} de {requests.length} solicitudes
-                </p>
-            </div>
+            <p className="text-[11px] font-semibold text-[var(--text-muted)]">
+                {filteredRequests.length} de {requests.length} solicitudes
+            </p>
 
             {filteredRequests.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] py-16 text-center">
+                <div className="billing-block rounded-2xl border border-dashed border-[var(--border-soft)] px-5 py-12 text-center">
                     <Search className="mx-auto mb-3 h-7 w-7 text-[var(--text-muted)]" />
-                    <p className="text-sm font-bold text-[var(--text-main)]">No hay solicitudes con estos filtros</p>
+                    <p className="text-sm font-semibold text-[var(--text-main)]">No hay solicitudes con estos filtros</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
                     {filteredRequests.map((task) => (
                         <TaskRequestCard
                             key={task.id}

@@ -173,72 +173,74 @@ export default function LocationsPage() {
         return list;
     }, [locations, user, ownerFilter]);
 
+    const filterSelectClass =
+        "h-9 w-auto min-w-[11rem] max-w-full cursor-pointer rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] outline-none ui-motion focus:border-accent/50";
+
     return (
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={MapPin}
                 title={dict.locations.title}
                 subtitle={dict.locations.subtitle || "Gestiona los locales, sedes e instalaciones donde presta servicio tu equipo."}
-                className="mb-8"
+                className="mb-6"
                 actions={!isReadOnly ? <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} /> : undefined}
             />
 
-            {/* Owned and shared property tabs */}
-            <PremiumTabs
-                layout="fit"
-                tabs={[
-                    { id: "own" as const, label: `${dict.locations?.tabs?.own || "Propias"} (${locations.filter((l) => getOwnerCompanyId(l) == null || getOwnerCompanyId(l) === user?.company_id).length})`, icon: Home },
-                    { id: "shared" as const, label: `${dict.locations?.tabs?.shared || "Compartidas"} (${locations.filter((l) => getOwnerCompanyId(l) != null && getOwnerCompanyId(l) !== user?.company_id).length})`, icon: Share2 }
-                ]}
-                activeTab={activeTab}
-                onChange={(tab) => setActiveTab(tab as "own" | "shared")}
-                className="mb-6"
-            />
+            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
+                <div className="space-y-4">
+                    <PremiumTabs
+                        layout="fit"
+                        tabs={[
+                            { id: "own" as const, label: `${dict.locations?.tabs?.own || "Propias"} (${locations.filter((l) => getOwnerCompanyId(l) == null || getOwnerCompanyId(l) === user?.company_id).length})`, icon: Home },
+                            { id: "shared" as const, label: `${dict.locations?.tabs?.shared || "Compartidas"} (${locations.filter((l) => getOwnerCompanyId(l) != null && getOwnerCompanyId(l) !== user?.company_id).length})`, icon: Share2 }
+                        ]}
+                        activeTab={activeTab}
+                        onChange={(tab) => setActiveTab(tab as "own" | "shared")}
+                    />
 
-            {/* Unified premium filter bar */}
-            <div className="flex flex-wrap items-center gap-4 bg-[var(--bg-card)] border border-[var(--border-soft)] p-4 rounded-3xl shadow-sm mb-6">
-                {activeTab === "own" ? (
-                    <select
-                        aria-label={dict.locations?.filter?.all_clients || "Todos los clientes"}
-                        value={selectedClientId}
-                        onChange={(e) => setSelectedClientId(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
-                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer ui-motion w-full md:w-[260px]"
-                    >
-                        <option value="ALL">{dict.locations?.filter?.all_clients || "Todos los clientes"}</option>
-                        {clients.map((c) => (
-                            <option key={c.id} value={c.id}>
-                                {c.name}
-                            </option>
-                        ))}
-                    </select>
-                ) : (
-                    <select
-                        aria-label="Todos los colaboradores"
-                        value={ownerFilter}
-                        onChange={(e) => setOwnerFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
-                        className="bg-[var(--bg-primary)] border border-[var(--border-soft)] rounded-xl px-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/50 font-semibold uppercase tracking-wider cursor-pointer ui-motion w-full md:w-[260px]"
-                    >
-                        <option value="ALL">Todos los colaboradores</option>
-                        {collaborators.map((collab) => (
-                            <option key={collab.id} value={collab.id}>
-                                {collab.name}
-                            </option>
-                        ))}
-                    </select>
-                )}
-            </div>
+                    <div className="billing-block inline-flex max-w-full items-center rounded-xl px-2 py-1.5">
+                        {activeTab === "own" ? (
+                            <select
+                                aria-label={dict.locations?.filter?.all_clients || "Todos los clientes"}
+                                value={selectedClientId}
+                                onChange={(e) => setSelectedClientId(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
+                                className={filterSelectClass}
+                            >
+                                <option value="ALL">{dict.locations?.filter?.all_clients || "Todos los clientes"}</option>
+                                {clients.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : (
+                            <select
+                                aria-label="Todos los colaboradores"
+                                value={ownerFilter}
+                                onChange={(e) => setOwnerFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
+                                className={filterSelectClass}
+                            >
+                                <option value="ALL">Todos los colaboradores</option>
+                                {collaborators.map((collab) => (
+                                    <option key={collab.id} value={collab.id}>
+                                        {collab.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
 
-            {/* Filtered locations grid */}
-            <LocationsGrid
-                locations={activeTab === "own" ? ownLocations : sharedLocations}
-                clients={clients}
-                tasks={tasks}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-                onTasks={handleTasksClick}
-            />
+                    <LocationsGrid
+                        locations={activeTab === "own" ? ownLocations : sharedLocations}
+                        clients={clients}
+                        tasks={tasks}
+                        onEdit={handleEdit}
+                        onDelete={handleDeleteClick}
+                        onTasks={handleTasksClick}
+                    />
+                </div>
+            </section>
 
-            {/* Edit sheet */}
             <EditLocationSheet
                 location={editingLocation}
                 clients={clients}
@@ -247,7 +249,6 @@ export default function LocationsPage() {
                 onLocationUpdated={loadLocations}
             />
 
-            {/* Checklist task sheet */}
             <LocationTasksSheet
                 location={tasksLocation}
                 open={tasksSheetOpen}

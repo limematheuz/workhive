@@ -1,6 +1,11 @@
 "use client";
 
-import { Filter, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+    reservationFilterSearchClass,
+    reservationFilterSelectClass,
+} from "@/features/reservations/reservation-filter-styles";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -25,9 +30,6 @@ interface TasksListFiltersProps {
     onDateScopeChange: (value: string) => void;
 }
 
-const controlClass =
-    "h-9 w-full rounded-xl border border-[var(--border-color)] bg-[color-mix(in_srgb,var(--bg-secondary)_80%,transparent)] px-3 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent";
-
 export function TasksListFilters({
     dict,
     totalItems,
@@ -48,35 +50,33 @@ export function TasksListFilters({
     onDateScopeChange,
 }: TasksListFiltersProps) {
     return (
-        <div className="surface-glass-card mb-4 space-y-2.5 rounded-2xl p-2.5 sm:p-3">
-            <div className="flex items-center justify-between gap-3 text-[var(--text-muted)]">
-                <div className="flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5 text-accent" />
-                    <span className="text-[10px] font-black uppercase tracking-wider">
-                        {dict.tasks?.filters || "Filters"}
-                    </span>
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-wider tabular-nums">
+        <div className="billing-block space-y-2.5 rounded-2xl border border-[var(--border-soft)] p-3 sm:p-3.5">
+            <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                    {dict.tasks?.filters || "Filters"}
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wider tabular-nums text-[var(--text-muted)]">
                     {totalItems} {dict.tasks?.pagination_tasks || "tareas"}
                 </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                <div className="relative sm:col-span-2 xl:col-span-1 2xl:col-span-1">
-                    <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input
-                        type="search"
-                        value={searchQuery}
-                        onChange={(event) => onSearchQueryChange(event.target.value)}
-                        placeholder={dict.tasks?.list_search || "Buscar tarea"}
-                        className={`${controlClass} pl-9`}
-                    />
-                </div>
+            <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+                <Input
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => onSearchQueryChange(event.target.value)}
+                    placeholder={dict.tasks?.list_search || "Buscar tarea"}
+                    className={reservationFilterSearchClass}
+                />
+            </div>
+
+            <div className="flex flex-wrap gap-2">
                 <select
                     value={selectedLocationId}
                     onChange={(e) => onSelectedLocationIdChange(e.target.value)}
                     aria-label="Filtrar por ubicación"
-                    className={controlClass}
+                    className={reservationFilterSelectClass}
                 >
                     <option value="">{dict.tasks?.filter_all_locations || "All locations"}</option>
                     {locations.map(l => (
@@ -89,7 +89,7 @@ export function TasksListFilters({
                         value={selectedUserId}
                         onChange={(e) => onSelectedUserIdChange(e.target.value)}
                         aria-label="Filtrar por operario"
-                        className={controlClass}
+                        className={reservationFilterSelectClass}
                     >
                         <option value="">{dict.tasks?.filter_all_operators || "All operators"}</option>
                         {users.map(u => (
@@ -97,7 +97,7 @@ export function TasksListFilters({
                         ))}
                     </select>
                 ) : (
-                    <div className="flex h-9 items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 text-xs font-medium text-[var(--text-muted)]">
+                    <div className="inline-flex h-9 items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.tasks?.filter_assigned_to_me || "Assigned to me"}
                     </div>
                 )}
@@ -106,7 +106,7 @@ export function TasksListFilters({
                     value={selectedStatus}
                     onChange={(e) => onSelectedStatusChange(e.target.value)}
                     aria-label="Filtrar por estado"
-                    className={controlClass}
+                    className={reservationFilterSelectClass}
                 >
                     <option value="">{dict.tasks?.filter_all_statuses || "All statuses"}</option>
                     <option value="pending">{dict.profile?.tables?.status_pending || "Pending"}</option>
@@ -119,7 +119,7 @@ export function TasksListFilters({
                     value={selectedPriority}
                     onChange={(e) => onSelectedPriorityChange(e.target.value)}
                     aria-label="Filtrar por prioridad"
-                    className={controlClass}
+                    className={reservationFilterSelectClass}
                 >
                     <option value="">{dict.tasks?.filter_all_priorities || "Todas las prioridades"}</option>
                     <option value="high">{dict.tasks?.priority_high || "High"}</option>
@@ -131,7 +131,7 @@ export function TasksListFilters({
                     value={dateScope}
                     onChange={(event) => onDateScopeChange(event.target.value)}
                     aria-label="Filtrar por fecha"
-                    className={controlClass}
+                    className={reservationFilterSelectClass}
                 >
                     <option value="ALL">{dict.tasks?.filter_all_dates || "Todas las fechas"}</option>
                     <option value="UPCOMING">{dict.tasks?.filter_upcoming || "Próximas"}</option>

@@ -161,13 +161,13 @@ export default function ProfilePage() {
                 <section className="billing-surface billing-surface-accent-pad relative w-full animate-fade-in overflow-hidden rounded-[24px]">
                     <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
 
-                    <div className="relative z-10 space-y-5">
-                        <header className="flex flex-col justify-between gap-3 border-b border-[var(--border-soft)] pb-4 sm:flex-row sm:items-center">
+                    <div className="relative z-10 space-y-4">
+                        <header className="flex flex-col justify-between gap-2.5 border-b border-[var(--border-soft)] pb-3 sm:flex-row sm:items-center">
                             <div>
                                 <h2 className="text-base font-semibold text-[var(--text-main)]">
                                     {state.locale === "es" ? "Configuración de Cuenta" : "Account Settings"}
                                 </h2>
-                                <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
+                                <p className="mt-0.5 text-xs leading-5 text-[var(--text-muted)]">
                                     {state.locale === "es"
                                         ? "Gestiona tus datos personales, información de la empresa y credenciales de acceso."
                                         : "Manage your personal details, corporate info, and security credentials."}

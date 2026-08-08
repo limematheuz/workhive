@@ -22,7 +22,7 @@ function TasksPageContent() {
                 icon={ListTodo}
                 title={state.dict.tasks?.page_title || "Tareas y Operaciones"}
                 subtitle={state.dict.tasks?.page_subtitle || "Planifica el trabajo, sigue su avance y estandariza los servicios."}
-                className="mb-8"
+                className="mb-6"
                 actions={(
                     <>
                         {state.activeTab === "templates" && state.isAdminOrManager && (
@@ -48,79 +48,77 @@ function TasksPageContent() {
                 )}
             />
 
-            {/* Tab selector (Premium Navigation) */}
-            <PremiumTabs
-                layout="fit"
-                tabs={[
-                    { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Tablero", icon: Columns3 },
-                    ...(state.isAdminOrManager
-                        ? [
-                            { id: "list" as const, label: state.dict.tasks?.tab_list || "Lista", icon: ListTodo },
-                            { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Plantillas", icon: Library }
-                          ]
-                        : [])
-                ]}
-                activeTab={state.activeTab}
-                onChange={state.setActiveTab}
-                className="mb-6"
-            />
+            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
+                <div className="space-y-4">
+                    <PremiumTabs
+                        layout="fit"
+                        tabs={[
+                            { id: "kanban" as const, label: state.dict.tasks?.tab_kanban || "Tablero", icon: Columns3 },
+                            ...(state.isAdminOrManager
+                                ? [
+                                    { id: "list" as const, label: state.dict.tasks?.tab_list || "Lista", icon: ListTodo },
+                                    { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Plantillas", icon: Library }
+                                  ]
+                                : [])
+                        ]}
+                        activeTab={state.activeTab}
+                        onChange={state.setActiveTab}
+                    />
 
-            {state.loadingData ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                    <Loader2 className="w-8 h-8 text-[var(--text-main)] animate-spin" />
-                    <span className="text-xs text-[var(--text-muted)]">{state.dict.tasks?.syncing_flows || "Sincronizando flujos..."}</span>
+                    {state.loadingData ? (
+                        <div className="flex flex-col items-center justify-center gap-3 py-20">
+                            <Loader2 className="h-8 w-8 animate-spin text-[var(--text-main)]" />
+                            <span className="text-xs text-[var(--text-muted)]">{state.dict.tasks?.syncing_flows || "Sincronizando flujos..."}</span>
+                        </div>
+                    ) : (
+                        <>
+                            {state.activeTab === "kanban" && (
+                                <TasksKanban
+                                    tasks={state.tasks}
+                                    locations={state.locations}
+                                    users={state.users}
+                                    onTaskUpdate={state.loadTasks}
+                                    currentUser={state.currentUser}
+                                    onCreateTask={() => state.setIsCreateOpen(true)}
+                                />
+                            )}
+
+                            {state.activeTab === "list" && state.isAdminOrManager && (
+                                <TasksList
+                                    dict={state.dict}
+                                    tasks={state.tasks}
+                                    locations={state.locations}
+                                    users={state.users}
+                                    isAdminOrManager={state.isAdminOrManager}
+                                    currentUser={state.currentUser}
+                                    loadingTasks={state.loadingTasks}
+                                    selectedLocationId={state.selectedLocationId}
+                                    setSelectedLocationId={state.setSelectedLocationId}
+                                    selectedUserId={state.selectedUserId}
+                                    setSelectedUserId={state.setSelectedUserId}
+                                    selectedStatus={state.selectedStatus}
+                                    setSelectedStatus={state.setSelectedStatus}
+                                    handleOpenDetail={state.handleOpenDetail}
+                                    handleToggleStatus={state.handleToggleStatus}
+                                    getLocationName={state.getLocationName}
+                                    getAssigneeName={state.getAssigneeName}
+                                />
+                            )}
+
+                            {state.activeTab === "templates" && state.isAdminOrManager && (
+                                <TasksTemplates
+                                    templates={state.templates}
+                                    handleOpenTemplateModal={state.handleOpenTemplateModal}
+                                    onDeleteTemplate={state.handleDeleteTemplate}
+                                    isDeletingTemplate={state.isDeletingTemplate}
+                                    onDuplicateTemplate={state.handleDuplicateTemplate}
+                                />
+                            )}
+                        </>
+                    )}
                 </div>
-            ) : (
-                <>
-                    {/* CONTENT: KANBAN BOARD TAB */}
-                    {state.activeTab === "kanban" && (
-                        <TasksKanban
-                            tasks={state.tasks}
-                            locations={state.locations}
-                            users={state.users}
-                            onTaskUpdate={state.loadTasks}
-                            currentUser={state.currentUser}
-                            onCreateTask={() => state.setIsCreateOpen(true)}
-                        />
-                    )}
+            </section>
 
-                    {/* CONTENT: GENERAL LIST TAB */}
-                    {state.activeTab === "list" && state.isAdminOrManager && (
-                        <TasksList
-                            dict={state.dict}
-                            tasks={state.tasks}
-                            locations={state.locations}
-                            users={state.users}
-                            isAdminOrManager={state.isAdminOrManager}
-                            currentUser={state.currentUser}
-                            loadingTasks={state.loadingTasks}
-                            selectedLocationId={state.selectedLocationId}
-                            setSelectedLocationId={state.setSelectedLocationId}
-                            selectedUserId={state.selectedUserId}
-                            setSelectedUserId={state.setSelectedUserId}
-                            selectedStatus={state.selectedStatus}
-                            setSelectedStatus={state.setSelectedStatus}
-                            handleOpenDetail={state.handleOpenDetail}
-                            handleToggleStatus={state.handleToggleStatus}
-                            getLocationName={state.getLocationName}
-                            getAssigneeName={state.getAssigneeName}
-                        />
-                    )}
-
-                    {/* CONTENT: GLOBAL TEMPLATES TAB */}
-                    {state.activeTab === "templates" && state.isAdminOrManager && (
-                        <TasksTemplates
-                            templates={state.templates}
-                            handleOpenTemplateModal={state.handleOpenTemplateModal}
-                            onDeleteTemplate={state.handleDeleteTemplate}
-                            isDeletingTemplate={state.isDeletingTemplate}
-                            onDuplicateTemplate={state.handleDuplicateTemplate}
-                        />
-                    )}
-                </>
-            )}
-
-            {/* FORM MODALS */}
             <TaskFormModals
                 {...state}
                 onAccept={state.handleAcceptTask}
@@ -146,8 +144,8 @@ function TasksPageContent() {
 export default function TasksPage() {
     return (
         <Suspense fallback={
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-                <Loader2 className="w-8 h-8 text-[var(--text-main)] animate-spin" />
+            <div className="flex flex-col items-center justify-center gap-3 py-20">
+                <Loader2 className="h-8 w-8 animate-spin text-[var(--text-main)]" />
                 <span className="text-xs text-[var(--text-muted)]">Sincronizando flujos...</span>
             </div>
         }>

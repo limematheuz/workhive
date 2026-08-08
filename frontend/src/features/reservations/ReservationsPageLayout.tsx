@@ -117,71 +117,74 @@ export function ReservationsPageLayout({
     onConfirmCancelReservation,
 }: ReservationsPageLayoutProps) {
     return (
-        <div className="max-w-7xl mx-auto px-[3%] md:px-8 py-6 space-y-6">
+        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <ReservationsPageHeader
                 dict={dict}
                 showCreateButton={showCreateButton}
                 onCreate={onCreate}
             />
 
-            <PremiumTabs
-                layout="fit"
-                tabs={[
-                    {
-                        id: "reservations" as const,
-                        label: dict.reservations?.tabs?.own_reservations || "Reservas propias",
-                        icon: Calendar,
-                    },
-                    {
-                        id: "requests" as const,
-                        label: dict.reservations?.tabs?.requests || "Solicitudes",
-                        icon: Inbox,
-                        badge: requestCount,
-                        attention: requestCount > 0,
-                    },
-                ]}
-                activeTab={activeTab}
-                onChange={onTabChange}
-                className="mb-6"
-            />
+            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
+                <div className="space-y-4">
+                    <PremiumTabs
+                        layout="fit"
+                        tabs={[
+                            {
+                                id: "reservations" as const,
+                                label: dict.reservations?.tabs?.own_reservations || "Reservas propias",
+                                icon: Calendar,
+                            },
+                            {
+                                id: "requests" as const,
+                                label: dict.reservations?.tabs?.requests || "Solicitudes",
+                                icon: Inbox,
+                                badge: requestCount,
+                                attention: requestCount > 0,
+                            },
+                        ]}
+                        activeTab={activeTab}
+                        onChange={onTabChange}
+                    />
 
-            {activeTab === "reservations" ? (
-                <ReservationsListSection
-                    dict={dict}
-                    locale={locale}
-                    loading={loading}
-                    filters={reservationFilters}
-                    onFiltersChange={onFiltersChange}
-                    onResetFilters={onResetFilters}
-                    locations={locations}
-                    providers={providerOptions}
-                    resultCount={filteredReservations.length}
-                    viewMode={viewMode}
-                    onViewModeChange={onViewModeChange}
-                    reservations={filteredReservations}
-                    locationMap={locationMap}
-                    companyId={companyId}
-                    onEdit={onEdit}
-                    onCancel={onCancel}
-                />
-            ) : null}
+                    {activeTab === "reservations" ? (
+                        <ReservationsListSection
+                            dict={dict}
+                            locale={locale}
+                            loading={loading}
+                            filters={reservationFilters}
+                            onFiltersChange={onFiltersChange}
+                            onResetFilters={onResetFilters}
+                            locations={locations}
+                            providers={providerOptions}
+                            resultCount={filteredReservations.length}
+                            viewMode={viewMode}
+                            onViewModeChange={onViewModeChange}
+                            reservations={filteredReservations}
+                            locationMap={locationMap}
+                            companyId={companyId}
+                            onEdit={onEdit}
+                            onCancel={onCancel}
+                        />
+                    ) : null}
 
-            <ReservationsRequestsSection
-                showRequestsList={activeTab === "requests"}
-                loadingTasks={loadingTasks}
-                requests={displayRequestedTasks}
-                locations={locations}
-                dict={dict}
-                user={user}
-                users={users}
-                canManage={canManage}
-                taskCrud={taskCrud}
-                getLocationName={getLocationName}
-                getAssigneeName={getAssigneeName}
-                onAccept={onAcceptTask}
-                onReject={onRejectTask}
-                onOpenTaskDetail={onOpenTaskDetail}
-            />
+                    <ReservationsRequestsSection
+                        showRequestsList={activeTab === "requests"}
+                        loadingTasks={loadingTasks}
+                        requests={displayRequestedTasks}
+                        locations={locations}
+                        dict={dict}
+                        user={user}
+                        users={users}
+                        canManage={canManage}
+                        taskCrud={taskCrud}
+                        getLocationName={getLocationName}
+                        getAssigneeName={getAssigneeName}
+                        onAccept={onAcceptTask}
+                        onReject={onRejectTask}
+                        onOpenTaskDetail={onOpenTaskDetail}
+                    />
+                </div>
+            </section>
 
             <ReservationFormDialog
                 open={formOpen}

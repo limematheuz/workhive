@@ -12,6 +12,10 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     const stats = source("../components/profile/ProfileStats.tsx");
     const histories = source("../components/profile/ProfileHistories.tsx");
     const details = source("../components/profile/ProfileDetailsForm.tsx");
+    const company = source("../components/profile/CompanyDetailsFormFields.tsx");
+    const password = source("../components/profile/PasswordChangeForm.tsx");
+    const email = source("../components/profile/EmailChangeForm.tsx");
+    const section = source("../components/profile/ProfileFormSection.tsx");
     const globals = source("../app/globals.css");
 
     assert.match(page, /billing-surface/);
@@ -32,8 +36,18 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     assert.match(stats, /rounded-\[18px\]/);
     assert.doesNotMatch(stats, /shadow-xl|bg-\[var\(--bg-card\)\] border border-\[var\(--border-soft\)\]/);
 
+    assert.match(section, /billing-block/);
+    assert.match(details, /DocumentFormField/);
+    assert.match(details, /DocumentFormInput/);
+    assert.match(details, /ProfileFormSection/);
     assert.match(details, /btn-cancel-muted/);
     assert.match(details, /PAGE_ACTION_BUTTON_PRIMARY/);
+    assert.match(company, /DocumentFormField/);
+    assert.match(company, /btn-cancel-muted/);
+    assert.match(password, /DocumentFormField/);
+    assert.match(password, /btn-cancel-muted/);
+    assert.match(email, /DocumentFormField/);
+    assert.match(email, /PAGE_ACTION_BUTTON_PRIMARY/);
     assert.match(globals, /\.btn-cancel-muted/);
     assert.match(globals, /var\(--bg-tertiary\)/);
     // Histories / tables stay on the shared DataListTable path — leave table markup alone.

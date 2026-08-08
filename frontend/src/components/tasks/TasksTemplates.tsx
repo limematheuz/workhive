@@ -147,6 +147,7 @@ export function TasksTemplates({
                 getRowKey={(tmpl) => tmpl.id}
                 gridClassName={GRID}
                 desktopFrom="md"
+                variant="plain"
                 header={{
                     title: "Catálogo de servicios",
                     subtitle: dict.tasks.templates_subtitle
@@ -168,7 +169,7 @@ export function TasksTemplates({
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 aria-label="Buscar servicio o paso"
                                 placeholder="Buscar servicio o paso"
-                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] pl-10 pr-3 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                                className="h-9 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] pl-10 pr-3 text-sm font-medium text-[var(--text-main)] outline-none transition focus:border-accent/50"
                             />
                         </label>
                     </div>

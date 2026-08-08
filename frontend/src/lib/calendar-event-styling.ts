@@ -8,7 +8,7 @@ export const CALENDAR_STATUS_COLORS: Record<TaskStatus, string> = {
     rejected: "#e11d48",
     progress: "var(--brand-blue-hover)",
     review: "#7c3aed",
-    completed: "#0f766e",
+    completed: "var(--brand-blue)",
 };
 
 /**
@@ -22,7 +22,7 @@ export const CALENDAR_STATUS_SOFT_COLORS: Record<TaskStatus, { background: strin
     rejected: { background: "#fff1f2", accent: "#e11d48", text: "#9f1239" },
     progress: { background: "#eef4ff", accent: "var(--brand-blue-hover)", text: "#1e3a8a" },
     review: { background: "#f5f3ff", accent: "#7c3aed", text: "#5b21b6" },
-    completed: { background: "#ecfdf5", accent: "#0f766e", text: "#115e59" },
+    completed: { background: "#eff6ff", accent: "var(--brand-blue)", text: "#1e3a8a" },
 };
 
 export function isCalendarEventPast(end: Date | null | undefined, now: Date = new Date()): boolean {

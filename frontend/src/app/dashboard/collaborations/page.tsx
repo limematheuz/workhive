@@ -130,7 +130,7 @@ export default function CollaborationsPage() {
 
     if (!canManage) {
         return (
-            <div className="max-w-3xl mx-auto p-8 text-center text-sm text-[var(--text-muted)] font-semibold uppercase tracking-wider">
+            <div className="mx-auto max-w-3xl p-8 text-center text-sm font-medium text-[var(--text-muted)]">
                 {user?.role?.name === "superadmin"
                     ? "El superadmin gestiona la plataforma, pero no representa a una empresa y no tiene código partner."
                     : "Las colaboraciones se gestionan desde cuentas administradoras o gestoras de una empresa."}
@@ -139,31 +139,32 @@ export default function CollaborationsPage() {
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-[3%] md:px-8 py-6 space-y-8 animate-fade-in text-[var(--text-main)]">
-
+        <div className="mx-auto max-w-7xl animate-fade-in space-y-5 px-[3%] py-6 pb-10 text-[var(--text-main)] md:p-8">
             <PageHeader
                 icon={Users}
                 title="Colaboradores y Partners"
                 subtitle="Vincúlate con otras empresas para compartir lugares de trabajo y coordinar servicios."
             />
 
-            {/* Top Grid: Partner Code & Connect Form */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <CollaborationPartnerCodeCard
-                    partnerCode={partnerCode}
-                    loading={loading}
-                    onCopy={handleCopy}
-                />
-                <CollaborationConnectForm
-                    inputCode={inputCode}
-                    roleType={roleType}
-                    sending={sending}
-                    loading={loading}
-                    onInputCodeChange={setInputCode}
-                    onRoleTypeChange={setRoleType}
-                    onSubmit={handleSendRequest}
-                />
-            </div>
+            <section className="billing-surface billing-surface-accent-pad relative overflow-hidden rounded-[24px]">
+                <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
+                <div className="relative z-10 grid grid-cols-1 gap-3 lg:grid-cols-2">
+                    <CollaborationPartnerCodeCard
+                        partnerCode={partnerCode}
+                        loading={loading}
+                        onCopy={handleCopy}
+                    />
+                    <CollaborationConnectForm
+                        inputCode={inputCode}
+                        roleType={roleType}
+                        sending={sending}
+                        loading={loading}
+                        onInputCodeChange={setInputCode}
+                        onRoleTypeChange={setRoleType}
+                        onSubmit={handleSendRequest}
+                    />
+                </div>
+            </section>
 
             <CollaborationRequestsPanel
                 pendingRequests={pendingRequests}
@@ -179,7 +180,6 @@ export default function CollaborationsPage() {
                 onUnlink={setUnlinkTarget}
             />
 
-            {/* Unlink Confirmation Dialog */}
             <DeleteConfirmDialog
                 open={unlinkTarget !== null}
                 onOpenChange={(open) => !open && setUnlinkTarget(null)}
@@ -190,7 +190,6 @@ export default function CollaborationsPage() {
                 confirmText="Confirmar desvinculación"
                 cancelText="Cancelar"
             />
-
         </div>
     );
 }

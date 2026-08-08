@@ -23,8 +23,7 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
     const isCompanyAdmin = user.role?.name === "admin" || user.role?.name === "superadmin";
 
     return (
-        <div className="space-y-6 w-full relative z-10">
-            {/* Sub-tab switcher */}
+        <div className="relative z-10 w-full space-y-4">
             <PremiumTabs
                 tabs={[
                     {
@@ -64,7 +63,6 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
                 ]}
                 activeTab={subTab}
                 onChange={setSubTab}
-                className="mb-6"
             />
 
             {subTab === "details" ? (
@@ -82,16 +80,14 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
                     onSuccess={onSuccess}
                 />
             ) : (
-                <div className="space-y-8">
+                <div className="space-y-3">
                     <EmailChangeForm user={user} dict={dict} />
-                    <div className="border-t border-[var(--border-soft)] pt-8">
-                        <PasswordChangeForm
-                            user={user}
-                            dict={dict}
-                            onCancel={onCancel}
-                            onSuccess={onSuccess}
-                        />
-                    </div>
+                    <PasswordChangeForm
+                        user={user}
+                        dict={dict}
+                        onCancel={onCancel}
+                        onSuccess={onSuccess}
+                    />
                 </div>
             )}
         </div>

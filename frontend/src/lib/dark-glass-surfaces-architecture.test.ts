@@ -27,14 +27,15 @@ test("companies admin surfaces use billing shells without changing dashboard bac
     );
 });
 
-test("task list cards and filters stay visible in dark glass surfaces", () => {
+test("task list cards and filters use billing surfaces with readable metadata", () => {
     const card = read("../components/tasks/TaskListCard.tsx");
     const filters = read("../components/tasks/TasksListFilters.tsx");
     const list = read("../components/tasks/TasksList.tsx");
 
-    assert.match(card, /surface-glass-card/);
+    assert.match(card, /billing-block/);
     assert.match(card, /color-mix\(in_srgb,var\(--text-muted\)_55%,var\(--text-main\)\)/);
-    assert.match(filters, /surface-glass-card/);
-    assert.match(list, /surface-glass-card/);
+    assert.match(filters, /billing-block/);
+    assert.match(list, /billing-block/);
     assert.doesNotMatch(card, /dashboard-shell-backlight/);
+    assert.doesNotMatch(card, /surface-glass-card/);
 });

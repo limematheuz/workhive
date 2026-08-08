@@ -281,7 +281,7 @@ export function ProfileHistories({
                                 <div>
                                     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
                                         task.status === "completed"
-                                            ? "border border-emerald-500/10 bg-emerald-500/10 text-emerald-500"
+                                            ? "border border-accent/25 bg-accent/10 text-accent"
                                             : "border border-orange-500/20 bg-orange-500/10 text-orange-600"
                                     }`}>
                                         {task.status === "completed"

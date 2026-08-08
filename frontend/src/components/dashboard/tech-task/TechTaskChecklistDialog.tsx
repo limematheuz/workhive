@@ -294,7 +294,7 @@ function TechTaskChecklistDialogContent({
                             "min-h-10 shrink-0 border-none px-3.5 text-xs font-semibold shadow-sm hover:shadow-sm sm:px-4",
                             firstPendingItem
                                 ? "bg-accent text-white hover:bg-accent-light"
-                                : "bg-emerald-600 text-white hover:bg-emerald-600 disabled:opacity-100",
+                                : "bg-accent text-white hover:bg-accent-light disabled:opacity-100",
                         )}
                     >
                         {firstPendingItem ? dict.tech.requirements_next_pending : dict.tech.requirements_all_done}

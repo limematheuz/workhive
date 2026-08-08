@@ -84,7 +84,7 @@ export function ProfileStats({
                 ) : null}
                 <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-card-solid)]">
                     <div
-                        className="h-1.5 rounded-full bg-[var(--color-green-500)] transition-[width] duration-500"
+                        className="h-1.5 rounded-full bg-accent transition-[width] duration-500"
                         style={{ width: `${progress}%` }}
                     />
                 </div>

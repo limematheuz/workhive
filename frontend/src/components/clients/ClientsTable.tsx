@@ -30,7 +30,7 @@ export function ClientsTable({ clients, onEdit, onDelete, onToggleActive, onDeta
         <Badge
             variant={client.is_active ? "default" : "secondary"}
             className={client.is_active
-                ? "border border-emerald-500/20 bg-emerald-500/10 text-[9px] font-semibold uppercase text-emerald-500"
+                ? "border border-accent/25 bg-accent/10 text-[9px] font-semibold uppercase text-accent"
                 : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[9px] font-semibold uppercase text-[var(--text-muted)]"}
         >
             {client.is_active ? dict.clients.table.active : dict.clients.table.inactive}

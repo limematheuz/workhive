@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DocumentFormInput } from "@/components/billing/DocumentFormControls";
+import { DocumentFormField } from "@/components/billing/DocumentFormField";
+import { ProfileFormSection } from "@/components/profile/ProfileFormSection";
 import {
     getAuthFormMessages,
     prepareEmailChangeRequest,
 } from "@/lib/auth-forms";
 import { useDictionary, type Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { toast } from "@/lib/toast";
 import { authService } from "@/services/auth.service";
 import type { User } from "@/types/user";
@@ -65,89 +69,74 @@ export function EmailChangeForm({ user, dict }: EmailChangeFormProps) {
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-                <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                    {copy.email_change_title}
-                </h3>
-                <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">
-                    {copy.email_change_description}
-                </p>
-            </div>
-
-            {sentTo ? (
-                <div className="flex items-start gap-3 border-l-2 border-emerald-500 bg-emerald-500/5 px-4 py-3 text-sm">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    <div>
-                        <p className="font-semibold text-[var(--text-main)]">
-                            {copy.email_change_sent}
-                        </p>
-                        <p className="mt-1 break-all text-xs text-[var(--text-muted)]">
-                            {sentTo}
-                        </p>
-                    </div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                        <label htmlFor="new-profile-email" className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                            {copy.email_change_new}
-                        </label>
-                        <div className="relative">
-                            <Mail className="absolute left-3.5 top-3.5 h-4 w-4 text-[var(--text-muted)]" />
-                            <input
-                                id="new-profile-email"
-                                type="email"
-                                autoComplete="email"
-                                required
-                                value={newEmail}
-                                onChange={(event) => setNewEmail(event.target.value)}
-                                placeholder={copy.email_change_placeholder}
-                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 pl-10 pr-4 text-sm text-[var(--text-main)] outline-none ui-motion focus:border-accent/70 focus:ring-2 focus:ring-accent/10"
-                            />
+        <form onSubmit={handleSubmit}>
+            <ProfileFormSection
+                title={copy.email_change_title}
+                description={copy.email_change_description}
+            >
+                {sentTo ? (
+                    <div className="flex items-start gap-3 rounded-xl border border-accent/25 bg-accent/10 px-3.5 py-3 text-sm">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                        <div>
+                            <p className="font-semibold text-[var(--text-main)]">
+                                {copy.email_change_sent}
+                            </p>
+                            <p className="mt-1 break-all text-xs text-[var(--text-muted)]">
+                                {sentTo}
+                            </p>
                         </div>
                     </div>
+                ) : (
+                    <div className="flex w-full min-w-0 flex-col gap-3">
+                        <div className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
+                            <DocumentFormField id="new-profile-email" label={copy.email_change_new}>
+                                <DocumentFormInput
+                                    id="new-profile-email"
+                                    type="email"
+                                    autoComplete="email"
+                                    required
+                                    value={newEmail}
+                                    onChange={(event) => setNewEmail(event.target.value)}
+                                    placeholder={copy.email_change_placeholder}
+                                />
+                            </DocumentFormField>
 
-                    <div className="space-y-1.5">
-                        <label htmlFor="email-change-password" className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                            {copy.email_change_password}
-                        </label>
-                        <div className="relative">
-                            <Lock className="absolute left-3.5 top-3.5 h-4 w-4 text-[var(--text-muted)]" />
-                            <input
-                                id="email-change-password"
-                                type={showPassword ? "text" : "password"}
-                                autoComplete="current-password"
-                                required
-                                value={currentPassword}
-                                onChange={(event) => setCurrentPassword(event.target.value)}
-                                placeholder={copy.email_change_password_placeholder}
-                                className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] py-3 pl-10 pr-10 text-sm text-[var(--text-main)] outline-none ui-motion focus:border-accent/70 focus:ring-2 focus:ring-accent/10"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => setShowPassword((visible) => !visible)}
-                                aria-label={showPassword ? copy.hide_password : copy.show_password}
-                                className="absolute right-3 top-3.5 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                            <DocumentFormField id="email-change-password" label={copy.email_change_password}>
+                                <div className="relative">
+                                    <DocumentFormInput
+                                        id="email-change-password"
+                                        type={showPassword ? "text" : "password"}
+                                        autoComplete="current-password"
+                                        required
+                                        value={currentPassword}
+                                        onChange={(event) => setCurrentPassword(event.target.value)}
+                                        placeholder={copy.email_change_password_placeholder}
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword((visible) => !visible)}
+                                        aria-label={showPassword ? copy.hide_password : copy.show_password}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                                    >
+                                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </button>
+                                </div>
+                            </DocumentFormField>
+                        </div>
+
+                        <div className="flex justify-end">
+                            <Button
+                                type="submit"
+                                disabled={submitting}
+                                className={PAGE_ACTION_BUTTON_PRIMARY}
                             >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
+                                {submitting ? copy.email_change_sending : copy.email_change_submit}
+                            </Button>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {!sentTo && (
-                <div className="flex justify-end border-t border-[var(--border-soft)] pt-4">
-                    <Button
-                        type="submit"
-                        disabled={submitting}
-                        className="border-none bg-[var(--text-main)] px-6 text-xs font-semibold text-[var(--text-inverse)] hover:opacity-90"
-                    >
-                        {submitting ? copy.email_change_sending : copy.email_change_submit}
-                    </Button>
-                </div>
-            )}
+                )}
+            </ProfileFormSection>
         </form>
     );
 }
