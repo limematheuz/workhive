@@ -69,12 +69,12 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                                     : dict.dashboard.overview;
 
     return (
-        <header className="relative z-[var(--z-header)] flex h-20 items-center justify-between border-b border-[var(--border-soft)] bg-transparent px-[3%] transition-colors duration-300 md:px-8">
-            <div className="flex items-center gap-4">
+        <header className="relative z-[var(--z-header)] flex h-20 min-w-0 items-center justify-between gap-3 border-b border-[var(--border-soft)] bg-transparent px-[max(3%,env(safe-area-inset-left))] pr-[max(3%,env(safe-area-inset-right))] transition-colors duration-300 md:px-8">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
                 <button
                     type="button"
                     onClick={onToggleSidebar}
-                    className="text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
+                    className="shrink-0 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors"
                     aria-label="Toggle sidebar"
                 >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,10 +82,10 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v18" />
                     </svg>
                 </button>
-                <h1 className="text-xl font-semibold text-[var(--text-main)]">{pageTitle}</h1>
+                <h1 className="min-w-0 truncate text-lg font-semibold text-[var(--text-main)] sm:text-xl">{pageTitle}</h1>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex shrink-0 items-center gap-3 sm:gap-6">
                 <NotificationPanel />
 
                 <div className="relative" ref={profileRef}>

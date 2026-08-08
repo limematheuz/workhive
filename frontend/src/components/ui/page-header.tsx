@@ -28,7 +28,7 @@ export function PageHeader({
     return (
         <header
             className={cn(
-                "flex flex-col gap-4 border-b border-[var(--border-color)] pb-5 sm:flex-row sm:items-center sm:justify-between",
+                "flex min-w-0 max-w-full flex-col gap-4 border-b border-[var(--border-color)] pb-5 sm:flex-row sm:items-center sm:justify-between",
                 className,
             )}
         >
@@ -37,16 +37,20 @@ export function PageHeader({
                     <Icon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                    <TitleTag className="text-xl font-bold text-[var(--text-main)]">
+                    <TitleTag className="text-xl font-bold text-[var(--text-main)] [overflow-wrap:anywhere]">
                         {title}
                     </TitleTag>
                     {subtitle ? (
-                        <p className="mt-0.5 text-sm text-[var(--text-muted)]">{subtitle}</p>
+                        <p className="mt-0.5 text-sm text-[var(--text-muted)] [overflow-wrap:anywhere]">
+                            {subtitle}
+                        </p>
                     ) : null}
                 </div>
             </div>
             {actions ? (
-                <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+                <div className="flex w-full min-w-0 max-w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+                    {actions}
+                </div>
             ) : null}
         </header>
     );

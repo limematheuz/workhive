@@ -4,20 +4,36 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
+/** Classes on AuthShell `<main>` only (exclude backlight / children). */
+function authShellMainClass(source: string): string {
+    const match = source.match(/<main[\s\S]*?className=\{cn\(\s*"([^"]+)"/);
+    assert.ok(match?.[1], "AuthShell main className not found");
+    return match[1];
+}
+
 test("mobile screens use document scrolling and keep the desktop scroll region isolated", () => {
     const dashboardLayout = read("../app/dashboard/layout.tsx");
     const authShell = read("../components/auth/AuthShell.tsx");
     const resetPasswordPage = read("../app/(auth)/reset-password/page.tsx");
+    const mainClass = authShellMainClass(authShell);
 
     assert.match(dashboardLayout, /min-h-dvh/);
     assert.match(dashboardLayout, /lg:h-dvh lg:overflow-hidden/);
     assert.match(dashboardLayout, /dashboard-page-scroll-region/);
-    assert.match(dashboardLayout, /dashboard-page-scroll-region/);
     assert.match(dashboardLayout, /lg:overflow-y-auto/);
+    assert.match(dashboardLayout, /pointer-events-none absolute inset-0 overflow-hidden/);
+    assert.match(dashboardLayout, /dashboard-shell-backlight/);
     assert.doesNotMatch(dashboardLayout, /app-touch-scroll/);
     assert.doesNotMatch(dashboardLayout, /overflow-y-auto p-0/);
-    assert.doesNotMatch(authShell, /overflow-y-auto/);
-    assert.doesNotMatch(authShell, /app-touch-scroll/);
+
+    // Document is the scroll owner: AuthShell main must not create a scrollport.
+    // overflow-x:hidden/clip pairs to overflow-y:auto/clip and traps touch pans.
+    assert.doesNotMatch(mainClass, /overflow-x-(?:hidden|clip|auto|scroll)/);
+    assert.doesNotMatch(mainClass, /overflow-y-(?:auto|scroll|hidden|clip)/);
+    assert.doesNotMatch(mainClass, /\boverflow-(?:auto|scroll|hidden|clip)\b/);
+    assert.doesNotMatch(mainClass, /app-touch-scroll/);
+    assert.match(authShell, /absolute inset-0 overflow-hidden/);
+    assert.match(authShell, /dashboard-shell-backlight/);
     assert.doesNotMatch(resetPasswordPage, /overflow-y-auto/);
 });
 

@@ -142,7 +142,7 @@ export function TechTaskCard({
                 }
             }}
             className={cn(
-                "surface-glass-card group relative isolate overflow-hidden rounded-3xl p-5 ui-motion duration-300 flex flex-col justify-between min-h-[160px] cursor-pointer hover:shadow-lg",
+                "surface-glass-card group relative isolate flex min-h-[160px] min-w-0 max-w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl p-4 ui-motion duration-300 hover:shadow-lg sm:p-5",
                 isOverdue
                     ? "border-red-500/30 [background-color:color-mix(in_srgb,rgb(239_68_68)_6%,var(--surface-card-bg))] hover:border-red-500/50"
                     : isCompleted
@@ -161,14 +161,14 @@ export function TechTaskCard({
                 />
             )}
             {/* Top Bar info */}
-            <div className="flex items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3 mb-3 text-[10px] font-extrabold uppercase tracking-wider">
-                <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
+            <div className="mb-3 flex min-w-0 items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3 text-[10px] font-extrabold uppercase tracking-wider">
+                <div className="flex min-w-0 items-center gap-1.5 text-[var(--text-muted)]">
                     {isOverdue ? (
-                        <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                        <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-500" />
                     ) : (
-                        <Calendar className="w-3.5 h-3.5 text-accent" />
+                        <Calendar className="h-3.5 w-3.5 shrink-0 text-accent" />
                     )}
-                    <span className={cn(isOverdue && "text-red-500")}>
+                    <span className={cn("min-w-0 truncate", isOverdue && "text-red-500")}>
                         {dict.tech?.card_expires_on
                             ? dict.tech.card_expires_on.replace("{date}", formattedDate)
                             : `Expires on ${formattedDate}`}
@@ -176,7 +176,7 @@ export function TechTaskCard({
                 </div>
                 <span
                     className={cn(
-                        "text-[9px] font-black px-2 py-0.5 rounded-full border",
+                        "shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-black",
                         isOverdue
                             ? "bg-red-500/10 border-red-500/20 text-red-500"
                             : isCompleted
@@ -191,18 +191,18 @@ export function TechTaskCard({
             </div>
 
             {/* Main info of the task location */}
-            <div className="flex-1 space-y-1">
+            <div className="min-w-0 flex-1 space-y-1">
                 {!hideLocationName && (
-                    <h3 className="text-base font-black text-[var(--text-main)] group-hover:text-accent transition-colors pt-0.5">
+                    <h3 className="truncate pt-0.5 text-base font-black text-[var(--text-main)] transition-colors group-hover:text-accent">
                         {locationName}
                     </h3>
                 )}
                 {locationAddress && (
-                    <p className="text-[10px] text-[var(--text-muted)] font-bold tracking-wide">
+                    <p className="truncate text-[10px] font-bold tracking-wide text-[var(--text-muted)]">
                         {locationAddress}
                     </p>
                 )}
-                <p className="text-xs text-[var(--text-main)] font-semibold mt-3">
+                <p className="mt-3 break-words text-xs font-semibold text-[var(--text-main)]">
                     {task.title}
                 </p>
 
@@ -247,7 +247,7 @@ export function TechTaskCard({
             </div>
 
             {/* Bottom Actions and Navigation Details */}
-            <div className="mt-4 flex items-center gap-2 border-t border-[var(--border-soft)] pt-3">
+            <div className="mt-4 flex min-w-0 flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3">
                 <div className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white shadow-sm",
                     isOverdue ? "bg-red-500" : isCompleted ? "bg-[var(--text-muted)]" : "bg-accent"
@@ -269,7 +269,7 @@ export function TechTaskCard({
                         <Check className="h-4 w-4 stroke-[3px]" />
                     </div>
                 ) : isPending && canAcceptAssignments ? (
-                    <div className="ml-auto flex shrink-0 items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button
                             size="sm"
                             variant="outline"
@@ -289,14 +289,14 @@ export function TechTaskCard({
                         </Button>
                     </div>
                 ) : isAwaitingApproval ? (
-                    <div className="ml-auto shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <div className="ml-auto max-w-full shrink-0" onClick={(e) => e.stopPropagation()}>
                         <Button
                             size="sm"
                             disabled
-                            className="flex h-8 cursor-not-allowed items-center gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 text-[9px] font-black uppercase text-[var(--text-muted)]"
+                            className="flex h-8 max-w-full cursor-not-allowed items-center gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-[9px] font-black uppercase text-[var(--text-muted)] sm:px-4"
                         >
-                            <Clock className="h-3.5 w-3.5" />
-                            {dict.tech.msg_accept_first}
+                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{dict.tech.msg_accept_first}</span>
                         </Button>
                     </div>
                 ) : isPending ? (

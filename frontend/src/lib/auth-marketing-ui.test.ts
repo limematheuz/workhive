@@ -17,8 +17,11 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     const contactAside = read("../components/contact/ContactInfoAside.tsx");
 
     assert.match(shell, /dashboard-shell-backlight/);
+    assert.match(shell, /absolute inset-0 overflow-hidden/);
     assert.match(shell, /showThemeToggle/);
     assert.match(shell, /safe-area-inset/);
+    // Clip backlight in the decorative layer only — not on <main> (scroll trap).
+    assert.doesNotMatch(shell, /items-center overflow-x-(?:hidden|clip)/);
     assert.match(card, /glass-sheet-bg/);
     assert.match(login, /AuthShell/);
     assert.match(login, /AuthGlassCard/);
