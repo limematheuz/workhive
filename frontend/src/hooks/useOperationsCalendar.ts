@@ -15,6 +15,7 @@ import {
     buildTaskUpdatePayload,
     taskToEditValues,
     type TaskEditValues,
+    type TaskPricingMode,
 } from "@/domain/tasks/task-edit";
 import {
     getScheduleViolation,
@@ -66,6 +67,7 @@ export function useOperationsCalendar({
     const [editNotes, setEditNotes] = useState<string>("");
     const [editDescription, setEditDescription] = useState<string>("");
     const [editPrice, setEditPrice] = useState<string>("");
+    const [editPricingMode, setEditPricingMode] = useState<TaskPricingMode>("fixed");
     const [editQuantity, setEditQuantity] = useState<string>("");
     const [editUnit, setEditUnit] = useState<string>("");
     const [editLocationId, setEditLocationId] = useState<string>("");
@@ -241,6 +243,7 @@ export function useOperationsCalendar({
         setEditNotes(values.notes);
         setEditDescription(values.description);
         setEditPrice(values.price);
+        setEditPricingMode(values.pricingMode);
         setEditQuantity(values.quantity);
         setEditUnit(values.unit);
         setEditLocationId(values.locationId);
@@ -268,6 +271,7 @@ export function useOperationsCalendar({
             price: editPrice,
             quantity: editQuantity,
             unit: editUnit,
+            pricingMode: editPricingMode,
             locationId: editLocationId,
             userId: editUserId,
             status: editStatus,
@@ -374,6 +378,7 @@ export function useOperationsCalendar({
                 price: task.price,
                 quantity: task.quantity,
                 unit: task.unit || "unidad",
+                pricing_mode: task.pricing_mode || "fixed",
                 template_task_id: task.template_task_id,
                 location_id: task.location_id,
                 user_id: task.user_id,
@@ -412,6 +417,8 @@ export function useOperationsCalendar({
         setEditDescription,
         editPrice,
         setEditPrice,
+        editPricingMode,
+        setEditPricingMode,
         editQuantity,
         setEditQuantity,
         editUnit,

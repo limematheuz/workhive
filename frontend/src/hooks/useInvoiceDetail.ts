@@ -453,7 +453,13 @@ export function useInvoiceDetail(invoiceId: number) {
 
     useEffect(() => {
         if (loading || !invoice) return;
-        openEditFromQueryEvent();
+        let active = true;
+        queueMicrotask(() => {
+            if (active) openEditFromQueryEvent();
+        });
+        return () => {
+            active = false;
+        };
     }, [invoice, loading]);
 
     const handleDiscardEdit = () => {

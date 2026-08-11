@@ -31,6 +31,14 @@ const defaultApprovalForm = (request: TrialRequest | null): ApprovalForm => ({
     note: "",
 });
 
+const TRIAL_REQUEST_STATUS_STYLES: Record<string, string> = {
+    pending_email_verification: "border-amber-500/20 bg-amber-500/10 text-amber-600",
+    email_verified: "border-accent/25 bg-accent/10 text-accent",
+    approved: "border-accent/25 bg-accent/10 text-accent",
+    rejected: "border-red-500/20 bg-red-500/10 text-red-600",
+    expired: "border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
+};
+
 export function TrialRequestsPanel() {
     const { dict } = useDictionary();
     const t = dict.companies;
@@ -49,14 +57,6 @@ export function TrialRequestsPanel() {
         approved: t.request_status_approved,
         rejected: t.request_status_rejected,
         expired: t.request_status_expired,
-    };
-
-    const statusStyles: Record<string, string> = {
-        pending_email_verification: "border-amber-500/20 bg-amber-500/10 text-amber-600",
-        email_verified: "border-accent/25 bg-accent/10 text-accent",
-        approved: "border-accent/25 bg-accent/10 text-accent",
-        rejected: "border-red-500/20 bg-red-500/10 text-red-600",
-        expired: "border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
     };
 
     const pendingCount = useMemo(
@@ -175,7 +175,7 @@ export function TrialRequestsPanel() {
                                         </h4>
                                         <Badge
                                             variant="outline"
-                                            className={`${statusStyles[request.status] || statusStyles.expired} text-[10px] font-semibold uppercase`}
+                                            className={`${TRIAL_REQUEST_STATUS_STYLES[request.status] || TRIAL_REQUEST_STATUS_STYLES.expired} text-[10px] font-semibold uppercase`}
                                         >
                                             {statusLabels[request.status] || request.status}
                                         </Badge>

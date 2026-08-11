@@ -63,6 +63,17 @@ def _text(value: object | None, fallback: str = "-") -> str:
     return escape(str(value)).replace("\n", "<br/>")
 
 
+def _concept_description(value: object | None) -> str:
+    """Keep the service title visually stronger than location/time details."""
+    text = _text(value)
+    if text == "-":
+        return text
+    title, separator, rest = text.partition("<br/>")
+    if not separator:
+        return f"<b>{title}</b>"
+    return f"<b>{title}</b><br/>{rest}"
+
+
 def _party_block(title: str, snapshot: dict | None) -> list:
     party = snapshot or {}
     location = " ".join(
@@ -258,7 +269,7 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
     for item in invoice.items:
         item_rows.append(
             [
-                Paragraph(_text(item.description), styles["BodySmall"]),
+                Paragraph(_concept_description(item.description), styles["BodySmall"]),
                 Paragraph(_quantity(item.quantity), styles["BodySmall"]),
                 Paragraph(_money(item.unit_price), styles["SmallRight"]),
                 Paragraph(_percentage(item.tax_rate), styles["SmallRight"]),

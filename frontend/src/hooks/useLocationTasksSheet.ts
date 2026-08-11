@@ -303,15 +303,17 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
 
     // Dissociate a fixed task template
     const handleUnlinkTemplate = async (templateId: number) => {
-        if (!location) return;
+        if (!location) return false;
 
         try {
             await LocationTemplateService.removeTemplate(location.id, templateId);
 
             toast.success(dict.locations.sheet.toast_unlinked_success);
             await loadHouseTemplates();
+            return true;
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, dict.locations.sheet.toast_unlink_generic_error));
+            return false;
         }
     };
 

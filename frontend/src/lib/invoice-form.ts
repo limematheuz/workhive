@@ -16,6 +16,8 @@ export interface InvoiceFormConceptRow {
     quantity: number;
     taxRate: number;
     task_item_id?: number | null;
+    pricing_mode?: "fixed" | "hourly";
+    worked_seconds?: number | null;
 }
 
 export function getTodayIsoDate(): string {
@@ -113,6 +115,8 @@ export function createInvoiceConceptRow(
         quantity: 1,
         taxRate,
         task_item_id: null,
+        pricing_mode: "fixed",
+        worked_seconds: null,
     };
 }
 

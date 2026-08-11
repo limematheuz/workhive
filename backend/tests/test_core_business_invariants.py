@@ -600,6 +600,12 @@ def test_invoiced_reservation_cannot_be_cancelled_or_deleted(db):
         _reservation_data(location.id),
     )
     task = reservation.checkout_tasks[0]
+    # The invariant under test is the reservation lock after invoicing, so
+    # provide the commercial agreement now required for a valid invoice line.
+    task.pricing_mode = "fixed"
+    task.price = 100
+    task.quantity = 1
+    task.unit = "service"
     task.status = "completed"
     task.date_done = datetime.now(timezone.utc)
     db.add(task)

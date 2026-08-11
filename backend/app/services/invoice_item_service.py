@@ -4,7 +4,10 @@ from app.models.invoice_item import InvoiceItem
 from app.schemas.invoice_item import InvoiceItemCreate, InvoiceItemUpdate
 from app.repositories import invoice_item as invoice_item_repo
 from app.repositories import invoice as invoice_repo
-from app.services.invoice_tasks import validate_task_for_invoice
+from app.services.invoice_tasks import (
+    apply_task_amounts_to_invoice_item,
+    validate_task_for_invoice,
+)
 
 
 def get_invoice_items(
@@ -48,6 +51,10 @@ def create_invoice_item(
                 company_id,
                 invoice_item_data.task_item_id,
                 existing.client_id,
+            )
+            invoice_item_data = apply_task_amounts_to_invoice_item(
+                task_item,
+                invoice_item_data,
             )
             task_item.is_invoiced = True
             db.add(task_item)
@@ -106,8 +113,27 @@ def update_invoice_item(
                         new_task_id,
                         db_invoice.client_id,
                     )
+                    item_data = apply_task_amounts_to_invoice_item(
+                        new_task,
+                        item_data,
+                    )
                     new_task.is_invoiced = True
                     db.add(new_task)
+            elif existing_item.task_item_id is not None and (
+                "quantity" in item_data.model_fields_set
+                or "unit_price" in item_data.model_fields_set
+            ):
+                linked_task = validate_task_for_invoice(
+                    db,
+                    company_id,
+                    existing_item.task_item_id,
+                    db_invoice.client_id,
+                    linked_invoice_id=db_invoice.id,
+                )
+                item_data = apply_task_amounts_to_invoice_item(
+                    linked_task,
+                    item_data,
+                )
         item = invoice_item_repo.update_invoice_item(
             db, existing_item, item_data
         )

@@ -24,6 +24,9 @@ test("profile popover mirrors notification panel shell and billing action langua
     const notifications = read(
         "../components/dashboard/notifications/NotificationPanel.tsx",
     );
+    const notificationPopover = read(
+        "../components/dashboard/notifications/NotificationPopoverContent.tsx",
+    );
 
     assert.match(header, /import\s*\{\s*LogOut,\s*User\s*\}\s*from\s*"lucide-react"/);
     assert.match(
@@ -31,7 +34,10 @@ test("profile popover mirrors notification panel shell and billing action langua
         /billing-surface header-popover-layer fixed left-3 right-3 top-20[\s\S]*?rounded-\[24px\] p-3/,
     );
     assert.match(header, /sm:w-\[min\(25rem,calc\(100vw-2rem\)\)\]/);
-    assert.match(notifications, /sm:w-\[min\(25rem,calc\(100vw-2rem\)\)\]/);
+    assert.match(
+        `${notifications}\n${notificationPopover}`,
+        /sm:w-\[min\(25rem,calc\(100vw-2rem\)\)\]/,
+    );
     assert.match(header, /billing-block/);
     assert.match(header, /from "@\/components\/ui\/button"/);
     assert.match(header, /from "@\/components\/ui\/badge"/);

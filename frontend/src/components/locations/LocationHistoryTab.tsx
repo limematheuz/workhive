@@ -171,6 +171,7 @@ export function LocationHistoryTab({
                                     <input
                                         type="number"
                                         step="0.01"
+                                        data-price-input
                                         value={price}
                                         onChange={(e) => setPrice(e.target.value)}
                                         placeholder={dict.locations?.sheet?.price_placeholder || "0.00"}

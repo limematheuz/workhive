@@ -40,6 +40,7 @@ from app.services.invoice_pdf import (
     resolve_invoice_pdf,
 )
 from app.services.invoice_tasks import (  # noqa: F401
+    apply_task_amounts_to_invoice_item,
     get_invoiceable_completed_tasks,
     validate_invoice_client_for_linked_tasks,
     validate_task_for_invoice,
@@ -160,6 +161,7 @@ def create_invoice_draft(
                     item_data.task_item_id,
                     data.client_id,
                 )
+                item_data = apply_task_amounts_to_invoice_item(task, item_data)
                 task.is_invoiced = True
                 db.add(task)
             invoice_item_repo.create_invoice_item(db, invoice.id, item_data)
@@ -506,6 +508,7 @@ def _replace_draft_invoice_items(
     for item_data in replacement_items:
         if item_data.task_item_id is not None:
             task = validated_tasks[item_data.task_item_id]
+            item_data = apply_task_amounts_to_invoice_item(task, item_data)
             task.is_invoiced = True
             db.add(task)
         invoice_item_repo.create_invoice_item(db, invoice.id, item_data)

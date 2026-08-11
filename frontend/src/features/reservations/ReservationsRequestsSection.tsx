@@ -7,6 +7,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { TaskEditModal } from "@/components/tasks/TaskEditModal";
 import { TasksRequests } from "@/components/tasks/TasksRequests";
 import type { useTaskCrud } from "@/hooks/useTaskCrud";
+import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/types/location";
 import type { TaskItem } from "@/services/task.service";
@@ -24,7 +25,7 @@ type ReservationsRequestsSectionProps = {
     taskCrud: ReturnType<typeof useTaskCrud>;
     getLocationName: (locationId: number) => string;
     getAssigneeName: (userId: number | null) => string;
-    onAccept: (taskId: number, scheduledStartAt?: string) => Promise<void>;
+    onAccept: (taskId: number, input: TaskAcceptanceInput) => Promise<void>;
     onReject: (taskId: number) => Promise<void>;
     onOpenTaskDetail: (task: TaskItem) => void;
 };
@@ -92,6 +93,8 @@ export function ReservationsRequestsSection({
                 setEditDescription={taskCrud.setEditDescription}
                 editPrice={taskCrud.editPrice}
                 setEditPrice={taskCrud.setEditPrice}
+                editPricingMode={taskCrud.editPricingMode}
+                setEditPricingMode={taskCrud.setEditPricingMode}
                 editQuantity={taskCrud.editQuantity}
                 setEditQuantity={taskCrud.setEditQuantity}
                 editUnit={taskCrud.editUnit}

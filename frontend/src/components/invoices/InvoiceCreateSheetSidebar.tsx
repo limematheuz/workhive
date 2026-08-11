@@ -4,10 +4,10 @@ import { SignatureUpload } from "@/components/billing/SignatureUpload";
 import { DocumentFormAdvancedPanel } from "@/components/billing/DocumentFormAdvancedPanel";
 import { DocumentSummary } from "@/components/billing/DocumentSummary";
 import { InvoiceTaskSelector } from "./InvoiceTaskSelector";
-import type { TaskItem } from "@/services/task.service";
+import type { InvoiceableTask } from "@/services/invoice.service";
 import type { Dictionary } from "@/lib/dictionary-context";
 
-type SelectableInvoiceTask = TaskItem & { locationName: string };
+type SelectableInvoiceTask = InvoiceableTask & { locationName: string };
 
 interface InvoiceCreateSheetSidebarProps {
     dict: Dictionary;

@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, timezone
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.location import Location
@@ -13,6 +14,7 @@ from app.repositories import task_item as task_item_repo
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.reservation_validation import get_location
+from app.services.task_billing_service import pricing_is_locked
 from app.services import task_assignment_service
 
 
@@ -64,7 +66,7 @@ def _build_service_snapshot(
     location_id: int,
     owner_company_id: int,
     guest_count: int,
-) -> tuple[str, float | None, int | None, str]:
+) -> tuple[str, float | None, int | None, str, str]:
     assignments = (
         db.query(LocationTemplate)
         .join(TemplateTask)
@@ -83,7 +85,7 @@ def _build_service_snapshot(
 def _build_service_snapshot_from_assignments(
     assignments: list[LocationTemplate],
     guest_count: int,
-) -> tuple[str, float | None, int | None, str]:
+) -> tuple[str, float | None, int | None, str, str]:
     intro = f"Servicio solicitado para la salida de una reserva de {guest_count} huéspedes."
     checklist_lines: list[str] = []
     prices: list[float] = []
@@ -129,7 +131,12 @@ def _build_service_snapshot_from_assignments(
         if len(assignments) == 1
         else "service"
     )
-    return description, price, template_task_id, unit
+    # A combined reservation task has one price, not several independent rates.
+    # Preserve hourly terms only when exactly one issuer template defines them.
+    pricing_mode = assignments[0].template.pricing_mode if len(assignments) == 1 else "fixed"
+    if pricing_mode == "hourly":
+        unit = "hour"
+    return description, price, template_task_id, unit, pricing_mode
 
 
 def get_live_external_task_snapshot(
@@ -149,7 +156,7 @@ def get_live_external_task_snapshot(
     if task.company_id == reservation.owner_company_id:
         return {}
 
-    description, price, _, unit = _build_service_snapshot(
+    description, price, _, unit, pricing_mode = _build_service_snapshot(
         db,
         task.location_id,
         reservation.owner_company_id,
@@ -164,6 +171,7 @@ def get_live_external_task_snapshot(
         "price": price,
         "quantity": 1.0 if price is not None else None,
         "unit": unit,
+        "pricing_mode": pricing_mode,
     }
 
 
@@ -192,7 +200,7 @@ def get_live_external_task_snapshot_loaded(
         ),
         key=lambda assignment: assignment.template.id,
     )
-    description, price, _, unit = _build_service_snapshot_from_assignments(
+    description, price, _, unit, pricing_mode = _build_service_snapshot_from_assignments(
         assignments,
         reservation.guest_count,
     )
@@ -205,6 +213,7 @@ def get_live_external_task_snapshot_loaded(
         "price": price,
         "quantity": 1.0 if price is not None else None,
         "unit": unit,
+        "pricing_mode": pricing_mode,
     }
 
 
@@ -225,7 +234,7 @@ def sync_checkout_task(
 
     is_external = target_company_id != reservation.owner_company_id
     request_status = "requested" if is_external else "accepted"
-    description, price, template_task_id, unit = _build_service_snapshot(
+    description, price, template_task_id, unit, pricing_mode = _build_service_snapshot(
         db,
         location.id,
         reservation.owner_company_id,
@@ -241,6 +250,11 @@ def sync_checkout_task(
             return checkout_task
 
         target_changed = checkout_task.company_id != target_company_id
+        if target_changed and pricing_is_locked(checkout_task):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A reservation task cannot change provider after work has started",
+            )
         if target_changed:
             checkout_task.company_id = target_company_id
         update_fields = {
@@ -249,7 +263,10 @@ def sync_checkout_task(
             "due_at": check_out_at,
             "user_id": calendar_owner_user_id,
         }
-        if checkout_task.status == "requested" or target_changed:
+        if (
+            (checkout_task.status == "requested" or target_changed)
+            and not pricing_is_locked(checkout_task)
+        ):
             update_fields.update(
                 {
                     "status": request_status,
@@ -257,6 +274,7 @@ def sync_checkout_task(
                     "price": price,
                     "quantity": 1.0 if price is not None else None,
                     "unit": unit,
+                    "pricing_mode": pricing_mode,
                     "template_task_id": operational_template_id,
                 }
             )
@@ -280,6 +298,7 @@ def sync_checkout_task(
             price=price,
             quantity=1.0 if price is not None else None,
             unit=unit,
+            pricing_mode=pricing_mode,
             template_task_id=operational_template_id,
             location_id=location.id,
             user_id=calendar_owner_user_id,

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { ListChecks, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import Link from "next/link";
 import { InstructionList } from "@/components/ui/instruction-list";
 import { ChecklistStepsEditor } from "@/components/tasks/ChecklistStepsEditor";
 import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 interface LocationTemplatesTabProps {
     handleLinkTemplates: (e: React.FormEvent) => void;
@@ -25,7 +26,7 @@ interface LocationTemplatesTabProps {
     loadingHouseTemplates: boolean;
     houseTemplates: HouseTemplate[];
     globalTemplates: TemplateTask[];
-    handleUnlinkTemplate: (templateTaskId: number) => void;
+    handleUnlinkTemplate: (templateTaskId: number) => Promise<boolean>;
     readOnly?: boolean;
     editingTemplateId?: number | null;
     setEditingTemplateId?: (id: number | null) => void;
@@ -55,7 +56,22 @@ export function LocationTemplatesTab({
 }: LocationTemplatesTabProps) {
     const { dict } = useDictionary();
     const selectedGlobalTemplateIdSet = new Set(selectedGlobalTemplateIds);
+    const [templateToUnlink, setTemplateToUnlink] = useState<number | null>(null);
+    const [isUnlinking, setIsUnlinking] = useState(false);
+
+    const confirmUnlink = async () => {
+        if (templateToUnlink === null) return;
+        try {
+            setIsUnlinking(true);
+            const wasUnlinked = await handleUnlinkTemplate(templateToUnlink);
+            if (wasUnlinked) setTemplateToUnlink(null);
+        } finally {
+            setIsUnlinking(false);
+        }
+    };
+
     return (
+        <>
         <div className="space-y-6">
             <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3">
                 <p className="text-sm font-semibold text-[var(--text-main)]">
@@ -109,6 +125,7 @@ export function LocationTemplatesTab({
                                                 type="number"
                                                 aria-label={`${template.name} ${dict.locations?.sheet?.price_short_placeholder || "Local price"}`}
                                                 step="0.01"
+                                                data-price-input
                                                 value={templatePrices[template.id] || ""}
                                                 onClick={event => event.stopPropagation()}
                                                 onChange={event => setTemplatePrices(prices => ({ ...prices, [template.id]: event.target.value }))}
@@ -205,6 +222,7 @@ export function LocationTemplatesTab({
                                                     <input
                                                         type="number"
                                                         step="0.01"
+                                                        data-price-input
                                                         value={editingTemplateValues.price}
                                                         onChange={event => setEditingTemplateValues(values => ({ ...values, price: event.target.value }))}
                                                         placeholder={tmpl?.default_price?.toString() || "0.00"}
@@ -266,12 +284,13 @@ export function LocationTemplatesTab({
 
                                     {!readOnly && !isEditing && (
                                         <button type="button"
-                                            onClick={() => handleUnlinkTemplate(ht.template_task_id)}
-                                            className="p-2 text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)] rounded-xl border border-transparent hover:border-[var(--btn-cancel-border)] ui-motion cursor-pointer self-start"
+                                            onClick={() => setTemplateToUnlink(ht.template_task_id)}
+                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--btn-cancel-border)] px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)] ui-motion cursor-pointer self-start"
                                             title={dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}
                                             aria-label={dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}
                                         >
                                             <Trash2 className="w-4 h-4" />
+                                            <span>{dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}</span>
                                         </button>
                                     )}
                                 </div>
@@ -289,5 +308,18 @@ export function LocationTemplatesTab({
                 )}
             </div>
         </div>
+        <DeleteConfirmDialog
+            open={templateToUnlink !== null}
+            onOpenChange={(open) => !open && setTemplateToUnlink(null)}
+            title={dict.locations?.sheet?.unlink_confirm_title || "Remove fixed task from this location"}
+            description={dict.locations?.sheet?.unlink_confirm_description
+                || "This only unlinks the service from this location. The global template and existing jobs will not be deleted."}
+            onConfirm={() => void confirmUnlink()}
+            isDeleting={isUnlinking}
+            confirmText={dict.locations?.sheet?.unlink_confirm_button || "Remove from location"}
+            cancelText={dict.locations?.sheet?.cancel || "Cancel"}
+            confirmVariant="soft-danger"
+        />
+        </>
     );
 }

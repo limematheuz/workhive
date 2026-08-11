@@ -1,4 +1,10 @@
 import type { InvoiceableTask } from "@/services/invoice.service";
+import { formatHoursShort } from "./format-hours.ts";
+import {
+    buildInvoiceTaskDescription,
+    resolveTaskInvoiceBilling,
+    resolveTaskPersonSeconds,
+} from "./task-invoice-billing.ts";
 
 export type InvoiceTaskWithLocation = InvoiceableTask & {
     clientId?: number;
@@ -12,6 +18,8 @@ export type InvoiceTaskConcept = {
     quantity: number;
     taxRate: number;
     task_item_id: number;
+    pricing_mode: "fixed" | "hourly";
+    worked_seconds: number;
 };
 
 type PrepareInvoiceTasksParams = {
@@ -80,20 +88,30 @@ export function buildInvoiceTaskConcepts(
         const formattedDate = taskDate
             ? new Date(taskDate).toLocaleDateString(
                 "es-ES",
-                { day: "2-digit", month: "2-digit" },
+                { day: "2-digit", month: "2-digit", year: "numeric" },
             )
             : "";
+        const billing = resolveTaskInvoiceBilling(task);
+        const locationName =
+            task.locationName
+            || task.location_name
+            || "";
+        const workedSeconds = resolveTaskPersonSeconds(task);
         return [{
             id: `task-${task.id}`,
-            description: [
-                task.title,
-                task.locationName,
-                formattedDate,
-            ].filter(Boolean).join("\n"),
-            unitPrice: task.price ?? 0,
-            quantity: task.quantity ?? 1,
+            description: buildInvoiceTaskDescription({
+                title: task.title,
+                locationName,
+                dateLabel: formattedDate,
+                task,
+                formatHours: formatHoursShort,
+            }),
+            unitPrice: billing.unitPrice,
+            quantity: billing.quantity,
             taxRate,
             task_item_id: task.id,
+            pricing_mode: task.pricing_mode === "hourly" ? "hourly" : "fixed",
+            worked_seconds: workedSeconds,
         }];
     });
 }

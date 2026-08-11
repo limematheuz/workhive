@@ -11,21 +11,23 @@ function source(path: string): string {
 test("platform calendar panel is superadmin-scoped and never reads secrets", () => {
     const page = source("../app/dashboard/integrations/page.tsx");
     const overview = source("../components/integrations/PlatformCalendarOverview.tsx");
+    const statusCard = source("../components/integrations/PlatformCalendarStatusCard.tsx");
     const service = source("../services/calendar.service.ts");
 
     assert.match(page, /isPlatformSuperadmin\(user\)/);
     assert.match(page, /CalendarService\.getPlatformStatus\(\)/);
     assert.match(service, /\/api\/v1\/calendar\/platform\/status/);
-    assert.match(overview, /billing-surface/);
-    assert.match(overview, /billing-block/);
-    assert.match(overview, /DataListTable/);
-    assert.doesNotMatch(overview, /surface-glass-card/);
-    assert.doesNotMatch(overview, /BrandIconWell|icon-well/);
-    assert.doesNotMatch(overview, /emerald-|amber-/);
-    assert.match(overview, /<Button/);
-    assert.match(overview, /<Badge/);
-    assert.match(overview, /role="switch"/);
-    assert.doesNotMatch(`${page}\n${overview}`, /client_secret|encryption_key|access_token/i);
+    const calendarUi = `${overview}\n${statusCard}`;
+    assert.match(calendarUi, /billing-surface/);
+    assert.match(calendarUi, /billing-block/);
+    assert.match(calendarUi, /DataListTable/);
+    assert.doesNotMatch(calendarUi, /surface-glass-card/);
+    assert.doesNotMatch(calendarUi, /BrandIconWell|icon-well/);
+    assert.doesNotMatch(calendarUi, /emerald-|amber-/);
+    assert.match(calendarUi, /<Button/);
+    assert.match(calendarUi, /<Badge/);
+    assert.match(calendarUi, /role="switch"/);
+    assert.doesNotMatch(`${page}\n${calendarUi}`, /client_secret|encryption_key|access_token/i);
     assert.doesNotMatch(service, /client_secret|encryption_key|access_token/i);
 });
 

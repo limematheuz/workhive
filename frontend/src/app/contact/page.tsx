@@ -33,7 +33,14 @@ function ContactPageContent() {
     const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_PHONE;
 
     useEffect(() => {
-        setForm((current) => syncContactFormLocale(current, reasonParam, locale));
+        let active = true;
+        queueMicrotask(() => {
+            if (!active) return;
+            setForm((current) => syncContactFormLocale(current, reasonParam, locale));
+        });
+        return () => {
+            active = false;
+        };
     }, [locale, reasonParam]);
 
     useEffect(() => {

@@ -196,6 +196,7 @@ export function ExpenseFormDialog({
                                 type="number"
                                 min="0"
                                 step="0.01"
+                                data-price-input
                                 required
                                 value={form.base_amount}
                                 onChange={(event) => setForm({ ...form, base_amount: event.target.value })}

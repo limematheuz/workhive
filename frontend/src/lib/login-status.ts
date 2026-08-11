@@ -10,9 +10,11 @@ export function resolveLoginStatusPhrases(
     phrases: readonly string[] | undefined,
     fallback: string,
 ): string[] {
-    const cleaned = (phrases ?? [])
-        .map((phrase) => phrase.trim())
-        .filter((phrase) => phrase.length > 0);
+    const cleaned = (phrases ?? []).reduce<string[]>((result, phrase) => {
+        const trimmedPhrase = phrase.trim();
+        if (trimmedPhrase) result.push(trimmedPhrase);
+        return result;
+    }, []);
     if (cleaned.length > 0) return cleaned;
     return [fallback];
 }

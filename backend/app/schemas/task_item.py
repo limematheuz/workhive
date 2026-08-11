@@ -40,6 +40,7 @@ class TaskItemBase(BaseModel):
     price: float | None = None
     quantity: float | None = None
     unit: str
+    pricing_mode: Literal["fixed", "hourly"] = "fixed"
     template_task_id: int | None = None
     location_id: int
     user_id: int | None = None
@@ -76,6 +77,7 @@ class TaskItemUpdate(BaseModel):
     price: float | None = None
     quantity: float | None = None
     unit: str | None = None
+    pricing_mode: Literal["fixed", "hourly"] | None = None
     status: TaskStatus | None = None
     date_done: datetime | None = None
     template_task_id: int | None = None
@@ -99,6 +101,10 @@ class TaskItemUpdate(BaseModel):
 
 class TaskAcceptRequest(BaseModel):
     scheduled_start_at: datetime | None = None
+    pricing_mode: Literal["fixed", "hourly"] | None = None
+    price: float | None = None
+    quantity: float | None = None
+    unit: str | None = None
 
 
 class TaskWorkStartRequest(BaseModel):
@@ -146,6 +152,12 @@ class TaskItemResponse(TaskItemBase):
     status: str
     date_done: datetime | None = None
     is_invoiced: bool
+    worked_seconds_snapshot: int | None = None
+    pricing_locked_at: datetime | None = None
+    billing_pricing_mode_snapshot: Literal["fixed", "hourly"] | None = None
+    billing_price_snapshot: float | None = None
+    billing_quantity_snapshot: float | None = None
+    billing_unit_snapshot: str | None = None
     created_at: datetime
     updated_at: datetime
     checkout_reservation: ReservationOperationalResponse | None = None
@@ -157,6 +169,13 @@ class TaskItemResponse(TaskItemBase):
     assignments: list[TaskAssignmentResponse] = Field(default_factory=list)
 
 
+class InvoiceableWorkerHours(BaseModel):
+    user_id: int
+    user_name: str
+    worked_seconds: int
+    worked_hours: float
+
+
 class InvoiceableTaskResponse(TaskItemResponse):
     client_id: int
     client_name: str
@@ -166,3 +185,4 @@ class InvoiceableTaskResponse(TaskItemResponse):
     collaborator_company_name: str | None = None
     worked_seconds: int = 0
     worked_hours: float = 0
+    workers: list[InvoiceableWorkerHours] = Field(default_factory=list)

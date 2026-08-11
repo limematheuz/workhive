@@ -6,6 +6,7 @@ import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/user";
+import type { TaskPricingMode } from "@/domain/tasks/task-edit";
 import { TaskEditFormAlerts } from "./TaskEditFormAlerts";
 import { TaskEditFormFields } from "./TaskEditFormFields";
 import { TaskEditFormActions } from "./TaskEditFormActions";
@@ -19,6 +20,7 @@ interface TaskEditFormProps {
     editNotes: string;
     editPlanningTime: string;
     editPrice: string;
+    editPricingMode: TaskPricingMode;
     editPriority: TaskPriority;
     editQuantity: string;
     editStatus: TaskStatus;
@@ -40,6 +42,7 @@ interface TaskEditFormProps {
     setEditNotes: (value: string) => void;
     setEditPlanningTime: (value: string) => void;
     setEditPrice: (value: string) => void;
+    setEditPricingMode: (value: TaskPricingMode) => void;
     setEditPriority: (value: TaskPriority) => void;
     setEditQuantity: (value: string) => void;
     setEditStatus: (value: TaskStatus) => void;
@@ -57,6 +60,7 @@ export function TaskEditForm({
     editNotes,
     editPlanningTime,
     editPrice,
+    editPricingMode,
     editPriority,
     editQuantity,
     editStatus,
@@ -77,6 +81,7 @@ export function TaskEditForm({
     setEditNotes,
     setEditPlanningTime,
     setEditPrice,
+    setEditPricingMode,
     setEditPriority,
     setEditQuantity,
     setEditStatus,
@@ -107,6 +112,7 @@ export function TaskEditForm({
                     editNotes={editNotes}
                     editPlanningTime={editPlanningTime}
                     editPrice={editPrice}
+                    editPricingMode={editPricingMode}
                     editPriority={editPriority}
                     editQuantity={editQuantity}
                     editStatus={editStatus}
@@ -122,6 +128,7 @@ export function TaskEditForm({
                     setEditNotes={setEditNotes}
                     setEditPlanningTime={setEditPlanningTime}
                     setEditPrice={setEditPrice}
+                    setEditPricingMode={setEditPricingMode}
                     setEditPriority={setEditPriority}
                     setEditQuantity={setEditQuantity}
                     setEditStatus={setEditStatus}

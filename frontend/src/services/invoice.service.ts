@@ -64,6 +64,14 @@ export type InvoiceableTask = TaskItem & {
     billing_source: "own" | "external";
     collaborator_company_id?: number | null;
     collaborator_company_name?: string | null;
+    worked_seconds?: number;
+    worked_hours?: number;
+    workers?: Array<{
+        user_id: number;
+        user_name: string;
+        worked_seconds: number;
+        worked_hours: number;
+    }>;
 };
 
 export interface RectificationCreate {

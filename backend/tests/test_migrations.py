@@ -49,6 +49,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"] for column in inspector.get_columns("user_invitations")
         }
         task_columns = {column["name"] for column in inspector.get_columns("task_items")}
+        template_task_columns = {
+            column["name"] for column in inspector.get_columns("template_tasks")
+        }
         notification_columns = {
             column["name"] for column in inspector.get_columns("notifications")
         }
@@ -98,6 +101,19 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert "paid_at" in invoice_columns
     assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns
     assert "reported_issues" in task_columns
+    # The task read endpoint serializes these fields for every list view. Keep
+    # this contract coupled to Alembic so an unapplied pricing migration cannot
+    # surface as a production 500 while loading dashboards or calendars.
+    assert {
+        "pricing_mode",
+        "worked_seconds_snapshot",
+        "pricing_locked_at",
+        "billing_pricing_mode_snapshot",
+        "billing_price_snapshot",
+        "billing_quantity_snapshot",
+        "billing_unit_snapshot",
+    } <= task_columns
+    assert "pricing_mode" in template_task_columns
     assert {"user_id", "company_id", "event_type", "read_at", "href"} <= notification_columns
     assert {"task_id", "user_id", "status", "source"} <= assignment_columns
     assert {"task_id", "position", "text", "completed"} <= checklist_columns

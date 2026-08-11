@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "@/lib/toast";
-import { TemplateTaskService } from "@/services/template.service";
+import { TemplateTaskService, type TemplateTaskInput } from "@/services/template.service";
 import type { TemplateTask } from "@/types/template";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
@@ -18,6 +18,7 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
     const [tmplDescription, setTmplDescription] = useState<string>("");
     const [tmplPrice, setTmplPrice] = useState<string>("");
     const [tmplUnit, setTmplUnit] = useState<string>("unidad");
+    const [tmplPricingMode, setTmplPricingMode] = useState<"fixed" | "hourly">("fixed");
     const [isDeletingTemplate, setIsDeletingTemplate] = useState<boolean>(false);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateTask | null>(null);
 
@@ -26,11 +27,12 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
         if (!tmplName.trim()) return;
 
         try {
-            const payload = {
+            const payload: TemplateTaskInput = {
                 name: tmplName,
                 description: tmplDescription || null,
                 default_price: (tmplPrice !== "" && tmplPrice !== null && tmplPrice !== undefined) ? parseFloat(tmplPrice) : null,
-                unit: tmplUnit
+                unit: tmplPricingMode === "hourly" ? "hour" : tmplUnit,
+                pricing_mode: tmplPricingMode,
             };
 
             if (selectedTemplate) {
@@ -58,11 +60,13 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
             setTmplDescription(template.description || "");
             setTmplPrice(template.default_price !== null && template.default_price !== undefined ? template.default_price.toString() : "");
             setTmplUnit(template.unit || "unidad");
+            setTmplPricingMode(template.pricing_mode === "hourly" ? "hourly" : "fixed");
         } else {
             setTmplName("");
             setTmplDescription("");
             setTmplPrice("");
             setTmplUnit("unidad");
+            setTmplPricingMode("fixed");
         }
         setIsTemplateModalOpen(true);
     };
@@ -85,11 +89,12 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
 
     const handleDuplicateTemplate = async (template: TemplateTask) => {
         try {
-            const payload = {
+            const payload: TemplateTaskInput = {
                 name: `${template.name} (Copia)`,
                 description: template.description || null,
                 default_price: template.default_price !== null && template.default_price !== undefined ? template.default_price : null,
-                unit: template.unit
+                unit: template.unit,
+                pricing_mode: template.pricing_mode === "hourly" ? "hourly" : "fixed",
             };
 
             await TemplateTaskService.createTemplate(payload);
@@ -114,6 +119,8 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
         setTmplPrice,
         tmplUnit,
         setTmplUnit,
+        tmplPricingMode,
+        setTmplPricingMode,
         isDeletingTemplate,
         selectedTemplate,
         setSelectedTemplate,

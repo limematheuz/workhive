@@ -7,6 +7,7 @@ import type { EditingInvoiceItem } from "@/hooks/useInvoiceDetail";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
 import type { Invoice } from "@/types/invoice";
+import { InvoiceConceptDescriptionView } from "./InvoiceConceptDescription";
 
 type InvoiceDetailItemsSectionProps = {
     dict: Dictionary;
@@ -76,6 +77,7 @@ export function InvoiceDetailItemsSection({
                                     type="number"
                                     min="0"
                                     step="0.01"
+                                    data-price-input
                                     aria-label={dict.invoices.price}
                                     value={item.unit_price}
                                     onChange={(e) => onEditItemChange(index, "unit_price", parseFloat(e.target.value) || 0)}
@@ -171,8 +173,10 @@ export function InvoiceDetailItemsSection({
                                             idx % 2 === 0 ? "bg-[var(--bg-secondary)]/65" : "bg-[var(--bg-tertiary)]/85 print:bg-neutral-50"
                                         }`}
                                     >
-                                        <td className="px-3 py-3 font-semibold leading-5 text-[var(--text-main)] print:text-black">
-                                            <span className="block border-l-2 border-[var(--accent-color)] pl-2.5">{item.description}</span>
+                                        <td className="px-3 py-3 leading-5 text-[var(--text-main)] print:text-black">
+                                            <div className="border-l-2 border-[var(--accent-color)] pl-2.5">
+                                                <InvoiceConceptDescriptionView description={item.description} />
+                                            </div>
                                         </td>
                                         <td className="px-2 py-2.5 text-center font-mono font-semibold text-[var(--text-muted)] print:text-black">
                                             {item.quantity}

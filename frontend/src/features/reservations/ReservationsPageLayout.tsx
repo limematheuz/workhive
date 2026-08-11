@@ -21,6 +21,7 @@ import type { Location } from "@/types/location";
 import type { Reservation } from "@/types/reservation";
 import type { User } from "@/types/user";
 import type { useTaskCrud } from "@/hooks/useTaskCrud";
+import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import type { FormEvent } from "react";
 
 type TaskCrudState = ReturnType<typeof useTaskCrud>;
@@ -54,7 +55,7 @@ type ReservationsPageLayoutProps = {
     taskCrud: TaskCrudState;
     getLocationName: (locationId: number) => string;
     getAssigneeName: (userId: number | null) => string;
-    onAcceptTask: (taskId: number, scheduledStartAt?: string) => Promise<void>;
+    onAcceptTask: (taskId: number, input: TaskAcceptanceInput) => Promise<void>;
     onRejectTask: (taskId: number) => Promise<void>;
     onOpenTaskDetail: (task: TaskItem) => void;
     formOpen: boolean;

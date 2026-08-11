@@ -31,3 +31,13 @@ test("locations page uses billing surfaces and a compact filter chip", () => {
 
     assert.match(grid, /billing-block/);
 });
+
+test("location services can be unlinked with an explicit confirmation without deleting the catalog template", () => {
+    const tab = source("../components/locations/LocationTemplatesTab.tsx");
+
+    assert.match(tab, /DeleteConfirmDialog/);
+    assert.match(tab, /unlink_confirm_description/);
+    assert.match(tab, /handleUnlinkTemplate: \(templateTaskId: number\) => Promise<boolean>/);
+    assert.match(tab, /if \(wasUnlinked\) setTemplateToUnlink\(null\)/);
+    assert.match(tab, /unlink_tooltip/);
+});

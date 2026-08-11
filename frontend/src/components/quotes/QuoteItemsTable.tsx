@@ -101,6 +101,7 @@ export function QuoteItemsTable({
                                             id={`quote-concept-${row.id}-price`}
                                             type="number"
                                             step="0.01"
+                                            data-price-input
                                             value={row.unitPrice || ""}
                                             onChange={(e) => handleUpdateRow(row.id, "unitPrice", parseFloat(e.target.value) || 0)}
                                             className="w-full bg-transparent border-none outline-none text-right focus:ring-0 text-xs font-mono text-[var(--text-main)]"

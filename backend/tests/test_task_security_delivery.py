@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,7 @@ from app.models.task_item import TaskItem
 from app.models.task_structure import TaskAssignment
 from app.models.user import User
 from app.repositories import task_item as task_item_repo
-from app.services import task_assignment_service
+from app.services import task_assignment_service, task_item_service
 
 CONTRACT_PATH = Path(__file__).resolve().parents[2] / "test_contracts" / "task_visibility.json"
 
@@ -216,12 +217,14 @@ def test_viewer_can_progress_only_own_checklist_until_all_assignees_finish(clien
         headers=_headers(admin),
         json={
             "title": "Limpieza con reparto",
-            "description": description,
-            "unit": "servicio",
-            "location_id": location.id,
-            "status": "accepted",
-        },
-    )
+                "description": description,
+                "unit": "servicio",
+                "location_id": location.id,
+                "status": "accepted",
+                "price": 100,
+                "quantity": 1,
+            },
+        )
     assert created.status_code == 201, created.text
     task_id = created.json()["id"]
     assert created.json()["status"] == "pending"
@@ -344,6 +347,27 @@ def test_external_company_can_create_tasks_only_when_location_grants_task_permis
     assert created.status_code == 201, created.text
     assert created.json()["price"] is None
     task_id = created.json()["id"]
+    task = db.get(TaskItem, task_id)
+    assert task is not None
+    task.pricing_locked_at = datetime.now(timezone.utc)
+    task.billing_pricing_mode_snapshot = "hourly"
+    task.billing_price_snapshot = 250
+    task.billing_quantity_snapshot = 4
+    task.billing_unit_snapshot = "hour"
+    db.commit()
+
+    protected_response = task_item_service.build_task_response(
+        db,
+        task,
+        provider_viewer,
+    )
+    assert protected_response.price is None
+    assert protected_response.quantity is None
+    assert protected_response.billing_pricing_mode_snapshot is None
+    assert protected_response.billing_price_snapshot is None
+    assert protected_response.billing_quantity_snapshot is None
+    assert protected_response.billing_unit_snapshot is None
+
     assert task_id in _task_ids(
         client.get("/api/v1/task-items/", headers=_headers(provider_viewer))
     )

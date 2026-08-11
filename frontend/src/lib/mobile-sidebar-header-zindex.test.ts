@@ -8,6 +8,8 @@ test("mobile sidebar overlay covers the full viewport including header actions",
     const layout = read("../app/dashboard/layout.tsx");
     const header = read("../components/dashboard/DashboardHeader.tsx");
     const notifications = read("../components/dashboard/notifications/NotificationPanel.tsx");
+    const notificationPopover = read("../components/dashboard/notifications/NotificationPopoverContent.tsx");
+    const notificationUi = `${notifications}\n${notificationPopover}`;
     const sidebar = read("../components/dashboard/Sidebar.tsx");
     const globals = read("../app/globals.css");
 
@@ -30,10 +32,10 @@ test("mobile sidebar overlay covers the full viewport including header actions",
     assert.match(header, /header-popover-layer/);
     assert.match(header, /\bfixed\b/);
     assert.doesNotMatch(header, /z-\[10050\]/);
-    assert.match(notifications, /header-popover-layer/);
-    assert.match(notifications, /\bfixed\b/);
-    assert.doesNotMatch(notifications, /sm:absolute/);
-    assert.doesNotMatch(notifications, /z-\[10050\]/);
+    assert.match(notificationUi, /header-popover-layer/);
+    assert.match(notificationUi, /\bfixed\b/);
+    assert.doesNotMatch(notificationUi, /sm:absolute/);
+    assert.doesNotMatch(notificationUi, /z-\[10050\]/);
     assert.match(sidebar, /z-\[var\(--z-sidebar\)\]/);
     assert.match(sidebar, /max-lg:z-\[var\(--z-sidebar-mobile-open\)\]/);
 });

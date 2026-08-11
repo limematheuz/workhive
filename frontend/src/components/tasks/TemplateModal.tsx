@@ -40,6 +40,8 @@ interface TemplateModalProps {
     setTmplPrice: (val: string) => void;
     tmplUnit: string;
     setTmplUnit: (val: string) => void;
+    tmplPricingMode: "fixed" | "hourly";
+    setTmplPricingMode: (val: "fixed" | "hourly") => void;
     handleSaveTemplate: (e: React.FormEvent) => void;
 }
 
@@ -57,6 +59,8 @@ export function TemplateModal({
     setTmplPrice,
     tmplUnit,
     setTmplUnit,
+    tmplPricingMode,
+    setTmplPricingMode,
     handleSaveTemplate,
 }: TemplateModalProps) {
     return (
@@ -98,13 +102,30 @@ export function TemplateModal({
                             addLabel="Añadir paso"
                         />
 
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div className="space-y-1">
+                                <label htmlFor="template-pricing-mode" className="text-xs font-bold uppercase text-[var(--text-muted)]">Modo de cobro</label>
+                                <select
+                                    id="template-pricing-mode"
+                                    value={tmplPricingMode}
+                                    onChange={(event) => {
+                                        const mode = event.target.value as "fixed" | "hourly";
+                                        setTmplPricingMode(mode);
+                                        if (mode === "hourly") setTmplUnit("hour");
+                                    }}
+                                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent"
+                                >
+                                    <option value="fixed">Precio fijo</option>
+                                    <option value="hourly">Por horas</option>
+                                </select>
+                            </div>
                             <div className="space-y-1">
                                 <label htmlFor="template-price" className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.tasks.template_dialog.price_label}</label>
                                 <input
                                     id="template-price"
                                     type="number"
                                     step="0.01"
+                                    data-price-input
                                     value={tmplPrice}
                                     onChange={(e) => setTmplPrice(e.target.value)}
                                     placeholder="0.00"
@@ -117,6 +138,7 @@ export function TemplateModal({
                                     id="template-unit"
                                     value={tmplUnit}
                                     onChange={(e) => setTmplUnit(e.target.value)}
+                                    disabled={tmplPricingMode === "hourly"}
                                     aria-label={dict.tasks.template_dialog.unit_label}
                                     className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent"
                                 >

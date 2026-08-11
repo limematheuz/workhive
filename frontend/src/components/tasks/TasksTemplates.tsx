@@ -37,6 +37,12 @@ function parseStepLines(desc: string | null | undefined): string[] {
     return cleanLines;
 }
 
+function formatSuggestedPrice(template: TemplateTask): string {
+    return template.default_price !== null
+        ? `${template.default_price} € / ${template.unit}`
+        : "--";
+}
+
 export function TasksTemplates({
     templates,
     handleOpenTemplateModal,
@@ -85,9 +91,6 @@ export function TasksTemplates({
             </div>
         );
     };
-
-    const formatSuggestedPrice = (tmpl: TemplateTask) =>
-        tmpl.default_price !== null ? `${tmpl.default_price} € / ${tmpl.unit}` : "--";
 
     const getTemplateActions = (tmpl: TemplateTask): PopoverOption[] => [
         {

@@ -47,6 +47,7 @@ import { useUser } from "@/lib/user-context";
 import { LocationService } from "@/services/location.service";
 import { ReservationService } from "@/services/reservation.service";
 import { TaskService, TaskItem } from "@/services/task.service";
+import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import type { Company } from "@/types/company";
 import type { Location } from "@/types/location";
 import type { Reservation } from "@/types/reservation";
@@ -179,9 +180,9 @@ function ReservationsPageContent() {
         }
     };
 
-    const handleAcceptTask = async (taskId: number, scheduledStartAt?: string) => {
+    const handleAcceptTask = async (taskId: number, input: TaskAcceptanceInput) => {
         try {
-            await TaskService.acceptTaskItem(taskId, scheduledStartAt);
+            await TaskService.acceptTaskItem(taskId, input);
             toast.success("Solicitud aceptada con éxito");
             await loadRequestedTasks();
         } catch (error) {

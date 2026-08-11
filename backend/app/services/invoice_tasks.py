@@ -7,8 +7,14 @@ from app.models.location import Location
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.repositories import client as client_repo
-from app.schemas.task_item import InvoiceableTaskResponse, TaskItemResponse
+from app.repositories import work_session as work_session_repo
+from app.schemas.task_item import (
+    InvoiceableTaskResponse,
+    InvoiceableWorkerHours,
+    TaskItemResponse,
+)
 from app.services.company_client_service import find_company_client
+from app.services import task_billing_service
 
 
 def resolve_invoice_client_for_task(
@@ -86,6 +92,7 @@ def validate_task_for_invoice(
             status_code=status.HTTP_409_CONFLICT,
             detail="Only completed task items can be invoiced",
         )
+    task_billing_service.require_task_pricing_for_invoice(task)
 
     linked_to_current_invoice = linked_invoice_id is not None and any(
         item.invoice_id == linked_invoice_id for item in task.invoice_items
@@ -151,7 +158,18 @@ def get_invoiceable_completed_tasks(
     )
 
     responses: list[InvoiceableTaskResponse] = []
+    sessions_by_task: dict[int, list] = {task.id: [] for task in tasks}
+    if sessions_by_task:
+        for session in work_session_repo.get_sessions_by_tasks(
+            db,
+            list(sessions_by_task.keys()),
+        ):
+            if session.task_item_id in sessions_by_task:
+                sessions_by_task[session.task_item_id].append(session)
+
     for task in tasks:
+        if not task_billing_service.task_has_agreed_pricing(task):
+            continue
         client, billing_source, collaborator = resolve_invoice_client_for_task(
             db,
             company_id,
@@ -159,10 +177,27 @@ def get_invoiceable_completed_tasks(
         )
         if client is None:
             continue
+        worked_seconds, worker_rows = task_billing_service.resolve_invoiceable_work(
+            task,
+            sessions_by_task.get(task.id, []),
+        )
         base = TaskItemResponse.model_validate(task)
+        base_data = base.model_dump(
+            exclude={"pricing_mode", "price", "quantity", "unit"},
+        )
+        pricing_mode, agreed_price, agreed_quantity, agreed_unit = (
+            task_billing_service.resolve_invoice_pricing_terms(task)
+        )
+        worked_hours = float(
+            task_billing_service.billable_hours_from_seconds(worked_seconds)
+        )
         responses.append(
             InvoiceableTaskResponse(
-                **base.model_dump(),
+                **base_data,
+                pricing_mode=pricing_mode,
+                price=float(agreed_price),
+                quantity=float(agreed_quantity),
+                unit=agreed_unit,
                 client_id=client.id,
                 client_name=client.name,
                 location_name=(
@@ -177,6 +212,24 @@ def get_invoiceable_completed_tasks(
                 collaborator_company_name=(
                     collaborator.name if collaborator else None
                 ),
+                worked_seconds=worked_seconds,
+                worked_hours=worked_hours,
+                workers=[
+                    InvoiceableWorkerHours(**row) for row in worker_rows
+                ],
             )
         )
     return responses
+
+
+def apply_task_amounts_to_invoice_item(task: TaskItem, item_data):
+    """Override client quantity/rate with backend-authoritative task billing."""
+    quantity, unit_price = task_billing_service.resolve_task_invoice_quantity_and_rate(
+        task
+    )
+    return item_data.model_copy(
+        update={
+            "quantity": float(quantity),
+            "unit_price": float(unit_price),
+        }
+    )

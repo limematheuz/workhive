@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TaskItem, TaskService } from "@/services/task.service";
 import { Location, LocationService } from "@/services/location.service";
@@ -69,7 +69,7 @@ export function useNotifications({
     const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<string[]>([]);
     const [openingNotificationKey, setOpeningNotificationKey] = useState<string | null>(null);
     const [persistentNotifications, setPersistentNotifications] = useState<PersistentNotification[]>([]);
-    const pendingTaskAcknowledgementsRef = useRef(new Set<number>());
+    const [pendingTaskAcknowledgements] = useState(() => new Set<number>());
 
     const loadNotifications = useCallback(async () => {
         if (!enabled || !userId) return;
@@ -127,10 +127,10 @@ export function useNotifications({
         setPersistentNotifications(persistent.filter((notification) => !(
             notification.entity_type === "task_item"
             && typeof notification.entity_id === "number"
-            && pendingTaskAcknowledgementsRef.current.has(notification.entity_id)
+            && pendingTaskAcknowledgements.has(notification.entity_id)
         )));
         setNotificationReferenceTime(Date.now());
-    }, [enabled, userId, roleName]);
+    }, [enabled, pendingTaskAcknowledgements, roleName, userId]);
 
     useEffect(() => {
         if (!enabled || !userId) return;
@@ -155,13 +155,13 @@ export function useNotifications({
             if (detail?.userId && detail.userId !== userId) return;
             syncDismissedNotifications();
             if (typeof detail?.taskItemId === "number") {
-                pendingTaskAcknowledgementsRef.current.add(detail.taskItemId);
+                pendingTaskAcknowledgements.add(detail.taskItemId);
                 setPersistentNotifications((items) => items.filter((notification) => (
                     notification.entity_type !== "task_item"
                     || notification.entity_id !== detail.taskItemId
                 )));
                 if (detail.serverConfirmed) {
-                    pendingTaskAcknowledgementsRef.current.delete(detail.taskItemId);
+                    pendingTaskAcknowledgements.delete(detail.taskItemId);
                     void loadNotifications();
                 }
                 return;
@@ -176,7 +176,7 @@ export function useNotifications({
             window.removeEventListener("storage", syncDismissedNotifications);
             window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refreshNotifications);
         };
-    }, [loadNotifications, userId]);
+    }, [loadNotifications, pendingTaskAcknowledgements, userId]);
 
     const dismissedNotificationKeySet = useMemo(
         () => new Set(dismissedNotificationKeys),
@@ -336,7 +336,7 @@ export function useNotifications({
         );
         const notificationIds = new Set(notifications.map((notification) => notification.id));
 
-        taskItemIds.forEach((taskItemId) => pendingTaskAcknowledgementsRef.current.add(taskItemId));
+        taskItemIds.forEach((taskItemId) => pendingTaskAcknowledgements.add(taskItemId));
         setPersistentNotifications((items) => items.filter((notification) => (
             !notificationIds.has(notification.id)
             && !(notification.entity_type === "task_item"
@@ -344,18 +344,22 @@ export function useNotifications({
                 && taskItemIds.has(notification.entity_id))
         )));
 
-        void Promise.all([
-            ...Array.from(taskItemIds, (taskItemId) => NotificationService.markTaskItemRead(taskItemId)),
-            ...notifications
-                .filter((notification) => notification.entity_type !== "task_item")
-                .map((notification) => NotificationService.markRead(notification.id)),
-        ]).catch(() => {
+        const readOperations = Array.from(taskItemIds, (taskItemId) =>
+            NotificationService.markTaskItemRead(taskItemId),
+        );
+        for (const notification of notifications) {
+            if (notification.entity_type !== "task_item") {
+                readOperations.push(NotificationService.markRead(notification.id));
+            }
+        }
+
+        void Promise.all(readOperations).catch(() => {
             // Refresh below restores the authoritative server state on failure.
         }).finally(() => {
-            taskItemIds.forEach((taskItemId) => pendingTaskAcknowledgementsRef.current.delete(taskItemId));
+            taskItemIds.forEach((taskItemId) => pendingTaskAcknowledgements.delete(taskItemId));
             void loadNotifications();
         });
-    }, [loadNotifications]);
+    }, [loadNotifications, pendingTaskAcknowledgements]);
 
     const handleClearActiveTab = useCallback((activeNotificationTab: NotificationTab) => {
         const relatedArrivalKeys = primaryTaskNotifications.flatMap((task) =>
@@ -404,7 +408,7 @@ export function useNotifications({
         setOpeningNotificationKey(key);
         if (notification.entity_type === "task_item" && typeof notification.entity_id === "number") {
             const taskItemId = notification.entity_id;
-            pendingTaskAcknowledgementsRef.current.add(taskItemId);
+            pendingTaskAcknowledgements.add(taskItemId);
             setPersistentNotifications((items) => items.filter((item) => (
                 item.entity_type !== "task_item" || item.entity_id !== taskItemId
             )));
@@ -417,7 +421,7 @@ export function useNotifications({
                     }
                 },
                 () => {
-                    pendingTaskAcknowledgementsRef.current.delete(taskItemId);
+                    pendingTaskAcknowledgements.delete(taskItemId);
                     void loadNotifications();
                 },
             );
@@ -430,7 +434,7 @@ export function useNotifications({
         setIsNotificationsOpen(false);
         router.push(getPersistentNotificationHref(notification));
         setOpeningNotificationKey(null);
-    }, [loadNotifications, router, setIsNotificationsOpen, userId]);
+    }, [loadNotifications, pendingTaskAcknowledgements, router, setIsNotificationsOpen, userId]);
 
     const getNotificationHref = useCallback((task: TaskItem) => {
         if (task.status === "requested") {

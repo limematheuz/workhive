@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.task_item import TaskItem
 from app.models.user import User
-from app.models.work_session import WorkSession
 from app.repositories import task_item as task_item_repo
 from app.repositories import work_session as work_session_repo
 from app.schemas.location_history import (

@@ -1148,6 +1148,21 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
   box-shadow: none !important;
 }
 
+/* Numeric values are typed directly. Native increment controls add visual noise and
+   make forms look like developer tools instead of business forms. Keep validation
+   and the numeric keyboard, but remove the browser's spinner affordance everywhere. */
+input[type="number"] {
+  -webkit-appearance: none;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
 [data-slot="dialog-content"] textarea.invoice-email-message-field {
   height: 12rem !important;
   min-height: 12rem !important;
