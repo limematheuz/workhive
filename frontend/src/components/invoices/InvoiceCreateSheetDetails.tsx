@@ -42,11 +42,6 @@ interface InvoiceCreateSheetDetailsProps {
         field: Field,
         value: ConceptRow[Field]
     ) => void;
-    handleConceptBillingMode: (
-        id: string,
-        mode: "fixed" | "hourly",
-        hourlyRate?: number,
-    ) => void | Promise<void>;
     handleDeleteRow: (id: string) => void;
     notesEnabled: boolean;
     setNotesEnabled: (value: boolean) => void;
@@ -87,7 +82,6 @@ export function InvoiceCreateSheetDetails({
     handleDuplicateRow,
     handleAddExternalLaundryRow,
     handleUpdateRow,
-    handleConceptBillingMode,
     handleDeleteRow,
     notesEnabled,
     setNotesEnabled,
@@ -205,7 +199,6 @@ export function InvoiceCreateSheetDetails({
                 handleDuplicateRow={handleDuplicateRow}
                 handleAddExternalLaundryRow={handleAddExternalLaundryRow}
                 handleUpdateRow={handleUpdateRow}
-                handleConceptBillingMode={handleConceptBillingMode}
                 handleDeleteRow={handleDeleteRow}
             />
 

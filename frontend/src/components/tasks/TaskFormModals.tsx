@@ -12,6 +12,8 @@ import { TemplateModal } from "./TemplateModal";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { TaskPricingMode } from "@/domain/tasks/task-edit";
+import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
+import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
 
 interface TaskFormModalsProps {
     dict: Dictionary;
@@ -28,10 +30,10 @@ interface TaskFormModalsProps {
     setCreateOpen: (open: boolean) => void;
     houseTemplates: HouseTemplate[];
     loadingHouseTemplates: boolean;
-    selectedHouseTemplateIds: number[];
+    selectedHouseTemplateId: number | null;
     useHouseChecklist: boolean;
     setUseHouseChecklist: (use: boolean) => void;
-    toggleHouseTemplateSelection: (id: number) => void;
+    selectHouseTemplate: (id: number) => void;
     availableTemplates: TemplateTask[];
     handleLinkHouseTemplate: (templateTaskId: number, customPrice: number | null) => Promise<void>;
     newLocationId: string;
@@ -49,6 +51,8 @@ interface TaskFormModalsProps {
     handleCreateTask: (e: React.FormEvent) => void;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    taskPricingOverrides: Record<number, TaskCreationPricingOverride>;
+    setTaskPricingOverrides: React.Dispatch<React.SetStateAction<Record<number, TaskCreationPricingOverride>>>;
 
     // Edit Task Modal
     selectedTask: TaskItem | null;
@@ -82,7 +86,7 @@ interface TaskFormModalsProps {
     handleDeleteTask: (task: TaskItem) => void;
     handleDuplicateTask: (task: TaskItem) => Promise<void>;
     getAssigneeName: (userId: number | null) => string;
-    onAccept?: (taskId: number, scheduledStartAt?: string) => Promise<void> | void;
+    onAccept?: (taskId: number, input: TaskAcceptanceInput) => Promise<void> | void;
     onReject?: (taskId: number) => Promise<void> | void;
  
      // Templates Modal
@@ -97,6 +101,8 @@ interface TaskFormModalsProps {
      setTmplPrice: (val: string) => void;
      tmplUnit: string;
      setTmplUnit: (val: string) => void;
+     tmplPricingMode: "fixed" | "hourly";
+     setTmplPricingMode: (val: "fixed" | "hourly") => void;
      handleSaveTemplate: (e: React.FormEvent) => void;
  }
  
@@ -114,10 +120,10 @@ interface TaskFormModalsProps {
      setCreateOpen,
      houseTemplates,
      loadingHouseTemplates,
-     selectedHouseTemplateIds,
+     selectedHouseTemplateId,
      useHouseChecklist,
      setUseHouseChecklist,
-     toggleHouseTemplateSelection,
+     selectHouseTemplate,
      availableTemplates,
      handleLinkHouseTemplate,
      newLocationId,
@@ -133,8 +139,10 @@ interface TaskFormModalsProps {
      newNextReservationId,
      setNewNextReservationId,
      handleCreateTask,
-     fixedChecklistAssignments,
-     setFixedChecklistAssignments,
+    fixedChecklistAssignments,
+    setFixedChecklistAssignments,
+    taskPricingOverrides,
+    setTaskPricingOverrides,
  
      selectedTask,
      setSelectedTask,
@@ -181,6 +189,8 @@ interface TaskFormModalsProps {
      setTmplPrice,
      tmplUnit,
      setTmplUnit,
+     tmplPricingMode,
+     setTmplPricingMode,
      handleSaveTemplate,
  }: TaskFormModalsProps) {
      return (
@@ -197,10 +207,10 @@ interface TaskFormModalsProps {
                  setCreateOpen={setCreateOpen}
                  houseTemplates={houseTemplates}
                  loadingHouseTemplates={loadingHouseTemplates}
-                 selectedHouseTemplateIds={selectedHouseTemplateIds}
+                 selectedHouseTemplateId={selectedHouseTemplateId}
                  useHouseChecklist={useHouseChecklist}
                  setUseHouseChecklist={setUseHouseChecklist}
-                 toggleHouseTemplateSelection={toggleHouseTemplateSelection}
+                 selectHouseTemplate={selectHouseTemplate}
                  availableTemplates={availableTemplates}
                  handleLinkHouseTemplate={handleLinkHouseTemplate}
                  newLocationId={newLocationId}
@@ -218,6 +228,8 @@ interface TaskFormModalsProps {
                  handleCreateTask={handleCreateTask}
                  fixedChecklistAssignments={fixedChecklistAssignments}
                  setFixedChecklistAssignments={setFixedChecklistAssignments}
+                 taskPricingOverrides={taskPricingOverrides}
+                 setTaskPricingOverrides={setTaskPricingOverrides}
              />
  
              <TaskEditModal
@@ -277,6 +289,8 @@ interface TaskFormModalsProps {
                 setTmplPrice={setTmplPrice}
                 tmplUnit={tmplUnit}
                 setTmplUnit={setTmplUnit}
+                tmplPricingMode={tmplPricingMode}
+                setTmplPricingMode={setTmplPricingMode}
                 handleSaveTemplate={handleSaveTemplate}
             />
         </>

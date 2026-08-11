@@ -344,7 +344,9 @@ def test_opening_task_acknowledges_all_of_its_unread_events_for_current_user(cli
 def test_location_operational_history_is_period_scoped_and_tenant_safe(client, db):
     users = _external_task(db)
     task = users["task"]
-    now = datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+    # Wednesday keeps both sessions in the same Monday-based calendar week.
+    # Using the real date made this assertion fail every Monday.
+    now = datetime(2026, 8, 12, 12, 0, tzinfo=timezone.utc)
     task.status = "completed"
     task.date_done = now - timedelta(hours=1)
     db.add(LocationCompanyAccess(

@@ -22,6 +22,7 @@ import {
 } from "@/lib/task-display";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { TaskPricingMode } from "@/domain/tasks/task-edit";
+import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import {
     taskDialogContentClass,
     taskDialogHeaderClass,
@@ -67,7 +68,7 @@ interface TaskEditModalProps {
     setEditCreatedAt: (val: string) => void;
     editPlanningTime: string;
     setEditPlanningTime: (val: string) => void;
-    onAccept?: (taskId: number, scheduledStartAt?: string) => Promise<void> | void;
+    onAccept?: (taskId: number, input: TaskAcceptanceInput) => Promise<void> | void;
     onReject?: (taskId: number) => Promise<void> | void;
 }
 
@@ -163,6 +164,8 @@ export function TaskEditModal({
                 {selectedTask && (
                     selectedTask.status === "requested" ? (
                         <TaskRequestReview
+                            key={selectedTask.id}
+                            dict={dict}
                             task={selectedTask}
                             location={selectedLocation}
                             isAdminOrManager={adminOrManager}

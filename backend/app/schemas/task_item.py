@@ -101,6 +101,10 @@ class TaskItemUpdate(BaseModel):
 
 class TaskAcceptRequest(BaseModel):
     scheduled_start_at: datetime | None = None
+    pricing_mode: Literal["fixed", "hourly"] | None = None
+    price: float | None = None
+    quantity: float | None = None
+    unit: str | None = None
 
 
 class TaskWorkStartRequest(BaseModel):
@@ -149,6 +153,11 @@ class TaskItemResponse(TaskItemBase):
     date_done: datetime | None = None
     is_invoiced: bool
     worked_seconds_snapshot: int | None = None
+    pricing_locked_at: datetime | None = None
+    billing_pricing_mode_snapshot: Literal["fixed", "hourly"] | None = None
+    billing_price_snapshot: float | None = None
+    billing_quantity_snapshot: float | None = None
+    billing_unit_snapshot: str | None = None
     created_at: datetime
     updated_at: datetime
     checkout_reservation: ReservationOperationalResponse | None = None

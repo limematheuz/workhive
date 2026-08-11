@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-    applyConceptBillingMode,
     buildInvoiceTaskDescription,
     composeInvoiceConceptDescription,
     parseInvoiceConceptDescription,
@@ -58,7 +57,7 @@ test("hourly mode uses person-hours snapshot for quantity", () => {
     );
 });
 
-test("invoice description keeps a clear hierarchy for the client", () => {
+test("invoice description keeps the client hierarchy without worker identities", () => {
     const description = buildInvoiceTaskDescription({
         title: "Limpieza de cambios",
         locationName: "Casa Anastasia",
@@ -85,11 +84,9 @@ test("invoice description keeps a clear hierarchy for the client", () => {
             "08/08/2026",
             "",
             "Tiempo del equipo: 1h 11m",
-            "Andrea: 1h 2m",
-            "Ownet: 8m",
         ].join("\n"),
     );
-    assert.doesNotMatch(description, /Victoria/);
+    assert.doesNotMatch(description, /Andrea|Ownet|Victoria/);
 });
 
 test("parseInvoiceConceptDescription separates title location date and workers", () => {
@@ -148,24 +145,14 @@ test("composeInvoiceConceptDescription round-trips structured parts", () => {
     );
 });
 
-test("applyConceptBillingMode converts fixed price to hours times rate", () => {
-    const hourly = applyConceptBillingMode(
-        {
-            unitPrice: 180,
-            quantity: 1,
-            pricing_mode: "fixed" as const,
-            worked_seconds: 4260,
-        },
-        "hourly",
-        { hourlyRate: 20 },
+test("invoice billing does not reinterpret a fixed task using recorded time", () => {
+    assert.deepEqual(
+        resolveTaskInvoiceBilling({
+            pricing_mode: "fixed",
+            price: 165,
+            quantity: 2,
+            worked_seconds_snapshot: 9 * 3600,
+        }),
+        { unitPrice: 165, quantity: 2 },
     );
-    assert.equal(hourly.pricing_mode, "hourly");
-    assert.equal(hourly.unitPrice, 20);
-    assert.equal(hourly.quantity, 1.1833);
-    assert.equal(Number((hourly.unitPrice * hourly.quantity).toFixed(2)), 23.67);
-
-    const fixed = applyConceptBillingMode(hourly, "fixed");
-    assert.equal(fixed.pricing_mode, "fixed");
-    assert.equal(fixed.quantity, 1);
-    assert.equal(fixed.unitPrice, 23.67);
 });

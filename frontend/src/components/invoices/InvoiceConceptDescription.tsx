@@ -36,6 +36,28 @@ function emptyParts(title = ""): InvoiceConceptDescriptionParts {
     };
 }
 
+function workersTextFromParts(parts: InvoiceConceptDescriptionParts): string {
+    return parts.workers
+        .map((worker) => `${worker.name}: ${worker.time}`)
+        .join("\n");
+}
+
+function parseWorkersText(value: string): InvoiceConceptDescriptionParts["workers"] {
+    return value.split("\n").reduce<InvoiceConceptDescriptionParts["workers"]>(
+        (workers, rawLine) => {
+            const line = rawLine.trim();
+            if (!line) return workers;
+            const [name, ...rest] = line.split(":");
+            workers.push({
+                name: (name || "").trim(),
+                time: rest.join(":").trim() || "0m",
+            });
+            return workers;
+        },
+        [],
+    );
+}
+
 export function InvoiceConceptDescriptionField({
     id,
     value,
@@ -51,34 +73,26 @@ export function InvoiceConceptDescriptionField({
     const [draft, setDraft] = useState<InvoiceConceptDescriptionParts>(
         parsed.title ? parsed : emptyParts(value),
     );
-    const [workersText, setWorkersText] = useState(
-        (parsed.title ? parsed.workers : [])
-            .map((worker) => `${worker.name}: ${worker.time}`)
-            .join("\n"),
-    );
+    const [workersText, setWorkersText] = useState(() => (
+        workersTextFromParts(parsed.title ? parsed : emptyParts(value))
+    ));
 
     useEffect(() => {
         if (editing) return;
-        setDraft(parsed.title ? parsed : emptyParts(value));
-        setWorkersText(
-            (parsed.title ? parsed.workers : [])
-                .map((worker) => `${worker.name}: ${worker.time}`)
-                .join("\n"),
-        );
+        let active = true;
+        queueMicrotask(() => {
+            if (!active) return;
+            const next = parsed.title ? parsed : emptyParts(value);
+            setDraft(next);
+            setWorkersText(workersTextFromParts(next));
+        });
+        return () => {
+            active = false;
+        };
     }, [editing, parsed, value]);
 
     const publish = (next: InvoiceConceptDescriptionParts, nextWorkersText = workersText) => {
-        const workers = nextWorkersText
-            .split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .map((line) => {
-                const [name, ...rest] = line.split(":");
-                return {
-                    name: (name || "").trim(),
-                    time: rest.join(":").trim() || "0m",
-                };
-            });
+        const workers = parseWorkersText(nextWorkersText);
         const composed = composeInvoiceConceptDescription({ ...next, workers });
         setDraft({ ...next, workers });
         onChange(composed);
@@ -215,8 +229,16 @@ export function InvoiceConceptDescriptionField({
                             Equipo {parsed.teamTime}
                         </span>
                     )}
-                    {parsed.workers.filter((worker) => worker.time !== "0m").map((worker) => (
-                        <WorkerChip key={`${worker.name}-${worker.time}`} name={worker.name} time={worker.time} />
+                    {parsed.workers.flatMap((worker) => (
+                        worker.time === "0m"
+                            ? []
+                            : [
+                                <WorkerChip
+                                    key={`${worker.name}-${worker.time}`}
+                                    name={worker.name}
+                                    time={worker.time}
+                                />,
+                            ]
                     ))}
                     {parsed.charge && (
                         <span className="inline-flex items-center rounded-md bg-accent/10 px-1.5 py-0.5 text-[10px] font-semibold text-accent">

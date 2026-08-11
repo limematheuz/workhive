@@ -26,6 +26,7 @@ import {
 } from "@/domain/access/roles";
 import { buildTaskListFilters } from "@/domain/tasks/task-list";
 import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
+import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import { canLinkTaskReservations } from "@/features/reservations/reservation-helpers";
 
 export type {
@@ -220,13 +221,13 @@ export function useTasksPage() {
     const activeTasks = tasks.filter(t => t.status !== "requested" && t.status !== "rejected");
     const requestedTasks = tasks.filter(t => t.status === "requested");
 
-    const handleAcceptTask = async (taskId: number, scheduledStartAt?: string) => {
-        if (scheduledStartAt && isTaskPlanningDateBeforeToday(scheduledStartAt)) {
+    const handleAcceptTask = async (taskId: number, input: TaskAcceptanceInput) => {
+        if (input.scheduledStartAt && isTaskPlanningDateBeforeToday(input.scheduledStartAt)) {
             toast.error("La fecha de planificación no puede ser anterior a hoy");
             return;
         }
         try {
-            await TaskService.acceptTaskItem(taskId, scheduledStartAt);
+            await TaskService.acceptTaskItem(taskId, input);
             toast.success("Solicitud aceptada con éxito");
             await loadTasks();
         } catch (error) {
@@ -283,7 +284,7 @@ export function useTasksPage() {
         setSelectedTask: crud.setSelectedTask,
         houseTemplates: crud.houseTemplates,
         loadingHouseTemplates: crud.loadingHouseTemplates,
-        selectedHouseTemplateIds: crud.selectedHouseTemplateIds,
+        selectedHouseTemplateId: crud.selectedHouseTemplateId,
         useHouseChecklist: crud.useHouseChecklist,
         setUseHouseChecklist: crud.setUseHouseChecklist,
         newLocationId: crud.newLocationId,
@@ -306,6 +307,8 @@ export function useTasksPage() {
         setEditDescription: crud.setEditDescription,
         editPrice: crud.editPrice,
         setEditPrice: crud.setEditPrice,
+        editPricingMode: crud.editPricingMode,
+        setEditPricingMode: crud.setEditPricingMode,
         editQuantity: crud.editQuantity,
         setEditQuantity: crud.setEditQuantity,
         editUnit: crud.editUnit,
@@ -333,12 +336,14 @@ export function useTasksPage() {
         handleSaveTaskDetails: crud.handleSaveTaskDetails,
         handleDeleteTask: crud.handleDeleteTask,
         handleDeleteTaskConfirm: crud.handleDeleteTaskConfirm,
-        toggleHouseTemplateSelection: crud.toggleHouseTemplateSelection,
+        selectHouseTemplate: crud.selectHouseTemplate,
         availableTemplates: crud.availableTemplates,
         handleLinkHouseTemplate: crud.handleLinkHouseTemplate,
         handleDuplicateTask: crud.handleDuplicateTask,
         fixedChecklistAssignments: crud.fixedChecklistAssignments,
         setFixedChecklistAssignments: crud.setFixedChecklistAssignments,
+        taskPricingOverrides: crud.taskPricingOverrides,
+        setTaskPricingOverrides: crud.setTaskPricingOverrides,
 
         // Templates CRUD
         isTemplateModalOpen: templateCrud.isTemplateModalOpen,
@@ -354,6 +359,8 @@ export function useTasksPage() {
         setTmplPrice: templateCrud.setTmplPrice,
         tmplUnit: templateCrud.tmplUnit,
         setTmplUnit: templateCrud.setTmplUnit,
+        tmplPricingMode: templateCrud.tmplPricingMode,
+        setTmplPricingMode: templateCrud.setTmplPricingMode,
         isDeletingTemplate: templateCrud.isDeletingTemplate,
         handleSaveTemplate: templateCrud.handleSaveTemplate,
         handleOpenTemplateModal: templateCrud.handleOpenTemplateModal,

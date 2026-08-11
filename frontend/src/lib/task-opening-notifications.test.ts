@@ -26,5 +26,6 @@ test("persistent task events are acknowledged by task rather than one row at a t
     const notifications = read("../components/dashboard/notifications/useNotifications.ts");
 
     assert.match(notifications, /NotificationService\.markTaskItemRead\(taskItemId\)/);
-    assert.match(notifications, /pendingTaskAcknowledgementsRef/);
+    assert.match(notifications, /pendingTaskAcknowledgements\.add\(taskItemId\)/);
+    assert.match(notifications, /pendingTaskAcknowledgements\.delete\(taskItemId\)/);
 });

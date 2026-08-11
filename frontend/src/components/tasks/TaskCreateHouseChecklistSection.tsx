@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, ChevronDown, ListTodo, Loader2, UsersRound } from "lucide-react";
+import { ListTodo, Loader2 } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
 import type { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
 import type { User } from "@/types/user";
-import { ALL_WORKERS_VALUE, parseChecklist } from "./taskCreateChecklist";
+import { TaskCreateHouseTemplateList } from "./TaskCreateHouseTemplateList";
+import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
 import {
     taskFormSectionClass,
     taskFormSectionHeaderClass,
@@ -22,14 +22,16 @@ type TaskCreateHouseChecklistSectionProps = {
     houseTemplates: HouseTemplate[];
     visibleHouseTemplates: HouseTemplate[];
     loadingHouseTemplates: boolean;
-    selectedHouseTemplateIds: number[];
+    selectedHouseTemplateId: number | null;
     useHouseChecklist: boolean;
     setUseHouseChecklist: (use: boolean) => void;
-    toggleHouseTemplateSelection: (id: number) => void;
+    selectHouseTemplate: (id: number) => void;
     availableTemplates: TemplateTask[];
     handleLinkHouseTemplate: (templateTaskId: number, customPrice: number | null) => Promise<void>;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    taskPricingOverrides: Record<number, TaskCreationPricingOverride>;
+    setTaskPricingOverrides: React.Dispatch<React.SetStateAction<Record<number, TaskCreationPricingOverride>>>;
     defaultAssigneeId: string;
     setDefaultAssigneeId: (value: string) => void;
 };
@@ -41,14 +43,16 @@ export function TaskCreateHouseChecklistSection({
     templates,
     visibleHouseTemplates,
     loadingHouseTemplates,
-    selectedHouseTemplateIds,
+    selectedHouseTemplateId,
     useHouseChecklist,
     setUseHouseChecklist,
-    toggleHouseTemplateSelection,
+    selectHouseTemplate,
     availableTemplates,
     handleLinkHouseTemplate,
     fixedChecklistAssignments,
     setFixedChecklistAssignments,
+    taskPricingOverrides,
+    setTaskPricingOverrides,
     defaultAssigneeId,
     setDefaultAssigneeId,
 }: TaskCreateHouseChecklistSectionProps) {
@@ -56,22 +60,6 @@ export function TaskCreateHouseChecklistSection({
     const [customPriceVal, setCustomPriceVal] = useState("");
     const [isLinking, setIsLinking] = useState(false);
     const [showQuickAddFixed, setShowQuickAddFixed] = useState(false);
-    const [expandedTemplateIds, setExpandedTemplateIds] = useState<Set<number>>(new Set());
-
-    const toggleTemplateExpanded = (templateId: number) => {
-        setExpandedTemplateIds(prev => {
-            const next = new Set(prev);
-            if (next.has(templateId)) {
-                next.delete(templateId);
-            } else {
-                next.add(templateId);
-            }
-            return next;
-        });
-    };
-
-    const selectedHouseTemplateIdSet = new Set(selectedHouseTemplateIds);
-
     return (
         <section className={taskFormSectionClass}>
             <div className={taskFormSectionHeaderClass}>
@@ -123,131 +111,21 @@ export function TaskCreateHouseChecklistSection({
                     <span className="text-2xs text-[var(--text-muted)] font-semibold">{dict.tasks?.create_dialog?.searching_fixed_tasks || "Searching default tasks..."}</span>
                 </div>
             ) : visibleHouseTemplates.length > 0 ? (
-                <div className={`space-y-3 transition-opacity ${useHouseChecklist ? "opacity-100" : "opacity-40"}`}>
-                    <div className="rounded-2xl border border-accent/20 bg-accent/5 p-3 sm:flex sm:items-center sm:justify-between sm:gap-4">
-                        <div className="flex items-start gap-2">
-                            <UsersRound className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                            <div>
-                                <p className="text-xs font-black text-[var(--text-main)]">Asignación rápida</p>
-                                <p className="mt-0.5 text-2xs leading-relaxed text-[var(--text-muted)]">
-                                    Se aplica a todos los pasos. Puedes cambiar una persona concreta al desplegar el servicio.
-                                </p>
-                            </div>
-                        </div>
-                        <label className="mt-3 block shrink-0 sm:mt-0 sm:w-52" htmlFor="task-create-default-assignee">
-                            <span className="sr-only">Asignar todos los pasos a</span>
-                            <select
-                                id="task-create-default-assignee"
-                                value={defaultAssigneeId}
-                                disabled={!useHouseChecklist}
-                                onChange={(event) => setDefaultAssigneeId(event.target.value)}
-                                className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs font-bold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed"
-                            >
-                                <option value="">Sin asignar por defecto</option>
-                                <option value={ALL_WORKERS_VALUE}>Todo el equipo</option>
-                                {users.map((user) => (
-                                    <option key={user.id} value={user.id.toString()}>{user.full_name || user.email}</option>
-                                ))}
-                            </select>
-                        </label>
-                    </div>
-                    {visibleHouseTemplates.map(ht => {
-                        const tmpl = templates.find(t => t.id === ht.template_task_id);
-                        const effective = getEffectiveLocationTemplate(ht, tmpl);
-                        const isChecked = selectedHouseTemplateIdSet.has(ht.template_task_id);
-                        const isExpanded = expandedTemplateIds.has(ht.template_task_id);
-                        const price = effective.price ?? 0;
-                        const subItems = effective.description ? parseChecklist(effective.description) : [];
-                        return (
-                            <div
-                                key={ht.template_task_id}
-                                className={`rounded-2xl border ui-motion duration-200 overflow-hidden ${
-                                    isChecked && useHouseChecklist
-                                        ? "border-[var(--border-soft)] bg-[var(--bg-primary)]/30"
-                                        : "border-[var(--border-soft)]/50 bg-[var(--bg-secondary)]"
-                                }`}
-                            >
-                                <div className="flex items-center gap-2.5 p-3">
-                                    <button
-                                        type="button"
-                                        disabled={!useHouseChecklist}
-                                        onClick={() => useHouseChecklist && toggleHouseTemplateSelection(ht.template_task_id)}
-                                        aria-label={`Seleccionar ${effective.name}`}
-                                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ui-motion ${
-                                            isChecked && useHouseChecklist
-                                                ? "bg-accent border-accent text-white"
-                                                : "border-[var(--border-color)] bg-[var(--bg-card)]"
-                                        } ${useHouseChecklist ? "cursor-pointer" : "cursor-default"}`}
-                                    >
-                                        {isChecked && useHouseChecklist && <Check className="w-2.5 h-2.5 stroke-[3px]" />}
-                                    </button>
-
-                                    <div className="flex-1 min-w-0">
-                                        <span className="text-xs font-bold text-[var(--text-main)] block truncate">
-                                            {effective.name}
-                                        </span>
-                                        <span className="text-[10px] font-semibold text-accent">
-                                            {price} € / {effective.unit}
-                                            <span className="text-[var(--text-muted)] ml-1">
-                                                {ht.custom_price !== null ? (dict.tasks?.create_dialog?.custom_price_note || "(Custom price)") : (dict.tasks?.create_dialog?.base_price_note || "(Base price)")}
-                                            </span>
-                                        </span>
-                                    </div>
-
-                                    {subItems.length > 0 && (
-                                        <button
-                                            type="button"
-                                            onClick={() => toggleTemplateExpanded(ht.template_task_id)}
-                                            className="flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors cursor-pointer shrink-0 px-2 py-1 rounded-lg hover:bg-[var(--bg-tertiary)]"
-                                        >
-                                            <span>{subItems.length} {subItems.length === 1 ? "paso" : "pasos"}</span>
-                                            <ChevronDown
-                                                className={`w-3.5 h-3.5 transition-transform duration-200 ${
-                                                    isExpanded ? "rotate-180" : ""
-                                                }`}
-                                            />
-                                        </button>
-                                    )}
-                                </div>
-
-                                {isExpanded && subItems.length > 0 && (
-                                    <div className="border-t border-[var(--border-soft)]/60 px-3 py-2.5 space-y-2 bg-[var(--bg-primary)]/10">
-                                        {subItems.map((item) => (
-                                            <div key={item.index} className="flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-2 min-w-0">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)]/40 shrink-0" />
-                                                    <span className="text-xs font-medium text-[var(--text-main)] truncate">{item.text}</span>
-                                                </div>
-                                                <select
-                                                    value={fixedChecklistAssignments[`${ht.template_task_id}-${item.index}`] || "unassigned"}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        setFixedChecklistAssignments(prev => ({
-                                                            ...prev,
-                                                            [`${ht.template_task_id}-${item.index}`]: val,
-                                                        }));
-                                                    }}
-                                                    aria-label={`Asignar trabajador: ${item.text}`}
-                                                    className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-full px-2.5 py-1 text-[10px] outline-none cursor-pointer shrink-0 max-w-[140px]"
-                                                >
-                                                    <option value="unassigned">-- Sin asignar --</option>
-                                                    <option value={ALL_WORKERS_VALUE}>
-                                                        {dict.tasks?.create_dialog?.assignee_all || "Todos los trabajadores"}
-                                                    </option>
-                                                    {users.map(u => (
-                                                        <option key={u.id} value={u.id.toString()}>
-                                                            {u.full_name || u.email}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                <TaskCreateHouseTemplateList
+                    dict={dict}
+                    users={users}
+                    templates={templates}
+                    visibleHouseTemplates={visibleHouseTemplates}
+                    selectedHouseTemplateId={selectedHouseTemplateId}
+                    useHouseChecklist={useHouseChecklist}
+                    selectHouseTemplate={selectHouseTemplate}
+                    fixedChecklistAssignments={fixedChecklistAssignments}
+                    setFixedChecklistAssignments={setFixedChecklistAssignments}
+                    taskPricingOverrides={taskPricingOverrides}
+                    setTaskPricingOverrides={setTaskPricingOverrides}
+                    defaultAssigneeId={defaultAssigneeId}
+                    setDefaultAssigneeId={setDefaultAssigneeId}
+                />
             ) : (
                 <div className="text-2xs text-[var(--text-muted)] italic font-semibold py-3 bg-[var(--bg-primary)]/10 text-center rounded-xl border border-dashed border-[var(--border-color)]">
                     {dict.tasks?.create_dialog?.no_fixed_tasks || "This location has no default tasks defined."}
@@ -289,6 +167,7 @@ export function TaskCreateHouseChecklistSection({
                                 id="task-create-special-price"
                                 type="number"
                                 step="0.01"
+                                data-price-input
                                 value={customPriceVal}
                                 onChange={(e) => setCustomPriceVal(e.target.value)}
                                 placeholder="Base price"

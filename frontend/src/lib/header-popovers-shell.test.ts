@@ -9,6 +9,8 @@ function source(path: string): string {
 test("header popovers use tinted billing-surface shells (no pure white)", () => {
     const header = source("../components/dashboard/DashboardHeader.tsx");
     const notifications = source("../components/dashboard/notifications/NotificationPanel.tsx");
+    const notificationPopover = source("../components/dashboard/notifications/NotificationPopoverContent.tsx");
+    const notificationUi = `${notifications}\n${notificationPopover}`;
     const globals = source("../app/globals.css");
 
     assert.match(header, /billing-surface/);
@@ -27,21 +29,21 @@ test("header popovers use tinted billing-surface shells (no pure white)", () => 
     assert.doesNotMatch(header, /emerald|color-green|text-green-|bg-green-/);
     assert.doesNotMatch(header, /btn-cancel-muted/);
 
-    assert.match(notifications, /billing-surface/);
-    assert.match(notifications, /header-popover-layer/);
-    assert.match(notifications, /billing-block/);
-    assert.match(notifications, /border-dashed/);
-    assert.match(notifications, /from "@\/components\/ui\/button"/);
-    assert.match(notifications, /PremiumTabs/);
-    assert.match(notifications, /CheckCheck/);
-    assert.match(notifications, /handleClearActiveTab/);
-    assert.doesNotMatch(notifications, /surface-popover/);
-    assert.doesNotMatch(notifications, /\bbg-white\b/);
-    assert.doesNotMatch(notifications, /#fff(?:fff)?\b/i);
-    assert.doesNotMatch(notifications, /Trash2/);
-    assert.doesNotMatch(notifications, /billing-surface-accent-pad/);
-    assert.doesNotMatch(notifications, /emerald|color-green|text-green-|bg-green-/);
-    assert.doesNotMatch(notifications, /btn-cancel-muted/);
+    assert.match(notificationUi, /billing-surface/);
+    assert.match(notificationUi, /header-popover-layer/);
+    assert.match(notificationUi, /billing-block/);
+    assert.match(notificationUi, /border-dashed/);
+    assert.match(notificationUi, /from "@\/components\/ui\/button"/);
+    assert.match(notificationUi, /PremiumTabs/);
+    assert.match(notificationUi, /CheckCheck/);
+    assert.match(notificationUi, /handleClearActiveTab/);
+    assert.doesNotMatch(notificationUi, /surface-popover/);
+    assert.doesNotMatch(notificationUi, /\bbg-white\b/);
+    assert.doesNotMatch(notificationUi, /#fff(?:fff)?\b/i);
+    assert.doesNotMatch(notificationUi, /Trash2/);
+    assert.doesNotMatch(notificationUi, /billing-surface-accent-pad/);
+    assert.doesNotMatch(notificationUi, /emerald|color-green|text-green-|bg-green-/);
+    assert.doesNotMatch(notificationUi, /btn-cancel-muted/);
 
     // Floating shell combo stays cool-tinted; light popover token is not near-white.
     assert.match(globals, /\.billing-surface\.header-popover-layer/);

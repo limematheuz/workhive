@@ -71,7 +71,6 @@ export function InvoiceCreateSheet({
         handleDuplicateRow,
         handleAddExternalLaundryRow,
         handleUpdateRow,
-        handleConceptBillingMode,
         handleDeleteRow,
         handleGlobalTaxRateChange,
         subtotal,
@@ -124,7 +123,6 @@ export function InvoiceCreateSheet({
             handleDuplicateRow={handleDuplicateRow}
             handleAddExternalLaundryRow={handleAddExternalLaundryRow}
             handleUpdateRow={handleUpdateRow}
-            handleConceptBillingMode={handleConceptBillingMode}
             handleDeleteRow={handleDeleteRow}
             notesEnabled={notesEnabled}
             setNotesEnabled={setNotesEnabled}

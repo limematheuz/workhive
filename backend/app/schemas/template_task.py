@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -6,6 +8,7 @@ class TemplateTaskBase(BaseModel):
     description: str | None = None
     default_price: float | None = None
     unit: str
+    pricing_mode: Literal["fixed", "hourly"] = "fixed"
     is_active: bool = True
 
     model_config = ConfigDict(from_attributes=True)
@@ -20,6 +23,7 @@ class TemplateTaskUpdate(BaseModel):
     description: str | None = None
     default_price: float | None = None
     unit: str | None = None
+    pricing_mode: Literal["fixed", "hourly"] | None = None
     is_active: bool | None = None
 
 

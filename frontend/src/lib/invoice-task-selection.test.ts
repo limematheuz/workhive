@@ -126,7 +126,7 @@ test("hourly jobs become invoice concepts from person-hours times rate", () => {
     assert.equal(concepts[0]?.unitPrice, 20);
     assert.equal(concepts[0]?.quantity, 2.5);
     assert.match(concepts[0]?.description || "", /Tiempo del equipo: 2h 30m/);
-    assert.match(concepts[0]?.description || "", /Ana: 40m/);
+    assert.doesNotMatch(concepts[0]?.description || "", /Ana|Bea|Carla|Diana/);
     assert.match(concepts[0]?.description || "", /Cobro: 2\.5 h × 20 €\/h/);
     assert.match(concepts[0]?.description || "", /Casa Horas/);
 });
@@ -160,6 +160,5 @@ test("fixed-price jobs still expose recorded person-hours in the concept", () =>
     assert.equal(concepts[0]?.unitPrice, 165);
     assert.equal(concepts[0]?.quantity, 1);
     assert.match(concepts[0]?.description || "", /Tiempo del equipo: 2h/);
-    assert.match(concepts[0]?.description || "", /Ana: 1h/);
-    assert.match(concepts[0]?.description || "", /Bea: 1h/);
+    assert.doesNotMatch(concepts[0]?.description || "", /Ana|Bea/);
 });

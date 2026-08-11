@@ -185,6 +185,7 @@ async def async_business_factory():
         seed = {
             "company_id": owner.id,
             "email": user.email,
+            "user_id": user.id,
             "partner_email": partner_user.email,
             "outsider_email": outsider_user.email,
             "invoice_id": invoice.id,
@@ -227,6 +228,9 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
         "/api/v1/quotes/",
         f"/api/v1/quotes/{seed['quote_id']}",
         f"/api/v1/quotes/{seed['quote_id']}/items",
+        "/api/v1/task-items/",
+        "/api/v1/task-items/?limit=500",
+        f"/api/v1/task-items/?user_id={seed['user_id']}",
         "/api/v1/task-items/?task_status=rejected",
         f"/api/v1/locations/{seed['location_id']}/templates",
         (
@@ -297,6 +301,12 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
     rejected = responses["/api/v1/task-items/?task_status=rejected"].json()
     assert any(item["id"] == seed["rejected_task_id"] for item in rejected)
     assert all(item["status"] == "rejected" for item in rejected)
+    for path in (
+        "/api/v1/task-items/",
+        "/api/v1/task-items/?limit=500",
+        f"/api/v1/task-items/?user_id={seed['user_id']}",
+    ):
+        assert any(item["id"] == seed["rejected_task_id"] for item in responses[path].json())
     location_templates = responses[
         f"/api/v1/locations/{seed['location_id']}/templates"
     ].json()

@@ -9,6 +9,8 @@ function source(path: string): string {
 test("profile identity, privacy, and stats use billing surfaces without touching histories tables", () => {
     const page = source("../app/dashboard/profile/page.tsx");
     const privacy = source("../components/profile/PrivacyControls.tsx");
+    const privacyManagement = source("../components/profile/PrivacyRequestManagement.tsx");
+    const privacyUi = `${privacy}\n${privacyManagement}`;
     const stats = source("../components/profile/ProfileStats.tsx");
     const histories = source("../components/profile/ProfileHistories.tsx");
     const details = source("../components/profile/ProfileDetailsForm.tsx");
@@ -27,10 +29,10 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     assert.match(page, /btn-cancel-muted/);
     assert.match(page, /Cerrar Editor|Close Editor/);
 
-    assert.match(privacy, /billing-surface/);
-    assert.match(privacy, /rounded-full bg-accent/);
-    assert.match(privacy, /PAGE_ACTION_BUTTON_PRIMARY/);
-    assert.match(privacy, /billing-block/);
+    assert.match(privacyUi, /billing-surface/);
+    assert.match(privacyUi, /rounded-full bg-accent/);
+    assert.match(privacyUi, /PAGE_ACTION_BUTTON_PRIMARY/);
+    assert.match(privacyUi, /billing-block/);
 
     assert.match(stats, /billing-block/);
     assert.match(stats, /rounded-\[18px\]/);

@@ -77,6 +77,7 @@ export function InvoiceDetailItemsSection({
                                     type="number"
                                     min="0"
                                     step="0.01"
+                                    data-price-input
                                     aria-label={dict.invoices.price}
                                     value={item.unit_price}
                                     onChange={(e) => onEditItemChange(index, "unit_price", parseFloat(e.target.value) || 0)}

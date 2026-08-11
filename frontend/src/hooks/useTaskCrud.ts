@@ -38,6 +38,11 @@ import {
     getTaskCreationSchedule,
 } from "@/domain/tasks/task-create";
 import { canDuplicateTask } from "@/domain/tasks/task-permissions";
+import {
+    hasValidTaskPricingAgreement,
+    resolveTaskCreationPricing,
+} from "@/lib/task-pricing";
+import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
 import { loadTaskCreateLocationData } from "@/lib/load-task-create-location-data";
 import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
 
@@ -53,7 +58,7 @@ interface UseTaskCrudParams {
 
 type HouseTemplateState = {
     items: HouseTemplate[];
-    selectedIds: number[];
+    selectedId: number | null;
     loading: boolean;
 };
 
@@ -66,7 +71,7 @@ type ReservationState = {
 
 const EMPTY_HOUSE_TEMPLATES: HouseTemplateState = {
     items: [],
-    selectedIds: [],
+    selectedId: null,
     loading: false,
 };
 
@@ -94,6 +99,7 @@ export function useTaskCrud({
     const [houseTemplateState, setHouseTemplateState] = useState<HouseTemplateState>(EMPTY_HOUSE_TEMPLATES);
     const [useHouseChecklist, setUseHouseChecklist] = useState<boolean>(true);
     const [fixedChecklistAssignments, setFixedChecklistAssignments] = useState<Record<string, string>>({});
+    const [taskPricingOverrides, setTaskPricingOverrides] = useState<Record<number, TaskCreationPricingOverride>>({});
 
     const [newLocationId, setNewLocationId] = useState<string>("");
     const [newUserId, setNewUserId] = useState<string>("");
@@ -101,19 +107,12 @@ export function useTaskCrud({
     const [reservationState, setReservationState] = useState<ReservationState>(EMPTY_RESERVATIONS);
 
     const houseTemplates = houseTemplateState.items;
-    const selectedHouseTemplateIds = houseTemplateState.selectedIds;
+    const selectedHouseTemplateId = houseTemplateState.selectedId;
     const loadingHouseTemplates = houseTemplateState.loading;
     const availableReservations = reservationState.items;
     const loadingReservations = reservationState.loading;
     const newCheckoutReservationId = reservationState.checkoutId;
     const newNextReservationId = reservationState.nextId;
-
-    const setSelectedHouseTemplateIds = (value: React.SetStateAction<number[]>) => {
-        setHouseTemplateState((prev) => ({
-            ...prev,
-            selectedIds: typeof value === "function" ? value(prev.selectedIds) : value,
-        }));
-    };
 
     const setNewCheckoutReservationId = (value: string) => {
         setReservationState((prev) => ({ ...prev, checkoutId: value }));
@@ -141,8 +140,9 @@ export function useTaskCrud({
     const [isDeleteTaskDialogOpen, setIsDeleteTaskDialogOpen] = useState<boolean>(false);
 
     const syncCreateLocationData = useEffectEvent(async (locationId: string) => {
-        setHouseTemplateState({ items: [], selectedIds: [], loading: true });
+        setHouseTemplateState({ items: [], selectedId: null, loading: true });
         setReservationState({ items: [], checkoutId: "", nextId: "", loading: true });
+        setTaskPricingOverrides({});
 
         const canLinkReservations = canManageReservationsForLocation(Number(locationId));
         const result = await loadTaskCreateLocationData(Number(locationId), {
@@ -158,7 +158,7 @@ export function useTaskCrud({
             const data = result.locationTemplates;
             setHouseTemplateState({
                 items: data,
-                selectedIds: data.map((ht) => ht.template_task_id),
+                selectedId: data[0]?.template_task_id ?? null,
                 loading: false,
             });
         } else {
@@ -201,6 +201,7 @@ export function useTaskCrud({
     const openCreate = () => {
         setHouseTemplateState(EMPTY_HOUSE_TEMPLATES);
         setReservationState(EMPTY_RESERVATIONS);
+        setTaskPricingOverrides({});
         setIsCreateOpen(true);
     };
 
@@ -208,6 +209,7 @@ export function useTaskCrud({
         setIsCreateOpen(false);
         setHouseTemplateState(EMPTY_HOUSE_TEMPLATES);
         setReservationState(EMPTY_RESERVATIONS);
+        setTaskPricingOverrides({});
     };
 
     const handleToggleStatus = async (task: TaskItem, e: React.MouseEvent) => {
@@ -250,10 +252,8 @@ export function useTaskCrud({
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        const hasChecklistItems = houseTemplates.length > 0 && useHouseChecklist && selectedHouseTemplateIds.length > 0;
-        
-        if (!hasChecklistItems) {
-            toast.error("Por favor, selecciona elementos del checklist para el local.");
+        if (!useHouseChecklist || selectedHouseTemplateId === null) {
+            toast.error("Por favor, selecciona un servicio para el trabajo.");
             return;
         }
 
@@ -269,7 +269,6 @@ export function useTaskCrud({
 
         try {
             setIsSaving(true);
-            const promises: Promise<TaskItem>[] = [];
             const checkoutReservation = availableReservations.find(
                 reservation => reservation.id.toString() === newCheckoutReservationId
             );
@@ -290,40 +289,55 @@ export function useTaskCrud({
             );
             const taskAssigneeId = getTaskAssigneeId(newUserId);
 
-            selectedHouseTemplateIds.forEach(tmplId => {
-                const tmpl = templates.find(t => t.id === tmplId);
-                const houseTmpl = houseTemplates.find(ht => ht.template_task_id === tmplId);
-                const effective = getEffectiveLocationTemplate(houseTmpl || {}, tmpl);
-                const price = effective.price ?? 0;
-
-                promises.push(
-                    TaskService.createTaskItem({
-                        title: effective.name || "Limpieza fija",
-                        description: buildChecklistDescription({
-                            description: effective.description,
-                            templateTaskId: tmplId,
-                            users,
-                            selectedUserId: newUserId,
-                            fixedChecklistAssignments,
-                        }),
-                        price: price,
-                        quantity: 1.0,
-                        unit: effective.unit,
-                        template_task_id: tmplId,
-                        location_id: parseInt(newLocationId, 10),
-                        user_id: taskAssigneeId,
-                        scheduled_start_at: checkoutReservation?.check_out_at
-                            || buildTaskPlanningDate(newCreatedAt),
-                        due_at: nextReservation?.check_in_at || undefined,
-                        service_context: serviceContext,
-                        checkout_reservation_id: checkoutReservation?.id || null,
-                        next_reservation_id: nextReservation?.id || null,
-                        priority,
-                    })
+            const templateId = selectedHouseTemplateId;
+            const template = templates.find((item) => item.id === templateId);
+            const locationTemplate = houseTemplates.find(
+                (item) => item.template_task_id === templateId,
+            );
+            if (!template || !locationTemplate) {
+                toast.error("El servicio seleccionado ya no está disponible. Vuelve a seleccionarlo.");
+                return;
+            }
+            const defaults = getEffectiveLocationTemplate(locationTemplate, template);
+            const pricing = resolveTaskCreationPricing(
+                defaults,
+                taskPricingOverrides[templateId],
+            );
+            const effective = {
+                ...defaults,
+                ...pricing,
+            };
+            if (!hasValidTaskPricingAgreement(effective.pricingMode, effective.price)) {
+                toast.error(
+                    `Define un precio ${effective.pricingMode === "hourly" ? "por hora positivo" : "fijo válido"} en la plantilla «${effective.name || "sin nombre"}» antes de crear el trabajo.`,
                 );
-            });
+                return;
+            }
 
-            await Promise.all(promises);
+            await TaskService.createTaskItem({
+                title: effective.name || "Limpieza fija",
+                description: buildChecklistDescription({
+                    description: effective.description,
+                    templateTaskId: templateId,
+                    users,
+                    selectedUserId: newUserId,
+                    fixedChecklistAssignments,
+                }),
+                price: effective.price,
+                quantity: 1.0,
+                unit: effective.pricingMode === "hourly" ? "hour" : effective.unit,
+                pricing_mode: effective.pricingMode,
+                template_task_id: templateId,
+                location_id: parseInt(newLocationId, 10),
+                user_id: taskAssigneeId,
+                scheduled_start_at: checkoutReservation?.check_out_at
+                    || buildTaskPlanningDate(newCreatedAt),
+                due_at: nextReservation?.check_in_at || undefined,
+                service_context: serviceContext,
+                checkout_reservation_id: checkoutReservation?.id || null,
+                next_reservation_id: nextReservation?.id || null,
+                priority,
+            });
             toast.success(newUserId === ALL_WORKERS_VALUE
                 ? "Trabajos registrados para todos los trabajadores."
                 : "Trabajos registrados exitosamente."
@@ -469,7 +483,7 @@ export function useTaskCrud({
             const data = await LocationTemplateService.getTemplates(Number(newLocationId));
             setHouseTemplateState({
                 items: data,
-                selectedIds: [...new Set([...data.map((ht) => ht.template_task_id), templateTaskId])],
+                selectedId: templateTaskId,
                 loading: false,
             });
         } catch (error: unknown) {
@@ -478,10 +492,11 @@ export function useTaskCrud({
         }
     };
 
-    const toggleHouseTemplateSelection = (id: number) => {
-        setSelectedHouseTemplateIds(prev => 
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-        );
+    const selectHouseTemplate = (id: number) => {
+        setHouseTemplateState((current) => ({ ...current, selectedId: id }));
+        setTaskPricingOverrides((overrides) => (
+            overrides[id] ? { [id]: overrides[id] } : {}
+        ));
     };
 
     const handleDuplicateTask = async (task: TaskItem) => {
@@ -527,7 +542,7 @@ export function useTaskCrud({
         setSelectedTask,
         houseTemplates,
         loadingHouseTemplates,
-        selectedHouseTemplateIds,
+        selectedHouseTemplateId,
         useHouseChecklist,
         setUseHouseChecklist,
         newLocationId,
@@ -577,11 +592,13 @@ export function useTaskCrud({
         handleSaveTaskDetails,
         handleDeleteTask,
         handleDeleteTaskConfirm,
-        toggleHouseTemplateSelection,
+        selectHouseTemplate,
         availableTemplates,
         handleLinkHouseTemplate,
         handleDuplicateTask,
         fixedChecklistAssignments,
         setFixedChecklistAssignments,
+        taskPricingOverrides,
+        setTaskPricingOverrides,
     };
 }

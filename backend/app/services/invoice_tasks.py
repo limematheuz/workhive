@@ -92,6 +92,7 @@ def validate_task_for_invoice(
             status_code=status.HTTP_409_CONFLICT,
             detail="Only completed task items can be invoiced",
         )
+    task_billing_service.require_task_pricing_for_invoice(task)
 
     linked_to_current_invoice = linked_invoice_id is not None and any(
         item.invoice_id == linked_invoice_id for item in task.invoice_items
@@ -166,8 +167,9 @@ def get_invoiceable_completed_tasks(
             if session.task_item_id in sessions_by_task:
                 sessions_by_task[session.task_item_id].append(session)
 
-    needs_commit = False
     for task in tasks:
+        if not task_billing_service.task_has_agreed_pricing(task):
+            continue
         client, billing_source, collaborator = resolve_invoice_client_for_task(
             db,
             company_id,
@@ -175,20 +177,27 @@ def get_invoiceable_completed_tasks(
         )
         if client is None:
             continue
-        had_snapshot = task.worked_seconds_snapshot is not None
         worked_seconds, worker_rows = task_billing_service.resolve_invoiceable_work(
             task,
             sessions_by_task.get(task.id, []),
         )
-        if not had_snapshot and task.worked_seconds_snapshot is not None:
-            needs_commit = True
         base = TaskItemResponse.model_validate(task)
+        base_data = base.model_dump(
+            exclude={"pricing_mode", "price", "quantity", "unit"},
+        )
+        pricing_mode, agreed_price, agreed_quantity, agreed_unit = (
+            task_billing_service.resolve_invoice_pricing_terms(task)
+        )
         worked_hours = float(
             task_billing_service.billable_hours_from_seconds(worked_seconds)
         )
         responses.append(
             InvoiceableTaskResponse(
-                **base.model_dump(),
+                **base_data,
+                pricing_mode=pricing_mode,
+                price=float(agreed_price),
+                quantity=float(agreed_quantity),
+                unit=agreed_unit,
                 client_id=client.id,
                 client_name=client.name,
                 location_name=(
@@ -210,8 +219,6 @@ def get_invoiceable_completed_tasks(
                 ],
             )
         )
-    if needs_commit:
-        db.commit()
     return responses
 
 

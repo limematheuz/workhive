@@ -128,3 +128,79 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.match(fields, /onAssignAll/);
     assert.doesNotMatch(fields, /calendarAssigneeName/);
 });
+
+test("tasks page forwards pricing state required by the task edit modal", () => {
+    const tasksPage = read("../hooks/useTasksPage.ts");
+    const formModals = read("../components/tasks/TaskFormModals.tsx");
+
+    assert.match(formModals, /editPricingMode: TaskPricingMode/);
+    assert.match(formModals, /setEditPricingMode: \(val: TaskPricingMode\) => void/);
+    assert.match(tasksPage, /editPricingMode: crud\.editPricingMode/);
+    assert.match(tasksPage, /setEditPricingMode: crud\.setEditPricingMode/);
+});
+
+test("task creation exposes compact per-job pricing controls and keeps defaults in the domain helper", () => {
+    const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
+    const crud = read("../hooks/useTaskCrud.ts");
+    const tasksPage = read("../hooks/useTasksPage.ts");
+
+    assert.match(createList, /taskPricingOverrides/);
+    assert.match(createList, /selectedHouseTemplateId: number \| null/);
+    assert.match(createList, /role="radiogroup"/);
+    assert.match(createList, /role="radio"/);
+    assert.match(createList, /aria-checked=\{isChecked\}/);
+    assert.match(createList, /pricingValuesForTaskCreation/);
+    assert.match(createList, /\["fixed", "hourly"\] as const/);
+    assert.match(createList, /aria-pressed=\{active\}/);
+    assert.match(createList, /dialog-compact-control/);
+    assert.match(createList, /flex items-end gap-2 md:ml-auto/);
+    assert.match(createList, /data-price-input/);
+    assert.match(crud, /resolveTaskCreationPricing/);
+    assert.match(crud, /pricing_mode: effective\.pricingMode/);
+    assert.match(tasksPage, /taskPricingOverrides: crud\.taskPricingOverrides/);
+    assert.match(tasksPage, /setTaskPricingOverrides: crud\.setTaskPricingOverrides/);
+});
+
+test("task creation selects and creates exactly one location service", () => {
+    const crud = read("../hooks/useTaskCrud.ts");
+    const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
+
+    assert.match(crud, /selectedId: number \| null/);
+    assert.match(crud, /selectedId: data\[0\]\?\.template_task_id \?\? null/);
+    assert.match(crud, /const selectHouseTemplate = \(id: number\)/);
+    assert.match(crud, /selectedId: id/);
+    assert.match(crud, /await TaskService\.createTaskItem\(/);
+    assert.doesNotMatch(crud, /Promise\.all\(promises\)/);
+    assert.match(createList, /role="radiogroup"/);
+    assert.match(createList, /role="radio"/);
+    assert.match(createList, /aria-checked=\{isChecked\}/);
+});
+
+test("monetary inputs keep numeric validation without native increment buttons", () => {
+    const globals = read("../app/globals.css");
+    const priceInputs = [
+        "../components/tasks/TaskCreateHouseTemplateList.tsx",
+        "../components/tasks/TaskEditPricingSection.tsx",
+        "../components/tasks/TemplateModal.tsx",
+        "../components/tasks/TaskCreateHouseChecklistSection.tsx",
+        "../components/locations/LocationTemplatesTab.tsx",
+        "../components/locations/LocationHistoryTab.tsx",
+        "../components/quotes/QuoteItemsTable.tsx",
+        "../components/invoices/InvoiceConceptsTable.tsx",
+        "../components/invoices/InvoiceDetailItemsSection.tsx",
+        "../components/expenses/ExpenseFormDialog.tsx",
+    ];
+
+    assert.match(globals, /input\[type="number"\]::-webkit-inner-spin-button/);
+    assert.match(globals, /-moz-appearance: textfield/);
+    for (const path of priceInputs) {
+        assert.match(read(path), /data-price-input/);
+    }
+
+    const invoiceDetailItems = read("../components/invoices/InvoiceDetailItemsSection.tsx");
+    assert.match(invoiceDetailItems, /data-price-input\s+aria-label=\{dict\.invoices\.price\}/);
+    assert.doesNotMatch(invoiceDetailItems, /data-price-input\s+aria-label=\{dict\.invoices\.col_qty\}/);
+
+    const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
+    assert.match(createList, /type="text"\s+inputMode="decimal"/);
+});

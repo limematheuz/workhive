@@ -59,6 +59,7 @@ test("effective location template prefers trimmed custom fields and template fal
             description: "Base",
             price: 100,
             unit: "servicio",
+            pricingMode: "fixed",
         },
     );
 
@@ -67,5 +68,30 @@ test("effective location template prefers trimmed custom fields and template fal
         description: null,
         price: null,
         unit: "unit",
+        pricingMode: "fixed",
     });
+});
+
+test("effective location template preserves hourly pricing from its template", () => {
+    assert.deepEqual(
+        getEffectiveLocationTemplate(
+            { custom_price: 28 },
+            {
+                id: 1,
+                company_id: 1,
+                name: "Refuerzo",
+                default_price: 24,
+                unit: "service",
+                pricing_mode: "hourly",
+                is_active: true,
+            },
+        ),
+        {
+            name: "Refuerzo",
+            description: null,
+            price: 28,
+            unit: "service",
+            pricingMode: "hourly",
+        },
+    );
 });

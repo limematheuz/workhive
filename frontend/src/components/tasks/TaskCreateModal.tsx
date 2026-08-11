@@ -18,6 +18,7 @@ import { TaskCreateMainFields } from "./TaskCreateMainFields";
 import { TaskCreateReservationSection } from "./TaskCreateReservationSection";
 import { TaskCreateHouseChecklistSection } from "./TaskCreateHouseChecklistSection";
 import { canLinkTaskReservations } from "@/features/reservations/reservation-helpers";
+import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
 import {
     taskDialogBodyClass,
     taskDialogContentClass,
@@ -40,10 +41,10 @@ interface TaskCreateModalProps {
     setCreateOpen: (open: boolean) => void;
     houseTemplates: HouseTemplate[];
     loadingHouseTemplates: boolean;
-    selectedHouseTemplateIds: number[];
+    selectedHouseTemplateId: number | null;
     useHouseChecklist: boolean;
     setUseHouseChecklist: (use: boolean) => void;
-    toggleHouseTemplateSelection: (id: number) => void;
+    selectHouseTemplate: (id: number) => void;
     availableTemplates: TemplateTask[];
     handleLinkHouseTemplate: (templateTaskId: number, customPrice: number | null) => Promise<void>;
     newLocationId: string;
@@ -61,6 +62,8 @@ interface TaskCreateModalProps {
     handleCreateTask: (e: React.FormEvent) => void;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+    taskPricingOverrides: Record<number, TaskCreationPricingOverride>;
+    setTaskPricingOverrides: React.Dispatch<React.SetStateAction<Record<number, TaskCreationPricingOverride>>>;
 }
 
 export function TaskCreateModal({
@@ -75,10 +78,10 @@ export function TaskCreateModal({
     setCreateOpen,
     houseTemplates,
     loadingHouseTemplates,
-    selectedHouseTemplateIds,
+    selectedHouseTemplateId,
     useHouseChecklist,
     setUseHouseChecklist,
-    toggleHouseTemplateSelection,
+    selectHouseTemplate,
     availableTemplates,
     handleLinkHouseTemplate,
     newLocationId,
@@ -96,6 +99,8 @@ export function TaskCreateModal({
     handleCreateTask,
     fixedChecklistAssignments,
     setFixedChecklistAssignments,
+    taskPricingOverrides,
+    setTaskPricingOverrides,
 }: TaskCreateModalProps) {
     const currentCompanyId = currentUser?.company_id;
     const ownLocations = locations.filter(location => (
@@ -164,14 +169,16 @@ export function TaskCreateModal({
                                 houseTemplates={houseTemplates}
                                 visibleHouseTemplates={visibleHouseTemplates}
                                 loadingHouseTemplates={loadingHouseTemplates}
-                                selectedHouseTemplateIds={selectedHouseTemplateIds}
+                                selectedHouseTemplateId={selectedHouseTemplateId}
                                 useHouseChecklist={useHouseChecklist}
                                 setUseHouseChecklist={setUseHouseChecklist}
-                                toggleHouseTemplateSelection={toggleHouseTemplateSelection}
+                                selectHouseTemplate={selectHouseTemplate}
                                 availableTemplates={availableTemplates}
                                 handleLinkHouseTemplate={handleLinkHouseTemplate}
                                 fixedChecklistAssignments={fixedChecklistAssignments}
                                 setFixedChecklistAssignments={setFixedChecklistAssignments}
+                                taskPricingOverrides={taskPricingOverrides}
+                                setTaskPricingOverrides={setTaskPricingOverrides}
                                 defaultAssigneeId={newUserId}
                                 setDefaultAssigneeId={setNewUserId}
                             />

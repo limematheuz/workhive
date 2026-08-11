@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+import pytest
+from fastapi import HTTPException
+
 from app.models.task_item import TaskItem
 from app.models.work_session import WorkSession
 from app.schemas.invoice import InvoiceDraftCreate
@@ -67,6 +70,11 @@ def test_completion_freezes_person_hours_snapshot(db):
 
     assert updated.status == "completed"
     assert updated.worked_seconds_snapshot == 2 * 3600 + 30 * 60
+    assert updated.pricing_locked_at is not None
+    assert updated.billing_pricing_mode_snapshot == "hourly"
+    assert updated.billing_price_snapshot == 20.0
+    assert updated.billing_quantity_snapshot == 1.0
+    assert updated.billing_unit_snapshot == "hour"
     assert task_billing_service.billable_hours_from_seconds(
         updated.worked_seconds_snapshot
     ) == Decimal("2.5000")
@@ -84,6 +92,13 @@ def test_hourly_invoice_uses_snapshot_hours_times_rate(db):
         TaskItemUpdate(status="completed"),
     )
     db.refresh(task)
+    # A later operational mutation cannot change the commercial agreement that
+    # was frozen at completion.
+    task.pricing_mode = "fixed"
+    task.price = 999.0
+    task.quantity = 99.0
+    task.unit = "service"
+    db.commit()
 
     client_id = task.location.client_id
     assert client_id is not None
@@ -157,7 +172,7 @@ def test_fixed_price_tasks_ignore_hours_for_invoice_amount(db):
     )
     task.pricing_mode = "fixed"
     task.price = 165.0
-    task.quantity = 1
+    task.quantity = 2
     task.unit = "service"
     db.add(task)
     db.commit()
@@ -191,5 +206,107 @@ def test_fixed_price_tasks_ignore_hours_for_invoice_amount(db):
         ),
     )
     item = invoice.items[0]
-    assert float(item.quantity) == 1.0
+    assert float(item.quantity) == 2.0
     assert float(item.unit_price) == 165.0
+
+
+def test_hourly_invoice_requires_a_positive_hourly_rate(db):
+    company, admin, task = _hourly_task_with_sessions(
+        db,
+        seconds_by_user=[3600],
+    )
+    task.price = 0
+    db.add(task)
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        task_item_service.update_task_item(
+            db,
+            admin,
+            task.id,
+            TaskItemUpdate(status="completed"),
+        )
+
+    assert error.value.status_code == 409
+    assert "positive hourly rate" in error.value.detail
+    db.refresh(task)
+    assert task.is_invoiced is False
+
+
+def test_legacy_unpriced_task_can_finish_but_cannot_be_invoiced(db):
+    company, admin, task = _hourly_task_with_sessions(
+        db,
+        seconds_by_user=[3600],
+    )
+    task.pricing_mode = "fixed"
+    task.price = None
+    task.quantity = None
+    task.unit = "service"
+    db.commit()
+
+    completed = task_item_service.update_task_item(
+        db,
+        admin,
+        task.id,
+        TaskItemUpdate(status="completed"),
+    )
+
+    assert completed.status == "completed"
+    assert completed.pricing_locked_at is None
+    assert invoice_service.get_invoiceable_completed_tasks(db, company.id) == []
+
+    with pytest.raises(HTTPException) as error:
+        task_billing_service.resolve_task_invoice_quantity_and_rate(completed)
+
+    assert error.value.status_code == 409
+    assert "agreed task price" in error.value.detail
+
+
+def test_first_clock_in_locks_pricing_and_rejects_later_changes(db):
+    _, admin, task = _hourly_task_with_sessions(db, seconds_by_user=[0])
+    worker = task.user
+    assert worker is not None
+    task.status = "accepted"
+    db.commit()
+
+    started = task_item_service.start_task_work(
+        db,
+        worker,
+        task.id,
+        start_latitude=42.1,
+        start_longitude=3.1,
+    )
+
+    assert started.pricing_locked_at is not None
+    assert started.billing_pricing_mode_snapshot == "hourly"
+    assert started.billing_price_snapshot == 20.0
+
+    with pytest.raises(HTTPException) as error:
+        task_item_service.update_task_item(
+            db,
+            admin,
+            task.id,
+            TaskItemUpdate(price=50.0),
+        )
+
+    assert error.value.status_code == 409
+    assert "Pricing terms are locked" in error.value.detail
+
+
+def test_invoiceable_legacy_fixed_task_does_not_backfill_a_snapshot(db):
+    company, _, task = _hourly_task_with_sessions(
+        db,
+        seconds_by_user=[40 * 60, 20 * 60],
+    )
+    task.pricing_mode = "fixed"
+    task.status = "completed"
+    task.date_done = datetime.now(timezone.utc)
+    task.worked_seconds_snapshot = None
+    db.add(task)
+    db.commit()
+
+    [billable] = invoice_service.get_invoiceable_completed_tasks(db, company.id)
+
+    assert billable.worked_seconds == 3600
+    db.refresh(task)
+    assert task.worked_seconds_snapshot is None

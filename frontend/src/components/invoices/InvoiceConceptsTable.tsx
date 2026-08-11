@@ -20,11 +20,6 @@ interface InvoiceConceptsTableProps {
         field: Field,
         value: ConceptRow[Field]
     ) => void;
-    handleConceptBillingMode: (
-        id: string,
-        mode: "fixed" | "hourly",
-        hourlyRate?: number,
-    ) => void | Promise<void>;
     handleDeleteRow: (id: string) => void;
 }
 
@@ -35,7 +30,6 @@ export function InvoiceConceptsTable({
     handleDuplicateRow,
     handleAddExternalLaundryRow,
     handleUpdateRow,
-    handleConceptBillingMode,
     handleDeleteRow,
 }: InvoiceConceptsTableProps) {
     return (
@@ -46,7 +40,7 @@ export function InvoiceConceptsTable({
                         Conceptos facturados
                     </Label>
                     <p className="mt-1 text-xs text-[var(--text-muted)]">
-                        Elige precio fijo o cobro por horas en cada trabajo terminado.
+                        Las tareas terminadas conservan el precio pactado al iniciar. Las líneas manuales se pueden editar.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
@@ -78,6 +72,7 @@ export function InvoiceConceptsTable({
                         {concepts.length > 0 ? (
                             concepts.map((row) => {
                                 const isHourly = row.pricing_mode === "hourly";
+                                const taskPricingLocked = Boolean(row.task_item_id);
                                 const workedLabel = row.worked_seconds
                                     ? formatHoursShort(row.worked_seconds)
                                     : null;
@@ -95,33 +90,12 @@ export function InvoiceConceptsTable({
                                                     />
                                                     {row.task_item_id ? (
                                                         <div className="flex flex-wrap items-center gap-1.5">
-                                                            <div className="inline-flex rounded-lg border border-[var(--border-soft)] p-0.5">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => void handleConceptBillingMode(row.id, "fixed")}
-                                                                    className={`rounded-md px-2 py-1 text-[10px] font-semibold transition ${
-                                                                        !isHourly
-                                                                            ? "bg-accent text-white"
-                                                                            : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                                                                    }`}
-                                                                >
-                                                                    Precio fijo
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => void handleConceptBillingMode(row.id, "hourly")}
-                                                                    className={`rounded-md px-2 py-1 text-[10px] font-semibold transition ${
-                                                                        isHourly
-                                                                            ? "bg-accent text-white"
-                                                                            : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
-                                                                    }`}
-                                                                >
-                                                                    Por horas
-                                                                </button>
-                                                            </div>
+                                                            <span className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-2 py-1 text-[10px] font-semibold text-[var(--text-muted)]">
+                                                                {isHourly ? "Por horas pactado" : "Precio fijo pactado"}
+                                                            </span>
                                                             {isHourly && workedLabel && (
                                                                 <span className="text-[10px] text-[var(--text-muted)]">
-                                                                    {workedLabel} registrados → cantidad en horas
+                                                                    {workedLabel} registrados
                                                                 </span>
                                                             )}
                                                         </div>
@@ -150,22 +124,30 @@ export function InvoiceConceptsTable({
                                             </div>
                                         </td>
                                         <td className="px-2 py-2.5 align-middle">
-                                            <label className="mb-1 block text-right text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                                            <label
+                                                htmlFor={`invoice-concept-${row.id}-price`}
+                                                className="mb-1 block text-right text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"
+                                            >
                                                 {isHourly ? "€ / h" : "Precio"}
                                             </label>
                                             <input
                                                 id={`invoice-concept-${row.id}-price`}
                                                 type="number"
                                                 step="0.01"
+                                                data-price-input
                                                 value={row.unitPrice || ""}
                                                 onChange={(e) => handleUpdateRow(row.id, "unitPrice", parseFloat(e.target.value) || 0)}
-                                                className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-right font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                                                readOnly={taskPricingLocked}
+                                                className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-right font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent read-only:bg-[var(--bg-secondary)]"
                                                 placeholder={isHourly ? "20.00" : "0.00"}
                                                 required
                                             />
                                         </td>
                                         <td className="px-2 py-2.5 align-middle">
-                                            <label className="mb-1 block text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                                            <label
+                                                htmlFor={`invoice-concept-${row.id}-quantity`}
+                                                className="mb-1 block text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"
+                                            >
                                                 {isHourly ? "Horas" : "Cant."}
                                             </label>
                                             <input
@@ -174,7 +156,7 @@ export function InvoiceConceptsTable({
                                                 step="any"
                                                 value={row.quantity || ""}
                                                 onChange={(e) => handleUpdateRow(row.id, "quantity", parseFloat(e.target.value) || 0)}
-                                                readOnly={isHourly && Boolean(row.worked_seconds)}
+                                                readOnly={taskPricingLocked}
                                                 className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-center font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent read-only:bg-[var(--bg-secondary)]"
                                                 placeholder="1"
                                                 required

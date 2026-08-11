@@ -62,48 +62,6 @@ export function resolveTaskInvoiceAmount(task: TaskBillingSource): number {
     return unitPrice * quantity;
 }
 
-export function billableHoursFromSeconds(seconds: number): number {
-    if (seconds <= 0) return 0;
-    return Number((seconds / 3600).toFixed(4));
-}
-
-/**
- * Switch a concept between fixed service price and hourly billing.
- * Hours always come from recorded person-seconds when available.
- */
-export function applyConceptBillingMode<T extends {
-    unitPrice: number;
-    quantity: number;
-    pricing_mode?: "fixed" | "hourly" | null;
-    worked_seconds?: number | null;
-}>(
-    row: T,
-    mode: "fixed" | "hourly",
-    options?: { hourlyRate?: number },
-): T {
-    const seconds = Math.max(0, row.worked_seconds || 0);
-    const hours = billableHoursFromSeconds(seconds);
-    const currentTotal = Number((row.unitPrice * (row.quantity || 0)).toFixed(2));
-
-    if (mode === "hourly") {
-        const rate = options?.hourlyRate
-            ?? (row.pricing_mode === "hourly" ? row.unitPrice : 0);
-        return {
-            ...row,
-            pricing_mode: "hourly",
-            quantity: hours > 0 ? hours : row.quantity || 1,
-            unitPrice: rate,
-        };
-    }
-
-    return {
-        ...row,
-        pricing_mode: "fixed",
-        quantity: 1,
-        unitPrice: currentTotal > 0 ? currentTotal : row.unitPrice,
-    };
-}
-
 export function resolveTaskPersonSeconds(task: TaskBillingSource): number {
     if (typeof task.worked_seconds === "number") return Math.max(0, task.worked_seconds);
     if (typeof task.worked_seconds_snapshot === "number") {
@@ -169,13 +127,6 @@ export function buildInvoiceTaskDescription(params: {
     formatHours: (seconds: number) => string;
 }): string {
     const seconds = resolveTaskPersonSeconds(params.task);
-    const workers = (params.task.workers || [])
-        .filter((worker) => worker.worked_seconds > 0)
-        .map((worker) => ({
-            name: worker.user_name,
-            time: params.formatHours(worker.worked_seconds),
-        }));
-
     let charge: string | null = null;
     if (params.task.pricing_mode === "hourly") {
         const billing = resolveTaskInvoiceBilling(params.task);
@@ -192,7 +143,6 @@ export function buildInvoiceTaskDescription(params: {
         location: params.locationName,
         date: params.dateLabel,
         teamTime: seconds > 0 ? params.formatHours(seconds) : null,
-        workers,
         charge,
     });
 }
@@ -218,7 +168,10 @@ export function parseInvoiceConceptDescription(
     description: string,
 ): InvoiceConceptDescriptionParts {
     const rawLines = description.replace(/\r\n/g, "\n").split("\n");
-    const lines = rawLines.map((line) => line.trim()).filter(Boolean);
+    const lines = rawLines.flatMap((line) => {
+        const trimmed = line.trim();
+        return trimmed ? [trimmed] : [];
+    });
 
     if (!lines.length) {
         return {

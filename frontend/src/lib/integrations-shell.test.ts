@@ -9,24 +9,26 @@ function source(path: string): string {
 test("platform calendar overview uses billing surfaces and DataListTable", () => {
     const page = source("../app/dashboard/integrations/page.tsx");
     const overview = source("../components/integrations/PlatformCalendarOverview.tsx");
+    const statusCard = source("../components/integrations/PlatformCalendarStatusCard.tsx");
+    const calendarUi = `${overview}\n${statusCard}`;
 
     assert.match(page, /isPlatformSuperadmin\(user\)/);
     assert.match(page, /PlatformCalendarOverview/);
     assert.match(page, /CalendarService\.getPlatformStatus\(\)/);
 
-    assert.match(overview, /billing-surface/);
-    assert.match(overview, /billing-block/);
-    assert.match(overview, /DataListTable/);
+    assert.match(calendarUi, /billing-surface/);
+    assert.match(calendarUi, /billing-block/);
+    assert.match(calendarUi, /DataListTable/);
     assert.match(overview, /PageHeader/);
-    assert.match(overview, /role="switch"/);
-    assert.match(overview, /<Button/);
-    assert.match(overview, /<Badge/);
+    assert.match(calendarUi, /role="switch"/);
+    assert.match(calendarUi, /<Button/);
+    assert.match(calendarUi, /<Badge/);
     assert.match(overview, /onCopyCallback/);
     assert.match(overview, /onRefresh/);
     assert.match(overview, /onToggle/);
-    assert.doesNotMatch(overview, /surface-glass-card/);
-    assert.doesNotMatch(overview, /billing-surface-accent-pad/);
-    assert.doesNotMatch(overview, /emerald|color-green|text-green-|bg-green-/);
-    assert.doesNotMatch(overview, /btn-cancel-muted/);
-    assert.doesNotMatch(`${page}\n${overview}`, /client_secret|encryption_key|access_token/i);
+    assert.doesNotMatch(calendarUi, /surface-glass-card/);
+    assert.doesNotMatch(calendarUi, /billing-surface-accent-pad/);
+    assert.doesNotMatch(calendarUi, /emerald|color-green|text-green-|bg-green-/);
+    assert.doesNotMatch(calendarUi, /btn-cancel-muted/);
+    assert.doesNotMatch(`${page}\n${calendarUi}`, /client_secret|encryption_key|access_token/i);
 });

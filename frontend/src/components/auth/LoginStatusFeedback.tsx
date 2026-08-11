@@ -43,7 +43,6 @@ export function LoginStatusFeedback({
     const phrasesKey = activePhrases.join("\0");
 
     useEffect(() => {
-        setPhraseIndex(0);
         const list = phrasesKey.length > 0 ? phrasesKey.split("\0") : [];
         if (list.length <= 1) return;
         const id = window.setInterval(() => {
@@ -52,7 +51,7 @@ export function LoginStatusFeedback({
         return () => window.clearInterval(id);
     }, [phrasesKey, variant]);
 
-    const phrase = activePhrases[phraseIndex] ?? "";
+    const phrase = activePhrases[phraseIndex % Math.max(activePhrases.length, 1)] ?? "";
 
     return (
         <div

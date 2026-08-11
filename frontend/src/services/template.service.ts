@@ -9,6 +9,7 @@ export interface TemplateTaskInput {
     description?: string | null;
     default_price?: number | null;
     unit: string;
+    pricing_mode?: "fixed" | "hourly";
     is_active?: boolean;
 }
 

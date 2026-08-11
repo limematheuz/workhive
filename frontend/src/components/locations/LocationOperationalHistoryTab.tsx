@@ -20,6 +20,7 @@ import {
 } from "@/services/location.service";
 
 const PAGE_SIZE = 10;
+const OPERATIONAL_HISTORY_TIME_ZONE = "Europe/Madrid";
 
 const PERIODS: Array<{ id: LocationHistoryPeriod; label: string }> = [
     { id: "day", label: "Día" },
@@ -47,6 +48,7 @@ function formatMoment(value: string): string {
         month: "short",
         hour: "2-digit",
         minute: "2-digit",
+        timeZone: OPERATIONAL_HISTORY_TIME_ZONE,
     });
 }
 
@@ -142,10 +144,11 @@ export function LocationOperationalHistoryTab({ locationId, open }: LocationOper
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [locationId, open, period, anchorDate, completedPage, sessionsPage]);
 
-    const dateLabel = useMemo(() => new Date(`${anchorDate}T12:00:00`).toLocaleDateString("es-ES", {
+    const dateLabel = useMemo(() => new Date(`${anchorDate}T12:00:00Z`).toLocaleDateString("es-ES", {
         day: "numeric",
         month: "long",
         year: "numeric",
+        timeZone: OPERATIONAL_HISTORY_TIME_ZONE,
     }), [anchorDate]);
 
     const resetPages = () => {

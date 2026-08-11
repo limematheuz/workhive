@@ -1,4 +1,8 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
+import {
+    buildTaskAcceptancePayload,
+    type TaskAcceptanceInput,
+} from "@/domain/tasks/task-acceptance"
 import { TaskItem } from "@/types/user"
 import { WorkStartLocation } from "@/lib/work-start-location"
 import type { TaskPriority, TaskStatus } from "@/types/task"
@@ -169,12 +173,10 @@ export const TaskService = {
         notifyTasksChanged()
     },
 
-    acceptTaskItem: async (id: number, scheduledStartAt?: string): Promise<TaskItem> => {
+    acceptTaskItem: async (id: number, input: TaskAcceptanceInput): Promise<TaskItem> => {
         const response = await apiFetch(`/api/v1/task-items/${id}/accept`, {
             method: "POST",
-            body: JSON.stringify({
-                scheduled_start_at: scheduledStartAt || null
-            })
+            body: JSON.stringify(buildTaskAcceptancePayload(input))
         })
         if (!response.ok) {
             const errMsg = await extractErrorMessage(response, "Error accepting task")

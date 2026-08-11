@@ -38,6 +38,7 @@ def _mark_task_completed(
     completed_at: datetime | None = None,
 ) -> datetime:
     stamped_at = completed_at or datetime.now(timezone.utc)
+    task_billing_service.lock_task_pricing(task, locked_at=stamped_at)
     task.status = "completed"
     task.date_done = stamped_at
     task_billing_service.capture_completed_work_snapshot(
@@ -148,7 +149,16 @@ def build_task_response(
         current_user,
         task.location_id,
     ):
-        return response.model_copy(update={"price": None})
+        return response.model_copy(
+            update={
+                "price": None,
+                "quantity": None,
+                "billing_pricing_mode_snapshot": None,
+                "billing_price_snapshot": None,
+                "billing_quantity_snapshot": None,
+                "billing_unit_snapshot": None,
+            }
+        )
     return response
 
 
@@ -166,7 +176,16 @@ def build_loaded_task_response(
         current_user,
         task.location,
     ):
-        return response.model_copy(update={"price": None})
+        return response.model_copy(
+            update={
+                "price": None,
+                "quantity": None,
+                "billing_pricing_mode_snapshot": None,
+                "billing_price_snapshot": None,
+                "billing_quantity_snapshot": None,
+                "billing_unit_snapshot": None,
+            }
+        )
     return response
 
 
@@ -365,6 +384,7 @@ def _validate_external_task_update(
             "description",
             "checklist_evidence",
             "price",
+            "pricing_mode",
             "quantity",
             "unit",
             "user_id",
@@ -587,6 +607,14 @@ def update_task_item(
     ):
         _freeze_live_external_snapshot(db, db_task_item)
 
+    pricing_updates = task_data.model_dump(exclude_unset=True)
+    task_billing_service.validate_pricing_update(db_task_item, pricing_updates)
+    if task_data.status in {"progress", "review", "completed"}:
+        task_billing_service.lock_task_pricing(
+            db_task_item,
+            updates=pricing_updates,
+        )
+
     updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
     if (
         "description" in task_data.model_fields_set
@@ -659,6 +687,8 @@ def start_task_work(
             if updated_count:
                 task.description = updated_description
             task_structure_service.set_user_status(task, current_user.id, "progress")
+            _freeze_live_external_snapshot(db, task)
+            task_billing_service.lock_task_pricing(task)
             task.status = "progress"
             task.date_done = None
             db.add(task)
@@ -678,6 +708,7 @@ def start_task_work(
         )
 
     _freeze_live_external_snapshot(db, task)
+    task_billing_service.lock_task_pricing(task)
     updated_description, updated_count = (
         task_assignment_service.set_user_assignment_status(
             task.description, current_user.id, "progress"
@@ -758,6 +789,31 @@ def accept_task_item(
     from app.services import reservation_service
 
     live_snapshot = reservation_service.get_live_external_task_snapshot(db, task)
+    acceptance_pricing = accept_data.model_dump(
+        exclude_unset=True,
+        exclude={"scheduled_start_at"},
+    )
+    live_snapshot.update(acceptance_pricing)
+    has_receiver_pricing_input = bool(acceptance_pricing)
+    has_issuer_pricing = live_snapshot.get("price") is not None
+    if has_receiver_pricing_input or has_issuer_pricing:
+        pricing_mode = task_billing_service.normalize_pricing_mode(
+            live_snapshot.get("pricing_mode")
+        )
+        price, quantity, unit = task_billing_service.validate_pricing_terms(
+            pricing_mode,
+            live_snapshot.get("price"),
+            live_snapshot.get("quantity"),
+            live_snapshot.get("unit"),
+        )
+        live_snapshot.update(
+            {
+                "pricing_mode": pricing_mode,
+                "price": price,
+                "quantity": quantity,
+                "unit": unit,
+            }
+        )
     calendar_owner_user_id = resolve_calendar_owner_user_id(
         db,
         task.company_id,

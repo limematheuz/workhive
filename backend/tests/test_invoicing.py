@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+import pytest
+from fastapi import HTTPException
+
 from app.models.client import Client
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.location_template import LocationTemplate
@@ -9,10 +12,15 @@ from app.models.task_item import TaskItem
 from app.models.template_task import TemplateTask
 from app.schemas.invoice import InvoiceDraftCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate
-from app.schemas.task_item import TaskAcceptRequest, TaskChecklistItemUpdate
+from app.schemas.task_item import (
+    TaskAcceptRequest,
+    TaskChecklistItemUpdate,
+    TaskItemUpdate,
+)
 from app.services import (
     invoice_service,
     company_service,
+    reservation_tasks,
     reservation_service,
     task_assignment_service,
     task_item_service,
@@ -20,7 +28,12 @@ from app.services import (
 from tests.test_reservations import _company, _location, _reservation_data, _user
 
 
-def _external_completed_task_setup(db):
+def _external_completed_task_setup(
+    db,
+    *,
+    complete: bool = True,
+    accept: bool = True,
+):
     issuer = _company(db, "Port Blanc", "PORTBLANC")
     receiver = _company(db, "Ownet Limpiezas", "OWNET")
     location = _location(db, issuer)
@@ -68,6 +81,9 @@ def _external_completed_task_setup(db):
     assert task is not None
     assert task.status == "requested"
 
+    if not accept:
+        return issuer, receiver, receiver_admin, task
+
     task_item_service.accept_task_item(
         db,
         receiver_admin,
@@ -76,6 +92,9 @@ def _external_completed_task_setup(db):
     )
     db.refresh(task)
     assert task.status == "accepted"
+
+    if not complete:
+        return issuer, receiver, receiver_admin, task
 
     completed = task
     for checklist_item in list(task.checklist_items):
@@ -128,6 +147,201 @@ def test_external_completed_task_is_invoiceable_for_receiver(db):
     assert expenses[0].task_id == task.id
     assert expenses[0].amount == 145.0
     assert expenses[0].provider_company_id == receiver.id
+
+
+def test_external_receiver_can_configure_hourly_task_billing(db):
+    _, _, receiver_admin, task = _external_completed_task_setup(db, complete=False)
+
+    updated = task_item_service.update_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskItemUpdate(
+            pricing_mode="hourly",
+            price=25,
+            quantity=1,
+            unit="hour",
+        ),
+    )
+
+    assert updated.pricing_mode == "hourly"
+    assert updated.price == 25
+    assert updated.unit == "hour"
+
+    started = task_item_service.update_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskItemUpdate(status="progress"),
+    )
+    assert started.pricing_locked_at is not None
+    assert started.billing_pricing_mode_snapshot == "hourly"
+    assert started.billing_price_snapshot == 25
+
+    with pytest.raises(HTTPException) as error:
+        task_item_service.update_task_item(
+            db,
+            receiver_admin,
+            task.id,
+            TaskItemUpdate(price=30),
+        )
+
+    assert error.value.status_code == 409
+
+
+def test_external_receiver_confirms_hourly_terms_when_accepting(db):
+    _, _, receiver_admin, task = _external_completed_task_setup(
+        db,
+        complete=False,
+        accept=False,
+    )
+
+    task.price = None
+    task.quantity = None
+    task.unit = "servicio"
+    db.commit()
+
+    accepted = task_item_service.accept_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskAcceptRequest(
+            pricing_mode="hourly",
+            price=25,
+            quantity=1,
+            unit="servicio",
+        ),
+    )
+
+    assert accepted.status == "accepted"
+    assert accepted.pricing_mode == "hourly"
+    assert accepted.price == 25
+    assert accepted.quantity == 1
+    assert accepted.unit == "hour"
+
+
+def test_external_task_without_agreed_price_cannot_be_accepted(db):
+    issuer, _, receiver_admin, task = _external_completed_task_setup(
+        db,
+        complete=False,
+        accept=False,
+    )
+    template = (
+        db.query(TemplateTask)
+        .filter(TemplateTask.company_id == issuer.id)
+        .one()
+    )
+    template.default_price = None
+    task.price = None
+    task.quantity = None
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        task_item_service.accept_task_item(
+            db,
+            receiver_admin,
+            task.id,
+            TaskAcceptRequest(pricing_mode="fixed", quantity=1, unit="service"),
+        )
+
+    assert error.value.status_code == 409
+    assert "agreed task price" in error.value.detail
+    db.refresh(task)
+    assert task.status == "requested"
+
+
+def test_reservation_resync_cannot_replace_started_receiver_terms(db):
+    issuer, receiver, receiver_admin, task = _external_completed_task_setup(
+        db,
+        complete=False,
+    )
+    task_item_service.update_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskItemUpdate(pricing_mode="hourly", price=25, quantity=1, unit="hour"),
+    )
+    task_item_service.update_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskItemUpdate(status="progress"),
+    )
+    db.refresh(task)
+    assert task.billing_price_snapshot == 25
+
+    template = (
+        db.query(TemplateTask)
+        .filter(TemplateTask.company_id == issuer.id)
+        .one()
+    )
+    template.default_price = 999
+    db.commit()
+
+    reservation = task.checkout_reservation
+    assert reservation is not None
+    resynced = reservation_tasks.sync_checkout_task(
+        db,
+        reservation,
+        task.location,
+        receiver.id,
+        reservation.check_out_at,
+        reservation.guest_count,
+        reservation.cleaning_scheduled_at,
+    )
+
+    assert resynced is not None
+    assert resynced.pricing_mode == "hourly"
+    assert resynced.price == 25
+    assert resynced.billing_price_snapshot == 25
+
+
+def test_reservation_resync_cannot_reassign_started_task_to_another_provider(db):
+    issuer, receiver, receiver_admin, task = _external_completed_task_setup(
+        db,
+        complete=False,
+    )
+    task_item_service.update_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskItemUpdate(pricing_mode="hourly", price=25, quantity=1, unit="hour"),
+    )
+    task_item_service.update_task_item(
+        db,
+        receiver_admin,
+        task.id,
+        TaskItemUpdate(status="progress"),
+    )
+
+    replacement_provider = _company(db, "Replacement Provider", "REPLACEMENT")
+    db.add(
+        LocationCompanyAccess(
+            location_id=task.location_id,
+            company_id=replacement_provider.id,
+            relationship_type="service_provider",
+            can_manage_reservations=True,
+            can_manage_tasks=True,
+        )
+    )
+    db.commit()
+
+    reservation = task.checkout_reservation
+    assert reservation is not None
+    with pytest.raises(HTTPException) as error:
+        reservation_tasks.sync_checkout_task(
+            db,
+            reservation,
+            task.location,
+            replacement_provider.id,
+            reservation.check_out_at,
+            reservation.guest_count,
+            reservation.cleaning_scheduled_at,
+        )
+
+    assert error.value.status_code == 409
+    db.refresh(task)
+    assert task.company_id == receiver.id
 
 
 def test_external_completed_task_creates_persistent_invoice_lines_and_totals(db):
@@ -208,7 +422,7 @@ def test_viewer_sees_accepted_external_task_in_company_pool(db):
         db,
         receiver_admin,
         task.id,
-        TaskAcceptRequest(),
+        TaskAcceptRequest(price=145, quantity=1, unit="service"),
     )
     db.refresh(task)
     assert task.status == "accepted"

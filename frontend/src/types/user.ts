@@ -84,6 +84,11 @@ export interface TaskItem {
     unit: string;
     pricing_mode?: "fixed" | "hourly";
     worked_seconds_snapshot?: number | null;
+    pricing_locked_at?: string | null;
+    billing_pricing_mode_snapshot?: "fixed" | "hourly" | null;
+    billing_price_snapshot?: number | null;
+    billing_quantity_snapshot?: number | null;
+    billing_unit_snapshot?: string | null;
     template_task_id?: number | null;
     location_id: number;
     user_id: number | null;
