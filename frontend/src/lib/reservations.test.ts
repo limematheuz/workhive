@@ -132,19 +132,28 @@ test("reservation provider options de-duplicate and sort collaborator companies"
 
 test("reservation filters enforce role visibility, search and cancelled visibility", () => {
     const companyId = 10;
+    const checkIn = new Date();
+    checkIn.setDate(checkIn.getDate() + 1);
+    const checkOut = new Date(checkIn);
+    checkOut.setDate(checkOut.getDate() + 2);
+    const activeStay = {
+        check_in_at: checkIn.toISOString(),
+        check_out_at: checkOut.toISOString(),
+    };
     const visibleLocation = location({ id: 1, owner_company_id: 10 });
     const externalLocation = location({ id: 2, owner_company_id: 20 });
     const locationMap = new Map([
         [visibleLocation.id, visibleLocation],
         [externalLocation.id, externalLocation],
     ]);
-    const visible = reservation({ id: 1, notes: "VIP guest" });
+    const visible = reservation({ id: 1, notes: "VIP guest", ...activeStay });
     const assignedToCompany = reservation({
         id: 2,
         location_id: 2,
         owner_company_id: 20,
         assigned_company_id: 10,
         assigned_company_name: "Ownet",
+        ...activeStay,
     });
     const hidden = reservation({
         id: 3,
