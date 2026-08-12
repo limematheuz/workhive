@@ -83,7 +83,7 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
         };
     }, [points]);
 
-    const total = regions.reduce((sum, region) => sum + region.count, 0);
+    const accessCount = regions.reduce((sum, region) => sum + region.count, 0);
 
     const handlePointerDown = useCallback((event: PointerEvent<SVGSVGElement>) => {
         if (event.button !== 0) return;
@@ -247,7 +247,7 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
 
                 <aside className="billing-block rounded-[18px] border border-[var(--border-soft)] p-3.5 text-sm">
                     <p className="font-mono text-2xl font-semibold text-[var(--text-main)]">
-                        {total.toLocaleString()}
+                        {regions.length.toLocaleString()}
                     </p>
                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                         {activeLocationsLabel}
@@ -256,7 +256,7 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
                     <div className="mt-4 grid gap-2.5">
                         {regions.length > 0 ? (
                             regions.slice(0, 6).map((region) => {
-                                const percent = total > 0 ? Math.max(8, Math.round((region.count / total) * 100)) : 0;
+                                const percent = accessCount > 0 ? Math.max(8, Math.round((region.count / accessCount) * 100)) : 0;
                                 return (
                                     <div key={region.id}>
                                         <div className="flex items-center justify-between gap-3">

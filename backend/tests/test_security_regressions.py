@@ -11,8 +11,8 @@ from app.schemas.invoice_item import InvoiceItemCreate, InvoiceItemUpdate
 from app.schemas.location import LocationCreate
 from app.schemas.quote import QuoteCreate, QuoteUpdate
 from credentials import TEST_SECRET, CREDENTIAL_FIELD, login_form
-from app.services import invoice_item_service, invoice_service, quote_service
-from app.services.request_context import get_client_ip
+from app.services import invoice_item_service, invoice_service, quote_service, request_context
+from app.services.request_context import get_client_ip, get_request_location_details
 from tests.test_reservations import _company
 
 
@@ -133,6 +133,57 @@ def test_client_ip_does_not_trust_client_supplied_forwarding_headers():
     )
 
     assert get_client_ip(request) == "198.51.100.10"
+
+
+def test_request_location_ignores_spoofed_cdn_geo_headers(monkeypatch):
+    request = Request(
+        {
+            "type": "http",
+            "headers": [
+                (b"cf-ipcity", b"Washington"),
+                (b"cf-ipcountry", b"US"),
+                (b"x-vercel-ip-latitude", b"38.9072"),
+                (b"x-vercel-ip-longitude", b"-77.0369"),
+            ],
+            "client": ("8.8.8.8", 8000),
+        }
+    )
+    monkeypatch.setattr(
+        request_context,
+        "_lookup_public_ip_location",
+        lambda ip_address: {
+            "country": "Spain",
+            "region": "Catalonia",
+            "city": "Girona",
+            "latitude": 41.98,
+            "longitude": 2.82,
+        },
+    )
+
+    details = get_request_location_details(request)
+
+    assert details["ip"] == "8.8.8.8"
+    assert details["geo"] == {
+        "country": "Spain",
+        "region": "Catalonia",
+        "city": "Girona",
+        "latitude": 41.98,
+        "longitude": 2.82,
+    }
+
+
+def test_request_location_skips_geolocation_for_anonymous_events(monkeypatch):
+    request = Request({"type": "http", "headers": [], "client": ("8.8.8.8", 8000)})
+    monkeypatch.setattr(
+        request_context,
+        "_lookup_public_ip_location",
+        lambda ip_address: pytest.fail("anonymous page views must not trigger IP geolocation"),
+    )
+
+    details = get_request_location_details(request, include_geolocation=False)
+
+    assert details["ip"] == "8.8.8.8"
+    assert details["geo"] == {}
 
 
 def test_partner_company_response_excludes_private_billing_fields(db):

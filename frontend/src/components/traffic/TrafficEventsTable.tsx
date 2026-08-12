@@ -1,6 +1,6 @@
 "use client";
 
-import { Link2, LogIn, MonitorSmartphone } from "lucide-react";
+import { Globe2, Link2, LogIn, Monitor, Smartphone, Tablet } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
     fallbackTraffic,
     formatDateTime,
+    getDeviceKind,
     getDeviceLabel,
     getGeoLabel,
     TRAFFIC_PAGE_SIZE,
@@ -54,12 +55,35 @@ export function TrafficEventsTable({
     const safeCurrentPage = Math.min(currentPage, visiblePageCount);
     const isLoginsTab = activeTab === "logins";
 
-    const deviceBadge = (event: AuditLog) => (
-        <Badge variant="secondary" className="gap-1.5 font-medium">
-            <MonitorSmartphone className="h-3 w-3" />
-            {getDeviceLabel(event.details.user_agent, traffic)}
-        </Badge>
-    );
+    const deviceBadge = (event: AuditLog) => {
+        const deviceKind = getDeviceKind(event.details.user_agent);
+        const presentation = {
+            desktop: {
+                icon: Monitor,
+                className: "border-[var(--brand-blue-border)] bg-[var(--brand-blue-soft)] text-[var(--brand-blue)]",
+            },
+            mobile: {
+                icon: Smartphone,
+                className: "border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]",
+            },
+            tablet: {
+                icon: Tablet,
+                className: "border-[color-mix(in_srgb,var(--brand-blue-sky-deep)_42%,var(--border-soft))] bg-[color-mix(in_srgb,var(--brand-blue-sky-deep)_14%,var(--bg-card-solid))] text-[var(--brand-blue-hover)]",
+            },
+            browser: {
+                icon: Globe2,
+                className: "border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
+            },
+        }[deviceKind];
+        const Icon = presentation.icon;
+
+        return (
+            <Badge variant="outline" className={`gap-1.5 font-medium ${presentation.className}`}>
+                <Icon className="h-3 w-3" />
+                {getDeviceLabel(event.details.user_agent, traffic)}
+            </Badge>
+        );
+    };
 
     return (
         <section className="billing-block overflow-hidden rounded-[18px] border border-[var(--border-soft)]">

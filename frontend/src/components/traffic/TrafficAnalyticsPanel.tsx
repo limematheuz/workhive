@@ -62,6 +62,14 @@ export function TrafficAnalyticsPanel({
     const lastEventLabel = latestEvent
         ? formatDateTime(latestEvent.created_at, locale).split(",").pop()?.trim() || "-"
         : "-";
+    const chartStops = platformStats.reduce<string[]>((stops, item, index) => {
+        const start = platformStats
+            .slice(0, index)
+            .reduce((sum, previous) => sum + previous.percent, 0);
+        const end = index === platformStats.length - 1 ? 100 : start + item.percent;
+        stops.push(`${item.color} ${start}% ${end}%`);
+        return stops;
+    }, []);
 
     return (
         <div className="space-y-4">
@@ -142,7 +150,7 @@ export function TrafficAnalyticsPanel({
                         <div
                             className="relative h-40 w-40 rounded-full"
                             style={{
-                                background: `conic-gradient(${platformStats[0].color} 0 ${platformStats[0].percent}%, ${platformStats[1].color} ${platformStats[0].percent}% ${platformStats[0].percent + platformStats[1].percent}%, ${platformStats[2].color} ${platformStats[0].percent + platformStats[1].percent}% 100%)`,
+                                background: `conic-gradient(${chartStops.join(", ")})`,
                             }}
                         >
                             <div className="absolute inset-8 rounded-full bg-[var(--bg-tertiary)]" />
