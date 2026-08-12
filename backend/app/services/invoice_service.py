@@ -1,6 +1,5 @@
 import logging
 import uuid
-from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -38,6 +37,11 @@ from app.services.invoice_pdf import (
     generate_invoice_pdf,
     generate_invoice_preview_pdf,
     resolve_invoice_pdf,
+)
+from app.services.invoice_update_policy_service import (
+    apply_issued_status_transition,
+    task_ids_from_invoice_items,
+    validate_draft_status_update,
 )
 from app.services.invoice_tasks import (  # noqa: F401
     apply_task_amounts_to_invoice_item,
@@ -106,18 +110,6 @@ def _ensure_invoice_number_available(
         )
 
 
-def _task_ids_from_invoice_items(
-    items: list[InvoiceItemCreate],
-) -> list[int]:
-    task_ids = [item.task_item_id for item in items if item.task_item_id is not None]
-    if len(task_ids) != len(set(task_ids)):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A task item cannot appear more than once in the same invoice",
-        )
-    return task_ids
-
-
 def create_invoice(
     db: Session, company_id: int, invoice_data: InvoiceCreate
 ) -> Invoice:
@@ -143,7 +135,7 @@ def create_invoice_draft(
 ) -> Invoice:
     _validate_client(db, company_id, data.client_id)
     _ensure_invoice_number_available(db, company_id, data.invoice_number)
-    _task_ids_from_invoice_items(data.items)
+    task_ids_from_invoice_items(data.items)
 
     try:
         header = InvoiceCreate(**data.model_dump(exclude={"items"}))
@@ -456,7 +448,7 @@ def _validate_invoice_update_links(
                 target_client_id,
                 linked_invoice_id=invoice.id,
             )
-            for task_id in _task_ids_from_invoice_items(replacement_items)
+            for task_id in task_ids_from_invoice_items(replacement_items)
         }
 
     if client_changed:
@@ -521,11 +513,7 @@ def _apply_draft_invoice_changes(
     replacement_items: list[InvoiceItemCreate] | None,
     validated_tasks: dict[int, TaskItem],
 ) -> None:
-    if requested_status not in {None, "draft", "cancelled"}:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A draft can only be issued or cancelled",
-        )
+    validate_draft_status_update(requested_status)
     if requested_status == "cancelled":
         _cancel_draft_invoice(db, invoice)
     elif replacement_items is not None:
@@ -535,36 +523,6 @@ def _apply_draft_invoice_changes(
             replacement_items,
             validated_tasks,
         )
-
-
-def _apply_issued_invoice_transition(
-    invoice: Invoice,
-    changes: dict,
-    replacement_items: list[InvoiceItemCreate] | None,
-    requested_status: str | None,
-) -> None:
-    detail_changes = {key for key in changes if key != "status"}
-    if replacement_items is not None:
-        detail_changes.add("items")
-    if detail_changes:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Issued invoice details are immutable",
-        )
-    allowed = {
-        "issued": {"paid", "overdue"},
-        "overdue": {"paid"},
-        "paid": set(),
-        "rectified": set(),
-        "cancelled": set(),
-    }
-    if requested_status not in allowed.get(invoice.status, set()):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid invoice status transition",
-        )
-    if requested_status == "paid":
-        invoice.paid_at = datetime.now(timezone.utc)
 
 
 def _normalize_invoice_update_number(
@@ -622,7 +580,7 @@ def update_invoice(
                 validated_tasks,
             )
         else:
-            _apply_issued_invoice_transition(
+            apply_issued_status_transition(
                 invoice,
                 changes,
                 replacement_items,
