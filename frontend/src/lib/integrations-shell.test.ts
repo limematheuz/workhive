@@ -23,6 +23,7 @@ test("platform calendar overview uses billing surfaces and DataListTable", () =>
     assert.match(calendarUi, /role="switch"/);
     assert.match(calendarUi, /<Button/);
     assert.match(calendarUi, /<Badge/);
+    assert.doesNotMatch(statusCard, /<StatusBadge\s+\{\.\.\.item\}\s*\/>/);
     assert.match(overview, /onCopyCallback/);
     assert.match(overview, /onRefresh/);
     assert.match(overview, /onToggle/);
