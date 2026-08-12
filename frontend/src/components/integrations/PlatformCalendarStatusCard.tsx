@@ -102,12 +102,16 @@ export function PlatformCalendarStatusCard({
                             const Icon = item.icon;
                             return <div className="flex items-center justify-between gap-3">
                                 <div className="flex min-w-0 items-center gap-2.5"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card-solid)] text-accent"><Icon className="h-3.5 w-3.5" aria-hidden="true" /></span><span className="truncate text-sm font-medium text-[var(--text-main)]">{item.label}</span></div>
-                                <StatusBadge {...item} />
+                                <StatusBadge
+                                    active={item.active}
+                                    activeLabel={item.activeLabel}
+                                    inactiveLabel={item.inactiveLabel}
+                                />
                             </div>;
                         }}
                         renderDesktopRow={(item) => {
                             const Icon = item.icon;
-                            return <><div className="flex min-w-0 items-center gap-2.5"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card-solid)] text-accent"><Icon className="h-3.5 w-3.5" aria-hidden="true" /></span><span className="truncate text-sm font-medium text-[var(--text-main)]">{item.label}</span></div><div className="flex justify-end"><StatusBadge {...item} /></div></>;
+                            return <><div className="flex min-w-0 items-center gap-2.5"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-card-solid)] text-accent"><Icon className="h-3.5 w-3.5" aria-hidden="true" /></span><span className="truncate text-sm font-medium text-[var(--text-main)]">{item.label}</span></div><div className="flex justify-end"><StatusBadge active={item.active} activeLabel={item.activeLabel} inactiveLabel={item.inactiveLabel} /></div></>;
                         }}
                     />
                     {diagnostics.length > 0 && (
