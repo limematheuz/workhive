@@ -27,6 +27,11 @@ from app.services.reservation_tasks import (
     sync_checkout_task,
     sync_location_reservation_chain,
 )
+from app.services.reservation_lifecycle_policy_service import (
+    require_all_linked_work_removable,
+    require_linked_work_removable,
+    require_provider_change_allowed,
+)
 from app.services.reservation_validation import (
     get_location,
     get_owner_company_id,
@@ -439,18 +444,7 @@ def _discard_checkout_task_for_assignment_change(
 ) -> TaskItem | None:
     if not assignment_changed or checkout_task is None:
         return checkout_task
-    if checkout_task.is_invoiced or checkout_task.status not in {
-        "requested",
-        "rejected",
-        "pending",
-    }:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "The service provider cannot be changed after the work "
-                "has been accepted or started."
-            ),
-        )
+    require_provider_change_allowed(checkout_task)
     task_item_repo.delete_task_item(db, checkout_task)
     reservation.service_request_sent_at = None
     return None
@@ -462,11 +456,7 @@ def _cancel_updated_reservation(
     checkout_task: TaskItem | None,
 ) -> Reservation:
     if checkout_task:
-        if checkout_task.is_invoiced:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Reservations linked to invoiced work cannot be cancelled.",
-            )
+        require_linked_work_removable(checkout_task, operation="cancel")
         task_item_repo.delete_task_item(db, checkout_task)
     sync_location_reservation_chain(db, reservation.location_id)
     db.commit()
@@ -533,11 +523,7 @@ def _remove_updated_reservation_cleaning(
 ) -> None:
     if not checkout_task:
         return
-    if checkout_task.is_invoiced:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Cleaning cannot be disabled after its work was invoiced.",
-        )
+    require_linked_work_removable(checkout_task, operation="disable_cleaning")
     task_item_repo.delete_task_item(db, checkout_task)
     reservation.service_request_sent_at = None
     db.add(reservation)
@@ -634,12 +620,7 @@ def delete_reservation(db: Session, current_user: User, reservation_id: int) -> 
             .filter(TaskItem.checkout_reservation_id == reservation.id)
             .all()
         )
-        invoiced_tasks = [task for task in checkout_tasks if task.is_invoiced]
-        if invoiced_tasks:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Reservations linked to invoiced work cannot be deleted.",
-            )
+        require_all_linked_work_removable(checkout_tasks, operation="delete")
         for task in checkout_tasks:
             task_item_repo.delete_task_item(db, task)
         reservation_repo.delete_reservation(db, reservation)
