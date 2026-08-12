@@ -1,4 +1,5 @@
-import { AuditLog } from "@/types/audit-log";
+import type { AuditLog } from "../../types/audit-log";
+import type { TrafficMapPoint } from "../traffic-map";
 
 export const TRAFFIC_PAGE_SIZE = 12;
 
@@ -17,10 +18,10 @@ export const fallbackTraffic = {
         unique_users: "Usuarios únicos",
         locations_seen: "Ubicaciones",
         map_title: "Mapa de accesos",
-        map_subtitle: "Mapa 2D con ubicación aproximada por IP pública o proxy/CDN.",
+        map_subtitle: "Solo inicios de sesión. Ubicación aproximada por IP pública; una VPN o red corporativa puede mostrar otra ciudad.",
         unknown_user: "Usuario desconocido",
         no_map_points: "Sin coordenadas todavía",
-        no_map_points_desc: "En localhost puede no haber coordenadas. En producción se usa IP pública o headers del proxy/CDN.",
+        no_map_points_desc: "Los accesos autenticados nuevos aparecerán cuando tengan una ubicación aproximada por IP pública.",
         active_locations: "Ubicaciones activas",
         reach_period: "Últimos 12 meses",
         search: "Buscar",
@@ -50,6 +51,7 @@ export const fallbackTraffic = {
         device: "Dispositivo",
         time: "Hora",
         mobile: "Móvil",
+        tablet: "Tablet",
         desktop: "Escritorio",
         browser: "Navegador",
         previous: "Anterior",
@@ -71,10 +73,10 @@ export const fallbackTraffic = {
         unique_users: "Unique users",
         locations_seen: "Locations",
         map_title: "Access map",
-        map_subtitle: "2D map with approximate location from public IP or proxy/CDN.",
+        map_subtitle: "Signed-in access only. Location is approximate from public IP; VPNs and corporate networks may show another city.",
         unknown_user: "Unknown user",
         no_map_points: "No coordinates yet",
-        no_map_points_desc: "Localhost may have no coordinates. Production uses public IP or proxy/CDN headers.",
+        no_map_points_desc: "New signed-in access will appear when an approximate public-IP location is available.",
         active_locations: "Active locations",
         reach_period: "Last 12 months",
         search: "Search",
@@ -104,6 +106,7 @@ export const fallbackTraffic = {
         device: "Device",
         time: "Time",
         mobile: "Mobile",
+        tablet: "Tablet",
         desktop: "Desktop",
         browser: "Browser",
         previous: "Previous",
@@ -137,15 +140,56 @@ export function getGeoLabel(event: AuditLog) {
     return [geo?.city, geo?.region, geo?.country].filter(Boolean).join(", ") || "-";
 }
 
+export type DeviceKind = "desktop" | "mobile" | "tablet" | "browser";
+
+export function getDeviceKind(userAgent: string | null | undefined): DeviceKind {
+    const value = String(userAgent || "").toLowerCase();
+    if (!value) return "browser";
+
+    // iPadOS may present a desktop-like Macintosh user agent with a Mobile
+    // token, while Android tablets do not include Mobile.
+    if (
+        /ipad|tablet|playbook|silk|kindle|kftt|kfapwi/.test(value)
+        || (/macintosh/.test(value) && /mobile/.test(value))
+        || (/android/.test(value) && !/mobile/.test(value))
+    ) {
+        return "tablet";
+    }
+    if (/iphone|ipod|windows phone|android.*mobile|mobi/.test(value)) return "mobile";
+    if (/macintosh|windows|linux|cros/.test(value)) return "desktop";
+    return "browser";
+}
+
 export function getDeviceLabel(
     userAgent: string | null | undefined,
     traffic: TrafficLabels,
 ) {
-    const value = String(userAgent || "");
-    if (!value) return "-";
-    if (/iphone|ipad|android|mobile/i.test(value)) return traffic.mobile;
-    if (/macintosh|windows|linux/i.test(value)) return traffic.desktop;
+    const deviceKind = getDeviceKind(userAgent);
+    if (deviceKind === "mobile") return traffic.mobile;
+    if (deviceKind === "tablet") return traffic.tablet;
+    if (deviceKind === "desktop") return traffic.desktop;
     return traffic.browser;
+}
+
+export function getAuthenticatedTrafficMapPoints(
+    events: AuditLog[],
+    unknownUserLabel: string,
+): TrafficMapPoint[] {
+    return events.flatMap((event) => {
+        if (event.action !== "auth.login") return [];
+
+        const lat = parseCoordinate(event.details.geo?.latitude);
+        const lng = parseCoordinate(event.details.geo?.longitude);
+        if (lat === null || lng === null) return [];
+
+        return [{
+            id: event.id.toString(),
+            lat,
+            lng,
+            label: event.details.user_email || unknownUserLabel,
+            location: getGeoLabel(event),
+        }];
+    });
 }
 
 export function formatDateTime(value: string, locale: "en" | "es") {

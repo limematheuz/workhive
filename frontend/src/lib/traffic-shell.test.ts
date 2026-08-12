@@ -20,6 +20,8 @@ test("traffic dashboard uses billing surfaces without accent pad or green chrome
     assert.match(page, /isPlatformSuperadmin/);
     assert.match(page, /TrafficAnalyticsPanel/);
     assert.match(page, /TrafficEventsTable/);
+    assert.match(page, /getAuthenticatedTrafficMapPoints\(loginEvents/);
+    assert.match(page, /const labels = \[traffic\.desktop, traffic\.mobile, traffic\.tablet, traffic\.browser\]/);
     assert.doesNotMatch(page, /billing-surface-accent-pad/);
     assert.doesNotMatch(page, /surface-glass-card/);
     assert.doesNotMatch(page, /btn-cancel-muted/);
@@ -41,6 +43,10 @@ test("traffic dashboard uses billing surfaces without accent pad or green chrome
     assert.match(events, /DataListTable/);
     assert.match(events, /variant="plain"/);
     assert.match(events, /PremiumTabs/);
+    assert.match(events, /getDeviceKind/);
+    assert.match(events, /Smartphone/);
+    assert.match(events, /Tablet/);
+    assert.match(events, /Monitor/);
     assert.match(events, /from "@\/components\/ui\/badge"/);
     assert.match(events, /from "@\/components\/ui\/button"/);
     assert.doesNotMatch(events, /<table className/);

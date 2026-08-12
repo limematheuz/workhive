@@ -45,21 +45,25 @@ def _lookup_public_ip_location(ip_address: str) -> dict:
     }
 
 
-def get_request_location_details(request: Request) -> dict:
+def get_request_location_details(
+    request: Request,
+    *,
+    include_geolocation: bool = True,
+) -> dict:
+    """Return request metadata without trusting client-controlled geo headers.
+
+    Uvicorn resolves the client address from trusted reverse proxies before this
+    function runs. Headers such as ``CF-IPCity`` and ``X-Vercel-IP-City`` are
+    not trustworthy in WorkHive's current direct-Caddy deployment because a
+    browser could send them itself. Public page views also do not need a third
+    party IP lookup, so callers can explicitly opt out of it.
+    """
     client_ip = get_client_ip(request)
-    geo = {
-        "country": request.headers.get("x-vercel-ip-country")
-        or request.headers.get("cf-ipcountry"),
-        "region": request.headers.get("x-vercel-ip-country-region")
-        or request.headers.get("cf-region"),
-        "city": request.headers.get("x-vercel-ip-city")
-        or request.headers.get("cf-ipcity"),
-        "latitude": request.headers.get("x-vercel-ip-latitude"),
-        "longitude": request.headers.get("x-vercel-ip-longitude"),
-    }
-    if not geo["latitude"] and not geo["longitude"] and _is_public_ip(client_ip):
-        looked_up_geo = _lookup_public_ip_location(client_ip)
-        geo = {key: geo.get(key) or looked_up_geo.get(key) for key in geo}
+    geo = (
+        _lookup_public_ip_location(client_ip)
+        if include_geolocation and _is_public_ip(client_ip)
+        else {}
+    )
 
     return {
         "ip": client_ip,

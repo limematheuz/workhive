@@ -39,7 +39,10 @@ def record_page_view(
             "screen": payload.screen,
             "timezone": payload.timezone,
             "language": payload.language,
-            **get_request_location_details(request),
+            # Anonymous page views stay useful for acquisition reporting, but
+            # should not trigger third-party IP geolocation or feed the map of
+            # authenticated WorkHive users.
+            **get_request_location_details(request, include_geolocation=False),
         },
     )
     return {"status": "accepted"}

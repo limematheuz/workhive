@@ -12,12 +12,11 @@ import { AuditLogService } from "@/services/audit-log.service";
 import { AuditLog } from "@/types/audit-log";
 import { User } from "@/types/user";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
-import type { TrafficMapPoint } from "@/lib/traffic-map";
 import {
     fallbackTraffic,
+    getAuthenticatedTrafficMapPoints,
     getDeviceLabel,
     getGeoLabel,
-    parseCoordinate,
     startOfDayKey,
     TRAFFIC_PAGE_SIZE,
 } from "@/lib/traffic/traffic-page-utils";
@@ -133,37 +132,32 @@ export default function TrafficPage() {
         }));
     }, [events]);
 
-    const mapPoints = useMemo<TrafficMapPoint[]>(() => {
-        return events.flatMap((event) => {
-            const lat = parseCoordinate(event.details.geo?.latitude);
-            const lng = parseCoordinate(event.details.geo?.longitude);
-            if (lat === null || lng === null) return [];
-            const location = getGeoLabel(event);
-            return [{
-                id: event.id.toString(),
-                lat,
-                lng,
-                label: event.details.user_email || event.details.path || traffic.unknown_user,
-                location,
-            }];
-        });
-    }, [events, traffic.unknown_user]);
+    const mapPoints = useMemo(
+        () => getAuthenticatedTrafficMapPoints(loginEvents, traffic.unknown_user),
+        [loginEvents, traffic.unknown_user],
+    );
 
     const platformStats = useMemo(() => {
-        const labels = [traffic.desktop, traffic.mobile, traffic.browser];
+        const labels = [traffic.desktop, traffic.mobile, traffic.tablet, traffic.browser];
         const counts = new Map(labels.map((label) => [label, 0]));
-        events.forEach((event) => {
+        loginEvents.forEach((event) => {
             const label = getDeviceLabel(event.details.user_agent, traffic);
             counts.set(label, (counts.get(label) || 0) + 1);
         });
-        const total = Math.max(1, events.length);
+        const total = Math.max(1, loginEvents.length);
         return labels.map((label, index) => ({
             label,
             count: counts.get(label) || 0,
             percent: Math.round(((counts.get(label) || 0) / total) * 100),
-            color: index === 0 ? "var(--accent-color)" : index === 1 ? "var(--alert-warning-text)" : "var(--text-muted)",
+            color: index === 0
+                ? "var(--accent-color)"
+                : index === 1
+                    ? "var(--alert-warning-text)"
+                    : index === 2
+                        ? "var(--brand-blue-sky-deep)"
+                        : "var(--text-muted)",
         }));
-    }, [events, traffic]);
+    }, [loginEvents, traffic]);
 
     const heatmap = useMemo(() => {
         const days = locale === "en" ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
