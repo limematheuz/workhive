@@ -5,6 +5,7 @@ export interface BillingPartyFields {
     phone: string;
     email: string;
     bank?: string;
+    swiftBic?: string;
 }
 
 export type BillingPartyField = keyof BillingPartyFields;
@@ -15,6 +16,7 @@ const BILLING_LABELS: Record<Exclude<BillingPartyField, "name">, string> = {
     phone: "Teléfono:",
     email: "Email:",
     bank: "Banco:",
+    swiftBic: "SWIFT/BIC:",
 };
 
 export function parseBillingParty(info: string): BillingPartyFields {
@@ -26,6 +28,7 @@ export function parseBillingParty(info: string): BillingPartyFields {
         phone: "",
         email: "",
         bank: "",
+        swiftBic: "",
     };
 
     for (const line of lines) {
@@ -59,6 +62,9 @@ export function formatBillingParty(fields: BillingPartyFields): string {
 
     if (fields.bank) {
         lines.push(`${BILLING_LABELS.bank} ${fields.bank}`);
+    }
+    if (fields.swiftBic) {
+        lines.push(`${BILLING_LABELS.swiftBic} ${fields.swiftBic}`);
     }
 
     return lines.join("\n");

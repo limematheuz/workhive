@@ -45,6 +45,7 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     assert.match(details, /btn-cancel-muted/);
     assert.match(details, /PAGE_ACTION_BUTTON_PRIMARY/);
     assert.match(company, /DocumentFormField/);
+    assert.match(company, /company-swift-bic/);
     assert.match(company, /btn-cancel-muted/);
     assert.match(password, /DocumentFormField/);
     assert.match(password, /btn-cancel-muted/);

@@ -49,6 +49,7 @@ const EMPTY_BILLING_PARTY_FIELDS: BillingPartyFields = {
     phone: "",
     email: "",
     bank: "",
+    swiftBic: "",
 };
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
@@ -117,6 +118,7 @@ function editableIssuerFields(invoice: Invoice, company: Company | null): Billin
         phone: String(snapshot.phone || company?.phone || ""),
         email: String(snapshot.email || company?.email || ""),
         bank: String(snapshot.bank_account || company?.bank_account || ""),
+        swiftBic: String(snapshot.swift_bic || company?.swift_bic || ""),
     };
 }
 

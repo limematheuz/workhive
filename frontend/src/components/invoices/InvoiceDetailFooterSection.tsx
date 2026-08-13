@@ -12,7 +12,11 @@ type InvoiceDetailFooterSectionProps = {
 };
 
 export function InvoiceDetailFooterSection({ dict, invoice, company }: InvoiceDetailFooterSectionProps) {
-    if (!invoice.notes && !invoice.terms && !invoice.signature_url && !company?.bank_account) {
+    const issuerSnapshot = invoice.issuer_snapshot || {};
+    const bankAccount = String(issuerSnapshot.bank_account || company?.bank_account || "");
+    const swiftBic = String(issuerSnapshot.swift_bic || company?.swift_bic || "");
+
+    if (!invoice.notes && !invoice.terms && !invoice.signature_url && !bankAccount && !swiftBic) {
         return null;
     }
 
@@ -35,10 +39,11 @@ export function InvoiceDetailFooterSection({ dict, invoice, company }: InvoiceDe
             </div>
 
             <div className="flex flex-col gap-4 pt-1 md:flex-row md:items-end md:justify-between">
-                {company?.bank_account && (
+                {(bankAccount || swiftBic) && (
                     <div className="text-[10px] text-[var(--text-muted)] print:text-neutral-600">
                         <p className="font-semibold text-[var(--text-main)] print:text-black">{dict.invoices.payment_info}:</p>
-                        <p>{dict.invoices.bank_transfer}: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{company.bank_account}</span></p>
+                        {bankAccount && <p>{dict.invoices.bank_transfer}: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{bankAccount}</span></p>}
+                        {swiftBic && <p>SWIFT/BIC: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{swiftBic}</span></p>}
                     </div>
                 )}
                 {invoice.signature_url && (

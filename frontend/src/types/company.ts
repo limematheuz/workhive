@@ -13,6 +13,7 @@ export interface Company {
     logo?: string | null;
     iban?: string;
     bank_account?: string | null;
+    swift_bic?: string | null;
     default_payment_notes?: string | null;
     default_document_terms?: string | null;
     partner_code?: string;

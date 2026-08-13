@@ -16,6 +16,7 @@ class Company(Base):
     email = Column(String(100), nullable=False, index=True)
     logo = Column(Text, nullable=True)
     bank_account = Column(String(50), nullable=True)
+    swift_bic = Column(String(11), nullable=True)
     default_payment_notes = Column(Text, nullable=True)
     default_document_terms = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)

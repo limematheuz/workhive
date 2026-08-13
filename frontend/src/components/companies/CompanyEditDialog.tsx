@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { normalizeSwiftBicInput } from "@/lib/banking";
 
 export type CompanyEditFormData = {
     name: string;
@@ -19,6 +20,7 @@ export type CompanyEditFormData = {
     phone: string;
     email: string;
     bank_account: string;
+    swift_bic: string;
     subscription_plan: string;
     subscription_status: string;
     trial_ends_at: string;
@@ -39,6 +41,7 @@ type CompanyEditDialogProps = {
         email: string;
         address: string;
         iban: string;
+        swiftBic: string;
         cancel: string;
         saving: string;
         save: string;
@@ -120,14 +123,28 @@ export function CompanyEditDialog({
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <Label htmlFor="bank_account">{labels.iban}</Label>
-                                <Input
-                                    id="bank_account"
-                                    value={formData.bank_account}
-                                    onChange={(e) => setFormData({ ...formData, bank_account: e.target.value })}
-                                    className="bg-[var(--bg-primary)] border-[var(--border-color)]"
-                                />
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="bank_account">{labels.iban}</Label>
+                                    <Input
+                                        id="bank_account"
+                                        value={formData.bank_account}
+                                        onChange={(e) => setFormData({ ...formData, bank_account: e.target.value })}
+                                        className="bg-[var(--bg-primary)] border-[var(--border-color)] font-mono"
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="swift_bic">{labels.swiftBic}</Label>
+                                    <Input
+                                        id="swift_bic"
+                                        value={formData.swift_bic}
+                                        onChange={(e) => setFormData({ ...formData, swift_bic: normalizeSwiftBicInput(e.target.value) })}
+                                        placeholder="CAIXESBBXXX"
+                                        maxLength={11}
+                                        pattern="[A-Za-z]{4}[A-Za-z]{2}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?"
+                                        className="bg-[var(--bg-primary)] border-[var(--border-color)] font-mono uppercase"
+                                    />
+                                </div>
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/50 p-4 sm:grid-cols-2">

@@ -76,6 +76,7 @@ export function getIssuerFieldsFromCompany(company: Company): BillingPartyFields
         phone: company.phone || "",
         email: company.email || "",
         bank: company.bank_account || "",
+        swiftBic: company.swift_bic || "",
     };
 }
 

@@ -1668,6 +1668,7 @@
     "email_label": "Email de la Empresa",
     "address_label": "Dirección Legal",
     "iban_label": "Código IBAN (Cuenta Bancaria)",
+    "swift_bic_label": "SWIFT / BIC",
     "cancel": "Cancelar",
     "save": "Guardar Cambios",
     "saving": "Guardando...",

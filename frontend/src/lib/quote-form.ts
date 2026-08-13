@@ -45,6 +45,7 @@ export function getQuoteIssuerFieldsFromCompany(company: Company): BillingPartyF
         phone: company.phone || "",
         email: company.email || "",
         bank: company.bank_account || "",
+        swiftBic: company.swift_bic || "",
     };
 }
 

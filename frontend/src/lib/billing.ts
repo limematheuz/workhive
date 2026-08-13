@@ -5,6 +5,7 @@ export interface BillingPartyFields {
     phone: string
     email: string
     bank?: string
+    swiftBic?: string
 }
 
 export function parseBillingInfo(infoStr: string): BillingPartyFields {
@@ -16,6 +17,7 @@ export function parseBillingInfo(infoStr: string): BillingPartyFields {
     let phone = ""
     let email = ""
     let bank = ""
+    let swiftBic = ""
 
     lines.slice(1).forEach((line) => {
         if (line.startsWith("NIF/CIF:")) taxId = line.replace("NIF/CIF:", "").trim()
@@ -23,10 +25,11 @@ export function parseBillingInfo(infoStr: string): BillingPartyFields {
         else if (line.startsWith("Teléfono:")) phone = line.replace("Teléfono:", "").trim()
         else if (line.startsWith("Email:")) email = line.replace("Email:", "").trim()
         else if (line.startsWith("Banco:")) bank = line.replace("Banco:", "").trim()
+        else if (line.startsWith("SWIFT/BIC:")) swiftBic = line.replace("SWIFT/BIC:", "").trim()
         else if (address === "" && line.trim() !== "") {
             address = line.trim()
         }
     })
 
-    return { name, taxId, address, phone, email, bank }
+    return { name, taxId, address, phone, email, bank, swiftBic }
 }

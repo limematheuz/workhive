@@ -14,6 +14,7 @@ test("billing party data round-trips through the stored text format", () => {
         phone: "+34 600 000 000",
         email: "billing@example.com",
         bank: "ES00 0000 0000 0000",
+        swiftBic: "CAIXESBBXXX",
     };
 
     assert.deepEqual(parseBillingParty(formatBillingParty(fields)), fields);

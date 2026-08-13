@@ -64,6 +64,8 @@ def _draft_payload(client_id: int) -> InvoiceDraftCreate:
 
 def test_invoice_draft_and_issue_are_consistent_and_chained(db):
     company = _company(db, "Issuer SL", "A12345678")
+    company.swift_bic = "CAIXESBBXXX"
+    db.commit()
     client = _billing_client(db, company)
 
     draft = invoice_service.create_invoice_draft(
@@ -83,6 +85,7 @@ def test_invoice_draft_and_issue_are_consistent_and_chained(db):
     assert issued.issued_at is not None
     assert issued.invoice_hash is not None
     assert issued.issuer_snapshot["tax_id"] == company.tax_id
+    assert issued.issuer_snapshot["swift_bic"] == "CAIXESBBXXX"
     assert issued.recipient_snapshot["tax_id"] == client.legal_number
     assert issued.pdf_generated_at is not None
     assert issued.pdf_sha256 is not None

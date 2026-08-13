@@ -348,10 +348,16 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
             )
         )
     bank_account = (invoice.issuer_snapshot or {}).get("bank_account")
-    if bank_account:
+    swift_bic = (invoice.issuer_snapshot or {}).get("swift_bic")
+    if bank_account or swift_bic:
+        payment_details = []
+        if bank_account:
+            payment_details.append(f"Cuenta / IBAN: {_text(bank_account)}")
+        if swift_bic:
+            payment_details.append(f"SWIFT/BIC: {_text(swift_bic)}")
         footer_blocks.append(
             Paragraph(
-                f"<b>Pago por transferencia:</b> {_text(bank_account)}",
+                f"<b>Pago por transferencia:</b> {' · '.join(payment_details)}",
                 styles["BodySmall"],
             )
         )

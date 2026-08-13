@@ -102,10 +102,12 @@ test("billing party fields from company keep bank account", () => {
         phone: "+34 634 92 09 23",
         email: "ownet@example.com",
         bank_account: "ES0000",
+        swift_bic: "CAIXESBBXXX",
         is_active: true,
     } as Company);
 
     assert.equal(fields.bank, "ES0000");
+    assert.equal(fields.swiftBic, "CAIXESBBXXX");
 });
 
 test("invoice draft payload maps concept rows and optional fields", () => {

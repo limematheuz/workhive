@@ -6,6 +6,7 @@ import type {
     BillingPartyField,
     BillingPartyFields,
 } from "@/lib/billing-party";
+import { normalizeSwiftBicInput } from "@/lib/banking";
 
 export type { BillingPartyFields } from "@/lib/billing-party";
 
@@ -88,6 +89,12 @@ export function BillingPartyCard({
                                 <span className="font-mono text-2xs">{structuredFields.bank}</span>
                             </div>
                         )}
+                        {isIssuer && structuredFields.swiftBic && (
+                            <div>
+                                <span className="text-[var(--text-muted)] font-semibold">SWIFT/BIC:</span>{" "}
+                                <span className="font-mono text-2xs">{structuredFields.swiftBic}</span>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="space-y-2 pt-1 flex-1">
@@ -146,15 +153,30 @@ export function BillingPartyCard({
                             </div>
                         </div>
                         {isIssuer && (
-                            <div className="space-y-0.5">
-                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_bank || "Banco / IBAN"}</label>
-                                <input 
-                                    type="text" 
-                                    aria-label={dict.invoices?.field_bank || "Banco / IBAN"}
-                                    value={structuredFields.bank || ""} 
-                                    onChange={(e) => onChangeField("bank", e.target.value)} 
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent font-mono"
-                                />
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                <div className="space-y-0.5">
+                                    <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_bank || "Banco / IBAN"}</label>
+                                    <input
+                                        type="text"
+                                        aria-label={dict.invoices?.field_bank || "Banco / IBAN"}
+                                        value={structuredFields.bank || ""}
+                                        onChange={(e) => onChangeField("bank", e.target.value)}
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent font-mono"
+                                    />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">SWIFT / BIC</label>
+                                    <input
+                                        type="text"
+                                        aria-label="SWIFT / BIC"
+                                        value={structuredFields.swiftBic || ""}
+                                        onChange={(e) => onChangeField("swiftBic", normalizeSwiftBicInput(e.target.value))}
+                                        maxLength={11}
+                                        pattern="[A-Za-z]{4}[A-Za-z]{2}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?"
+                                        title="8 u 11 caracteres: entidad, país y código BIC"
+                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent font-mono uppercase"
+                                    />
+                                </div>
                             </div>
                         )}
                     </div>

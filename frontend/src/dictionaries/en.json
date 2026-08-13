@@ -1668,6 +1668,7 @@
     "email_label": "Company Email",
     "address_label": "Legal Address",
     "iban_label": "IBAN Code (Bank Account)",
+    "swift_bic_label": "SWIFT / BIC",
     "cancel": "Cancel",
     "save": "Save Changes",
     "saving": "Saving...",

@@ -10,6 +10,7 @@ import {
 import { DocumentFormField } from "@/components/billing/DocumentFormField";
 import { ProfileFormSection } from "@/components/profile/ProfileFormSection";
 import { resolveApiMediaUrl } from "@/lib/api";
+import { normalizeSwiftBicInput } from "@/lib/banking";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
@@ -33,6 +34,8 @@ type CompanyDetailsFormFieldsProps = {
     setEmail: (value: string) => void;
     bankAccount: string;
     setBankAccount: (value: string) => void;
+    swiftBic: string;
+    setSwiftBic: (value: string) => void;
     defaultPaymentNotes: string;
     setDefaultPaymentNotes: (value: string) => void;
     defaultDocumentTerms: string;
@@ -64,6 +67,8 @@ export function CompanyDetailsFormFields({
     setEmail,
     bankAccount,
     setBankAccount,
+    swiftBic,
+    setSwiftBic,
     defaultPaymentNotes,
     setDefaultPaymentNotes,
     defaultDocumentTerms,
@@ -176,16 +181,32 @@ export function CompanyDetailsFormFields({
                             </DocumentFormField>
                         </div>
 
-                        <DocumentFormField id="company-bank-account" label="Account Number / IBAN">
-                            <DocumentFormInput
-                                id="company-bank-account"
-                                type="text"
-                                value={bankAccount}
-                                onChange={(e) => setBankAccount(e.target.value)}
-                                placeholder="ES00 0000 0000 0000 0000 0000"
-                                className="font-mono"
-                            />
-                        </DocumentFormField>
+                        <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
+                            <DocumentFormField id="company-bank-account" label="Account Number / IBAN">
+                                <DocumentFormInput
+                                    id="company-bank-account"
+                                    type="text"
+                                    value={bankAccount}
+                                    onChange={(e) => setBankAccount(e.target.value)}
+                                    placeholder="ES00 0000 0000 0000 0000 0000"
+                                    className="font-mono"
+                                />
+                            </DocumentFormField>
+                            <DocumentFormField id="company-swift-bic" label="SWIFT / BIC">
+                                <DocumentFormInput
+                                    id="company-swift-bic"
+                                    type="text"
+                                    value={swiftBic}
+                                    onChange={(e) => setSwiftBic(normalizeSwiftBicInput(e.target.value))}
+                                    placeholder="CAIXESBBXXX"
+                                    maxLength={11}
+                                    pattern="[A-Za-z]{4}[A-Za-z]{2}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?"
+                                    title="8 or 11 characters: bank, country, and BIC code"
+                                    autoCapitalize="characters"
+                                    className="font-mono uppercase"
+                                />
+                            </DocumentFormField>
+                        </div>
                     </div>
                 </ProfileFormSection>
 

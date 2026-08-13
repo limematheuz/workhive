@@ -82,6 +82,7 @@ export function useInvoiceForm({
     const [issuerPhone, setIssuerPhone] = useState<string>("");
     const [issuerEmail, setIssuerEmail] = useState<string>("");
     const [issuerBank, setIssuerBank] = useState<string>("");
+    const [issuerSwiftBic, setIssuerSwiftBic] = useState<string>("");
     const [isEditingIssuer, setIsEditingIssuer] = useState<boolean>(false);
 
     const [recipientName, setRecipientName] = useState<string>("");
@@ -263,6 +264,7 @@ export function useInvoiceForm({
                     setIssuerPhone(issuer.phone);
                     setIssuerEmail(issuer.email);
                     setIssuerBank(issuer.bank || "");
+                    setIssuerSwiftBic(issuer.swiftBic || "");
                     setNotes(
                         comp.default_payment_notes
                         || dict.invoices.payment_notes_placeholder
@@ -458,6 +460,7 @@ export function useInvoiceForm({
         setIssuerPhone(updatedFields.phone);
         setIssuerEmail(updatedFields.email);
         setIssuerBank(updatedFields.bank || "");
+        setIssuerSwiftBic(updatedFields.swiftBic || "");
         setCustomIssuerInfo(formatBillingParty(updatedFields));
     };
 
@@ -478,6 +481,7 @@ export function useInvoiceForm({
         phone: issuerPhone,
         email: issuerEmail,
         bank: issuerBank,
+        swiftBic: issuerSwiftBic,
     };
 
     const recipientFields: BillingPartyFields = {
