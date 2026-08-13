@@ -41,20 +41,22 @@ export function buildInvoiceSummaryRows(
     invoices: Invoice[],
     clientNames: ReadonlyMap<number, string>,
 ): InvoiceSummaryRow[] {
-    return invoices
-        .filter((invoice) => REPORTABLE_INVOICE_STATUSES.has(invoice.status))
-        .map((invoice) => ({
+    return invoices.flatMap((invoice) => {
+        if (!REPORTABLE_INVOICE_STATUSES.has(invoice.status)) return [];
+
+        return [{
             invoice,
             clientName: snapshotText(invoice.recipient_snapshot, "name")
                 || clientNames.get(invoice.client_id)
                 || `Cliente #${invoice.client_id}`,
-            concept: invoice.items
-                .map((item) => item.description.trim())
-                .filter(Boolean)
-                .join(" · "),
+            concept: invoice.items.flatMap((item) => {
+                const description = item.description.trim();
+                return description ? [description] : [];
+            }).join(" · "),
             paymentMethod: invoice.payment_method || null,
             paymentAccount: snapshotText(invoice.issuer_snapshot, "bank_account"),
-        }));
+        }];
+    });
 }
 
 export function filterInvoiceSummaryRows(

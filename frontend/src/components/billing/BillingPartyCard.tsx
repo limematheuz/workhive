@@ -165,8 +165,9 @@ export function BillingPartyCard({
                                     />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">SWIFT / BIC</label>
+                                    <label htmlFor="issuer-swift-bic" className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">SWIFT / BIC</label>
                                     <input
+                                        id="issuer-swift-bic"
                                         type="text"
                                         aria-label="SWIFT / BIC"
                                         value={structuredFields.swiftBic || ""}

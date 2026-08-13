@@ -53,9 +53,21 @@ function SummaryMetric({ label, value, icon: Icon }: { label: string; value: str
 }
 
 function getAvailableYears(invoices: Invoice[]): string[] {
-    return Array.from(new Set(
-        invoices.map((invoice) => getInvoiceIssueYear(invoice.issue_date)).filter(Boolean),
-    )).sort((first, second) => Number(second) - Number(first));
+    return Array.from(new Set(invoices.flatMap((invoice) => {
+        const year = getInvoiceIssueYear(invoice.issue_date);
+        return year ? [year] : [];
+    }))).sort((first, second) => Number(second) - Number(first));
+}
+
+function downloadCsv(content: string, name: string) {
+    const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
 }
 
 export default function InvoiceSummaryPage() {
@@ -121,17 +133,6 @@ export default function InvoiceSummaryPage() {
     }
 
     const statusLabel = (invoice: Invoice) => getInvoiceStatusText(invoice.status, labels);
-
-    const downloadCsv = (content: string, name: string) => {
-        const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = name;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-    };
 
     const handleExportCsv = () => downloadCsv(
         buildInvoiceSummaryCsv(rows),
