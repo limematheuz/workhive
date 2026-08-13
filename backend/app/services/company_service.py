@@ -46,6 +46,7 @@ from app.services.user_scope import (
     is_platform_superadmin,
     require_platform_superadmin,
 )
+from app.services import company_update_policy_service
 
 
 def get_companies(db: Session, current_user: User, skip: int = 0, limit: int = 100) -> list[Company]:
@@ -58,14 +59,11 @@ def get_companies(db: Session, current_user: User, skip: int = 0, limit: int = 1
 
 
 def get_company(db: Session, company_id: int, current_user: User) -> Company:
-    if (
-        not is_platform_superadmin(current_user)
-        and current_user.company_id != company_id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to access this company",
-        )
+    company_update_policy_service.require_company_access(
+        current_user,
+        company_id,
+        action="access",
+    )
     existing_company = company_repo.get_company_by_id(db, company_id)
     if not existing_company:
         raise HTTPException(
@@ -231,39 +229,20 @@ def provision_company(
 def update_company(
     db: Session, company_id: int, company_update: CompanyUpdate, current_user: User
 ) -> Company:
-    if (
-        not is_platform_superadmin(current_user)
-        and current_user.company_id != company_id
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to update this company",
-        )
+    company_update_policy_service.require_company_access(
+        current_user,
+        company_id,
+        action="update",
+    )
     db_company = company_repo.get_company_by_id(db, company_id)
     if not db_company:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Company not found"
         )
-    if "is_active" in company_update.model_fields_set and not is_platform_superadmin(
-        current_user
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only a WorkHive superadmin can change company activation",
-        )
-    access_fields = {
-        "subscription_plan",
-        "subscription_status",
-        "trial_started_at",
-        "trial_ends_at",
-    }
-    if company_update.model_fields_set & access_fields and not is_platform_superadmin(
-        current_user
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only a WorkHive superadmin can change company access",
-        )
+    company_update_policy_service.require_company_update_permissions(
+        current_user,
+        company_update.model_fields_set,
+    )
     if company_update.tax_id is not None:
         existing_tax_id_in_company = company_repo.get_company_by_tax_id(
             db, tax_id=company_update.tax_id
@@ -275,23 +254,14 @@ def update_company(
             )
 
     update_payload = company_update.model_dump(exclude_unset=True)
-    if is_platform_superadmin(current_user) and "subscription_plan" in update_payload:
-        plan = update_payload["subscription_plan"]
-        if plan == "trial":
-            update_payload.setdefault("subscription_status", "trialing")
-            update_payload.setdefault("trial_started_at", datetime.now(timezone.utc))
-        elif plan == "pro":
-            update_payload["subscription_status"] = "active"
-            update_payload["trial_started_at"] = None
-            update_payload["trial_ends_at"] = None
-        elif plan == "none":
-            update_payload["subscription_status"] = "inactive"
-            update_payload["trial_started_at"] = None
-            update_payload["trial_ends_at"] = None
-
-    should_revoke_company_sessions = bool(
-        company_update.model_fields_set
-        & (access_fields | {"is_active"})
+    update_payload = company_update_policy_service.normalize_platform_subscription_update(
+        update_payload,
+        platform_superadmin=is_platform_superadmin(current_user),
+    )
+    should_revoke_company_sessions = (
+        company_update_policy_service.requires_session_revocation(
+            company_update.model_fields_set
+        )
     )
 
     normalized_update = CompanyUpdate.model_validate(update_payload)
