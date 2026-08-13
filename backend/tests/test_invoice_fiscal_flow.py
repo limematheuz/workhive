@@ -73,6 +73,7 @@ def test_invoice_draft_and_issue_are_consistent_and_chained(db):
     )
 
     assert draft.status == "draft"
+    assert draft.payment_method == "bank_transfer"
     assert draft.invoice_number.startswith("DRAFT-")
     assert draft.base_amount == Decimal("90.00")
     assert draft.tax_amount == Decimal("23.58")
@@ -86,6 +87,7 @@ def test_invoice_draft_and_issue_are_consistent_and_chained(db):
     assert issued.invoice_hash is not None
     assert issued.issuer_snapshot["tax_id"] == company.tax_id
     assert issued.issuer_snapshot["swift_bic"] == "CAIXESBBXXX"
+    assert issued.payment_method == "bank_transfer"
     assert issued.recipient_snapshot["tax_id"] == client.legal_number
     assert issued.pdf_generated_at is not None
     assert issued.pdf_sha256 is not None
@@ -226,6 +228,7 @@ def test_draft_update_allows_invoice_number_and_recipient_tax_data(db):
         draft.id,
         InvoiceUpdate(
             invoice_number="FV/2026/0070",
+            payment_method="direct_debit",
             custom_recipient_info=(
                 "Customer SL\n"
                 "NIF/CIF: B44556677\n"
@@ -237,7 +240,18 @@ def test_draft_update_allows_invoice_number_and_recipient_tax_data(db):
     )
 
     assert updated.invoice_number == "FV/2026/0070"
+    assert updated.payment_method == "direct_debit"
     assert "B44556677" in (updated.custom_recipient_info or "")
+
+
+def test_invoice_payment_method_rejects_unknown_values():
+    with pytest.raises(ValidationError):
+        InvoiceDraftCreate(
+            client_id=1,
+            issue_date=datetime.now(timezone.utc),
+            payment_method="crypto",
+            items=[InvoiceItemCreate(description="Servicio", unit_price=10)],
+        )
 
 
 def test_issue_uses_custom_recipient_tax_data_from_draft(db):

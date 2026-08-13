@@ -2,6 +2,7 @@ import Image from "next/image";
 
 import { resolveApiMediaUrl } from "@/lib/api";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { getInvoicePaymentMethodLabel } from "@/lib/invoice-payment-methods";
 import type { Company } from "@/services/company.service";
 import type { Invoice } from "@/types/invoice";
 
@@ -15,8 +16,13 @@ export function InvoiceDetailFooterSection({ dict, invoice, company }: InvoiceDe
     const issuerSnapshot = invoice.issuer_snapshot || {};
     const bankAccount = String(issuerSnapshot.bank_account || company?.bank_account || "");
     const swiftBic = String(issuerSnapshot.swift_bic || company?.swift_bic || "");
+    const paymentMethod = getInvoicePaymentMethodLabel(
+        invoice.payment_method,
+        dict.invoices.payment_methods,
+    );
+    const showsTransferDetails = !invoice.payment_method || invoice.payment_method === "bank_transfer";
 
-    if (!invoice.notes && !invoice.terms && !invoice.signature_url && !bankAccount && !swiftBic) {
+    if (!invoice.notes && !invoice.terms && !invoice.signature_url && !bankAccount && !swiftBic && !invoice.payment_method) {
         return null;
     }
 
@@ -39,11 +45,12 @@ export function InvoiceDetailFooterSection({ dict, invoice, company }: InvoiceDe
             </div>
 
             <div className="flex flex-col gap-4 pt-1 md:flex-row md:items-end md:justify-between">
-                {(bankAccount || swiftBic) && (
+                {(bankAccount || swiftBic || invoice.payment_method) && (
                     <div className="text-[10px] text-[var(--text-muted)] print:text-neutral-600">
                         <p className="font-semibold text-[var(--text-main)] print:text-black">{dict.invoices.payment_info}:</p>
-                        {bankAccount && <p>{dict.invoices.bank_transfer}: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{bankAccount}</span></p>}
-                        {swiftBic && <p>SWIFT/BIC: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{swiftBic}</span></p>}
+                        <p>{dict.invoices.payment_method}: <span className="font-semibold text-[var(--text-main)] print:text-black">{paymentMethod}</span></p>
+                        {showsTransferDetails && bankAccount && <p>{dict.invoices.bank_transfer}: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{bankAccount}</span></p>}
+                        {showsTransferDetails && swiftBic && <p>SWIFT/BIC: <span className="font-mono font-semibold text-[var(--text-main)] print:text-black">{swiftBic}</span></p>}
                     </div>
                 )}
                 {invoice.signature_url && (

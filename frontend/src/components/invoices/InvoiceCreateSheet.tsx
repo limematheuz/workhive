@@ -39,6 +39,8 @@ export function InvoiceCreateSheet({
         setDueDate,
         invoiceNumber,
         setInvoiceNumber,
+        paymentMethod,
+        setPaymentMethod,
         maxDueDate,
         shippingAddress,
         setShippingAddress,
@@ -115,6 +117,8 @@ export function InvoiceCreateSheet({
             setDueDate={setDueDate}
             invoiceNumber={invoiceNumber}
             setInvoiceNumber={setInvoiceNumber}
+            paymentMethod={paymentMethod}
+            setPaymentMethod={setPaymentMethod}
             maxDueDate={maxDueDate}
             shippingAddress={shippingAddress}
             setShippingAddress={setShippingAddress}

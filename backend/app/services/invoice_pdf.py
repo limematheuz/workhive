@@ -347,17 +347,28 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
                 styles["BodySmall"],
             )
         )
+    payment_method_labels = {
+        "bank_transfer": "Transferencia bancaria",
+        "direct_debit": "Domiciliación bancaria",
+        "card": "Tarjeta",
+        "cash": "Efectivo",
+        "bizum": "Bizum",
+        "other": "Otro",
+    }
+    payment_method = getattr(invoice, "payment_method", None) or "bank_transfer"
+    payment_method_label = payment_method_labels.get(payment_method, "Transferencia bancaria")
     bank_account = (invoice.issuer_snapshot or {}).get("bank_account")
     swift_bic = (invoice.issuer_snapshot or {}).get("swift_bic")
-    if bank_account or swift_bic:
+    if bank_account or swift_bic or getattr(invoice, "payment_method", None):
         payment_details = []
-        if bank_account:
+        if payment_method == "bank_transfer" and bank_account:
             payment_details.append(f"Cuenta / IBAN: {_text(bank_account)}")
-        if swift_bic:
+        if payment_method == "bank_transfer" and swift_bic:
             payment_details.append(f"SWIFT/BIC: {_text(swift_bic)}")
         footer_blocks.append(
             Paragraph(
-                f"<b>Pago por transferencia:</b> {' · '.join(payment_details)}",
+                f"<b>Forma de pago:</b> {_text(payment_method_label)}"
+                + (f" · {' · '.join(payment_details)}" if payment_details else ""),
                 styles["BodySmall"],
             )
         )

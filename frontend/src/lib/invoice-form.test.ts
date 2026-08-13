@@ -119,6 +119,7 @@ test("invoice draft payload maps concept rows and optional fields", () => {
         discount: 0,
         equivalenceSurcharge: 0,
         retention: 0,
+        paymentMethod: "direct_debit",
         notesEnabled: false,
         notes: "hidden",
         termsEnabled: true,
@@ -142,6 +143,7 @@ test("invoice draft payload maps concept rows and optional fields", () => {
     assert.equal(payload.notes, null);
     assert.equal(payload.terms, "Terms");
     assert.equal(payload.shipping_address, null);
+    assert.equal(payload.payment_method, "direct_debit");
     assert.deepEqual(payload.items, [{
         description: "Limpieza",
         quantity: 1,

@@ -29,7 +29,7 @@ import {
     InvoiceEmailPayload,
     InvoiceService,
 } from "@/services/invoice.service";
-import { Invoice } from "@/types/invoice";
+import { Invoice, type InvoicePaymentMethod } from "@/types/invoice";
 
 
 export interface EditingInvoiceItem {
@@ -197,6 +197,7 @@ export function useInvoiceDetail(invoiceId: number) {
     const [editingInvoiceNumber, setEditingInvoiceNumber] = useState("");
     const [editingIssueDate, setEditingIssueDate] = useState("");
     const [editingDueDate, setEditingDueDate] = useState("");
+    const [editingPaymentMethod, setEditingPaymentMethod] = useState<InvoicePaymentMethod>("bank_transfer");
     const [editingIssuerFields, setEditingIssuerFields] = useState<BillingPartyFields>(
         EMPTY_BILLING_PARTY_FIELDS
     );
@@ -429,6 +430,7 @@ export function useInvoiceDetail(invoiceId: number) {
         );
         setEditingIssueDate(toDateInputValue(invoice.issue_date));
         setEditingDueDate(toDateInputValue(invoice.due_date));
+        setEditingPaymentMethod(invoice.payment_method || "bank_transfer");
         setEditingIssuerFields(editableIssuerFields(invoice, company));
         setEditingRecipientFields(editableRecipientFields(invoice, client));
         setEditingItems(
@@ -469,6 +471,7 @@ export function useInvoiceDetail(invoiceId: number) {
         setEditingInvoiceNumber("");
         setEditingIssueDate("");
         setEditingDueDate("");
+        setEditingPaymentMethod("bank_transfer");
         setEditingIssuerFields(EMPTY_BILLING_PARTY_FIELDS);
         setEditingRecipientFields(EMPTY_BILLING_PARTY_FIELDS);
         setEditingItems([]);
@@ -551,6 +554,7 @@ export function useInvoiceDetail(invoiceId: number) {
                 due_date: editingDueDate
                     ? new Date(editingDueDate).toISOString()
                     : null,
+                payment_method: editingPaymentMethod,
                 custom_issuer_info: formatBillingParty(editingIssuerFields),
                 custom_recipient_info: formatBillingParty(editingRecipientFields),
                 ...(editingInvoiceNumber.trim()
@@ -570,6 +574,7 @@ export function useInvoiceDetail(invoiceId: number) {
             setEditingInvoiceNumber("");
             setEditingIssueDate("");
             setEditingDueDate("");
+            setEditingPaymentMethod("bank_transfer");
             setEditingIssuerFields(EMPTY_BILLING_PARTY_FIELDS);
             setEditingRecipientFields(EMPTY_BILLING_PARTY_FIELDS);
             setEditingItems([]);
@@ -679,6 +684,8 @@ export function useInvoiceDetail(invoiceId: number) {
         setEditingIssueDate,
         editingDueDate,
         setEditingDueDate,
+        editingPaymentMethod,
+        setEditingPaymentMethod,
         editingIssuerFields,
         editingRecipientFields,
         editingItems,

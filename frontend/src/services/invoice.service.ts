@@ -1,5 +1,5 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
-import { Invoice, InvoiceItem } from "@/types/invoice"
+import { Invoice, InvoiceItem, InvoicePaymentMethod } from "@/types/invoice"
 import { TaskItem } from "@/types/user"
 import { collectPaginated } from "@/lib/pagination"
 
@@ -11,6 +11,7 @@ export interface InvoiceCreate {
     discount?: number;
     equivalence_surcharge?: number;
     retention?: number;
+    payment_method?: InvoicePaymentMethod | null;
     notes?: string | null;
     terms?: string | null;
     shipping_address?: string | null;
@@ -32,6 +33,7 @@ export interface InvoiceUpdate {
     discount?: number;
     equivalence_surcharge?: number;
     retention?: number;
+    payment_method?: InvoicePaymentMethod | null;
     notes?: string | null;
     terms?: string | null;
     shipping_address?: string | null;

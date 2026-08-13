@@ -45,6 +45,7 @@ class Invoice(Base):
     discount = Column(Numeric(7, 4), default=0, nullable=False)
     equivalence_surcharge = Column(Numeric(7, 4), default=0, nullable=False)
     retention = Column(Numeric(7, 4), default=0, nullable=False)
+    payment_method = Column(String(30), nullable=True)
     notes = Column(Text, nullable=True)
     terms = Column(Text, nullable=True)
     shipping_address = Column(Text, nullable=True)

@@ -6,6 +6,16 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
+InvoicePaymentMethod = Literal[
+    "bank_transfer",
+    "direct_debit",
+    "card",
+    "cash",
+    "bizum",
+    "other",
+]
+
+
 class InvoiceBase(BaseModel):
     client_id: int = Field(gt=0)
     issue_date: datetime
@@ -14,6 +24,7 @@ class InvoiceBase(BaseModel):
     discount: float = Field(default=0.0, ge=0, le=100)
     equivalence_surcharge: float = Field(default=0.0, ge=0, le=100)
     retention: float = Field(default=0.0, ge=0, le=100)
+    payment_method: InvoicePaymentMethod | None = "bank_transfer"
     notes: str | None = None
     terms: str | None = None
     shipping_address: str | None = None
@@ -41,6 +52,7 @@ class InvoiceUpdate(BaseModel):
     discount: float | None = Field(default=None, ge=0, le=100)
     equivalence_surcharge: float | None = Field(default=None, ge=0, le=100)
     retention: float | None = Field(default=None, ge=0, le=100)
+    payment_method: InvoicePaymentMethod | None = None
     notes: str | None = None
     terms: str | None = None
     shipping_address: str | None = None

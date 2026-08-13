@@ -12,6 +12,14 @@ export interface InvoiceItem {
     updated_at: string;
 }
 
+export type InvoicePaymentMethod =
+    | "bank_transfer"
+    | "direct_debit"
+    | "card"
+    | "cash"
+    | "bizum"
+    | "other";
+
 export interface Invoice {
     id: number;
     invoice_number: string;
@@ -45,6 +53,7 @@ export interface Invoice {
     discount: number;
     equivalence_surcharge: number;
     retention: number;
+    payment_method?: InvoicePaymentMethod | null;
     notes?: string | null;
     terms?: string | null;
     shipping_address?: string | null;

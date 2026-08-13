@@ -43,6 +43,20 @@ def test_definitive_invoice_rejects_detail_changes():
     assert "immutable" in error.value.detail
 
 
+def test_definitive_invoice_rejects_payment_method_changes():
+    invoice = SimpleNamespace(status="issued", paid_at=None)
+
+    with pytest.raises(HTTPException) as error:
+        invoice_update_policy_service.apply_issued_status_transition(
+            invoice,
+            {"payment_method": "cash"},
+            replacement_items=None,
+            requested_status=None,
+        )
+
+    assert error.value.status_code == 403
+
+
 def test_issued_invoice_can_move_to_paid_and_records_timestamp():
     invoice = SimpleNamespace(status="issued", paid_at=None)
 

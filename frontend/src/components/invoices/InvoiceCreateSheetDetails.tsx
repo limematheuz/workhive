@@ -16,6 +16,8 @@ import type { InvoiceableTask } from "@/services/invoice.service";
 import type { ConceptRow } from "@/hooks/useInvoiceForm";
 import type { BillingPartyField } from "@/lib/billing-party";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { INVOICE_PAYMENT_METHODS, getInvoicePaymentMethodLabel } from "@/lib/invoice-payment-methods";
+import type { InvoicePaymentMethod } from "@/types/invoice";
 
 interface InvoiceCreateSheetDetailsProps {
     dict: Dictionary;
@@ -30,6 +32,8 @@ interface InvoiceCreateSheetDetailsProps {
     setDueDate: (value: string) => void;
     invoiceNumber: string;
     setInvoiceNumber: (value: string) => void;
+    paymentMethod: InvoicePaymentMethod;
+    setPaymentMethod: (value: InvoicePaymentMethod) => void;
     maxDueDate: string;
     shippingAddress: string;
     setShippingAddress: (value: string) => void;
@@ -74,6 +78,8 @@ export function InvoiceCreateSheetDetails({
     setDueDate,
     invoiceNumber,
     setInvoiceNumber,
+    paymentMethod,
+    setPaymentMethod,
     maxDueDate,
     shippingAddress,
     setShippingAddress,
@@ -146,7 +152,7 @@ export function InvoiceCreateSheetDetails({
                         )}
                     </DocumentFormField>
 
-                    <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2 @[40rem]:grid-cols-3">
+                    <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2">
                         <DocumentFormField
                             id="invoice-number"
                             label={dict.invoices?.invoice_number_label || "Número de factura"}
@@ -177,7 +183,6 @@ export function InvoiceCreateSheetDetails({
                         <DocumentFormField
                             id="invoice-due-date"
                             label={dict.invoices?.due_date || "Fecha de vencimiento"}
-                            className="@[28rem]:col-span-2 @[40rem]:col-span-1"
                         >
                             <DocumentFormInput
                                 id="invoice-due-date"
@@ -187,6 +192,22 @@ export function InvoiceCreateSheetDetails({
                                 max={maxDueDate}
                                 aria-label={dict.invoices?.due_date}
                             />
+                        </DocumentFormField>
+                        <DocumentFormField
+                            id="invoice-payment-method"
+                            label={dict.invoices?.payment_method || "Forma de pago"}
+                        >
+                            <DocumentFormSelect
+                                id="invoice-payment-method"
+                                value={paymentMethod}
+                                onChange={(event) => setPaymentMethod(event.target.value as InvoicePaymentMethod)}
+                            >
+                                {INVOICE_PAYMENT_METHODS.map((method) => (
+                                    <option key={method} value={method}>
+                                        {getInvoicePaymentMethodLabel(method, dict.invoices.payment_methods)}
+                                    </option>
+                                ))}
+                            </DocumentFormSelect>
                         </DocumentFormField>
                     </div>
                 </div>

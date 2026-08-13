@@ -35,6 +35,7 @@ import {
     InvoiceFormConceptRow,
     resolveInvoiceClientId,
 } from "@/lib/invoice-form";
+import type { InvoicePaymentMethod } from "@/types/invoice";
 
 export type ConceptRow = InvoiceFormConceptRow;
 
@@ -71,6 +72,7 @@ export function useInvoiceForm({
     const [issueDate, setIssueDateValue] = useState<string>(getTodayIsoDate);
     const [dueDate, setDueDate] = useState<string>(() => getDefaultInvoiceDueDate());
     const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+    const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>("bank_transfer");
 
     const [customIssuerInfo, setCustomIssuerInfo] = useState<string>("");
     const [customRecipientInfo, setCustomRecipientInfo] = useState<string>("");
@@ -430,6 +432,7 @@ export function useInvoiceForm({
                 discount,
                 equivalenceSurcharge,
                 retention,
+                paymentMethod,
                 notesEnabled,
                 notes,
                 termsEnabled,
@@ -505,6 +508,8 @@ export function useInvoiceForm({
         setDueDate,
         invoiceNumber,
         setInvoiceNumber,
+        paymentMethod,
+        setPaymentMethod,
         maxDueDate,
         customIssuerInfo,
         setCustomIssuerInfo,
