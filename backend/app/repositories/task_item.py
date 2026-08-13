@@ -1,12 +1,15 @@
-from sqlalchemy.orm import Session
+from collections.abc import Collection
+from datetime import datetime
+
 from sqlalchemy import and_, or_
+from sqlalchemy.orm import Session
+
 from app.models.task_item import TaskItem
 from app.models.location import Location
 from app.models.client import Client
 from app.models.reservation import Reservation
 from app.models.task_structure import TaskAssignment
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
-from datetime import datetime
 
 
 def _user_assignment_conditions(user_id: int):
@@ -158,11 +161,16 @@ def delete_task_item(db: Session, db_task_item: TaskItem) -> None:
 
 
 def count_tasks_by_user(
-    db: Session, user_id: int, start_date: datetime | None = None
+    db: Session,
+    user_id: int,
+    start_date: datetime | None = None,
+    statuses: Collection[str] | None = None,
 ) -> int:
     query = db.query(TaskItem).filter(or_(*_user_assignment_conditions(user_id)))
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
+    if statuses is not None:
+        query = query.filter(TaskItem.status.in_(statuses))
     return query.count()
 
 
