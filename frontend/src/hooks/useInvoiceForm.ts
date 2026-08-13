@@ -35,6 +35,7 @@ import {
     InvoiceFormConceptRow,
     resolveInvoiceClientId,
 } from "@/lib/invoice-form";
+import type { InvoicePaymentMethod } from "@/types/invoice";
 
 export type ConceptRow = InvoiceFormConceptRow;
 
@@ -71,6 +72,7 @@ export function useInvoiceForm({
     const [issueDate, setIssueDateValue] = useState<string>(getTodayIsoDate);
     const [dueDate, setDueDate] = useState<string>(() => getDefaultInvoiceDueDate());
     const [invoiceNumber, setInvoiceNumber] = useState<string>("");
+    const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>("bank_transfer");
 
     const [customIssuerInfo, setCustomIssuerInfo] = useState<string>("");
     const [customRecipientInfo, setCustomRecipientInfo] = useState<string>("");
@@ -82,6 +84,7 @@ export function useInvoiceForm({
     const [issuerPhone, setIssuerPhone] = useState<string>("");
     const [issuerEmail, setIssuerEmail] = useState<string>("");
     const [issuerBank, setIssuerBank] = useState<string>("");
+    const [issuerSwiftBic, setIssuerSwiftBic] = useState<string>("");
     const [isEditingIssuer, setIsEditingIssuer] = useState<boolean>(false);
 
     const [recipientName, setRecipientName] = useState<string>("");
@@ -263,6 +266,7 @@ export function useInvoiceForm({
                     setIssuerPhone(issuer.phone);
                     setIssuerEmail(issuer.email);
                     setIssuerBank(issuer.bank || "");
+                    setIssuerSwiftBic(issuer.swiftBic || "");
                     setNotes(
                         comp.default_payment_notes
                         || dict.invoices.payment_notes_placeholder
@@ -428,6 +432,7 @@ export function useInvoiceForm({
                 discount,
                 equivalenceSurcharge,
                 retention,
+                paymentMethod,
                 notesEnabled,
                 notes,
                 termsEnabled,
@@ -458,6 +463,7 @@ export function useInvoiceForm({
         setIssuerPhone(updatedFields.phone);
         setIssuerEmail(updatedFields.email);
         setIssuerBank(updatedFields.bank || "");
+        setIssuerSwiftBic(updatedFields.swiftBic || "");
         setCustomIssuerInfo(formatBillingParty(updatedFields));
     };
 
@@ -478,6 +484,7 @@ export function useInvoiceForm({
         phone: issuerPhone,
         email: issuerEmail,
         bank: issuerBank,
+        swiftBic: issuerSwiftBic,
     };
 
     const recipientFields: BillingPartyFields = {
@@ -501,6 +508,8 @@ export function useInvoiceForm({
         setDueDate,
         invoiceNumber,
         setInvoiceNumber,
+        paymentMethod,
+        setPaymentMethod,
         maxDueDate,
         customIssuerInfo,
         setCustomIssuerInfo,

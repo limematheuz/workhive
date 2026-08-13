@@ -159,6 +159,40 @@ def test_login_user(client):
     assert "HttpOnly" in response.headers["set-cookie"]
 
 
+def test_login_company_user_with_swift_bic(client, db):
+    company = Company(
+        name="Banking Login Company",
+        tax_id="BANK-LOGIN",
+        address="Calle Banca 1",
+        phone="600000000",
+        email="banking-login@example.com",
+        swift_bic="CAIXESBBXXX",
+        subscription_plan="pro",
+        subscription_status="active",
+        onboarding_completed=False,
+    )
+    db.add(company)
+    db.flush()
+    user = User(
+        email="banking-login-user@example.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Banking Login User",
+        role_id=1,
+        company_id=company.id,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+
+    response = client.post(
+        "/api/v1/auth/login",
+        data=login_form(user.email, TEST_SECRET),
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["token_type"] == "bearer"
+
+
 def test_every_active_role_can_login_and_read_its_session(client, db):
     company = Company(
         name="Role Access Company",

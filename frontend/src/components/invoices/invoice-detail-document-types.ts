@@ -7,7 +7,7 @@ import type {
     FiscalInvoiceRecord,
     FiscalReadiness,
 } from "@/services/invoice.service";
-import type { Invoice } from "@/types/invoice";
+import type { Invoice, InvoicePaymentMethod } from "@/types/invoice";
 
 export type DraftFiscalPreview = {
     code: string;
@@ -32,6 +32,7 @@ export type InvoiceDetailDocumentProps = {
     editingInvoiceNumber: string;
     editingIssueDate: string;
     editingDueDate: string;
+    editingPaymentMethod: InvoicePaymentMethod;
     editingIssuerFields: BillingPartyFields;
     editingRecipientFields: BillingPartyFields;
     editingItems: EditingInvoiceItem[];
@@ -57,6 +58,7 @@ export type InvoiceDetailDocumentProps = {
     onEditingInvoiceNumberChange: (value: string) => void;
     onEditingIssueDateChange: (value: string) => void;
     onEditingDueDateChange: (value: string) => void;
+    onEditingPaymentMethodChange: (value: InvoicePaymentMethod) => void;
     onEditIssuerFieldChange: (field: BillingPartyField, value: string) => void;
     onEditRecipientFieldChange: (field: BillingPartyField, value: string) => void;
     onEditItemChange: (index: number, field: keyof EditingInvoiceItem, value: string | number) => void;

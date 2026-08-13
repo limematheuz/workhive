@@ -389,3 +389,47 @@ def test_company_document_defaults_are_editable(client):
     assert updated.status_code == 200
     assert updated.json()["default_payment_notes"] == "Transferencia a 30 días"
     assert updated.json()["default_document_terms"] == "Validez de 15 días"
+
+
+def test_company_swift_bic_is_normalized_and_rejects_invalid_values(client):
+    client.post(
+        "/api/v1/auth/register",
+        json=with_credential(
+            {
+                "email": "banking@workhive.com",
+                "full_name": "Banking Admin",
+                "accept_terms": True,
+                "accept_privacy": True,
+                "policy_version": "2026-06-15",
+            }
+        ),
+    )
+    login = client.post("/api/v1/auth/login", data=login_form("banking@workhive.com"))
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    company = client.post(
+        "/api/v1/companies/",
+        headers=headers,
+        json={
+            "name": "Banking SL",
+            "tax_id": "B44550022",
+            "address": "Calle Bancaria 1",
+            "phone": "600000002",
+            "email": "billing@banking.com",
+        },
+    )
+    company_id = company.json()["id"]
+
+    updated = client.patch(
+        f"/api/v1/companies/{company_id}",
+        headers=headers,
+        json={"swift_bic": " caixes bb xxx "},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["swift_bic"] == "CAIXESBBXXX"
+
+    invalid = client.patch(
+        f"/api/v1/companies/{company_id}",
+        headers=headers,
+        json={"swift_bic": "12345678"},
+    )
+    assert invalid.status_code == 422

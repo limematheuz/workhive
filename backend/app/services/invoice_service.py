@@ -133,11 +133,11 @@ def create_invoice(
 def create_invoice_draft(
     db: Session, company_id: int, data: InvoiceDraftCreate
 ) -> Invoice:
-    _validate_client(db, company_id, data.client_id)
-    _ensure_invoice_number_available(db, company_id, data.invoice_number)
-    task_ids_from_invoice_items(data.items)
-
     try:
+        _validate_client(db, company_id, data.client_id)
+        _ensure_invoice_number_available(db, company_id, data.invoice_number)
+        task_ids_from_invoice_items(data.items)
+
         header = InvoiceCreate(**data.model_dump(exclude={"items"}))
         invoice = invoice_repo.create_invoice(
             db,

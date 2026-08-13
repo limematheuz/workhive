@@ -237,6 +237,12 @@ function buildNavLinks(
                       ),
                   },
                   {
+                      href: "/dashboard/invoice-summary",
+                      label: dict.invoices.summary_nav,
+                      exact: false,
+                      icon: <LineChart className="h-5 w-5 flex-shrink-0" />,
+                  },
+                  {
                       href: "/dashboard/expenses",
                       label: dict.expenses.title,
                       exact: false,
@@ -295,7 +301,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
     const navGroups = [
         buildGroup("sales", dict.sidebar_groups.sales, (
             <FileText className="h-5 w-5 flex-shrink-0" />
-        ), ["/dashboard/invoices", "/dashboard/clients", "/dashboard/quotes"]),
+        ), ["/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/clients", "/dashboard/quotes"]),
         buildGroup("finance", dict.sidebar_groups.finance, (
             <LineChart className="h-5 w-5 flex-shrink-0" />
         ), ["/dashboard/expenses", "/dashboard/analytics"]),

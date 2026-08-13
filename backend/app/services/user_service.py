@@ -8,6 +8,7 @@ from app.repositories import work_session as work_session_repo
 from app.repositories import task_item as task_item_repo
 from app.repositories import role as role_repo
 from app.core.security import get_password_hash, verify_password
+from app.services import task_assignment_service
 from app.services.subscription_policy import require_active_user_capacity
 from app.services.user_scope import is_superadmin
 from datetime import datetime, timedelta, timezone
@@ -197,7 +198,12 @@ def get_user_stats(
     )
     total_hours_worked = round(total_seconds / 3600.0, 2)
 
-    total_tasks = task_item_repo.count_tasks_by_user(db, user_id, start_date)
+    total_tasks = task_item_repo.count_tasks_by_user(
+        db,
+        user_id,
+        start_date,
+        statuses=task_assignment_service.OPERATIONAL_VIEWER_STATUSES,
+    )
     tasks_completed = task_item_repo.count_tasks_by_user_and_status(
         db, user_id, "completed", start_date
     )

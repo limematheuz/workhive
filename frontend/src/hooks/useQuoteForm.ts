@@ -65,6 +65,7 @@ export function useQuoteForm({
     const [issuerPhone, setIssuerPhone] = useState<string>("");
     const [issuerEmail, setIssuerEmail] = useState<string>("");
     const [issuerBank, setIssuerBank] = useState<string>("");
+    const [issuerSwiftBic, setIssuerSwiftBic] = useState<string>("");
     const [isEditingIssuer, setIsEditingIssuer] = useState<boolean>(false);
 
     const [recipientName, setRecipientName] = useState<string>("");
@@ -167,6 +168,7 @@ export function useQuoteForm({
                         setIssuerPhone(parsed.phone);
                         setIssuerEmail(parsed.email);
                         setIssuerBank(parsed.bank || "");
+                        setIssuerSwiftBic(parsed.swiftBic || "");
 
                     }
                     if (quoteToEdit.custom_recipient_info) {
@@ -196,6 +198,7 @@ export function useQuoteForm({
                         setIssuerPhone(issuer.phone);
                         setIssuerEmail(issuer.email);
                         setIssuerBank(issuer.bank || "");
+                        setIssuerSwiftBic(issuer.swiftBic || "");
                         setNotes(
                             comp.default_payment_notes
                             || dict.quotes.notes_placeholder
@@ -377,6 +380,7 @@ export function useQuoteForm({
         setIssuerPhone(updatedFields.phone);
         setIssuerEmail(updatedFields.email);
         setIssuerBank(updatedFields.bank || "");
+        setIssuerSwiftBic(updatedFields.swiftBic || "");
         setCustomIssuerInfo(formatBillingParty(updatedFields));
     };
 
@@ -397,6 +401,7 @@ export function useQuoteForm({
         phone: issuerPhone,
         email: issuerEmail,
         bank: issuerBank,
+        swiftBic: issuerSwiftBic,
     };
 
     const recipientFields: BillingPartyFields = {

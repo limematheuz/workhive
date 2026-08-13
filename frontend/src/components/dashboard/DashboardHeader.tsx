@@ -60,6 +60,8 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                     ? dict.dashboard.locations
                     : pathname.includes("/dashboard/tasks")
                         ? dict.dashboard.tasks
+                        : pathname.includes("/dashboard/invoice-summary")
+                            ? dict.invoices.summary_nav
                         : pathname.includes("/dashboard/invoices")
                             ? dict.dashboard.invoices
                             : pathname.includes("/dashboard/companies")

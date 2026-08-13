@@ -20,6 +20,7 @@ export function InvoiceDetailDocument({
     editingInvoiceNumber,
     editingIssueDate,
     editingDueDate,
+    editingPaymentMethod,
     editingIssuerFields,
     editingRecipientFields,
     editingItems,
@@ -45,6 +46,7 @@ export function InvoiceDetailDocument({
     onEditingInvoiceNumberChange,
     onEditingIssueDateChange,
     onEditingDueDateChange,
+    onEditingPaymentMethodChange,
     onEditIssuerFieldChange,
     onEditRecipientFieldChange,
     onEditItemChange,
@@ -59,11 +61,13 @@ export function InvoiceDetailDocument({
                     editingInvoiceNumber={editingInvoiceNumber}
                     editingIssueDate={editingIssueDate}
                     editingDueDate={editingDueDate}
+                    editingPaymentMethod={editingPaymentMethod}
                     editingIssuerFields={editingIssuerFields}
                     editingRecipientFields={editingRecipientFields}
                     onEditingInvoiceNumberChange={onEditingInvoiceNumberChange}
                     onEditingIssueDateChange={onEditingIssueDateChange}
                     onEditingDueDateChange={onEditingDueDateChange}
+                    onEditingPaymentMethodChange={onEditingPaymentMethodChange}
                     onEditIssuerFieldChange={onEditIssuerFieldChange}
                     onEditRecipientFieldChange={onEditRecipientFieldChange}
                 />

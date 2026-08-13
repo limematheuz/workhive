@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 
+from app.core.banking import normalize_swift_bic
 from app.schemas.user import validate_user_password
 
 
@@ -19,11 +20,17 @@ class CompanyBase(BaseModel):
     email: EmailStr
     logo: str | None = None
     bank_account: str | None = None
+    swift_bic: str | None = None
     default_payment_notes: str | None = None
     default_document_terms: str | None = None
     is_active: bool = True
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("swift_bic")
+    @classmethod
+    def validate_swift_bic(cls, value: str | None) -> str | None:
+        return normalize_swift_bic(value)
 
 
 class CompanyCreate(CompanyBase):
@@ -62,6 +69,7 @@ class CompanyUpdate(BaseModel):
     email: EmailStr | None = None
     logo: str | None = None
     bank_account: str | None = None
+    swift_bic: str | None = None
     default_payment_notes: str | None = None
     default_document_terms: str | None = None
     is_active: bool | None = None
@@ -70,6 +78,11 @@ class CompanyUpdate(BaseModel):
     subscription_status: Literal["trialing", "active", "inactive", "expired", "canceled"] | None = None
     trial_started_at: datetime | None = None
     trial_ends_at: datetime | None = None
+
+    @field_validator("swift_bic")
+    @classmethod
+    def validate_swift_bic(cls, value: str | None) -> str | None:
+        return normalize_swift_bic(value)
 
 
 class CompanyOnboardingLocationCreate(BaseModel):

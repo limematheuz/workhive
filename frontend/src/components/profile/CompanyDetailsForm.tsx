@@ -25,6 +25,7 @@ type CompanyFormFields = {
     phone: string;
     email: string;
     bankAccount: string;
+    swiftBic: string;
     defaultPaymentNotes: string;
     defaultDocumentTerms: string;
     logoUrl: string | null;
@@ -51,6 +52,7 @@ const EMPTY_FIELDS: CompanyFormFields = {
     phone: "",
     email: "",
     bankAccount: "",
+    swiftBic: "",
     defaultPaymentNotes: "",
     defaultDocumentTerms: "",
     logoUrl: null,
@@ -105,6 +107,7 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
                         phone: comp.phone || "",
                         email: comp.email || "",
                         bankAccount: comp.bank_account || "",
+                        swiftBic: comp.swift_bic || "",
                         defaultPaymentNotes: comp.default_payment_notes || "",
                         defaultDocumentTerms: comp.default_document_terms || "",
                         logoUrl: comp.logo ?? null,
@@ -166,6 +169,7 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
                 phone: form.phone,
                 email: form.email,
                 bank_account: form.bankAccount || null,
+                swift_bic: form.swiftBic || null,
                 default_payment_notes: form.defaultPaymentNotes || null,
                 default_document_terms: form.defaultDocumentTerms || null,
                 logo: form.logoUrl || null,
@@ -219,6 +223,8 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
             setEmail={setField("email")}
             bankAccount={form.bankAccount}
             setBankAccount={setField("bankAccount")}
+            swiftBic={form.swiftBic}
+            setSwiftBic={setField("swiftBic")}
             defaultPaymentNotes={form.defaultPaymentNotes}
             setDefaultPaymentNotes={setField("defaultPaymentNotes")}
             defaultDocumentTerms={form.defaultDocumentTerms}

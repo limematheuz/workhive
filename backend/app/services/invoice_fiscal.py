@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.banking import normalize_swift_bic
 from app.integrations.aeat.hash import (
     CancellationHashInput,
     InvoiceHashInput,
@@ -33,6 +34,7 @@ PARTY_FIELD_LABELS = {
     "Teléfono:": "phone",
     "Email:": "email",
     "Banco:": "bank_account",
+    "SWIFT/BIC:": "swift_bic",
 }
 TAX_ID_SEPARATOR_RE = re.compile(r"[\s.\-/]+")
 SPANISH_TAX_ID_RE = re.compile(
@@ -111,6 +113,7 @@ def party_snapshots(
         "phone": company.phone,
         "email": company.email,
         "bank_account": company.bank_account,
+        "swift_bic": company.swift_bic,
         "logo": company.logo,
         "display_text": invoice.custom_issuer_info,
     }
@@ -128,6 +131,13 @@ def party_snapshots(
     issuer.update(_custom_party_fields(invoice.custom_issuer_info))
     recipient.update(_custom_party_fields(invoice.custom_recipient_info))
     issuer["tax_id"] = _normalize_tax_id(issuer.get("tax_id"))
+    try:
+        issuer["swift_bic"] = normalize_swift_bic(issuer.get("swift_bic"))
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(error),
+        ) from error
     recipient["tax_id"] = _normalize_tax_id(recipient.get("tax_id"))
     return issuer, recipient
 

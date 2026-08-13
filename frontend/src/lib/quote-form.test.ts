@@ -44,11 +44,13 @@ test("quote issuer fields keep company fiscal and bank data", () => {
         phone: "+34 634 92 09 23",
         email: "ownet@example.com",
         bank_account: "ES0000",
+        swift_bic: "CAIXESBBXXX",
         is_active: true,
     } as Company);
 
     assert.equal(fields.name, "Ownet");
     assert.equal(fields.bank, "ES0000");
+    assert.equal(fields.swiftBic, "CAIXESBBXXX");
 });
 
 test("quote recipient fields include fiscal address data", () => {

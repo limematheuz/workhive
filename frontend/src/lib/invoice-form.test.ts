@@ -102,10 +102,12 @@ test("billing party fields from company keep bank account", () => {
         phone: "+34 634 92 09 23",
         email: "ownet@example.com",
         bank_account: "ES0000",
+        swift_bic: "CAIXESBBXXX",
         is_active: true,
     } as Company);
 
     assert.equal(fields.bank, "ES0000");
+    assert.equal(fields.swiftBic, "CAIXESBBXXX");
 });
 
 test("invoice draft payload maps concept rows and optional fields", () => {
@@ -117,6 +119,7 @@ test("invoice draft payload maps concept rows and optional fields", () => {
         discount: 0,
         equivalenceSurcharge: 0,
         retention: 0,
+        paymentMethod: "direct_debit",
         notesEnabled: false,
         notes: "hidden",
         termsEnabled: true,
@@ -140,6 +143,7 @@ test("invoice draft payload maps concept rows and optional fields", () => {
     assert.equal(payload.notes, null);
     assert.equal(payload.terms, "Terms");
     assert.equal(payload.shipping_address, null);
+    assert.equal(payload.payment_method, "direct_debit");
     assert.deepEqual(payload.items, [{
         description: "Limpieza",
         quantity: 1,

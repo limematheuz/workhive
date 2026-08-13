@@ -1,17 +1,22 @@
 import { BillingPartyCard } from "@/components/billing/BillingPartyCard";
+import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { BillingPartyField, BillingPartyFields } from "@/lib/billing-party";
+import { INVOICE_PAYMENT_METHODS } from "@/lib/invoice-payment-methods";
+import type { InvoicePaymentMethod } from "@/types/invoice";
 
 type InvoiceDetailEditModePanelProps = {
     dict: Dictionary;
     editingInvoiceNumber: string;
     editingIssueDate: string;
     editingDueDate: string;
+    editingPaymentMethod: InvoicePaymentMethod;
     editingIssuerFields: BillingPartyFields;
     editingRecipientFields: BillingPartyFields;
     onEditingInvoiceNumberChange: (value: string) => void;
     onEditingIssueDateChange: (value: string) => void;
     onEditingDueDateChange: (value: string) => void;
+    onEditingPaymentMethodChange: (value: InvoicePaymentMethod) => void;
     onEditIssuerFieldChange: (field: BillingPartyField, value: string) => void;
     onEditRecipientFieldChange: (field: BillingPartyField, value: string) => void;
 };
@@ -21,11 +26,13 @@ export function InvoiceDetailEditModePanel({
     editingInvoiceNumber,
     editingIssueDate,
     editingDueDate,
+    editingPaymentMethod,
     editingIssuerFields,
     editingRecipientFields,
     onEditingInvoiceNumberChange,
     onEditingIssueDateChange,
     onEditingDueDateChange,
+    onEditingPaymentMethodChange,
     onEditIssuerFieldChange,
     onEditRecipientFieldChange,
 }: InvoiceDetailEditModePanelProps) {
@@ -37,7 +44,7 @@ export function InvoiceDetailEditModePanel({
                     <p className="mt-1 text-xs text-[var(--text-muted)]">Revisa los datos y los conceptos antes de emitir la factura fiscal.</p>
                 </div>
             </header>
-            <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div className="space-y-1">
                     <label htmlFor="invoice-edit-final-number" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.final_number}
@@ -78,6 +85,20 @@ export function InvoiceDetailEditModePanel({
                         onChange={(event) => onEditingDueDateChange(event.target.value)}
                         className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
                     />
+                </div>
+                <div className="space-y-1">
+                    <label htmlFor="invoice-edit-payment-method" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                        {dict.invoices.payment_method}
+                    </label>
+                    <DocumentFormSelect
+                        id="invoice-edit-payment-method"
+                        value={editingPaymentMethod}
+                        onChange={(event) => onEditingPaymentMethodChange(event.target.value as InvoicePaymentMethod)}
+                    >
+                        {INVOICE_PAYMENT_METHODS.map((method) => (
+                            <option key={method} value={method}>{dict.invoices.payment_methods[method]}</option>
+                        ))}
+                    </DocumentFormSelect>
                 </div>
             </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

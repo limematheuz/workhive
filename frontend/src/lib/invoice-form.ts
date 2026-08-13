@@ -5,6 +5,7 @@ import type {
     InvoiceDraftCreate,
     InvoiceableTask,
 } from "@/services/invoice.service";
+import type { InvoicePaymentMethod } from "@/types/invoice";
 
 export const DEFAULT_INVOICE_TAX_RATE = 0.21;
 export const DEFAULT_INVOICE_DUE_DAYS = 15;
@@ -76,6 +77,7 @@ export function getIssuerFieldsFromCompany(company: Company): BillingPartyFields
         phone: company.phone || "",
         email: company.email || "",
         bank: company.bank_account || "",
+        swiftBic: company.swift_bic || "",
     };
 }
 
@@ -128,6 +130,7 @@ export function buildInvoiceDraftPayload(params: {
     discount: number;
     equivalenceSurcharge: number;
     retention: number;
+    paymentMethod: InvoicePaymentMethod;
     notesEnabled: boolean;
     notes: string;
     termsEnabled: boolean;
@@ -146,6 +149,7 @@ export function buildInvoiceDraftPayload(params: {
         discount: params.discount,
         equivalence_surcharge: params.equivalenceSurcharge,
         retention: params.retention,
+        payment_method: params.paymentMethod,
         notes: params.notesEnabled ? params.notes : null,
         terms: params.termsEnabled ? params.terms : null,
         shipping_address: params.shippingAddress || null,

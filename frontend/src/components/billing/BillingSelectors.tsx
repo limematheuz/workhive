@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { Dictionary } from "@/lib/dictionary-context";
 import {
     EQUIVALENCE_SURCHARGE_OPTIONS,
     RETENTION_OPTIONS,
@@ -43,7 +44,7 @@ interface PercentSelectProps {
     value: number;
     onChange: (value: number) => void;
     options: ReadonlyArray<{ value: string; label?: string; labelKey?: string; fallback?: string }>;
-    dict?: { invoices?: Record<string, string> };
+    dict?: Pick<Dictionary, "invoices">;
     className?: string;
 }
 
@@ -63,14 +64,21 @@ function PercentSelect({
         >
             {options.map((option) => (
                 <option key={option.value} value={option.value}>
-                    {option.label
-                        ?? (option.labelKey
-                            ? dict?.invoices?.[option.labelKey] ?? option.fallback
-                            : option.fallback)}
+                    {option.label ?? getInvoiceLabel(dict, option.labelKey) ?? option.fallback}
                 </option>
             ))}
         </select>
     );
+}
+
+function getInvoiceLabel(
+    dict: Pick<Dictionary, "invoices"> | undefined,
+    key: string | undefined,
+): string | undefined {
+    if (!key) return undefined;
+
+    const value = (dict?.invoices as Record<string, unknown> | undefined)?.[key];
+    return typeof value === "string" ? value : undefined;
 }
 
 export function EquivalenceSurchargeSelect(
