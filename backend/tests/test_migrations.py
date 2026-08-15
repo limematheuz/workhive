@@ -45,6 +45,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]: column for column in inspector.get_columns("quotes")
         }
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
+        sales_ledger_columns = {
+            column["name"] for column in inspector.get_columns("sales_ledger_records")
+        }
         invitation_columns = {
             column["name"] for column in inspector.get_columns("user_invitations")
         }
@@ -101,6 +104,18 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert quote_columns["client_id"]["nullable"] is True
     assert "paid_at" in invoice_columns
     assert "payment_method" in invoice_columns
+    assert {
+        "company_id",
+        "created_by_user_id",
+        "document_number",
+        "entry_date",
+        "client_name",
+        "base_amount",
+        "tax_amount",
+        "total_amount",
+        "payment_status",
+        "is_active",
+    } <= sales_ledger_columns
     assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns
     assert "reported_issues" in task_columns
     # The task read endpoint serializes these fields for every list view. Keep
