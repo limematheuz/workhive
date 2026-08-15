@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 
 from app.core.build_info import build_info
 from app.core.config import Settings
@@ -14,7 +15,7 @@ def test_release_version_sources_stay_in_sync():
         (ROOT / "frontend" / "package.json").read_text(encoding="utf-8")
     )
 
-    assert release_version == "1.3.1"
+    assert re.fullmatch(r"(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)", release_version)
     assert Settings.model_fields["APP_VERSION"].default == release_version
     assert frontend_package["version"] == release_version
 
