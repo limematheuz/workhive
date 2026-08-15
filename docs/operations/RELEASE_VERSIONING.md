@@ -49,8 +49,11 @@ values become safe development or `unknown` fallbacks.
 ## Preparing a release
 
 1. Choose the required SemVer increment.
-2. Update `VERSION`, `frontend/package.json`, the backend `APP_VERSION` default,
-   and Docker/Compose version defaults in one focused change.
+2. Run `pnpm release:prepare X.Y.Z` from the repository root. It validates the
+   requested semantic version and updates `VERSION`, `frontend/package.json`,
+   the backend `APP_VERSION` default, and Docker/Compose version defaults in
+   one focused change. Run `pnpm release:verify` before committing to prove
+   that every source still agrees with `VERSION`.
 3. Run backend and frontend tests, typecheck, lint, build, React Doctor, and
    security checks.
 4. Merge the reviewed release PR.

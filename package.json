@@ -1,0 +1,10 @@
+{
+  "name": "workhive-release-tools",
+  "private": true,
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "release:prepare": "node scripts/release-version.mjs",
+    "release:verify": "node scripts/release-version.mjs --verify",
+    "test:release": "node --test scripts/release-version.test.mjs"
+  }
+}

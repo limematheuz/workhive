@@ -157,6 +157,12 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify release version automation
+        working-directory: .
+        run: |
+          pnpm test:release
+          pnpm release:verify
+
       - name: Run frontend tests
         run: pnpm test
 
