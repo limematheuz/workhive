@@ -41,6 +41,11 @@ class Company(Base):
     invoices = relationship("Invoice", back_populates="company")
     quotes = relationship("Quote", back_populates="company")
     expenses = relationship("Expense", back_populates="company")
+    sales_ledger_records = relationship(
+        "SalesLedgerRecord",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
     location_access = relationship(
         "LocationCompanyAccess", back_populates="company", cascade="all, delete-orphan"
     )

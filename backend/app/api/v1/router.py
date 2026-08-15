@@ -28,6 +28,7 @@ from app.api.v1.traffic import router as traffic_router
 from app.api.v1.user_invitations import router as user_invitations_router
 from app.api.v1.notifications import router as notifications_router
 from app.api.v1.task_reports import router as task_reports_router
+from app.api.v1.sales_ledger import router as sales_ledger_router
 
 api_router = APIRouter()
 
@@ -61,6 +62,7 @@ api_router.include_router(task_items_router, prefix="/task-items", tags=["task-i
 api_router.include_router(task_reports_router, prefix="/task-reports", tags=["task-reports"])
 api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
 api_router.include_router(invoices_router, prefix="/invoices", tags=["invoices"])
+api_router.include_router(sales_ledger_router, prefix="/sales-ledger", tags=["sales-ledger"])
 api_router.include_router(
     invoice_email_contacts_router,
     prefix="/invoice-email-contacts",

@@ -16,6 +16,7 @@ from app.models.invoice_item import InvoiceItem
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
 from app.models.expense import Expense
+from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.reservation import Reservation
 from app.models.company_collaboration import CompanyCollaboration
