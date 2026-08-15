@@ -5,6 +5,7 @@
   "scripts": {
     "release:prepare": "node scripts/release-version.mjs",
     "release:verify": "node scripts/release-version.mjs --verify",
-    "test:release": "node --test scripts/release-version.test.mjs"
+    "release:tag": "node scripts/release-tag.mjs",
+    "test:release": "node --test scripts/release-version.test.mjs scripts/release-tag.test.mjs"
   }
 }
