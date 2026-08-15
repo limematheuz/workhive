@@ -1,5 +1,13 @@
 # WorkHive
 
+[English](#english) · [Español](#español)
+
+---
+
+<a id="español"></a>
+
+## Español
+
 > Operaciones de servicios, desde la reserva hasta la factura.
 
 WorkHive reúne ubicaciones, reservas, tareas, equipos, jornadas, presupuestos
@@ -86,8 +94,34 @@ repositorios concentran acceso a datos.
 
 ## Arranque local
 
-Usa las plantillas `.env.example` de cada parte. Los valores reales viven solo
-en tu entorno local o en el servidor.
+Clona el repositorio y crea los archivos de entorno solo para tu ordenador.
+Git nunca copia `.env` reales, credenciales, datos de producción ni accesos AWS.
+
+```bash
+git clone https://github.com/limematheuz/workhive.git
+cd workhive
+
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+```
+
+Antes de arrancar, configura únicamente estos valores locales:
+
+- En `.env`, elige un `POSTGRES_PASSWORD` local.
+- En `backend/.env`, haz que `DATABASE_URL` use esa misma contraseña local.
+- En `backend/.env`, sustituye `SECRET_KEY` por un valor local nuevo:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Email, Stripe, Google Calendar, VeriFactu, AWS, ECR, S3 y los valores de
+producción son opcionales para desarrollo local. Sus funciones están
+desactivadas por defecto en los archivos ejemplo. Nunca copies credenciales de
+producción a la máquina de otra persona ni a un entorno de presentación.
+
+Arranca una base PostgreSQL local vacía y aplica las mismas migraciones:
 
 ```bash
 docker compose up -d db
@@ -105,9 +139,13 @@ En otra terminal:
 ```bash
 cd frontend
 corepack enable
-pnpm install
+pnpm install --frozen-lockfile
 pnpm dev
 ```
+
+Cada desarrollador tiene una base de datos independiente. Para una presentación
+usa datos demo ficticios; nunca compartas backups de producción ni datos de
+clientes.
 
 ## Calidad
 
@@ -129,6 +167,31 @@ cd frontend && pnpm test && pnpm typecheck && pnpm lint
 No se versionan contraseñas, tokens, certificados, claves privadas, backups ni
 archivos de entorno reales.
 
+## Releases
+
+Prepara una nueva versión desde una rama limpia:
+
+```bash
+pnpm release:prepare 1.3.3
+pnpm release:verify
+```
+
+Después de mergear la PR de release, actualiza `main` y crea el tag anotado e
+inmutable con un único comando seguro:
+
+```bash
+git switch main
+git pull --ff-only origin main
+pnpm release:tag
+```
+
+`release:tag` se niega a ejecutarse fuera de `main`, con cambios locales, si
+`main` no coincide con GitHub o si el tag ya existe. Después ejecuta, en este
+orden, las Actions **Publish release images to ECR** y **Deploy reviewed release
+to production**, usando el tag mostrado por el comando. Consulta el documento de
+[versionado de releases](docs/operations/RELEASE_VERSIONING.md) para el flujo
+completo de producción y rollback.
+
 ## WIP
 
 - Implementar el flujo de **Solicitar acceso**: debe avisar a
@@ -136,3 +199,133 @@ archivos de entorno reales.
   que un administrador de WorkHive apruebe la solicitud.
 - Pulir la UX/UI del envío de presupuestos tras la validación funcional en
   producción.
+
+---
+
+<a id="english"></a>
+
+## English
+
+> Service operations, from reservation to invoice.
+
+WorkHive brings locations, reservations, tasks, teams, time tracking, quotes,
+and invoices together in one workspace.
+
+### Connected workflow
+
+| Area | What it enables |
+| --- | --- |
+| Operations | Clients, locations, reservations, and tasks in one place. |
+| Team | Assignments, checklists, permissions, and time tracking. |
+| Business | Quotes, invoices, expenses, and analytics. |
+| Control | Company-scoped data and actions. |
+
+### Product principles
+
+- A task has context: location, client, assignees, and status.
+- Each company sees only its own authorized data and operations.
+- Completed work can become commercial documents without duplicating data.
+- UI and API share behavioural contracts for critical rules.
+
+### Stack and repository structure
+
+- **Frontend:** Next.js + TypeScript (`frontend/`)
+- **Backend:** FastAPI + Python (`backend/`)
+- **Data:** PostgreSQL
+- **Containers:** Docker Compose (`docker-compose.yml`)
+- **Shared contracts:** backend/frontend rules (`test_contracts/`)
+
+Routes validate transport input, services enforce business rules and
+permissions, and repositories centralize data access.
+
+### Local development
+
+Clone the repository and create local-only environment files. Git never copies
+real `.env` files, credentials, production database data, or AWS access.
+
+```bash
+git clone https://github.com/limematheuz/workhive.git
+cd workhive
+
+cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
+```
+
+Set only these local values before starting:
+
+- In `.env`, choose a local `POSTGRES_PASSWORD`.
+- In `backend/.env`, make `DATABASE_URL` use that same local password.
+- In `backend/.env`, replace `SECRET_KEY` with a newly generated local value:
+
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Email, Stripe, Google Calendar, VeriFactu, AWS, ECR, S3, and production values
+are optional for local development. Their features are disabled by default in
+the example files. Never copy production credentials into another person's
+machine or into a presentation environment.
+
+Start an empty local PostgreSQL database and apply the same schema migrations:
+
+```bash
+docker compose up -d db
+
+cd backend
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+In another terminal:
+
+```bash
+cd frontend
+corepack enable
+pnpm install --frozen-lockfile
+pnpm dev
+```
+
+Each developer has an independent local database. Use fictional demo data for
+presentations; do not distribute production backups or customer data.
+
+### Quality checks
+
+```bash
+cd backend && ./.venv/bin/pytest -q
+
+cd frontend && pnpm test && pnpm typecheck && pnpm lint
+```
+
+### Releases
+
+Prepare a new release version from a clean branch:
+
+```bash
+pnpm release:prepare 1.3.3
+pnpm release:verify
+```
+
+After the release PR is merged, update `main` and create the immutable
+annotated tag with one safe command:
+
+```bash
+git switch main
+git pull --ff-only origin main
+pnpm release:tag
+```
+
+`release:tag` refuses to run from another branch, with uncommitted changes,
+when `main` is out of sync with GitHub, or when the tag already exists. Then
+run the GitHub Actions workflows in this order: **Publish release images to
+ECR**, followed by **Deploy reviewed release to production**, using the printed
+tag. See [release versioning](docs/operations/RELEASE_VERSIONING.md) for the
+complete production flow and rollback procedure.
+
+### Security
+
+Passwords, tokens, certificates, private keys, backups, real environment files,
+and customer data are never versioned.

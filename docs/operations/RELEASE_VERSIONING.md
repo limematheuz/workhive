@@ -57,7 +57,10 @@ values become safe development or `unknown` fallbacks.
 3. Run backend and frontend tests, typecheck, lint, build, React Doctor, and
    security checks.
 4. Merge the reviewed release PR.
-5. Create an annotated Git tag matching the version, for example `v1.2.0`.
+5. From a clean and updated `main`, run `pnpm release:tag`. It creates and
+   pushes the matching annotated tag, but refuses an existing tag, a dirty
+   working tree, a branch other than `main`, or a local `main` that differs
+   from `origin/main`.
 6. Build images from that exact tag and inject its full Git SHA.
 7. Keep the previous immutable image tags available for rollback.
 
