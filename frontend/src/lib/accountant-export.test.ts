@@ -1,0 +1,27 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import {
+    accountantExportFilename,
+    accountantExportPath,
+    accountantExportYears,
+} from "./accountant-export.ts";
+
+test("accountant export uses a stable, descriptive download filename", () => {
+    assert.equal(accountantExportFilename(2026), "workhive-gestoria-2026.zip");
+});
+
+test("accountant export years are newest first and never precede the API boundary", () => {
+    assert.deepEqual(accountantExportYears(2026, 3), [2026, 2025, 2024]);
+    assert.deepEqual(accountantExportYears(2001, 5), [2001, 2000]);
+});
+
+test("accountant export accepts only the backend year boundary", () => {
+    assert.equal(
+        accountantExportPath(2026),
+        "/api/v1/accounting-exports/accountant?year=2026",
+    );
+    assert.throws(() => accountantExportPath(1999), /invalid/);
+    assert.throws(() => accountantExportPath(2101), /invalid/);
+    assert.throws(() => accountantExportPath(2026.5), /invalid/);
+});
