@@ -67,23 +67,24 @@ test("finance revenue excludes drafts and cancelled invoices", () => {
     assert.equal(isRevenueInvoice(makeInvoice({ status: "cancelled" })), false);
 });
 
-test("finance summary totals revenue tax expenses tax and profit", () => {
+test("finance summary keeps operating results net of VAT and exposes VAT separately", () => {
     const invoices = [
-        makeInvoice({ id: 1, status: "paid", total_amount: 121, tax_amount: 21 }),
-        makeInvoice({ id: 2, status: "issued", total_amount: 242, tax_amount: 42 }),
+        makeInvoice({ id: 1, status: "paid", base_amount: 100, total_amount: 121, tax_amount: 21 }),
+        makeInvoice({ id: 2, status: "issued", base_amount: 200, total_amount: 242, tax_amount: 42 }),
         makeInvoice({ id: 3, status: "cancelled", total_amount: 999, tax_amount: 999 }),
     ];
     const expenses = [
-        makeExpense({ id: 1, total_amount: 48.4, tax_amount: 8.4 }),
-        makeExpense({ id: 2, total_amount: 12.1, tax_amount: 2.1 }),
+        makeExpense({ id: 1, base_amount: 40, total_amount: 48.4, tax_amount: 8.4 }),
+        makeExpense({ id: 2, base_amount: 10, total_amount: 12.1, tax_amount: 2.1 }),
     ];
 
     assert.deepEqual(summarizeFinance(invoices, expenses), {
-        revenue: 363,
-        expenses: 60.5,
-        profit: 302.5,
+        revenue: 300,
+        expenses: 50,
+        profit: 250,
         invoiceTax: 63,
         expenseTax: 10.5,
+        vatBalance: 52.5,
     });
 });
 
@@ -95,19 +96,20 @@ test("monthly finance creates sorted data buckets and keeps the last twelve mont
         return makeInvoice({
             id: index + 10,
             issue_date: `${year}-${month}-01T00:00:00`,
+            base_amount: index + 1,
             total_amount: index + 1,
         });
     });
     const months = buildMonthlyFinance(
         [
-            makeInvoice({ id: 1, issue_date: "2025-06-01T00:00:00", total_amount: 10 }),
+            makeInvoice({ id: 1, issue_date: "2025-06-01T00:00:00", base_amount: 10, total_amount: 10 }),
             ...historicalInvoices,
-            makeInvoice({ id: 2, issue_date: "2026-06-01T00:00:00", total_amount: 200 }),
-            makeInvoice({ id: 3, issue_date: "2026-07-01T00:00:00", total_amount: 100 }),
+            makeInvoice({ id: 2, issue_date: "2026-06-01T00:00:00", base_amount: 200, total_amount: 200 }),
+            makeInvoice({ id: 3, issue_date: "2026-07-01T00:00:00", base_amount: 100, total_amount: 100 }),
         ],
         [
-            makeExpense({ id: 1, expense_date: "2026-07-02T00:00:00", total_amount: 30 }),
-            makeExpense({ id: 2, expense_date: "2026-06-02T00:00:00", total_amount: 20 }),
+            makeExpense({ id: 1, expense_date: "2026-07-02T00:00:00", base_amount: 30, total_amount: 30 }),
+            makeExpense({ id: 2, expense_date: "2026-06-02T00:00:00", base_amount: 20, total_amount: 20 }),
         ],
         "es",
     );
@@ -130,14 +132,14 @@ test("monthly finance creates sorted data buckets and keeps the last twelve mont
 test("finance period comparison separates current and previous period values", () => {
     const comparison = summarizeFinancePeriod(
         [
-            makeInvoice({ id: 1, status: "paid", issue_date: "2026-07-04T10:00:00", total_amount: 100, tax_amount: 10 }),
-            makeInvoice({ id: 2, status: "issued", issue_date: "2026-07-05T10:00:00", total_amount: 70, tax_amount: 7 }),
-            makeInvoice({ id: 3, status: "overdue", issue_date: "2026-07-06T10:00:00", total_amount: 30, tax_amount: 3 }),
-            makeInvoice({ id: 4, status: "paid", issue_date: "2026-06-04T10:00:00", total_amount: 40, tax_amount: 4 }),
+            makeInvoice({ id: 1, status: "paid", issue_date: "2026-07-04T10:00:00", base_amount: 90, total_amount: 100, tax_amount: 10 }),
+            makeInvoice({ id: 2, status: "issued", issue_date: "2026-07-05T10:00:00", base_amount: 63, total_amount: 70, tax_amount: 7 }),
+            makeInvoice({ id: 3, status: "overdue", issue_date: "2026-07-06T10:00:00", base_amount: 27, total_amount: 30, tax_amount: 3 }),
+            makeInvoice({ id: 4, status: "paid", issue_date: "2026-06-04T10:00:00", base_amount: 36, total_amount: 40, tax_amount: 4 }),
         ],
         [
-            makeExpense({ id: 1, expense_date: "2026-07-06T10:00:00", total_amount: 25, tax_amount: 5 }),
-            makeExpense({ id: 2, expense_date: "2026-06-06T10:00:00", total_amount: 12, tax_amount: 2 }),
+            makeExpense({ id: 1, expense_date: "2026-07-06T10:00:00", base_amount: 20, total_amount: 25, tax_amount: 5 }),
+            makeExpense({ id: 2, expense_date: "2026-06-06T10:00:00", base_amount: 10, total_amount: 12, tax_amount: 2 }),
         ],
         "month",
         new Date("2026-07-07T12:00:00"),
@@ -147,14 +149,15 @@ test("finance period comparison separates current and previous period values", (
         paid: 100,
         pending: 70,
         overdue: 30,
-        revenue: 200,
-        expenses: 25,
-        profit: 175,
+        revenue: 180,
+        expenses: 20,
+        profit: 160,
         invoiceTax: 20,
         expenseTax: 5,
+        vatBalance: 15,
     });
-    assert.equal(comparison.previous.revenue, 40);
-    assert.equal(comparison.previous.expenses, 12);
+    assert.equal(comparison.previous.revenue, 36);
+    assert.equal(comparison.previous.expenses, 10);
 });
 
 test("paid totals use collection date while revenue keeps issue date", () => {
@@ -176,7 +179,7 @@ test("paid totals use collection date while revenue keeps issue date", () => {
     assert.equal(comparison.current.paid, 121);
     assert.equal(comparison.current.revenue, 0);
     assert.equal(comparison.previous.paid, 0);
-    assert.equal(comparison.previous.revenue, 121);
+    assert.equal(comparison.previous.revenue, 100);
 });
 
 test("overdue totals use due date instead of issue date", () => {
@@ -186,6 +189,7 @@ test("overdue totals use due date instead of issue date", () => {
                 status: "overdue",
                 issue_date: "2026-06-15T10:00:00",
                 due_date: "2026-07-05T10:00:00",
+                base_amount: 250,
                 total_amount: 300,
             }),
         ],
@@ -196,7 +200,7 @@ test("overdue totals use due date instead of issue date", () => {
 
     assert.equal(comparison.current.overdue, 300);
     assert.equal(comparison.previous.overdue, 0);
-    assert.equal(comparison.previous.revenue, 300);
+    assert.equal(comparison.previous.revenue, 250);
 });
 
 test("the latest chart bucket exactly matches every current-period summary", () => {
@@ -242,7 +246,7 @@ test("finance series includes stable buckets and ignores invalid dates", () => {
             makeInvoice({ id: 1, status: "paid", issue_date: "2026-07-04T10:00:00", total_amount: 100 }),
             makeInvoice({ id: 2, issue_date: "invalid", total_amount: 999 }),
         ],
-        [makeExpense({ id: 1, expense_date: "2026-07-04T10:00:00", total_amount: 35 })],
+        [makeExpense({ id: 1, expense_date: "2026-07-04T10:00:00", base_amount: 35, total_amount: 35 })],
         "en",
         "day",
         new Date("2026-07-07T12:00:00"),
@@ -258,9 +262,9 @@ test("finance series includes stable buckets and ignores invalid dates", () => {
 
 test("expenses are grouped by category from highest to lowest total", () => {
     assert.deepEqual(groupExpensesByCategory([
-        makeExpense({ id: 1, category: "transport", total_amount: 30 }),
-        makeExpense({ id: 2, category: "supplies", total_amount: 80 }),
-        makeExpense({ id: 3, category: "transport", total_amount: 20 }),
+        makeExpense({ id: 1, category: "transport", base_amount: 30, total_amount: 30 }),
+        makeExpense({ id: 2, category: "supplies", base_amount: 80, total_amount: 80 }),
+        makeExpense({ id: 3, category: "transport", base_amount: 20, total_amount: 20 }),
     ]), [
         { category: "supplies", total: 80 },
         { category: "transport", total: 50 },
@@ -270,9 +274,9 @@ test("expenses are grouped by category from highest to lowest total", () => {
 test("expense categories only represent the selected current period", () => {
     const grouped = groupExpensesByCategory(
         [
-            makeExpense({ id: 1, category: "supplies", expense_date: "2026-07-05T10:00:00", total_amount: 80 }),
-            makeExpense({ id: 2, category: "transport", expense_date: "2026-07-06T10:00:00", total_amount: 20 }),
-            makeExpense({ id: 3, category: "transport", expense_date: "2026-06-30T10:00:00", total_amount: 999 }),
+            makeExpense({ id: 1, category: "supplies", expense_date: "2026-07-05T10:00:00", base_amount: 80, total_amount: 80 }),
+            makeExpense({ id: 2, category: "transport", expense_date: "2026-07-06T10:00:00", base_amount: 20, total_amount: 20 }),
+            makeExpense({ id: 3, category: "transport", expense_date: "2026-06-30T10:00:00", base_amount: 999, total_amount: 999 }),
         ],
         "month",
         new Date("2026-07-07T12:00:00"),

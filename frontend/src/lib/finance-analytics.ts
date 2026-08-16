@@ -10,11 +10,13 @@ export interface FinanceMonth {
 }
 
 export interface FinanceSummary {
+    /** Net values exclude VAT, which is not operating revenue or expense. */
     revenue: number;
     expenses: number;
     profit: number;
     invoiceTax: number;
     expenseTax: number;
+    vatBalance: number;
 }
 
 export type FinancePeriod = "day" | "week" | "month" | "year";
@@ -129,6 +131,7 @@ function emptyPeriodSummary(): FinancePeriodSummary {
         profit: 0,
         invoiceTax: 0,
         expenseTax: 0,
+        vatBalance: 0,
     };
 }
 
@@ -157,7 +160,7 @@ function summarizeRange(
             summary.overdue += invoice.total_amount;
         }
         if (isRevenueInvoice(invoice) && isInRange(issueDate, start, end)) {
-            summary.revenue += invoice.total_amount;
+            summary.revenue += invoice.base_amount;
             summary.invoiceTax += invoice.tax_amount;
         }
     });
@@ -165,11 +168,12 @@ function summarizeRange(
     expenses.forEach((expense) => {
         const date = parseDate(expense.expense_date);
         if (!isInRange(date, start, end)) return;
-        summary.expenses += expense.total_amount;
+        summary.expenses += expense.base_amount;
         summary.expenseTax += expense.tax_amount;
     });
 
     summary.profit = summary.revenue - summary.expenses;
+    summary.vatBalance = summary.invoiceTax - summary.expenseTax;
     return summary;
 }
 
@@ -180,13 +184,16 @@ export function isRevenueInvoice(invoice: Invoice) {
 export function summarizeFinance(invoices: Invoice[], expenses: Expense[]): FinanceSummary {
     const revenueInvoices = invoices.filter(isRevenueInvoice);
     return {
-        revenue: revenueInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0),
-        expenses: expenses.reduce((sum, expense) => sum + expense.total_amount, 0),
+        revenue: revenueInvoices.reduce((sum, invoice) => sum + invoice.base_amount, 0),
+        expenses: expenses.reduce((sum, expense) => sum + expense.base_amount, 0),
         profit:
-            revenueInvoices.reduce((sum, invoice) => sum + invoice.total_amount, 0)
-            - expenses.reduce((sum, expense) => sum + expense.total_amount, 0),
+            revenueInvoices.reduce((sum, invoice) => sum + invoice.base_amount, 0)
+            - expenses.reduce((sum, expense) => sum + expense.base_amount, 0),
         invoiceTax: revenueInvoices.reduce((sum, invoice) => sum + invoice.tax_amount, 0),
         expenseTax: expenses.reduce((sum, expense) => sum + expense.tax_amount, 0),
+        vatBalance:
+            revenueInvoices.reduce((sum, invoice) => sum + invoice.tax_amount, 0)
+            - expenses.reduce((sum, expense) => sum + expense.tax_amount, 0),
     };
 }
 
@@ -215,13 +222,13 @@ export function buildMonthlyFinance(
         if (!isRevenueInvoice(invoice)) continue;
         const date = parseDate(invoice.issue_date);
         if (!date) continue;
-        ensureMonth(monthKey(date)).revenue += invoice.total_amount;
+        ensureMonth(monthKey(date)).revenue += invoice.base_amount;
     }
 
     expenses.forEach((expense) => {
         const date = parseDate(expense.expense_date);
         if (!date) return;
-        ensureMonth(monthKey(date)).expenses += expense.total_amount;
+        ensureMonth(monthKey(date)).expenses += expense.base_amount;
     });
 
     return Array.from(months.values())
@@ -280,7 +287,7 @@ export function groupExpensesByCategory(
             const end = addPeriod(start, period, 1);
             if (!isInRange(parseDate(expense.expense_date), start, end)) return;
         }
-        totals.set(expense.category, (totals.get(expense.category) || 0) + expense.total_amount);
+        totals.set(expense.category, (totals.get(expense.category) || 0) + expense.base_amount);
     });
     return Array.from(totals.entries())
         .map(([category, total]) => ({ category, total }))
