@@ -2215,6 +2215,7 @@
         "request": "Solicitud",
         "rejected": "Rechazada",
         "overdue": "Con retraso",
+        "payment_reminder": "Cobro pendiente",
         "cancelled": "Cancelada",
         "reservation_cancelled": "Reserva cancelada"
       },

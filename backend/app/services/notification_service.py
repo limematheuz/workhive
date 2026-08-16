@@ -55,7 +55,7 @@ def notify_users_once(
     dedupe_key: str,
     metadata: dict | None = None,
     commit: bool = True,
-) -> None:
+) -> int:
     """Persist one notification per recipient and business event.
 
     Polling, retries and idempotent commands can execute the same service more
@@ -64,7 +64,7 @@ def notify_users_once(
     """
     unique_users = {user.id: user for user in users if user.is_active and user.company_id}
     if not unique_users:
-        return
+        return 0
 
     existing = (
         db.query(Notification)
@@ -82,27 +82,27 @@ def notify_users_once(
         if (notification.metadata_json or {}).get("dedupe_key") == dedupe_key
     }
     event_metadata = {**(metadata or {}), "dedupe_key": dedupe_key}
-    db.add_all(
-        [
-            Notification(
-                user_id=user.id,
-                company_id=user.company_id,
-                event_type=event_type,
-                title=title,
-                message=message,
-                entity_type=entity_type,
-                entity_id=entity_id,
-                href=href,
-                metadata_json=event_metadata,
-            )
-            for user in unique_users.values()
-            if user.id not in notified_user_ids
-        ]
-    )
+    notifications = [
+        Notification(
+            user_id=user.id,
+            company_id=user.company_id,
+            event_type=event_type,
+            title=title,
+            message=message,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            href=href,
+            metadata_json=event_metadata,
+        )
+        for user in unique_users.values()
+        if user.id not in notified_user_ids
+    ]
+    db.add_all(notifications)
     if commit:
         db.commit()
     else:
         db.flush()
+    return len(notifications)
 
 
 def list_notifications(

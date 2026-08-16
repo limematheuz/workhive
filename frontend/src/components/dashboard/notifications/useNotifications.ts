@@ -37,7 +37,10 @@ import {
 } from "@/lib/task-reporting";
 import { getTaskScheduleDate, isTaskOverdue } from "@/domain/tasks/task-schedule";
 import { isOperationalStatus } from "@/domain/tasks/task-status";
-import { getTaskNotificationPriority } from "@/lib/notification-priority";
+import {
+    getPersistentNotificationPriority,
+    getTaskNotificationPriority,
+} from "@/lib/notification-priority";
 
 const ACTIVE_PRIVACY_REQUEST_STATUSES = new Set(["pending", "processing"]);
 
@@ -199,20 +202,24 @@ export function useNotifications({
         ) === "alert")
     ), []);
 
-    const primaryPersistentNotifications = useMemo(() => persistentNotifications.filter((notification) => {
-        if (notification.entity_type !== "task_item") return true;
-        return !isAlertTask(
-            typeof notification.entity_id === "number"
-                ? tasksById.get(notification.entity_id)
-                : undefined,
-        );
-    }), [isAlertTask, persistentNotifications, tasksById]);
+    const persistentNotificationPriority = useCallback((notification: PersistentNotification) => {
+        if (getPersistentNotificationPriority(notification.entity_type, notification.event_type) === "alert") {
+            return "alert";
+        }
+        return notification.entity_type === "task_item"
+            && typeof notification.entity_id === "number"
+            && isAlertTask(tasksById.get(notification.entity_id))
+            ? "alert"
+            : "update";
+    }, [isAlertTask, tasksById]);
 
-    const alertPersistentTaskNotifications = useMemo(() => persistentNotifications.filter((notification) => (
-        notification.entity_type === "task_item"
-        && typeof notification.entity_id === "number"
-        && isAlertTask(tasksById.get(notification.entity_id))
-    )), [isAlertTask, persistentNotifications, tasksById]);
+    const primaryPersistentNotifications = useMemo(() => persistentNotifications.filter((notification) => (
+        persistentNotificationPriority(notification) === "update"
+    )), [persistentNotificationPriority, persistentNotifications]);
+
+    const alertPersistentNotifications = useMemo(() => persistentNotifications.filter((notification) => (
+        persistentNotificationPriority(notification) === "alert"
+    )), [persistentNotificationPriority, persistentNotifications]);
 
     const taskNotifications = useMemo(() => {
         if (!userId) return [];
@@ -294,7 +301,7 @@ export function useNotifications({
         + upcomingArrivalNotifications.length
         + privacyRequestNotifications.length;
 
-    const alertNotificationCount = alertPersistentTaskNotifications.length
+    const alertNotificationCount = alertPersistentNotifications.length
         + alertTaskNotifications.length
         + secondaryReservationNotifications.length;
 
@@ -387,7 +394,7 @@ export function useNotifications({
         acknowledgePersistentNotifications(
             activeNotificationTab === "primary"
                 ? primaryPersistentNotifications
-                : alertPersistentTaskNotifications,
+                : alertPersistentNotifications,
         );
     }, [
         primaryTaskNotifications,
@@ -399,7 +406,7 @@ export function useNotifications({
         secondaryReservationNotifications,
         dismissNotifications,
         primaryPersistentNotifications,
-        alertPersistentTaskNotifications,
+        alertPersistentNotifications,
         acknowledgePersistentNotifications,
     ]);
 
@@ -532,7 +539,7 @@ export function useNotifications({
     return {
         loadNotifications,
         primaryPersistentNotifications,
-        alertPersistentTaskNotifications,
+        alertPersistentNotifications,
         primaryTaskNotifications,
         alertTaskNotifications,
         primaryCollaborationNotifications,

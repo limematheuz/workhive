@@ -1,4 +1,5 @@
 export type TaskNotificationPriority = "update" | "alert";
+export type PersistentNotificationPriority = "update" | "alert";
 
 /**
  * New work is an update; a rejected request or overdue operational work is an
@@ -10,4 +11,13 @@ export function getTaskNotificationPriority(
     isOverdue: boolean,
 ): TaskNotificationPriority {
     return status === "rejected" || isOverdue ? "alert" : "update";
+}
+
+export function getPersistentNotificationPriority(
+    entityType: string | null | undefined,
+    eventType: string | null | undefined,
+): PersistentNotificationPriority {
+    return entityType === "invoice" && eventType?.startsWith("invoice.payment_")
+        ? "alert"
+        : "update";
 }
