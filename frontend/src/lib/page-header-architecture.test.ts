@@ -27,6 +27,7 @@ test("dashboard page headers use shared PageHeader", () => {
         "../app/dashboard/expenses/page.tsx",
         "../app/dashboard/task-reports/page.tsx",
         "../app/dashboard/analytics/page.tsx",
+        "../app/dashboard/fiscal-summary/page.tsx",
         "../components/dashboard/superadmin/SuperadminDashboard.tsx",
         "../components/invoices/InvoicesPageHeader.tsx",
         "../features/reservations/ReservationsPageHeader.tsx",
