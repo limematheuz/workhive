@@ -241,7 +241,11 @@
     "categories_subtitle": "Distribution of recorded spending.",
     "empty_monthly": "Not enough finance data yet.",
     "empty_categories": "No categorized expenses yet.",
-    "error_load": "Could not load finance data."
+    "error_load": "Could not load finance data.",
+    "accountant_export": "Export for accountant",
+    "accountant_export_year": "Year to export",
+    "accountant_export_success": "Accountant package downloaded.",
+    "accountant_export_error": "Could not export the accountant package."
   },
   "fiscal_summary": {
     "nav_label": "Fiscal summary",

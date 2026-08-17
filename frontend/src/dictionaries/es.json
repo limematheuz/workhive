@@ -241,7 +241,11 @@
     "categories_subtitle": "Distribución del gasto registrado.",
     "empty_monthly": "Todavía no hay datos financieros suficientes.",
     "empty_categories": "Todavía no hay gastos categorizados.",
-    "error_load": "No se pudieron cargar los datos financieros."
+    "error_load": "No se pudieron cargar los datos financieros.",
+    "accountant_export": "Exportar gestoría",
+    "accountant_export_year": "Año a exportar",
+    "accountant_export_success": "Paquete para gestoría descargado.",
+    "accountant_export_error": "No se pudo exportar el paquete para gestoría."
   },
   "fiscal_summary": {
     "nav_label": "Resumen fiscal",
