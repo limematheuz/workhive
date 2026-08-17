@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ExternalLink, Info, Loader2, Settings2 } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
@@ -34,7 +34,12 @@ function toCalendarPreferences(settings: CompanyFiscalSettings) {
 function formatDeadlineDate(value: string, locale: "en" | "es") {
     return new Date(`${value}T12:00:00`).toLocaleDateString(
         locale === "en" ? "en-US" : "es-ES",
-        { day: "numeric", month: "short", year: "numeric" },
+        {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+            timeZone: "UTC",
+        },
     );
 }
 
@@ -48,24 +53,29 @@ export default function FiscalCalendarPage() {
     const [saving, setSaving] = useState(false);
     const [reminderDays, setReminderDays] = useState("7");
 
-    const loadSettings = useCallback(async () => {
-        if (!canManage) return;
-        try {
-            setLoading(true);
-            const loaded = await FiscalSettingsService.getSettings();
-            setSettings(loaded);
-            setReminderDays(String(loaded.fiscal_reminder_days));
-        } catch {
-            toast.error(text.error_load);
-        } finally {
-            setLoading(false);
-        }
-    }, [canManage, text.error_load]);
-
     useEffect(() => {
-        if (userLoading) return;
-        void loadSettings();
-    }, [loadSettings, userLoading]);
+        if (userLoading || !canManage) return;
+
+        let cancelled = false;
+
+        const requestSettings = async () => {
+            try {
+                const loaded = await FiscalSettingsService.getSettings();
+                if (cancelled) return;
+                setSettings(loaded);
+                setReminderDays(String(loaded.fiscal_reminder_days));
+            } catch {
+                if (!cancelled) toast.error(text.error_load);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        void requestSettings();
+        return () => {
+            cancelled = true;
+        };
+    }, [canManage, text.error_load, userLoading]);
 
     const deadlines = useMemo(
         () => settings

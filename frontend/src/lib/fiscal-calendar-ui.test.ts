@@ -13,6 +13,7 @@ test("fiscal calendar is company-admin scoped and saves explicit obligations", (
     assert.match(page, /quarterly_withholding_enabled/);
     assert.match(page, /fiscal_reminder_days/);
     assert.match(page, /FiscalSettingsService\.updateSettings/);
+    assert.match(page, /timeZone: "UTC"/);
 });
 
 test("fiscal calendar reuses dashboard navigation and surfaces official-date guidance", () => {
