@@ -91,7 +91,13 @@ def test_sales_ledger_includes_issued_invoices_as_read_only_automatic_rows(clien
     assert payload[0]["source_type"] == "invoice"
     assert payload[0]["source_id"] == invoice.id
     assert payload[0]["document_number"] == invoice.invoice_number
-    assert payload[0]["total_amount"] == "121.00"
+    assert payload[0]["base_amount"] == 100.0
+    assert payload[0]["tax_amount"] == 21.0
+    assert payload[0]["total_amount"] == 121.0
+    assert all(
+        isinstance(payload[0][field], (int, float))
+        for field in ("base_amount", "tax_amount", "total_amount")
+    )
     assert payload[0]["is_editable"] is False
 
 
@@ -110,7 +116,7 @@ def test_manual_history_is_calculated_editable_and_isolated_per_company(client, 
     assert created.status_code == 201
     record = created.json()
     assert record["source_type"] == "manual"
-    assert record["total_amount"] == "530.71"
+    assert record["total_amount"] == 530.71
     assert record["is_editable"] is True
 
     updated = client.patch(
@@ -119,7 +125,7 @@ def test_manual_history_is_calculated_editable_and_isolated_per_company(client, 
         json={"base_amount": "80.00", "tax_amount": "16.80"},
     )
     assert updated.status_code == 200
-    assert updated.json()["total_amount"] == "96.80"
+    assert updated.json()["total_amount"] == 96.8
 
     forbidden = client.delete(
         f"/api/v1/sales-ledger/manual-records/{record['source_id']}",

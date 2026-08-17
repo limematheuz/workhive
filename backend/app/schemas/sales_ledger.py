@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 
 PaymentStatus = Literal["paid", "pending"]
@@ -73,6 +73,11 @@ class SalesLedgerEntryResponse(BaseModel):
     is_editable: bool
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+    @field_serializer("base_amount", "tax_amount", "total_amount", when_used="json")
+    def serialize_money_as_number(self, value: Decimal) -> float:
+        """Keep the API contract aligned with the frontend's numeric totals."""
+        return float(value)
 
 
 class SalesLedgerCsvError(BaseModel):
