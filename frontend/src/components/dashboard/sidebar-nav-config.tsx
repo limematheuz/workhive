@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { CloudCog, FileText, LineChart, ShieldAlert } from "lucide-react";
+import { CalendarDays, CloudCog, FileText, LineChart, ShieldAlert } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = {
@@ -273,6 +273,12 @@ function buildNavLinks(
                       exact: false,
                       icon: <FileText className="h-5 w-5 flex-shrink-0" />,
                   },
+                  {
+                      href: "/dashboard/fiscal-calendar",
+                      label: dict.fiscal_calendar.title,
+                      exact: false,
+                      icon: <CalendarDays className="h-5 w-5 flex-shrink-0" />,
+                  },
               ]
             : []),
     ];
@@ -310,7 +316,12 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         ), ["/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/clients", "/dashboard/quotes"]),
         buildGroup("finance", dict.sidebar_groups.finance, (
             <LineChart className="h-5 w-5 flex-shrink-0" />
-        ), ["/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary"]),
+        ), [
+            "/dashboard/expenses",
+            "/dashboard/analytics",
+            "/dashboard/fiscal-summary",
+            "/dashboard/fiscal-calendar",
+        ]),
     ].filter(Boolean) as NavGroup[];
 
     const groupedLinkHrefs = new Set(navGroups.flatMap(group => group.children.map(link => link.href)));

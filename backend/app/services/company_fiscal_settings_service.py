@@ -33,7 +33,9 @@ def decrypt_password(value: str | None) -> str | None:
     try:
         return _fernet().decrypt(value.encode("utf-8")).decode("utf-8")
     except InvalidToken as error:
-        raise ValueError("Stored fiscal certificate password cannot be decrypted") from error
+        raise ValueError(
+            "Stored fiscal certificate password cannot be decrypted"
+        ) from error
 
 
 def _certificate_root() -> Path:
@@ -72,6 +74,14 @@ def update_settings(
         fiscal_settings.enabled = data.enabled
     if data.environment is not None:
         fiscal_settings.environment = data.environment
+    if data.quarterly_vat_enabled is not None:
+        fiscal_settings.quarterly_vat_enabled = data.quarterly_vat_enabled
+    if data.quarterly_withholding_enabled is not None:
+        fiscal_settings.quarterly_withholding_enabled = (
+            data.quarterly_withholding_enabled
+        )
+    if data.fiscal_reminder_days is not None:
+        fiscal_settings.fiscal_reminder_days = data.fiscal_reminder_days
     db.add(fiscal_settings)
     db.commit()
     db.refresh(fiscal_settings)
@@ -179,6 +189,15 @@ def readiness_payload(
         "global_enabled": global_enabled,
         "company_enabled": company_enabled,
         "environment": environment,
+        "quarterly_vat_enabled": bool(
+            fiscal_settings and fiscal_settings.quarterly_vat_enabled
+        ),
+        "quarterly_withholding_enabled": bool(
+            fiscal_settings and fiscal_settings.quarterly_withholding_enabled
+        ),
+        "fiscal_reminder_days": (
+            fiscal_settings.fiscal_reminder_days if fiscal_settings else 7
+        ),
         "certificate_configured": certificate_ready,
         "certificate_uploaded_at": (
             fiscal_settings.certificate_uploaded_at if fiscal_settings else None

@@ -1,4 +1,13 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -17,6 +26,9 @@ class CompanyFiscalSettings(Base):
     )
     enabled = Column(Boolean, nullable=False, default=False)
     environment = Column(String(20), nullable=False, default="test")
+    quarterly_vat_enabled = Column(Boolean, nullable=False, default=False)
+    quarterly_withholding_enabled = Column(Boolean, nullable=False, default=False)
+    fiscal_reminder_days = Column(Integer, nullable=False, default=7)
     certificate_path = Column(Text, nullable=True)
     certificate_password_encrypted = Column(Text, nullable=True)
     certificate_uploaded_at = Column(DateTime(timezone=True), nullable=True)

@@ -10,7 +10,6 @@ from app.core.config import settings
 from credentials import TEST_SECRET, login_form, CREDENTIAL_FIELD
 
 
-
 def _admin_headers(client):
     email = "fiscal-admin@workhive.example.com"
     password = TEST_SECRET
@@ -104,3 +103,30 @@ def test_company_fiscal_settings_upload_certificate_and_report_readiness(
     assert payload["producer_configured"] is True
     assert payload["submission_available"] is True
     assert payload["environment"] == "test"
+
+
+def test_company_fiscal_calendar_preferences_are_company_scoped_and_validated(client):
+    headers = _admin_headers(client)
+
+    updated = client.patch(
+        "/api/v1/fiscal-settings/",
+        headers=headers,
+        json={
+            "quarterly_vat_enabled": True,
+            "quarterly_withholding_enabled": True,
+            "fiscal_reminder_days": 14,
+        },
+    )
+
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["quarterly_vat_enabled"] is True
+    assert updated.json()["quarterly_withholding_enabled"] is True
+    assert updated.json()["fiscal_reminder_days"] == 14
+
+    invalid_reminder = client.patch(
+        "/api/v1/fiscal-settings/",
+        headers=headers,
+        json={"fiscal_reminder_days": 0},
+    )
+
+    assert invalid_reminder.status_code == 422

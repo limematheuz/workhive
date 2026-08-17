@@ -5,6 +5,9 @@ export interface CompanyFiscalSettings {
     global_enabled: boolean;
     company_enabled: boolean;
     environment: "test" | "production";
+    quarterly_vat_enabled: boolean;
+    quarterly_withholding_enabled: boolean;
+    fiscal_reminder_days: number;
     certificate_configured: boolean;
     certificate_uploaded_at?: string | null;
     producer_configured: boolean;
@@ -17,6 +20,9 @@ export interface CompanyFiscalSettings {
 export interface CompanyFiscalSettingsUpdate {
     enabled?: boolean;
     environment?: "test" | "production";
+    quarterly_vat_enabled?: boolean;
+    quarterly_withholding_enabled?: boolean;
+    fiscal_reminder_days?: number;
 }
 
 export const FiscalSettingsService = {
