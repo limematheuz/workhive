@@ -35,7 +35,7 @@ export function NotificationPopoverContent({
 }: NotificationPopoverContentProps) {
     const {
         primaryPersistentNotifications,
-        alertPersistentTaskNotifications,
+        alertPersistentNotifications,
         primaryTaskNotifications,
         alertTaskNotifications,
         primaryCollaborationNotifications,
@@ -123,7 +123,7 @@ export function NotificationPopoverContent({
                             })}
                         </>}
                         {activeTab === "secondary" && <>
-                            {alertPersistentTaskNotifications.map((notification) => <NotificationItem key={`persistent:${notification.id}`} type="persistent-alert" data={notification} notificationKey={`persistent:${notification.id}`} openingNotificationKey={openingNotificationKey} onClick={() => void handlePersistentNotificationClick(notification)} dict={dict} locale={locale} />)}
+                            {alertPersistentNotifications.map((notification) => <NotificationItem key={`persistent:${notification.id}`} type="persistent-alert" data={notification} notificationKey={`persistent:${notification.id}`} openingNotificationKey={openingNotificationKey} onClick={() => void handlePersistentNotificationClick(notification)} dict={dict} locale={locale} />)}
                             {alertTaskNotifications.map((task) => {
                                 const notificationKey = getTaskNotificationKey(task);
                                 return <NotificationItem key={notificationKey} type={task.status === "rejected" ? "task-rejected" : "task-overdue"} data={task} notificationKey={notificationKey} openingNotificationKey={openingNotificationKey} onClick={() => void handleTaskNotificationClick(task)} dict={dict} locale={locale} locationName={getNotificationLocationName(task.location_id)} previewText={getNotificationPreview(task)} />;

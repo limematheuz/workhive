@@ -149,6 +149,13 @@ function PersistentNotificationItem({
     danger = false,
     ...props
 }: NotificationContentProps & { notification: PersistentNotification; danger?: boolean }) {
+    const isPaymentReminder = notification.entity_type === "invoice"
+        && notification.event_type.startsWith("invoice.payment_");
+    const categoryLabel = isPaymentReminder
+        ? (props.dict.notifications?.types?.payment_reminder || "Cobro pendiente")
+        : notification.event_type === "task.reported"
+            ? "Reporte de tarea"
+            : "Tarea";
     return (
         <NotificationButton {...props} className={danger
             ? "border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] hover:bg-[var(--bg-tertiary)]"
@@ -156,9 +163,9 @@ function PersistentNotificationItem({
             <p className="text-sm font-black text-[var(--text-main)]">{notification.title}</p>
             <p className="mt-1.5 text-xs font-semibold text-[var(--text-muted)]">{notification.message}</p>
             <p className={`mt-2 text-[10px] font-bold uppercase ${danger ? "text-[var(--btn-cancel-text)]" : "text-accent"}`}>
-                {danger
+                {danger && !isPaymentReminder
                     ? (props.dict.notifications?.types?.overdue || "Con retraso")
-                    : notification.event_type === "task.reported" ? "Reporte de tarea" : "Tarea"}
+                    : categoryLabel}
             </p>
         </NotificationButton>
     );

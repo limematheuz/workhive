@@ -2271,6 +2271,7 @@
         "request": "Request",
         "rejected": "Rejected",
         "overdue": "Overdue",
+        "payment_reminder": "Payment reminder",
         "cancelled": "Cancelled",
         "reservation_cancelled": "Reservation Cancelled"
       },
