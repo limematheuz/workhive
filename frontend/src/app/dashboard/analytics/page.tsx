@@ -254,17 +254,31 @@ function FinanceDashboard({
             tone: "danger" as const,
         },
         {
+            label: text.profit,
+            value: current.profit,
+            previous: previous.profit,
+            icon: <BarChart3 className="h-4 w-4" />,
+            tone: "positive" as const,
+        },
+        {
             label: text.overdue,
             value: current.overdue,
             previous: previous.overdue,
             icon: <TriangleAlert className="h-4 w-4" />,
             tone: "danger" as const,
         },
+        {
+            label: text.vat_balance,
+            value: current.vatBalance,
+            previous: previous.vatBalance,
+            icon: <ReceiptText className="h-4 w-4" />,
+            tone: "warning" as const,
+        },
     ];
 
     return (
         <>
-            <section className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+            <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
                 {metricCards.map(({ label, value, previous, icon, tone }) => (
                     <MetricCard
                         key={label}
