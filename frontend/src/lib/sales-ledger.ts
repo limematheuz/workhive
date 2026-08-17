@@ -34,7 +34,10 @@ function moneyForCsv(value: number): string {
 }
 
 export function getSalesLedgerYears(entries: SalesLedgerEntry[]): string[] {
-    return Array.from(new Set(entries.map((entry) => entry.entry_date.substring(0, 4)).filter(Boolean)))
+    return Array.from(new Set(entries.flatMap((entry) => {
+        const year = entry.entry_date.substring(0, 4);
+        return year ? [year] : [];
+    })))
         .sort((first, second) => Number(second) - Number(first));
 }
 

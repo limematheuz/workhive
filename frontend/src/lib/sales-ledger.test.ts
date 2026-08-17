@@ -46,6 +46,7 @@ test("sales ledger totals preserve paid and pending fiscal amounts", () => {
         pending: 96.8,
     });
     assert.deepEqual(getSalesLedgerYears(entries), ["2026", "2025"]);
+    assert.deepEqual(getSalesLedgerYears([...entries, { ...entries[0], entry_date: "" }]), ["2026", "2025"]);
     assert.deepEqual(
         filterSalesLedgerEntries(entries, { year: "2025", search: "histórico" }).map((entry) => entry.source_id),
         [1],
