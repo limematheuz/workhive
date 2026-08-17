@@ -18,7 +18,7 @@ from app.schemas.reservation import (
     ReservationResponse,
     ReservationUpdate,
 )
-from app.services import reservation_service
+from app.services import reservation_query_service, reservation_service
 
 
 router = APIRouter()
@@ -33,7 +33,7 @@ async def read_reservations(
     current_user: User = AsyncActiveManagerOrAdmin,
 ):
     def operation(sync_db: Session):
-        reservations = reservation_service.list_reservations(
+        reservations = reservation_query_service.list_reservations(
             sync_db,
             current_user,
             location_id,
@@ -41,7 +41,7 @@ async def read_reservations(
             date_to,
         )
         return [
-            reservation_service.build_reservation_response(
+            reservation_query_service.build_reservation_response(
                 sync_db,
                 reservation,
                 current_user,
@@ -59,7 +59,7 @@ async def read_upcoming_arrivals(
     current_user: User = AsyncActiveManagerOrAdmin,
 ):
     return await db.run_sync(
-        lambda sync_db: reservation_service.list_upcoming_arrivals(
+        lambda sync_db: reservation_query_service.list_upcoming_arrivals(
             sync_db,
             current_user,
             days,
@@ -74,12 +74,12 @@ async def read_reservation(
     current_user: User = AsyncActiveUser,
 ):
     def operation(sync_db: Session):
-        reservation = reservation_service.get_reservation(
+        reservation = reservation_query_service.get_reservation(
             sync_db,
             current_user,
             reservation_id,
         )
-        return reservation_service.build_reservation_response(
+        return reservation_query_service.build_reservation_response(
             sync_db,
             reservation,
             current_user,
@@ -97,7 +97,9 @@ def create_reservation(
     current_user: User = ActiveUser,
 ):
     reservation = reservation_service.create_reservation(db, current_user, reservation_data)
-    return reservation_service.build_reservation_response(db, reservation, current_user)
+    return reservation_query_service.build_reservation_response(
+        db, reservation, current_user
+    )
 
 
 @router.patch("/{reservation_id}", response_model=ReservationResponse)
@@ -110,7 +112,9 @@ def update_reservation(
     reservation = reservation_service.update_reservation(
         db, current_user, reservation_id, reservation_data
     )
-    return reservation_service.build_reservation_response(db, reservation, current_user)
+    return reservation_query_service.build_reservation_response(
+        db, reservation, current_user
+    )
 
 
 @router.post(
@@ -125,7 +129,9 @@ def dispatch_cleaning_request(
     reservation = reservation_service.dispatch_cleaning_request(
         db, current_user, reservation_id
     )
-    return reservation_service.build_reservation_response(db, reservation, current_user)
+    return reservation_query_service.build_reservation_response(
+        db, reservation, current_user
+    )
 
 
 @router.delete("/{reservation_id}", status_code=status.HTTP_204_NO_CONTENT)
