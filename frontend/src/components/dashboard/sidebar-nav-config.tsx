@@ -267,6 +267,12 @@ function buildNavLinks(
                           </svg>
                       ),
                   },
+                  {
+                      href: "/dashboard/fiscal-summary",
+                      label: dict.fiscal_summary.nav_label,
+                      exact: false,
+                      icon: <FileText className="h-5 w-5 flex-shrink-0" />,
+                  },
               ]
             : []),
     ];
@@ -304,7 +310,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         ), ["/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/clients", "/dashboard/quotes"]),
         buildGroup("finance", dict.sidebar_groups.finance, (
             <LineChart className="h-5 w-5 flex-shrink-0" />
-        ), ["/dashboard/expenses", "/dashboard/analytics"]),
+        ), ["/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary"]),
     ].filter(Boolean) as NavGroup[];
 
     const groupedLinkHrefs = new Set(navGroups.flatMap(group => group.children.map(link => link.href)));

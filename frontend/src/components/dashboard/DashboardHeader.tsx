@@ -40,6 +40,8 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
 
     const pageTitle = pathname === "/dashboard"
             ? dict.dashboard.overview
+            : pathname.includes("/dashboard/fiscal-summary")
+                ? dict.fiscal_summary.title
             : pathname.includes("/dashboard/analytics")
                 ? dict.finance_analytics.eyebrow
             : pathname.includes("/dashboard/expenses")
