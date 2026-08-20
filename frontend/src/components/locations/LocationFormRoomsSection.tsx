@@ -56,6 +56,7 @@ export function LocationFormRoomsSection({
                                     <Input
                                         type="text"
                                         value={room.name}
+                                        aria-label={dict.locations.form.rooms_name}
                                         onChange={(e) => onRoomNameChange(index, e.target.value)}
                                         className="h-8 py-1 px-2.5 text-xs font-bold bg-[var(--bg-tertiary)] border-[var(--border-soft)] text-[var(--text-main)] w-full max-w-[200px]"
                                     />
@@ -65,6 +66,7 @@ export function LocationFormRoomsSection({
                                         </span>
                                         <button
                                             type="button"
+                                            aria-label={dict.locations.form.rooms_remove}
                                             onClick={() => onRemoveRoom(room.id)}
                                             className="text-red-500 hover:text-red-700 font-bold text-sm bg-transparent hover:bg-red-500/10 w-6 h-6 flex items-center justify-center rounded-lg transition-colors border-0 cursor-pointer"
                                         >
@@ -79,6 +81,7 @@ export function LocationFormRoomsSection({
                                         <div className="flex items-center gap-1.5">
                                             <button
                                                 type="button"
+                                                aria-label={dict.locations.form.rooms_decrease.replace("{type}", dict.locations.form.rooms_double)}
                                                 onClick={() => onUpdateBedCount(index, "double_beds", -1)}
                                                 className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
                                             >
@@ -87,6 +90,7 @@ export function LocationFormRoomsSection({
                                             <span className="text-xs font-bold text-[var(--text-main)] w-4 text-center">{room.double_beds}</span>
                                             <button
                                                 type="button"
+                                                aria-label={dict.locations.form.rooms_increase.replace("{type}", dict.locations.form.rooms_double)}
                                                 onClick={() => onUpdateBedCount(index, "double_beds", 1)}
                                                 className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
                                             >
@@ -100,6 +104,7 @@ export function LocationFormRoomsSection({
                                         <div className="flex items-center gap-1.5">
                                             <button
                                                 type="button"
+                                                aria-label={dict.locations.form.rooms_decrease.replace("{type}", dict.locations.form.rooms_single)}
                                                 onClick={() => onUpdateBedCount(index, "single_beds", -1)}
                                                 className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
                                             >
@@ -108,6 +113,7 @@ export function LocationFormRoomsSection({
                                             <span className="text-xs font-bold text-[var(--text-main)] w-4 text-center">{room.single_beds}</span>
                                             <button
                                                 type="button"
+                                                aria-label={dict.locations.form.rooms_increase.replace("{type}", dict.locations.form.rooms_single)}
                                                 onClick={() => onUpdateBedCount(index, "single_beds", 1)}
                                                 className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
                                             >
@@ -121,6 +127,7 @@ export function LocationFormRoomsSection({
                                         <div className="flex items-center gap-1.5">
                                             <button
                                                 type="button"
+                                                aria-label={dict.locations.form.rooms_decrease.replace("{type}", dict.locations.form.rooms_bunk)}
                                                 onClick={() => onUpdateBedCount(index, "bunk_beds", -1)}
                                                 className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
                                             >
@@ -129,6 +136,7 @@ export function LocationFormRoomsSection({
                                             <span className="text-xs font-bold text-[var(--text-main)] w-4 text-center">{room.bunk_beds}</span>
                                             <button
                                                 type="button"
+                                                aria-label={dict.locations.form.rooms_increase.replace("{type}", dict.locations.form.rooms_bunk)}
                                                 onClick={() => onUpdateBedCount(index, "bunk_beds", 1)}
                                                 className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
                                             >
