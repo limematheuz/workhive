@@ -51,6 +51,7 @@ import type { Expense } from "@/types/expense";
 import { toast } from "@/lib/toast";
 import { accountantExportYears, type AccountantExportPeriod } from "@/lib/accountant-export";
 import { AccountantExportService } from "@/services/accountant-export.service";
+import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import {
     ClientProfitabilityService,
     type ClientProfitability,
@@ -208,79 +209,78 @@ export default function FinanceAnalyticsPage() {
                     title={text.title}
                     subtitle={text.eyebrow}
                     actions={(
-                        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                            <PremiumTabs<AnalyticsTab>
-                                tabs={isAccountant
-                                    ? [{ id: "finance", label: text.tab_finance }]
-                                    : [
-                                        { id: "finance", label: text.tab_finance },
-                                        { id: "profitability", label: text.tab_profitability },
-                                        { id: "operations", label: text.tab_operations },
-                                    ]}
-                                activeTab={activeTab}
-                                onChange={setActiveTab}
-                                className="w-full sm:min-w-72"
-                            />
-                            {activeTab === "finance" ? (
-                                <div className="flex items-center gap-2">
-                                    <label className="sr-only" htmlFor="accountant-export-year">
-                                        {text.accountant_export_year}
-                                    </label>
-                                    <select
-                                        id="accountant-export-year"
-                                        value={exportYear}
-                                        onChange={(event) => setExportYear(Number(event.target.value))}
-                                        className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-[var(--brand-blue-border)]"
-                                    >
-                                        {accountantExportYears(new Date().getFullYear()).map((year) => (
-                                            <option key={year} value={year}>{year}</option>
-                                        ))}
-                                    </select>
-                                    <select
-                                        aria-label={text.accountant_export_period}
-                                        value={exportPeriod}
-                                        onChange={(event) => {
-                                            const nextPeriod = event.target.value as AccountantExportPeriod;
-                                            setExportPeriod(nextPeriod);
-                                            setExportPeriodNumber(1);
-                                        }}
-                                        className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-[var(--brand-blue-border)]"
-                                    >
-                                        <option value="month">{text.accountant_export_month}</option>
-                                        <option value="quarter">{text.accountant_export_quarter}</option>
-                                        <option value="semester">{text.accountant_export_semester}</option>
-                                        <option value="year">{text.accountant_export_annual}</option>
-                                    </select>
-                                    {exportPeriod !== "year" ? (
-                                        <select
-                                            aria-label={text.accountant_export_period_number}
-                                            value={exportPeriodNumber}
-                                            onChange={(event) => setExportPeriodNumber(Number(event.target.value))}
-                                            className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-[var(--brand-blue-border)]"
-                                        >
-                                            {periodNumberOptions.map((periodNumber) => (
-                                                <option key={periodNumber} value={periodNumber}>
-                                                    {exportPeriod === "month"
-                                                        ? new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2026, periodNumber - 1, 1))
-                                                        : `${exportPeriod === "quarter" ? "T" : "S"}${periodNumber}`}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    ) : null}
-                                    <button
-                                        type="button"
-                                        onClick={() => void downloadAccountantPackage()}
-                                        disabled={exportingAccountantPackage}
-                                        className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-[var(--btn-primary)] px-3 text-sm font-bold text-[var(--btn-primary-text)] shadow-sm transition hover:bg-[var(--btn-primary-hover)] disabled:cursor-not-allowed disabled:opacity-60"
-                                    >
-                                        {exportingAccountantPackage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                                        <span>{text.accountant_export}</span>
-                                    </button>
-                                </div>
-                            ) : null}
-                        </div>
+                        <PremiumTabs<AnalyticsTab>
+                            tabs={isAccountant
+                                ? [{ id: "finance", label: text.tab_finance }]
+                                : [
+                                    { id: "finance", label: text.tab_finance },
+                                    { id: "profitability", label: text.tab_profitability },
+                                    { id: "operations", label: text.tab_operations },
+                                ]}
+                            activeTab={activeTab}
+                            onChange={setActiveTab}
+                            className="w-full sm:min-w-72"
+                        />
                     )}
                 />
+
+                {activeTab === "finance" ? (
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        <label className="sr-only" htmlFor="accountant-export-year">
+                            {text.accountant_export_year}
+                        </label>
+                        <select
+                            id="accountant-export-year"
+                            value={exportYear}
+                            onChange={(event) => setExportYear(Number(event.target.value))}
+                            className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-[var(--brand-blue-border)]"
+                        >
+                            {accountantExportYears(new Date().getFullYear()).map((year) => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                        <select
+                            aria-label={text.accountant_export_period}
+                            value={exportPeriod}
+                            onChange={(event) => {
+                                const nextPeriod = event.target.value as AccountantExportPeriod;
+                                setExportPeriod(nextPeriod);
+                                setExportPeriodNumber(1);
+                            }}
+                            className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-[var(--brand-blue-border)]"
+                        >
+                            <option value="month">{text.accountant_export_month}</option>
+                            <option value="quarter">{text.accountant_export_quarter}</option>
+                            <option value="semester">{text.accountant_export_semester}</option>
+                            <option value="year">{text.accountant_export_annual}</option>
+                        </select>
+                        {exportPeriod !== "year" ? (
+                            <select
+                                aria-label={text.accountant_export_period_number}
+                                value={exportPeriodNumber}
+                                onChange={(event) => setExportPeriodNumber(Number(event.target.value))}
+                                className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-[var(--brand-blue-border)]"
+                            >
+                                {periodNumberOptions.map((periodNumber) => (
+                                    <option key={periodNumber} value={periodNumber}>
+                                        {exportPeriod === "month"
+                                            ? new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2026, periodNumber - 1, 1))
+                                            : `${exportPeriod === "quarter" ? "T" : "S"}${periodNumber}`}
+                                    </option>
+                                ))}
+                            </select>
+                        ) : null}
+                        <button
+                            type="button"
+                            onClick={() => void downloadAccountantPackage()}
+                            disabled={exportingAccountantPackage}
+                            className={PAGE_ACTION_BUTTON_PRIMARY}
+                        >
+                            {exportingAccountantPackage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                            <span>{text.accountant_export}</span>
+                        </button>
+                    </div>
+                ) : null}
 
                 {activeTab === "finance" ? (
                     <FinanceDashboard
