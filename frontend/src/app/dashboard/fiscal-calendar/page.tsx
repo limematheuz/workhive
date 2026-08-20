@@ -21,7 +21,7 @@ import {
     type CompanyFiscalSettings,
 } from "@/services/fiscal-settings.service";
 
-const AEAT_CALENDAR_URL = "https://sede.agenciatributaria.gob.es/Sede/ayuda/calendario-contribuyente.html";
+const AEAT_CALENDAR_URL = "https://sede.agenciatributaria.gob.es/Sede/calendario-contribuyente.html";
 
 function toCalendarPreferences(settings: CompanyFiscalSettings) {
     return {
