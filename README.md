@@ -101,6 +101,10 @@ Git nunca copia `.env` reales, credenciales, datos de producción ni accesos AWS
 git clone https://github.com/limematheuz/workhive.git
 cd workhive
 
+# Si usas nvm, instala/activa la versión de Node fijada por el proyecto.
+nvm install
+nvm use
+
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
@@ -153,7 +157,12 @@ clientes.
 cd backend && ./.venv/bin/pytest -q
 
 cd frontend && pnpm test && pnpm typecheck && pnpm lint
+
+cd .. && pnpm test:architecture
 ```
+
+Consulta las [guardas de arquitectura](docs/engineering/ARCHITECTURE_GUARDRAILS.md)
+para las reglas que CI impone sobre tamaño y separación de capas.
 
 ## Pruebas
 
@@ -247,6 +256,10 @@ real `.env` files, credentials, production database data, or AWS access.
 git clone https://github.com/limematheuz/workhive.git
 cd workhive
 
+# If you use nvm, install/use the Node line fixed by the repository.
+nvm install
+nvm use
+
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
@@ -298,7 +311,12 @@ presentations; do not distribute production backups or customer data.
 cd backend && ./.venv/bin/pytest -q
 
 cd frontend && pnpm test && pnpm typecheck && pnpm lint
+
+cd .. && pnpm test:architecture
 ```
+
+See the [architecture guardrails](docs/engineering/ARCHITECTURE_GUARDRAILS.md)
+for CI-enforced size and layer-boundary rules.
 
 ### Releases
 
