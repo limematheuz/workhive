@@ -21,4 +21,5 @@ test("fiscal calendar reuses dashboard navigation and surfaces official-date gui
     assert.match(page, /billing-surface/);
     assert.match(page, /official_notice/);
     assert.match(page, /AEAT_CALENDAR_URL/);
+    assert.match(page, /https:\/\/sede\.agenciatributaria\.gob\.es\/Sede\/calendario-contribuyente\.html/);
 });
