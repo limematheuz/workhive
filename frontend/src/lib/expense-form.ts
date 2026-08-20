@@ -3,6 +3,7 @@ import type { Expense, ExpensePayload } from "../types/expense.ts";
 
 export const DEFAULT_EXPENSE_FORM = {
     expense_date: "",
+    client_id: "",
     vendor: "",
     category: "operations",
     description: "",
@@ -56,6 +57,7 @@ export function buildExpensePayload(form: ExpenseFormState): ExpensePayload {
     const taxRate = Number(form.tax_rate || 0);
     return {
         expense_date: dateToApi(form.expense_date),
+        client_id: form.client_id ? Number(form.client_id) : null,
         vendor: form.vendor.trim() || null,
         category: form.category,
         description: form.description.trim(),
@@ -92,6 +94,7 @@ export function filterExpenses(
 export function expenseToFormState(expense: Expense): ExpenseFormState {
     return {
         expense_date: dateFromApi(expense.expense_date),
+        client_id: expense.client_id?.toString() || "",
         vendor: expense.vendor || "",
         category: expense.category,
         description: expense.description,

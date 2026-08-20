@@ -31,6 +31,7 @@ from app.api.v1.task_reports import router as task_reports_router
 from app.api.v1.sales_ledger import router as sales_ledger_router
 from app.api.v1.accounting_exports import router as accounting_exports_router
 from app.api.v1.fiscal_summary import router as fiscal_summary_router
+from app.api.v1.client_profitability import router as client_profitability_router
 
 api_router = APIRouter()
 
@@ -66,6 +67,11 @@ api_router.include_router(notifications_router, prefix="/notifications", tags=["
 api_router.include_router(invoices_router, prefix="/invoices", tags=["invoices"])
 api_router.include_router(sales_ledger_router, prefix="/sales-ledger", tags=["sales-ledger"])
 api_router.include_router(fiscal_summary_router, prefix="/fiscal-summary", tags=["fiscal-summary"])
+api_router.include_router(
+    client_profitability_router,
+    prefix="/client-profitability",
+    tags=["client-profitability"],
+)
 api_router.include_router(
     accounting_exports_router,
     prefix="/accounting-exports",

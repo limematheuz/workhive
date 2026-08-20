@@ -45,6 +45,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]: column for column in inspector.get_columns("quotes")
         }
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
+        expense_columns = {column["name"] for column in inspector.get_columns("expenses")}
         sales_ledger_columns = {
             column["name"] for column in inspector.get_columns("sales_ledger_records")
         }
@@ -104,6 +105,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert quote_columns["client_id"]["nullable"] is True
     assert "paid_at" in invoice_columns
     assert "payment_method" in invoice_columns
+    assert "client_id" in expense_columns
     assert {
         "company_id",
         "created_by_user_id",

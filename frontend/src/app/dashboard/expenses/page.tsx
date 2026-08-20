@@ -19,6 +19,8 @@ import {
 } from "@/lib/expense-form";
 import { useUser } from "@/lib/user-context";
 import { ExpenseService } from "@/services/expense.service";
+import { ClientService } from "@/services/client.service";
+import type { Client } from "@/types/client";
 import type { Expense, ExpensePayload } from "@/types/expense";
 import { toast } from "@/lib/toast";
 
@@ -29,6 +31,7 @@ export default function ExpensesPage() {
     const text = dict.expenses;
 
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState("");
@@ -42,7 +45,22 @@ export default function ExpensesPage() {
         if (!canViewExpenses) return;
         try {
             setLoading(true);
-            setExpenses(await ExpenseService.getExpenses({ limit: 250 }));
+            const [expenseResult, clientResult] = await Promise.allSettled([
+                ExpenseService.getExpenses({ limit: 250 }),
+                ClientService.getClients(null),
+            ]);
+            if (expenseResult.status === "rejected") {
+                throw expenseResult.reason;
+            }
+            setExpenses(expenseResult.value);
+            if (clientResult.status === "fulfilled") {
+                setClients(clientResult.value);
+            } else {
+                // Client attribution is optional. Keep expense operations available
+                // when the supporting catalog is temporarily unavailable.
+                console.error("Error loading expense client catalog", clientResult.reason);
+                setClients([]);
+            }
         } catch (error) {
             console.error("Error loading expenses", error);
             toast.error(text.error_load);
@@ -196,6 +214,7 @@ export default function ExpensesPage() {
                     keepAdding={keepAdding}
                     setKeepAdding={setKeepAdding}
                     saving={saving}
+                    clients={clients}
                     onSubmit={(event) => void handleSubmit(event)}
                 />
             </div>

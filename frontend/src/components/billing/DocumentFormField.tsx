@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 type DocumentFormFieldProps = {
     id?: string;
     label: string;
+    hint?: string;
     children: ReactNode;
     className?: string;
     htmlFor?: string;
@@ -17,6 +18,7 @@ type DocumentFormFieldProps = {
 export function DocumentFormField({
     id,
     label,
+    hint,
     children,
     className,
     htmlFor,
@@ -26,6 +28,7 @@ export function DocumentFormField({
             <Label htmlFor={htmlFor ?? id} className="w-full">
                 {label}
             </Label>
+            {hint ? <p className="text-xs text-[var(--text-muted)]">{hint}</p> : null}
             <div className="min-w-0 w-full">{children}</div>
         </div>
     );
