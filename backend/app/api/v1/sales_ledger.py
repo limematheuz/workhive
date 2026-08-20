@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.deps import ActiveAdmin, AsyncActiveAdmin, AsyncActiveFinancialReader, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.sales_ledger import (
@@ -37,7 +37,7 @@ async def read_sales_ledger(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     _require_company_admin(current_user)
     return await db.run_sync(

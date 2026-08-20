@@ -2,7 +2,7 @@ import secrets
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
-from app.api.deps import ActiveUser, get_db
+from app.api.deps import AuthenticatedUser, get_db
 from app.schemas.user import (
     EmailChangeConfirm,
     EmailChangeRequest,
@@ -123,7 +123,7 @@ def login(
 def get_csrf_token(
     request: Request,
     response: Response,
-    current_user: User = ActiveUser,
+    current_user: User = AuthenticatedUser,
 ) -> dict[str, str]:
     del current_user
     csrf_token = request.cookies.get(settings.CSRF_COOKIE_NAME)
@@ -142,7 +142,7 @@ def get_csrf_token(
 def logout(
     response: Response,
     db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    current_user: User = AuthenticatedUser,
 ) -> None:
     current_user.session_version += 1
     db.add(current_user)
@@ -194,7 +194,7 @@ def request_email_change(
     change_request: EmailChangeRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    current_user: User = AuthenticatedUser,
 ) -> dict[str, str]:
     enforce_rate_limit(
         request,

@@ -11,7 +11,8 @@ import { LocationService, Location } from "@/services/location.service";
 import { TaskService, TaskItem } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { isPlatformSuperadmin } from "@/domain/access/roles";
+import { isAccountantRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { useRouter } from "next/navigation";
 
 const mergeLocations = (base: Location[], extra: Location[]) => {
     const byId = new Map<number, Location>();
@@ -22,6 +23,7 @@ const mergeLocations = (base: Location[], extra: Location[]) => {
 function DashboardOverviewContent() {
     const { dict } = useDictionary();
     const { user, loading: loadingUser } = useUser();
+    const router = useRouter();
 
     const [tasks, setTasks] = useState<TaskItem[]>([]);
     const [locations, setLocations] = useState<Location[]>([]);
@@ -29,9 +31,10 @@ function DashboardOverviewContent() {
     const [error, setError] = useState<string | null>(null);
     const [showGuidedTour, setShowGuidedTour] = useState<boolean>(false);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
+    const isAccountant = isAccountantRole(user?.role?.name);
 
     const loadDashboardData = useCallback(async (silent = false) => {
-        if (!user) return;
+        if (!user || isAccountant) return;
         if (user.role?.name === "superadmin" && !user.company_id) {
             setTasks([]);
             setLocations([]);
@@ -74,18 +77,22 @@ function DashboardOverviewContent() {
         } finally {
             setLoadingData(false);
         }
-    }, [user, dict.dashboard.error_load_data]);
+    }, [dict.dashboard.error_load_data, isAccountant, user]);
 
     useEffect(() => {
-        if (user) {
+        if (user && !isAccountant) {
             startTransition(() => {
                 void loadDashboardData();
             });
         }
-    }, [user, loadDashboardData]);
+    }, [isAccountant, user, loadDashboardData]);
+
+    useEffect(() => {
+        if (isAccountant) router.replace("/dashboard/analytics");
+    }, [isAccountant, router]);
 
     useBackgroundPolling(
-        () => userIsPlatformSuperadmin ? Promise.resolve() : loadDashboardData(true),
+        () => userIsPlatformSuperadmin || isAccountant ? Promise.resolve() : loadDashboardData(true),
         POLL_INTERVALS.dashboard,
     );
 
@@ -114,7 +121,7 @@ function DashboardOverviewContent() {
         return () => window.removeEventListener("workhive_onboarding_completed", checkTour);
     }, [user]);
 
-    if (loadingUser || (loadingData && tasks.length === 0)) {
+    if (loadingUser || isAccountant || (loadingData && tasks.length === 0)) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                 <Loader2 className="w-8 h-8 text-accent animate-spin" />

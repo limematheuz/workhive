@@ -19,7 +19,7 @@ test("accountant export years are newest first and never precede the API boundar
 test("accountant export accepts only the backend year boundary", () => {
     assert.equal(
         accountantExportPath(2026),
-        "/api/v1/accounting-exports/accountant?year=2026",
+        "/api/v1/accounting-exports/accountant?year=2026&period=year",
     );
     assert.throws(() => accountantExportPath(1999), /invalid/);
     assert.throws(() => accountantExportPath(2101), /invalid/);

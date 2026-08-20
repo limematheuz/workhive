@@ -187,12 +187,20 @@ def require_authenticated_role_async(*allowed_roles: str):
     return role_checker
 
 
+# External roles must opt into their permitted boundaries explicitly.  The
+# operational application remains limited to company staff; accountant access
+# is granted only through AsyncActiveFinancialReader on finance endpoints.
 ActiveAdmin = Depends(require_role("admin"))
 ActiveManagerOrAdmin = Depends(require_role("admin", "manager"))
 ActiveViewer = Depends(require_role("admin", "manager", "viewer"))
-ActiveUser = Depends(get_current_user)
-AsyncActiveUser = Depends(get_current_user_async)
+ActiveUser = ActiveViewer
+AsyncActiveUser = Depends(require_role_async("admin", "manager", "viewer"))
+ActiveApplicationUser = Depends(require_role("admin", "manager", "viewer", "accountant"))
+AsyncActiveApplicationUser = Depends(
+    require_role_async("admin", "manager", "viewer", "accountant")
+)
 AsyncActiveAdmin = Depends(require_role_async("admin"))
+AsyncActiveFinancialReader = Depends(require_role_async("admin", "accountant"))
 AsyncActiveManagerOrAdmin = Depends(require_role_async("admin", "manager"))
 AsyncAuthenticatedUser = Depends(get_authenticated_user_async)
 AsyncAuthenticatedAdmin = Depends(require_authenticated_role_async("admin"))

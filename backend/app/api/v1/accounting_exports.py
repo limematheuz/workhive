@@ -1,8 +1,10 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import AsyncActiveAdmin, get_async_db
+from app.api.deps import AsyncActiveFinancialReader, get_async_db
 from app.models.user import User
 from app.services import accountant_export_service, audit_service
 from app.services.user_scope import is_platform_superadmin
@@ -22,14 +24,27 @@ def _require_company_admin(current_user: User) -> None:
 async def download_accountant_export(
     request: Request,
     year: int = Query(ge=2000, le=2100),
+    period: Literal["year", "month", "quarter", "semester"] = "year",
+    period_number: int | None = Query(default=None),
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     _require_company_admin(current_user)
+    try:
+        export_period = accountant_export_service.resolve_export_period(
+            year=year,
+            period=period,
+            period_number=period_number,
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(error),
+        ) from error
 
     def create_export(sync_db: Session) -> accountant_export_service.AccountantExport:
         export = accountant_export_service.build_accountant_export(
-            sync_db, current_user.company_id, year
+            sync_db, current_user.company_id, export_period
         )
         audit_service.record_event(
             sync_db,
@@ -41,6 +56,8 @@ async def download_accountant_export(
             request=request,
             details={
                 "year": year,
+                "period": export_period.kind,
+                "period_number": export_period.number,
                 "invoice_count": export.invoice_count,
                 "expense_count": export.expense_count,
             },

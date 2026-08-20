@@ -1,0 +1,9 @@
+const ACCOUNTANT_ALLOWED_DASHBOARD_PATHS = new Set([
+    "/dashboard/analytics",
+    "/dashboard/fiscal-summary",
+    "/dashboard/profile",
+]);
+
+export function canAccessAccountantDashboardPath(pathname: string): boolean {
+    return ACCOUNTANT_ALLOWED_DASHBOARD_PATHS.has(pathname);
+}

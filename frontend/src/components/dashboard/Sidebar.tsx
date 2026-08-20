@@ -9,7 +9,9 @@ import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
 import {
     canAdministerCompany,
+    canViewFinance,
     canManageCompanyTasks,
+    isAccountantRole,
     isPlatformSuperadmin,
 } from "@/domain/access/roles";
 import { buildSidebarNavLinks } from "./sidebar-nav-config";
@@ -44,6 +46,8 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
 
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
+    const userCanViewFinance = canViewFinance(user);
+    const isAccountant = isAccountantRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
 
     const fetchPendingRequests = useCallback(async () => {
@@ -56,7 +60,7 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     }, []);
 
     const fetchTaskPendingCount = useCallback(async () => {
-        if (!user || userIsPlatformSuperadmin) {
+        if (!user || userIsPlatformSuperadmin || isAccountant) {
             setTaskPendingCount(0);
             return;
         }
@@ -68,17 +72,17 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
         } catch {
             // Keep the last known workload during a transient API failure.
         }
-    }, [isAdminOrManager, user, userIsPlatformSuperadmin]);
+    }, [isAccountant, isAdminOrManager, user, userIsPlatformSuperadmin]);
 
     const fetchReportAlerts = useCallback(async () => {
-        if (!user) return;
+        if (!user || isAccountant) return;
         try {
             const notifications = await NotificationService.listUnread();
             setReportAlertsCount(countUnreadTaskReportNotifications(notifications));
         } catch {
             // Keep navigation available during transient API failures.
         }
-    }, [user]);
+    }, [isAccountant, user]);
 
     useEffect(() => {
         if (!isAdminOrManager || userIsPlatformSuperadmin) return;
@@ -122,6 +126,8 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     const { visibleNavLinks, navGroups, plainLinks } = buildSidebarNavLinks(dict, {
         isAdminOrManager,
         isCompanyAdmin,
+        canViewFinance: userCanViewFinance,
+        isAccountant,
         userIsPlatformSuperadmin,
     });
 

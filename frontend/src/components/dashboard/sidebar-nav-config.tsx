@@ -44,10 +44,16 @@ const PLATFORM_SUPERADMIN_HREFS = new Set([
     "/dashboard/users",
     "/dashboard/integrations",
 ]);
+const ACCOUNTANT_HREFS = new Set([
+    "/dashboard/analytics",
+    "/dashboard/fiscal-summary",
+]);
 
 export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
     isCompanyAdmin: boolean;
+    canViewFinance: boolean;
+    isAccountant: boolean;
     userIsPlatformSuperadmin: boolean;
 };
 
@@ -55,6 +61,7 @@ function buildNavLinks(
     dict: Dictionary,
     isAdminOrManager: boolean,
     isCompanyAdmin: boolean,
+    canViewFinance: boolean,
     userIsPlatformSuperadmin: boolean,
 ): NavLink[] {
     return [
@@ -221,7 +228,7 @@ function buildNavLinks(
                   },
               ]
             : []),
-        ...(isCompanyAdmin
+        ...(canViewFinance
             ? [
                   {
                       href: "/dashboard/invoices",
@@ -289,11 +296,14 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         dict,
         flags.isAdminOrManager,
         flags.isCompanyAdmin,
+        flags.canViewFinance,
         flags.userIsPlatformSuperadmin,
     );
 
     const visibleNavLinks = flags.userIsPlatformSuperadmin
         ? navLinks.filter(link => PLATFORM_SUPERADMIN_HREFS.has(link.href))
+        : flags.isAccountant
+            ? navLinks.filter(link => ACCOUNTANT_HREFS.has(link.href))
         : navLinks;
 
     const linkByHref = new Map(visibleNavLinks.map(link => [link.href, link]));

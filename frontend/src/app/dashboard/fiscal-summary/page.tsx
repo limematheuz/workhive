@@ -5,7 +5,7 @@ import { Calculator, FileText, Landmark, Loader2, ReceiptText } from "lucide-rea
 
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { PageHeader } from "@/components/ui/page-header";
-import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -68,7 +68,7 @@ function SummaryMetric({
 export default function FiscalSummaryPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
-    const canViewSummary = canAdministerCompany(user) && !isPlatformSuperadmin(user);
+    const canViewSummary = canViewFinance(user) && !isPlatformSuperadmin(user);
     const currentYear = new Date().getFullYear();
     const [year, setYear] = useState(currentYear);
     const [summary, setSummary] = useState<FiscalSummary | null>(null);

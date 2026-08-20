@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { redirect, useRouter } from "next/navigation";
+import { redirect, usePathname, useRouter } from "next/navigation";
 import { useDictionary } from "@/lib/dictionary-context";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -12,6 +12,8 @@ import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
+import { isAccountantRole } from "@/domain/access/roles";
+import { canAccessAccountantDashboardPath } from "@/domain/access/accountant-dashboard";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
     return (
@@ -25,9 +27,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useThemeMode();
     const router = useRouter();
+    const pathname = usePathname();
     const { user, loading } = useUser();
     const { dict } = useDictionary();
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const isAccountant = isAccountantRole(user?.role?.name);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -79,6 +83,12 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             .catch(() => {});
     }, [user, loading]);
 
+    useEffect(() => {
+        if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {
+            router.replace("/dashboard/analytics");
+        }
+    }, [isAccountant, pathname, router]);
+
     const handleLogout = async () => {
         try {
             await authService.logout();
@@ -101,6 +111,14 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                         {dict.dashboard.loading || "Loading..."}
                     </p>
                 </div>
+            </div>
+        );
+    }
+
+    if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {
+        return (
+            <div className="flex h-dvh items-center justify-center bg-[var(--bg-primary)]">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-accent border-b-transparent" />
             </div>
         );
     }

@@ -5,6 +5,7 @@ import { Bell } from "lucide-react";
 
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
+import { isAccountantRole } from "@/domain/access/roles";
 import {
     HEADER_ALERT_BADGE_CLASS,
     HEADER_UPDATE_BADGE_CLASS,
@@ -22,7 +23,7 @@ export function NotificationPanel() {
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [activeNotificationTab, setActiveNotificationTab] = useState<NotificationTab>("primary");
     const notificationsRef = useRef<HTMLDivElement>(null);
-    const enabled = Boolean(user);
+    const enabled = Boolean(user) && !isAccountantRole(user?.role?.name);
     const notifications = useNotifications({
         enabled,
         userId: user?.id,

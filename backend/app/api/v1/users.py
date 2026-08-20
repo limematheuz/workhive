@@ -12,8 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
     ActiveUser,
+    ActiveApplicationUser,
     AsyncActiveManagerOrAdmin,
     AsyncActiveUser,
+    AsyncActiveApplicationUser,
     get_async_db,
     get_db,
 )
@@ -30,7 +32,7 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_current_user(current_user: User = AsyncActiveUser):
+async def read_current_user(current_user: User = AsyncActiveApplicationUser):
     return current_user
 
 
@@ -68,7 +70,7 @@ def update_user(
     user_update: UserUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    current_user: User = ActiveApplicationUser,
 ):
     updated_user = user_service.update_user(
         db, user_id, user_update, current_user
@@ -97,7 +99,7 @@ def upload_user_photo(
     request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    current_user: User = ActiveApplicationUser,
 ):
     enforce_rate_limit(
         request,

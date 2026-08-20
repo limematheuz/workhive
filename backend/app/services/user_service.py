@@ -61,6 +61,16 @@ def update_user(
     is_own_profile = current_user.id == user_id
 
     if (
+        not is_own_profile
+        and db_user.role.name == "accountant"
+        and current_user.role.name not in {"superadmin", "admin"}
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to manage an accountant user",
+        )
+
+    if (
         user_data.is_active is not None
         and user_data.is_active != db_user.is_active
         and current_user.role.name not in {"superadmin", "admin", "manager"}
