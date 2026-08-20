@@ -1,7 +1,7 @@
 import csv
 import io
 import zipfile
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from app.core.security import create_access_token
@@ -9,6 +9,7 @@ from app.models.client import Client
 from app.models.company import Company
 from app.models.expense import Expense
 from app.models.invoice import Invoice
+from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.user import User
 
 
@@ -206,3 +207,75 @@ def test_accountant_export_requires_company_admin_and_valid_year(client, db):
         ).status_code
         == 422
     )
+
+
+def test_accountant_export_includes_manual_history_once_and_preserves_real_invoices(
+    client, db
+):
+    company = _company(db, "MANUAL-HISTORY")
+    headers = _headers(db, company, 1, "admin-manual-history")
+    client_record = Client(
+        company_id=company.id,
+        name="Cliente factura real",
+        address="Calle Cliente 2",
+        city="Girona",
+        postal_code="17001",
+        country="España",
+    )
+    db.add(client_record)
+    db.flush()
+    db.add(
+        Invoice(
+            company_id=company.id,
+            client_id=client_record.id,
+            invoice_number="INV-2026-SHARED",
+            issue_date=datetime(2026, 6, 1, tzinfo=timezone.utc),
+            status="issued",
+            base_amount=Decimal("100.00"),
+            tax_amount=Decimal("21.00"),
+            total_amount=Decimal("121.00"),
+        )
+    )
+    db.add_all(
+        [
+            SalesLedgerRecord(
+                company_id=company.id,
+                document_number="HIST-2026-0001",
+                entry_date=date(2026, 6, 2),
+                client_name="=Cliente histórico",
+                base_amount=Decimal("50.00"),
+                tax_amount=Decimal("10.50"),
+                total_amount=Decimal("60.50"),
+                payment_status="paid",
+            ),
+            SalesLedgerRecord(
+                company_id=company.id,
+                document_number=" inv-2026-shared ",
+                entry_date=date(2026, 6, 3),
+                client_name="Duplicado legado",
+                base_amount=Decimal("999.00"),
+                tax_amount=Decimal("209.79"),
+                total_amount=Decimal("1208.79"),
+                payment_status="pending",
+            ),
+        ]
+    )
+    db.commit()
+
+    response = client.get(
+        "/api/v1/accounting-exports/accountant?year=2026", headers=headers
+    )
+
+    assert response.status_code == 200
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        invoices = _read_csv(archive, "facturas_emitidas_2026.csv")
+        readme = archive.read("LEEME.txt").decode()
+
+    assert [row["Numero factura"] for row in invoices] == [
+        "INV-2026-SHARED",
+        "HIST-2026-0001",
+    ]
+    assert invoices[1]["Cliente"] == "'=Cliente histórico"
+    assert invoices[1]["Estado"] == "paid"
+    assert invoices[1]["IRPF retenido"] == "0,00"
+    assert "2 facturas fiscales activas y asientos manuales no duplicados" in readme

@@ -6,8 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.models.expense import Expense
 from app.models.invoice import Invoice
+from app.models.sales_ledger_record import SalesLedgerRecord
 from app.repositories import fiscal_summary as fiscal_summary_repo
 from app.schemas.fiscal_summary import FiscalPeriodSummary, FiscalSummaryResponse
+from app.services.reportable_sales_service import manual_records_without_workhive_invoice
 
 
 MONEY = Decimal("0.01")
@@ -59,6 +61,12 @@ class _Totals:
         self.registered_expense_base_amount += _decimal(expense.base_amount)
         self.registered_input_vat_amount += _decimal(expense.tax_amount)
 
+    def include_manual_sales_record(self, record: SalesLedgerRecord) -> None:
+        """Include imported history without inventing unsupported tax fields."""
+        self.issued_invoice_count += 1
+        self.output_base_amount += _decimal(record.base_amount)
+        self.output_vat_amount += _decimal(record.tax_amount)
+
     def to_response(self, *, key: str, label: str) -> FiscalPeriodSummary:
         output_vat = _money(self.output_vat_amount)
         registered_input_vat = _money(self.registered_input_vat_amount)
@@ -97,13 +105,23 @@ def get_summary(
     start, end = _year_range(year)
     quarterly_totals = [_Totals() for _ in QUARTERS]
 
-    for invoice in fiscal_summary_repo.get_reportable_invoices(
+    invoices = fiscal_summary_repo.get_reportable_invoices(
         db,
         company_id,
         start=start,
         end=end,
-    ):
+    )
+    for invoice in invoices:
         quarterly_totals[_quarter_index(invoice.issue_date.month)].include_invoice(invoice)
+
+    manual_records = fiscal_summary_repo.get_active_manual_sales_records(
+        db,
+        company_id,
+        start=start,
+        end=end,
+    )
+    for record in manual_records_without_workhive_invoice(invoices, manual_records):
+        quarterly_totals[_quarter_index(record.entry_date.month)].include_manual_sales_record(record)
 
     for expense in fiscal_summary_repo.get_registered_expenses(
         db,

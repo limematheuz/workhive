@@ -1,5 +1,15 @@
 import type { Expense } from "@/types/expense";
-import type { Invoice } from "@/types/invoice";
+import type { SalesLedgerEntry } from "@/services/sales-ledger.service";
+
+export interface FinanceRevenueRecord {
+    issue_date: string;
+    due_date?: string | null;
+    paid_at?: string | null;
+    status: "issued" | "paid" | "overdue" | "rectified" | "draft" | "cancelled";
+    base_amount: number;
+    tax_amount: number;
+    total_amount: number;
+}
 
 export interface FinanceMonth {
     key: string;
@@ -140,7 +150,7 @@ function isInRange(date: Date | null, start: Date, end: Date) {
 }
 
 function summarizeRange(
-    invoices: Invoice[],
+    invoices: FinanceRevenueRecord[],
     expenses: Expense[],
     start: Date,
     end: Date,
@@ -177,11 +187,11 @@ function summarizeRange(
     return summary;
 }
 
-export function isRevenueInvoice(invoice: Invoice) {
+export function isRevenueInvoice(invoice: FinanceRevenueRecord) {
     return REVENUE_STATUSES.has(invoice.status);
 }
 
-export function summarizeFinance(invoices: Invoice[], expenses: Expense[]): FinanceSummary {
+export function summarizeFinance(invoices: FinanceRevenueRecord[], expenses: Expense[]): FinanceSummary {
     const revenueInvoices = invoices.filter(isRevenueInvoice);
     return {
         revenue: revenueInvoices.reduce((sum, invoice) => sum + invoice.base_amount, 0),
@@ -198,7 +208,7 @@ export function summarizeFinance(invoices: Invoice[], expenses: Expense[]): Fina
 }
 
 export function buildMonthlyFinance(
-    invoices: Invoice[],
+    invoices: FinanceRevenueRecord[],
     expenses: Expense[],
     locale: "en" | "es",
 ): FinanceMonth[] {
@@ -241,7 +251,7 @@ export function buildMonthlyFinance(
 }
 
 export function buildFinanceSeries(
-    invoices: Invoice[],
+    invoices: FinanceRevenueRecord[],
     expenses: Expense[],
     locale: "en" | "es",
     period: FinancePeriod,
@@ -261,7 +271,7 @@ export function buildFinanceSeries(
 }
 
 export function summarizeFinancePeriod(
-    invoices: Invoice[],
+    invoices: FinanceRevenueRecord[],
     expenses: Expense[],
     period: FinancePeriod,
     now = new Date(),
@@ -273,6 +283,35 @@ export function summarizeFinancePeriod(
         current: summarizeRange(invoices, expenses, currentStart, currentEnd),
         previous: summarizeRange(invoices, expenses, previousStart, currentStart),
     };
+}
+
+export function manualSalesLedgerToFinanceRevenue(
+    entry: SalesLedgerEntry,
+): FinanceRevenueRecord {
+    const entryDate = `${entry.entry_date}T12:00:00`;
+    return {
+        issue_date: entryDate,
+        due_date: null,
+        // Imported history has a paid/pending flag but no reliable collection
+        // date. Its accounting entry date is therefore the documented fallback.
+        paid_at: entry.payment_status === "paid" ? entryDate : null,
+        status: entry.payment_status === "paid" ? "paid" : "issued",
+        base_amount: entry.base_amount,
+        tax_amount: entry.tax_amount,
+        total_amount: entry.total_amount,
+    };
+}
+
+export function manualSalesLedgerEntriesWithoutWorkHiveInvoices(
+    entries: SalesLedgerEntry[],
+    invoices: Array<{ invoice_number: string }>,
+): SalesLedgerEntry[] {
+    const invoiceNumbers = new Set(
+        invoices.map((invoice) => invoice.invoice_number.trim().toLowerCase()),
+    );
+    return entries.filter(
+        (entry) => !invoiceNumbers.has(entry.document_number.trim().toLowerCase()),
+    );
 }
 
 export function groupExpensesByCategory(

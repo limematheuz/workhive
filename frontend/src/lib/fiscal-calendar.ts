@@ -75,6 +75,27 @@ export function buildQuarterlyFiscalDeadlines(
         );
 }
 
+export function buildFiscalCalendarDeadlines(
+    calendarYear: number,
+    preferences: FiscalCalendarPreferences,
+): FiscalDeadline[] {
+    /**
+     * Show obligations by the year in which they are payable.
+     *
+     * T4 belongs to the previous tax year but is payable in January, so it
+     * remains visible in the following calendar year alongside that year's T1–T3.
+     */
+    return [
+        ...buildQuarterlyFiscalDeadlines(calendarYear - 1, preferences),
+        ...buildQuarterlyFiscalDeadlines(calendarYear, preferences),
+    ]
+        .filter((deadline) => Number(deadline.dueDate.slice(0, 4)) === calendarYear)
+        .sort(
+            (left, right) => left.dueDate.localeCompare(right.dueDate)
+                || MODEL_ORDER[left.model] - MODEL_ORDER[right.model],
+        );
+}
+
 export function getFiscalDeadlineStatus(
     deadline: FiscalDeadline,
     now = new Date(),

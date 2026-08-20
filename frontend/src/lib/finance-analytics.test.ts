@@ -6,11 +6,14 @@ import {
     buildMonthlyFinance,
     groupExpensesByCategory,
     isRevenueInvoice,
+    manualSalesLedgerEntriesWithoutWorkHiveInvoices,
+    manualSalesLedgerToFinanceRevenue,
     summarizeFinance,
     summarizeFinancePeriod,
 } from "./finance-analytics.ts";
 import type { Expense } from "../types/expense.ts";
 import type { Invoice } from "../types/invoice.ts";
+import type { SalesLedgerEntry } from "../services/sales-ledger.service.ts";
 
 function makeInvoice(overrides: Partial<Invoice>): Invoice {
     return {
@@ -86,6 +89,86 @@ test("finance summary keeps operating results net of VAT and exposes VAT separat
         expenseTax: 10.5,
         vatBalance: 52.5,
     });
+});
+
+test("manual ledger history contributes revenue once with a documented payment fallback", () => {
+    const entry: SalesLedgerEntry = {
+        source_type: "manual",
+        source_id: 9,
+        document_number: "HIST-2026-0001",
+        entry_date: "2026-07-04",
+        client_name: "Cliente histórico",
+        base_amount: 100,
+        tax_amount: 21,
+        total_amount: 121,
+        payment_status: "paid",
+        is_editable: true,
+    };
+
+    const revenue = manualSalesLedgerToFinanceRevenue(entry);
+    const current = summarizeFinancePeriod(
+        [revenue],
+        [],
+        "month",
+        new Date("2026-07-07T12:00:00"),
+    ).current;
+
+    assert.deepEqual(revenue, {
+        issue_date: "2026-07-04T12:00:00",
+        due_date: null,
+        paid_at: "2026-07-04T12:00:00",
+        status: "paid",
+        base_amount: 100,
+        tax_amount: 21,
+        total_amount: 121,
+    });
+    assert.deepEqual(current, {
+        paid: 121,
+        pending: 0,
+        overdue: 0,
+        revenue: 100,
+        expenses: 0,
+        profit: 100,
+        invoiceTax: 21,
+        expenseTax: 0,
+        vatBalance: 21,
+    });
+});
+
+test("manual ledger history cannot duplicate a real WorkHive invoice in finance", () => {
+    const entries: SalesLedgerEntry[] = [
+        {
+            source_type: "manual",
+            source_id: 1,
+            document_number: " inv-2026-0001 ",
+            entry_date: "2026-07-04",
+            client_name: "Duplicado legado",
+            base_amount: 100,
+            tax_amount: 21,
+            total_amount: 121,
+            payment_status: "paid",
+            is_editable: true,
+        },
+        {
+            source_type: "manual",
+            source_id: 2,
+            document_number: "HIST-2026-0001",
+            entry_date: "2026-07-04",
+            client_name: "Histórico único",
+            base_amount: 50,
+            tax_amount: 10.5,
+            total_amount: 60.5,
+            payment_status: "pending",
+            is_editable: true,
+        },
+    ];
+
+    assert.deepEqual(
+        manualSalesLedgerEntriesWithoutWorkHiveInvoices(entries, [
+            { invoice_number: "INV-2026-0001" },
+        ]).map((entry) => entry.document_number),
+        ["HIST-2026-0001"],
+    );
 });
 
 test("monthly finance creates sorted data buckets and keeps the last twelve months", () => {

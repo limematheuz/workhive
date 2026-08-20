@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 
 from app.core.security import create_access_token
@@ -6,6 +6,7 @@ from app.models.client import Client
 from app.models.company import Company
 from app.models.expense import Expense
 from app.models.invoice import Invoice
+from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.user import User
 
 
@@ -226,6 +227,60 @@ def test_fiscal_summary_is_tenant_scoped_and_admin_only(client, db):
     assert own_summary.status_code == 200
     assert own_summary.json()["annual"]["issued_invoice_count"] == 0
     assert own_summary.json()["annual"]["output_vat_amount"] == "0.00"
+
+
+def test_fiscal_summary_includes_manual_history_without_duplicating_workhive_invoices(
+    client, db
+):
+    company = _company(db, "MANUAL-HISTORY")
+    headers = _headers(db, company, 1, "admin-manual-history")
+    fiscal_client = _client(db, company)
+    _invoice(
+        db,
+        company,
+        fiscal_client,
+        number="INV-2026-SHARED",
+        month=5,
+        status="issued",
+        base="100.00",
+        tax="21.00",
+    )
+    db.add_all(
+        [
+            SalesLedgerRecord(
+                company_id=company.id,
+                document_number="HIST-2026-0001",
+                entry_date=date(2026, 5, 10),
+                client_name="Cliente histórico",
+                base_amount=Decimal("50.00"),
+                tax_amount=Decimal("10.50"),
+                total_amount=Decimal("60.50"),
+                payment_status="paid",
+            ),
+            # Defensive legacy case: an old CSV record can differ only in case
+            # and whitespace even though a real invoice is now authoritative.
+            SalesLedgerRecord(
+                company_id=company.id,
+                document_number=" inv-2026-shared ",
+                entry_date=date(2026, 5, 11),
+                client_name="No duplicar",
+                base_amount=Decimal("999.00"),
+                tax_amount=Decimal("209.79"),
+                total_amount=Decimal("1208.79"),
+                payment_status="pending",
+            ),
+        ]
+    )
+    db.commit()
+
+    response = client.get("/api/v1/fiscal-summary/?year=2026", headers=headers)
+
+    assert response.status_code == 200
+    may = response.json()["periods"][1]
+    assert may["issued_invoice_count"] == 2
+    assert may["output_base_amount"] == "150.00"
+    assert may["output_vat_amount"] == "31.50"
+    assert response.json()["annual"]["withheld_irpf_amount"] == "0.00"
 
 
 def test_fiscal_summary_rejects_invalid_year(client, db):
