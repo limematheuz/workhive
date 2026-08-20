@@ -169,6 +169,10 @@ export default function FinanceAnalyticsPage() {
             : exportPeriod === "semester"
                 ? [1, 2]
                 : [];
+    const accountantMonthFormatter = useMemo(
+        () => new Intl.DateTimeFormat(locale, { month: "long" }),
+        [locale],
+    );
 
     const series = useMemo(
         () => buildFinanceSeries(revenueRecords, expenses, locale, period),
@@ -264,7 +268,7 @@ export default function FinanceAnalyticsPage() {
                                 {periodNumberOptions.map((periodNumber) => (
                                     <option key={periodNumber} value={periodNumber}>
                                         {exportPeriod === "month"
-                                            ? new Intl.DateTimeFormat(locale, { month: "long" }).format(new Date(2026, periodNumber - 1, 1))
+                                            ? accountantMonthFormatter.format(new Date(2026, periodNumber - 1, 1))
                                             : `${exportPeriod === "quarter" ? "T" : "S"}${periodNumber}`}
                                     </option>
                                 ))}

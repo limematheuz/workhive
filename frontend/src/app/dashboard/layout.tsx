@@ -83,12 +83,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
             .catch(() => {});
     }, [user, loading]);
 
-    useEffect(() => {
-        if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {
-            router.replace("/dashboard/analytics");
-        }
-    }, [isAccountant, pathname, router]);
-
     const handleLogout = async () => {
         try {
             await authService.logout();
@@ -116,11 +110,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
 
     if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {
-        return (
-            <div className="flex h-dvh items-center justify-center bg-[var(--bg-primary)]">
-                <div className="h-10 w-10 animate-spin rounded-full border-2 border-accent border-b-transparent" />
-            </div>
-        );
+        redirect("/dashboard/analytics");
     }
 
     return (

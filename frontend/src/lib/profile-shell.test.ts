@@ -75,6 +75,6 @@ test("accountant routes redirect before protected dashboard pages mount", () => 
 
     assert.match(layout, /canAccessAccountantDashboardPath/);
     assert.match(layout, /isAccountantRole\(user\?\.role\?\.name\)/);
-    assert.match(layout, /router\.replace\("\/dashboard\/analytics"\)/);
+    assert.match(layout, /redirect\("\/dashboard\/analytics"\)/);
     assert.match(layout, /if \(isAccountant && !canAccessAccountantDashboardPath\(pathname\)\)/);
 });
