@@ -57,7 +57,6 @@ def authorization_url(
     *,
     company_id: int,
     user_id: int,
-    login_hint: str | None = None,
 ) -> str:
     if not settings.GOOGLE_CALENDAR_CLIENT_ID:
         raise ValueError("Google Calendar OAuth client is not configured")
@@ -71,8 +70,6 @@ def authorization_url(
         "include_granted_scopes": "true",
         "state": create_oauth_state(company_id=company_id, user_id=user_id),
     }
-    if login_hint:
-        parameters["login_hint"] = login_hint
     return f"{AUTHORIZATION_ENDPOINT}?{
         urlencode(parameters)
     }"

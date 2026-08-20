@@ -243,7 +243,7 @@ def test_only_primary_admin_can_connect_and_other_admin_requests_control(
     oauth_query = parse_qs(
         urlparse(oauth_start.json()["authorization_url"]).query
     )
-    assert oauth_query["login_hint"] == [primary.email]
+    assert "login_hint" not in oauth_query
 
     secondary_status = client.get(
         "/api/v1/calendar/status",

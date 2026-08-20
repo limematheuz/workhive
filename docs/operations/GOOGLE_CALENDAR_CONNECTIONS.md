@@ -21,7 +21,7 @@ Google solo permite dar acceso a un calendario Google a una identidad de Google.
 
 Una dirección corporativa no necesita terminar en `@gmail.com`. Google permite crear una Cuenta de Google usando un correo existente de empresa. Google Workspace tampoco es un requisito de WorkHive: solo es la opción de empresas que ya administran sus usuarios con Google.
 
-Al pulsar **Conectar Google Calendar**, WorkHive envía `login_hint` con el correo con el que el administrador inició sesión. Google puede preseleccionarlo, pero sigue mostrando su pantalla de consentimiento: nadie puede autorizar un calendario Google en nombre de otra persona sin ese consentimiento.
+Al pulsar **Conectar Google Calendar**, Google muestra el selector de cuentas. La Cuenta de Google elegida puede ser distinta del correo con el que el administrador inició sesión en WorkHive. Nadie puede autorizar un calendario Google en nombre de otra persona sin ese consentimiento.
 
 ## Flujo para una empresa
 

@@ -154,14 +154,13 @@ def test_oauth_state_and_authorization_url_are_company_scoped(monkeypatch):
     url = calendar_client.authorization_url(
         company_id=12,
         user_id=34,
-        login_hint="admin@empresa.example",
     )
     query = parse_qs(urlparse(url).query)
     state = query["state"][0]
     decoded = calendar_client.decode_oauth_state(state)
 
     assert query["access_type"] == ["offline"]
-    assert query["login_hint"] == ["admin@empresa.example"]
+    assert "login_hint" not in query
     assert decoded["company_id"] == 12
     assert decoded["user_id"] == 34
 

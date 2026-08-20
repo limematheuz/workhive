@@ -368,7 +368,7 @@
     "disconnect_dialog_cancel": "Cancelar",
     "primary_admin": "Administrador principal",
     "company_connection_scope": "Cada empresa conecta un único calendario Google.",
-    "google_account_hint": "Es opcional: puedes usar Gmail o cualquier correo de empresa que ya tenga una Cuenta de Google; Google Workspace no es obligatorio.",
+    "google_account_hint": "Es opcional: elige cualquier Cuenta de Google. Puede ser distinta de tu correo de WorkHive; Gmail y Google Workspace no son obligatorios.",
     "request_control": "Solicitar control",
     "request_pending": "Solicitud pendiente",
     "control_requests": "Solicitudes de control",
