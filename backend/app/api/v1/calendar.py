@@ -28,6 +28,16 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
+def _oauth_failure_reason(error: str | None) -> str:
+    """Return a safe, user-facing OAuth outcome without exposing provider details."""
+    normalized_error = (error or "").strip().lower()
+    if normalized_error == "access_denied":
+        return "access_denied"
+    if normalized_error in {"redirect_uri_mismatch", "unauthorized_client"}:
+        return "provider_configuration"
+    return "oauth_failed"
+
+
 @router.get("/platform/status", response_model=PlatformCalendarStatus)
 def read_platform_calendar_status(
     db: Session = Depends(get_db),
@@ -189,7 +199,9 @@ def google_calendar_callback(
     db: Session = Depends(get_db),
 ):
     if error or not code or not state:
-        query = urlencode({"calendar": "error", "reason": error or "missing_code"})
+        reason = _oauth_failure_reason(error)
+        logger.warning("Google Calendar OAuth did not complete: %s", reason)
+        query = urlencode({"calendar": "error", "reason": reason})
         return RedirectResponse(f"{settings.FRONTEND_URL}/dashboard/calendar?{query}")
     try:
         connection = calendar_sync_service.complete_oauth(

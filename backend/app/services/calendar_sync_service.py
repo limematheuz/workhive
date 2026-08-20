@@ -37,6 +37,7 @@ def oauth_authorization_url(db: Session, current_user: User) -> str:
     return calendar_client.authorization_url(
         company_id=current_user.company_id,
         user_id=current_user.id,
+        login_hint=current_user.email,
     )
 
 

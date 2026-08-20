@@ -66,6 +66,14 @@ export function CalendarHeader({
                     />
                 )}
             />
+            {status && !status.connected && (
+                <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--dialog-control-bg)] px-3 py-2 text-xs leading-relaxed text-[var(--text-muted)]">
+                    <span className="font-semibold text-[var(--text-main)]">
+                        {calendarDict.company_connection_scope}
+                    </span>{" "}
+                    {calendarDict.google_account_hint}
+                </p>
+            )}
             {lastError && (
                 <p className="rounded-xl bg-red-500/10 px-3 py-2 text-xs text-red-600">{lastError}</p>
             )}
