@@ -3,6 +3,7 @@
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "scripts": {
+    "test:architecture": "node --test scripts/architecture-guardrails.test.mjs",
     "release:prepare": "node scripts/release-version.mjs",
     "release:verify": "node scripts/release-version.mjs --verify",
     "release:tag": "node scripts/release-tag.mjs",

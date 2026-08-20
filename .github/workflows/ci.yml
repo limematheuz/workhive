@@ -154,6 +154,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
+      - name: Enforce architecture guardrails
+        working-directory: .
+        run: pnpm test:architecture
+
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
