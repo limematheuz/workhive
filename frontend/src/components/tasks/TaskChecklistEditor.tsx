@@ -53,7 +53,6 @@ export function TaskChecklistEditor({
                             <button
                                 type="button"
                                 disabled={!canEdit}
-                                aria-label={item.checked ? `Marcar pendiente: ${item.text}` : `Marcar completado: ${item.text}`}
                                 onClick={() => onToggle(item.index)}
                                 className={cn(
                                     "flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ui-motion",
