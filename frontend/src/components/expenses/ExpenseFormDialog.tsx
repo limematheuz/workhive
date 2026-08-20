@@ -23,6 +23,7 @@ import {
 } from "@/lib/expense-form";
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import type { Client } from "@/types/client";
 import { CATEGORY_OPTIONS, PAYMENT_METHOD_OPTIONS } from "./expense-options";
 
 type ExpenseFormDialogProps = {
@@ -34,6 +35,7 @@ type ExpenseFormDialogProps = {
     keepAdding: boolean;
     setKeepAdding: (value: boolean) => void;
     saving: boolean;
+    clients: Client[];
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
@@ -46,6 +48,7 @@ export function ExpenseFormDialog({
     keepAdding,
     setKeepAdding,
     saving,
+    clients,
     onSubmit,
 }: ExpenseFormDialogProps) {
     const { dict } = useDictionary();
@@ -189,6 +192,25 @@ export function ExpenseFormDialog({
                             </DocumentFormSelect>
                         </DocumentFormField>
                     </div>
+                    <DocumentFormField
+                        id="expense-client"
+                        label={text.client_assignment}
+                        hint={text.client_assignment_hint}
+                    >
+                        <DocumentFormSelect
+                            id="expense-client"
+                            value={form.client_id}
+                            onChange={(event) => setForm({ ...form, client_id: event.target.value })}
+                            aria-label={text.client_assignment}
+                        >
+                            <option value="">{text.client_assignment_none}</option>
+                            {clients.map((client) => (
+                                <option key={client.id} value={client.id}>
+                                    {client.name}{client.is_active ? "" : ` (${text.client_inactive})`}
+                                </option>
+                            ))}
+                        </DocumentFormSelect>
+                    </DocumentFormField>
                     <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2">
                         <DocumentFormField id="expense-base" label={text.base_amount}>
                             <DocumentFormInput

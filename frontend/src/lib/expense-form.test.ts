@@ -19,6 +19,7 @@ import type { Expense } from "../types/expense.ts";
 const baseExpense = {
     id: 1,
     company_id: 10,
+    client_id: 3,
     created_by_user_id: 2,
     expense_date: "2026-07-16T00:00:00",
     vendor: "Imprex",
@@ -52,6 +53,7 @@ test("expense amount and tax calculation tolerate invalid numeric input", () => 
 test("expense payload trims values, calculates tax and caps notes", () => {
     const form = {
         expense_date: "2026-07-16",
+        client_id: "3",
         vendor: "  Imprex  ",
         category: "supplies",
         description: "  Limpieza  ",
@@ -63,6 +65,7 @@ test("expense payload trims values, calculates tax and caps notes", () => {
 
     const payload = buildExpensePayload(form);
     assert.equal(payload.expense_date, "2026-07-16T00:00:00");
+    assert.equal(payload.client_id, 3);
     assert.equal(payload.vendor, "Imprex");
     assert.equal(payload.description, "Limpieza");
     assert.equal(payload.payment_method, "card");
@@ -75,6 +78,7 @@ test("expense payload trims values, calculates tax and caps notes", () => {
 test("expense payload normalizes empty optional fields to null", () => {
     const payload = buildExpensePayload({
         expense_date: "2026-07-16",
+        client_id: "",
         vendor: " ",
         category: "other",
         description: "Parking",
@@ -85,6 +89,7 @@ test("expense payload normalizes empty optional fields to null", () => {
     });
 
     assert.equal(payload.vendor, null);
+    assert.equal(payload.client_id, null);
     assert.equal(payload.payment_method, null);
     assert.equal(payload.notes, null);
     assert.equal(payload.tax_amount, 0);
@@ -94,6 +99,7 @@ test("expense edit state infers tax rate and preserves editable fields", () => {
     assert.equal(inferExpenseTaxRate(baseExpense), "0.21");
     assert.deepEqual(expenseToFormState(baseExpense), {
         expense_date: "2026-07-16",
+        client_id: "3",
         vendor: "Imprex",
         category: "supplies",
         description: "Limpieza",

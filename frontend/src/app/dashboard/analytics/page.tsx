@@ -21,6 +21,7 @@ import {
     PieChart,
     ReceiptText,
     TriangleAlert,
+    UsersRound,
 } from "lucide-react";
 
 import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
@@ -50,8 +51,14 @@ import type { Expense } from "@/types/expense";
 import { toast } from "@/lib/toast";
 import { accountantExportYears } from "@/lib/accountant-export";
 import { AccountantExportService } from "@/services/accountant-export.service";
+import {
+    ClientProfitabilityService,
+    type ClientProfitability,
+    type ClientProfitabilityPeriod,
+} from "@/services/client-profitability.service";
+import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 
-type AnalyticsTab = "finance" | "operations";
+type AnalyticsTab = "finance" | "profitability" | "operations";
 
 const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 
@@ -75,6 +82,9 @@ export default function FinanceAnalyticsPage() {
     const [loading, setLoading] = useState(true);
     const [exportYear, setExportYear] = useState(() => new Date().getFullYear());
     const [exportingAccountantPackage, setExportingAccountantPackage] = useState(false);
+    const [profitabilityPeriod, setProfitabilityPeriod] = useState<ClientProfitabilityPeriod>("month");
+    const [profitability, setProfitability] = useState<ClientProfitability | null>(null);
+    const [profitabilityLoading, setProfitabilityLoading] = useState(false);
 
     const loadAnalytics = useCallback(async () => {
         if (!canViewAnalytics) return;
@@ -102,6 +112,19 @@ export default function FinanceAnalyticsPage() {
         }
     }, [canViewAnalytics, text.error_load]);
 
+    const loadProfitability = useCallback(async () => {
+        if (!canViewAnalytics) return;
+        try {
+            setProfitabilityLoading(true);
+            setProfitability(await ClientProfitabilityService.getProfitability(profitabilityPeriod));
+        } catch (error) {
+            console.error("Error loading client profitability", error);
+            toast.error(text.profitability_error_load);
+        } finally {
+            setProfitabilityLoading(false);
+        }
+    }, [canViewAnalytics, profitabilityPeriod, text.profitability_error_load]);
+
     useEffect(() => {
         if (userLoading) return;
         const timer = window.setTimeout(() => {
@@ -109,6 +132,14 @@ export default function FinanceAnalyticsPage() {
         }, 0);
         return () => window.clearTimeout(timer);
     }, [loadAnalytics, userLoading]);
+
+    useEffect(() => {
+        if (userLoading || activeTab !== "profitability") return;
+        const timer = window.setTimeout(() => {
+            void loadProfitability();
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [activeTab, loadProfitability, userLoading]);
 
     const downloadAccountantPackage = useCallback(async () => {
         try {
@@ -166,6 +197,7 @@ export default function FinanceAnalyticsPage() {
                             <PremiumTabs<AnalyticsTab>
                                 tabs={[
                                     { id: "finance", label: text.tab_finance },
+                                    { id: "profitability", label: text.tab_profitability },
                                     { id: "operations", label: text.tab_operations },
                                 ]}
                                 activeTab={activeTab}
@@ -211,6 +243,14 @@ export default function FinanceAnalyticsPage() {
                         categoryLabels={dict.expenses.categories}
                         period={period}
                         setPeriod={setPeriod}
+                    />
+                ) : activeTab === "profitability" ? (
+                    <ClientProfitabilityDashboard
+                        text={text}
+                        data={profitability}
+                        loading={profitabilityLoading}
+                        period={profitabilityPeriod}
+                        setPeriod={setProfitabilityPeriod}
                     />
                 ) : (
                     <OperationsDashboard
@@ -470,6 +510,189 @@ function ExpenseBreakdownCard({
     );
 }
 
+function ClientProfitabilityDashboard({
+    text,
+    data,
+    loading,
+    period,
+    setPeriod,
+}: {
+    text: Record<string, string>;
+    data: ClientProfitability | null;
+    loading: boolean;
+    period: ClientProfitabilityPeriod;
+    setPeriod: (period: ClientProfitabilityPeriod) => void;
+}) {
+    if (loading && !data) {
+        return (
+            <div className="billing-surface flex items-center justify-center gap-3 rounded-[28px] py-20 text-sm font-semibold text-[var(--text-muted)]">
+                <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                {text.loading}
+            </div>
+        );
+    }
+
+    if (!data) {
+        return (
+            <div className="billing-surface rounded-[28px] p-8 text-center text-sm text-[var(--text-muted)]">
+                {text.profitability_empty}
+            </div>
+        );
+    }
+
+    const { current, previous } = data;
+    const metrics = [
+        {
+            label: text.profitability_revenue,
+            value: current.revenue_base_amount,
+            previous: previous.revenue_base_amount,
+            icon: <ReceiptText className="h-4 w-4" />,
+            tone: "positive" as const,
+        },
+        {
+            label: text.profitability_direct_costs,
+            value: current.direct_cost_base_amount,
+            previous: previous.direct_cost_base_amount,
+            icon: <ArrowDownRight className="h-4 w-4" />,
+            tone: "danger" as const,
+        },
+        {
+            label: text.profitability_known_margin,
+            value: current.known_margin_amount,
+            previous: previous.known_margin_amount,
+            icon: <BarChart3 className="h-4 w-4" />,
+            tone: "positive" as const,
+        },
+        {
+            label: text.profitability_unassigned_expenses,
+            value: current.unassigned_expense_base_amount,
+            previous: previous.unassigned_expense_base_amount,
+            icon: <Inbox className="h-4 w-4" />,
+            tone: "warning" as const,
+        },
+    ];
+    const columns: DataListColumn[] = [
+        { key: "client", label: text.profitability_client },
+        { key: "invoices", label: text.profitability_invoices, className: "text-right" },
+        { key: "costs", label: text.profitability_costs, className: "text-right" },
+        { key: "margin", label: text.profitability_margin, className: "text-right" },
+        { key: "percentage", label: text.profitability_margin_percent, className: "text-right" },
+    ];
+
+    return (
+        <>
+            <section className="billing-surface rounded-[22px] p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
+                            <UsersRound className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                        <div>
+                            <h2 className="text-base font-semibold text-[var(--text-main)]">{text.profitability_title}</h2>
+                            <p className="text-xs text-[var(--text-muted)]">{text.profitability_subtitle}</p>
+                        </div>
+                    </div>
+                    <div
+                        className="flex w-fit rounded-full bg-[var(--bg-tertiary)] p-1"
+                        role="group"
+                        aria-label={text.profitability_title}
+                    >
+                        {(["month", "year"] as const).map((item) => (
+                            <button
+                                key={item}
+                                type="button"
+                                onClick={() => setPeriod(item)}
+                                aria-pressed={period === item}
+                                className={`h-8 rounded-full px-3 text-xs font-semibold transition ${
+                                    period === item
+                                        ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)]"
+                                        : "text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                                }`}
+                            >
+                                {item === "month" ? text.profitability_period_month : text.profitability_period_year}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {data ? (
+                <>
+                    <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+                        {metrics.map(({ label, value, previous: previousValue, icon, tone }) => (
+                            <MetricCard
+                                key={label}
+                                label={label}
+                                value={value}
+                                previous={previousValue}
+                                icon={icon}
+                                tone={tone}
+                            />
+                        ))}
+                    </section>
+
+                    <DataListTable
+                        items={current.clients}
+                        getRowKey={(item) => item.client_id}
+                        columns={columns}
+                        gridClassName="grid-cols-[minmax(11rem,1.35fr)_5rem_7rem_7rem_5rem]"
+                        header={{
+                            title: text.profitability_table_title,
+                            subtitle: text.profitability_table_subtitle,
+                            countLabel: text.profitability_clients.replace("{count}", String(current.client_count)),
+                        }}
+                        renderCompactRow={(item) => (
+                            <div className="space-y-2">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-sm font-semibold text-[var(--text-main)]">{item.client_name}</p>
+                                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                                            {item.invoice_count} {text.profitability_invoices.toLowerCase()}
+                                        </p>
+                                    </div>
+                                    <span className="shrink-0 text-sm font-semibold text-[var(--text-main)]">
+                                        {formatCurrency(item.known_margin_amount)}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-3 text-xs text-[var(--text-muted)]">
+                                    <span>{text.profitability_costs}: {formatCurrency(item.direct_cost_base_amount)}</span>
+                                    <span>{formatMarginPercentage(item.known_margin_percentage)}</span>
+                                </div>
+                            </div>
+                        )}
+                        renderDesktopRow={(item) => (
+                            <>
+                                <span className="truncate text-sm font-semibold text-[var(--text-main)]">{item.client_name}</span>
+                                <span className="text-right text-sm text-[var(--text-muted)]">{item.invoice_count}</span>
+                                <span className="text-right text-sm text-[var(--text-muted)]">{formatCurrency(item.direct_cost_base_amount)}</span>
+                                <span className="text-right text-sm font-semibold text-[var(--text-main)]">{formatCurrency(item.known_margin_amount)}</span>
+                                <span className="text-right text-sm text-[var(--text-muted)]">{formatMarginPercentage(item.known_margin_percentage)}</span>
+                            </>
+                        )}
+                        empty={<p className="text-sm text-[var(--text-muted)]">{text.profitability_empty}</p>}
+                    />
+
+                    <section className="grid gap-3 lg:grid-cols-2">
+                        <div className="billing-block rounded-2xl p-4">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{text.profitability_unassigned_expenses}</p>
+                            <p className="mt-1 text-xl font-semibold text-[var(--text-main)]">{formatCurrency(current.unassigned_expense_base_amount)}</p>
+                            <p className="mt-1 text-xs text-[var(--text-muted)]">{text.profitability_unassigned_expenses_desc}</p>
+                        </div>
+                        {current.unlinked_historical_sales_base_amount > 0 ? (
+                            <div className="billing-block rounded-2xl p-4 text-sm text-[var(--text-muted)]">
+                                {text.profitability_history_notice.replace(
+                                    "{amount}",
+                                    formatCurrency(current.unlinked_historical_sales_base_amount),
+                                )}
+                            </div>
+                        ) : null}
+                    </section>
+                </>
+            ) : null}
+        </>
+    );
+}
+
 function OperationsDashboard({
     text,
     dict,
@@ -667,6 +890,10 @@ function getDeltaPercent(current: number, previous: number) {
 function formatDelta(value: number) {
     const sign = value > 0 ? "+" : "";
     return `${sign}${value.toFixed(1)}%`;
+}
+
+function formatMarginPercentage(value: number | null) {
+    return value === null ? "—" : `${value.toFixed(1)}%`;
 }
 
 function formatCompactCurrency(value: number) {

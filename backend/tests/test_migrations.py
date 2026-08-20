@@ -8,6 +8,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 
 from app.core.database_url import to_sync_database_url
+from app.db.base import Base
 
 
 def _migration_engine():
@@ -45,6 +46,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]: column for column in inspector.get_columns("quotes")
         }
         invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
+        expense_columns = {column["name"] for column in inspector.get_columns("expenses")}
         sales_ledger_columns = {
             column["name"] for column in inspector.get_columns("sales_ledger_records")
         }
@@ -104,6 +106,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert quote_columns["client_id"]["nullable"] is True
     assert "paid_at" in invoice_columns
     assert "payment_method" in invoice_columns
+    assert "client_id" in expense_columns
     assert {
         "company_id",
         "created_by_user_id",
@@ -158,6 +161,44 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "status",
     } <= ownership_request_columns
     assert ("company_id",) in calendar_connection_unique_constraints
+
+
+@pytest.mark.skipif(
+    not os.getenv("MIGRATION_TEST_DATABASE_URL"),
+    reason="PostgreSQL migration contract runs in CI",
+)
+def test_postgresql_schema_includes_every_declared_model_column():
+    """Keep mapped fields and Alembic migrations aligned before deployment.
+
+    The CI workflow first upgrades a clean PostgreSQL service to ``head``. This
+    catches the class of regression where an ORM field is merged but its
+    matching database migration is missing or not applied by the release.
+    """
+    engine = _migration_engine()
+    try:
+        inspector = inspect(engine)
+        missing_columns = {
+            table.name: sorted(
+                {column.name for column in table.columns}
+                - {column["name"] for column in inspector.get_columns(table.name)}
+            )
+            for table in Base.metadata.sorted_tables
+            if inspector.has_table(table.name)
+        }
+        missing_tables = [
+            table.name
+            for table in Base.metadata.sorted_tables
+            if not inspector.has_table(table.name)
+        ]
+    finally:
+        engine.dispose()
+
+    assert missing_tables == []
+    assert {
+        table_name: columns
+        for table_name, columns in missing_columns.items()
+        if columns
+    } == {}
 
 
 @pytest.mark.skipif(

@@ -1,6 +1,7 @@
 export interface Expense {
     id: number;
     company_id: number;
+    client_id?: number | null;
     created_by_user_id?: number | null;
     expense_date: string;
     vendor?: string | null;
@@ -19,6 +20,7 @@ export interface Expense {
 
 export interface ExpensePayload {
     expense_date: string;
+    client_id?: number | null;
     vendor?: string | null;
     category: string;
     description: string;

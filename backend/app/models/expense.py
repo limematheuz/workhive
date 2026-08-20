@@ -9,6 +9,7 @@ class Expense(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
+    client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
     created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
     expense_date = Column(DateTime(timezone=True), nullable=False, index=True)
@@ -33,4 +34,5 @@ class Expense(Base):
     )
 
     company = relationship("Company", back_populates="expenses")
+    client = relationship("Client", back_populates="expenses")
     created_by = relationship("User")
