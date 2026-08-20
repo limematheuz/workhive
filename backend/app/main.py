@@ -23,6 +23,9 @@ from app.services.health_service import readiness_checks
 from app.services.calendar_background_service import periodic_calendar_sync
 from app.services.trial_expiry_notification_service import periodic_trial_expiry_notification_check
 from app.services.payment_reminder_service import periodic_payment_reminder_check
+from app.services.fiscal_deadline_notification_service import (
+    periodic_fiscal_deadline_notification_check,
+)
 from sqlalchemy.orm import Session
 
 
@@ -39,6 +42,8 @@ async def lifespan(app: FastAPI):
         tasks.append(asyncio.create_task(periodic_trial_expiry_notification_check()))
     if settings.PAYMENT_REMINDERS_ENABLED:
         tasks.append(asyncio.create_task(periodic_payment_reminder_check()))
+    if settings.FISCAL_CALENDAR_REMINDERS_ENABLED:
+        tasks.append(asyncio.create_task(periodic_fiscal_deadline_notification_check()))
     try:
         yield
     finally:

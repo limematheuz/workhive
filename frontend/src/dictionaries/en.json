@@ -250,13 +250,13 @@
   "fiscal_summary": {
     "nav_label": "Fiscal summary",
     "title": "Fiscal summary",
-    "subtitle": "Quarterly operating estimate for VAT and IRPF from issued invoices and recorded expenses.",
+    "subtitle": "Quarterly operating estimate for VAT and IRPF from invoices, deduplicated historical sales records, and recorded expenses.",
     "loading": "Loading fiscal summary...",
     "error_load": "Could not load fiscal summary.",
     "year": "Financial year",
     "annual_totals": "Annual fiscal totals",
     "output_vat": "Output VAT",
-    "output_vat_desc": "From issued invoices",
+    "output_vat_desc": "From invoices and historical sales",
     "input_vat": "Recorded input VAT",
     "input_vat_desc": "From recorded expenses",
     "vat_payable": "Estimated VAT payable",
@@ -265,13 +265,13 @@
     "vat_balance": "VAT balance",
     "vat_balance_desc": "Output less recorded input VAT",
     "irpf_withheld": "IRPF withheld",
-    "irpf_withheld_desc": "Withholding from issued invoices",
-    "disclaimer": "Operating estimate based on issued invoices and recorded expenses. It does not replace your accountant's review or a tax filing.",
+    "irpf_withheld_desc": "Withholding from WorkHive invoices",
+    "disclaimer": "Operating estimate based on invoices, deduplicated historical sales records, and recorded expenses. It does not replace your accountant's review or a tax filing.",
     "periods_title": "Quarterly detail",
     "periods_subtitle": "Includes issued documents and active expenses for the selected financial year.",
     "period": "Period",
-    "activity_header": "Invoices / expenses",
-    "activity": "{invoices} invoices · {expenses} expenses"
+    "activity_header": "Sales / expenses",
+    "activity": "{invoices} sales documents · {expenses} expenses"
   },
   "fiscal_calendar": {
     "eyebrow": "Finance",

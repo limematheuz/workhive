@@ -250,13 +250,13 @@
   "fiscal_summary": {
     "nav_label": "Resumen fiscal",
     "title": "Resumen fiscal",
-    "subtitle": "Estimación operativa trimestral de IVA e IRPF a partir de facturas emitidas y gastos registrados.",
+    "subtitle": "Estimación operativa trimestral de IVA e IRPF a partir de facturas y registros históricos de venta, sin duplicados, y gastos registrados.",
     "loading": "Cargando resumen fiscal...",
     "error_load": "No se pudo cargar el resumen fiscal.",
     "year": "Ejercicio",
     "annual_totals": "Totales fiscales anuales",
     "output_vat": "IVA repercutido",
-    "output_vat_desc": "De facturas emitidas",
+    "output_vat_desc": "De facturas y registros históricos",
     "input_vat": "IVA soportado registrado",
     "input_vat_desc": "De gastos registrados",
     "vat_payable": "IVA estimado a ingresar",
@@ -265,13 +265,13 @@
     "vat_balance": "Balance IVA",
     "vat_balance_desc": "Repercutido menos soportado registrado",
     "irpf_withheld": "IRPF retenido",
-    "irpf_withheld_desc": "Retenciones de facturas emitidas",
-    "disclaimer": "Estimación operativa basada en facturas emitidas y gastos registrados. No sustituye la revisión de tu gestoría ni una declaración fiscal.",
+    "irpf_withheld_desc": "Retenciones de facturas de WorkHive",
+    "disclaimer": "Estimación operativa basada en facturas, registros históricos sin duplicados y gastos registrados. No sustituye la revisión de tu gestoría ni una declaración fiscal.",
     "periods_title": "Detalle trimestral",
     "periods_subtitle": "Incluye documentos emitidos y gastos activos del ejercicio seleccionado.",
     "period": "Periodo",
-    "activity_header": "Facturas / gastos",
-    "activity": "{invoices} facturas · {expenses} gastos"
+    "activity_header": "Ventas / gastos",
+    "activity": "{invoices} documentos de venta · {expenses} gastos"
   },
   "fiscal_calendar": {
     "eyebrow": "Finanzas",

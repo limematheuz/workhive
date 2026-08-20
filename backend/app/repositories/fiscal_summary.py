@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.models.expense import Expense
 from app.models.invoice import Invoice
+from app.models.sales_ledger_record import SalesLedgerRecord
 
 
 REPORTABLE_INVOICE_STATUSES = ("issued", "paid", "overdue", "rectified")
@@ -46,5 +47,25 @@ def get_registered_expenses(
             Expense.expense_date < end,
         )
         .order_by(Expense.expense_date.asc(), Expense.id.asc())
+        .all()
+    )
+
+
+def get_active_manual_sales_records(
+    db: Session,
+    company_id: int,
+    *,
+    start: datetime,
+    end: datetime,
+) -> list[SalesLedgerRecord]:
+    return (
+        db.query(SalesLedgerRecord)
+        .filter(
+            SalesLedgerRecord.company_id == company_id,
+            SalesLedgerRecord.is_active.is_(True),
+            SalesLedgerRecord.entry_date >= start.date(),
+            SalesLedgerRecord.entry_date < end.date(),
+        )
+        .order_by(SalesLedgerRecord.entry_date.asc(), SalesLedgerRecord.id.asc())
         .all()
     )

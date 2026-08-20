@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.models.expense import Expense
 from app.models.invoice import Invoice
+from app.models.sales_ledger_record import SalesLedgerRecord
 from app.repositories import accountant_export as accountant_export_repo
+from app.services.reportable_sales_service import manual_records_without_workhive_invoice
 
 
 MONEY_QUANTUM = Decimal("0.01")
@@ -117,6 +119,26 @@ def _invoice_row(invoice: Invoice) -> dict[str, str]:
     }
 
 
+def _manual_sales_record_row(record: SalesLedgerRecord) -> dict[str, str]:
+    """Use empty cells for fiscal attributes unavailable in imported history."""
+    return {
+        "Numero factura": _safe_spreadsheet_text(record.document_number),
+        "Fecha emision": record.entry_date.isoformat(),
+        "Fecha vencimiento": "",
+        "Cliente": _safe_spreadsheet_text(record.client_name),
+        "NIF cliente": "",
+        "Base imponible": _money_text(record.base_amount),
+        "IVA": _money_text(record.tax_amount),
+        "Recargo equivalencia": _money_text(None),
+        "IRPF retenido": _money_text(None),
+        "Total factura": _money_text(record.total_amount),
+        "Estado": "paid" if record.payment_status == "paid" else "issued",
+        "Fecha cobro": "",
+        "Forma de pago": "",
+        "Rectificativa": "No",
+    }
+
+
 def _expense_row(expense: Expense) -> dict[str, str]:
     return {
         "Fecha": _date_text(expense.expense_date),
@@ -135,7 +157,7 @@ def _readme(year: int, invoice_count: int, expense_count: int) -> bytes:
     return f"""PAQUETE PARA GESTORIA - {year}
 
 Contenido:
-- facturas_emitidas_{year}.csv: {invoice_count} facturas fiscales activas.
+- facturas_emitidas_{year}.csv: {invoice_count} facturas fiscales activas y asientos manuales no duplicados.
 - gastos_registrados_{year}.csv: {expense_count} gastos activos.
 
 Los CSV usan punto y coma como separador, UTF-8 y coma decimal para abrirse bien en Excel.
@@ -153,6 +175,10 @@ def build_accountant_export(
     invoices = accountant_export_repo.list_reportable_invoices(
         db, company_id, start=start, end=end
     )
+    manual_records = accountant_export_repo.list_active_manual_sales_records(
+        db, company_id, start=start, end=end
+    )
+    manual_records = manual_records_without_workhive_invoice(invoices, manual_records)
     expenses = accountant_export_repo.list_active_expenses(
         db, company_id, start=start, end=end
     )
@@ -162,7 +188,11 @@ def build_accountant_export(
         zip_file.writestr(
             f"facturas_emitidas_{year}.csv",
             _csv_bytes(
-                INVOICE_HEADERS, [_invoice_row(invoice) for invoice in invoices]
+                INVOICE_HEADERS,
+                [
+                    *[_invoice_row(invoice) for invoice in invoices],
+                    *[_manual_sales_record_row(record) for record in manual_records],
+                ],
             ),
         )
         zip_file.writestr(
@@ -171,11 +201,14 @@ def build_accountant_export(
                 EXPENSE_HEADERS, [_expense_row(expense) for expense in expenses]
             ),
         )
-        zip_file.writestr("LEEME.txt", _readme(year, len(invoices), len(expenses)))
+        zip_file.writestr(
+            "LEEME.txt",
+            _readme(year, len(invoices) + len(manual_records), len(expenses)),
+        )
 
     return AccountantExport(
         content=archive.getvalue(),
         filename=f"workhive-gestoria-{year}.zip",
-        invoice_count=len(invoices),
+        invoice_count=len(invoices) + len(manual_records),
         expense_count=len(expenses),
     )
