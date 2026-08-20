@@ -337,6 +337,11 @@ def test_expense_client_assignment_rejects_foreign_clients_and_can_be_removed(cl
     assert created.json()["client_id"] == own_client.id
     assert created.json()["total_amount"] == 36.3
 
+    listed = client.get("/api/v1/expenses/", headers=headers)
+    assert listed.status_code == 200
+    assert listed.json()[0]["id"] == created.json()["id"]
+    assert listed.json()[0]["client_id"] == own_client.id
+
     rejected = client.post(
         "/api/v1/expenses/",
         headers=headers,

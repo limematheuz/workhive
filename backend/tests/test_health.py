@@ -60,6 +60,32 @@ def test_readiness_rejects_previous_company_schema_without_operating_model():
         engine.dispose()
 
 
+def test_readiness_rejects_expense_schema_without_client_assignment_column():
+    engine = create_engine("sqlite://")
+    try:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "CREATE TABLE companies ("
+                    "id INTEGER PRIMARY KEY, operating_model VARCHAR NOT NULL)"
+                )
+            )
+            connection.execute(text("CREATE TABLE expenses (id INTEGER PRIMARY KEY)"))
+            for table in (
+                "task_assignments",
+                "task_checklist_items",
+                "task_checklist_assignments",
+            ):
+                connection.execute(
+                    text(f"CREATE TABLE {table} (id INTEGER PRIMARY KEY)")
+                )
+
+        with Session(engine) as session:
+            assert required_schema_is_ready(session) is False
+    finally:
+        engine.dispose()
+
+
 def test_unsafe_request_id_is_replaced(client):
     response = client.get("/health", headers={"X-Request-ID": "x" * 65})
     assert response.status_code == 200

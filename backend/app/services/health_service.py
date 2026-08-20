@@ -18,6 +18,10 @@ REQUIRED_SCHEMA_TABLES = frozenset(
 )
 REQUIRED_SCHEMA_COLUMNS = {
     "companies": frozenset({"operating_model"}),
+    # Expenses are read by both the expenses workspace and finance analytics.
+    # Keep this column in readiness so a database that predates client cost
+    # attribution is declared unavailable before those views can return 500.
+    "expenses": frozenset({"client_id"}),
 }
 
 
