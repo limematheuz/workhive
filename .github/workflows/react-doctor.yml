@@ -39,7 +39,7 @@ jobs:
           # Any issue prevents merging: a clean scan is 100/100.
           blocking: warning
           scope: full
-          version: "0.9.3"
+          version: "0.9.12"
           # The GitHub check is enough; avoid granting the action write access.
           comment: false
           review-comments: false
