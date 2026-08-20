@@ -16,6 +16,7 @@ import { RoleService, Role } from "@/services/role.service";
 import { UserService } from "@/services/user.service";
 import { User } from "@/types/user";
 import { getUserDeletionErrorMessage } from "@/lib/user-deletion";
+import { COMPANY_ASSIGNABLE_ROLE_NAMES } from "@/components/users/user-role-utils";
 
 type EditDialogState = {
     open: boolean;
@@ -54,8 +55,11 @@ export default function TeamPage() {
             ]);
             setTeam(users);
 
-            const allowedRoles = ["superadmin", "admin", "manager", "viewer"];
-            const cleanedRoles = allRoles.filter((r) => allowedRoles.includes(r.name));
+            const cleanedRoles = allRoles.filter((r) =>
+                COMPANY_ASSIGNABLE_ROLE_NAMES.includes(
+                    r.name as typeof COMPANY_ASSIGNABLE_ROLE_NAMES[number],
+                ),
+            );
             const filteredRoles = currentUser.role?.name === "superadmin"
                 ? cleanedRoles
                 : cleanedRoles.filter((r) => r.name !== "superadmin");
@@ -120,6 +124,7 @@ export default function TeamPage() {
     const roleLabels = {
         role_superadmin: dict.users.role_superadmin,
         role_admin: dict.users.role_admin,
+        role_accountant: dict.users.role_accountant,
         role_manager: dict.users.role_manager,
         role_installer: dict.users.role_installer,
         role_viewer: dict.users.role_viewer,

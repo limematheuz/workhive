@@ -103,6 +103,7 @@ def db():
         Role(id=2, name="manager", description="Manager"),
         Role(id=3, name="viewer", description="Viewer"),
         Role(id=4, name="superadmin", description="Superadmin"),
+        Role(id=5, name="accountant", description="External accountant"),
     ]
     session.add_all(roles)
     session.commit()

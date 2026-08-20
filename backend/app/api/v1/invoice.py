@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import FileResponse
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.deps import ActiveAdmin, AsyncActiveAdmin, AsyncActiveFinancialReader, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.invoice import (
@@ -41,7 +41,7 @@ async def read_invoices(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: invoice_service.get_invoices(

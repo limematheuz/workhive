@@ -74,7 +74,7 @@ function DashboardOverviewContent() {
         } finally {
             setLoadingData(false);
         }
-    }, [user, dict.dashboard.error_load_data]);
+    }, [dict.dashboard.error_load_data, user]);
 
     useEffect(() => {
         if (user) {

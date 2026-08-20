@@ -10,7 +10,7 @@ test("fiscal summary uses the shared data-list architecture and server-side sour
 
     assert.match(page, /PageHeader/);
     assert.match(page, /DataListTable/);
-    assert.match(page, /canAdministerCompany\(user\) && !isPlatformSuperadmin\(user\)/);
+    assert.match(page, /canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/);
     assert.match(page, /FiscalSummaryService\.getSummary/);
     assert.doesNotMatch(page, /InvoiceService|getAllInvoices|ExpenseService|getAllExpenses/);
     assert.match(service, /assertApiResponseOk/);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { redirect, useRouter } from "next/navigation";
+import { redirect, usePathname, useRouter } from "next/navigation";
 import { useDictionary } from "@/lib/dictionary-context";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
@@ -12,6 +12,8 @@ import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
+import { isAccountantRole } from "@/domain/access/roles";
+import { canAccessAccountantDashboardPath } from "@/domain/access/accountant-dashboard";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
     return (
@@ -25,9 +27,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useThemeMode();
     const router = useRouter();
+    const pathname = usePathname();
     const { user, loading } = useUser();
     const { dict } = useDictionary();
     const [showOnboarding, setShowOnboarding] = useState(false);
+    const isAccountant = isAccountantRole(user?.role?.name);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia("(min-width: 1024px)");
@@ -103,6 +107,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </div>
         );
+    }
+
+    if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {
+        redirect("/dashboard/analytics");
     }
 
     return (

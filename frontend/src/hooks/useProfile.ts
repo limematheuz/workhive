@@ -12,7 +12,7 @@ import { ActiveCompanySession, UserStatsResponse, WorkSession, TaskItem } from "
 import { WorkSessionService } from "@/services/work-session.service";
 import { Invoice } from "@/types/invoice";
 import { getErrorMessage } from "@/lib/errors";
-import { isPlatformSuperadmin } from "@/domain/access/roles";
+import { isAccountantRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import type { CompanyExpense } from "@/types/company";
 import { buildCompanyTaskStats } from "@/lib/operations-analytics";
 
@@ -253,7 +253,9 @@ export function useProfile() {
     const isAdminOrSuperadmin = user?.role?.name === "admin" || user?.role?.name === "superadmin";
     const isManager = user?.role?.name === "manager";
     const isViewer = user?.role?.name === "viewer";
+    const isAccountant = isAccountantRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
+    const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin;
     const canViewActiveTeam = (isAdminOrSuperadmin || isManager) && !userIsPlatformSuperadmin;
 
     // Load all profile data
@@ -265,18 +267,17 @@ export function useProfile() {
 
             const isAdm = user.role?.name === "admin" || user.role?.name === "superadmin";
             const isMgr = user.role?.name === "manager";
-            const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
 
             const [userStats, userSessions, userTasks, allLocations, fetchedInvoices, fetchedCompanyTasks, fetchedExpenses] = await Promise.all([
-                userIsPlatformSuperadmin
-                    ? Promise.resolve(null)
-                    : UserService.getUserStats(user.id).catch(() => null),
-                userIsPlatformSuperadmin ? Promise.resolve([]) : UserService.getUserWorkSessions(10),
-                userIsPlatformSuperadmin ? Promise.resolve([]) : UserService.getUserTasks(user.id, 100),
-                userIsPlatformSuperadmin ? Promise.resolve([]) : LocationService.getLocations(),
-                isAdm && !userIsPlatformSuperadmin ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
-                (isAdm || isMgr) && !userIsPlatformSuperadmin ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
-                isAdm && user.company_id && !userIsPlatformSuperadmin
+                canLoadOperationalData
+                    ? UserService.getUserStats(user.id).catch(() => null)
+                    : Promise.resolve(null),
+                canLoadOperationalData ? UserService.getUserWorkSessions(10) : Promise.resolve([]),
+                canLoadOperationalData ? UserService.getUserTasks(user.id, 100) : Promise.resolve([]),
+                canLoadOperationalData ? LocationService.getLocations() : Promise.resolve([]),
+                isAdm && canLoadOperationalData ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
+                (isAdm || isMgr) && canLoadOperationalData ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
+                isAdm && user.company_id && canLoadOperationalData
                     ? CompanyService.getCompanyExpenses(user.company_id).catch(() => [] as CompanyExpense[])
                     : Promise.resolve([] as CompanyExpense[])
             ]);
@@ -289,7 +290,7 @@ export function useProfile() {
             setAllCompanyTasks(fetchedCompanyTasks);
             setCompanyExpenses(fetchedExpenses);
 
-            if (user.company_id) {
+            if (user.company_id && canLoadOperationalData) {
                 try {
                     const comp = await CompanyService.getCompany(user.company_id);
                     setCompanyName(comp.name);
@@ -426,6 +427,7 @@ export function useProfile() {
         isAdminOrSuperadmin,
         isManager,
         isViewer,
+        isAccountant,
         canViewActiveTeam,
         loadProfileData,
         locationsMap,

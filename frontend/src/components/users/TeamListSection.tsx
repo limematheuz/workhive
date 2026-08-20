@@ -23,6 +23,7 @@ type TeamListSectionProps = {
         empty: string;
         role_superadmin?: string;
         role_admin?: string;
+        role_accountant?: string;
         role_manager?: string;
         role_installer?: string;
         role_viewer?: string;
@@ -44,6 +45,7 @@ export function TeamListSection({
     const roleLabels = {
         role_superadmin: labels.role_superadmin,
         role_admin: labels.role_admin,
+        role_accountant: labels.role_accountant,
         role_manager: labels.role_manager,
         role_installer: labels.role_installer,
         role_viewer: labels.role_viewer,
@@ -51,7 +53,8 @@ export function TeamListSection({
 
     const canManageUser = (worker: User) =>
         worker.id !== currentUser?.id
-        && getRoleRank(currentUser?.role?.name) > getRoleRank(worker.role?.name);
+        && getRoleRank(currentUser?.role?.name) > getRoleRank(worker.role?.name)
+        && !(currentUser?.role?.name === "manager" && worker.role?.name === "accountant");
 
     const actionOptions = (worker: User) => [
         {

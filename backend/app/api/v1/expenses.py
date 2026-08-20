@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.deps import ActiveAdmin, AsyncActiveFinancialReader, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
@@ -31,7 +31,7 @@ async def read_expenses(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     _require_company_admin(current_user)
     return await db.run_sync(
@@ -51,7 +51,7 @@ async def read_expenses(
 async def read_expense(
     expense_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     _require_company_admin(current_user)
     return await db.run_sync(

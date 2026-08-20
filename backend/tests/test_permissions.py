@@ -66,7 +66,7 @@ def test_manager_cannot_invite_privileged_users(client, db, monkeypatch):
         "Authorization": f"Bearer {login.json()['access_token']}"
     }
 
-    for role_id in (1, 2, 4):
+    for role_id in (1, 2, 4, 5):
         response = client.post(
             "/api/v1/user-invitations/",
             headers=manager_headers,
@@ -86,6 +86,43 @@ def test_manager_cannot_invite_privileged_users(client, db, monkeypatch):
         },
     )
     assert worker.status_code == 202, worker.text
+
+
+def test_manager_cannot_manage_accountant_users(client, db):
+    _, company_id = _register_company(client, "accountant-management")
+    manager = User(
+        email="manager-accountant@workhive.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Manager",
+        role_id=2,
+        company_id=company_id,
+        is_active=True,
+    )
+    accountant = User(
+        email="accountant@workhive.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Accountant",
+        role_id=5,
+        company_id=company_id,
+        is_active=True,
+    )
+    db.add_all([manager, accountant])
+    db.commit()
+    db.refresh(accountant)
+
+    login = client.post(
+        "/api/v1/auth/login",
+        data=login_form("manager-accountant@workhive.com", TEST_SECRET),
+    )
+    manager_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    response = client.patch(
+        f"/api/v1/users/{accountant.id}",
+        headers=manager_headers,
+        json={"is_active": False},
+    )
+
+    assert response.status_code == 403, response.text
 
 
 def test_platform_superadmin_stats_are_empty_without_company(db):

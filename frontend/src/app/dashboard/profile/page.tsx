@@ -90,7 +90,7 @@ export default function ProfilePage() {
                                     <Briefcase className="h-3 w-3" aria-hidden="true" />
                                     {state.user?.role?.name || "Sin Rol"}
                                 </Badge>
-                                {state.user?.company_id && (
+                                {!state.isAccountant && state.user?.company_id && (
                                     <Badge
                                         variant="secondary"
                                         className="px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide"
@@ -201,28 +201,32 @@ export default function ProfilePage() {
                 canManageRequests={state.isAdminOrSuperadmin}
             />
 
-            <ProfileStats
-                stats={state.stats}
-                dict={state.dict}
-                activeSession={state.activeSession}
-                activeSessionTime={state.activeSessionTime}
-                formatTime={state.formatTime}
-            />
+            {!state.isAccountant && (
+                <>
+                    <ProfileStats
+                        stats={state.stats}
+                        dict={state.dict}
+                        activeSession={state.activeSession}
+                        activeSessionTime={state.activeSessionTime}
+                        formatTime={state.formatTime}
+                    />
 
-            <ProfileHistories
-                activeTab={state.activeTab}
-                setActiveTab={state.setActiveTab}
-                sessions={state.sessions}
-                tasks={state.tasks}
-                locationsMap={state.locationsMap}
-                dict={state.dict}
-                formatDate={state.formatDate}
-                formatTime={state.formatTime}
-                calculateDuration={state.calculateDuration}
-                activeSessionTime={state.activeSessionTime}
-                activeCompanySessions={state.activeCompanySessions}
-                canViewActiveTeam={state.canViewActiveTeam}
-            />
+                    <ProfileHistories
+                        activeTab={state.activeTab}
+                        setActiveTab={state.setActiveTab}
+                        sessions={state.sessions}
+                        tasks={state.tasks}
+                        locationsMap={state.locationsMap}
+                        dict={state.dict}
+                        formatDate={state.formatDate}
+                        formatTime={state.formatTime}
+                        calculateDuration={state.calculateDuration}
+                        activeSessionTime={state.activeSessionTime}
+                        activeCompanySessions={state.activeCompanySessions}
+                        canViewActiveTeam={state.canViewActiveTeam}
+                    />
+                </>
+            )}
             {/* Custom confirmation dialog */}
             <Dialog open={showResetConfirm} onOpenChange={setShowResetConfirm}>
                 <DialogContent className="max-w-md">

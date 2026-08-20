@@ -52,6 +52,73 @@ class AccountantExport:
     expense_count: int
 
 
+@dataclass(frozen=True)
+class AccountantExportPeriod:
+    year: int
+    kind: str
+    number: int | None
+    start: datetime
+    end: datetime
+    suffix: str
+    label: str
+
+
+def resolve_export_period(
+    *,
+    year: int,
+    period: str,
+    period_number: int | None,
+) -> AccountantExportPeriod:
+    if period == "year":
+        if period_number is not None:
+            raise ValueError("Annual exports do not accept a period number")
+        return AccountantExportPeriod(
+            year=year,
+            kind=period,
+            number=None,
+            start=datetime(year, 1, 1, tzinfo=timezone.utc),
+            end=datetime(year + 1, 1, 1, tzinfo=timezone.utc),
+            suffix=str(year),
+            label=str(year),
+        )
+
+    limits = {"month": 12, "quarter": 4, "semester": 2}
+    limit = limits.get(period)
+    if limit is None:
+        raise ValueError("Unsupported accountant export period")
+    if period_number is None or not 1 <= period_number <= limit:
+        raise ValueError(f"{period.capitalize()} exports require a number from 1 to {limit}")
+
+    if period == "month":
+        start_month = period_number
+        suffix = f"{year}-{period_number:02d}"
+        label = f"{year}-{period_number:02d}"
+        end_year = year + 1 if start_month == 12 else year
+        end_month = 1 if start_month == 12 else start_month + 1
+    elif period == "quarter":
+        start_month = (period_number - 1) * 3 + 1
+        suffix = f"{year}-T{period_number}"
+        label = f"T{period_number} {year}"
+        end_year = year + 1 if period_number == 4 else year
+        end_month = 1 if period_number == 4 else start_month + 3
+    else:
+        start_month = (period_number - 1) * 6 + 1
+        suffix = f"{year}-S{period_number}"
+        label = f"S{period_number} {year}"
+        end_year = year + 1 if period_number == 2 else year
+        end_month = 1 if period_number == 2 else start_month + 6
+
+    return AccountantExportPeriod(
+        year=year,
+        kind=period,
+        number=period_number,
+        start=datetime(year, start_month, 1, tzinfo=timezone.utc),
+        end=datetime(end_year, end_month, 1, tzinfo=timezone.utc),
+        suffix=suffix,
+        label=label,
+    )
+
+
 def _money(value: Decimal | float | int | None) -> Decimal:
     return Decimal(str(value or 0)).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)
 
@@ -153,12 +220,12 @@ def _expense_row(expense: Expense) -> dict[str, str]:
     }
 
 
-def _readme(year: int, invoice_count: int, expense_count: int) -> bytes:
-    return f"""PAQUETE PARA GESTORIA - {year}
+def _readme(period: AccountantExportPeriod, invoice_count: int, expense_count: int) -> bytes:
+    return f"""PAQUETE PARA GESTORIA - {period.label}
 
 Contenido:
-- facturas_emitidas_{year}.csv: {invoice_count} facturas fiscales activas y asientos manuales no duplicados.
-- gastos_registrados_{year}.csv: {expense_count} gastos activos.
+- facturas_emitidas_{period.suffix}.csv: {invoice_count} facturas fiscales activas y asientos manuales no duplicados.
+- gastos_registrados_{period.suffix}.csv: {expense_count} gastos activos.
 
 Los CSV usan punto y coma como separador, UTF-8 y coma decimal para abrirse bien en Excel.
 No incluye facturas en borrador ni canceladas. No incluye PDFs ni los archivos de justificantes: esos documentos siguen bajo el control de acceso de WorkHive.
@@ -168,25 +235,23 @@ Este paquete es un resumen operativo para la gestoria. Revise los datos antes de
 
 
 def build_accountant_export(
-    db: Session, company_id: int, year: int
+    db: Session, company_id: int, period: AccountantExportPeriod
 ) -> AccountantExport:
-    start = datetime(year, 1, 1, tzinfo=timezone.utc)
-    end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
     invoices = accountant_export_repo.list_reportable_invoices(
-        db, company_id, start=start, end=end
+        db, company_id, start=period.start, end=period.end
     )
     manual_records = accountant_export_repo.list_active_manual_sales_records(
-        db, company_id, start=start, end=end
+        db, company_id, start=period.start, end=period.end
     )
     manual_records = manual_records_without_workhive_invoice(invoices, manual_records)
     expenses = accountant_export_repo.list_active_expenses(
-        db, company_id, start=start, end=end
+        db, company_id, start=period.start, end=period.end
     )
 
     archive = io.BytesIO()
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.writestr(
-            f"facturas_emitidas_{year}.csv",
+            f"facturas_emitidas_{period.suffix}.csv",
             _csv_bytes(
                 INVOICE_HEADERS,
                 [
@@ -196,19 +261,19 @@ def build_accountant_export(
             ),
         )
         zip_file.writestr(
-            f"gastos_registrados_{year}.csv",
+            f"gastos_registrados_{period.suffix}.csv",
             _csv_bytes(
                 EXPENSE_HEADERS, [_expense_row(expense) for expense in expenses]
             ),
         )
         zip_file.writestr(
             "LEEME.txt",
-            _readme(year, len(invoices) + len(manual_records), len(expenses)),
+            _readme(period, len(invoices) + len(manual_records), len(expenses)),
         )
 
     return AccountantExport(
         content=archive.getvalue(),
-        filename=f"workhive-gestoria-{year}.zip",
+        filename=f"workhive-gestoria-{period.suffix}.zip",
         invoice_count=len(invoices) + len(manual_records),
         expense_count=len(expenses),
     )
