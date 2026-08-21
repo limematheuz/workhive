@@ -30,6 +30,19 @@ www.{$MARKETING_DOMAIN} {
 {$MARKETING_DOMAIN} {
 	encode zstd gzip
 
+	# Authentication and application routes belong exclusively to APP_DOMAIN.
+	# Keep the original path/query so bookmarks reach the canonical app host.
+	@app_routes path \
+		/login \
+		/register \
+		/forgot-password \
+		/reset-password \
+		/accept-invitation \
+		/confirm-email-change \
+		/dashboard* \
+		/subscription*
+	redir @app_routes https://{$APP_DOMAIN}{uri} permanent
+
 	# The marketing host intentionally exposes only the public Next.js pages.
 	# API, uploads and health checks remain exclusive to APP_DOMAIN.
 	handle /api/* {

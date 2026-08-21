@@ -9,9 +9,9 @@ import { useDictionary } from "@/lib/dictionary-context";
 const COPY = {
     es: {
         eyebrow: "WORKHIVE · GESTIÓN PARA EMPRESAS DE SERVICIOS",
-        title: "Coordina equipos, trabajos y facturación desde un solo lugar.",
+        title: "WorkHive coordina equipos, trabajos y facturación desde un solo lugar.",
         description:
-            "WorkHive ayuda a empresas de limpieza y servicios de campo a planificar trabajos, asignar responsables, registrar horas y preparar su facturación.",
+            "WorkHive es una plataforma de gestión para empresas de limpieza y servicios de campo. Permite planificar trabajos, asignar responsables, registrar horas y preparar la facturación.",
         access: "Acceder a WorkHive",
         contact: "Contactar",
         purposeTitle: "Qué resuelve WorkHive",
@@ -31,9 +31,9 @@ const COPY = {
     },
     en: {
         eyebrow: "WORKHIVE · MANAGEMENT FOR SERVICE COMPANIES",
-        title: "Coordinate teams, jobs and invoicing in one place.",
+        title: "WorkHive coordinates teams, jobs and invoicing in one place.",
         description:
-            "WorkHive helps cleaning and field-service companies plan jobs, assign workers, track hours and prepare invoicing.",
+            "WorkHive is a management platform for cleaning and field-service companies. It helps them plan jobs, assign workers, track hours and prepare invoicing.",
         access: "Access WorkHive",
         contact: "Contact us",
         purposeTitle: "What WorkHive solves",
