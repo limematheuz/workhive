@@ -44,11 +44,6 @@ www.{$MARKETING_DOMAIN} {
 		respond 404
 	}
 
-	handle / {
-		rewrite * /about
-		reverse_proxy frontend:3000
-	}
-
 	handle {
 		reverse_proxy frontend:3000
 	}

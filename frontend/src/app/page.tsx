@@ -1,5 +1,17 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default function Home() {
-  redirect("/login");
+import { PublicLanding } from "@/components/marketing/PublicLanding";
+import { isPublicSiteHost, PUBLIC_SITE_METADATA } from "@/lib/public-site";
+
+export const metadata = PUBLIC_SITE_METADATA;
+
+export default async function Home() {
+    const host = (await headers()).get("host");
+
+    if (isPublicSiteHost(host)) {
+        return <PublicLanding />;
+    }
+
+    redirect("/login");
 }

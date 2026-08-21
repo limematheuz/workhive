@@ -6,9 +6,9 @@ WorkHive uses two public hosts with separate responsibilities:
 - `app.workhive.es`: login, dashboard, API callbacks and the authenticated product.
 
 The marketing host is served by the existing frontend container, but Caddy does
-not expose backend API, upload or health routes on that host. Its root path is
-internally rewritten to the public `/about` page. The application host keeps its
-existing behavior.
+not expose backend API, upload or health routes on that host. The frontend uses
+the request host to serve the public landing directly at `/`; the application
+host keeps redirecting its own root to `/login`.
 
 ## Production configuration
 
@@ -57,5 +57,5 @@ and display the same `WorkHive` name used by the OAuth consent screen.
 
 No new secret is required locally. `MARKETING_DOMAIN=workhive.localhost` is a
 local routing value only. The public page can also be reviewed directly at
-`http://localhost:3000/about`; real Google OAuth still uses the redirect URI
+`http://localhost:3000`; real Google OAuth still uses the redirect URI
 registered for the environment being tested.

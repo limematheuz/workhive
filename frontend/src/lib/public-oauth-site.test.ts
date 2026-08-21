@@ -2,18 +2,21 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
+import { isPublicSiteHost } from "./public-site.ts";
+
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("public landing explains WorkHive and optional Google Calendar access", () => {
     const landing = read("../components/marketing/PublicLanding.tsx");
-    const route = read("../app/about/page.tsx");
+    const route = read("../app/page.tsx");
 
     assert.match(landing, /WORKHIVE · GESTIÓN PARA EMPRESAS DE SERVICIOS/);
     assert.match(landing, /Integración opcional con Google Calendar/);
     assert.match(landing, /consentimiento explícito/);
     assert.match(landing, /no vende datos de Google/);
     assert.match(landing, /https:\/\/app\.workhive\.es\/login/);
-    assert.match(route, /canonical: "https:\/\/workhive\.es"/);
+    assert.match(route, /isPublicSiteHost\(host\)/);
+    assert.match(route, /return <PublicLanding \/>/);
 });
 
 test("public pages expose stable canonical URLs for OAuth verification", () => {
@@ -45,7 +48,7 @@ test("edge config keeps marketing pages separate from the application API", () =
     const deployEnvironment = read("../../../.env.deploy.example");
 
     assert.match(caddy, /\{\$MARKETING_DOMAIN\}/);
-    assert.match(caddy, /rewrite \* \/about/);
+    assert.doesNotMatch(caddy, /rewrite \* \/about/);
     assert.match(caddy, /\{\$APP_DOMAIN\}[\s\S]*handle \/api\/\*/);
     assert.doesNotMatch(caddy.split("{$MARKETING_DOMAIN} {")[1], /reverse_proxy backend/);
     assert.match(compose, /MARKETING_DOMAIN: \$\{MARKETING_DOMAIN:-workhive\.localhost\}/);
@@ -56,8 +59,20 @@ test("public marketing pages do not call the application traffic API", () => {
     const tracker = read("../components/traffic/TrafficTracker.tsx");
 
     assert.match(tracker, /PUBLIC_SITE_PATHS/);
-    for (const path of ["/about", "/contact", "/privacy", "/terms"]) {
+    for (const path of ["/", "/about", "/contact", "/privacy", "/terms"]) {
         assert.match(tracker, new RegExp(`PUBLIC_SITE_PATHS = new Set\\(\\[[^\\]]*"${path}"`));
     }
     assert.match(tracker, /PUBLIC_SITE_PATHS\.has\(pathname\)/);
+});
+
+test("public root is selected by the configured marketing hostname", () => {
+    const publicSite = read("./public-site.ts");
+    const compose = read("../../../docker-compose.yml");
+
+    assert.match(publicSite, /process\.env\.MARKETING_DOMAIN \?\? "localhost"/);
+    assert.match(publicSite, /hostname === domain \|\| hostname === `www\.\$\{domain\}`/);
+    assert.match(compose, /MARKETING_DOMAIN: \$\{MARKETING_DOMAIN:-workhive\.localhost\}/);
+    assert.equal(isPublicSiteHost("workhive.es", "workhive.es"), true);
+    assert.equal(isPublicSiteHost("www.workhive.es:443", "workhive.es"), true);
+    assert.equal(isPublicSiteHost("app.workhive.es", "workhive.es"), false);
 });

@@ -140,6 +140,7 @@ services:
       NEXT_PUBLIC_SUPPORT_EMAIL: ${NEXT_PUBLIC_SUPPORT_EMAIL:-}
       NEXT_PUBLIC_SUPPORT_PHONE: ${NEXT_PUBLIC_SUPPORT_PHONE:-}
       NEXT_PUBLIC_BUSINESS_LOCATION: ${NEXT_PUBLIC_BUSINESS_LOCATION:-}
+      MARKETING_DOMAIN: ${MARKETING_DOMAIN:-workhive.localhost}
     depends_on:
       backend:
         condition: service_healthy
