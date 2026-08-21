@@ -22,3 +22,34 @@
 		reverse_proxy frontend:3000
 	}
 }
+
+www.{$MARKETING_DOMAIN} {
+	redir https://{$MARKETING_DOMAIN}{uri} permanent
+}
+
+{$MARKETING_DOMAIN} {
+	encode zstd gzip
+
+	# The marketing host intentionally exposes only the public Next.js pages.
+	# API, uploads and health checks remain exclusive to APP_DOMAIN.
+	handle /api/* {
+		respond 404
+	}
+
+	handle /health* {
+		respond 404
+	}
+
+	handle /uploads/* {
+		respond 404
+	}
+
+	handle / {
+		rewrite * /about
+		reverse_proxy frontend:3000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

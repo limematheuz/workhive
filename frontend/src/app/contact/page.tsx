@@ -127,7 +127,7 @@ function ContactPageContent() {
     return (
         <AuthShell wide showFooter={false} contentClassName="py-2 sm:py-6 lg:py-8">
             <Link
-                href="/login"
+                href="/"
                 className="group mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion sm:mb-6"
             >
                 <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
