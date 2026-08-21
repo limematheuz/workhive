@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 import { isPublicSiteHost } from "./public-site.ts";
@@ -17,6 +17,11 @@ test("public landing explains WorkHive and optional Google Calendar access", () 
     assert.match(landing, /https:\/\/app\.workhive\.es\/login/);
     assert.match(route, /isPublicSiteHost\(host\)/);
     assert.match(route, /return <PublicLanding \/>/);
+    assert.equal(
+        existsSync(new URL("../app/about/page.tsx", import.meta.url)),
+        false,
+        "the public landing must live only at the root route",
+    );
 });
 
 test("public pages expose stable canonical URLs for OAuth verification", () => {
@@ -59,7 +64,7 @@ test("public marketing pages do not call the application traffic API", () => {
     const tracker = read("../components/traffic/TrafficTracker.tsx");
 
     assert.match(tracker, /PUBLIC_SITE_PATHS/);
-    for (const path of ["/", "/about", "/contact", "/privacy", "/terms"]) {
+    for (const path of ["/", "/contact", "/privacy", "/terms"]) {
         assert.match(tracker, new RegExp(`PUBLIC_SITE_PATHS = new Set\\(\\[[^\\]]*"${path}"`));
     }
     assert.match(tracker, /PUBLIC_SITE_PATHS\.has\(pathname\)/);
