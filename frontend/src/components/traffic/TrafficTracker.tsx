@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { getVisitorId } from "@/lib/visitor-id";
 import { TrafficService } from "@/services/traffic.service";
 
-const PUBLIC_SITE_PATHS = new Set(["/about", "/contact", "/privacy", "/terms"]);
+const PUBLIC_SITE_PATHS = new Set(["/", "/about", "/contact", "/privacy", "/terms"]);
 
 export function TrafficTracker() {
     const pathname = usePathname();
