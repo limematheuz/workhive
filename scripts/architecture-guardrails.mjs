@@ -28,7 +28,6 @@ const LEGACY_LINE_LIMITS = {
     "backend/app/services/task_report_service.py": 458,
     "backend/app/services/work_session_service.py": 348,
     "backend/app/api/v1/auth.py": 261,
-    "backend/app/api/v1/calendar.py": 284,
     "backend/app/api/v1/invoice.py": 505,
     "backend/app/api/v1/task_items.py": 266,
     "frontend/src/services/invoice.service.ts": 383,
@@ -40,7 +39,6 @@ const LEGACY_LINE_LIMITS = {
 const ROUTE_PERSISTENCE_DEBT = {
     "backend/app/api/v1/auth.py": ["db.add(", "db.commit("],
     "backend/app/api/v1/billing.py": ["db.query(", "db.query("],
-    "backend/app/api/v1/calendar.py": ["db.query("],
     "backend/app/api/v1/users.py": ["db.add(", "db.commit("],
 };
 

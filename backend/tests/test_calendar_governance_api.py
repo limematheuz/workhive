@@ -19,7 +19,7 @@ from app.models.google_calendar_connection import GoogleCalendarConnection
 from app.models.notification import Notification
 from app.models.user import User
 from app.services import calendar_sync_service
-from app.api.v1.calendar import _oauth_failure_reason
+from app.api.v1.calendar_oauth import oauth_failure_reason
 
 
 @pytest.fixture(autouse=True)
@@ -506,4 +506,4 @@ def test_oauth_failure_reasons_are_safe_and_allowlisted(
     provider_error,
     expected_reason,
 ):
-    assert _oauth_failure_reason(provider_error) == expected_reason
+    assert oauth_failure_reason(provider_error) == expected_reason
