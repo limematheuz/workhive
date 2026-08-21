@@ -7,8 +7,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { TrafficTracker } from "@/components/traffic/TrafficTracker";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://workhive.es"),
   title: "WorkHive",
-  description: "ERP/CRM for field service companies",
+  description: "Gestión de operaciones, equipos y facturación para empresas de servicios.",
 };
 
 export default async function RootLayout({

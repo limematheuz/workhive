@@ -16,11 +16,11 @@ export default function PrivacyPage() {
 
             <div className="w-full max-w-4xl z-10 py-12">
                 <Link
-                    href="/login"
+                    href="/"
                     className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors mb-8 group"
                 >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    {locale === "es" ? "Volver al inicio" : "Back to login"}
+                    {locale === "es" ? "Volver a WorkHive" : "Back to WorkHive"}
                 </Link>
 
                 <div className="backdrop-blur-xl bg-[var(--bg-card)] border border-[var(--border-soft)] shadow-2xl rounded-3xl p-8 lg:p-12 relative overflow-hidden">
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
                                 {locale === "es" ? "Política de Privacidad" : "Privacy Policy"}
                             </h1>
                             <p className="text-[var(--text-muted)] text-sm mt-1">
-                                {locale === "es" ? "Borrador pre-lanzamiento · 14 de junio de 2026" : "Pre-launch draft · June 14, 2026"}
+                                {locale === "es" ? "Última actualización · 21 de agosto de 2026" : "Last updated · August 21, 2026"}
                             </p>
                         </div>
                     </div>
@@ -72,20 +72,33 @@ export default function PrivacyPage() {
                                 <section className="space-y-3">
                                     <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
                                         <Lock className="w-5 h-5 text-accent" />
-                                        3. Seguridad y Cifrado de Datos
+                                        3. Datos de Google Calendar
                                     </h2>
                                     <p>
-                                        Las contraseñas se almacenan mediante hashes irreversibles. En producción, las comunicaciones deberán realizarse exclusivamente mediante HTTPS y la base de datos deberá contar con cifrado, copias de seguridad y controles de acceso del proveedor de infraestructura. WorkHive aplica controles de acceso por empresa y rol, sujetos a revisión continua antes del lanzamiento comercial.
+                                        La conexión con Google Calendar es opcional y requiere el consentimiento explícito de un administrador. WorkHive accede al correo de la Cuenta de Google conectada y a los calendarios y eventos necesarios para crear y mantener un calendario dedicado de WorkHive y sincronizar las tareas o reservas que el usuario seleccione.
+                                    </p>
+                                    <p>
+                                        Los tokens de acceso se almacenan cifrados y se utilizan únicamente para prestar esta sincronización. WorkHive no vende datos de Google, no los utiliza para publicidad y no los comparte con terceros salvo los proveedores de infraestructura necesarios para operar el servicio o cuando exista una obligación legal. El administrador puede desconectar Google Calendar desde WorkHive o revocar el acceso desde su Cuenta de Google.
                                     </p>
                                 </section>
 
                                 <section className="space-y-3">
                                     <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
                                         <Lock className="w-5 h-5 text-accent" />
-                                        4. Derechos del Usuario (ARCO - RGPD)
+                                        4. Seguridad y Cifrado de Datos
                                     </h2>
                                     <p>
-                                        Como titular de los datos, puede solicitar acceso, rectificación, supresión, limitación, portabilidad u oposición escribiendo a privacy@workhive.com. Antes del lanzamiento comercial deberán publicarse la identidad fiscal y dirección completa del responsable del tratamiento, los encargados, plazos de conservación y base jurídica aplicable.
+                                        Las contraseñas se almacenan mediante hashes irreversibles. Las comunicaciones de producción usan HTTPS y la infraestructura aplica copias de seguridad y controles de acceso. WorkHive limita el acceso a la información por empresa y rol.
+                                    </p>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+                                        <Lock className="w-5 h-5 text-accent" />
+                                        5. Derechos del Usuario (RGPD)
+                                    </h2>
+                                    <p>
+                                        Como titular de los datos, puede solicitar acceso, rectificación, supresión, limitación, portabilidad u oposición escribiendo a cloud-admin@workhive.es. También puede solicitar la eliminación de su cuenta y de los datos asociados, sujetos a las obligaciones legales de conservación aplicables.
                                     </p>
                                 </section>
                             </>
@@ -120,20 +133,33 @@ export default function PrivacyPage() {
                                 <section className="space-y-3">
                                     <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
                                         <Lock className="w-5 h-5 text-accent" />
-                                        3. Data Security & Encryption
+                                        3. Google Calendar Data
                                     </h2>
                                     <p>
-                                        Passwords are stored as irreversible hashes. Production traffic must use HTTPS exclusively, and the database provider must provide encryption, backups and access controls. WorkHive applies company and role-based access controls that remain subject to continuous review before commercial launch.
+                                        Google Calendar connection is optional and requires explicit administrator consent. WorkHive accesses the connected Google Account email and the calendars and events required to create and maintain a dedicated WorkHive calendar and synchronize tasks or reservations selected by the user.
+                                    </p>
+                                    <p>
+                                        Access tokens are stored encrypted and used only to provide this synchronization. WorkHive does not sell Google data, use it for advertising, or share it with third parties except infrastructure providers required to operate the service or where legally required. Administrators can disconnect Google Calendar in WorkHive or revoke access from their Google Account.
                                     </p>
                                 </section>
 
                                 <section className="space-y-3">
                                     <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
                                         <Lock className="w-5 h-5 text-accent" />
-                                        4. User Rights (GDPR)
+                                        4. Data Security & Encryption
                                     </h2>
                                     <p>
-                                        Under GDPR you may request access, rectification, erasure, restriction, portability or objection by emailing privacy@workhive.com. The controller&apos;s full legal identity and address, processors, retention periods and legal bases must be completed before commercial launch.
+                                        Passwords are stored as irreversible hashes. Production traffic uses HTTPS, and the infrastructure applies backups and access controls. WorkHive restricts access to information by company and role.
+                                    </p>
+                                </section>
+
+                                <section className="space-y-3">
+                                    <h2 className="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+                                        <Lock className="w-5 h-5 text-accent" />
+                                        5. User Rights (GDPR)
+                                    </h2>
+                                    <p>
+                                        Under GDPR you may request access, rectification, erasure, restriction, portability or objection by emailing cloud-admin@workhive.es. You may also request deletion of your account and associated data, subject to applicable legal retention obligations.
                                     </p>
                                 </section>
                             </>

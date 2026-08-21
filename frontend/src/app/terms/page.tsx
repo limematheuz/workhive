@@ -16,11 +16,11 @@ export default function TermsPage() {
 
             <div className="w-full max-w-4xl z-10 py-12">
                 <Link
-                    href="/login"
+                    href="/"
                     className="inline-flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors mb-8 group"
                 >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                    {locale === "es" ? "Volver al inicio" : "Back to login"}
+                    {locale === "es" ? "Volver a WorkHive" : "Back to WorkHive"}
                 </Link>
 
                 <div className="backdrop-blur-xl bg-[var(--bg-card)] border border-[var(--border-soft)] shadow-2xl rounded-3xl p-8 lg:p-12 relative overflow-hidden">
@@ -35,7 +35,7 @@ export default function TermsPage() {
                                 {locale === "es" ? "Términos y Condiciones" : "Terms and Conditions"}
                             </h1>
                             <p className="text-[var(--text-muted)] text-sm mt-1">
-                                {locale === "es" ? "Borrador pre-lanzamiento · 14 de junio de 2026" : "Pre-launch draft · June 14, 2026"}
+                                {locale === "es" ? "Última actualización · 21 de agosto de 2026" : "Last updated · August 21, 2026"}
                             </p>
                         </div>
                     </div>

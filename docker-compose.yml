@@ -160,6 +160,7 @@ services:
     restart: unless-stopped
     environment:
       APP_DOMAIN: ${APP_DOMAIN}
+      MARKETING_DOMAIN: ${MARKETING_DOMAIN:-workhive.localhost}
     ports:
       - "80:80"
       - "443:443"

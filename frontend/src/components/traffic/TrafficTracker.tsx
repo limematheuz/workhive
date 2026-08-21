@@ -6,11 +6,13 @@ import { usePathname } from "next/navigation";
 import { getVisitorId } from "@/lib/visitor-id";
 import { TrafficService } from "@/services/traffic.service";
 
+const PUBLIC_SITE_PATHS = new Set(["/about", "/contact", "/privacy", "/terms"]);
+
 export function TrafficTracker() {
     const pathname = usePathname();
 
     useEffect(() => {
-        if (pathname.startsWith("/dashboard")) return;
+        if (pathname.startsWith("/dashboard") || PUBLIC_SITE_PATHS.has(pathname)) return;
 
         const visitorId = getVisitorId();
         if (!visitorId) return;
