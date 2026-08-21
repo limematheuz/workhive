@@ -68,6 +68,8 @@ export function CompanyCalendar({
         messages: {
             connectedSuccess: calendarDict.connected_success,
             connectionError: calendarDict.connection_error,
+            connectionAccessDenied: calendarDict.connection_access_denied,
+            connectionConfigurationError: calendarDict.connection_configuration_error,
             disconnectedSuccess: calendarDict.disconnected_success,
             disconnectError: calendarDict.disconnect_error,
             syncError: calendarDict.sync_error,

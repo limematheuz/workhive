@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from fastapi import HTTPException
@@ -18,6 +19,7 @@ from app.models.google_calendar_connection import GoogleCalendarConnection
 from app.models.notification import Notification
 from app.models.user import User
 from app.services import calendar_sync_service
+from app.api.v1.calendar_oauth import oauth_failure_reason
 
 
 @pytest.fixture(autouse=True)
@@ -232,6 +234,16 @@ def test_only_primary_admin_can_connect_and_other_admin_requests_control(
     assert primary_status.status_code == 200
     assert primary_status.json()["is_owner"] is True
     assert primary_status.json()["can_connect"] is True
+
+    oauth_start = client.post(
+        "/api/v1/calendar/google/oauth/start",
+        headers=_headers(primary),
+    )
+    assert oauth_start.status_code == 200
+    oauth_query = parse_qs(
+        urlparse(oauth_start.json()["authorization_url"]).query
+    )
+    assert "login_hint" not in oauth_query
 
     secondary_status = client.get(
         "/api/v1/calendar/status",
@@ -478,3 +490,20 @@ def test_oauth_callback_rechecks_current_company_owner(db, monkeypatch):
 
     assert error.value.status_code == 403
     assert exchange_called is False
+
+
+@pytest.mark.parametrize(
+    ("provider_error", "expected_reason"),
+    [
+        ("access_denied", "access_denied"),
+        ("redirect_uri_mismatch", "provider_configuration"),
+        ("unauthorized_client", "provider_configuration"),
+        ("unexpected_provider_error", "oauth_failed"),
+        (None, "oauth_failed"),
+    ],
+)
+def test_oauth_failure_reasons_are_safe_and_allowlisted(
+    provider_error,
+    expected_reason,
+):
+    assert oauth_failure_reason(provider_error) == expected_reason

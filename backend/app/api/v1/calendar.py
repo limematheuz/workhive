@@ -1,17 +1,13 @@
-import logging
-from urllib.parse import urlencode
-
-from fastapi import APIRouter, Depends, Query, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveUser, get_db
+from app.api.v1.calendar_oauth import router as oauth_router
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.schemas.calendar import (
     CalendarConnectionStatus,
-    CalendarOAuthStartResponse,
     CalendarOwnershipRequestResponse,
     CalendarSyncResponse,
     PlatformCalendarStatus,
@@ -25,7 +21,7 @@ from app.services import (
 
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+router.include_router(oauth_router)
 
 
 @router.get("/platform/status", response_model=PlatformCalendarStatus)
@@ -69,29 +65,6 @@ def read_calendar_status(
     current_user: User = ActiveUser,
 ):
     return calendar_governance_service.company_status(db, current_user)
-
-
-@router.post(
-    "/google/oauth/start",
-    response_model=CalendarOAuthStartResponse,
-)
-def start_google_calendar_oauth(
-    request: Request,
-    db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
-):
-    enforce_rate_limit(
-        request,
-        "calendar-oauth",
-        settings.CALENDAR_OAUTH_RATE_LIMIT,
-        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
-        identity=str(current_user.id),
-    )
-    return {
-        "authorization_url": (
-            calendar_sync_service.oauth_authorization_url(db, current_user)
-        )
-    }
 
 
 @router.post(
@@ -178,46 +151,6 @@ def reject_calendar_ownership(
         request=request,
     )
     return result
-
-
-@router.get("/google/callback")
-def google_calendar_callback(
-    request: Request,
-    code: str | None = Query(default=None, max_length=2048),
-    state: str | None = Query(default=None, max_length=4096),
-    error: str | None = Query(default=None, max_length=256),
-    db: Session = Depends(get_db),
-):
-    if error or not code or not state:
-        query = urlencode({"calendar": "error", "reason": error or "missing_code"})
-        return RedirectResponse(f"{settings.FRONTEND_URL}/dashboard/calendar?{query}")
-    try:
-        connection = calendar_sync_service.complete_oauth(
-            db,
-            code=code,
-            state=state,
-        )
-        actor = db.query(User).filter(
-            User.id == connection.connected_by_user_id
-        ).one()
-        audit_service.record_event(
-            db,
-            actor=actor,
-            company_id=connection.company_id,
-            action="calendar.connected",
-            entity_type="google_calendar_connection",
-            entity_id=connection.id,
-            request=request,
-            details={
-                "google_account_email": connection.google_account_email,
-                "calendar_name": connection.calendar_name,
-            },
-        )
-        query = urlencode({"calendar": "connected"})
-    except Exception:
-        logger.exception("Google Calendar OAuth callback failed")
-        query = urlencode({"calendar": "error", "reason": "oauth_failed"})
-    return RedirectResponse(f"{settings.FRONTEND_URL}/dashboard/calendar?{query}")
 
 
 @router.post("/sync", response_model=CalendarSyncResponse)

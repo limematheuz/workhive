@@ -53,22 +53,25 @@ def decode_oauth_state(state: str) -> dict:
     return payload
 
 
-def authorization_url(*, company_id: int, user_id: int) -> str:
+def authorization_url(
+    *,
+    company_id: int,
+    user_id: int,
+) -> str:
     if not settings.GOOGLE_CALENDAR_CLIENT_ID:
         raise ValueError("Google Calendar OAuth client is not configured")
+    parameters = {
+        "client_id": settings.GOOGLE_CALENDAR_CLIENT_ID,
+        "redirect_uri": settings.GOOGLE_CALENDAR_REDIRECT_URI,
+        "response_type": "code",
+        "scope": " ".join(SCOPES),
+        "access_type": "offline",
+        "prompt": "consent",
+        "include_granted_scopes": "true",
+        "state": create_oauth_state(company_id=company_id, user_id=user_id),
+    }
     return f"{AUTHORIZATION_ENDPOINT}?{
-        urlencode(
-            {
-                'client_id': settings.GOOGLE_CALENDAR_CLIENT_ID,
-                'redirect_uri': settings.GOOGLE_CALENDAR_REDIRECT_URI,
-                'response_type': 'code',
-                'scope': ' '.join(SCOPES),
-                'access_type': 'offline',
-                'prompt': 'consent',
-                'include_granted_scopes': 'true',
-                'state': create_oauth_state(company_id=company_id, user_id=user_id),
-            }
-        )
+        urlencode(parameters)
     }"
 
 

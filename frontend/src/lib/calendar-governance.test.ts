@@ -37,6 +37,8 @@ test("company calendar renders backend capabilities and ownership workflow", () 
     const controls = source("../components/calendar/CalendarGoogleControls.tsx");
     const requests = source("../components/calendar/CalendarOwnershipRequests.tsx");
     const calendar = source("../components/calendar/CompanyCalendar.tsx");
+    const header = source("../components/calendar/CalendarHeader.tsx");
+    const connection = source("../components/calendar/useGoogleCalendarConnection.ts");
 
     assert.match(service, /can_connect: boolean/);
     assert.match(service, /can_request_ownership: boolean/);
@@ -46,6 +48,11 @@ test("company calendar renders backend capabilities and ownership workflow", () 
     assert.match(controls, /status\.can_request_ownership/);
     assert.match(requests, /decision: "approve" \| "reject"/);
     assert.match(calendar, /canLoadStatus: canView/);
+    assert.match(header, /company_connection_scope/);
+    assert.match(header, /google_account_hint/);
+    assert.match(connection, /connectionAccessDenied/);
+    assert.match(connection, /connectionConfigurationError/);
+    assert.match(connection, /reason === "access_denied"/);
 });
 
 

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from cryptography.fernet import Fernet
@@ -150,11 +151,16 @@ def test_oauth_state_and_authorization_url_are_company_scoped(monkeypatch):
         "http://localhost:8000/api/v1/calendar/google/callback",
     )
 
-    url = calendar_client.authorization_url(company_id=12, user_id=34)
-    state = url.split("state=", 1)[1].split("&", 1)[0]
+    url = calendar_client.authorization_url(
+        company_id=12,
+        user_id=34,
+    )
+    query = parse_qs(urlparse(url).query)
+    state = query["state"][0]
     decoded = calendar_client.decode_oauth_state(state)
 
-    assert "access_type=offline" in url
+    assert query["access_type"] == ["offline"]
+    assert "login_hint" not in query
     assert decoded["company_id"] == 12
     assert decoded["user_id"] == 34
 

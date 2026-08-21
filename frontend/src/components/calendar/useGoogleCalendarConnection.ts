@@ -11,6 +11,8 @@ import {
 interface ConnectionMessages {
     connectedSuccess: string;
     connectionError: string;
+    connectionAccessDenied: string;
+    connectionConfigurationError: string;
     disconnectedSuccess: string;
     disconnectError: string;
     syncError: string;
@@ -71,10 +73,22 @@ export function useGoogleCalendarConnection({
                 void loadStatus();
             });
         } else if (result === "error") {
-            toast.error(messages.connectionError);
+            const reason = params.get("reason");
+            const message = reason === "access_denied"
+                ? messages.connectionAccessDenied
+                : reason === "provider_configuration"
+                    ? messages.connectionConfigurationError
+                    : messages.connectionError;
+            toast.error(message);
             window.history.replaceState({}, "", window.location.pathname);
         }
-    }, [loadStatus, messages.connectedSuccess, messages.connectionError]);
+    }, [
+        loadStatus,
+        messages.connectedSuccess,
+        messages.connectionAccessDenied,
+        messages.connectionConfigurationError,
+        messages.connectionError,
+    ]);
 
     const connect = async () => {
         if (!status?.can_connect) return;
