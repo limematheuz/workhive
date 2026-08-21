@@ -11,6 +11,8 @@ test("public landing explains WorkHive and optional Google Calendar access", () 
     const route = read("../app/page.tsx");
 
     assert.match(landing, /WORKHIVE · GESTIÓN PARA EMPRESAS DE SERVICIOS/);
+    assert.match(landing, /WorkHive es una plataforma de gestión/);
+    assert.match(landing, /WorkHive coordina equipos, trabajos y facturación/);
     assert.match(landing, /Integración opcional con Google Calendar/);
     assert.match(landing, /consentimiento explícito/);
     assert.match(landing, /no vende datos de Google/);
@@ -56,6 +58,8 @@ test("edge config keeps marketing pages separate from the application API", () =
     assert.doesNotMatch(caddy, /rewrite \* \/about/);
     assert.match(caddy, /\{\$APP_DOMAIN\}[\s\S]*handle \/api\/\*/);
     assert.doesNotMatch(caddy.split("{$MARKETING_DOMAIN} {")[1], /reverse_proxy backend/);
+    assert.match(caddy, /@app_routes path[\s\S]*\/login[\s\S]*\/register[\s\S]*\/dashboard\*/);
+    assert.match(caddy, /redir @app_routes https:\/\/\{\$APP_DOMAIN\}\{uri\} permanent/);
     assert.match(compose, /MARKETING_DOMAIN: \$\{MARKETING_DOMAIN:-workhive\.localhost\}/);
     assert.match(deployEnvironment, /MARKETING_DOMAIN=example\.com/);
 });
