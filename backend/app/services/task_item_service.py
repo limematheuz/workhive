@@ -22,7 +22,9 @@ from app.services import (
     notification_service,
     task_assignment_service,
     task_billing_service,
+    task_completion_service,
     task_lifecycle_notification_service,
+    location_zone_service,
     task_structure_service,
     task_update_policy_service,
 )
@@ -204,36 +206,6 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
         setattr(task, field, value)
 
 
-def _notify_new_task_assignees(
-    db: Session,
-    task: TaskItem,
-    user_ids: set[int],
-) -> None:
-    if not user_ids or task.status in {"requested", "rejected", "completed"}:
-        return
-    recipients = (
-        db.query(User)
-        .filter(
-            User.id.in_(user_ids),
-            User.company_id == task.company_id,
-            User.is_active.is_(True),
-        )
-        .all()
-    )
-    if not recipients:
-        return
-    notification_service.notify_users(
-        db,
-        users=recipients,
-        event_type="task.assigned",
-        title="Nueva tarea asignada",
-        message=task.title,
-        entity_type="task_item",
-        entity_id=task.id,
-        href=f"/dashboard?taskId={task.id}",
-    )
-
-
 def create_task_item(
     db: Session, current_user: User, task_item_data: TaskItemCreate
 ) -> TaskItem:
@@ -262,6 +234,11 @@ def create_task_item(
         task_item_data.location_id,
         task_item_data.checkout_reservation_id,
         task_item_data.next_reservation_id,
+    )
+    location_zone_service.validate_task_zone_ids(
+        db,
+        task_item_data.location_id,
+        task_item_data.zone_ids,
     )
     task_structure_service.validate_description_assignees(
         db,
@@ -292,36 +269,23 @@ def create_task_item(
         current_user.company_id,
         task_item_data,
     )
+    location_zone_service.sync_task_zones(
+        db,
+        task.id,
+        task.location_id,
+        task_item_data.zone_ids,
+    )
     task_structure_service.sync_from_description(db, task)
     _complete_task_when_checklist_is_done(db, task)
     db.commit()
     db.refresh(task)
-    _notify_new_task_assignees(
+    task_lifecycle_notification_service.notify_task_assignees(
         db,
         task,
         task_assignment_service.assigned_user_ids(task),
     )
     calendar_sync_service.enqueue_task_sync(db, task)
     return task
-
-
-def _apply_completion_side_effects(
-    db: Session,
-    task: TaskItem,
-    *,
-    was_completed: bool,
-) -> None:
-    if not was_completed and task.status == "completed":
-        completed_at = task.date_done or datetime.now(timezone.utc)
-        task.date_done = completed_at
-        task_billing_service.capture_completed_work_snapshot(
-            db,
-            task,
-            completed_at=completed_at,
-        )
-        return
-    if was_completed and task.status != "completed":
-        task_billing_service.clear_work_snapshot_on_reopen(task)
 
 
 def update_task_item(
@@ -346,6 +310,18 @@ def update_task_item(
         current_user,
         task_data,
     )
+    target_location_id = task_data.location_id or db_task_item.location_id
+    if "zone_ids" in task_data.model_fields_set:
+        location_zone_service.validate_task_zone_ids(
+            db,
+            target_location_id,
+            task_data.zone_ids or [],
+        )
+    elif task_data.location_id is not None and task_data.location_id != db_task_item.location_id and db_task_item.zones:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Update the selected zones when changing the task location",
+        )
     task_data = task_update_policy_service.normalize_task_completion(
         db_task_item,
         task_data,
@@ -373,20 +349,27 @@ def update_task_item(
         )
 
     updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
+    if "zone_ids" in task_data.model_fields_set:
+        location_zone_service.sync_task_zones(
+            db,
+            updated_task.id,
+            updated_task.location_id,
+            task_data.zone_ids or [],
+        )
     if (
         "description" in task_data.model_fields_set
         or "user_id" in task_data.model_fields_set
     ):
         task_structure_service.sync_from_description(db, updated_task)
     _complete_task_when_checklist_is_done(db, updated_task)
-    _apply_completion_side_effects(
+    task_completion_service.apply_update_side_effects(
         db,
         updated_task,
         was_completed=was_completed,
     )
     db.commit()
     db.refresh(updated_task)
-    _notify_new_task_assignees(
+    task_lifecycle_notification_service.notify_task_assignees(
         db,
         updated_task,
         task_assignment_service.assigned_user_ids(updated_task) - previous_assignee_ids,

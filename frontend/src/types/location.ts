@@ -31,3 +31,11 @@ export interface Location {
     max_capacity?: number;
     shared_companies?: number[];
 }
+
+export interface LocationZone {
+    id: number;
+    name: string;
+    zone_type: string;
+    sort_order: number;
+    is_active: boolean;
+}

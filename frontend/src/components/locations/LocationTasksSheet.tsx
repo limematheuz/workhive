@@ -12,6 +12,7 @@ import { Location } from "@/services/location.service";
 import { useLocationTasksSheet } from "@/hooks/useLocationTasksSheet";
 import { LocationHistoryTab } from "./LocationHistoryTab";
 import { LocationTemplatesTab } from "./LocationTemplatesTab";
+import { LocationZonesTab } from "./LocationZonesTab";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 
 interface LocationTasksSheetProps {
@@ -19,7 +20,7 @@ interface LocationTasksSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialCreateForm?: boolean;
-    initialTab?: "history" | "templates";
+    initialTab?: "history" | "templates" | "zones";
     readOnly?: boolean;
 }
 
@@ -50,7 +51,10 @@ export function LocationTasksSheet({
                     <PremiumTabs
                         tabs={[
                             ...(state.isAdminOrManager
-                                ? [{ id: "templates" as const, label: "Servicios" }]
+                                ? [
+                                    { id: "templates" as const, label: "Servicios" },
+                                    { id: "zones" as const, label: "Zonas" },
+                                ]
                                 : []),
                             { id: "history" as const, label: "Registro" },
                         ]}
@@ -109,6 +113,14 @@ export function LocationTasksSheet({
                             editingTemplateValues={state.editingTemplateValues}
                             setEditingTemplateValues={state.setEditingTemplateValues}
                             handleUpdateTemplate={state.handleUpdateTemplate}
+                        />
+                    )}
+
+                    {state.activeTab === "zones" && location && state.isAdminOrManager && (
+                        <LocationZonesTab
+                            locationId={location.id}
+                            open={open}
+                            canManage={state.canManageLocationTemplates}
                         />
                     )}
                 </div>

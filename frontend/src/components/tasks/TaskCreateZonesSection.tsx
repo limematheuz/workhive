@@ -1,0 +1,84 @@
+"use client";
+
+import { MapPinned } from "lucide-react";
+
+import {
+    getLocationZoneTypeLabel,
+} from "@/domain/locations/location-zone";
+import type { LocationZone } from "@/services/location.service";
+import {
+    taskFormSectionClass,
+    taskFormSectionHeaderClass,
+    taskFormSectionHintClass,
+    taskFormSectionTitleClass,
+} from "./taskFormLayout";
+
+
+interface TaskCreateZonesSectionProps {
+    zones: LocationZone[];
+    loading: boolean;
+    selectedZoneIds: number[];
+    setSelectedZoneIds: (zoneIds: number[]) => void;
+}
+
+export function TaskCreateZonesSection({
+    zones,
+    loading,
+    selectedZoneIds,
+    setSelectedZoneIds,
+}: TaskCreateZonesSectionProps) {
+    if (!loading && zones.length === 0) return null;
+
+    const toggleZone = (zoneId: number) => {
+        setSelectedZoneIds(
+            selectedZoneIds.includes(zoneId)
+                ? selectedZoneIds.filter((id) => id !== zoneId)
+                : [...selectedZoneIds, zoneId],
+        );
+    };
+
+    return (
+        <section className={taskFormSectionClass}>
+            <div className={taskFormSectionHeaderClass}>
+                <h3 className={`${taskFormSectionTitleClass} flex items-center gap-1.5`}>
+                    <MapPinned className="h-4 w-4 text-accent" />
+                    Zonas del trabajo
+                </h3>
+                <p className={taskFormSectionHintClass}>
+                    Selecciona solo las zonas que se incluyen en este trabajo. Si no marcas ninguna, se aplica a toda la ubicación.
+                </p>
+            </div>
+
+            {loading ? (
+                <p className="py-2 text-xs text-[var(--text-muted)]">Cargando zonas...</p>
+            ) : (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    {zones.map((zone) => {
+                        const selected = selectedZoneIds.includes(zone.id);
+                        return (
+                            <label
+                                key={zone.id}
+                                className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                                    selected
+                                        ? "border-accent/35 bg-accent/10"
+                                        : "border-[var(--border-soft)] bg-[var(--bg-card)] hover:bg-[var(--bg-tertiary)]"
+                                }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    onChange={() => toggleZone(zone.id)}
+                                    className="h-4 w-4 accent-accent"
+                                />
+                                <span className="min-w-0">
+                                    <span className="block truncate text-xs font-bold text-[var(--text-main)]">{zone.name}</span>
+                                    <span className="text-2xs text-[var(--text-muted)]">{getLocationZoneTypeLabel(zone.zone_type)}</span>
+                                </span>
+                            </label>
+                        );
+                    })}
+                </div>
+            )}
+        </section>
+    );
+}

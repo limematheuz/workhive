@@ -4,6 +4,7 @@ from app.db.session import Base
 from app.models.user import User
 from app.models.client import Client
 from app.models.location import Location
+from app.models.location_zone import LocationZone, TaskZone
 from app.models.role import Role
 from app.models.company import Company
 from app.models.template_task import TemplateTask

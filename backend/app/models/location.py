@@ -53,6 +53,7 @@ class Location(Base):
     )
 
     templates = relationship("LocationTemplate", back_populates="location", cascade="all, delete-orphan")
+    zones = relationship("LocationZone", back_populates="location", cascade="all, delete-orphan")
     
     work_sessions = relationship("WorkSession", back_populates="location")
 

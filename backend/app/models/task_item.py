@@ -95,6 +95,12 @@ class TaskItem(Base):
         cascade="all, delete-orphan",
         order_by="TaskChecklistItem.position",
     )
+    zones = relationship(
+        "TaskZone",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="TaskZone.id",
+    )
 
     @property
     def user_company_id(self) -> int | None:

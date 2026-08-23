@@ -32,6 +32,7 @@ export interface TaskItemCreate {
     service_context?: string;
     checkout_reservation_id?: number | null;
     next_reservation_id?: number | null;
+    zone_ids?: number[];
 }
 
 export interface TaskItemUpdate {
@@ -58,6 +59,7 @@ export interface TaskItemUpdate {
     service_context?: string | null;
     checkout_reservation_id?: number | null;
     next_reservation_id?: number | null;
+    zone_ids?: number[] | null;
 }
 
 export interface TaskItemFilters {

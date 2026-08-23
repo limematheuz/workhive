@@ -110,6 +110,13 @@ export interface TaskItem {
     accepted_by_name?: string | null;
     checklist_items?: TaskChecklistItem[];
     assignments?: TaskAssignment[];
+    zones?: TaskZone[];
+}
+
+export interface TaskZone {
+    id: number;
+    name: string;
+    zone_type: string;
 }
 
 export interface TaskChecklistAssignment {

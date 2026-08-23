@@ -206,6 +206,12 @@ export function TechTaskCard({
                     {task.title}
                 </p>
 
+                {task.zones && task.zones.length > 0 && (
+                    <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-accent">
+                        {task.zones.map((zone) => zone.name).join(" · ")}
+                    </p>
+                )}
+
                 {isExternal && (
                     <div
                         className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-accent/20 bg-accent/10 px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-accent"
