@@ -38,6 +38,8 @@ edge_tls_terminated="${EDGE_TLS_TERMINATED:-false}"
 aws_region="${AWS_REGION:-eu-west-1}"
 aws_bin="${AWS_BIN:-/snap/bin/aws}"
 docker_bin="${DOCKER_BIN:-docker}"
+git_bin="${GIT_BIN:-git}"
+runuser_bin="${RUNUSER_BIN:-runuser}"
 systemctl_bin="${SYSTEMCTL_BIN:-systemctl}"
 curl_bin="${CURL_BIN:-curl}"
 flock_bin="${FLOCK_BIN:-flock}"
@@ -70,6 +72,8 @@ fi
 for required_command in \
     "${aws_bin}" \
     "${docker_bin}" \
+    "${git_bin}" \
+    "${runuser_bin}" \
     "${systemctl_bin}" \
     "${curl_bin}" \
     "${flock_bin}"; do
@@ -85,6 +89,63 @@ if ! "${flock_bin}" -n 9; then
     echo "Another WorkHive deployment is already running; exiting safely." >&2
     exit 1
 fi
+
+source_checkout_changed=false
+deployment_succeeded=false
+previous_source_commit=""
+workhive_owner="$(stat -c '%U' "${workhive_dir}")"
+workhive_owner_home="$(getent passwd "${workhive_owner}" | cut -d: -f6)"
+if [[ -z "${workhive_owner_home}" || ! -d "${workhive_owner_home}" ]]; then
+    echo "Could not resolve the home directory for ${workhive_owner}." >&2
+    exit 1
+fi
+git_command=(
+    "${runuser_bin}" -u "${workhive_owner}" --
+    env HOME="${workhive_owner_home}"
+    "${git_bin}" -C "${workhive_dir}"
+)
+
+restore_source_checkout() {
+    if [[ "${source_checkout_changed}" != "true" || -z "${previous_source_commit}" ]]; then
+        return 0
+    fi
+
+    echo "Restoring the previous production source checkout." >&2
+    "${git_command[@]}" checkout --detach "${previous_source_commit}" >/dev/null
+    source_checkout_changed=false
+}
+
+sync_release_checkout() {
+    local release_commit
+    local release_version
+
+    if [[ ! -d "${workhive_dir}/.git" ]]; then
+        echo "Production source checkout is not a Git worktree: ${workhive_dir}" >&2
+        return 1
+    fi
+    if [[ -n "$("${git_command[@]}" status --porcelain --untracked-files=no)" ]]; then
+        echo "Production source checkout has tracked changes; refusing to overwrite them." >&2
+        return 1
+    fi
+
+    previous_source_commit="$("${git_command[@]}" rev-parse HEAD)"
+    "${git_command[@]}" fetch --force origin \
+        "refs/tags/${release_tag}:refs/tags/${release_tag}"
+    if [[ "$("${git_command[@]}" cat-file -t "refs/tags/${release_tag}")" != "tag" ]]; then
+        echo "Release source must use an annotated Git tag: ${release_tag}" >&2
+        return 1
+    fi
+
+    release_commit="$("${git_command[@]}" rev-list -n 1 "refs/tags/${release_tag}")"
+    release_version="$("${git_command[@]}" show "${release_commit}:VERSION" | tr -d '[:space:]')"
+    if [[ "v${release_version}" != "${release_tag}" ]]; then
+        echo "Release tag does not match the VERSION file: ${release_tag}" >&2
+        return 1
+    fi
+
+    "${git_command[@]}" checkout --detach "${release_commit}" >/dev/null
+    source_checkout_changed=true
+}
 
 compose_files=(
     -f "${workhive_dir}/docker-compose.yml"
@@ -111,7 +172,14 @@ compose_production=(
 
 docker_config_directory="$(mktemp -d)"
 cleanup() {
+    local exit_code="$?"
+
     rm -rf -- "${docker_config_directory}"
+    if [[ "${exit_code}" -ne 0 && "${deployment_succeeded}" != "true" ]]; then
+        restore_source_checkout || true
+    fi
+    trap - EXIT
+    exit "${exit_code}"
 }
 trap cleanup EXIT
 export DOCKER_CONFIG="${docker_config_directory}"
@@ -208,6 +276,19 @@ echo "Verifying immutable release images."
 validate_images_exist
 ecr_login
 
+echo "Synchronizing production runtime configuration to ${release_tag}."
+sync_release_checkout
+
+for required_file in \
+    "${workhive_dir}/Caddyfile" \
+    "${workhive_dir}/docker-compose.yml" \
+    "${workhive_dir}/docker-compose.production.yml"; do
+    if [[ ! -f "${required_file}" ]]; then
+        echo "Required release file not found: ${required_file}" >&2
+        exit 1
+    fi
+done
+
 echo "Validating production Compose configuration."
 BACKEND_IMAGE="${target_backend_image}" FRONTEND_IMAGE="${target_frontend_image}" \
     "${compose_production[@]}" config >/dev/null
@@ -246,5 +327,6 @@ DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 EOF
 chmod 600 "${state_file_temporary}"
 mv -f "${state_file_temporary}" "${deployment_state_file}"
+deployment_succeeded=true
 
 echo "Release ${release_tag} is healthy and recorded for rollback."

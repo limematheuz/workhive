@@ -59,10 +59,12 @@ cd "$HOME/workhive"
 sudo ops/deploy/deploy_ecr_release.sh vMAJOR.MINOR.PATCH
 ```
 
-The release tag must already exist in ECR. The script checks the backup result,
-pulls that exact backend/frontend image pair, waits for containers to become
-healthy without a build, then checks backend health, login, running containers,
-and Alembic state. On success, the current release is recorded in
+The release tag must already exist in ECR and as an annotated Git tag. The
+script checks the backup result, refuses tracked host changes, synchronizes the
+production checkout to that exact release commit, pulls the matching
+backend/frontend image pair, waits for containers to become healthy without a
+build, then checks backend health, login, running containers, and Alembic state.
+On success, the current release is recorded in
 `/etc/workhive/deployed-release.env`.
 
 ## Deploy from GitHub Actions through SSM
@@ -120,5 +122,5 @@ deploy.
 
 `test_deploy_ecr_release.sh` validates the shell syntax and the security
 contract: no EC2 application build, no static AWS keys, temporary ECR login,
-fresh backup, image validation, health checks, and rollback paths. CI executes
-it before the backend test suite.
+fresh backup, annotated-tag source synchronization, image validation, health
+checks, and rollback paths. CI executes it before the backend test suite.

@@ -113,14 +113,16 @@ SSM ejecuta en EC2 el script versionado
 1. crea y valida un backup antes de tocar servicios;
 2. comprueba que backend y frontend con el tag solicitado existen en ECR;
 3. inicia sesión de Docker en ECR de forma temporal;
-4. descarga imágenes, sin construirlas;
-5. recrea los servicios necesarios con `--no-build`;
-6. espera los health checks y aplica migraciones Alembic;
-7. verifica backend, login y contenedores;
-8. registra la release desplegada para permitir rollback.
+4. descarga y valida el tag Git anotado y sincroniza el checkout operativo de
+   EC2 con ese commit exacto, sin aceptar cambios locales rastreados;
+5. descarga imágenes, sin construirlas;
+6. recrea los servicios necesarios con `--no-build`;
+7. espera los health checks y aplica migraciones Alembic;
+8. verifica backend, login y contenedores;
+9. registra la release desplegada para permitir rollback.
 
-Si una comprobación falla, el script intenta volver a las imágenes inmutables
-de la release anterior. Un rollback de base de datos no es automático: las
+Si una comprobación falla, el script restaura el checkout operativo anterior e
+intenta volver a las imágenes inmutables de la release anterior. Un rollback de base de datos no es automático: las
 migraciones solo avanzan y una recuperación de datos exige un procedimiento
 revisado aparte.
 
