@@ -33,6 +33,8 @@ export interface TaskItemCreate {
     checkout_reservation_id?: number | null;
     next_reservation_id?: number | null;
     zone_ids?: number[];
+    space_ids?: number[];
+    space_task_template_ids?: number[];
 }
 
 export interface TaskItemUpdate {
@@ -60,6 +62,7 @@ export interface TaskItemUpdate {
     checkout_reservation_id?: number | null;
     next_reservation_id?: number | null;
     zone_ids?: number[] | null;
+    space_ids?: number[] | null;
 }
 
 export interface TaskItemFilters {

@@ -4,7 +4,7 @@ import Image from "next/image"
 import { Location } from "@/services/location.service"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Building2, Navigation, Compass, Bath, Car, ChefHat, Sun, Bed, Users } from "lucide-react"
+import { MapPin, Building2, Navigation, Compass, Bath, Car, ChefHat, Sun, Bed, Users, Clock3, KeyRound } from "lucide-react"
 import { useDictionary } from "@/lib/dictionary-context"
 import { resolveApiMediaUrl } from "@/lib/api"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
@@ -63,6 +63,9 @@ export function LocationDetailDialog({
         exterior: dict.locations?.type_exterior,
         other: dict.locations?.type_other,
     })
+    const siteTypeLabel = location.profile?.site_type
+        ? location.profile.site_type.replaceAll("_", " ")
+        : null
 
     return (
         <Dialog open={location !== null} onOpenChange={(open) => !open && onClose()}>
@@ -170,6 +173,40 @@ export function LocationDetailDialog({
                                                 {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
                                             </p>
                                         </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {(location.profile || location.access) && (
+                                <div className={sectionClass}>
+                                    <h4 className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                                        Información operativa
+                                    </h4>
+                                    <div className="space-y-2 text-xs">
+                                        {location.profile && (
+                                            <div className="flex items-start justify-between gap-3">
+                                                <span className="text-[var(--text-muted)]">Tipo</span>
+                                                <span className="text-right font-semibold capitalize text-[var(--text-main)]">{siteTypeLabel}</span>
+                                            </div>
+                                        )}
+                                        {location.profile?.internal_code && (
+                                            <div className="flex items-start justify-between gap-3">
+                                                <span className="text-[var(--text-muted)]">Código interno</span>
+                                                <span className="text-right font-semibold text-[var(--text-main)]">{location.profile.internal_code}</span>
+                                            </div>
+                                        )}
+                                        {location.access && (
+                                            <div className="flex items-start gap-2 pt-1 text-[var(--text-main)]">
+                                                <Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                                                <span>{location.access.permitted_days.length ? `${location.access.permitted_from || "--:--"} – ${location.access.permitted_until || "--:--"}` : "Horario de acceso sin configurar"}</span>
+                                            </div>
+                                        )}
+                                        {location.access?.instructions && (
+                                            <div className="flex items-start gap-2 pt-1 text-[var(--text-main)]">
+                                                <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                                                <span>{location.access.instructions}</span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

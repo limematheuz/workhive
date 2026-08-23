@@ -12,7 +12,7 @@ import { Location } from "@/services/location.service";
 import { useLocationTasksSheet } from "@/hooks/useLocationTasksSheet";
 import { LocationHistoryTab } from "./LocationHistoryTab";
 import { LocationTemplatesTab } from "./LocationTemplatesTab";
-import { LocationZonesTab } from "./LocationZonesTab";
+import { LocationSpacesTab } from "./LocationSpacesTab";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 
 interface LocationTasksSheetProps {
@@ -20,7 +20,7 @@ interface LocationTasksSheetProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     initialCreateForm?: boolean;
-    initialTab?: "history" | "templates" | "zones";
+    initialTab?: "history" | "templates" | "spaces";
     readOnly?: boolean;
 }
 
@@ -53,7 +53,7 @@ export function LocationTasksSheet({
                             ...(state.isAdminOrManager
                                 ? [
                                     { id: "templates" as const, label: "Servicios" },
-                                    { id: "zones" as const, label: "Zonas" },
+                                    { id: "spaces" as const, label: "Espacios" },
                                 ]
                                 : []),
                             { id: "history" as const, label: "Registro" },
@@ -116,8 +116,8 @@ export function LocationTasksSheet({
                         />
                     )}
 
-                    {state.activeTab === "zones" && location && state.isAdminOrManager && (
-                        <LocationZonesTab
+                    {state.activeTab === "spaces" && location && state.isAdminOrManager && (
+                        <LocationSpacesTab
                             locationId={location.id}
                             open={open}
                             canManage={state.canManageLocationTemplates}

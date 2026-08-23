@@ -19,6 +19,8 @@ interface TaskCreateZonesSectionProps {
     loading: boolean;
     selectedZoneIds: number[];
     setSelectedZoneIds: (zoneIds: number[]) => void;
+    selectedSpaceTaskTemplateIds: number[];
+    setSelectedSpaceTaskTemplateIds: (taskIds: number[]) => void;
 }
 
 export function TaskCreateZonesSection({
@@ -26,14 +28,34 @@ export function TaskCreateZonesSection({
     loading,
     selectedZoneIds,
     setSelectedZoneIds,
+    selectedSpaceTaskTemplateIds,
+    setSelectedSpaceTaskTemplateIds,
 }: TaskCreateZonesSectionProps) {
     if (!loading && zones.length === 0) return null;
 
     const toggleZone = (zoneId: number) => {
+        const wasSelected = selectedZoneIds.includes(zoneId);
         setSelectedZoneIds(
-            selectedZoneIds.includes(zoneId)
+            wasSelected
                 ? selectedZoneIds.filter((id) => id !== zoneId)
                 : [...selectedZoneIds, zoneId],
+        );
+        if (wasSelected) {
+            const taskIds = new Set((zones.find((zone) => zone.id === zoneId)?.tasks || []).flatMap((task) => task.id ? [task.id] : []));
+            setSelectedSpaceTaskTemplateIds(selectedSpaceTaskTemplateIds.filter((taskId) => !taskIds.has(taskId)));
+        }
+    };
+
+    const toggleSuggestedTask = (zoneId: number, taskId: number) => {
+        setSelectedZoneIds(
+            selectedZoneIds.includes(zoneId)
+                ? selectedZoneIds
+                : [...selectedZoneIds, zoneId],
+        );
+        setSelectedSpaceTaskTemplateIds(
+            selectedSpaceTaskTemplateIds.includes(taskId)
+                ? selectedSpaceTaskTemplateIds.filter((id) => id !== taskId)
+                : [...selectedSpaceTaskTemplateIds, taskId],
         );
     };
 
@@ -42,21 +64,21 @@ export function TaskCreateZonesSection({
             <div className={taskFormSectionHeaderClass}>
                 <h3 className={`${taskFormSectionTitleClass} flex items-center gap-1.5`}>
                     <MapPinned className="h-4 w-4 text-accent" />
-                    Zonas del trabajo
+                    Espacios del trabajo
                 </h3>
                 <p className={taskFormSectionHintClass}>
-                    Selecciona solo las zonas que se incluyen en este trabajo. Si no marcas ninguna, se aplica a toda la ubicación.
+                    Selecciona solo los espacios que se incluyen en este trabajo. Si no marcas ninguno, se aplica a toda la ubicación.
                 </p>
             </div>
 
             {loading ? (
-                <p className="py-2 text-xs text-[var(--text-muted)]">Cargando zonas...</p>
+                <p className="py-2 text-xs text-[var(--text-muted)]">Cargando espacios...</p>
             ) : (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {zones.map((zone) => {
                         const selected = selectedZoneIds.includes(zone.id);
                         return (
-                            <label
+                            <div
                                 key={zone.id}
                                 className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
                                     selected
@@ -64,17 +86,36 @@ export function TaskCreateZonesSection({
                                         : "border-[var(--border-soft)] bg-[var(--bg-card)] hover:bg-[var(--bg-tertiary)]"
                                 }`}
                             >
-                                <input
-                                    type="checkbox"
-                                    checked={selected}
-                                    onChange={() => toggleZone(zone.id)}
-                                    className="h-4 w-4 accent-accent"
-                                />
+                                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={selected}
+                                        onChange={() => toggleZone(zone.id)}
+                                        className="h-4 w-4 accent-accent"
+                                    />
                                 <span className="min-w-0">
                                     <span className="block truncate text-xs font-bold text-[var(--text-main)]">{zone.name}</span>
                                     <span className="text-2xs text-[var(--text-muted)]">{getLocationZoneTypeLabel(zone.zone_type)}</span>
                                 </span>
-                            </label>
+                                </label>
+                                {selected && zone.tasks && zone.tasks.length > 0 && (
+                                    <div className="ml-7 mt-2 w-full space-y-1 border-t border-[var(--border-soft)] pt-2">
+                                        <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Tareas sugeridas</p>
+                                        {zone.tasks.map((task) => task.id && (
+                                            <label key={task.id} className="flex cursor-pointer items-center gap-2 text-xs text-[var(--text-main)]">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedSpaceTaskTemplateIds.includes(task.id)}
+                                                    onChange={() => toggleSuggestedTask(zone.id, task.id as number)}
+                                                    className="h-3.5 w-3.5 accent-accent"
+                                                />
+                                                <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                                                {task.estimated_minutes && <span className="text-2xs text-[var(--text-muted)]">{task.estimated_minutes} min</span>}
+                                            </label>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         );
                     })}
                 </div>

@@ -14,7 +14,15 @@ export function useLocationZones(locationId: number | null, enabled: boolean) {
         if (!locationId || !enabled) return;
         try {
             setLoading(true);
-            setZones(await LocationService.getZones(locationId));
+            const spaces = await LocationService.getSpaces(locationId);
+            setZones(spaces.map((space) => ({
+                id: space.id || 0,
+                name: space.name,
+                zone_type: space.space_type,
+                sort_order: space.sort_order || 0,
+                is_active: space.is_active !== false,
+                tasks: space.tasks,
+            })));
         } catch {
             setZones([]);
         } finally {

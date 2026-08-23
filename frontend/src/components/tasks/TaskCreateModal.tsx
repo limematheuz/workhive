@@ -65,6 +65,8 @@ interface TaskCreateModalProps {
     loadingLocationZones: boolean;
     selectedZoneIds: number[];
     setSelectedZoneIds: (zoneIds: number[]) => void;
+    selectedSpaceTaskTemplateIds: number[];
+    setSelectedSpaceTaskTemplateIds: (taskIds: number[]) => void;
     handleCreateTask: (e: React.FormEvent) => void;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -106,6 +108,8 @@ export function TaskCreateModal({
     loadingLocationZones,
     selectedZoneIds,
     setSelectedZoneIds,
+    selectedSpaceTaskTemplateIds,
+    setSelectedSpaceTaskTemplateIds,
     handleCreateTask,
     fixedChecklistAssignments,
     setFixedChecklistAssignments,
@@ -164,6 +168,8 @@ export function TaskCreateModal({
                                 loading={loadingLocationZones}
                                 selectedZoneIds={selectedZoneIds}
                                 setSelectedZoneIds={setSelectedZoneIds}
+                                selectedSpaceTaskTemplateIds={selectedSpaceTaskTemplateIds}
+                                setSelectedSpaceTaskTemplateIds={setSelectedSpaceTaskTemplateIds}
                             />
                         )}
 

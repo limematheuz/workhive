@@ -107,6 +107,7 @@ export function useTaskCrud({
     const [newCreatedAt, setNewCreatedAt] = useState<string>(() => getDefaultTaskDate());
     const [reservationState, setReservationState] = useState<ReservationState>(EMPTY_RESERVATIONS);
     const [selectedZoneIds, setSelectedZoneIds] = useState<number[]>([]);
+    const [selectedSpaceTaskTemplateIds, setSelectedSpaceTaskTemplateIds] = useState<number[]>([]);
     const { zones: locationZones, loading: loadingLocationZones } = useLocationZones(
         newLocationId ? Number(newLocationId) : null,
         isCreateOpen,
@@ -150,6 +151,7 @@ export function useTaskCrud({
         setReservationState({ items: [], checkoutId: "", nextId: "", loading: true });
         setTaskPricingOverrides({});
         setSelectedZoneIds([]);
+        setSelectedSpaceTaskTemplateIds([]);
 
         const canLinkReservations = canManageReservationsForLocation(Number(locationId));
         const result = await loadTaskCreateLocationData(Number(locationId), {
@@ -210,6 +212,7 @@ export function useTaskCrud({
         setReservationState(EMPTY_RESERVATIONS);
         setTaskPricingOverrides({});
         setSelectedZoneIds([]);
+        setSelectedSpaceTaskTemplateIds([]);
         setIsCreateOpen(true);
     };
 
@@ -219,6 +222,7 @@ export function useTaskCrud({
         setReservationState(EMPTY_RESERVATIONS);
         setTaskPricingOverrides({});
         setSelectedZoneIds([]);
+        setSelectedSpaceTaskTemplateIds([]);
     };
 
     const handleToggleStatus = async (task: TaskItem, e: React.MouseEvent) => {
@@ -347,6 +351,7 @@ export function useTaskCrud({
                 next_reservation_id: nextReservation?.id || null,
                 priority,
                 zone_ids: selectedZoneIds,
+                space_task_template_ids: selectedSpaceTaskTemplateIds,
             });
             toast.success(newUserId === ALL_WORKERS_VALUE
                 ? "Trabajos registrados para todos los trabajadores."
@@ -528,7 +533,7 @@ export function useTaskCrud({
                 location_id: task.location_id,
                 user_id: task.user_id,
                 priority: task.priority || "medium",
-                zone_ids: task.zones?.map((zone) => zone.id),
+                zone_ids: task.zones?.map((zone) => zone.space_id),
             });
             toast.success("Tarea duplicada con éxito.");
             setSelectedTask(null);
@@ -572,6 +577,8 @@ export function useTaskCrud({
         loadingLocationZones,
         selectedZoneIds,
         setSelectedZoneIds,
+        selectedSpaceTaskTemplateIds,
+        setSelectedSpaceTaskTemplateIds,
         editTitle,
         setEditTitle,
         editNotes,

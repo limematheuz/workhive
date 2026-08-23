@@ -110,6 +110,7 @@ def _validate_external_task_update(
             "status",
             "date_done",
             "zone_ids",
+            "space_ids",
         }
         if not task_data.model_fields_set.issubset(allowed_external_fields):
             raise HTTPException(

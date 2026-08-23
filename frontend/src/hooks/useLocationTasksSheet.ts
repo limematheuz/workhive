@@ -28,7 +28,7 @@ interface UseLocationTasksSheetParams {
     location: Location | null;
     open: boolean;
     initialCreateForm?: boolean;
-    initialTab?: "history" | "templates" | "zones";
+    initialTab?: "history" | "templates" | "spaces";
 }
 
 export function useLocationTasksSheet({ location, open, initialCreateForm, initialTab = "history" }: UseLocationTasksSheetParams) {
@@ -79,7 +79,7 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     const activeTab = activeSheetUiState.activeTab;
     const showCreateForm = activeSheetUiState.showCreateForm;
     const assignedUserId = activeSheetUiState.assignedUserId;
-    const setActiveTab = (nextTab: SetStateAction<"history" | "templates" | "zones">) => {
+    const setActiveTab = (nextTab: SetStateAction<"history" | "templates" | "spaces">) => {
         setSheetUiState((prev) => {
             const current = prev.contextKey === sheetUiContextKey ? prev : buildSheetUiState();
             const resolvedTab = typeof nextTab === "function" ? nextTab(current.activeTab) : nextTab;

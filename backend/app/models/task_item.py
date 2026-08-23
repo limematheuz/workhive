@@ -111,3 +111,13 @@ class TaskItem(Base):
         if not self.accepted_by:
             return None
         return self.accepted_by.full_name or self.accepted_by.email
+
+    @property
+    def spaces(self):
+        """New name for the existing task-zone snapshot relation.
+
+        The database deliberately retains ``task_zones`` so existing tasks and
+        integrations keep working, while new product language can consistently
+        refer to the physical areas as spaces.
+        """
+        return self.zones

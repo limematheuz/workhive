@@ -25,6 +25,7 @@ from app.services import (
     task_completion_service,
     task_lifecycle_notification_service,
     location_zone_service,
+    location_workspace_service,
     task_structure_service,
     task_update_policy_service,
 )
@@ -235,10 +236,22 @@ def create_task_item(
         task_item_data.checkout_reservation_id,
         task_item_data.next_reservation_id,
     )
-    location_zone_service.validate_task_zone_ids(
+    selected_space_ids = location_workspace_service.resolve_task_space_ids(
+        task_item_data.zone_ids,
+        task_item_data.space_ids,
+    )
+    location_workspace_service.validate_task_space_ids(
         db,
         task_item_data.location_id,
-        task_item_data.zone_ids,
+        selected_space_ids,
+    )
+    selected_space_task_templates = (
+        location_workspace_service.validate_space_task_template_ids(
+            db,
+            task_item_data.location_id,
+            selected_space_ids,
+            task_item_data.space_task_template_ids,
+        )
     )
     task_structure_service.validate_description_assignees(
         db,
@@ -273,9 +286,14 @@ def create_task_item(
         db,
         task.id,
         task.location_id,
-        task_item_data.zone_ids,
+        selected_space_ids,
     )
     task_structure_service.sync_from_description(db, task)
+    location_workspace_service.append_selected_space_tasks_to_checklist(
+        db,
+        task,
+        selected_space_task_templates,
+    )
     _complete_task_when_checklist_is_done(db, task)
     db.commit()
     db.refresh(task)
@@ -311,16 +329,22 @@ def update_task_item(
         task_data,
     )
     target_location_id = task_data.location_id or db_task_item.location_id
-    if "zone_ids" in task_data.model_fields_set:
-        location_zone_service.validate_task_zone_ids(
+    space_fields_present = {"zone_ids", "space_ids"} & task_data.model_fields_set
+    selected_space_ids: list[int] | None = None
+    if space_fields_present:
+        selected_space_ids = location_workspace_service.resolve_task_space_ids(
+            task_data.zone_ids or [],
+            task_data.space_ids or [],
+        )
+        location_workspace_service.validate_task_space_ids(
             db,
             target_location_id,
-            task_data.zone_ids or [],
+            selected_space_ids,
         )
     elif task_data.location_id is not None and task_data.location_id != db_task_item.location_id and db_task_item.zones:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Update the selected zones when changing the task location",
+            detail="Update the selected spaces when changing the task location",
         )
     task_data = task_update_policy_service.normalize_task_completion(
         db_task_item,
@@ -349,12 +373,12 @@ def update_task_item(
         )
 
     updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
-    if "zone_ids" in task_data.model_fields_set:
+    if selected_space_ids is not None:
         location_zone_service.sync_task_zones(
             db,
             updated_task.id,
             updated_task.location_id,
-            task_data.zone_ids or [],
+            selected_space_ids,
         )
     if (
         "description" in task_data.model_fields_set

@@ -10,6 +10,7 @@ import { LocationsGrid } from "@/components/locations/LocationsGrid";
 import { EditLocationSheet } from "@/components/locations/EditLocationSheet";
 import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
 import { CreateLocationSheet } from "@/components/locations/CreateLocationSheet";
+import { LocationBulkImportDialog } from "@/components/locations/LocationBulkImportDialog";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
@@ -183,7 +184,12 @@ export default function LocationsPage() {
                 title={dict.locations.title}
                 subtitle={dict.locations.subtitle || "Gestiona los locales, sedes e instalaciones donde presta servicio tu equipo."}
                 className="mb-6"
-                actions={!isReadOnly ? <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} /> : undefined}
+                actions={!isReadOnly ? (
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        <LocationBulkImportDialog onImported={loadLocations} />
+                        <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} />
+                    </div>
+                ) : undefined}
             />
 
             <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">

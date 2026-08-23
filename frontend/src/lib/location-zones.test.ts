@@ -22,14 +22,15 @@ test("location zones keep a small reusable set of operational types", () => {
     assert.equal(getLocationZoneTypeLabel("unknown"), "Otra zona");
 });
 
-test("zones are optional in configuration and task creation", () => {
+test("spaces are optional in configuration and task creation", () => {
     const zonesTab = read("../components/locations/LocationZonesTab.tsx");
     const taskZones = read("../components/tasks/TaskCreateZonesSection.tsx");
 
     assert.match(zonesTab, /Zonas de trabajo/);
     assert.match(zonesTab, /Opcional/);
     assert.match(zonesTab, /LocationService/);
-    assert.match(taskZones, /Selecciona solo las zonas/);
+    assert.match(taskZones, /Selecciona solo los espacios/);
+    assert.match(taskZones, /Tareas sugeridas/);
     assert.match(taskZones, /type="checkbox"/);
     assert.match(taskZones, /selectedZoneIds/);
 });
@@ -42,8 +43,8 @@ test("selected zones stay visible to planners and field workers", () => {
     assert.match(techCard, /task\.zones/);
 });
 
-test("duplicating a task preserves its selected zones", () => {
+test("duplicating a task preserves its selected source spaces", () => {
     const taskCrud = read("../hooks/useTaskCrud.ts");
 
-    assert.match(taskCrud, /zone_ids: task\.zones\?\.map\(\(zone\) => zone\.id\)/);
+    assert.match(taskCrud, /zone_ids: task\.zones\?\.map\(\(zone\) => zone\.space_id\)/);
 });

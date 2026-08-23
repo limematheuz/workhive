@@ -54,8 +54,24 @@ class Location(Base):
 
     templates = relationship("LocationTemplate", back_populates="location", cascade="all, delete-orphan")
     zones = relationship("LocationZone", back_populates="location", cascade="all, delete-orphan")
+    profile = relationship(
+        "LocationProfile",
+        back_populates="location",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    access_profile = relationship(
+        "LocationAccessProfile",
+        back_populates="location",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
     
     work_sessions = relationship("WorkSession", back_populates="location")
+
+    @property
+    def access(self):
+        return self.access_profile
 
     task_items = relationship("TaskItem", back_populates="location")
     reservations = relationship(

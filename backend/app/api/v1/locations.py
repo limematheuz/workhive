@@ -91,6 +91,8 @@ async def read_locations(
             response.shared_companies = [
                 access.company_id for access in location.company_access
             ]
+            if not location_access_service.can_view_sensitive_loaded(current_user, location):
+                response.access = None
             responses.append(response)
         return responses
 
@@ -127,6 +129,8 @@ async def read_location(
         response.shared_companies = [
             access.company_id for access in location.company_access
         ]
+        if not location_access_service.can_view_sensitive_loaded(current_user, location):
+            response.access = None
         return response
 
     return await db.run_sync(operation)

@@ -24,6 +24,7 @@ class LocationZoneResponse(BaseModel):
 
 class TaskZoneResponse(BaseModel):
     id: int
+    space_id: int
     name: str
     zone_type: str
 

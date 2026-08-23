@@ -303,6 +303,8 @@ export function useTasksPage() {
         loadingLocationZones: crud.loadingLocationZones,
         selectedZoneIds: crud.selectedZoneIds,
         setSelectedZoneIds: crud.setSelectedZoneIds,
+        selectedSpaceTaskTemplateIds: crud.selectedSpaceTaskTemplateIds,
+        setSelectedSpaceTaskTemplateIds: crud.setSelectedSpaceTaskTemplateIds,
         editTitle: crud.editTitle,
         setEditTitle: crud.setEditTitle,
         editNotes: crud.editNotes,

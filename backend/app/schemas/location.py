@@ -2,6 +2,9 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.location_workspace import LocationProfileInput, LocationProfileResponse, LocationSpaceInput
+from app.schemas.location_access import LocationAccessInput, LocationAccessResponse
+
 
 ALLOWED_MAP_URL_HOSTS = {
     "google.com",
@@ -65,7 +68,9 @@ class LocationBase(BaseModel):
 
 
 class LocationCreate(LocationBase):
-    pass
+    profile: LocationProfileInput | None = None
+    access: LocationAccessInput | None = None
+    spaces: list[LocationSpaceInput] = Field(default_factory=list, max_length=500)
 
 
 class LocationUpdate(BaseModel):
@@ -88,6 +93,8 @@ class LocationUpdate(BaseModel):
     is_active: bool | None = None
     client_id: int | None = None
     default_service_provider_id: int | None = None
+    profile: LocationProfileInput | None = None
+    access: LocationAccessInput | None = None
 
     @field_validator("map_url")
     @classmethod
@@ -97,6 +104,8 @@ class LocationUpdate(BaseModel):
 
 class LocationResponse(LocationBase):
     id: int
+    profile: LocationProfileResponse | None = None
+    access: LocationAccessResponse | None = None
     can_manage_reservations: bool | None = None
     can_manage_tasks: bool | None = None
     shared_companies: list[int] = []

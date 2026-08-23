@@ -111,10 +111,12 @@ export interface TaskItem {
     checklist_items?: TaskChecklistItem[];
     assignments?: TaskAssignment[];
     zones?: TaskZone[];
+    spaces?: TaskZone[];
 }
 
 export interface TaskZone {
     id: number;
+    space_id: number;
     name: string;
     zone_type: string;
 }
@@ -128,6 +130,7 @@ export interface TaskChecklistAssignment {
 export interface TaskChecklistItem {
     id: number;
     position: number;
+    space_name?: string | null;
     text: string;
     completed: boolean;
     assignments: TaskChecklistAssignment[];

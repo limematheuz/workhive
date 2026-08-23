@@ -10,6 +10,7 @@ from app.repositories import client as client_repo
 from app.repositories import company as company_repo
 from fastapi import HTTPException, status
 from app.services import location_access_service
+from app.services import location_workspace_service
 
 
 def _validate_default_service_provider(
@@ -174,7 +175,7 @@ def get_location_service_providers(
     return providers
 
 
-def create_location(
+def create_location_in_transaction(
     db: Session, company_id: int | None, location_data: LocationCreate
 ) -> Location:
     if location_data.client_id is not None:
@@ -201,19 +202,39 @@ def create_location(
     if provider_id is not None:
         _validate_default_service_provider(db, company_id, provider_id)
 
-    try:
-        location = location_repo.create_location(db, location_data)
-        if provider_id is not None:
-            db.add(
-                LocationCompanyAccess(
-                    location_id=location.id,
-                    company_id=provider_id,
-                    relationship_type="default_service_provider",
-                    can_manage_reservations=False,
-                    can_manage_tasks=True,
-                    can_view_sensitive=False,
-                )
+    location = location_repo.create_location(db, location_data)
+    if provider_id is not None:
+        db.add(
+            LocationCompanyAccess(
+                location_id=location.id,
+                company_id=provider_id,
+                relationship_type="default_service_provider",
+                can_manage_reservations=False,
+                can_manage_tasks=True,
+                can_view_sensitive=False,
             )
+        )
+    if company_id is not None:
+        location_workspace_service.sync_profile(
+            db,
+            location,
+            company_id,
+            location_data.profile,
+        )
+    location_workspace_service.sync_access_profile(
+        db,
+        location,
+        location_data.access,
+    )
+    location_workspace_service.create_spaces(db, location.id, location_data.spaces)
+    return location
+
+
+def create_location(
+    db: Session, company_id: int | None, location_data: LocationCreate
+) -> Location:
+    try:
+        location = create_location_in_transaction(db, company_id, location_data)
         db.commit()
         db.refresh(location)
         return location
@@ -264,6 +285,18 @@ def update_location(
         
     try:
         location = location_repo.update_location(db, db_location, location_update)
+        if company_id is not None:
+            location_workspace_service.sync_profile(
+                db,
+                location,
+                company_id,
+                location_update.profile,
+            )
+        location_workspace_service.sync_access_profile(
+            db,
+            location,
+            location_update.access,
+        )
         if "default_service_provider_id" in location_update.model_fields_set:
             _sync_default_service_provider_access(db, location, previous_provider_id)
         db.commit()
