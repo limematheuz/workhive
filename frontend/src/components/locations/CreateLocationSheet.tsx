@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { MapPinned, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -52,15 +52,20 @@ export function CreateLocationSheet({ clients, defaultClientId, onLocationCreate
                     {dict.locations.form.new_location}
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-3xl">
-                <DialogHeader className="border-b border-[var(--border-soft)] p-6">
-                    <DialogTitle>Nueva ubicación</DialogTitle>
+            <DialogContent className="flex h-[min(92vh,980px)] w-[calc(100vw-1.5rem)] max-w-[1380px] flex-col gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-[calc(100vw-3rem)]">
+                <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 sm:px-7 sm:py-5">
+                    <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><MapPinned className="h-5 w-5" /></div>
+                        <div>
+                            <DialogTitle>Nueva ubicación</DialogTitle>
                     <DialogDescription>
-                        Añade lo imprescindible ahora. Los espacios son opcionales y se pueden ajustar después.
+                                Crea el local paso a paso. Solo pedimos lo necesario y podrás completar el resto cuando quieras.
                     </DialogDescription>
+                        </div>
+                    </div>
                 </DialogHeader>
                 {open && (
-                    <div className="p-6">
+                    <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
                         <LocationWorkspaceForm
                             clients={clients}
                             defaultClientId={defaultClientId}

@@ -71,10 +71,10 @@ export function LocationDetailDialog({
         <Dialog open={location !== null} onOpenChange={(open) => !open && onClose()}>
             <DialogContent
                 overlayClassName="dialog-glass-overlay"
-                className="dialog-glass flex max-h-[min(92vh,860px)] w-full flex-col gap-0 overflow-hidden rounded-[28px] border border-[var(--border-soft)] !border-t border-t-[var(--border-soft)] p-0 text-[var(--text-main)] shadow-[0_28px_90px_var(--shadow-color)] sm:max-w-3xl lg:max-w-4xl"
+                className="dialog-glass flex max-h-[min(92vh,920px)] w-[calc(100vw-1.5rem)] max-w-[1280px] flex-col gap-0 overflow-hidden rounded-[28px] border border-[var(--border-soft)] !border-t border-t-[var(--border-soft)] p-0 text-[var(--text-main)] shadow-[0_28px_90px_var(--shadow-color)] sm:w-[calc(100vw-3rem)]"
             >
                 {location.photo_url ? (
-                    <div className="relative h-36 w-full shrink-0 sm:h-44">
+                    <div className="relative h-40 w-full shrink-0 sm:h-52">
                         <Image
                             src={resolveApiMediaUrl(location.photo_url) || ""}
                             alt={location.name}
@@ -104,7 +104,7 @@ export function LocationDetailDialog({
                         </div>
                     </div>
                 ) : (
-                    <div className="relative h-36 w-full shrink-0 sm:h-44" style={{ background: gradient }}>
+                    <div className="relative h-40 w-full shrink-0 sm:h-52" style={{ background: gradient }}>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-white/10" />
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md">

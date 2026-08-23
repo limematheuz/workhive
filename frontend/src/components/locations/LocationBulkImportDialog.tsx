@@ -111,10 +111,12 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                         <Button type="button" variant="secondary" size="sm" onClick={downloadTemplate}>
                             <Download className="h-3.5 w-3.5" /> Descargar plantilla
                         </Button>
-                        <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-lg bg-[var(--btn-primary-bg)] px-3 text-xs font-semibold text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]">
-                            <FileSpreadsheet className="h-3.5 w-3.5" /> Seleccionar CSV
-                            <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
-                        </label>
+                        <Button type="button" variant="secondary" size="sm" asChild>
+                            <label className="cursor-pointer">
+                                <FileSpreadsheet className="h-3.5 w-3.5" /> Seleccionar CSV
+                                <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
+                            </label>
+                        </Button>
                         {csvContent && <span className="self-center text-xs text-[var(--text-muted)]">Archivo cargado</span>}
                     </div>
 
@@ -126,7 +128,7 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                     </section>}
 
                     <div className="flex justify-end gap-2 border-t border-[var(--border-soft)] pt-4">
-                        <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
+                        <Button type="button" variant="dangerSoft" onClick={() => setOpen(false)}>Cancelar</Button>
                         {!preview ? <Button type="button" onClick={() => void loadPreview()} disabled={previewing}>{previewing ? "Validando..." : "Vista previa"}</Button> : <Button type="button" onClick={() => void importLocations()} disabled={!preview.valid || importing}>{importing ? "Importando..." : "Importar ubicaciones"}</Button>}
                     </div>
                 </div>

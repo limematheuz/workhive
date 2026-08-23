@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PencilLine } from "lucide-react";
 
 import {
     Dialog,
@@ -49,16 +50,21 @@ export function EditLocationSheet({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] overflow-y-auto p-0 sm:max-w-3xl">
+            <DialogContent className="flex h-[min(92vh,980px)] w-[calc(100vw-1.5rem)] max-w-[1380px] flex-col gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-[calc(100vw-3rem)]">
                 {location && (
                     <>
-                        <DialogHeader className="border-b border-[var(--border-soft)] p-6">
-                            <DialogTitle>Editar ubicación</DialogTitle>
+                        <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 sm:px-7 sm:py-5">
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><PencilLine className="h-5 w-5" /></div>
+                                <div>
+                                    <DialogTitle>Editar ubicación</DialogTitle>
                             <DialogDescription>
-                                Actualiza lo esencial. La estructura de espacios se gestiona en su pestaña para no recargar este formulario.
+                                        Actualiza los datos operativos. La estructura de espacios y sus tareas se mantiene en su propia pestaña.
                             </DialogDescription>
+                                </div>
+                            </div>
                         </DialogHeader>
-                        <div className="p-6">
+                        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
                             <LocationWorkspaceForm
                                 key={location.id}
                                 clients={clients}

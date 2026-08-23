@@ -252,10 +252,10 @@ export function LocationWorkspaceForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
             <LocationWorkspaceWizardProgress step={step} />
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_15rem]">
-                <section className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4 sm:p-5">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
+                <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
                     {step === 1 && <LocationInfoAccessStep clients={clients} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setAccess={setAccess} />}
                     {step === 2 && <LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} />}
                     {step === 3 && <LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} />}
@@ -263,9 +263,9 @@ export function LocationWorkspaceForm({
                 </section>
                 <LocationWorkspaceSummary name={name} address={address} city={city} siteTypeLabel={selectedSiteType?.label} spacesCount={location ? "Gestionables tras guardar" : spaces.length} accessLabel={access.access_code || location?.access?.has_access_code ? "Código protegido" : access.access_method || "Sin configurar"} />
             </div>
-            <div className="flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-4">
+            <div className="sticky bottom-0 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)] pt-4">
                 <div>{step > 1 && <Button type="button" variant="secondary" onClick={() => setStep((current) => current - 1)}>Anterior</Button>}</div>
-                <div className="flex gap-2"><Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>{step < 4 ? <Button type="button" onClick={goNext}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
+                <div className="flex gap-2"><Button type="button" variant="dangerSoft" onClick={onCancel}>Cancelar</Button>{step < 4 ? <Button type="button" onClick={goNext}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
             </div>
         </form>
     );

@@ -41,6 +41,18 @@ test("bulk import previews the CSV before it commits any locations", () => {
     assert.match(dialog, /previewBulkImport/);
     assert.match(dialog, /importBulkLocations/);
     assert.match(dialog, /Vista previa/);
+    assert.match(dialog, /variant="secondary" size="sm" asChild/);
+    assert.match(dialog, /variant="dangerSoft"/);
+});
+
+test("locations use a compact table and keep the visual image in the detail dialog", () => {
+    const list = read("../components/locations/LocationsGrid.tsx");
+    const detail = read("../components/locations/LocationDetailDialog.tsx");
+
+    assert.match(list, /<table/);
+    assert.doesNotMatch(list, /LocationCard/);
+    assert.match(list, /onClick=\{\(\) => setSelectedLoc\(loc\)\}/);
+    assert.match(detail, /<Image/);
 });
 
 test("location configuration exposes spaces and their reusable tasks without replacing legacy services", () => {
