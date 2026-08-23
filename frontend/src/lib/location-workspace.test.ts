@@ -61,7 +61,7 @@ test("locations use the shared data table and keep the visual image in the detai
 
     assert.match(list, /DataListTable/);
     assert.doesNotMatch(list, /LocationCard/);
-    assert.match(list, /onRowClick=\{onEdit\}/);
+    assert.match(list, /onRowClick=\{setSelectedLocation\}/);
     assert.match(detail, /<Image/);
     assert.match(detail, /LocationTasksWorkspace/);
     assert.match(list, /triggerLabel/);
@@ -85,12 +85,12 @@ test("location configuration exposes spaces and their reusable tasks without rep
     assert.match(workspace, /LocationSpacesTab/);
 });
 
-test("opening a location edits it directly and keeps its detail available from the shared actions menu", () => {
+test("opening a location shows its detail first and keeps editing as an explicit action", () => {
     const grid = read("../components/locations/LocationsGrid.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const editSheet = read("../components/locations/EditLocationSheet.tsx");
 
-    assert.match(grid, /onRowClick=\{onEdit\}/);
+    assert.match(grid, /onRowClick=\{setSelectedLocation\}/);
     assert.match(grid, /Ver detalle/);
     assert.match(detail, /onEdit/);
     assert.match(editSheet, /PremiumTabs/);

@@ -139,8 +139,8 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             desktopFrom="lg"
             renderDesktopRow={renderDesktopRow}
             renderCompactRow={renderCompactRow}
-            onRowClick={onEdit}
-            rowAriaLabel={(location) => `Editar ${location.name}`}
+            onRowClick={setSelectedLocation}
+            rowAriaLabel={(location) => `Ver detalle de ${location.name}`}
             empty={<div className="flex flex-col items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent"><MapPin className="h-6 w-6" /></span><p className="text-sm font-medium text-[var(--text-muted)]">{dict.locations.table.empty}</p></div>}
         />
 
