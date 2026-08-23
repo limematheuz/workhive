@@ -22,6 +22,17 @@ function normalizeHostname(value: string | null | undefined): string {
         .replace(/\.$/, "");
 }
 
+export function getCanonicalAppHost(
+    appDomain = process.env.APP_DOMAIN,
+    marketingDomain = process.env.MARKETING_DOMAIN ?? "localhost",
+): string {
+    const configuredAppHost = normalizeHostname(appDomain);
+    if (configuredAppHost) return configuredAppHost;
+
+    const configuredMarketingHost = normalizeHostname(marketingDomain);
+    return configuredMarketingHost ? `app.${configuredMarketingHost}` : "";
+}
+
 const APP_ONLY_PATHS = new Set([
     "/login",
     "/register",
