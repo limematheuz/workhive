@@ -203,6 +203,16 @@ export const LocationService = {
         return await response.json();
     },
 
+    reorderSpaces: async (locationId: number, spaceIds: number[]): Promise<void> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/spaces/order`, {
+            method: "PUT",
+            body: JSON.stringify({ space_ids: spaceIds }),
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error reordering location spaces"));
+        }
+    },
+
     createSpace: async (
         locationId: number,
         data: Omit<LocationSpace, "id" | "location_id" | "sort_order" | "is_active">,

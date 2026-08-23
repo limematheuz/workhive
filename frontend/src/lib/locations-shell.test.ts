@@ -29,7 +29,7 @@ test("locations page uses billing surfaces and a compact filter chip", () => {
     assert.match(card, /variant="secondary"/);
     assert.doesNotMatch(card, /emerald|color-green|text-green-|bg-green-/);
 
-    assert.match(grid, /billing-block/);
+    assert.match(grid, /DataListTable/);
 });
 
 test("location services can be unlinked with an explicit confirmation without deleting the catalog template", () => {

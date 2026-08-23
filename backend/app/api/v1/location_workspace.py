@@ -10,6 +10,7 @@ from app.schemas.location_workspace import (
     LocationCatalogSuggestionRequest,
     LocationCatalogSuggestionResponse,
     LocationSpaceInput,
+    LocationSpaceReorderRequest,
     LocationSpaceResponse,
     LocationSpaceTaskTemplateInput,
     LocationSpaceTaskTemplateResponse,
@@ -100,6 +101,22 @@ def create_location_space(
         db.commit()
         db.refresh(space)
         return space
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.put("/{location_id}/spaces/order", status_code=status.HTTP_204_NO_CONTENT)
+def reorder_location_spaces(
+    location_id: int,
+    request: LocationSpaceReorderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveManagerOrAdmin,
+):
+    location_access_service.require_location_owner(db, current_user, location_id)
+    try:
+        location_workspace_service.reorder_spaces(db, location_id, request.space_ids)
+        db.commit()
     except Exception:
         db.rollback()
         raise

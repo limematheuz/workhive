@@ -8,7 +8,6 @@ import { CollaborationService } from "@/services/collaboration.service";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { LocationsGrid } from "@/components/locations/LocationsGrid";
 import { EditLocationSheet } from "@/components/locations/EditLocationSheet";
-import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
 import { CreateLocationSheet } from "@/components/locations/CreateLocationSheet";
 import { LocationBulkImportDialog } from "@/components/locations/LocationBulkImportDialog";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -43,10 +42,6 @@ export default function LocationsPage() {
     // Edit state
     const [editingLocation, setEditingLocation] = useState<Location | null>(null);
     const [editSheetOpen, setEditSheetOpen] = useState(false);
-
-    // Task state
-    const [tasksLocation, setTasksLocation] = useState<Location | null>(null);
-    const [tasksSheetOpen, setTasksSheetOpen] = useState(false);
 
     // Delete state
     const deletingLocationRef = useRef<Location | null>(null);
@@ -100,11 +95,6 @@ export default function LocationsPage() {
     const handleEdit = (location: Location) => {
         setEditingLocation(location);
         setEditSheetOpen(true);
-    };
-
-    const handleTasksClick = (location: Location) => {
-        setTasksLocation(location);
-        setTasksSheetOpen(true);
     };
 
     const handleDeleteClick = (location: Location) => {
@@ -242,7 +232,6 @@ export default function LocationsPage() {
                         tasks={tasks}
                         onEdit={handleEdit}
                         onDelete={handleDeleteClick}
-                        onTasks={handleTasksClick}
                     />
                 </div>
             </section>
@@ -253,13 +242,6 @@ export default function LocationsPage() {
                 open={editSheetOpen}
                 onOpenChange={setEditSheetOpen}
                 onLocationUpdated={loadLocations}
-            />
-
-            <LocationTasksSheet
-                location={tasksLocation}
-                open={tasksSheetOpen}
-                onOpenChange={setTasksSheetOpen}
-                initialTab={user?.role?.name === "viewer" ? "history" : "templates"}
             />
 
             <DeleteConfirmDialog

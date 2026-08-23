@@ -1,14 +1,18 @@
 "use client"
 
 import Image from "next/image"
-import { Location } from "@/services/location.service"
+import { useEffect, useState } from "react"
+import { Location, LocationService } from "@/services/location.service"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { MapPin, Building2, Navigation, Compass, Bath, Car, ChefHat, Sun, Bed, Users, Clock3, KeyRound } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { MapPin, Building2, Navigation, Compass, Bath, Car, ChefHat, Sun, Bed, Users, Clock3, KeyRound, Layers3, ListChecks, PencilLine } from "lucide-react"
 import { useDictionary } from "@/lib/dictionary-context"
 import { resolveApiMediaUrl } from "@/lib/api"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
 import { isSafeLocationMapUrl } from "@/lib/location-map-url"
+import type { LocationSpace } from "@/types/location"
+import { LocationTasksWorkspace } from "./LocationTasksWorkspace"
 
 const getGoogleMapsUrl = (loc: Location) => {
     if (isSafeLocationMapUrl(loc.map_url)) {
@@ -39,6 +43,7 @@ interface LocationDetailDialogProps {
     activeLabel: string
     inactiveLabel: string
     gradient: string
+    onEdit: () => void
 }
 
 const sectionClass = "glass-panel rounded-2xl p-3.5"
@@ -53,9 +58,28 @@ export function LocationDetailDialog({
     activeLabel,
     inactiveLabel,
     gradient,
+    onEdit,
 }: LocationDetailDialogProps) {
     const { dict } = useDictionary()
+    const [spaces, setSpaces] = useState<LocationSpace[]>([])
+    const [spacesLoading, setSpacesLoading] = useState(true)
+    const locationId = location?.id
+
+    useEffect(() => {
+        if (!locationId) {
+            return
+        }
+        let cancelled = false
+        void LocationService.getSpaces(locationId)
+            .then((items) => { if (!cancelled) setSpaces(items) })
+            .catch(() => { if (!cancelled) setSpaces([]) })
+            .finally(() => { if (!cancelled) setSpacesLoading(false) })
+        return () => { cancelled = true }
+    }, [locationId])
+
     if (!location) return null
+
+    const taskTemplateCount = spaces.reduce((count, space) => count + (space.tasks?.length || 0), 0)
     const locationTypeLabel = getLocationTypeLabel(location.location_type, {
         private: dict.locations?.type_private,
         real_estate: dict.locations?.type_real_estate,
@@ -71,7 +95,7 @@ export function LocationDetailDialog({
         <Dialog open={location !== null} onOpenChange={(open) => !open && onClose()}>
             <DialogContent
                 overlayClassName="dialog-glass-overlay"
-                className="dialog-glass flex max-h-[min(92vh,920px)] w-[calc(100vw-1.5rem)] max-w-[1280px] flex-col gap-0 overflow-hidden rounded-[28px] border border-[var(--border-soft)] !border-t border-t-[var(--border-soft)] p-0 text-[var(--text-main)] shadow-[0_28px_90px_var(--shadow-color)] sm:w-[calc(100vw-3rem)]"
+                className="dialog-glass flex max-h-[min(92vh,920px)] w-[calc(100vw-1.5rem)] !max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden rounded-[28px] border border-[var(--border-soft)] !border-t border-t-[var(--border-soft)] p-0 text-[var(--text-main)] shadow-[0_28px_90px_var(--shadow-color)] sm:w-[calc(100vw-3rem)] sm:!max-w-[calc(100vw-3rem)] 2xl:!max-w-[1400px]"
             >
                 {location.photo_url ? (
                     <div className="relative h-40 w-full shrink-0 sm:h-52">
@@ -133,15 +157,27 @@ export function LocationDetailDialog({
                 )}
 
                 <div className="min-h-0 flex-1 overflow-y-auto p-5 [scrollbar-width:none] sm:p-6 [&::-webkit-scrollbar]:hidden">
-                    <DialogHeader className="space-y-1 text-left">
-                        <DialogTitle className="text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
-                            {location.name}
-                        </DialogTitle>
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]">
-                            <Building2 className="h-3.5 w-3.5 shrink-0" />
-                            <span>{clientName}</span>
+                    <DialogHeader className="text-left">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 space-y-1">
+                                <DialogTitle className="text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
+                                    {location.name}
+                                </DialogTitle>
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]">
+                                    <Building2 className="h-3.5 w-3.5 shrink-0" />
+                                    <span>{clientName}</span>
+                                </div>
+                            </div>
+                            <Button type="button" size="sm" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" /> Editar ubicación</Button>
                         </div>
                     </DialogHeader>
+
+                    <section className="mt-5 grid grid-cols-2 gap-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:grid-cols-4">
+                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Código</p><p className="mt-1 truncate text-sm font-semibold text-[var(--text-main)]">{location.profile?.internal_code || `LOC-${location.id}`}</p></div>
+                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Espacios</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[var(--text-main)]"><Layers3 className="h-4 w-4 text-accent" /> {spacesLoading ? "…" : spaces.length}</p></div>
+                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Tareas</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[var(--text-main)]"><ListChecks className="h-4 w-4 text-accent" /> {spacesLoading ? "…" : taskTemplateCount}</p></div>
+                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Acceso</p><p className="mt-1 truncate text-sm font-semibold text-[var(--text-main)]">{location.access?.access_method || (location.access?.has_access_code ? "Código" : "Sin configurar")}</p></div>
+                    </section>
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
                         <div className="space-y-3.5">
@@ -323,6 +359,17 @@ export function LocationDetailDialog({
                             </div>
                         </div>
                     </div>
+
+                    <section className={`${sectionClass} mt-5`}>
+                        <div className="mb-4 flex items-start justify-between gap-3">
+                            <div>
+                                <h4 className="text-sm font-bold text-[var(--text-main)]">Operativa de la ubicación</h4>
+                                <p className="mt-1 text-xs text-[var(--text-muted)]">Servicios habituales, estructura de espacios y registro de trabajos en un mismo lugar.</p>
+                            </div>
+                            <Button type="button" variant="secondary" size="sm" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" /> Editar</Button>
+                        </div>
+                        <LocationTasksWorkspace location={location} open={location !== null} initialTab="history" />
+                    </section>
                 </div>
             </DialogContent>
         </Dialog>

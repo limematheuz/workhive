@@ -252,18 +252,22 @@ export function LocationWorkspaceForm({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <LocationWorkspaceWizardProgress step={step} />
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_19rem]">
-                <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
+        <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
+            <div className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-5 lg:px-7">
+                <LocationWorkspaceWizardProgress step={step} />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-7">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+                    <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
                     {step === 1 && <LocationInfoAccessStep clients={clients} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setAccess={setAccess} />}
                     {step === 2 && <LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} />}
                     {step === 3 && <LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} />}
                     {step === 4 && <LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} />}
-                </section>
-                <LocationWorkspaceSummary name={name} address={address} city={city} siteTypeLabel={selectedSiteType?.label} spacesCount={location ? "Gestionables tras guardar" : spaces.length} accessLabel={access.access_code || location?.access?.has_access_code ? "Código protegido" : access.access_method || "Sin configurar"} />
+                    </section>
+                    <LocationWorkspaceSummary name={name} address={address} city={city} siteTypeLabel={selectedSiteType?.label} spacesCount={location ? "Gestionables tras guardar" : spaces.length} accessLabel={access.access_code || location?.access?.has_access_code ? "Código protegido" : access.access_method || "Sin configurar"} />
+                </div>
             </div>
-            <div className="sticky bottom-0 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)] pt-4">
+            <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 py-4 sm:px-6 lg:px-7">
                 <div>{step > 1 && <Button type="button" variant="secondary" onClick={() => setStep((current) => current - 1)}>Anterior</Button>}</div>
                 <div className="flex gap-2"><Button type="button" variant="dangerSoft" onClick={onCancel}>Cancelar</Button>{step < 4 ? <Button type="button" onClick={goNext}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
             </div>

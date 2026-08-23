@@ -10,8 +10,8 @@ test("location list uses a dense operational table and keeps visual content in t
     const globals = read("../app/globals.css");
     const dialog = read("../components/ui/dialog.tsx");
 
-    assert.match(grid, /<table/);
-    assert.match(grid, /overflow-x-auto/);
+    assert.match(grid, /DataListTable/);
+    assert.match(grid, /DataListRow|gridClassName/);
     assert.match(grid, /Ubicación/);
     assert.match(grid, /Tareas/);
     assert.match(grid, /Estado/);

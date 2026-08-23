@@ -129,6 +129,46 @@ def test_location_setup_persists_profile_spaces_and_suggested_task_templates(cli
     assert refreshed_spaces.json()[0]["tasks"] == []
 
 
+def test_location_spaces_can_be_reordered_atomically(client, db):
+    company = _company(db, "ReorderWorkspace")
+    admin = _admin(db, company)
+    headers = _headers(admin)
+    location = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Centro ordenado",
+            "address": "Calle Orden 1",
+            "city": "Madrid",
+            "spaces": [
+                {"name": "Recepción", "space_type": "common_area"},
+                {"name": "Baño", "space_type": "bathroom"},
+                {"name": "Almacén", "space_type": "storage"},
+            ],
+        },
+    ).json()
+    spaces = client.get(f"/api/v1/locations/{location['id']}/spaces", headers=headers).json()
+    ordered_ids = [spaces[2]["id"], spaces[0]["id"], spaces[1]["id"]]
+
+    response = client.put(
+        f"/api/v1/locations/{location['id']}/spaces/order",
+        headers=headers,
+        json={"space_ids": ordered_ids},
+    )
+
+    assert response.status_code == 204, response.text
+    reordered = client.get(f"/api/v1/locations/{location['id']}/spaces", headers=headers)
+    assert [space["id"] for space in reordered.json()] == ordered_ids
+
+    invalid = client.put(
+        f"/api/v1/locations/{location['id']}/spaces/order",
+        headers=headers,
+        json={"space_ids": ordered_ids[:2]},
+    )
+    assert invalid.status_code == 422
+    assert [space["id"] for space in client.get(f"/api/v1/locations/{location['id']}/spaces", headers=headers).json()] == ordered_ids
+
+
 def test_space_catalog_generates_editable_office_suggestions(client, db):
     company = _company(db, "CatalogOwner")
     admin = _admin(db, company)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Download, FileSpreadsheet, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
     const [preview, setPreview] = useState<LocationBulkImportPreview | null>(null);
     const [previewing, setPreviewing] = useState(false);
     const [importing, setImporting] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const reset = () => {
         setCsvContent("");
@@ -99,24 +100,22 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                     <Upload className="h-4 w-4" /> Importar CSV
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-                <DialogHeader>
+            <DialogContent className="w-[calc(100vw-1.5rem)] !max-w-[calc(100vw-1.5rem)] gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-full sm:!max-w-2xl">
+                <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-5 sm:px-7">
                     <DialogTitle>Importar ubicaciones</DialogTitle>
                     <DialogDescription>
                         Para importaciones grandes, descarga la plantilla, completa los datos y revisa todo antes de guardar.
                     </DialogDescription>
                 </DialogHeader>
-                <div className="space-y-4">
-                    <div className="flex flex-wrap gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3">
+                <div className="space-y-5 p-5 sm:p-7">
+                    <div className="flex min-h-32 flex-wrap items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4">
                         <Button type="button" variant="secondary" size="sm" onClick={downloadTemplate}>
                             <Download className="h-3.5 w-3.5" /> Descargar plantilla
                         </Button>
-                        <Button type="button" variant="secondary" size="sm" asChild>
-                            <label className="cursor-pointer">
-                                <FileSpreadsheet className="h-3.5 w-3.5" /> Seleccionar CSV
-                                <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
-                            </label>
+                        <Button type="button" variant="default" size="sm" onClick={() => fileInputRef.current?.click()}>
+                            <FileSpreadsheet className="h-3.5 w-3.5" /> Seleccionar CSV
                         </Button>
+                        <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
                         {csvContent && <span className="self-center text-xs text-[var(--text-muted)]">Archivo cargado</span>}
                     </div>
 
@@ -127,7 +126,7 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                         </div>
                     </section>}
 
-                    <div className="flex justify-end gap-2 border-t border-[var(--border-soft)] pt-4">
+                    <div className="flex justify-end gap-2 border-t border-[var(--border-soft)] pt-5">
                         <Button type="button" variant="dangerSoft" onClick={() => setOpen(false)}>Cancelar</Button>
                         {!preview ? <Button type="button" onClick={() => void loadPreview()} disabled={previewing}>{previewing ? "Validando..." : "Vista previa"}</Button> : <Button type="button" onClick={() => void importLocations()} disabled={!preview.valid || importing}>{importing ? "Importando..." : "Importar ubicaciones"}</Button>}
                     </div>

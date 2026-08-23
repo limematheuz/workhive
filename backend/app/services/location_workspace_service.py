@@ -161,6 +161,27 @@ def update_space(
     return space
 
 
+def reorder_spaces(
+    db: Session,
+    location_id: int,
+    space_ids: list[int],
+) -> None:
+    spaces = workspace_repo.list_spaces(db, location_id)
+    current_ids = [space.id for space in spaces]
+    if len(space_ids) != len(current_ids) or set(space_ids) != set(current_ids):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The reorder list must include every active location space exactly once",
+        )
+
+    spaces_by_id = {space.id: space for space in spaces}
+    for sort_order, space_id in enumerate(space_ids):
+        space = spaces_by_id[space_id]
+        space.sort_order = sort_order
+        db.add(space)
+    db.flush()
+
+
 def archive_space(db: Session, location_id: int, space_id: int) -> None:
     space = workspace_repo.get_space(db, location_id, space_id)
     if space is None or not space.is_active:

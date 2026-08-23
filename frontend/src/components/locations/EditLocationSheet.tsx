@@ -1,19 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { PencilLine } from "lucide-react";
+import { LayoutList, PencilLine } from "lucide-react";
 
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type { Client } from "@/services/client.service";
 import { Location, LocationService } from "@/services/location.service";
+import { LocationSpacesTab } from "./LocationSpacesTab";
 import { LocationWorkspaceForm, type LocationWorkspacePayload } from "./LocationWorkspaceForm";
 
 interface EditLocationSheetProps {
@@ -24,14 +20,9 @@ interface EditLocationSheetProps {
     onLocationUpdated?: () => void;
 }
 
-export function EditLocationSheet({
-    location,
-    clients,
-    open,
-    onOpenChange,
-    onLocationUpdated,
-}: EditLocationSheetProps) {
+export function EditLocationSheet({ location, clients, open, onOpenChange, onLocationUpdated }: EditLocationSheetProps) {
     const [submitting, setSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState("details");
 
     const updateLocation = async (payload: LocationWorkspacePayload) => {
         if (!location) return;
@@ -39,6 +30,7 @@ export function EditLocationSheet({
             setSubmitting(true);
             await LocationService.updateLocation(location.id, payload);
             toast.success("Ubicación actualizada.");
+            setActiveTab("details");
             onOpenChange(false);
             onLocationUpdated?.();
         } catch (error) {
@@ -49,34 +41,38 @@ export function EditLocationSheet({
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex h-[min(92vh,980px)] w-[calc(100vw-1.5rem)] max-w-[1380px] flex-col gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-[calc(100vw-3rem)]">
-                {location && (
-                    <>
-                        <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 sm:px-7 sm:py-5">
-                            <div className="flex items-start gap-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><PencilLine className="h-5 w-5" /></div>
-                                <div>
-                                    <DialogTitle>Editar ubicación</DialogTitle>
-                            <DialogDescription>
-                                        Actualiza los datos operativos. La estructura de espacios y sus tareas se mantiene en su propia pestaña.
-                            </DialogDescription>
-                                </div>
+        <Dialog open={open} onOpenChange={(nextOpen) => {
+            if (!nextOpen) setActiveTab("details");
+            onOpenChange(nextOpen);
+        }}>
+            <DialogContent className="flex h-[min(92vh,980px)] w-[calc(100vw-1.5rem)] !max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-[calc(100vw-3rem)] sm:!max-w-[calc(100vw-3rem)] 2xl:!max-w-[1380px]">
+                {location && <div className="flex min-h-0 flex-1 flex-col">
+                    <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 sm:px-7 sm:py-5">
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><PencilLine className="h-5 w-5" /></div>
+                            <div className="min-w-0 flex-1">
+                                <DialogTitle>Editar ubicación</DialogTitle>
+                                <DialogDescription>Actualiza los datos o abre directamente la estructura de espacios.</DialogDescription>
                             </div>
-                        </DialogHeader>
-                        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
-                            <LocationWorkspaceForm
-                                key={location.id}
-                                clients={clients}
-                                location={location}
-                                submitting={submitting}
-                                submitLabel="Guardar cambios"
-                                onCancel={() => onOpenChange(false)}
-                                onSubmit={updateLocation}
-                            />
                         </div>
-                    </>
-                )}
+                        <PremiumTabs
+                            className="mt-4"
+                            tabs={[{ id: "details", label: "Información", icon: PencilLine }, { id: "spaces", label: "Espacios y tareas", icon: LayoutList }]}
+                            activeTab={activeTab}
+                            onChange={setActiveTab}
+                        />
+                    </DialogHeader>
+
+                    {activeTab === "details" ? (
+                        <div className="h-full min-h-0 overflow-hidden">
+                            <LocationWorkspaceForm key={location.id} clients={clients} location={location} submitting={submitting} submitLabel="Guardar cambios" onCancel={() => { setActiveTab("details"); onOpenChange(false); }} onSubmit={updateLocation} />
+                        </div>
+                    ) : (
+                    <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7">
+                        <LocationSpacesTab locationId={location.id} open={open && activeTab === "spaces"} canManage />
+                    </div>
+                    )}
+                </div>}
             </DialogContent>
         </Dialog>
     );

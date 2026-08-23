@@ -86,6 +86,17 @@ class LocationSpaceUpdate(BaseModel):
     _trim_strings = field_validator("name", "space_type")(_trim_optional)
 
 
+class LocationSpaceReorderRequest(BaseModel):
+    space_ids: list[int] = Field(min_length=1, max_length=500)
+
+    @field_validator("space_ids")
+    @classmethod
+    def space_ids_must_be_unique(cls, value: list[int]) -> list[int]:
+        if len(value) != len(set(value)):
+            raise ValueError("space_ids must not contain duplicates")
+        return value
+
+
 class LocationSpaceResponse(BaseModel):
     id: int
     location_id: int
