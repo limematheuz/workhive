@@ -22,6 +22,23 @@ function normalizeHostname(value: string | null | undefined): string {
         .replace(/\.$/, "");
 }
 
+const APP_ONLY_PATHS = new Set([
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/reset-password",
+    "/accept-invitation",
+    "/confirm-email-change",
+]);
+
+export function isAppOnlyPath(pathname: string): boolean {
+    return APP_ONLY_PATHS.has(pathname)
+        || pathname === "/dashboard"
+        || pathname.startsWith("/dashboard/")
+        || pathname === "/subscription"
+        || pathname.startsWith("/subscription/");
+}
+
 export function isPublicSiteHost(
     hostHeader: string | null,
     marketingDomain = process.env.MARKETING_DOMAIN ?? "localhost",
