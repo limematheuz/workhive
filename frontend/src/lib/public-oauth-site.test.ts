@@ -2,7 +2,11 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import { isAppOnlyPath, isPublicSiteHost } from "./public-site.ts";
+import {
+    getCanonicalAppHost,
+    isAppOnlyPath,
+    isPublicSiteHost,
+} from "./public-site.ts";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -111,4 +115,7 @@ test("application routes cannot remain on the public marketing host", () => {
     assert.match(proxy, /isAppOnlyPath\(pathname\)/);
     assert.match(proxy, /NextResponse\.redirect\(appUrl, 308\)/);
     assert.match(compose, /APP_DOMAIN: \$\{APP_DOMAIN:\?Define APP_DOMAIN\}/);
+    assert.equal(getCanonicalAppHost("app.workhive.es", "workhive.es"), "app.workhive.es");
+    assert.equal(getCanonicalAppHost(undefined, "workhive.es"), "app.workhive.es");
+    assert.equal(getCanonicalAppHost(undefined, "workhive.es."), "app.workhive.es");
 });

@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { isAppOnlyPath, isPublicSiteHost } from "@/lib/public-site";
+import {
+    getCanonicalAppHost,
+    isAppOnlyPath,
+    isPublicSiteHost,
+} from "@/lib/public-site";
 
 function getApiOrigin(): string {
     if (process.env.NODE_ENV === "production") return "";
@@ -72,7 +76,7 @@ export function proxy(request: NextRequest) {
     requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
 
     if (isPublicSiteHost(request.headers.get("host")) && isAppOnlyPath(pathname)) {
-        const appDomain = process.env.APP_DOMAIN?.trim();
+        const appDomain = getCanonicalAppHost();
         if (appDomain) {
             const appUrl = new URL(`${pathname}${request.nextUrl.search}`, `https://${appDomain}`);
             return applySecurityHeaders(
