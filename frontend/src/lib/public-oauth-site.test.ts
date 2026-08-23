@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
-import { isPublicSiteHost } from "./public-site.ts";
+import { isAppOnlyPath, isPublicSiteHost } from "./public-site.ts";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -84,4 +84,31 @@ test("public root is selected by the configured marketing hostname", () => {
     assert.equal(isPublicSiteHost("workhive.es", "workhive.es"), true);
     assert.equal(isPublicSiteHost("www.workhive.es:443", "workhive.es"), true);
     assert.equal(isPublicSiteHost("app.workhive.es", "workhive.es"), false);
+});
+
+test("application routes cannot remain on the public marketing host", () => {
+    const proxy = read("../proxy.ts");
+    const compose = read("../../../docker-compose.yml");
+
+    for (const path of [
+        "/login",
+        "/register",
+        "/forgot-password",
+        "/reset-password",
+        "/accept-invitation",
+        "/confirm-email-change",
+        "/dashboard",
+        "/dashboard/calendar",
+        "/subscription",
+    ]) {
+        assert.equal(isAppOnlyPath(path), true, `${path} must belong to the app host`);
+    }
+    for (const path of ["/", "/privacy", "/terms", "/contact"]) {
+        assert.equal(isAppOnlyPath(path), false, `${path} must remain public`);
+    }
+
+    assert.match(proxy, /isPublicSiteHost\(request\.headers\.get\("host"\)\)/);
+    assert.match(proxy, /isAppOnlyPath\(pathname\)/);
+    assert.match(proxy, /NextResponse\.redirect\(appUrl, 308\)/);
+    assert.match(compose, /APP_DOMAIN: \$\{APP_DOMAIN:\?Define APP_DOMAIN\}/);
 });
