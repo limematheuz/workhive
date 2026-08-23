@@ -50,6 +50,16 @@ export function isAppOnlyPath(pathname: string): boolean {
         || pathname.startsWith("/subscription/");
 }
 
+export function shouldRedirectPublicAppRoute(
+    hostHeader: string | null,
+    pathname: string,
+    environment = process.env.NODE_ENV,
+    marketingDomain = process.env.MARKETING_DOMAIN ?? "localhost",
+): boolean {
+    if (environment === "development") return false;
+    return isPublicSiteHost(hostHeader, marketingDomain) && isAppOnlyPath(pathname);
+}
+
 export function isPublicSiteHost(
     hostHeader: string | null,
     marketingDomain = process.env.MARKETING_DOMAIN ?? "localhost",

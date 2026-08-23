@@ -3,8 +3,7 @@ import type { NextRequest } from "next/server";
 
 import {
     getCanonicalAppHost,
-    isAppOnlyPath,
-    isPublicSiteHost,
+    shouldRedirectPublicAppRoute,
 } from "@/lib/public-site";
 
 function getApiOrigin(): string {
@@ -75,7 +74,7 @@ export function proxy(request: NextRequest) {
     requestHeaders.set("x-nonce", nonce);
     requestHeaders.set("Content-Security-Policy", contentSecurityPolicy);
 
-    if (isPublicSiteHost(request.headers.get("host")) && isAppOnlyPath(pathname)) {
+    if (shouldRedirectPublicAppRoute(request.headers.get("host"), pathname)) {
         const appDomain = getCanonicalAppHost();
         if (appDomain) {
             const appUrl = new URL(`${pathname}${request.nextUrl.search}`, `https://${appDomain}`);
