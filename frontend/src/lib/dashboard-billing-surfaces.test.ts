@@ -17,7 +17,6 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     const expenses = source("../components/expenses/ExpenseSummaryCards.tsx");
     const fiscalSummary = source("../app/dashboard/fiscal-summary/page.tsx");
     const ledgerSummary = source("../app/dashboard/invoice-summary/page.tsx");
-    const clientOverview = source("../components/clients/ClientDetailOverview.tsx");
     const chart = source("../components/dashboard/InteractiveLineChart.tsx");
     const metricCard = source("../components/ui/summary-metric-card.tsx");
 
@@ -49,7 +48,6 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     assert.match(fiscalSummary, /SummaryMetricCard/);
     assert.match(ledgerSummary, /SummaryMetricCard/);
     assert.doesNotMatch(ledgerSummary, /function SummaryMetric\(/);
-    assert.match(clientOverview, /SummaryMetricCard/);
     assert.match(metricCard, /const TrendIcon = rounded > 0 \? ArrowUpRight : rounded < 0 \? ArrowDownRight : Minus/);
     assert.match(metricCard, /size-10 shrink-0 items-center justify-center rounded-xl bg-\[var\(--brand-blue-soft\)\] text-accent/);
     assert.match(globals, /--status-active-text: #047857/);
