@@ -21,7 +21,9 @@ import { useDictionary } from "@/lib/dictionary-context";
 import {
     buildClientWorkspace,
     filterClientWorkspaceRows,
+    getClientWorkspaceMonthlyRevenue,
     getClientWorkspaceCities,
+    summarizeClientWorkspaceRows,
     type ClientWorkspaceFilter,
 } from "@/lib/client-workspace";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -86,12 +88,12 @@ export default function ClientsPage() {
             setTasks(taskData);
             setInvoices(invoiceData);
         } catch {
-            if (isInitialLoad) toast.error("No se pudieron cargar los clientes.");
+            if (isInitialLoad) toast.error(dict.clients.workspace.load_error);
         } finally {
             hasLoadedRef.current = true;
             setLoading(false);
         }
-    }, [canViewClientFinancials, user, userLoading]);
+    }, [canViewClientFinancials, dict.clients.workspace.load_error, user, userLoading]);
 
     useEffect(() => {
         if (userLoading || !user) return;
@@ -106,6 +108,14 @@ export default function ClientsPage() {
         [clients, invoices, locations, tasks, workspaceReferenceDate],
     );
     const visibleRows = useMemo(() => filterClientWorkspaceRows(workspace.rows, filters), [filters, workspace.rows]);
+    const visibleSummary = useMemo(
+        () => summarizeClientWorkspaceRows(visibleRows, workspace.summary.hasFinancialData),
+        [visibleRows, workspace.summary.hasFinancialData],
+    );
+    const monthlyRevenue = useMemo(
+        () => getClientWorkspaceMonthlyRevenue(invoices, visibleRows, workspaceReferenceDate),
+        [invoices, visibleRows, workspaceReferenceDate],
+    );
     const cities = useMemo(() => getClientWorkspaceCities(workspace.rows), [workspace.rows]);
     const detailsRow = workspace.rows.find((row) => row.client.id === detailsClient?.id) ?? null;
 
@@ -124,7 +134,7 @@ export default function ClientsPage() {
             await ClientService.updateClient(client.id, { is_active: !client.is_active });
             setClients((current) => current.map((item) => item.id === client.id ? { ...item, is_active: !client.is_active } : item));
             setDetailsClient((current) => current?.id === client.id ? { ...current, is_active: !client.is_active } : current);
-            toast.success(client.is_active ? "Cliente desactivado." : "Cliente activado.");
+            toast.success(client.is_active ? dict.clients.workspace.deactivated : dict.clients.workspace.activated);
             void loadClients();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : dict.clients.form.update_error_toast);
@@ -154,7 +164,7 @@ export default function ClientsPage() {
                 <PageHeader
                     icon={Building2}
                     title={dict.clients.title}
-                    subtitle="Gestiona todos tus clientes, sus ubicaciones y su actividad desde aquí."
+                    subtitle={dict.clients.workspace.subtitle}
                     actions={(
                         <>
                             <ClientWorkspaceExportButton
@@ -170,20 +180,19 @@ export default function ClientsPage() {
                 {loading ? (
                     <section className="billing-surface flex min-h-80 flex-col items-center justify-center gap-3 rounded-[26px]">
                         <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
-                        <p className="text-sm text-[var(--text-muted)]">Cargando clientes…</p>
+                        <p className="text-sm text-[var(--text-muted)]">{dict.clients.workspace.loading}</p>
                     </section>
                 ) : (
                     <>
-                        <ClientWorkspaceStats summary={workspace.summary} year={workspaceReferenceDate.getFullYear()} />
+                        <ClientWorkspaceStats summary={visibleSummary} monthlyRevenue={monthlyRevenue} />
                         {!workspace.summary.hasFinancialData && (
                             <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-muted)]">
-                                Las cifras de facturación solo se muestran a los roles con acceso financiero.
+                                {dict.clients.workspace.financial_access_hint}
                             </p>
                         )}
                         <ClientWorkspaceFilters filters={filters} cities={cities} onChange={setFilters} />
                         <ClientsTable
                             rows={visibleRows}
-                            financialDataAvailable={workspace.summary.hasFinancialData}
                             onEdit={handleEdit}
                             onDelete={handleDeleteClick}
                             onToggleActive={handleToggleActive}

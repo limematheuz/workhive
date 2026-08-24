@@ -3,6 +3,7 @@
 import { FileText, ListChecks, MapPin, PanelTop } from "lucide-react";
 
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { useDictionary } from "@/lib/dictionary-context";
 import type { ClientWorkspaceRow } from "@/lib/client-workspace";
 import type { Client } from "@/services/client.service";
 import type { Location } from "@/services/location.service";
@@ -53,11 +54,13 @@ export function ClientDetailDialogTabsSection({
     onViewTaskDetails,
     onClose,
 }: ClientDetailDialogTabsSectionProps) {
+    const { dict } = useDictionary();
+    const workspace = dict.clients.workspace;
     const tabs = [
-        { id: "overview" as const, label: "Resumen", icon: PanelTop },
-        { id: "locations" as const, label: `Ubicaciones (${locations.length})`, icon: MapPin },
-        { id: "tasks" as const, label: `Trabajos (${tasks.length})`, icon: ListChecks },
-        ...(financialDataAvailable ? [{ id: "billing" as const, label: `Facturación (${invoices.length})`, icon: FileText }] : []),
+        { id: "overview" as const, label: workspace.overview, icon: PanelTop },
+        { id: "locations" as const, label: `${workspace.locations} (${locations.length})`, icon: MapPin },
+        { id: "tasks" as const, label: `${workspace.jobs} (${tasks.length})`, icon: ListChecks },
+        ...(financialDataAvailable ? [{ id: "billing" as const, label: `${dict.invoices.title} (${invoices.length})`, icon: FileText }] : []),
     ];
 
     return (
@@ -65,7 +68,7 @@ export function ClientDetailDialogTabsSection({
             <PremiumTabs tabs={tabs} activeTab={activeTab} onChange={onActiveTabChange} className="mb-5" layout="scroll" />
             {activeTab === "overview" && <ClientDetailOverview client={client} row={row} locations={locations} tasks={tasks} financialDataAvailable={financialDataAvailable} onViewLocationTasks={onViewLocationTasks} onOpenLocations={() => onActiveTabChange("locations")} />}
             {activeTab === "locations" && <ClientDetailLocationsTab locations={locations} onViewLocationTasks={onViewLocationTasks} onClose={onClose} />}
-            {activeTab === "tasks" && <ClientDetailTasksTab filteredTasks={filteredTasks} locations={locations} taskSearch={taskSearch} onTaskSearchChange={onTaskSearchChange} taskStatusFilter={taskStatusFilter} onTaskStatusFilterChange={onTaskStatusFilterChange} getAssigneeName={(userId) => userId == null ? "Sin asignar" : "Asignado"} onViewTaskDetails={onViewTaskDetails} onClose={onClose} labels={{ search_task: "Buscar trabajo…", all_statuses: "Todos los estados", status_pending: "Pendientes", status_in_progress: "En curso", status_completed: "Completadas", no_tasks: "No hay trabajos con estos filtros." }} />}
+            {activeTab === "tasks" && <ClientDetailTasksTab filteredTasks={filteredTasks} locations={locations} taskSearch={taskSearch} onTaskSearchChange={onTaskSearchChange} taskStatusFilter={taskStatusFilter} onTaskStatusFilterChange={onTaskStatusFilterChange} getAssigneeName={(userId) => userId == null ? workspace.unassigned : workspace.assigned} onViewTaskDetails={onViewTaskDetails} onClose={onClose} labels={{ search_task: dict.clients.details.search_task, all_statuses: dict.clients.details.all_statuses, status_pending: dict.clients.details.status_pending, status_in_progress: dict.clients.details.status_in_progress, status_completed: dict.clients.details.status_completed, no_tasks: dict.clients.details.no_tasks, task: workspace.task, assignment: workspace.assignment, open_task: workspace.open_task }} />}
             {activeTab === "billing" && financialDataAvailable && <ClientDetailBillingTab invoices={invoices} />}
         </>
     );

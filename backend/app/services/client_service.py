@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
 from app.models.client import Client
-from app.schemas.client import ClientCreate, ClientUpdate
+from app.schemas.client import ClientCreate, ClientEmailRequest, ClientUpdate
 from app.repositories import client as client_repo
 from fastapi import HTTPException, status
+from app.services import email_service, invoice_email_contact_service
 
 
 def get_clients(
@@ -66,3 +67,40 @@ def delete_client(db: Session, company_id: int | None, client_id: int) -> Client
             status_code=status.HTTP_404_NOT_FOUND, detail="Client not found"
         )
     return client_repo.delete_client(db, db_client)
+
+
+def email_client(
+    db: Session,
+    company_id: int | None,
+    client_id: int,
+    data: ClientEmailRequest,
+    *,
+    sender_email: str | None = None,
+) -> tuple[Client, str]:
+    client = get_client(db, company_id, client_id)
+    recipient_emails = list(dict.fromkeys(str(email).strip() for email in data.recipient_emails if str(email).strip()))
+    if data.save_recipient_to_client_id not in (None, client.id):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="The email can only be saved to this client")
+    if data.save_recipient_to_client_id is not None and len(recipient_emails) != 1:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Select exactly one recipient before saving it to a client")
+
+    try:
+        sent = email_service.send_client_email(
+            recipient_emails=recipient_emails,
+            recipient_name=client.name,
+            subject=data.subject,
+            custom_message=data.message,
+            reply_to_email=sender_email,
+            copy_emails=[str(email) for email in data.copy_emails],
+            sender_copy_email=sender_email if data.send_copy else None,
+        )
+    except Exception:
+        sent = False
+    if not sent:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Email delivery is not configured or unavailable")
+
+    if data.save_recipient_to_client_id is not None:
+        invoice_email_contact_service.save_email_to_client(db, company_id, client.id, recipient_emails)
+    elif data.save_recipients:
+        invoice_email_contact_service.remember_document_recipients(db, company_id, recipient_emails)
+    return client, recipient_emails[0]

@@ -31,6 +31,11 @@ export type ClientWorkspace = {
     summary: ClientWorkspaceSummary;
 };
 
+export type ClientWorkspaceMonthlyRevenue = {
+    current: number;
+    previous: number;
+};
+
 export type ClientWorkspaceFilter = {
     search: string;
     status: "all" | "active" | "inactive";
@@ -156,19 +161,48 @@ export function buildClientWorkspace({
         .map((client) => rowsByClientId.get(client.id))
         .filter((row): row is ClientWorkspaceRow => Boolean(row));
 
+    return { rows, summary: summarizeClientWorkspaceRows(rows, invoices !== undefined) };
+}
+
+export function summarizeClientWorkspaceRows(
+    rows: ClientWorkspaceRow[],
+    hasFinancialData: boolean,
+): ClientWorkspaceSummary {
     return {
-        rows,
-        summary: {
-            clientCount: rows.length,
-            activeClientCount: rows.filter((row) => row.client.is_active).length,
-            missingContactCount: rows.filter((row) => !row.hasContact).length,
-            locationCount: rows.reduce((sum, row) => sum + row.locationCount, 0),
-            pendingTaskCount: rows.reduce((sum, row) => sum + row.pendingTaskCount, 0),
-            annualBillingTotal: rows.reduce((sum, row) => sum + row.annualBillingTotal, 0),
-            pendingBalanceTotal: rows.reduce((sum, row) => sum + row.pendingBalance, 0),
-            hasFinancialData: invoices !== undefined,
-        },
+        clientCount: rows.length,
+        activeClientCount: rows.filter((row) => row.client.is_active).length,
+        missingContactCount: rows.filter((row) => !row.hasContact).length,
+        locationCount: rows.reduce((sum, row) => sum + row.locationCount, 0),
+        pendingTaskCount: rows.reduce((sum, row) => sum + row.pendingTaskCount, 0),
+        annualBillingTotal: rows.reduce((sum, row) => sum + row.annualBillingTotal, 0),
+        pendingBalanceTotal: rows.reduce((sum, row) => sum + row.pendingBalance, 0),
+        hasFinancialData,
     };
+}
+
+export function getClientWorkspaceMonthlyRevenue(
+    invoices: Invoice[] | undefined,
+    rows: ClientWorkspaceRow[],
+    referenceDate: Date,
+): ClientWorkspaceMonthlyRevenue | null {
+    if (!invoices) return null;
+
+    const clientIds = new Set(rows.map((row) => row.client.id));
+    const currentMonth = Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), 1);
+    const previousMonth = Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth() - 1, 1);
+    let current = 0;
+    let previous = 0;
+
+    for (const invoice of invoices) {
+        if (!clientIds.has(invoice.client_id) || !REVENUE_STATUSES.has(invoice.status)) continue;
+        const issueDate = validDate(invoice.issue_date);
+        if (!issueDate) continue;
+        const issuedMonth = Date.UTC(issueDate.getUTCFullYear(), issueDate.getUTCMonth(), 1);
+        if (issuedMonth === currentMonth) current += invoice.total_amount;
+        if (issuedMonth === previousMonth) previous += invoice.total_amount;
+    }
+
+    return { current, previous };
 }
 
 export function filterClientWorkspaceRows(
@@ -200,8 +234,12 @@ export function filterClientWorkspaceRows(
 }
 
 export function getClientWorkspaceCities(rows: ClientWorkspaceRow[]): string[] {
-    return Array.from(new Set(rows.map((row) => row.client.city.trim()).filter(Boolean)))
-        .sort((left, right) => left.localeCompare(right));
+    const cities = new Set<string>();
+    for (const row of rows) {
+        const city = row.client.city.trim();
+        if (city) cities.add(city);
+    }
+    return Array.from(cities).sort((left, right) => left.localeCompare(right));
 }
 
 function csvCell(value: string | number | null | undefined): string {

@@ -5,6 +5,8 @@ import {
     buildClientWorkspace,
     buildClientWorkspaceCsv,
     filterClientWorkspaceRows,
+    getClientWorkspaceMonthlyRevenue,
+    summarizeClientWorkspaceRows,
 } from "./client-workspace.ts";
 import type { Client } from "../types/client.ts";
 import type { Location } from "../types/location.ts";
@@ -136,6 +138,34 @@ test("client workspace filters using real client fields only", () => {
         city: "Girona",
         contact: "missing",
     }).map((row) => row.client.id), [2]);
+});
+
+test("client workspace monthly revenue compares only the filtered clients and adjacent months", () => {
+    const rows = buildClientWorkspace({
+        clients,
+        locations,
+        tasks: [],
+        invoices: [],
+        referenceDate: new Date("2026-08-24T12:00:00Z"),
+    }).rows;
+    const monthlyRevenue = getClientWorkspaceMonthlyRevenue([
+        { ...invoice(1, 1, "issued", 300), issue_date: "2026-08-12T10:00:00Z" },
+        { ...invoice(2, 1, "paid", 200), issue_date: "2026-07-12T10:00:00Z" },
+        { ...invoice(3, 2, "issued", 900), issue_date: "2026-08-12T10:00:00Z" },
+        { ...invoice(4, 1, "draft", 500), issue_date: "2026-08-12T10:00:00Z" },
+    ], [rows[0]!], new Date("2026-08-24T12:00:00Z"));
+
+    assert.deepEqual(monthlyRevenue, { current: 300, previous: 200 });
+    assert.deepEqual(summarizeClientWorkspaceRows([rows[0]!], true), {
+        clientCount: 1,
+        activeClientCount: 1,
+        missingContactCount: 0,
+        locationCount: 1,
+        pendingTaskCount: 0,
+        annualBillingTotal: 0,
+        pendingBalanceTotal: 0,
+        hasFinancialData: true,
+    });
 });
 
 test("client CSV escapes spreadsheet formulas and keeps financial columns permission-aware", () => {

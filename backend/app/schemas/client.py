@@ -68,6 +68,17 @@ class ClientUpdate(BaseModel):
         return value.strip() or None
 
 
+class ClientEmailRequest(BaseModel):
+    recipient_emails: list[EmailStr] = Field(min_length=1, max_length=20)
+    copy_emails: list[EmailStr] = Field(default_factory=list, max_length=20)
+    subject: str | None = Field(default=None, max_length=200)
+    message: str | None = Field(default=None, max_length=2000)
+    send_copy: bool = False
+    save_recipients: bool = False
+    save_recipient_to_client_id: int | None = Field(default=None, gt=0)
+    locale: Literal["es", "en"] = "es"
+
+
 class ClientResponse(ClientBase):
     id: int
     company_id: int

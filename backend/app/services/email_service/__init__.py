@@ -19,6 +19,7 @@ from app.services.email_service.auth_emails import (
     send_password_reset_email,
 )
 from app.services.email_service.billing_emails import send_invoice_email
+from app.services.email_service.client_emails import send_client_email
 from app.services.email_service.contact_emails import send_contact_email
 from app.services.email_service.layout import (
     _BRAND,
@@ -56,6 +57,7 @@ __all__ = [
     "send_erasure_request_received_email",
     "send_erasure_request_resolved_email",
     "send_invoice_email",
+    "send_client_email",
     "_BRAND",
     "_add_logo_to_message",
     "_base_layout",
