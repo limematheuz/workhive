@@ -1,8 +1,8 @@
 from email.message import EmailMessage
-from email.utils import formataddr
 from html import escape
 
 from app.services.email_service import transport
+from app.services.email_service.layout import base_layout, heading, lead, plain_body
 
 
 def send_client_email(
@@ -27,11 +27,18 @@ def send_client_email(
         message["Reply-To"] = reply_to_email
 
     content = custom_message or ""
-    plain_body = f"Hello {recipient_name},\n\n{content}".strip()
-    html_body = (
-        f"<p>Hello {escape(recipient_name)},</p>"
-        f"<p>{escape(content).replace(chr(10), '<br>')}</p>"
+    safe_name = escape(recipient_name)
+    safe_content = escape(content).replace("\n", "<br>")
+    html_body = base_layout(
+        f"""
+{heading("Message from WorkHive")}
+{lead(f"Hello {safe_name},")}
+<p style="margin:0;font-size:14px;line-height:22px;color:#111827;">{safe_content}</p>
+""",
+        preview_text=content[:140],
+        locale="en",
     )
-    message.set_content(plain_body)
+    plain_text = plain_body([f"Hello {recipient_name},", "", content])
+    message.set_content(plain_text)
     message.add_alternative(html_body, subtype="html")
     return transport.send_email(message)
