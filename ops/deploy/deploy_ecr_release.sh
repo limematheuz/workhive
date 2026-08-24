@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Manually deploy one immutable vMAJOR.MINOR.PATCH ECR release to production.
-# The script is intentionally host-oriented: its real configuration and state
-# live outside Git in /etc/workhive and it never needs persistent AWS keys.
+# Deploy one immutable ECR image revision to production. A formal release uses
+# an annotated vMAJOR.MINOR.PATCH tag; the continuous main workflow uses the
+# complete 40-character Git SHA. The script is intentionally host-oriented:
+# its real configuration and state live outside Git in /etc/workhive and it
+# never needs persistent AWS keys.
 
 umask 077
 
@@ -12,12 +14,12 @@ if [[ "${EUID}" -ne 0 ]]; then
     exit 1
 fi
 
-if [[ "${#}" -ne 1 || ! "${1}" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-    echo "Usage: sudo $0 vMAJOR.MINOR.PATCH" >&2
+if [[ "${#}" -ne 1 || ! "${1}" =~ ^(v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)|[0-9a-f]{40})$ ]]; then
+    echo "Usage: sudo $0 vMAJOR.MINOR.PATCH|FULL_GIT_SHA" >&2
     exit 1
 fi
 
-release_tag="${1}"
+release_ref="${1}"
 deploy_env_file="${DEPLOY_ENV_FILE:-/etc/workhive/deploy.env}"
 deployment_state_file="${DEPLOYMENT_STATE_FILE:-/etc/workhive/deployed-release.env}"
 lock_file="${DEPLOY_LOCK_FILE:-/run/lock/workhive-ecr-deploy.lock}"
@@ -117,7 +119,6 @@ restore_source_checkout() {
 
 sync_release_checkout() {
     local release_commit
-    local release_version
 
     if [[ ! -d "${workhive_dir}/.git" ]]; then
         echo "Production source checkout is not a Git worktree: ${workhive_dir}" >&2
@@ -130,16 +131,27 @@ sync_release_checkout() {
 
     previous_source_commit="$("${git_command[@]}" rev-parse HEAD)"
     "${git_command[@]}" fetch --force origin \
-        "refs/tags/${release_tag}:refs/tags/${release_tag}"
-    if [[ "$("${git_command[@]}" cat-file -t "refs/tags/${release_tag}")" != "tag" ]]; then
-        echo "Release source must use an annotated Git tag: ${release_tag}" >&2
-        return 1
+        "refs/heads/main:refs/remotes/origin/main"
+
+    if [[ "${release_ref}" =~ ^v ]]; then
+        "${git_command[@]}" fetch --force origin \
+            "refs/tags/${release_ref}:refs/tags/${release_ref}"
+        if [[ "$("${git_command[@]}" cat-file -t "refs/tags/${release_ref}")" != "tag" ]]; then
+            echo "Release source must use an annotated Git tag: ${release_ref}" >&2
+            return 1
+        fi
+        release_commit="$("${git_command[@]}" rev-list -n 1 "refs/tags/${release_ref}")"
+    else
+        if ! "${git_command[@]}" cat-file -e "${release_ref}^{commit}"; then
+            echo "Release SHA is not available from origin/main: ${release_ref}" >&2
+            return 1
+        fi
+        release_commit="$("${git_command[@]}" rev-parse "${release_ref}^{commit}")"
     fi
 
-    release_commit="$("${git_command[@]}" rev-list -n 1 "refs/tags/${release_tag}")"
-    release_version="$("${git_command[@]}" show "${release_commit}:VERSION" | tr -d '[:space:]')"
-    if [[ "v${release_version}" != "${release_tag}" ]]; then
-        echo "Release tag does not match the VERSION file: ${release_tag}" >&2
+    if ! "${git_command[@]}" merge-base --is-ancestor \
+        "${release_commit}" refs/remotes/origin/main; then
+        echo "Release source must belong to origin/main: ${release_ref}" >&2
         return 1
     fi
 
@@ -190,8 +202,8 @@ if [[ ! "${account_id}" =~ ^[0-9]{12}$ ]]; then
     exit 1
 fi
 registry="${account_id}.dkr.ecr.${aws_region}.amazonaws.com"
-target_backend_image="${registry}/workhive/backend:${release_tag}"
-target_frontend_image="${registry}/workhive/frontend:${release_tag}"
+target_backend_image="${registry}/workhive/backend:${release_ref}"
+target_frontend_image="${registry}/workhive/frontend:${release_ref}"
 
 previous_backend_image=""
 previous_frontend_image=""
@@ -209,7 +221,7 @@ validate_images_exist() {
         "${aws_bin}" ecr describe-images \
             --region "${aws_region}" \
             --repository-name "${repository}" \
-            --image-ids "imageTag=${release_tag}" \
+            --image-ids "imageTag=${release_ref}" \
             >/dev/null
     done
 }
@@ -276,7 +288,7 @@ echo "Verifying immutable release images."
 validate_images_exist
 ecr_login
 
-echo "Synchronizing production runtime configuration to ${release_tag}."
+echo "Synchronizing production runtime configuration to ${release_ref}."
 sync_release_checkout
 
 for required_file in \
@@ -293,11 +305,11 @@ echo "Validating production Compose configuration."
 BACKEND_IMAGE="${target_backend_image}" FRONTEND_IMAGE="${target_frontend_image}" \
     "${compose_production[@]}" config >/dev/null
 
-echo "Pulling release ${release_tag} from ECR."
+echo "Pulling release ${release_ref} from ECR."
 BACKEND_IMAGE="${target_backend_image}" FRONTEND_IMAGE="${target_frontend_image}" \
     "${compose_production[@]}" pull backend frontend
 
-echo "Starting release ${release_tag} without building on EC2."
+echo "Starting release ${release_ref} without building on EC2."
 if ! BACKEND_IMAGE="${target_backend_image}" FRONTEND_IMAGE="${target_frontend_image}" \
     "${compose_production[@]}" up -d --no-build --wait --wait-timeout 180 backend frontend caddy; then
     if [[ -n "${previous_backend_image}" && -n "${previous_frontend_image}" ]]; then
@@ -320,7 +332,7 @@ fi
 state_file_temporary="$(mktemp "${deployment_state_file}.tmp.XXXXXX")"
 cat > "${state_file_temporary}" <<EOF
 # Managed by deploy_ecr_release.sh. Keep this private host state file out of Git.
-RELEASE_TAG=${release_tag}
+RELEASE_REF=${release_ref}
 BACKEND_IMAGE=${target_backend_image}
 FRONTEND_IMAGE=${target_frontend_image}
 DEPLOYED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -329,4 +341,4 @@ chmod 600 "${state_file_temporary}"
 mv -f "${state_file_temporary}" "${deployment_state_file}"
 deployment_succeeded=true
 
-echo "Release ${release_tag} is healthy and recorded for rollback."
+echo "Release ${release_ref} is healthy and recorded for rollback."

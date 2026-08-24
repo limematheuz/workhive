@@ -1,11 +1,25 @@
 "use client";
 
-import { TrafficAccessMap } from "@/components/dashboard/TrafficAccessMap";
+import dynamic from "next/dynamic";
+
 import { TrafficStatsCards } from "@/components/traffic/TrafficStatsCards";
 import { formatDate } from "@/lib/format";
 import type { TrafficMapPoint } from "@/lib/traffic-map";
 import { formatDateTime, type TrafficLabels } from "@/lib/traffic/traffic-page-utils";
 import { AuditLog } from "@/types/audit-log";
+
+const TrafficAccessMap = dynamic(
+    () => import("@/components/dashboard/TrafficAccessMap").then(({ TrafficAccessMap }) => TrafficAccessMap),
+    {
+        ssr: false,
+        loading: () => (
+            <div
+                aria-busy="true"
+                className="h-[14rem] animate-pulse rounded-[18px] bg-[var(--bg-tertiary)] motion-reduce:animate-none sm:h-[18rem]"
+            />
+        ),
+    },
+);
 
 type TrafficStats = {
     total: number;

@@ -30,12 +30,12 @@ from app.services.company_client_service import ensure_company_as_client
 from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.task_item_read_service import (
-    build_loaded_task_response,
-    build_task_response,
+    build_loaded_task_response,  # noqa: F401 - public compatibility re-export
+    build_task_response,  # noqa: F401 - public compatibility re-export
     get_task_item,
-    get_task_item_async,
-    get_task_items,
-    get_task_items_async,
+    get_task_item_async,  # noqa: F401 - public compatibility re-export
+    get_task_items,  # noqa: F401 - public compatibility re-export
+    get_task_items_async,  # noqa: F401 - public compatibility re-export
 )
 
 

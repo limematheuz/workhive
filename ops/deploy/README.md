@@ -1,8 +1,10 @@
 # WorkHive ECR deployment
 
-This directory defines the **manual** production deployment path after a release
-image has passed CI and been published to private Amazon ECR. EC2 pulls an
-immutable image; it never builds backend or frontend application images.
+This directory defines the production deployment path after a commit has passed
+CI and its images have been published to private Amazon ECR. Every merge to
+`main` follows that path automatically and pauses for the GitHub `production`
+environment approval. EC2 pulls an immutable image; it never builds backend or
+frontend application images.
 
 The broader explanation of the release lifecycle and its AWS/GitHub terms is
 in [the production delivery guide](../../docs/operations/PRODUCTION_DELIVERY_GUIDE.md).
@@ -49,19 +51,21 @@ sudo stat -c '%a %U %G %n' /etc/workhive/deploy.env
 
 Expected permissions are `640 root ubuntu`.
 
-## Deploy a reviewed release
+## Deploy a reviewed revision manually
 
 First ensure the release workflow completed successfully and ECR Basic scanning
 shows a completed scan for both images. Then run exactly one command:
 
 ```bash
 cd "$HOME/workhive"
-sudo ops/deploy/deploy_ecr_release.sh vMAJOR.MINOR.PATCH
+sudo ops/deploy/deploy_ecr_release.sh FULL_GIT_SHA
 ```
 
-The release tag must already exist in ECR and as an annotated Git tag. The
-script checks the backup result, refuses tracked host changes, synchronizes the
-production checkout to that exact release commit, pulls the matching
+The full Git SHA must already exist as the immutable tag of both ECR images and
+belong to `origin/main`. An annotated `vMAJOR.MINOR.PATCH` tag remains accepted
+for a formal release or rollback. The script checks the backup result, refuses
+tracked host changes, synchronizes the production checkout to that exact commit,
+pulls the matching
 backend/frontend image pair, waits for containers to become healthy without a
 build, then checks backend health, login, running containers, and Alembic state.
 On success, the current release is recorded in
@@ -69,16 +73,21 @@ On success, the current release is recorded in
 
 ## Deploy from GitHub Actions through SSM
 
-The preferred production path is the manual `Deploy reviewed release to
-production` GitHub Actions workflow. It never opens SSH from GitHub and it
-does not contain AWS access keys.
+The preferred production path is `Deploy main to production`, triggered only
+by a push to `main` (normally a merged PR). It waits for the named CI and
+security checks for that exact commit, publishes backend and frontend images
+tagged with its full SHA, then pauses at the GitHub `production` environment.
+After an approved deployment, it invokes SSM. It never opens SSH from GitHub
+and it does not contain AWS access keys.
 
-The workflow can only be dispatched from `main` with a strict
-`vMAJOR.MINOR.PATCH` release tag. It assumes a dedicated GitHub OIDC role,
-requests the private `WorkHiveProductionDeploy` SSM Command document for the
-one configured production instance, and waits for the result. The SSM document
-starts this same host script, so backup validation, immutable image checks,
-health checks, and rollback behavior remain in one place.
+The older manual `Deploy reviewed release to production` workflow is retained
+for a deliberate rollback or a formal semantic release. Both workflows accept
+an immutable full SHA; the manual one also accepts an annotated semantic tag.
+They assume a dedicated GitHub OIDC role, request the private
+`WorkHiveProductionDeploy` SSM Command document for the one configured
+production instance, and wait for the result. The SSM document starts this same
+host script, so backup validation, immutable image checks, health checks, and
+rollback behavior remain in one place.
 
 Before enabling the workflow, configure outside Git:
 
@@ -88,6 +97,13 @@ Before enabling the workflow, configure outside Git:
   for the production EC2 instance and read the invocation result;
 - the GitHub repository variables `AWS_DEPLOY_ROLE_ARN` and
   `PRODUCTION_EC2_INSTANCE_ID`.
+- a GitHub `production` environment with required reviewers. Configure this in
+  **Settings → Environments → production**; without required reviewers GitHub
+  will not pause the automatic deployment.
+
+Protect `main` outside GitHub Actions too: require pull requests and the named
+CI/security checks, and disallow direct pushes. Otherwise a direct push would
+correctly be treated as a production candidate by the workflow.
 
 The canonical content for the private SSM document is
 [`workhive-production-deploy.ssm.yaml`](workhive-production-deploy.ssm.yaml).
@@ -108,7 +124,7 @@ After a successful deploy:
 
 ```bash
 docker compose --env-file .env ps
-sudo grep -E '^(RELEASE_TAG|DEPLOYED_AT)=' /etc/workhive/deployed-release.env
+sudo grep -E '^(RELEASE_REF|DEPLOYED_AT)=' /etc/workhive/deployed-release.env
 ```
 
 Only use the second command on EC2; the file also contains private image

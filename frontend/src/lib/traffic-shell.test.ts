@@ -22,6 +22,9 @@ test("traffic dashboard uses billing surfaces without accent pad or green chrome
     assert.match(page, /TrafficEventsTable/);
     assert.match(page, /getAuthenticatedTrafficMapPoints\(loginEvents/);
     assert.match(page, /const labels = \[traffic\.desktop, traffic\.mobile, traffic\.tablet, traffic\.browser\]/);
+    assert.match(analytics, /dynamic\(/);
+    assert.match(analytics, /import\("@\/components\/dashboard\/TrafficAccessMap"\)/);
+    assert.doesNotMatch(analytics, /import \{ TrafficAccessMap \}/);
     assert.doesNotMatch(page, /billing-surface-accent-pad/);
     assert.doesNotMatch(page, /surface-glass-card/);
     assert.doesNotMatch(page, /btn-cancel-muted/);
