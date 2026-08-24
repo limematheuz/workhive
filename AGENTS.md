@@ -11,4 +11,6 @@ These rules apply to every backend and frontend change in this repository.
 - Keep tenant and authorization checks in the backend service boundary. Frontend visibility is never an authorization control.
 - Do not refactor unrelated code or make broad style-only changes.
 - Every behavior change requires focused regression tests. Run backend tests and frontend test, typecheck, lint, and build when affected.
+- For every frontend change, run `pnpm run doctor` before opening or updating a PR. React Doctor warnings are release blockers: resolve them instead of weakening its CI policy or deferring them to a later PR.
+- When removing or replacing a frontend flow, delete its obsolete components and update the related architecture tests in the same change; icon-only controls must keep an accessible name.
 - Never commit credentials, tokens, private keys, production environment files, private infrastructure identifiers, or customer data.

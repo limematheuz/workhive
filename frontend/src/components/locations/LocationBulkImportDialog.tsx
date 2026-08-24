@@ -27,6 +27,16 @@ interface LocationBulkImportDialogProps {
     onImported?: () => void;
 }
 
+function downloadLocationTemplate() {
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "plantilla-ubicaciones-workhive.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+}
+
 export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialogProps) {
     const [open, setOpen] = useState(false);
     const [csvContent, setCsvContent] = useState("");
@@ -40,16 +50,6 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
         setPreview(null);
         setPreviewing(false);
         setImporting(false);
-    };
-
-    const downloadTemplate = () => {
-        const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = "plantilla-ubicaciones-workhive.csv";
-        anchor.click();
-        URL.revokeObjectURL(url);
     };
 
     const selectFile = async (file?: File) => {
@@ -109,13 +109,13 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                 </DialogHeader>
                 <div className="space-y-5 p-5 sm:p-7">
                     <div className="flex min-h-32 flex-wrap items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4">
-                        <Button type="button" variant="secondary" size="sm" onClick={downloadTemplate}>
+                        <Button type="button" variant="secondary" size="sm" onClick={downloadLocationTemplate}>
                             <Download className="h-3.5 w-3.5" /> Descargar plantilla
                         </Button>
                         <Button type="button" variant="default" size="sm" onClick={() => fileInputRef.current?.click()}>
                             <FileSpreadsheet className="h-3.5 w-3.5" /> Seleccionar CSV
                         </Button>
-                        <input ref={fileInputRef} type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
+                        <input ref={fileInputRef} type="file" accept=".csv,text/csv" aria-label="Archivo CSV de ubicaciones" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
                         {csvContent && <span className="self-center text-xs text-[var(--text-muted)]">Archivo cargado</span>}
                     </div>
 

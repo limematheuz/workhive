@@ -23,12 +23,11 @@ test("location zones keep a small reusable set of operational types", () => {
 });
 
 test("spaces are optional in configuration and task creation", () => {
-    const zonesTab = read("../components/locations/LocationZonesTab.tsx");
+    const spacesTab = read("../components/locations/LocationSpacesTab.tsx");
     const taskZones = read("../components/tasks/TaskCreateZonesSection.tsx");
 
-    assert.match(zonesTab, /Zonas de trabajo/);
-    assert.match(zonesTab, /Opcional/);
-    assert.match(zonesTab, /LocationService/);
+    assert.match(spacesTab, /Espacios y tareas/);
+    assert.match(spacesTab, /LocationService/);
     assert.match(taskZones, /Selecciona solo los espacios/);
     assert.match(taskZones, /Tareas sugeridas/);
     assert.match(taskZones, /type="checkbox"/);

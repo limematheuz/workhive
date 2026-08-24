@@ -22,6 +22,7 @@ from app.services import (
     location_catalog_service,
     location_import_service,
     location_workspace_service,
+    location_workspace_mutation_service,
 )
 from app.services.user_scope import scoped_company_id
 
@@ -96,14 +97,7 @@ def create_location_space(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        space = location_workspace_service.create_space(db, location_id, space_data)
-        db.commit()
-        db.refresh(space)
-        return space
-    except Exception:
-        db.rollback()
-        raise
+    return location_workspace_mutation_service.create_space(db, location_id, space_data)
 
 
 @router.put("/{location_id}/spaces/order", status_code=status.HTTP_204_NO_CONTENT)
@@ -114,12 +108,7 @@ def reorder_location_spaces(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        location_workspace_service.reorder_spaces(db, location_id, request.space_ids)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
+    location_workspace_mutation_service.reorder_spaces(db, location_id, request)
 
 
 @router.patch("/{location_id}/spaces/{space_id}", response_model=LocationSpaceResponse)
@@ -131,14 +120,12 @@ def update_location_space(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        space = location_workspace_service.update_space(db, location_id, space_id, space_data)
-        db.commit()
-        db.refresh(space)
-        return space
-    except Exception:
-        db.rollback()
-        raise
+    return location_workspace_mutation_service.update_space(
+        db,
+        location_id,
+        space_id,
+        space_data,
+    )
 
 
 @router.delete("/{location_id}/spaces/{space_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -149,12 +136,7 @@ def archive_location_space(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        location_workspace_service.archive_space(db, location_id, space_id)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
+    location_workspace_mutation_service.archive_space(db, location_id, space_id)
 
 
 @router.post(
@@ -170,19 +152,12 @@ def create_space_task_template(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        task = location_workspace_service.create_space_task_template(
-            db,
-            location_id,
-            space_id,
-            task_data,
-        )
-        db.commit()
-        db.refresh(task)
-        return task
-    except Exception:
-        db.rollback()
-        raise
+    return location_workspace_mutation_service.create_space_task_template(
+        db,
+        location_id,
+        space_id,
+        task_data,
+    )
 
 
 @router.patch(
@@ -198,20 +173,13 @@ def update_space_task_template(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        task = location_workspace_service.update_space_task_template(
-            db,
-            location_id,
-            space_id,
-            task_template_id,
-            task_data,
-        )
-        db.commit()
-        db.refresh(task)
-        return task
-    except Exception:
-        db.rollback()
-        raise
+    return location_workspace_mutation_service.update_space_task_template(
+        db,
+        location_id,
+        space_id,
+        task_template_id,
+        task_data,
+    )
 
 
 @router.delete(
@@ -226,14 +194,9 @@ def archive_space_task_template(
     current_user: User = ActiveManagerOrAdmin,
 ):
     location_access_service.require_location_owner(db, current_user, location_id)
-    try:
-        location_workspace_service.archive_space_task_template(
-            db,
-            location_id,
-            space_id,
-            task_template_id,
-        )
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
+    location_workspace_mutation_service.archive_space_task_template(
+        db,
+        location_id,
+        space_id,
+        task_template_id,
+    )

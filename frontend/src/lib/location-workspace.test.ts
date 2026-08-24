@@ -7,16 +7,18 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("location workspace has optional profiles, spaces, and a catalog in one API service", () => {
     const types = read("../types/location.ts");
     const service = read("../services/location.service.ts");
+    const workspaceService = read("../services/location-workspace.service.ts");
 
     assert.match(types, /LocationProfile/);
     assert.match(types, /LocationSpace/);
     assert.match(types, /profile\?: LocationProfile/);
-    assert.match(service, /getLocationCatalog/);
-    assert.match(service, /getSpaceSuggestions/);
-    assert.match(service, /getSpaces/);
-    assert.match(service, /reorderSpaces/);
-    assert.match(service, /previewBulkImport/);
-    assert.match(service, /importBulkLocations/);
+    assert.match(service, /LocationWorkspaceService/);
+    assert.match(workspaceService, /getLocationCatalog/);
+    assert.match(workspaceService, /getSpaceSuggestions/);
+    assert.match(workspaceService, /getSpaces/);
+    assert.match(workspaceService, /reorderSpaces/);
+    assert.match(workspaceService, /previewBulkImport/);
+    assert.match(workspaceService, /importBulkLocations/);
 });
 
 test("the new location wizard follows the four-step workflow and keeps suggestions optional", () => {

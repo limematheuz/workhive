@@ -18,6 +18,10 @@ const techTaskCard = readFileSync(
     new URL("../components/dashboard/TechTaskCard.tsx", import.meta.url),
     "utf8",
 );
+const techTaskCardSupplementaryInfo = readFileSync(
+    new URL("../components/dashboard/TechTaskCardSupplementaryInfo.tsx", import.meta.url),
+    "utf8",
+);
 
 test("kanban card opens task details from an accessible full-card control", () => {
     assert.match(
@@ -67,8 +71,8 @@ test("kanban loads work summaries in a batch instead of one request per card", (
 
 test("summary cards share the kanban progress component and identify external work", () => {
     assert.match(card, /TaskProgressBar/);
-    assert.match(techTaskCard, /TaskProgressBar/);
+    assert.match(techTaskCardSupplementaryInfo, /TaskProgressBar/);
     assert.match(techTaskCard, /getOperationalTaskStatus/);
     assert.match(techTaskCard, /isExternalTaskForCompany/);
-    assert.match(techTaskCard, /Servicio externo|Externo/);
+    assert.match(techTaskCardSupplementaryInfo, /Servicio externo|Externo/);
 });

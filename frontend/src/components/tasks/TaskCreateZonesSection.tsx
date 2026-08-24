@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { MapPinned } from "lucide-react";
 
 import {
@@ -31,29 +32,36 @@ export function TaskCreateZonesSection({
     selectedSpaceTaskTemplateIds,
     setSelectedSpaceTaskTemplateIds,
 }: TaskCreateZonesSectionProps) {
+    const selectedZoneIdSet = useMemo(() => new Set(selectedZoneIds), [selectedZoneIds]);
+    const selectedSpaceTaskTemplateIdSet = useMemo(
+        () => new Set(selectedSpaceTaskTemplateIds),
+        [selectedSpaceTaskTemplateIds],
+    );
+    const zonesById = useMemo(() => new Map(zones.map((zone) => [zone.id, zone])), [zones]);
+
     if (!loading && zones.length === 0) return null;
 
     const toggleZone = (zoneId: number) => {
-        const wasSelected = selectedZoneIds.includes(zoneId);
+        const wasSelected = selectedZoneIdSet.has(zoneId);
         setSelectedZoneIds(
             wasSelected
                 ? selectedZoneIds.filter((id) => id !== zoneId)
                 : [...selectedZoneIds, zoneId],
         );
         if (wasSelected) {
-            const taskIds = new Set((zones.find((zone) => zone.id === zoneId)?.tasks || []).flatMap((task) => task.id ? [task.id] : []));
+            const taskIds = new Set((zonesById.get(zoneId)?.tasks || []).flatMap((task) => task.id ? [task.id] : []));
             setSelectedSpaceTaskTemplateIds(selectedSpaceTaskTemplateIds.filter((taskId) => !taskIds.has(taskId)));
         }
     };
 
     const toggleSuggestedTask = (zoneId: number, taskId: number) => {
         setSelectedZoneIds(
-            selectedZoneIds.includes(zoneId)
+            selectedZoneIdSet.has(zoneId)
                 ? selectedZoneIds
                 : [...selectedZoneIds, zoneId],
         );
         setSelectedSpaceTaskTemplateIds(
-            selectedSpaceTaskTemplateIds.includes(taskId)
+            selectedSpaceTaskTemplateIdSet.has(taskId)
                 ? selectedSpaceTaskTemplateIds.filter((id) => id !== taskId)
                 : [...selectedSpaceTaskTemplateIds, taskId],
         );
@@ -76,7 +84,7 @@ export function TaskCreateZonesSection({
             ) : (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     {zones.map((zone) => {
-                        const selected = selectedZoneIds.includes(zone.id);
+                        const selected = selectedZoneIdSet.has(zone.id);
                         return (
                             <div
                                 key={zone.id}
@@ -105,7 +113,7 @@ export function TaskCreateZonesSection({
                                             <label key={task.id} className="flex cursor-pointer items-center gap-2 text-xs text-[var(--text-main)]">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedSpaceTaskTemplateIds.includes(task.id)}
+                                                    checked={selectedSpaceTaskTemplateIdSet.has(task.id)}
                                                     onChange={() => toggleSuggestedTask(zone.id, task.id as number)}
                                                     className="h-3.5 w-3.5 accent-accent"
                                                 />

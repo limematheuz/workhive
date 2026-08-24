@@ -8,7 +8,6 @@ function source(path: string): string {
 
 test("locations page uses billing surfaces and a compact filter chip", () => {
     const page = source("../app/dashboard/locations/page.tsx");
-    const card = source("../components/locations/LocationCard.tsx");
     const grid = source("../components/locations/LocationsGrid.tsx");
 
     assert.match(page, /billing-surface/);
@@ -24,10 +23,6 @@ test("locations page uses billing surfaces and a compact filter chip", () => {
     assert.doesNotMatch(page, /rounded-3xl shadow-sm mb-6/);
     assert.doesNotMatch(page, /btn-cancel-muted/);
     assert.doesNotMatch(page, /surface-glass-card/);
-
-    assert.match(card, /billing-block/);
-    assert.match(card, /variant="secondary"/);
-    assert.doesNotMatch(card, /emerald|color-green|text-green-|bg-green-/);
 
     assert.match(grid, /DataListTable/);
 });

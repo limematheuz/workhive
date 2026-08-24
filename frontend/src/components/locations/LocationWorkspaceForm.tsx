@@ -162,7 +162,7 @@ export function LocationWorkspaceForm({
     const [address, setAddress] = useState(location?.address || "");
     const [city, setCity] = useState(location?.city || "");
     const [postalCode, setPostalCode] = useState(location?.postal_code || "");
-    const [clientId, setClientId] = useState(location?.client_id?.toString() || (defaultClientId === "ALL" ? "" : String(defaultClientId)));
+    const [clientId, setClientId] = useState(() => location?.client_id?.toString() || (defaultClientId === "ALL" ? "" : String(defaultClientId)));
     const [profile, setProfile] = useState(() => initialProfile(location));
     const [access, setAccess] = useState(() => initialAccess(location));
     const [spaces, setSpaces] = useState<LocationSpace[]>([]);

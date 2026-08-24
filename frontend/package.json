@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types src/lib/*.test.ts",
     "test:e2e": "playwright test",
-    "doctor": "pnpm dlx react-doctor@0.9.12 --blocking warning --scope full"
+    "doctor": "pnpm dlx react-doctor@0.9.12 . --blocking warning --scope full"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
