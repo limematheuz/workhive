@@ -5,9 +5,11 @@ import { Calculator, FileText, Landmark, Loader2, ReceiptText } from "lucide-rea
 
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { PageHeader } from "@/components/ui/page-header";
+import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
 import { canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
+import { getPercentageChange } from "@/lib/metric-trend";
 import {
     getFiscalPeriodActivityLabel,
     getFiscalSummaryYearOptions,
@@ -30,41 +32,6 @@ const COLUMNS: DataListColumn[] = [
     { key: "irpf", label: "", className: "text-right" },
 ];
 
-function SummaryMetric({
-    label,
-    value,
-    description,
-    icon: Icon,
-    tone = "accent",
-}: {
-    label: string;
-    value: string;
-    description: string;
-    icon: typeof ReceiptText;
-    tone?: "accent" | "positive" | "warning";
-}) {
-    const iconClass = tone === "positive"
-        ? "bg-[var(--success-soft)] text-[var(--success)]"
-        : tone === "warning"
-            ? "bg-[var(--warning-soft)] text-[var(--warning)]"
-            : "bg-[var(--brand-blue-soft)] text-accent";
-
-    return (
-        <article className="billing-block rounded-[22px] p-4">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] sm:text-[11px]">{label}</p>
-                    <p className="mt-2 font-mono text-xl font-semibold leading-tight text-[var(--text-main)] sm:text-2xl">{value}</p>
-                    <p className="mt-1 text-[11px] text-[var(--text-muted)]">{description}</p>
-                </div>
-                <span className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${iconClass}`} aria-hidden="true">
-                    <Icon className="h-4 w-4" />
-                </span>
-            </div>
-        </article>
-    );
-}
-
 export default function FiscalSummaryPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
@@ -72,6 +39,7 @@ export default function FiscalSummaryPage() {
     const currentYear = new Date().getFullYear();
     const [year, setYear] = useState(currentYear);
     const [summary, setSummary] = useState<FiscalSummary | null>(null);
+    const [previousSummary, setPreviousSummary] = useState<FiscalSummary | null>(null);
     const [loading, setLoading] = useState(true);
     const text = dict.fiscal_summary;
 
@@ -79,7 +47,12 @@ export default function FiscalSummaryPage() {
         if (!canViewSummary) return;
         try {
             setLoading(true);
-            setSummary(await FiscalSummaryService.getSummary(year));
+            const [current, previous] = await Promise.all([
+                FiscalSummaryService.getSummary(year),
+                FiscalSummaryService.getSummary(year - 1).catch(() => null),
+            ]);
+            setSummary(current);
+            setPreviousSummary(previous);
         } catch {
             toast.error(text.error_load);
         } finally {
@@ -123,6 +96,10 @@ export default function FiscalSummaryPage() {
     const activityLabel = (period: FiscalPeriodSummary) => text.activity.replace(
         "{invoices}", period.issued_invoice_count.toString(),
     ).replace("{expenses}", period.registered_expense_count.toString());
+    const trend = (current: number, previous: number) => {
+        const value = getPercentageChange(current, previous);
+        return value === null ? undefined : { value };
+    };
 
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
@@ -146,10 +123,10 @@ export default function FiscalSummaryPage() {
                 />
 
                 <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label={text.annual_totals}>
-                    <SummaryMetric label={text.output_vat} value={formatCurrency(summary.annual.output_vat_amount)} description={text.output_vat_desc} icon={ReceiptText} />
-                    <SummaryMetric label={text.input_vat} value={formatCurrency(summary.annual.registered_input_vat_amount)} description={text.input_vat_desc} icon={FileText} tone="positive" />
-                    <SummaryMetric label={vatBalanceLabel} value={formatCurrency(Math.abs(summary.annual.estimated_vat_balance))} description={text.vat_balance_desc} icon={Landmark} tone={vatBalanceState === "payable" ? "warning" : "positive"} />
-                    <SummaryMetric label={text.irpf_withheld} value={formatCurrency(summary.annual.withheld_irpf_amount)} description={text.irpf_withheld_desc} icon={Calculator} />
+                    <SummaryMetricCard label={text.output_vat} value={formatCurrency(summary.annual.output_vat_amount)} description={text.output_vat_desc} icon={ReceiptText} trend={previousSummary ? trend(summary.annual.output_vat_amount, previousSummary.annual.output_vat_amount) : undefined} />
+                    <SummaryMetricCard label={text.input_vat} value={formatCurrency(summary.annual.registered_input_vat_amount)} description={text.input_vat_desc} icon={FileText} trend={previousSummary ? trend(summary.annual.registered_input_vat_amount, previousSummary.annual.registered_input_vat_amount) : undefined} />
+                    <SummaryMetricCard label={vatBalanceLabel} value={formatCurrency(Math.abs(summary.annual.estimated_vat_balance))} description={text.vat_balance_desc} icon={Landmark} trend={previousSummary ? trend(Math.abs(summary.annual.estimated_vat_balance), Math.abs(previousSummary.annual.estimated_vat_balance)) : undefined} />
+                    <SummaryMetricCard label={text.irpf_withheld} value={formatCurrency(summary.annual.withheld_irpf_amount)} description={text.irpf_withheld_desc} icon={Calculator} trend={previousSummary ? trend(summary.annual.withheld_irpf_amount, previousSummary.annual.withheld_irpf_amount) : undefined} />
                 </section>
 
                 <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-muted)]">

@@ -28,6 +28,7 @@ import { useUser } from "@/lib/user-context"
 import { redirect } from "next/navigation"
 import { toast } from "@/lib/toast"
 import { Loader2 } from "lucide-react"
+import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend"
 
 type CreateSheetState = {
     open: boolean
@@ -55,6 +56,7 @@ export default function InvoicesPage() {
     const [selectedStatus, setSelectedStatus] = useState<string>("")
     const [selectedClientId, setSelectedClientId] = useState<string>("")
     const [invoiceSearch, setInvoiceSearch] = useState<string>("")
+    const [month, setMonth] = useState(() => getMonthKey(new Date()) ?? "")
     const [createSheet, setCreateSheet] = useState<CreateSheetState>(EMPTY_CREATE_SHEET)
     const [activeView, setActiveView] = useState<"invoices" | "jobs">("invoices")
     const [invoiceableTasks, setInvoiceableTasks] = useState<InvoiceableTask[]>([])
@@ -157,9 +159,16 @@ export default function InvoicesPage() {
     const selectedJobIdSet = new Set(selectedJobIds)
     const selectedJobs = invoiceableTasks.filter(task => selectedJobIdSet.has(task.id))
     const selectedJobsClientId = selectedJobs[0]?.clientId
-    const visibleInvoices = filterVisibleInvoices(invoices, invoiceSearch, getClientName, dict.invoices)
-    const invoiceStats = computeInvoiceStats(invoices)
-    const statusCounts = computeStatusCounts(invoices)
+    const invoicesForMonth = invoices.filter((invoice) => getMonthKey(invoice.issue_date) === month)
+    const previousMonth = getPreviousMonthKey(month)
+    const previousInvoicesForMonth = previousMonth
+        ? invoices.filter((invoice) => getMonthKey(invoice.issue_date) === previousMonth)
+        : []
+    const visibleInvoices = filterVisibleInvoices(invoicesForMonth, invoiceSearch, getClientName, dict.invoices)
+    const previousVisibleInvoices = filterVisibleInvoices(previousInvoicesForMonth, invoiceSearch, getClientName, dict.invoices)
+    const invoiceStats = computeInvoiceStats(visibleInvoices)
+    const previousInvoiceStats = computeInvoiceStats(previousVisibleInvoices)
+    const statusCounts = computeStatusCounts(visibleInvoices)
 
     const resetCreateForm = () => {
         setCreateSheet((current) => ({
@@ -232,6 +241,7 @@ export default function InvoicesPage() {
                 {activeView === "invoices" && (
                     <InvoicesStatsCards
                         stats={invoiceStats}
+                        previousStats={previousInvoiceStats}
                         statusCounts={statusCounts}
                         labels={dict.invoices}
                     />
@@ -248,10 +258,14 @@ export default function InvoicesPage() {
                         onClientChange: setSelectedClientId,
                         selectedStatus,
                         onStatusChange: setSelectedStatus,
+                        month,
+                        onMonthChange: setMonth,
+                        monthLabel: dict.invoices.month,
                         onReset: () => {
                             setInvoiceSearch("")
                             setSelectedClientId("")
                             setSelectedStatus("")
+                            setMonth(getMonthKey(new Date()) ?? "")
                         },
                         clients,
                         labels: dict.invoices,

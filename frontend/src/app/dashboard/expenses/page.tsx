@@ -23,6 +23,17 @@ import { ClientService } from "@/services/client.service";
 import type { Client } from "@/types/client";
 import type { Expense, ExpensePayload } from "@/types/expense";
 import { toast } from "@/lib/toast";
+import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend";
+
+function summarizeExpenses(expenses: Expense[]) {
+    return expenses.reduce(
+        (acc, expense) => ({
+            tax: acc.tax + expense.tax_amount,
+            total: acc.total + expense.total_amount,
+        }),
+        { tax: 0, total: 0 },
+    );
+}
 
 export default function ExpensesPage() {
     const { dict } = useDictionary();
@@ -36,6 +47,7 @@ export default function ExpensesPage() {
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("");
+    const [month, setMonth] = useState(() => getMonthKey(new Date()) ?? "");
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [keepAdding, setKeepAdding] = useState(true);
@@ -78,20 +90,16 @@ export default function ExpensesPage() {
         });
     }, [userLoading]);
 
-    const totals = useMemo(() => {
-        return expenses.reduce(
-            (acc, expense) => ({
-                base: acc.base + expense.base_amount,
-                tax: acc.tax + expense.tax_amount,
-                total: acc.total + expense.total_amount,
-            }),
-            { base: 0, tax: 0, total: 0 },
-        );
-    }, [expenses]);
-
     const filteredExpenses = useMemo(() => {
-        return filterExpenses(expenses, search, categoryFilter);
-    }, [categoryFilter, expenses, search]);
+        return filterExpenses(expenses.filter((expense) => getMonthKey(expense.expense_date) === month), search, categoryFilter);
+    }, [categoryFilter, expenses, month, search]);
+    const previousMonthExpenses = useMemo(() => {
+        const previousMonth = getPreviousMonthKey(month);
+        if (!previousMonth) return [];
+        return filterExpenses(expenses.filter((expense) => getMonthKey(expense.expense_date) === previousMonth), search, categoryFilter);
+    }, [categoryFilter, expenses, month, search]);
+    const totals = useMemo(() => summarizeExpenses(filteredExpenses), [filteredExpenses]);
+    const previousTotals = useMemo(() => summarizeExpenses(previousMonthExpenses), [previousMonthExpenses]);
 
     const resetForm = () => {
         setEditingExpense(null);
@@ -190,7 +198,7 @@ export default function ExpensesPage() {
                         </button>
                     )}
                 />
-                <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={expenses.length} />
+                <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} />
 
                 <ExpensesListSection
                     expenses={filteredExpenses}
@@ -198,6 +206,8 @@ export default function ExpensesPage() {
                     onSearchChange={setSearch}
                     categoryFilter={categoryFilter}
                     onCategoryFilterChange={setCategoryFilter}
+                    month={month}
+                    onMonthChange={setMonth}
                     onEdit={startEdit}
                     onDelete={(expense) => void handleDelete(expense)}
                 />
