@@ -47,7 +47,7 @@ arbitrarios en producción.
 | **SemVer** | Versionado semántico `MAJOR.MINOR.PATCH`: incompatible, nueva funcionalidad compatible y corrección compatible. |
 | **SHA / Git SHA** | Identificador criptográfico de un commit. Indica exactamente qué código se construyó. No es una contraseña. |
 | **CI** | Integración continua: pruebas y verificaciones automáticas ejecutadas por GitHub Actions. |
-| **GitHub Actions** | Automatización alojada en GitHub. En este proyecto ejecuta CI, publica imágenes y solicita despliegues manuales revisados. |
+| **GitHub Actions** | Automatización alojada en GitHub. En este proyecto ejecuta CI, publica imágenes tras llegar a `main` y solicita despliegues aprobados. |
 | **IAM** | Identity and Access Management. Sistema de permisos de AWS. |
 | **Role / rol IAM** | Identidad de AWS con permisos, usada temporalmente por EC2 o GitHub Actions. No contiene una contraseña fija. |
 | **OIDC** | OpenID Connect. GitHub demuestra su identidad ante AWS y recibe credenciales temporales; no se guardan claves AWS en GitHub. |
@@ -85,6 +85,13 @@ Su función es impedir que código no revisado llegue a `main`.
 
 ### Publicación de imágenes
 
+Cada push a `main` —normalmente el resultado de mergear una PR revisada— activa
+**Deploy main to production**. Primero espera CI, seguridad y React Doctor del
+SHA exacto; después publica las imágenes backend/frontend con ese SHA inmutable
+y queda detenido hasta que un revisor apruebe el entorno GitHub `production`.
+Solo entonces solicita el despliegue por OIDC y SSM. Las PR no publican ni
+despliegan imágenes.
+
 La acción manual **Publish release images to ECR** usa un rol OIDC dedicado que
 puede publicar únicamente en los repositorios ECR de WorkHive. Ese rol no debe
 tener permiso para ejecutar comandos en EC2.
@@ -102,24 +109,26 @@ Publicar imágenes solo las deja disponibles en ECR. No cambia producción.
 
 ### Despliegue
 
-La acción manual **Deploy reviewed release to production** usa un segundo rol
-OIDC, diferente del rol de publicación. Este rol puede solicitar el documento
-SSM privado y leer su resultado, pero no puede publicar imágenes ni conectarse
-por SSH.
+El job aprobado de **Deploy main to production** usa un segundo rol OIDC,
+diferente del rol de publicación. Este rol puede solicitar el documento SSM
+privado y leer su resultado, pero no puede publicar imágenes ni conectarse por
+SSH. La acción manual **Deploy reviewed release to production** sigue disponible
+para rollback deliberado.
 
 SSM ejecuta en EC2 el script versionado
 `ops/deploy/deploy_ecr_release.sh`. El script hace, en este orden:
 
 1. crea y valida un backup antes de tocar servicios;
-2. comprueba que backend y frontend con el tag solicitado existen en ECR;
+2. comprueba que backend y frontend con el SHA o tag solicitado existen en ECR;
 3. inicia sesión de Docker en ECR de forma temporal;
-4. descarga y valida el tag Git anotado y sincroniza el checkout operativo de
-   EC2 con ese commit exacto, sin aceptar cambios locales rastreados;
+4. valida que el SHA pertenece a `origin/main` (o valida un tag Git anotado) y
+   sincroniza el checkout operativo de EC2 con ese commit exacto, sin aceptar
+   cambios locales rastreados;
 5. descarga imágenes, sin construirlas;
 6. recrea los servicios necesarios con `--no-build`;
 7. espera los health checks y aplica migraciones Alembic;
 8. verifica backend, login y contenedores;
-9. registra la release desplegada para permitir rollback.
+9. registra la referencia desplegada para permitir rollback.
 
 Si una comprobación falla, el script restaura el checkout operativo anterior e
 intenta volver a las imágenes inmutables de la release anterior. Un rollback de base de datos no es automático: las
@@ -247,7 +256,19 @@ Un tag anotado fija la relación entre la versión legible (`v1.2.3`) y el commi
 exacto. No lo muevas ni lo borres tras publicarlo. Para una versión que ya está
 en ECR o producción, no se vuelve a crear el tag.
 
-### 4. Publicar imágenes en ECR
+### 4. Despliegue automático tras merge a `main`
+
+No ejecutes una Action desde una PR. Al mergear, **Deploy main to production**
+espera los checks de ese SHA, publica las imágenes inmutables y se detiene en
+la aprobación del entorno `production`. Tras aprobarlo, el workflow solicita el
+comando SSM y espera su resultado final.
+
+Si otro merge llega mientras la producción está ocupada, GitHub conserva el
+despliegue en curso y el candidato más reciente pendiente; no interrumpe una
+operación ya iniciada en EC2. Esto evita aplicar dos cambios sobre producción a
+la vez.
+
+### 5. Publicar una release semántica manualmente
 
 En GitHub abre **Actions → Publish release images to ECR → Run workflow**:
 
@@ -259,7 +280,7 @@ El build ocurre en un runner de GitHub, no en EC2. Es normal que tarde varios
 minutos, especialmente para el frontend. Después confirma que ECR muestra un
 escaneo básico completado para ambas imágenes.
 
-### 5. Desplegar la misma release en producción
+### 6. Desplegar o revertir una release semántica manualmente
 
 En GitHub abre **Actions → Deploy reviewed release to production → Run workflow**:
 
@@ -272,13 +293,13 @@ salida en AWS Systems Manager. Si la acción de GitHub falla pero SSM termina
 correctamente, revisa primero los permisos `ssm:GetCommandInvocation` del rol
 OIDC de despliegue; no repitas pasos de publicación innecesariamente.
 
-### 6. Verificar producción
+### 7. Verificar producción
 
 Conéctate a EC2 solo para diagnóstico o comprobación administrativa:
 
 ```bash
 cd <APP_DIRECTORY>
-sudo grep -E '^(RELEASE_TAG|DEPLOYED_AT)=' \
+sudo grep -E '^(RELEASE_REF|DEPLOYED_AT)=' \
   /etc/<APP_NAME>/deployed-release.env
 docker compose --env-file .env ps
 ```

@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@10.30.3",
   "scripts": {
+    "clean:cache": "node scripts/clean-caches.mjs",
+    "test:clean:cache": "node --test scripts/clean-caches.test.mjs",
     "test:architecture": "node --test scripts/architecture-guardrails.test.mjs",
     "release:prepare": "node scripts/release-version.mjs",
     "release:verify": "node scripts/release-version.mjs --verify",

@@ -195,9 +195,11 @@ pnpm release:tag
 ```
 
 `release:tag` se niega a ejecutarse fuera de `main`, con cambios locales, si
-`main` no coincide con GitHub o si el tag ya existe. Después ejecuta, en este
-orden, las Actions **Publish release images to ECR** y **Deploy reviewed release
-to production**, usando el tag mostrado por el comando. Consulta el documento de
+`main` no coincide con GitHub o si el tag ya existe. Cada merge a `main` publica
+las imágenes del SHA exacto y queda pendiente de aprobación en `production`
+antes de desplegar. Las Actions **Publish release images to ECR** y **Deploy
+reviewed release to production** se conservan para releases semánticas y
+rollbacks deliberados. Consulta el documento de
 [versionado de releases](docs/operations/RELEASE_VERSIONING.md) para el flujo
 completo de producción y rollback.
 
@@ -337,11 +339,12 @@ pnpm release:tag
 ```
 
 `release:tag` refuses to run from another branch, with uncommitted changes,
-when `main` is out of sync with GitHub, or when the tag already exists. Then
-run the GitHub Actions workflows in this order: **Publish release images to
-ECR**, followed by **Deploy reviewed release to production**, using the printed
-tag. See [release versioning](docs/operations/RELEASE_VERSIONING.md) for the
-complete production flow and rollback procedure.
+when `main` is out of sync with GitHub, or when the tag already exists. Every
+merge to `main` publishes the exact SHA images and waits for `production`
+approval before deploying. **Publish release images to ECR** and **Deploy
+reviewed release to production** remain available for semantic releases and
+deliberate rollbacks. See [release versioning](docs/operations/RELEASE_VERSIONING.md)
+for the complete production flow and rollback procedure.
 
 ### Security
 

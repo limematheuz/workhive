@@ -107,7 +107,8 @@ GitHub Actions must not receive SSH access to production or a long-lived AWS
 key. Instead, it exchanges its OIDC identity for a short-lived deployment role
 and invokes the single private `WorkHiveProductionDeploy` SSM document.
 
-That document accepts only a `vMAJOR.MINOR.PATCH` release tag, passes it as an
+That document accepts an immutable full Git SHA for automatic main deployments
+or a `vMAJOR.MINOR.PATCH` release tag for a formal rollback, passes it as an
 environment variable, and calls the already-reviewed host deployment script.
 The deployment role is separate from the ECR publishing role. This separation
 means that a workflow permitted to build an image cannot deploy it, and a

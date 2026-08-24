@@ -1,6 +1,6 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api"
 import { LocationWorkspaceService } from "@/services/location-workspace.service"
-import {
+import type {
     Location,
     LocationSpace,
     LocationSpaceTask,
