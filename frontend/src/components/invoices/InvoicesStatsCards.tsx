@@ -4,7 +4,7 @@ import { CircleCheck, Clock3, FileText, OctagonAlert } from "lucide-react";
 
 import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
 import { formatCurrency } from "@/lib/format";
-import { getPercentageChange } from "@/lib/metric-trend";
+import { getMetricTrend } from "@/lib/metric-trend";
 
 export type InvoiceStats = {
     totalCount: number;
@@ -31,24 +31,20 @@ type InvoicesStatsCardsProps = {
 };
 
 export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, labels }: InvoicesStatsCardsProps) {
-    const getTrend = (current: number, previous: number, comparisonDirection?: "higher" | "lower") => {
-        const value = getPercentageChange(current, previous);
-        return value === null ? undefined : { value, comparisonDirection };
-    };
     const cards = [
         {
             label: labels.stats_total_invoiced,
             value: formatCurrency(stats.totalAmount),
             detail: labels.stats_invoices_count.replace("{count}", stats.totalCount.toString()),
             icon: FileText,
-            trend: previousStats ? getTrend(stats.totalAmount, previousStats.totalAmount) : undefined,
+            trend: previousStats ? getMetricTrend(stats.totalAmount, previousStats.totalAmount) : undefined,
         },
         {
             label: labels.stats_collected,
             value: formatCurrency(stats.paidAmount),
             detail: labels.stats_paid_count.replace("{count}", (statusCounts.paid || 0).toString()),
             icon: CircleCheck,
-            trend: previousStats ? getTrend(stats.paidAmount, previousStats.paidAmount) : undefined,
+            trend: previousStats ? getMetricTrend(stats.paidAmount, previousStats.paidAmount) : undefined,
         },
         {
             label: labels.stats_pending,
@@ -58,14 +54,14 @@ export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, 
                 ((statusCounts.draft || 0) + (statusCounts.issued || 0)).toString(),
             ),
             icon: Clock3,
-            trend: previousStats ? getTrend(stats.openAmount, previousStats.openAmount, "lower") : undefined,
+            trend: previousStats ? getMetricTrend(stats.openAmount, previousStats.openAmount, "lower") : undefined,
         },
         {
             label: labels.stats_overdue,
             value: formatCurrency(stats.overdueAmount),
             detail: labels.stats_overdue_count.replace("{count}", (statusCounts.overdue || 0).toString()),
             icon: OctagonAlert,
-            trend: previousStats ? getTrend(stats.overdueAmount, previousStats.overdueAmount, "lower") : undefined,
+            trend: previousStats ? getMetricTrend(stats.overdueAmount, previousStats.overdueAmount, "lower") : undefined,
         },
     ];
 

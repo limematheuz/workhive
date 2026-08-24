@@ -21,7 +21,7 @@ test("invoice stats cards use compact semantic icon chips instead of colour-only
 });
 
 test("invoice stats cards receive calculated comparisons instead of hard-coded badges", () => {
-    assert.match(source, /getPercentageChange/);
+    assert.match(source, /getMetricTrend/);
     assert.match(source, /previousStats/);
     assert.match(source, /previousStats\.openAmount, "lower"/);
     assert.doesNotMatch(source, /100%/);

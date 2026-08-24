@@ -8,6 +8,15 @@ export function getPercentageChange(current: number, previous: number): number |
     return ((current - previous) / Math.abs(previous)) * 100;
 }
 
+export function getMetricTrend(
+    current: number,
+    previous: number,
+    comparisonDirection?: "higher" | "lower",
+) {
+    const value = getPercentageChange(current, previous);
+    return value === null ? undefined : { value, comparisonDirection };
+}
+
 export function getMonthKey(value: string | Date): string | null {
     const date = typeof value === "string" ? new Date(value) : value;
     if (Number.isNaN(date.getTime())) return null;
