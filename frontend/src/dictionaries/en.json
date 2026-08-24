@@ -721,6 +721,27 @@
       "defined_services": "Defined services",
       "linked_services": "Linked services",
       "no_owner_services": "The owning company has not defined fixed services for this location yet."
+    },
+    "workspace": {
+      "client_unavailable": "Client unavailable",
+      "no_client": "No linked client",
+      "other_type": "Other",
+      "pending_tasks": "pending",
+      "tasks": "tasks",
+      "view_location": "View {name}",
+      "actions_for": "Actions for {name}",
+      "wizard_progress": "Location progress",
+      "step_info_access": "Information and access",
+      "step_type": "Location type",
+      "step_features": "Features",
+      "step_spaces_tasks": "Spaces and tasks",
+      "summary": "Location summary",
+      "name": "Name",
+      "address": "Address",
+      "type": "Type",
+      "spaces": "Spaces",
+      "access": "Access",
+      "pending": "Pending"
     }
   },
   "clients": {

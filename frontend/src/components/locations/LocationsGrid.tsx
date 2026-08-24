@@ -90,7 +90,7 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             <span className={`w-fit rounded-md px-2 py-1 text-[11px] font-semibold capitalize ${visual.className}`}>{siteType}</span>
             <div className="flex min-w-0 items-start gap-1.5 text-xs text-[var(--text-muted)]"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" /><span className="line-clamp-2">{location.address}, {location.city}</span></div>
             <span className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-[var(--bg-tertiary)] px-2 py-1 text-xs font-semibold text-[var(--text-main)]"><ListChecks className="h-3.5 w-3.5 text-accent" />{taskItems.length}<span className="text-[var(--text-muted)]">({pendingTasks} {workspace.pending_tasks})</span></span>
-            <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${location.is_active ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "bg-slate-500/10 text-slate-600"}`}><CheckCircle2 className="h-3.5 w-3.5" />{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span>
+            <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${location.is_active ? "border border-[var(--status-active-border)] bg-[var(--status-active-bg)] text-[var(--status-active-text)]" : "bg-slate-500/10 text-slate-600"}`}><CheckCircle2 className="h-3.5 w-3.5" />{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span>
             {renderActions(location)}
         </>
     }
@@ -102,7 +102,7 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
 
         return <div className="flex items-center gap-3">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${visual.className}`}><Icon className="h-4 w-4" /></span>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</p><div className="mt-2 flex items-center gap-2"><span className="text-xs text-[var(--text-muted)]">{taskItems.length} {workspace.tasks}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${location.is_active ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "bg-slate-500/10 text-slate-600"}`}>{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span></div></div>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</p><div className="mt-2 flex items-center gap-2"><span className="text-xs text-[var(--text-muted)]">{taskItems.length} {workspace.tasks}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${location.is_active ? "border border-[var(--status-active-border)] bg-[var(--status-active-bg)] text-[var(--status-active-text)]" : "bg-slate-500/10 text-slate-600"}`}>{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span></div></div>
             {renderActions(location)}
         </div>
     }

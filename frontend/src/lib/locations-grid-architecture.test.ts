@@ -33,8 +33,8 @@ test("location table uses semantic status and shared application surfaces", () =
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const page = read("../app/dashboard/locations/page.tsx");
 
-    assert.match(grid, /bg-emerald-500\/10/);
-    assert.match(grid, /text-emerald-700/);
+    assert.match(grid, /bg-\[var\(--status-active-bg\)\]/);
+    assert.match(grid, /text-\[var\(--status-active-text\)\]/);
     assert.match(grid, /bg-accent\/10/);
     assert.match(detail, /bg-accent\/90/);
     assert.match(page, /billing-surface/);
