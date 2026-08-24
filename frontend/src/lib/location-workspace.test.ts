@@ -85,6 +85,17 @@ test("location configuration exposes spaces and their reusable tasks without rep
     assert.match(workspace, /LocationSpacesTab/);
 });
 
+test("location operational data does not reload when polling replaces the location object", () => {
+    const hook = read("../hooks/useLocationTasksSheet.ts");
+    const detail = read("../components/locations/LocationDetailDialog.tsx");
+
+    assert.match(hook, /const locationId = location\?\.id/);
+    assert.match(hook, /\[open, locationId\]/);
+    assert.doesNotMatch(hook, /\[open, location\]/);
+    assert.match(detail, /showSpaces=\{false\}/);
+    assert.match(detail, /Estructura de espacios/);
+});
+
 test("opening a location shows its detail first and keeps editing as an explicit action", () => {
     const grid = read("../components/locations/LocationsGrid.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");
