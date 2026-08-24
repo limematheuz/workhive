@@ -31,20 +31,11 @@ interface LocationsGridProps {
 
 const GRID_CLASS = "grid-cols-[minmax(12rem,1.35fr)_minmax(9rem,1fr)_minmax(6.5rem,.7fr)_minmax(13rem,1.2fr)_minmax(10rem,.8fr)_minmax(7rem,.65fr)_2.25rem]"
 
-function getGradient(name: string): string {
-    const gradients = [
-        "linear-gradient(160deg, var(--brand-blue-sky) 0%, var(--brand-blue-mid) 100%)",
-        "linear-gradient(160deg, var(--brand-blue-sky-deep) 0%, var(--brand-blue) 100%)",
-        "linear-gradient(160deg, var(--brand-blue-mist) 0%, var(--brand-blue-bright) 100%)",
-        "linear-gradient(160deg, var(--brand-blue-sky) 0%, var(--brand-blue) 100%)",
-    ]
-    return gradients[name.charCodeAt(0) % gradients.length]
-}
-
 export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: LocationsGridProps) {
     const { dict } = useDictionary()
     const { user } = useUser()
-    const [selectedLocation, setSelectedLocation] = React.useState<Location | null>(null)
+    const [selectedLocationId, setSelectedLocationId] = React.useState<number | null>(null)
+    const selectedLocation = locations.find((location) => location.id === selectedLocationId) ?? null
     const readOnlyRole = user?.role?.name === "viewer" || user?.role?.name === "manager"
 
     const getClientName = (clientId?: number | null) => clientId
@@ -66,7 +57,7 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
                         {
                             label: "Ver detalle",
                             icon: Eye,
-                            onClick: () => setSelectedLocation(location),
+                            onClick: () => setSelectedLocationId(location.id),
                         },
                         ...(!isReadOnly ? [
                             {
@@ -139,11 +130,11 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             desktopFrom="lg"
             renderDesktopRow={renderDesktopRow}
             renderCompactRow={renderCompactRow}
-            onRowClick={setSelectedLocation}
+            onRowClick={(location) => setSelectedLocationId(location.id)}
             rowAriaLabel={(location) => `Ver detalle de ${location.name}`}
             empty={<div className="flex flex-col items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent"><MapPin className="h-6 w-6" /></span><p className="text-sm font-medium text-[var(--text-muted)]">{dict.locations.table.empty}</p></div>}
         />
 
-        {selectedLocation && <LocationDetailDialog location={selectedLocation} clientName={getClientName(selectedLocation.client_id)} activeLabel={dict.locations.table.active} inactiveLabel={dict.locations.table.inactive} gradient={getGradient(selectedLocation.name)} onClose={() => setSelectedLocation(null)} onEdit={() => { setSelectedLocation(null); onEdit(selectedLocation); }} />}
+        {selectedLocation && <LocationDetailDialog location={selectedLocation} clientName={getClientName(selectedLocation.client_id)} activeLabel={dict.locations.table.active} inactiveLabel={dict.locations.table.inactive} onClose={() => setSelectedLocationId(null)} onEdit={() => onEdit(selectedLocation)} />}
     </>
 }

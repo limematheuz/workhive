@@ -1,11 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import Image from "next/image";
 import { ExternalLink } from "lucide-react";
 import { Location } from "@/types/location";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { resolveApiMediaUrl } from "@/lib/api";
 import { isSafeLocationMapUrl } from "@/lib/location-map-url";
 import { Button } from "@/components/ui/button";
 import { getLocationHeroFallbackGradient } from "./utils";
@@ -34,36 +32,17 @@ export function TechTaskMapArea({
         ? customMapUrl
         : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
 
-    const photoSrc = location?.photo_url
-        ? resolveApiMediaUrl(location.photo_url) || null
-        : null;
     const addressLine = [location?.address, location?.city].filter(Boolean).join(", ");
     const fallbackGradient = getLocationHeroFallbackGradient(locationName);
 
     return (
         <div className="tech-task-map-area relative h-52 w-full shrink-0 overflow-hidden sm:h-56">
-            {/* Layer 1: blurred property media (dedicated layer — filter on wrapper, not Next/Image) */}
+            {/* Layer 1: location fallback background */}
             <div className="tech-task-hero-media absolute inset-0 z-0 overflow-hidden" aria-hidden>
-                {photoSrc ? (
-                    <div className="tech-task-hero-photo">
-                        <Image
-                            src={photoSrc}
-                            alt=""
-                            fill
-                            sizes="(max-width: 1024px) 100vw, 42rem"
-                            className="object-cover"
-                            unoptimized
-                        />
-                    </div>
-                ) : (
-                    <div
-                        className="tech-task-hero-fallback"
-                        style={{ background: fallbackGradient }}
-                    />
-                )}
+                <div className="tech-task-hero-fallback" style={{ background: fallbackGradient }} />
             </div>
 
-            {/* Layer 2: dark scrim between photo and copy */}
+            {/* Layer 2: dark scrim between background and copy */}
             <div className="tech-task-hero-scrim absolute inset-0 z-[1]" aria-hidden />
 
             {/* Layer 3: high-contrast copy + GPS CTA */}

@@ -169,6 +169,63 @@ def test_location_spaces_can_be_reordered_atomically(client, db):
     assert [space["id"] for space in client.get(f"/api/v1/locations/{location['id']}/spaces", headers=headers).json()] == ordered_ids
 
 
+def test_location_workspace_fields_are_updated_and_returned(client, db):
+    company = _company(db, "UpdateWorkspace")
+    admin = _admin(db, company)
+    headers = _headers(admin)
+    created = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Local inicial",
+            "address": "Calle Inicial 1",
+            "city": "Madrid",
+        },
+    )
+    assert created.status_code == 201, created.text
+
+    updated = client.patch(
+        f"/api/v1/locations/{created.json()['id']}",
+        headers=headers,
+        json={
+            "name": "Local actualizado",
+            "address": "Avenida Actualizada 20",
+            "city": "Barcelona",
+            "postal_code": "08001",
+            "profile": {
+                "site_type": "office",
+                "internal_code": "OFI-UPDATE",
+                "contact_name": "María Pérez",
+                "contact_phone": "600 111 222",
+                "service_notes": "Acceso por recepción.",
+                "attributes": {"office_count": 3, "has_kitchen": True},
+            },
+            "access": {
+                "permitted_days": ["mon", "tue", "wed", "thu", "fri"],
+                "permitted_from": "07:00",
+                "permitted_until": "21:00",
+                "requires_outside_hours_authorization": True,
+                "access_method": "code",
+                "keys_available": True,
+                "keys_location": "Recepción",
+                "key_custodian": "Conserjería",
+                "instructions": "Llamar antes de entrar.",
+                "access_code": "4321",
+            },
+        },
+    )
+
+    assert updated.status_code == 200, updated.text
+    location = updated.json()
+    assert location["name"] == "Local actualizado"
+    assert location["profile"]["internal_code"] == "OFI-UPDATE"
+    assert location["profile"]["attributes"]["office_count"] == 3
+    assert location["access"]["requires_outside_hours_authorization"] is True
+    assert location["access"]["keys_location"] == "Recepción"
+    assert location["access"]["has_access_code"] is True
+    assert "access_code" not in location["access"]
+
+
 def test_space_catalog_generates_editable_office_suggestions(client, db):
     company = _company(db, "CatalogOwner")
     admin = _admin(db, company)

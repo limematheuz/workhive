@@ -8,7 +8,6 @@ export interface Location {
     managing_company_id?: number | null;
     owner_company_id?: number | null;
     is_active: boolean;
-    photo_url?: string;
     latitude?: number;
     longitude?: number;
     map_url?: string;

@@ -32,7 +32,7 @@ export function LocationTasksWorkspace({
                 <PremiumTabs
                     tabs={[
                         ...(state.isAdminOrManager ? [
-                            { id: "templates" as const, label: "Servicios" },
+                            { id: "templates" as const, label: "Servicios habituales" },
                             { id: "spaces" as const, label: "Espacios" },
                         ] : []),
                         { id: "history" as const, label: "Registro" },

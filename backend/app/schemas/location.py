@@ -41,7 +41,6 @@ class LocationBase(BaseModel):
     address: str
     city: str
     postal_code: str | None = None
-    photo_url: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     map_url: str | None = Field(default=None, max_length=2048)
@@ -78,7 +77,6 @@ class LocationUpdate(BaseModel):
     address: str | None = None
     city: str | None = None
     postal_code: str | None = None
-    photo_url: str | None = None
     latitude: float | None = None
     longitude: float | None = None
     map_url: str | None = Field(default=None, max_length=2048)

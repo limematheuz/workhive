@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("location list uses a dense operational table and keeps visual content in the detail dialog", () => {
+test("location list uses a dense operational table and keeps the detail free of photos", () => {
     const grid = read("../components/locations/LocationsGrid.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const globals = read("../app/globals.css");
@@ -16,14 +16,12 @@ test("location list uses a dense operational table and keeps visual content in t
     assert.match(grid, /Tareas/);
     assert.match(grid, /Estado/);
     assert.doesNotMatch(grid, /LocationCard/);
-    assert.match(grid, /--brand-blue-sky|--brand-blue-mist|--brand-blue-sky-deep|--brand-blue-bright/);
-    assert.match(grid, /var\(--brand-blue\)/);
     assert.doesNotMatch(grid, /#1e3a8a|#1e40af|#14b8a6|#2563eb/);
     assert.match(grid, /ActionPopover/);
     assert.match(grid, /getLocationTypeVisual/);
     assert.match(detail, /dialog-glass/);
     assert.match(detail, /dialog-glass-overlay|glass-panel/);
-    assert.match(detail, /<Image/);
+    assert.doesNotMatch(detail, /photo_url|<Image/);
     assert.match(globals, /\[data-slot="dialog-close"\]/);
     assert.match(globals, /\.dialog-glass/);
     assert.match(globals, /\.billing-block/);

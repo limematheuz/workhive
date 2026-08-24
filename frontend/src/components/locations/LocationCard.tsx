@@ -1,13 +1,11 @@
 "use client"
 
-import Image from "next/image"
 import { Location } from "@/services/location.service"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, MapPin, Building2, Pencil, Trash2, ListChecks } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useDictionary } from "@/lib/dictionary-context"
 import { ActionPopover } from "@/components/ui/action-popover"
-import { resolveApiMediaUrl } from "@/lib/api"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
 
 interface LocationCardProps {
@@ -72,33 +70,18 @@ export function LocationCard({
 
     return (
         <article className="billing-block group relative flex h-full w-full flex-col overflow-hidden rounded-2xl border border-[var(--border-soft)] transition-[border-color,box-shadow] duration-200 hover:border-accent/30 hover:shadow-[0_8px_20px_rgba(52,74,94,0.08)]">
-            {location.photo_url ? (
-                <div className="relative h-28 w-full overflow-hidden border-b border-[var(--border-soft)] bg-[var(--bg-tertiary)] sm:h-32">
-                    <Image
-                        src={resolveApiMediaUrl(location.photo_url) || ""}
-                        alt={location.name}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                        className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        unoptimized
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
-                    {headerBadges}
+            <div
+                className="relative h-28 w-full overflow-hidden border-b border-[var(--border-soft)] sm:h-32"
+                style={{ background: gradient }}
+            >
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3">
+                    <MapPin className="h-7 w-7 text-white drop-shadow-sm" />
+                    <span className="max-w-full truncate text-[11px] font-semibold text-white/95 drop-shadow-sm">
+                        {location.city}
+                    </span>
                 </div>
-            ) : (
-                <div
-                    className="relative h-28 w-full overflow-hidden border-b border-[var(--border-soft)] sm:h-32"
-                    style={{ background: gradient }}
-                >
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 px-3">
-                        <MapPin className="h-7 w-7 text-white drop-shadow-sm" />
-                        <span className="max-w-full truncate text-[11px] font-semibold text-white/95 drop-shadow-sm">
-                            {location.city}
-                        </span>
-                    </div>
-                    {headerBadges}
-                </div>
-            )}
+                {headerBadges}
+            </div>
 
             <div
                 className="absolute right-1.5 top-1.5 z-10"

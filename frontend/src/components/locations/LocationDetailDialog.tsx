@@ -1,14 +1,12 @@
 "use client"
 
-import Image from "next/image"
 import { useEffect, useState } from "react"
 import { Location, LocationService } from "@/services/location.service"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MapPin, Building2, Navigation, Compass, Bath, Car, ChefHat, Sun, Bed, Users, Clock3, KeyRound, Layers3, ListChecks, PencilLine } from "lucide-react"
+import { MapPin, Building2, Navigation, Bath, Car, ChefHat, Sun, Bed, Users, Clock3, KeyRound, Layers3, ListChecks, PencilLine } from "lucide-react"
 import { useDictionary } from "@/lib/dictionary-context"
-import { resolveApiMediaUrl } from "@/lib/api"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
 import { isSafeLocationMapUrl } from "@/lib/location-map-url"
 import type { LocationSpace } from "@/types/location"
@@ -42,7 +40,6 @@ interface LocationDetailDialogProps {
     clientName: string
     activeLabel: string
     inactiveLabel: string
-    gradient: string
     onEdit: () => void
 }
 
@@ -57,7 +54,6 @@ export function LocationDetailDialog({
     clientName,
     activeLabel,
     inactiveLabel,
-    gradient,
     onEdit,
 }: LocationDetailDialogProps) {
     const { dict } = useDictionary()
@@ -97,69 +93,16 @@ export function LocationDetailDialog({
                 overlayClassName="dialog-glass-overlay"
                 className="dialog-glass flex max-h-[min(92vh,920px)] w-[calc(100vw-1.5rem)] !max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden rounded-[28px] border border-[var(--border-soft)] !border-t border-t-[var(--border-soft)] p-0 text-[var(--text-main)] shadow-[0_28px_90px_var(--shadow-color)] sm:w-[calc(100vw-3rem)] sm:!max-w-[calc(100vw-3rem)] 2xl:!max-w-[1400px]"
             >
-                {location.photo_url ? (
-                    <div className="relative h-40 w-full shrink-0 sm:h-52">
-                        <Image
-                            src={resolveApiMediaUrl(location.photo_url) || ""}
-                            alt={location.name}
-                            fill
-                            sizes="(max-width: 1024px) 100vw, 64rem"
-                            className="object-cover"
-                            unoptimized
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
-                        <div className="absolute bottom-3.5 left-5 flex flex-wrap gap-1.5 sm:left-6">
-                            <Badge
-                                variant={location.is_active ? "default" : "secondary"}
-                                className={
-                                    location.is_active
-                                        ? "border-0 bg-accent/90 text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
-                                        : "border-0 bg-black/40 text-xs font-semibold uppercase tracking-wide text-white/80 shadow-sm backdrop-blur-sm"
-                                }
-                            >
-                                {location.is_active ? activeLabel : inactiveLabel}
-                            </Badge>
-                            <Badge
-                                variant="secondary"
-                                className="border-0 bg-black/40 text-xs text-white/95 shadow-sm backdrop-blur-sm"
-                            >
-                                {locationTypeLabel}
-                            </Badge>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="relative h-40 w-full shrink-0 sm:h-52" style={{ background: gradient }}>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-white/10" />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/30 bg-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)] backdrop-blur-md">
-                                <Compass className="h-8 w-8 text-white/90" />
-                            </div>
-                        </div>
-                        <div className="absolute bottom-3.5 left-5 flex flex-wrap gap-1.5 sm:left-6">
-                            <Badge
-                                variant={location.is_active ? "default" : "secondary"}
-                                className={
-                                    location.is_active
-                                        ? "border-0 bg-accent/90 text-xs font-semibold uppercase tracking-wide text-white shadow-sm"
-                                        : "border-0 bg-black/40 text-xs font-semibold uppercase tracking-wide text-white/80 shadow-sm backdrop-blur-sm"
-                                }
-                            >
-                                {location.is_active ? activeLabel : inactiveLabel}
-                            </Badge>
-                            <Badge
-                                variant="secondary"
-                                className="border-0 bg-black/40 text-xs text-white/95 shadow-sm backdrop-blur-sm"
-                            >
-                                {locationTypeLabel}
-                            </Badge>
-                        </div>
-                    </div>
-                )}
-
                 <div className="min-h-0 flex-1 overflow-y-auto p-5 [scrollbar-width:none] sm:p-6 [&::-webkit-scrollbar]:hidden">
                     <DialogHeader className="text-left">
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0 space-y-1">
+                                <div className="flex flex-wrap gap-1.5">
+                                    <Badge variant={location.is_active ? "default" : "secondary"} className={location.is_active ? "border-0 bg-accent text-xs font-semibold uppercase tracking-wide text-white" : "text-xs font-semibold uppercase tracking-wide"}>
+                                        {location.is_active ? activeLabel : inactiveLabel}
+                                    </Badge>
+                                    <Badge variant="secondary" className="text-xs font-medium">{locationTypeLabel}</Badge>
+                                </div>
                                 <DialogTitle className="text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
                                     {location.name}
                                 </DialogTitle>
@@ -168,7 +111,7 @@ export function LocationDetailDialog({
                                     <span>{clientName}</span>
                                 </div>
                             </div>
-                            <Button type="button" size="sm" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" /> Editar ubicación</Button>
+                            <Button type="button" size="sm" className="border-accent bg-accent text-white hover:bg-accent/90" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" /> Editar ubicación</Button>
                         </div>
                     </DialogHeader>
 
@@ -361,12 +304,11 @@ export function LocationDetailDialog({
                     </div>
 
                     <section className={`${sectionClass} mt-5`}>
-                        <div className="mb-4 flex items-start justify-between gap-3">
+                        <div className="mb-4">
                             <div>
                                 <h4 className="text-sm font-bold text-[var(--text-main)]">Operativa de la ubicación</h4>
                                 <p className="mt-1 text-xs text-[var(--text-muted)]">Servicios habituales, estructura de espacios y registro de trabajos en un mismo lugar.</p>
                             </div>
-                            <Button type="button" variant="secondary" size="sm" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" /> Editar</Button>
                         </div>
                         <LocationTasksWorkspace location={location} open={location !== null} initialTab="history" />
                     </section>
