@@ -4,7 +4,6 @@ import * as React from "react"
 import {
     Building2,
     CheckCircle2,
-    Eye,
     ListChecks,
     MapPin,
     Pencil,
@@ -33,14 +32,15 @@ const GRID_CLASS = "grid-cols-[minmax(12rem,1.35fr)_minmax(9rem,1fr)_minmax(6.5r
 
 export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: LocationsGridProps) {
     const { dict } = useDictionary()
+    const workspace = dict.locations.workspace
     const { user } = useUser()
     const [selectedLocationId, setSelectedLocationId] = React.useState<number | null>(null)
     const selectedLocation = locations.find((location) => location.id === selectedLocationId) ?? null
     const readOnlyRole = user?.role?.name === "viewer" || user?.role?.name === "manager"
 
     const getClientName = (clientId?: number | null) => clientId
-        ? clients.find((client) => client.id === clientId)?.name ?? "Cliente no disponible"
-        : "Sin cliente vinculado"
+        ? clients.find((client) => client.id === clientId)?.name ?? workspace.client_unavailable
+        : workspace.no_client
 
     const locationTasks = (locationId: number) => tasks.filter((task) => task.location_id === locationId)
 
@@ -52,13 +52,8 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             <div onClick={(event) => event.stopPropagation()}>
                 <ActionPopover
                     align="end"
-                    triggerLabel={`Acciones para ${location.name}`}
+                    triggerLabel={workspace.actions_for.replace("{name}", location.name)}
                     options={[
-                        {
-                            label: "Ver detalle",
-                            icon: Eye,
-                            onClick: () => setSelectedLocationId(location.id),
-                        },
                         ...(!isReadOnly ? [
                             {
                                 label: dict.locations.table.edit,
@@ -84,7 +79,7 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
         const pendingTasks = taskItems.filter((task) => task.status !== "completed").length
         const visual = getLocationTypeVisual(location.profile?.site_type)
         const Icon = visual.icon
-        const siteType = location.profile?.site_type?.replaceAll("_", " ") || "Otro"
+        const siteType = location.profile?.site_type?.replaceAll("_", " ") || workspace.other_type
 
         return <>
             <div className="flex min-w-0 items-center gap-3">
@@ -94,8 +89,8 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             <div className="flex min-w-0 items-center gap-2 text-xs text-[var(--text-muted)]"><Building2 className="h-3.5 w-3.5 shrink-0" /><span className="truncate font-medium">{getClientName(location.client_id)}</span></div>
             <span className={`w-fit rounded-md px-2 py-1 text-[11px] font-semibold capitalize ${visual.className}`}>{siteType}</span>
             <div className="flex min-w-0 items-start gap-1.5 text-xs text-[var(--text-muted)]"><MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" /><span className="line-clamp-2">{location.address}, {location.city}</span></div>
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-[var(--bg-tertiary)] px-2 py-1 text-xs font-semibold text-[var(--text-main)]"><ListChecks className="h-3.5 w-3.5 text-accent" />{taskItems.length}<span className="text-[var(--text-muted)]">({pendingTasks} pendientes)</span></span>
-            <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${location.is_active ? "bg-emerald-500/10 text-emerald-700" : "bg-slate-500/10 text-slate-600"}`}><CheckCircle2 className="h-3.5 w-3.5" />{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span>
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-lg bg-[var(--bg-tertiary)] px-2 py-1 text-xs font-semibold text-[var(--text-main)]"><ListChecks className="h-3.5 w-3.5 text-accent" />{taskItems.length}<span className="text-[var(--text-muted)]">({pendingTasks} {workspace.pending_tasks})</span></span>
+            <span className={`inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${location.is_active ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "bg-slate-500/10 text-slate-600"}`}><CheckCircle2 className="h-3.5 w-3.5" />{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span>
             {renderActions(location)}
         </>
     }
@@ -107,7 +102,7 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
 
         return <div className="flex items-center gap-3">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${visual.className}`}><Icon className="h-4 w-4" /></span>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</p><div className="mt-2 flex items-center gap-2"><span className="text-xs text-[var(--text-muted)]">{taskItems.length} tareas</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${location.is_active ? "bg-emerald-500/10 text-emerald-700" : "bg-slate-500/10 text-slate-600"}`}>{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span></div></div>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</p><div className="mt-2 flex items-center gap-2"><span className="text-xs text-[var(--text-muted)]">{taskItems.length} {workspace.tasks}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${location.is_active ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "bg-slate-500/10 text-slate-600"}`}>{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</span></div></div>
             {renderActions(location)}
         </div>
     }
@@ -118,12 +113,12 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             items={locations}
             getRowKey={(location) => location.id}
             columns={[
-                { key: "location", label: "Ubicación" },
-                { key: "client", label: "Cliente" },
-                { key: "type", label: "Tipo" },
-                { key: "address", label: "Dirección" },
-                { key: "tasks", label: "Tareas" },
-                { key: "status", label: "Estado" },
+                { key: "location", label: dict.locations.title },
+                { key: "client", label: dict.locations.form.client_label },
+                { key: "type", label: dict.locations.table.type },
+                { key: "address", label: dict.locations.table.address },
+                { key: "tasks", label: workspace.tasks },
+                { key: "status", label: dict.locations.table.status },
                 { key: "actions", label: <span className="sr-only">Acciones</span> },
             ]}
             gridClassName={GRID_CLASS}
@@ -131,7 +126,7 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             renderDesktopRow={renderDesktopRow}
             renderCompactRow={renderCompactRow}
             onRowClick={(location) => setSelectedLocationId(location.id)}
-            rowAriaLabel={(location) => `Ver detalle de ${location.name}`}
+            rowAriaLabel={(location) => workspace.view_location.replace("{name}", location.name)}
             empty={<div className="flex flex-col items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent"><MapPin className="h-6 w-6" /></span><p className="text-sm font-medium text-[var(--text-muted)]">{dict.locations.table.empty}</p></div>}
         />
 

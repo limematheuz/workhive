@@ -104,7 +104,8 @@ test("opening a location shows its detail first and keeps editing as an explicit
     const editSheet = read("../components/locations/EditLocationSheet.tsx");
 
     assert.match(grid, /onRowClick=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
-    assert.match(grid, /Ver detalle/);
+    assert.doesNotMatch(grid, /Ver detalle/);
+    assert.match(grid, /workspace\.view_location/);
     assert.match(detail, /onEdit/);
     assert.match(editSheet, /PremiumTabs/);
     assert.match(editSheet, /Espacios y tareas/);

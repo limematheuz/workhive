@@ -12,9 +12,9 @@ test("location list uses a dense operational table and keeps the detail free of 
 
     assert.match(grid, /DataListTable/);
     assert.match(grid, /DataListRow|gridClassName/);
-    assert.match(grid, /Ubicación/);
-    assert.match(grid, /Tareas/);
-    assert.match(grid, /Estado/);
+    assert.match(grid, /dict\.locations\.title/);
+    assert.match(grid, /workspace\.tasks/);
+    assert.match(grid, /dict\.locations\.table\.status/);
     assert.doesNotMatch(grid, /LocationCard/);
     assert.doesNotMatch(grid, /#1e3a8a|#1e40af|#14b8a6|#2563eb/);
     assert.match(grid, /ActionPopover/);
