@@ -1,30 +1,62 @@
 "use client";
 
-import { Building2 } from "lucide-react";
+import { ArrowLeft, Building2, Pencil, Power, Trash2 } from "lucide-react";
 
-import {
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
-import { Client } from "@/services/client.service";
+import { ActionPopover } from "@/components/ui/action-popover";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { Client } from "@/services/client.service";
 
 type ClientDetailDialogHeaderProps = {
     client: Client;
+    canManage: boolean;
+    onEditClient?: (client: Client) => void;
+    onToggleActiveClient?: (client: Client) => void;
+    onDeleteClient?: (client: Client) => void;
+    onClose: () => void;
 };
 
-export function ClientDetailDialogHeader({ client }: ClientDetailDialogHeaderProps) {
+export function ClientDetailDialogHeader({
+    client,
+    canManage,
+    onEditClient,
+    onToggleActiveClient,
+    onDeleteClient,
+    onClose,
+}: ClientDetailDialogHeaderProps) {
+    const edit = () => {
+        onClose();
+        onEditClient?.(client);
+    };
+
     return (
-        <DialogHeader className="p-4 sm:p-6 border-b border-[var(--border-soft)] flex-shrink-0 text-left">
-            <div className="flex items-center gap-3 pr-12">
-                <Building2 className="w-7 h-7 text-accent" />
-                <div>
-                    <DialogTitle className="text-xl font-black text-[var(--text-main)]">
-                        {client.name}
-                    </DialogTitle>
-                    <DialogDescription className="text-2xs font-bold text-[var(--text-muted)] mt-0.5 tracking-wider uppercase font-mono">
-                        NIF/CIF: {client.legal_number || "No informado"}
-                    </DialogDescription>
+        <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] px-5 py-5 text-left sm:px-7">
+            <div className="flex min-w-0 items-center justify-between gap-3 pr-12">
+                <Button type="button" variant="ghost" size="xs" onClick={onClose} className="-ml-1 text-[var(--text-muted)]">
+                    <ArrowLeft aria-hidden="true" /> Volver a clientes
+                </Button>
+                {canManage && (
+                    <div className="flex shrink-0 items-center gap-2">
+                        {onEditClient && <Button type="button" variant="secondary" size="sm" onClick={edit}><Pencil aria-hidden="true" />Editar información</Button>}
+                        <ActionPopover
+                            triggerLabel={`Acciones para ${client.name}`}
+                            options={[
+                                ...(onToggleActiveClient ? [{ label: client.is_active ? "Desactivar" : "Activar", icon: Power, onClick: () => onToggleActiveClient(client), variant: "deactivate" as const }] : []),
+                                ...(onDeleteClient ? [{ label: "Eliminar", icon: Trash2, onClick: () => { onClose(); onDeleteClient(client); }, variant: "delete" as const }] : []),
+                            ]}
+                        />
+                    </div>
+                )}
+            </div>
+            <div className="mt-4 flex min-w-0 items-start gap-3 pr-12">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-blue-soft)] text-accent" aria-hidden="true"><Building2 className="h-5 w-5" /></span>
+                <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <DialogTitle className="truncate text-2xl font-bold text-[var(--text-main)]">{client.name}</DialogTitle>
+                        <Badge className={client.is_active ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}>{client.is_active ? "Activo" : "Inactivo"}</Badge>
+                    </div>
+                    <DialogDescription className="mt-1 font-mono text-xs">Cliente · {client.legal_number || "Sin NIF/CIF"}</DialogDescription>
                 </div>
             </div>
         </DialogHeader>

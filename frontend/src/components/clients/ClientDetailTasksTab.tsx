@@ -106,10 +106,10 @@ export function ClientDetailTasksTab({
                                         }`}
                                     >
                                         {task.status === "completed"
-                                            ? "Completed"
+                                            ? (labels.status_completed || "Completadas")
                                             : task.status === "progress"
-                                              ? "In progress"
-                                              : "Pending"}
+                                              ? (labels.status_in_progress || "En curso")
+                                              : (labels.status_pending || "Pendientes")}
                                     </Badge>
                                     <Button
                                         size="sm"
