@@ -12,9 +12,9 @@ test("location list uses a dense operational table and keeps the detail free of 
 
     assert.match(grid, /DataListTable/);
     assert.match(grid, /DataListRow|gridClassName/);
-    assert.match(grid, /Ubicación/);
-    assert.match(grid, /Tareas/);
-    assert.match(grid, /Estado/);
+    assert.match(grid, /dict\.locations\.title/);
+    assert.match(grid, /workspace\.tasks/);
+    assert.match(grid, /dict\.locations\.table\.status/);
     assert.doesNotMatch(grid, /LocationCard/);
     assert.doesNotMatch(grid, /#1e3a8a|#1e40af|#14b8a6|#2563eb/);
     assert.match(grid, /ActionPopover/);
@@ -33,8 +33,8 @@ test("location table uses semantic status and shared application surfaces", () =
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const page = read("../app/dashboard/locations/page.tsx");
 
-    assert.match(grid, /bg-emerald-500\/10/);
-    assert.match(grid, /text-emerald-700/);
+    assert.match(grid, /bg-\[var\(--status-active-bg\)\]/);
+    assert.match(grid, /text-\[var\(--status-active-text\)\]/);
     assert.match(grid, /bg-accent\/10/);
     assert.match(detail, /bg-accent\/90/);
     assert.match(page, /billing-surface/);

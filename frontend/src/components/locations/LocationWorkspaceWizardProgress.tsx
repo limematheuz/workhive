@@ -1,20 +1,17 @@
 import { Check } from "lucide-react";
+import { useDictionary } from "@/lib/dictionary-context";
 
 interface LocationWorkspaceWizardProgressProps {
     step: number;
 }
 
-const WIZARD_STEPS = [
-    "Información y acceso",
-    "Tipo de ubicación",
-    "Características",
-    "Espacios y tareas",
-];
-
 export function LocationWorkspaceWizardProgress({ step }: LocationWorkspaceWizardProgressProps) {
+    const { dict } = useDictionary();
+    const workspace = dict.locations.workspace;
+    const wizardSteps = [workspace.step_info_access, workspace.step_type, workspace.step_features, workspace.step_spaces_tasks];
     return (
-        <ol className="grid grid-cols-4 border-y border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-3 sm:px-5" aria-label="Progreso de la ubicación">
-            {WIZARD_STEPS.map((label, index) => {
+        <ol className="grid grid-cols-4 border-y border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-3 sm:px-5" aria-label={workspace.wizard_progress}>
+            {wizardSteps.map((label, index) => {
                 const itemStep = index + 1;
                 const complete = itemStep < step;
                 const active = itemStep === step;
