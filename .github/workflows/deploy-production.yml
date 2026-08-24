@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: Immutable full Git SHA or semantic release tag already published to ECR
+        description: Immutable semantic release tag already published to ECR, for example v1.5.0
         required: true
         type: string
 
@@ -18,22 +18,19 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy reviewed ECR revision
+    name: Deploy reviewed ECR release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    environment:
-      name: production
-
     steps:
-      - name: Validate immutable release reference
+      - name: Validate immutable release tag
         env:
-          RELEASE_REF: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ ! "$RELEASE_REF" =~ ^(v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)|[0-9a-f]{40})$ ]]; then
-            printf 'release_ref must use vMAJOR.MINOR.PATCH or a full Git SHA.\n' >&2
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            printf 'release_tag must use vMAJOR.MINOR.PATCH.\n' >&2
             exit 1
           fi
 
@@ -50,7 +47,7 @@ jobs:
         id: deploy
         env:
           INSTANCE_ID: ${{ vars.PRODUCTION_EC2_INSTANCE_ID }}
-          RELEASE_REF: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         shell: bash
         run: |
           set -euo pipefail
@@ -58,9 +55,9 @@ jobs:
           command_id="$(aws ssm send-command \
             --document-name WorkHiveProductionDeploy \
             --instance-ids "$INSTANCE_ID" \
-            --parameters "ReleaseRef=${RELEASE_REF}" \
+            --parameters "ReleaseTag=${RELEASE_TAG}" \
             --timeout-seconds 900 \
-            --comment "WorkHive reviewed revision ${RELEASE_REF}" \
+            --comment "WorkHive reviewed release ${RELEASE_TAG}" \
             --query 'Command.CommandId' \
             --output text)"
 
@@ -71,7 +68,7 @@ jobs:
         env:
           COMMAND_ID: ${{ steps.deploy.outputs.command_id }}
           INSTANCE_ID: ${{ vars.PRODUCTION_EC2_INSTANCE_ID }}
-          RELEASE_REF: ${{ inputs.release_tag }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
         shell: bash
         run: |
           set -euo pipefail
@@ -93,7 +90,7 @@ jobs:
 
             case "$status" in
               Success)
-                printf 'Production deployment of %s succeeded.\n' "$RELEASE_REF"
+                printf 'Production deployment of %s succeeded.\n' "$RELEASE_TAG"
                 exit 0
                 ;;
               Pending|InProgress|Delayed|"")

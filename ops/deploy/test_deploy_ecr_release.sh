@@ -39,9 +39,9 @@ grep -Fq 'ops/security/docker-compose.alb.yml' "${script_under_test}"
 grep -Fq 'http://${domain}/health' "${script_under_test}"
 grep -Fq 'RELEASE_REF=${release_ref}' "${script_under_test}"
 
-grep -Fq 'ReleaseRef:' "${ssm_document}"
-grep -Fq '[0-9a-f]{40}' "${ssm_document}"
-grep -Fq 'SSM_ReleaseRef' "${ssm_document}"
+grep -Fq 'ReleaseTag:' "${ssm_document}"
+grep -Fq '^v[0-9]+' "${ssm_document}"
+grep -Fq 'SSM_ReleaseTag' "${ssm_document}"
 
 if grep -Eq '(^|[[:space:]])up[[:space:]].*--build' "${script_under_test}"; then
     echo 'Deployment script must never build application images on EC2.' >&2
