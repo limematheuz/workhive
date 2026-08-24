@@ -5,19 +5,16 @@ import {
     useEffect,
     useMemo,
     useState,
-    type ReactNode,
 } from "react";
 import {
     Activity,
     ArrowDownRight,
-    ArrowUpRight,
     BarChart3,
     CheckCircle2,
     Clock3,
     Download,
     Inbox,
     Loader2,
-    Minus,
     PieChart,
     ReceiptText,
     TriangleAlert,
@@ -40,6 +37,7 @@ import {
 } from "@/lib/finance-analytics";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
+import { getPercentageChange } from "@/lib/metric-trend";
 import { useUser } from "@/lib/user-context";
 import { useProfile, type TaskChartStats } from "@/hooks/useProfile";
 import { InteractiveLineChart } from "@/components/dashboard/InteractiveLineChart";
@@ -58,15 +56,16 @@ import {
     type ClientProfitabilityPeriod,
 } from "@/services/client-profitability.service";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
+import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
 
 type AnalyticsTab = "finance" | "profitability" | "operations";
 
 const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 
 const FINANCE_LINES = [
-    { key: "revenue", color: "var(--accent-color)", labelKey: "revenue" },
-    { key: "expenses", color: "var(--btn-cancel-hover-bg)", labelKey: "expenses" },
-    { key: "profit", color: "var(--brand-blue-bright)", labelKey: "profit" },
+    { key: "revenue", color: "#047857", labelKey: "revenue", strokeOpacity: 0.82 },
+    { key: "expenses", color: "var(--btn-cancel-hover-bg)", labelKey: "expenses", strokeOpacity: 0.98 },
+    { key: "profit", color: "var(--brand-blue-bright)", labelKey: "profit", strokeOpacity: 0.98 },
 ] as const;
 
 export default function FinanceAnalyticsPage() {
@@ -340,59 +339,53 @@ function FinanceDashboard({
             label: text.paid_collected,
             value: current.paid,
             previous: previous.paid,
-            icon: <CheckCircle2 className="h-4 w-4" />,
-            tone: "positive" as const,
+            icon: CheckCircle2,
+            comparisonDirection: "higher" as const,
         },
         {
             label: text.pending,
             value: current.pending,
             previous: previous.pending,
-            icon: <Clock3 className="h-4 w-4" />,
-            tone: "warning" as const,
+            icon: Clock3,
+            comparisonDirection: "lower" as const,
         },
         {
             label: text.expenses,
             value: current.expenses,
             previous: previous.expenses,
-            icon: <ReceiptText className="h-4 w-4" />,
-            tone: "danger" as const,
+            icon: ReceiptText,
+            comparisonDirection: "lower" as const,
         },
         {
             label: text.profit,
             value: current.profit,
             previous: previous.profit,
-            icon: <BarChart3 className="h-4 w-4" />,
-            tone: "positive" as const,
+            icon: BarChart3,
+            comparisonDirection: "higher" as const,
         },
         {
             label: text.overdue,
             value: current.overdue,
             previous: previous.overdue,
-            icon: <TriangleAlert className="h-4 w-4" />,
-            tone: "danger" as const,
+            icon: TriangleAlert,
+            comparisonDirection: "lower" as const,
         },
         {
             label: text.vat_balance,
             value: current.vatBalance,
             previous: previous.vatBalance,
-            icon: <ReceiptText className="h-4 w-4" />,
-            tone: "warning" as const,
+            icon: ReceiptText,
+            comparisonDirection: "lower" as const,
         },
     ];
 
     return (
         <>
             <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
-                {metricCards.map(({ label, value, previous, icon, tone }) => (
-                    <MetricCard
-                        key={label}
-                        label={label}
-                        value={value}
-                        previous={previous}
-                        icon={icon}
-                        tone={tone}
-                    />
-                ))}
+                {metricCards.map(({ label, value, previous, icon, comparisonDirection }) => {
+                    const change = getPercentageChange(value, previous);
+                    return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
+                })}
             </section>
 
             <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.62fr)]">
@@ -430,7 +423,11 @@ function FinanceTrendCard({
     const totals = [
         { label: text.revenue, value: current.revenue, color: FINANCE_LINES[0].color },
         { label: text.expenses, value: current.expenses, color: FINANCE_LINES[1].color },
-        { label: text.profit, value: current.profit, color: FINANCE_LINES[2].color },
+        {
+            label: text.profit,
+            value: current.profit,
+            color: current.profit < 0 ? FINANCE_LINES[1].color : FINANCE_LINES[2].color,
+        },
     ];
 
     return (
@@ -493,6 +490,7 @@ function FinanceLineChart({
     series: FinanceSeriesPoint[];
     text: Record<string, string>;
 }) {
+    const latestProfit = series[series.length - 1]?.profit ?? 0;
     return (
         <InteractiveLineChart
             labels={series.map((point) => point.label)}
@@ -501,7 +499,10 @@ function FinanceLineChart({
             series={FINANCE_LINES.map((line) => ({
                 id: line.key,
                 label: text[line.labelKey],
-                color: line.color,
+                color: line.key === "profit" && latestProfit < 0
+                    ? FINANCE_LINES[1].color
+                    : line.color,
+                strokeOpacity: line.strokeOpacity,
                 values: series.map((point) => getPointValue(point, line.key)),
                 valueFormatter: formatCurrency,
             }))}
@@ -598,29 +599,29 @@ function ClientProfitabilityDashboard({
             label: text.profitability_revenue,
             value: current.revenue_base_amount,
             previous: previous.revenue_base_amount,
-            icon: <ReceiptText className="h-4 w-4" />,
-            tone: "positive" as const,
+            icon: ReceiptText,
+            comparisonDirection: "higher" as const,
         },
         {
             label: text.profitability_direct_costs,
             value: current.direct_cost_base_amount,
             previous: previous.direct_cost_base_amount,
-            icon: <ArrowDownRight className="h-4 w-4" />,
-            tone: "danger" as const,
+            icon: ArrowDownRight,
+            comparisonDirection: "lower" as const,
         },
         {
             label: text.profitability_known_margin,
             value: current.known_margin_amount,
             previous: previous.known_margin_amount,
-            icon: <BarChart3 className="h-4 w-4" />,
-            tone: "positive" as const,
+            icon: BarChart3,
+            comparisonDirection: "higher" as const,
         },
         {
             label: text.profitability_unassigned_expenses,
             value: current.unassigned_expense_base_amount,
             previous: previous.unassigned_expense_base_amount,
-            icon: <Inbox className="h-4 w-4" />,
-            tone: "warning" as const,
+            icon: Inbox,
+            comparisonDirection: "lower" as const,
         },
     ];
     const columns: DataListColumn[] = [
@@ -671,16 +672,10 @@ function ClientProfitabilityDashboard({
             {data ? (
                 <>
                     <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
-                        {metrics.map(({ label, value, previous: previousValue, icon, tone }) => (
-                            <MetricCard
-                                key={label}
-                                label={label}
-                                value={value}
-                                previous={previousValue}
-                                icon={icon}
-                                tone={tone}
-                            />
-                        ))}
+                        {metrics.map(({ label, value, previous: previousValue, icon, comparisonDirection }) => {
+                            const change = getPercentageChange(value, previousValue);
+                            return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
+                        })}
                     </section>
 
                     <DataListTable
@@ -877,71 +872,8 @@ function FinanceTotal({
     );
 }
 
-function MetricCard({
-    icon,
-    label,
-    value,
-    previous,
-}: {
-    icon: ReactNode;
-    label: string;
-    value: number;
-    previous: number;
-    tone: "positive" | "warning" | "danger";
-}) {
-    const toneColor = "var(--accent-color)";
-
-    return (
-        <article className="billing-block rounded-[18px] p-3.5">
-            <div className="flex items-start justify-between gap-3">
-                <span
-                    className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)]"
-                    style={{ color: toneColor }}
-                    aria-hidden="true"
-                >
-                    {icon}
-                </span>
-                <DeltaBadge current={value} previous={previous} />
-            </div>
-            <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">{label}</p>
-            <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">{formatCurrency(value)}</p>
-        </article>
-    );
-}
-
-function DeltaBadge({
-    current,
-    previous,
-}: {
-    current: number;
-    previous: number;
-}) {
-    const delta = getDeltaPercent(current, previous);
-    const positive = delta >= 0;
-    return (
-        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black ${
-            positive
-                ? "bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] text-accent"
-                : "bg-[color-mix(in_srgb,var(--btn-cancel-bg)_80%,transparent)] text-[color-mix(in_srgb,var(--btn-cancel-text)_78%,var(--text-muted))]"
-        }`}>
-            {delta > 0 ? <ArrowUpRight className="h-3 w-3" /> : delta < 0 ? <ArrowDownRight className="h-3 w-3" /> : <Minus className="h-3 w-3" />}
-            {formatDelta(delta)}
-        </span>
-    );
-}
-
 function getPointValue(point: FinanceSeriesPoint, key: (typeof FINANCE_LINES)[number]["key"]) {
     return point[key];
-}
-
-function getDeltaPercent(current: number, previous: number) {
-    if (previous === 0) return current === 0 ? 0 : 100;
-    return ((current - previous) / Math.abs(previous)) * 100;
-}
-
-function formatDelta(value: number) {
-    const sign = value > 0 ? "+" : "";
-    return `${sign}${value.toFixed(1)}%`;
 }
 
 function formatMarginPercentage(value: number | null) {

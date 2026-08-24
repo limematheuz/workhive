@@ -6,11 +6,13 @@ import { CheckCircle2, Clock3, Download, FileSpreadsheet, FileText, Loader2, Pen
 import { SalesLedgerImportDialog } from "@/components/invoices/SalesLedgerImportDialog";
 import { SalesLedgerRecordDialog } from "@/components/invoices/SalesLedgerRecordDialog";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
+import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary, type Dictionary } from "@/lib/dictionary-context";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { getPercentageChange } from "@/lib/metric-trend";
 import {
     buildSalesLedgerCsv,
     filterSalesLedgerEntries,
@@ -38,20 +40,6 @@ const LEDGER_COLUMNS: DataListColumn[] = [
 ];
 
 type InvoiceCopy = Dictionary["invoices"];
-
-function SummaryMetric({ label, value, icon: Icon }: { label: string; value: string; icon: typeof FileText }) {
-    return (
-        <article className="billing-block rounded-[22px] p-4">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] sm:text-[11px]">{label}</p>
-                    <p className="mt-2 font-mono text-xl font-semibold leading-tight text-[var(--text-main)] sm:text-2xl">{value}</p>
-                </div>
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-blue-soft)] text-accent" aria-hidden="true"><Icon className="h-4 w-4" /></span>
-            </div>
-        </article>
-    );
-}
 
 function downloadCsv(content: string, name: string) {
     const url = URL.createObjectURL(new Blob([content], { type: "text/csv;charset=utf-8" }));
@@ -102,6 +90,13 @@ export default function InvoiceSummaryPage() {
 
     const rows = useMemo(() => filterSalesLedgerEntries(entries, { year, search }), [entries, search, year]);
     const totals = useMemo(() => summarizeSalesLedger(rows), [rows]);
+    const previousTotals = useMemo(() => {
+        if (!/^\d{4}$/.test(year)) return null;
+        return summarizeSalesLedger(filterSalesLedgerEntries(entries, {
+            year: String(Number(year) - 1),
+            search,
+        }));
+    }, [entries, search, year]);
     const years = useMemo(() => getSalesLedgerYears(entries), [entries]);
 
     const openNewRecord = () => {
@@ -185,11 +180,11 @@ export default function InvoiceSummaryPage() {
                 <PageHeader icon={ReceiptText} title={copy.ledger_title} subtitle={copy.ledger_subtitle} />
 
                 <section className="grid grid-cols-2 gap-3 xl:grid-cols-5" aria-label={copy.ledger_totals}>
-                    <SummaryMetric label={copy.ledger_base} value={formatCurrency(totals.base)} icon={FileText} />
-                    <SummaryMetric label={copy.ledger_vat} value={formatCurrency(totals.tax)} icon={ReceiptText} />
-                    <SummaryMetric label={copy.ledger_total} value={formatCurrency(totals.total)} icon={FileText} />
-                    <SummaryMetric label={copy.ledger_paid} value={formatCurrency(totals.paid)} icon={CheckCircle2} />
-                    <SummaryMetric label={copy.ledger_pending} value={formatCurrency(totals.pending)} icon={Clock3} />
+                    <SummaryMetricCard label={copy.ledger_base} value={formatCurrency(totals.base)} icon={FileText} trend={previousTotals ? toTrend(totals.base, previousTotals.base) : undefined} />
+                    <SummaryMetricCard label={copy.ledger_vat} value={formatCurrency(totals.tax)} icon={ReceiptText} trend={previousTotals ? toTrend(totals.tax, previousTotals.tax) : undefined} />
+                    <SummaryMetricCard label={copy.ledger_total} value={formatCurrency(totals.total)} icon={FileText} trend={previousTotals ? toTrend(totals.total, previousTotals.total) : undefined} />
+                    <SummaryMetricCard label={copy.ledger_paid} value={formatCurrency(totals.paid)} icon={CheckCircle2} trend={previousTotals ? toTrend(totals.paid, previousTotals.paid) : undefined} />
+                    <SummaryMetricCard label={copy.ledger_pending} value={formatCurrency(totals.pending)} icon={Clock3} trend={previousTotals ? toTrend(totals.pending, previousTotals.pending, "lower") : undefined} />
                 </section>
 
                 <DataListTable
@@ -240,6 +235,11 @@ export default function InvoiceSummaryPage() {
             <SalesLedgerImportDialog open={importDialogOpen} busy={saving} onOpenChange={setImportDialogOpen} onPreview={previewImport} onImport={importCsv} />
         </div>
     );
+}
+
+function toTrend(current: number, previous: number, comparisonDirection?: "higher" | "lower") {
+    const value = getPercentageChange(current, previous);
+    return value === null ? undefined : { value, comparisonDirection };
 }
 
 function LedgerDesktopRow({ entry, copy, onEdit }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void }) {

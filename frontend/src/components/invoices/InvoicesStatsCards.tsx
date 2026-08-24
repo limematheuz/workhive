@@ -2,9 +2,11 @@
 
 import { CircleCheck, Clock3, FileText, OctagonAlert } from "lucide-react";
 
+import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
 import { formatCurrency } from "@/lib/format";
+import { getMetricTrend } from "@/lib/metric-trend";
 
-type InvoiceStats = {
+export type InvoiceStats = {
     totalCount: number;
     totalAmount: number;
     paidAmount: number;
@@ -14,6 +16,7 @@ type InvoiceStats = {
 
 type InvoicesStatsCardsProps = {
     stats: InvoiceStats;
+    previousStats?: InvoiceStats | null;
     statusCounts: Record<string, number>;
     labels: {
         stats_total_invoiced: string;
@@ -27,21 +30,21 @@ type InvoicesStatsCardsProps = {
     };
 };
 
-export function InvoicesStatsCards({ stats, statusCounts, labels }: InvoicesStatsCardsProps) {
+export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, labels }: InvoicesStatsCardsProps) {
     const cards = [
         {
             label: labels.stats_total_invoiced,
             value: formatCurrency(stats.totalAmount),
             detail: labels.stats_invoices_count.replace("{count}", stats.totalCount.toString()),
             icon: FileText,
-            accentClassName: "bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]",
+            trend: previousStats ? getMetricTrend(stats.totalAmount, previousStats.totalAmount) : undefined,
         },
         {
             label: labels.stats_collected,
             value: formatCurrency(stats.paidAmount),
             detail: labels.stats_paid_count.replace("{count}", (statusCounts.paid || 0).toString()),
             icon: CircleCheck,
-            accentClassName: "bg-[var(--btn-neutral-bg)] text-[var(--text-main)]",
+            trend: previousStats ? getMetricTrend(stats.paidAmount, previousStats.paidAmount) : undefined,
         },
         {
             label: labels.stats_pending,
@@ -51,44 +54,28 @@ export function InvoicesStatsCards({ stats, statusCounts, labels }: InvoicesStat
                 ((statusCounts.draft || 0) + (statusCounts.issued || 0)).toString(),
             ),
             icon: Clock3,
-            accentClassName: "bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]",
+            trend: previousStats ? getMetricTrend(stats.openAmount, previousStats.openAmount, "lower") : undefined,
         },
         {
             label: labels.stats_overdue,
             value: formatCurrency(stats.overdueAmount),
             detail: labels.stats_overdue_count.replace("{count}", (statusCounts.overdue || 0).toString()),
             icon: OctagonAlert,
-            accentClassName: "bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)]",
+            trend: previousStats ? getMetricTrend(stats.overdueAmount, previousStats.overdueAmount, "lower") : undefined,
         },
     ];
 
     return (
         <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Resumen de facturas">
             {cards.map((stat) => (
-                <article
+                <SummaryMetricCard
                     key={stat.label}
-                    className="billing-block relative overflow-hidden rounded-[22px] p-4"
-                >
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] sm:text-[11px]">
-                                {stat.label}
-                            </p>
-                            <p className="mt-2 font-mono text-xl font-semibold leading-tight text-[var(--text-main)] sm:text-2xl">
-                                {stat.value}
-                            </p>
-                        </div>
-                        <span
-                            className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${stat.accentClassName}`}
-                            aria-hidden="true"
-                        >
-                            <stat.icon className="h-4 w-4" />
-                        </span>
-                    </div>
-                    <p className="mt-3 text-[11px] font-medium text-[var(--text-muted)] sm:text-xs">
-                        {stat.detail}
-                    </p>
-                </article>
+                    label={stat.label}
+                    value={stat.value}
+                    description={stat.detail}
+                    icon={stat.icon}
+                    trend={stat.trend}
+                />
             ))}
         </section>
     );

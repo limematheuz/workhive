@@ -1,69 +1,54 @@
 "use client";
 
-import { type ReactNode } from "react";
 import { Hash, ReceiptText, WalletCards } from "lucide-react";
 
+import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
+import { getPercentageChange } from "@/lib/metric-trend";
 
 type ExpenseSummaryCardsProps = {
     total: number;
     tax: number;
     records: number;
+    previous?: { total: number; tax: number } | null;
 };
 
-export function ExpenseSummaryCards({ total, tax, records }: ExpenseSummaryCardsProps) {
+export function ExpenseSummaryCards({ total, tax, records, previous = null }: ExpenseSummaryCardsProps) {
     const { dict } = useDictionary();
     const text = dict.expenses;
+    const totalTrend = previous ? getPercentageChange(total, previous.total) : null;
+    const taxTrend = previous ? getPercentageChange(tax, previous.tax) : null;
 
     const cards = [
         {
             label: text.total_spent,
             value: formatCurrency(total),
-            icon: <WalletCards className="h-4 w-4" />,
+            icon: WalletCards,
+            trend: totalTrend !== null
+                ? { value: totalTrend, comparisonDirection: "lower" as const }
+                : undefined,
         },
         {
             label: text.tax_amount,
             value: formatCurrency(tax),
-            icon: <ReceiptText className="h-4 w-4" />,
+            icon: ReceiptText,
+            trend: taxTrend !== null
+                ? { value: taxTrend, comparisonDirection: "lower" as const }
+                : undefined,
         },
         {
             label: text.records,
             value: records.toString(),
-            icon: <Hash className="h-4 w-4" />,
+            icon: Hash,
         },
     ];
 
     return (
         <section className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-3">
             {cards.map((card) => (
-                <SummaryCard key={card.label} label={card.label} value={card.value} icon={card.icon} />
+                <SummaryMetricCard key={card.label} {...card} />
             ))}
         </section>
-    );
-}
-
-function SummaryCard({
-    label,
-    value,
-    icon,
-}: {
-    label: string;
-    value: string;
-    icon: ReactNode;
-}) {
-    return (
-        <article className="billing-block rounded-[18px] p-3.5">
-            <span
-                className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-card-solid)] text-accent"
-                aria-hidden="true"
-            >
-                {icon}
-            </span>
-            <p className="mt-3 text-[9px] font-semibold uppercase tracking-wide text-[var(--text-muted)] sm:text-[10px]">
-                {label}
-            </p>
-            <p className="mt-1 text-xl font-semibold text-[var(--text-main)] sm:text-2xl">{value}</p>
-        </article>
     );
 }

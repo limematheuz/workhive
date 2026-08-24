@@ -26,6 +26,7 @@ export interface InteractiveLineChartSeries {
     color: string;
     values: number[];
     valueFormatter?: (value: number) => string;
+    strokeOpacity?: number;
 }
 
 interface InteractiveLineChartProps {
@@ -246,7 +247,7 @@ export function InteractiveLineChart({
                                 stroke={item.color}
                                 strokeWidth="1.8"
                                 strokeLinecap="round"
-                                opacity="0.98"
+                                opacity={item.strokeOpacity ?? 0.98}
                             />
                         </g>
                     ))}

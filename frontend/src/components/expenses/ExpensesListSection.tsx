@@ -16,6 +16,8 @@ type ExpensesListSectionProps = {
     onSearchChange: (value: string) => void;
     categoryFilter: string;
     onCategoryFilterChange: (value: string) => void;
+    month: string;
+    onMonthChange: (value: string) => void;
     onEdit: (expense: Expense) => void;
     onDelete: (expense: Expense) => void;
 };
@@ -29,6 +31,8 @@ export function ExpensesListSection({
     onSearchChange,
     categoryFilter,
     onCategoryFilterChange,
+    month,
+    onMonthChange,
     onEdit,
     onDelete,
 }: ExpensesListSectionProps) {
@@ -89,6 +93,16 @@ export function ExpensesListSection({
                                 </option>
                             ))}
                         </select>
+                    </label>
+                    <label className="block sm:w-44">
+                        <span className="sr-only">{text.month}</span>
+                        <input
+                            type="month"
+                            value={month}
+                            onChange={(event) => onMonthChange(event.target.value)}
+                            aria-label={text.month}
+                            className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        />
                     </label>
                 </div>
             )}

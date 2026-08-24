@@ -11,6 +11,17 @@
   transition-duration: 150ms;
 }
 
+.status-active {
+  border-color: var(--status-active-border);
+  background-color: var(--status-active-bg);
+  color: var(--status-active-text);
+}
+
+.status-active-icon {
+  background-color: var(--status-active-bg);
+  color: var(--status-active-text);
+}
+
 :root {
   --brand-blue: #2563eb;
   --brand-blue-hover: #1d4ed8;
@@ -26,6 +37,9 @@
   --accent-color: var(--brand-blue);
   --accent-light-color: var(--brand-blue-hover);
   --accent-toast-color: rgba(37, 99, 235, 0.28);
+  --status-active-bg: rgba(16, 185, 129, 0.1);
+  --status-active-text: #047857;
+  --status-active-border: rgba(16, 185, 129, 0.2);
 
   /* Theme Variables - Default (Dark) — elevated charcoal for readability */
   --bg-primary: #191919;
@@ -229,6 +243,9 @@
   --accent-color: var(--brand-blue); /* High-contrast dark blue */
   --accent-light-color: var(--brand-blue-hover);
   --accent-toast-color: rgba(37, 99, 235, 0.15);
+  --status-active-bg: rgba(16, 185, 129, 0.1);
+  --status-active-text: #047857;
+  --status-active-border: rgba(16, 185, 129, 0.2);
 
   /* Standardized amber and orange colors in light mode */
   --color-amber-500: #e78a08; /* Vibrant, accessible golden amber-orange intermediate */

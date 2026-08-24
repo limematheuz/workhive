@@ -6,11 +6,12 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 
 test("invoices open their detail in a modal with a fixed action header", () => {
     const page = read("../app/dashboard/invoices/page.tsx");
+    const workspace = read("../components/invoices/use-invoices-workspace.ts");
     const list = read("../components/invoices/InvoicesListSection.tsx");
     const view = read("../components/invoices/InvoiceDetailView.tsx");
     const quoteSheet = read("../components/quotes/QuoteDetailSheet.tsx");
 
-    assert.match(page, /const \[selectedInvoiceId, setSelectedInvoiceId\]/);
+    assert.match(workspace, /const \[selectedInvoiceId, setSelectedInvoiceId\]/);
     assert.match(page, /onOpenInvoice: setSelectedInvoiceId/);
     assert.match(page, /<Dialog open=\{selectedInvoiceId !== null\}/);
     assert.doesNotMatch(page, /router\.push\(`\/dashboard\/invoices/);
