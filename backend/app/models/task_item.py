@@ -95,6 +95,12 @@ class TaskItem(Base):
         cascade="all, delete-orphan",
         order_by="TaskChecklistItem.position",
     )
+    zones = relationship(
+        "TaskZone",
+        back_populates="task",
+        cascade="all, delete-orphan",
+        order_by="TaskZone.id",
+    )
 
     @property
     def user_company_id(self) -> int | None:
@@ -105,3 +111,13 @@ class TaskItem(Base):
         if not self.accepted_by:
             return None
         return self.accepted_by.full_name or self.accepted_by.email
+
+    @property
+    def spaces(self):
+        """New name for the existing task-zone snapshot relation.
+
+        The database deliberately retains ``task_zones`` so existing tasks and
+        integrations keep working, while new product language can consistently
+        refer to the physical areas as spaces.
+        """
+        return self.zones

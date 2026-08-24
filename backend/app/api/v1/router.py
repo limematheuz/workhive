@@ -7,6 +7,8 @@ from app.api.v1.roles import router as roles_router
 from app.api.v1.companies import router as companies_router
 from app.api.v1.template_tasks import router as template_tasks_router
 from app.api.v1.location_templates import router as location_templates_router
+from app.api.v1.location_zones import router as location_zones_router
+from app.api.v1.location_workspace import router as location_workspace_router
 from app.api.v1.work_sessions import router as work_sessions_router
 from app.api.v1.task_items import router as task_items_router
 from app.api.v1.invoice import router as invoices_router
@@ -43,6 +45,11 @@ api_router.include_router(
     tags=["user-invitations"],
 )
 api_router.include_router(clients_router, prefix="/clients", tags=["clients"])
+api_router.include_router(
+    location_workspace_router,
+    prefix="/locations",
+    tags=["location-workspace"],
+)
 api_router.include_router(locations_router, prefix="/locations", tags=["locations"])
 api_router.include_router(
     location_company_access_router, prefix="/locations", tags=["location-company-access"]
@@ -57,6 +64,9 @@ api_router.include_router(
 )
 api_router.include_router(
     location_templates_router, prefix="/locations", tags=["location-templates"]
+)
+api_router.include_router(
+    location_zones_router, prefix="/locations", tags=["location-zones"]
 )
 api_router.include_router(
     work_sessions_router, prefix="/work-sessions", tags=["work-session"]

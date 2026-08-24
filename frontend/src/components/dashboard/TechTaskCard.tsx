@@ -1,18 +1,17 @@
 import React from "react";
-import { ArrowDownLeft, Clock, MapPin, Check, X, Calendar, Flag, AlertCircle, Timer } from "lucide-react";
+import { Clock, MapPin, Check, X, Calendar, Flag, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { TaskItem, User, TaskWorkDetailedSummary } from "@/types/user";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getUserTaskStatus, isTaskAssignedToUser } from "@/lib/format";
-import { formatHoursShort } from "@/lib/format-hours";
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import { getTaskScheduleDate } from "@/domain/tasks/task-schedule";
 import { canStartTaskWork, isTaskWorkInProgress } from "@/domain/tasks/task-status";
 import { getTaskChecklistProgress } from "@/lib/task-checklist-completion";
 import { isExternalTaskForCompany } from "@/lib/task-display";
 import { getOperationalTaskStatus } from "@/lib/operational-task-count";
-import { TaskProgressBar } from "@/components/tasks/TaskProgressBar";
+import { TechTaskCardSupplementaryInfo } from "./TechTaskCardSupplementaryInfo";
 
 interface TechTaskCardProps {
     task: TaskItem;
@@ -206,44 +205,19 @@ export function TechTaskCard({
                     {task.title}
                 </p>
 
-                {isExternal && (
-                    <div
-                        className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-lg border border-accent/20 bg-accent/10 px-2 py-1 text-[9px] font-extrabold uppercase tracking-wider text-accent"
-                        title={externalSource ? `Servicio enviado por ${externalSource}` : "Servicio enviado por una empresa colaboradora"}
-                    >
-                        <ArrowDownLeft className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">
-                            {externalSource ? `Externo · ${externalSource}` : "Servicio externo"}
-                        </span>
-                    </div>
+                {task.zones && task.zones.length > 0 && (
+                    <p className="mt-1 truncate text-[10px] font-bold uppercase tracking-wide text-accent">
+                        {task.zones.map((zone) => zone.name).join(" · ")}
+                    </p>
                 )}
 
-                {checklistProgress.total > 0 && (
-                    <TaskProgressBar
-                        completed={checklistProgress.completed}
-                        total={checklistProgress.total}
-                        className="mt-2.5 max-w-[24rem]"
-                    />
-                )}
-
-                {workSummary && workSummary.total_seconds > 0 && (
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        <span className="text-[9px] font-bold text-[var(--text-muted)] flex items-center gap-1">
-                            <Timer className="w-3.5 h-3.5 text-accent" />
-                            {formatHoursShort(workSummary.total_seconds)}
-                        </span>
-                        {workSummary.workers.map((w) => (
-                            <span
-                                key={w.user_id}
-                                className="text-[9px] bg-accent/10 text-accent dark:text-accent border border-accent/20 px-1.5 py-0.5 rounded-md font-bold flex items-center gap-1"
-                                title={`${w.user_name}: ${formatHoursShort(w.total_seconds)}`}
-                            >
-                                {w.user_name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)} {formatHoursShort(w.total_seconds)}
-                                {w.is_active && <span className="w-1.5 h-1.5 rounded-full bg-accent" />}
-                            </span>
-                        ))}
-                    </div>
-                )}
+                <TechTaskCardSupplementaryInfo
+                    checklistCompleted={checklistProgress.completed}
+                    checklistTotal={checklistProgress.total}
+                    externalSource={externalSource}
+                    isExternal={isExternal}
+                    workSummary={workSummary}
+                />
             </div>
 
             {/* Bottom Actions and Navigation Details */}

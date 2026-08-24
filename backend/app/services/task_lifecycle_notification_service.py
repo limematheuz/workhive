@@ -34,6 +34,36 @@ def operational_users(db: Session, company_id: int) -> list[User]:
     return _active_company_users(db, company_id, OPERATIONAL_ROLES)
 
 
+def notify_task_assignees(
+    db: Session,
+    task: TaskItem,
+    user_ids: set[int],
+) -> None:
+    if not user_ids or task.status in {"requested", "rejected", "completed"}:
+        return
+    recipients = (
+        db.query(User)
+        .filter(
+            User.id.in_(user_ids),
+            User.company_id == task.company_id,
+            User.is_active.is_(True),
+        )
+        .all()
+    )
+    if not recipients:
+        return
+    notification_service.notify_users(
+        db,
+        users=recipients,
+        event_type="task.assigned",
+        title="Nueva tarea asignada",
+        message=task.title,
+        entity_type="task_item",
+        entity_id=task.id,
+        href=f"/dashboard?taskId={task.id}",
+    )
+
+
 def _issuer_recipients(db: Session, reservation: Reservation) -> list[User]:
     users = _active_company_users(db, reservation.owner_company_id, MANAGEMENT_ROLES)
     if reservation.created_by and reservation.created_by.is_active:

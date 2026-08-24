@@ -28,11 +28,12 @@ interface UseLocationTasksSheetParams {
     location: Location | null;
     open: boolean;
     initialCreateForm?: boolean;
-    initialTab?: "history" | "templates";
+    initialTab?: "history" | "templates" | "spaces";
 }
 
 export function useLocationTasksSheet({ location, open, initialCreateForm, initialTab = "history" }: UseLocationTasksSheetParams) {
     const { dict } = useDictionary();
+    const locationId = location?.id;
     const [tasks, setTasks] = useState<TaskItem[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -79,7 +80,7 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     const activeTab = activeSheetUiState.activeTab;
     const showCreateForm = activeSheetUiState.showCreateForm;
     const assignedUserId = activeSheetUiState.assignedUserId;
-    const setActiveTab = (nextTab: SetStateAction<"history" | "templates">) => {
+    const setActiveTab = (nextTab: SetStateAction<"history" | "templates" | "spaces">) => {
         setSheetUiState((prev) => {
             const current = prev.contextKey === sheetUiContextKey ? prev : buildSheetUiState();
             const resolvedTab = typeof nextTab === "function" ? nextTab(current.activeTab) : nextTab;
@@ -102,6 +103,7 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     };
 
     const isAdminOrManager = canManageCompanyTasks(currentUser);
+    const currentUserId = currentUser?.id;
     const locationOwnerCompanyId = location?.owner_company_id ?? location?.managing_company_id;
     const canManageLocationTemplates = Boolean(
         currentUser
@@ -129,11 +131,10 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     }, [open]);
 
     // Load tasks and job history
-    const loadExecutedTasks = async () => {
-        if (!location) return;
+    const loadExecutedTasks = async (targetLocationId: number) => {
         try {
             setLoadingTasks(true);
-            const data = await TaskService.getTaskItems({ locationId: location.id });
+            const data = await TaskService.getTaskItems({ locationId: targetLocationId });
             setTasks(data);
         } catch (error) {
             console.error("Error fetching tasks", error);
@@ -144,11 +145,10 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     };
 
     // Load house and global templates (soft-fail so a 500 does not break the sheet)
-    const loadHouseTemplates = async () => {
-        if (!location) return;
+    const loadHouseTemplates = async (targetLocationId: number) => {
         try {
             setLoadingHouseTemplates(true);
-            const bundle = await loadLocationTemplatesBundle(location.id, {
+            const bundle = await loadLocationTemplatesBundle(targetLocationId, {
                 getHouseTemplates: LocationTemplateService.getTemplates,
                 getGlobalTemplates: TemplateTaskService.getTemplates,
             });
@@ -172,15 +172,15 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     };
 
     const syncExecutedTasks = useEffectEvent(async () => {
-        await loadExecutedTasks();
+        if (locationId) await loadExecutedTasks(locationId);
     });
 
     useEffect(() => {
-        if (!open || !location) return;
+        if (!open || !locationId) return;
         startTransition(() => {
             void syncExecutedTasks();
         });
-    }, [open, location]);
+    }, [open, locationId]);
 
     const syncAdminSheetData = useEffectEvent(async () => {
         try {
@@ -194,15 +194,15 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
         } catch (error) {
             console.error("Error fetching users", error);
         }
-        await loadHouseTemplates();
+        if (locationId) await loadHouseTemplates(locationId);
     });
 
     useEffect(() => {
-        if (!open || !location || !currentUser) return;
+        if (!open || !locationId || !currentUserId) return;
         startTransition(() => {
             void syncAdminSheetData();
         });
-    }, [open, location, currentUser, isAdminOrManager]);
+    }, [open, locationId, currentUserId, isAdminOrManager]);
 
     // Toggle completed
     const handleToggleStatus = async (task: TaskItem) => {
@@ -293,7 +293,7 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
             toast.success(dict.locations.sheet.toast_linked_success);
             setSelectedGlobalTemplateIds([]);
             setTemplatePrices({});
-            await loadHouseTemplates();
+            await loadHouseTemplates(location.id);
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, dict.locations.sheet.toast_link_generic_error));
         } finally {
@@ -309,7 +309,7 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
             await LocationTemplateService.removeTemplate(location.id, templateId);
 
             toast.success(dict.locations.sheet.toast_unlinked_success);
-            await loadHouseTemplates();
+            await loadHouseTemplates(location.id);
             return true;
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, dict.locations.sheet.toast_unlink_generic_error));
@@ -336,7 +336,7 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
 
             toast.success(dict.locations.sheet.toast_updated_success);
             setEditingTemplateId(null);
-            await loadHouseTemplates();
+            await loadHouseTemplates(location.id);
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, dict.locations.sheet.toast_update_error));
         }

@@ -135,7 +135,9 @@ def create_task_item(
     company_id: int,
     task_item_data: TaskItemCreate,
 ) -> TaskItem:
-    dump = task_item_data.model_dump()
+    dump = task_item_data.model_dump(
+        exclude={"zone_ids", "space_ids", "space_task_template_ids"}
+    )
     if dump.get("created_at") is None:
         dump.pop("created_at", None)
     db_task_item = TaskItem(**dump, company_id=company_id)
@@ -147,7 +149,10 @@ def create_task_item(
 def update_task_item(
     db: Session, db_task_item: TaskItem, task_item_data: TaskItemUpdate
 ) -> TaskItem:
-    update_data = task_item_data.model_dump(exclude_unset=True)
+    update_data = task_item_data.model_dump(
+        exclude_unset=True,
+        exclude={"zone_ids", "space_ids"},
+    )
     for key, value in update_data.items():
         setattr(db_task_item, key, value)
     db.add(db_task_item)

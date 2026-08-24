@@ -66,6 +66,15 @@ export function TechTaskHeaderInfo({
                 >
                     {locationTypeLabel}
                 </Badge>
+                {task.zones && task.zones.length > 0 && (
+                    <Badge
+                        variant="outline"
+                        className="max-w-full truncate rounded-lg px-2 py-0.5 text-[10px] font-semibold text-accent"
+                        title={task.zones.map((zone) => zone.name).join(", ")}
+                    >
+                        {task.zones.map((zone) => zone.name).join(", ")}
+                    </Badge>
+                )}
             </div>
 
             <div className="flex flex-wrap items-start justify-between gap-2">

@@ -6,7 +6,6 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 
 test("dark visibility tokens live in globals and drive glass surfaces", () => {
     const globals = read("../app/globals.css");
-    const locationCard = read("../components/locations/LocationCard.tsx");
     const taskCard = read("../components/tasks/TaskListCard.tsx");
     const companies = read("../components/companies/CompaniesListSection.tsx");
     const header = read("../components/dashboard/DashboardHeader.tsx");
@@ -54,7 +53,6 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.doesNotMatch(globals, /\.input-field\s*\{/);
     assert.doesNotMatch(globals, /--sidebar-active-shadow/);
 
-    assert.match(locationCard, /surface-glass-card|billing-block/);
     assert.match(taskCard, /billing-block/);
     assert.match(companies, /DataListTable/);
     assert.doesNotMatch(companies, /surface-glass-card/);

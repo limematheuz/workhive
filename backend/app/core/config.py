@@ -107,6 +107,7 @@ class Settings(BaseSettings):
     )
     GOOGLE_CALENDAR_TIMEZONE: str = "Europe/Madrid"
     GOOGLE_TOKEN_ENCRYPTION_KEY: str | None = None
+    LOCATION_ACCESS_ENCRYPTION_KEY: str | None = None
     GOOGLE_CALENDAR_BACKGROUND_SYNC_INTERVAL_SECONDS: int = 300
 
     PRIVACY_POLICY_VERSION: str = "2026-06-15"
@@ -120,6 +121,22 @@ class Settings(BaseSettings):
         if value != "HS256":
             raise ValueError("Only HS256 is supported")
         return value
+
+    @field_validator("LOCATION_ACCESS_ENCRYPTION_KEY")
+    @classmethod
+    def validate_location_access_encryption_key(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        from cryptography.fernet import Fernet
+
+        normalized = value.strip()
+        try:
+            Fernet(normalized.encode("ascii"))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "LOCATION_ACCESS_ENCRYPTION_KEY must be a valid Fernet key"
+            ) from exc
+        return normalized
 
     @field_validator("DATABASE_USE_NULL_POOL", mode="before")
     @classmethod

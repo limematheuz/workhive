@@ -49,6 +49,13 @@ class TaskChecklistItem(Base):
     )
     position = Column(Integer, nullable=False)
     source_line_index = Column(Integer, nullable=True)
+    location_space_task_template_id = Column(
+        Integer,
+        ForeignKey("location_space_task_templates.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    space_name = Column(String(100), nullable=True)
     text = Column(Text, nullable=False)
     completed = Column(Boolean, nullable=False, default=False)
 

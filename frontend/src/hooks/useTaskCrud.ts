@@ -45,6 +45,7 @@ import {
 import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
 import { loadTaskCreateLocationData } from "@/lib/load-task-create-location-data";
 import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
+import { useLocationZones } from "@/hooks/useLocationZones";
 
 interface UseTaskCrudParams {
     dict: Dictionary;
@@ -105,6 +106,12 @@ export function useTaskCrud({
     const [newUserId, setNewUserId] = useState<string>("");
     const [newCreatedAt, setNewCreatedAt] = useState<string>(() => getDefaultTaskDate());
     const [reservationState, setReservationState] = useState<ReservationState>(EMPTY_RESERVATIONS);
+    const [selectedZoneIds, setSelectedZoneIds] = useState<number[]>([]);
+    const [selectedSpaceTaskTemplateIds, setSelectedSpaceTaskTemplateIds] = useState<number[]>([]);
+    const { zones: locationZones, loading: loadingLocationZones } = useLocationZones(
+        newLocationId ? Number(newLocationId) : null,
+        isCreateOpen,
+    );
 
     const houseTemplates = houseTemplateState.items;
     const selectedHouseTemplateId = houseTemplateState.selectedId;
@@ -143,6 +150,8 @@ export function useTaskCrud({
         setHouseTemplateState({ items: [], selectedId: null, loading: true });
         setReservationState({ items: [], checkoutId: "", nextId: "", loading: true });
         setTaskPricingOverrides({});
+        setSelectedZoneIds([]);
+        setSelectedSpaceTaskTemplateIds([]);
 
         const canLinkReservations = canManageReservationsForLocation(Number(locationId));
         const result = await loadTaskCreateLocationData(Number(locationId), {
@@ -202,6 +211,8 @@ export function useTaskCrud({
         setHouseTemplateState(EMPTY_HOUSE_TEMPLATES);
         setReservationState(EMPTY_RESERVATIONS);
         setTaskPricingOverrides({});
+        setSelectedZoneIds([]);
+        setSelectedSpaceTaskTemplateIds([]);
         setIsCreateOpen(true);
     };
 
@@ -210,6 +221,8 @@ export function useTaskCrud({
         setHouseTemplateState(EMPTY_HOUSE_TEMPLATES);
         setReservationState(EMPTY_RESERVATIONS);
         setTaskPricingOverrides({});
+        setSelectedZoneIds([]);
+        setSelectedSpaceTaskTemplateIds([]);
     };
 
     const handleToggleStatus = async (task: TaskItem, e: React.MouseEvent) => {
@@ -337,6 +350,8 @@ export function useTaskCrud({
                 checkout_reservation_id: checkoutReservation?.id || null,
                 next_reservation_id: nextReservation?.id || null,
                 priority,
+                zone_ids: selectedZoneIds,
+                space_task_template_ids: selectedSpaceTaskTemplateIds,
             });
             toast.success(newUserId === ALL_WORKERS_VALUE
                 ? "Trabajos registrados para todos los trabajadores."
@@ -518,6 +533,7 @@ export function useTaskCrud({
                 location_id: task.location_id,
                 user_id: task.user_id,
                 priority: task.priority || "medium",
+                zone_ids: task.zones?.map((zone) => zone.space_id),
             });
             toast.success("Tarea duplicada con éxito.");
             setSelectedTask(null);
@@ -557,6 +573,12 @@ export function useTaskCrud({
         setNewCheckoutReservationId,
         newNextReservationId,
         setNewNextReservationId,
+        locationZones,
+        loadingLocationZones,
+        selectedZoneIds,
+        setSelectedZoneIds,
+        selectedSpaceTaskTemplateIds,
+        setSelectedSpaceTaskTemplateIds,
         editTitle,
         setEditTitle,
         editNotes,

@@ -1,13 +1,11 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
 import { MapPin, ChevronUp, ChevronDown, X, Bed, Bath, ChefHat, Sun, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Location } from "@/types/location";
 import { PropertyFeatures } from "./utils";
 import { useDictionary } from "@/lib/dictionary-context";
-import { resolveApiMediaUrl } from "@/lib/api";
 
 interface TechTaskPropertySectionProps {
     expanded: boolean;
@@ -262,18 +260,6 @@ export function TechTaskPropertySection({
                                     </p>
                                 </div>
                             </div>
-                            {location?.photo_url && (
-                                <div className="relative mt-2 h-40 overflow-hidden rounded-xl border border-[var(--border-soft)]">
-                                    <Image
-                                        src={resolveApiMediaUrl(location.photo_url) || ""}
-                                        className="object-cover"
-                                        alt={locationName}
-                                        fill
-                                        sizes="(max-width: 1024px) 100vw, 32rem"
-                                        unoptimized
-                                    />
-                                </div>
-                            )}
                         </div>
                     )}
                 </div>

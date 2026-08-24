@@ -1,9 +1,15 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api"
-import { Location } from "@/types/location"
+import { LocationWorkspaceService } from "@/services/location-workspace.service"
+import {
+    Location,
+    LocationSpace,
+    LocationSpaceTask,
+    LocationZone,
+} from "@/types/location"
 import { Company } from "@/types/company"
 import { User } from "@/types/user"
 
-export type { Location };
+export type { Location, LocationSpace, LocationSpaceTask, LocationZone };
 
 export type LocationHistoryPeriod = "day" | "week" | "month";
 
@@ -40,6 +46,8 @@ export interface LocationOperationalHistory {
 }
 
 export const LocationService = {
+    ...LocationWorkspaceService,
+
     getLocations: async (clientId?: number): Promise<Location[]> => {
         const path = clientId
             ? `/api/v1/locations/?client_id=${clientId}`
@@ -121,6 +129,40 @@ export const LocationService = {
             throw new Error("Error fetching location service providers")
         }
         return await response.json()
+    },
+
+    getZones: async (locationId: number): Promise<LocationZone[]> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/zones`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error fetching location zones"));
+        }
+        return await response.json();
+    },
+
+    createZone: async (
+        locationId: number,
+        data: Pick<LocationZone, "name" | "zone_type">,
+    ): Promise<LocationZone> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/zones`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error creating location zone"));
+        }
+        return await response.json();
+    },
+
+    archiveZone: async (locationId: number, zoneId: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/zones/${zoneId}`, {
+            method: "DELETE",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error archiving location zone"));
+        }
     },
 
     getOperationalHistory: async (

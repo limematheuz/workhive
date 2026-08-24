@@ -215,6 +215,14 @@ export function TaskListCard({
                             <MapPin className="h-3 w-3 shrink-0 text-accent" />
                             <span className="truncate">{getLocationName(task.location_id)}</span>
                         </span>
+                        {task.zones && task.zones.length > 0 && (
+                            <>
+                                <span aria-hidden="true" className="text-[var(--border-color)]">·</span>
+                                <span className="min-w-0 truncate font-semibold text-accent">
+                                    {task.zones.map((zone) => zone.name).join(", ")}
+                                </span>
+                            </>
+                        )}
                         {isAdminOrManager && (
                             <>
                                 <span aria-hidden="true" className="text-[var(--border-color)]">·</span>

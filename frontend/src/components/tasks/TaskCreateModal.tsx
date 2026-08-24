@@ -17,8 +17,10 @@ import {
 import { TaskCreateMainFields } from "./TaskCreateMainFields";
 import { TaskCreateReservationSection } from "./TaskCreateReservationSection";
 import { TaskCreateHouseChecklistSection } from "./TaskCreateHouseChecklistSection";
+import { TaskCreateZonesSection } from "./TaskCreateZonesSection";
 import { canLinkTaskReservations } from "@/features/reservations/reservation-helpers";
 import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
+import type { LocationZone } from "@/services/location.service";
 import {
     taskDialogBodyClass,
     taskDialogContentClass,
@@ -59,6 +61,12 @@ interface TaskCreateModalProps {
     setNewCheckoutReservationId: (val: string) => void;
     newNextReservationId: string;
     setNewNextReservationId: (val: string) => void;
+    locationZones: LocationZone[];
+    loadingLocationZones: boolean;
+    selectedZoneIds: number[];
+    setSelectedZoneIds: (zoneIds: number[]) => void;
+    selectedSpaceTaskTemplateIds: number[];
+    setSelectedSpaceTaskTemplateIds: (taskIds: number[]) => void;
     handleCreateTask: (e: React.FormEvent) => void;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -96,6 +104,12 @@ export function TaskCreateModal({
     setNewCheckoutReservationId,
     newNextReservationId,
     setNewNextReservationId,
+    locationZones,
+    loadingLocationZones,
+    selectedZoneIds,
+    setSelectedZoneIds,
+    selectedSpaceTaskTemplateIds,
+    setSelectedSpaceTaskTemplateIds,
     handleCreateTask,
     fixedChecklistAssignments,
     setFixedChecklistAssignments,
@@ -147,6 +161,17 @@ export function TaskCreateModal({
                             newCreatedAt={newCreatedAt}
                             setNewCreatedAt={setNewCreatedAt}
                         />
+
+                        {newLocationId && (
+                            <TaskCreateZonesSection
+                                zones={locationZones}
+                                loading={loadingLocationZones}
+                                selectedZoneIds={selectedZoneIds}
+                                setSelectedZoneIds={setSelectedZoneIds}
+                                selectedSpaceTaskTemplateIds={selectedSpaceTaskTemplateIds}
+                                setSelectedSpaceTaskTemplateIds={setSelectedSpaceTaskTemplateIds}
+                            />
+                        )}
 
                         {newLocationId && canLinkReservations && (
                             <TaskCreateReservationSection

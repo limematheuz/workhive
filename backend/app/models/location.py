@@ -1,6 +1,6 @@
 from sqlalchemy.orm import relationship
 from app.db.session import Base
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, Text, func, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, func, JSON
 
 
 class Location(Base):
@@ -10,7 +10,6 @@ class Location(Base):
     address = Column(String(255), nullable=False)
     city = Column(String(100), nullable=False)
     postal_code = Column(String(20), nullable=True)
-    photo_url = Column(Text, nullable=True)
     latitude = Column(Float, nullable=True)
     longitude = Column(Float, nullable=True)
     map_url = Column(String(500), nullable=True)
@@ -53,8 +52,25 @@ class Location(Base):
     )
 
     templates = relationship("LocationTemplate", back_populates="location", cascade="all, delete-orphan")
+    zones = relationship("LocationZone", back_populates="location", cascade="all, delete-orphan")
+    profile = relationship(
+        "LocationProfile",
+        back_populates="location",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    access_profile = relationship(
+        "LocationAccessProfile",
+        back_populates="location",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
     
     work_sessions = relationship("WorkSession", back_populates="location")
+
+    @property
+    def access(self):
+        return self.access_profile
 
     task_items = relationship("TaskItem", back_populates="location")
     reservations = relationship(

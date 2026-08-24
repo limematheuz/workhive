@@ -12,6 +12,8 @@ def get_location_by_id(
     query = db.query(Location).options(
         selectinload(Location.client),
         selectinload(Location.company_access),
+        selectinload(Location.profile),
+        selectinload(Location.access_profile),
     )
     if company_id is not None:
         query = query.outerjoin(Client).filter(
@@ -37,6 +39,8 @@ def get_locations_by_client(
     query = db.query(Location).options(
         selectinload(Location.client),
         selectinload(Location.company_access),
+        selectinload(Location.profile),
+        selectinload(Location.access_profile),
     )
     if company_id is not None:
         query = query.outerjoin(Client).filter(
@@ -58,7 +62,7 @@ def get_locations_by_client(
 
 
 def create_location(db: Session, location_data: LocationCreate) -> Location:
-    dump = location_data.model_dump()
+    dump = location_data.model_dump(exclude={"profile", "access", "spaces"})
     db_location = Location(**dump)
     db.add(db_location)
     db.flush()
@@ -68,7 +72,10 @@ def create_location(db: Session, location_data: LocationCreate) -> Location:
 def update_location(
     db: Session, db_location: Location, location_data: LocationUpdate
 ) -> Location:
-    update_data = location_data.model_dump(exclude_unset=True)
+    update_data = location_data.model_dump(
+        exclude_unset=True,
+        exclude={"profile", "access"},
+    )
     for key, value in update_data.items():
         setattr(db_location, key, value)
 

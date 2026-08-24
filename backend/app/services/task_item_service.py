@@ -1,17 +1,14 @@
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import status, HTTPException
 from app.models.task_item import TaskItem
 from app.schemas.task_item import (
     TaskAcceptRequest,
     TaskItemCreate,
-    TaskItemResponse,
     TaskItemUpdate,
     TaskChecklistItemUpdate,
 )
 from app.repositories import task_item as task_item_repo
-from app.repositories import async_task_item as async_task_item_repo
 from app.repositories import user as user_repo
 from app.services import location_access_service
 from app.models.user import User
@@ -22,13 +19,24 @@ from app.services import (
     notification_service,
     task_assignment_service,
     task_billing_service,
+    task_completion_service,
     task_lifecycle_notification_service,
+    location_zone_service,
+    location_workspace_service,
     task_structure_service,
     task_update_policy_service,
 )
 from app.services.company_client_service import ensure_company_as_client
 from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
+from app.services.task_item_read_service import (
+    build_loaded_task_response,
+    build_task_response,
+    get_task_item,
+    get_task_item_async,
+    get_task_items,
+    get_task_items_async,
+)
 
 
 def _mark_task_completed(
@@ -62,133 +70,6 @@ def _complete_task_when_checklist_is_done(
     return True
 
 
-def get_task_items(
-    db: Session,
-    company_id: int,
-    user_id: int | None = None,
-    location_id: int | None = None,
-    task_status: str | None = None,
-    skip: int = 0,
-    limit: int = 100,
-    include_requested: bool = False,
-) -> list[TaskItem]:
-    return task_item_repo.get_task_items(
-        db,
-        company_id,
-        user_id,
-        location_id,
-        task_status,
-        skip,
-        limit,
-        include_requested,
-    )
-
-
-async def get_task_items_async(
-    db: AsyncSession,
-    company_id: int,
-    user_id: int | None = None,
-    location_id: int | None = None,
-    task_status: str | None = None,
-    skip: int = 0,
-    limit: int = 100,
-    include_requested: bool = False,
-) -> list[TaskItem]:
-    return await async_task_item_repo.get_task_items(
-        db,
-        company_id,
-        user_id,
-        location_id,
-        task_status,
-        skip,
-        limit,
-        include_requested,
-    )
-
-
-async def get_task_item_async(
-    db: AsyncSession,
-    current_user: User,
-    task_item_id: int,
-) -> TaskItem:
-    existing = await async_task_item_repo.get_task_item(
-        db,
-        current_user.company_id,
-        task_item_id,
-    )
-    if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Task Item not found",
-        )
-    return existing
-
-
-def get_task_item(db: Session, current_user: User, task_item_id: int) -> TaskItem:
-    existing = task_item_repo.get_task_item(db, current_user.company_id, task_item_id)
-    if not existing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
-        )
-    return existing
-
-
-def build_task_response(
-    db: Session,
-    task: TaskItem,
-    current_user: User,
-) -> TaskItemResponse:
-    from app.services import reservation_service
-
-    response = TaskItemResponse.model_validate(task)
-    live_snapshot = reservation_service.get_live_external_task_snapshot(db, task)
-    if live_snapshot:
-        response = response.model_copy(update=live_snapshot)
-    if not location_access_service.can_view_sensitive(
-        db,
-        current_user,
-        task.location_id,
-    ):
-        return response.model_copy(
-            update={
-                "price": None,
-                "quantity": None,
-                "billing_pricing_mode_snapshot": None,
-                "billing_price_snapshot": None,
-                "billing_quantity_snapshot": None,
-                "billing_unit_snapshot": None,
-            }
-        )
-    return response
-
-
-def build_loaded_task_response(
-    task: TaskItem,
-    current_user: User,
-) -> TaskItemResponse:
-    from app.services.reservation_tasks import get_live_external_task_snapshot_loaded
-
-    response = TaskItemResponse.model_validate(task)
-    live_snapshot = get_live_external_task_snapshot_loaded(task)
-    if live_snapshot:
-        response = response.model_copy(update=live_snapshot)
-    if not location_access_service.can_view_sensitive_loaded(
-        current_user,
-        task.location,
-    ):
-        return response.model_copy(
-            update={
-                "price": None,
-                "quantity": None,
-                "billing_pricing_mode_snapshot": None,
-                "billing_price_snapshot": None,
-                "billing_quantity_snapshot": None,
-                "billing_unit_snapshot": None,
-            }
-        )
-    return response
-
-
 def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
     from app.services import reservation_service
 
@@ -202,36 +83,6 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
         )
     for field, value in live_snapshot.items():
         setattr(task, field, value)
-
-
-def _notify_new_task_assignees(
-    db: Session,
-    task: TaskItem,
-    user_ids: set[int],
-) -> None:
-    if not user_ids or task.status in {"requested", "rejected", "completed"}:
-        return
-    recipients = (
-        db.query(User)
-        .filter(
-            User.id.in_(user_ids),
-            User.company_id == task.company_id,
-            User.is_active.is_(True),
-        )
-        .all()
-    )
-    if not recipients:
-        return
-    notification_service.notify_users(
-        db,
-        users=recipients,
-        event_type="task.assigned",
-        title="Nueva tarea asignada",
-        message=task.title,
-        entity_type="task_item",
-        entity_id=task.id,
-        href=f"/dashboard?taskId={task.id}",
-    )
 
 
 def create_task_item(
@@ -263,6 +114,23 @@ def create_task_item(
         task_item_data.checkout_reservation_id,
         task_item_data.next_reservation_id,
     )
+    selected_space_ids = location_workspace_service.resolve_task_space_ids(
+        task_item_data.zone_ids,
+        task_item_data.space_ids,
+    )
+    location_workspace_service.validate_task_space_ids(
+        db,
+        task_item_data.location_id,
+        selected_space_ids,
+    )
+    selected_space_task_templates = (
+        location_workspace_service.validate_space_task_template_ids(
+            db,
+            task_item_data.location_id,
+            selected_space_ids,
+            task_item_data.space_task_template_ids,
+        )
+    )
     task_structure_service.validate_description_assignees(
         db,
         current_user.company_id,
@@ -292,36 +160,28 @@ def create_task_item(
         current_user.company_id,
         task_item_data,
     )
+    location_zone_service.sync_task_zones(
+        db,
+        task.id,
+        task.location_id,
+        selected_space_ids,
+    )
     task_structure_service.sync_from_description(db, task)
+    location_workspace_service.append_selected_space_tasks_to_checklist(
+        db,
+        task,
+        selected_space_task_templates,
+    )
     _complete_task_when_checklist_is_done(db, task)
     db.commit()
     db.refresh(task)
-    _notify_new_task_assignees(
+    task_lifecycle_notification_service.notify_task_assignees(
         db,
         task,
         task_assignment_service.assigned_user_ids(task),
     )
     calendar_sync_service.enqueue_task_sync(db, task)
     return task
-
-
-def _apply_completion_side_effects(
-    db: Session,
-    task: TaskItem,
-    *,
-    was_completed: bool,
-) -> None:
-    if not was_completed and task.status == "completed":
-        completed_at = task.date_done or datetime.now(timezone.utc)
-        task.date_done = completed_at
-        task_billing_service.capture_completed_work_snapshot(
-            db,
-            task,
-            completed_at=completed_at,
-        )
-        return
-    if was_completed and task.status != "completed":
-        task_billing_service.clear_work_snapshot_on_reopen(task)
 
 
 def update_task_item(
@@ -346,6 +206,24 @@ def update_task_item(
         current_user,
         task_data,
     )
+    target_location_id = task_data.location_id or db_task_item.location_id
+    space_fields_present = {"zone_ids", "space_ids"} & task_data.model_fields_set
+    selected_space_ids: list[int] | None = None
+    if space_fields_present:
+        selected_space_ids = location_workspace_service.resolve_task_space_ids(
+            task_data.zone_ids or [],
+            task_data.space_ids or [],
+        )
+        location_workspace_service.validate_task_space_ids(
+            db,
+            target_location_id,
+            selected_space_ids,
+        )
+    elif task_data.location_id is not None and task_data.location_id != db_task_item.location_id and db_task_item.zones:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Update the selected spaces when changing the task location",
+        )
     task_data = task_update_policy_service.normalize_task_completion(
         db_task_item,
         task_data,
@@ -373,20 +251,27 @@ def update_task_item(
         )
 
     updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
+    if selected_space_ids is not None:
+        location_zone_service.sync_task_zones(
+            db,
+            updated_task.id,
+            updated_task.location_id,
+            selected_space_ids,
+        )
     if (
         "description" in task_data.model_fields_set
         or "user_id" in task_data.model_fields_set
     ):
         task_structure_service.sync_from_description(db, updated_task)
     _complete_task_when_checklist_is_done(db, updated_task)
-    _apply_completion_side_effects(
+    task_completion_service.apply_update_side_effects(
         db,
         updated_task,
         was_completed=was_completed,
     )
     db.commit()
     db.refresh(updated_task)
-    _notify_new_task_assignees(
+    task_lifecycle_notification_service.notify_task_assignees(
         db,
         updated_task,
         task_assignment_service.assigned_user_ids(updated_task) - previous_assignee_ids,

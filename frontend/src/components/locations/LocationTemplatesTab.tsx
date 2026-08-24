@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ListChecks, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type {
     LocationTemplate as HouseTemplate,
@@ -105,7 +106,7 @@ export function LocationTemplatesTab({
                                 {availableTemplates.map(template => {
                                     const selected = selectedGlobalTemplateIdSet.has(template.id);
                                     return (
-                                        <div key={template.id} className="flex items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3">
+                                        <div key={template.id} className="grid gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-center">
                                             <label htmlFor={`location-template-${template.id}`} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
                                                 <input
                                                     id={`location-template-${template.id}`}
@@ -121,7 +122,7 @@ export function LocationTemplatesTab({
                                                     <span className="text-xs text-[var(--text-muted)]">{template.default_price ?? 0} € / {template.unit}</span>
                                                 </span>
                                             </label>
-                                            <input
+                                            <Input
                                                 type="number"
                                                 aria-label={`${template.name} ${dict.locations?.sheet?.price_short_placeholder || "Local price"}`}
                                                 step="0.01"
@@ -130,7 +131,7 @@ export function LocationTemplatesTab({
                                                 onClick={event => event.stopPropagation()}
                                                 onChange={event => setTemplatePrices(prices => ({ ...prices, [template.id]: event.target.value }))}
                                                 placeholder={dict.locations?.sheet?.price_short_placeholder || "Local price"}
-                                                className="h-9 w-28 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] px-2 text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                                                className="h-9 w-full bg-[var(--bg-secondary)] text-xs text-[var(--text-main)] focus-visible:border-accent"
                                             />
                                         </div>
                                     );

@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.schemas.reservation import ReservationOperationalResponse
+from app.schemas.location_zone import TaskZoneResponse
 
 
 MAX_REPORT_COLLECTION_ITEMS = 200
@@ -64,6 +65,9 @@ class TaskItemBase(BaseModel):
 class TaskItemCreate(TaskItemBase):
     status: TaskStatus = "pending"
     created_at: datetime | None = None
+    zone_ids: list[int] = Field(default_factory=list, max_length=100)
+    space_ids: list[int] = Field(default_factory=list, max_length=100)
+    space_task_template_ids: list[int] = Field(default_factory=list, max_length=200)
 
 
 class TaskItemUpdate(BaseModel):
@@ -90,6 +94,8 @@ class TaskItemUpdate(BaseModel):
     service_context: str | None = None
     checkout_reservation_id: int | None = None
     next_reservation_id: int | None = None
+    zone_ids: list[int] | None = Field(default=None, max_length=100)
+    space_ids: list[int] | None = Field(default=None, max_length=100)
 
     _limit_report_payload = field_validator(
         "operational_notes",
@@ -138,6 +144,7 @@ class TaskChecklistItemResponse(BaseModel):
     position: int
     text: str
     completed: bool
+    space_name: str | None = None
     assignments: list[TaskChecklistAssignmentResponse] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
@@ -167,6 +174,8 @@ class TaskItemResponse(TaskItemBase):
     accepted_by_name: str | None = None
     checklist_items: list[TaskChecklistItemResponse] = Field(default_factory=list)
     assignments: list[TaskAssignmentResponse] = Field(default_factory=list)
+    zones: list[TaskZoneResponse] = Field(default_factory=list)
+    spaces: list[TaskZoneResponse] = Field(default_factory=list)
 
 
 class InvoiceableWorkerHours(BaseModel):

@@ -12,6 +12,7 @@ from app.models.task_structure import (
     TaskChecklistAssignment,
     TaskChecklistItem,
 )
+from app.models.location_zone import TaskZone
 
 
 def _user_assignment_conditions(user_id: int):
@@ -35,6 +36,7 @@ def _load_options():
         selectinload(TaskItem.checklist_items)
         .selectinload(TaskChecklistItem.assignments)
         .selectinload(TaskChecklistAssignment.user),
+        selectinload(TaskItem.zones).selectinload(TaskZone.zone),
         selectinload(TaskItem.checkout_reservation).selectinload(
             Reservation.owner_company
         ),

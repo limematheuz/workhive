@@ -14,6 +14,7 @@ import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { TaskPricingMode } from "@/domain/tasks/task-edit";
 import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import type { TaskCreationPricingOverride } from "@/lib/task-pricing";
+import type { LocationZone } from "@/services/location.service";
 
 interface TaskFormModalsProps {
     dict: Dictionary;
@@ -48,6 +49,12 @@ interface TaskFormModalsProps {
     setNewCheckoutReservationId: (val: string) => void;
     newNextReservationId: string;
     setNewNextReservationId: (val: string) => void;
+    locationZones: LocationZone[];
+    loadingLocationZones: boolean;
+    selectedZoneIds: number[];
+    setSelectedZoneIds: (zoneIds: number[]) => void;
+    selectedSpaceTaskTemplateIds: number[];
+    setSelectedSpaceTaskTemplateIds: (taskIds: number[]) => void;
     handleCreateTask: (e: React.FormEvent) => void;
     fixedChecklistAssignments: Record<string, string>;
     setFixedChecklistAssignments: React.Dispatch<React.SetStateAction<Record<string, string>>>;
@@ -138,6 +145,12 @@ interface TaskFormModalsProps {
      setNewCheckoutReservationId,
      newNextReservationId,
      setNewNextReservationId,
+    locationZones,
+    loadingLocationZones,
+    selectedZoneIds,
+    setSelectedZoneIds,
+    selectedSpaceTaskTemplateIds,
+    setSelectedSpaceTaskTemplateIds,
      handleCreateTask,
     fixedChecklistAssignments,
     setFixedChecklistAssignments,
@@ -225,6 +238,12 @@ interface TaskFormModalsProps {
                  setNewCheckoutReservationId={setNewCheckoutReservationId}
                  newNextReservationId={newNextReservationId}
                  setNewNextReservationId={setNewNextReservationId}
+                locationZones={locationZones}
+                loadingLocationZones={loadingLocationZones}
+                selectedZoneIds={selectedZoneIds}
+                setSelectedZoneIds={setSelectedZoneIds}
+                selectedSpaceTaskTemplateIds={selectedSpaceTaskTemplateIds}
+                setSelectedSpaceTaskTemplateIds={setSelectedSpaceTaskTemplateIds}
                  handleCreateTask={handleCreateTask}
                  fixedChecklistAssignments={fixedChecklistAssignments}
                  setFixedChecklistAssignments={setFixedChecklistAssignments}
