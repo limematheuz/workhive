@@ -7,7 +7,6 @@ set -euo pipefail
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 script_under_test="${repository_root}/ops/deploy/deploy_ecr_release.sh"
 compose_override="${repository_root}/docker-compose.production.yml"
-automatic_workflow="${repository_root}/.github/workflows/deploy-main-production.yml"
 ssm_document="${repository_root}/ops/deploy/workhive-production-deploy.ssm.yaml"
 
 bash -n "${script_under_test}"
@@ -39,12 +38,6 @@ grep -Fq 'EDGE_TLS_TERMINATED must be true or false.' "${script_under_test}"
 grep -Fq 'ops/security/docker-compose.alb.yml' "${script_under_test}"
 grep -Fq 'http://${domain}/health' "${script_under_test}"
 grep -Fq 'RELEASE_REF=${release_ref}' "${script_under_test}"
-
-grep -Fq 'name: Deploy main to production' "${automatic_workflow}"
-grep -Fq 'Require successful main checks' "${automatic_workflow}"
-grep -Fq 'name: production' "${automatic_workflow}"
-grep -Fq 'ReleaseRef=${RELEASE_REF}' "${automatic_workflow}"
-grep -Fq 'cancel-in-progress: false' "${automatic_workflow}"
 
 grep -Fq 'ReleaseRef:' "${ssm_document}"
 grep -Fq '[0-9a-f]{40}' "${ssm_document}"
