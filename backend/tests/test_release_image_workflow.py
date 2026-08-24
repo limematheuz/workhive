@@ -61,7 +61,9 @@ def test_release_requires_existing_ci_frontend_security_and_react_checks():
     ):
         assert f'"{required_check}"' in command
 
-    assert 'if [[ "$conclusion" != "success" ]]' in command
+    assert "Waiting for required check" in command
+    assert "Timed out waiting for required checks" in command
+    assert "sleep 15" in command
     assert workflow["jobs"]["publish"]["needs"] == [
         "release-metadata",
         "verified-checks",

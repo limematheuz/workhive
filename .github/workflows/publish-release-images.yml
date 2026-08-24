@@ -82,7 +82,7 @@ jobs:
     name: Require successful release checks
     needs: release-metadata
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 35
 
     steps:
       - name: Verify required checks on the release commit
@@ -101,25 +101,42 @@ jobs:
             "react-doctor"
           )
 
-          checks_json="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
+          for _ in $(seq 1 121); do
+            checks_json="$(gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
+            pending=false
 
-          for check_name in "${required_checks[@]}"; do
-            conclusion="$(jq -r --arg name "$check_name" \
-              '[.check_runs[] | select(.name == $name)]
-               | sort_by(.completed_at)
-               | last
-               | .conclusion // "missing"' <<< "$checks_json")"
+            for check_name in "${required_checks[@]}"; do
+              check="$(jq -c --arg name "$check_name" \
+                '[.check_runs[] | select(.name == $name)]
+                 | sort_by(.started_at // .completed_at // "")
+                 | last // {}' <<< "$checks_json")"
+              status="$(jq -r '.status // "missing"' <<< "$check")"
+              conclusion="$(jq -r '.conclusion // ""' <<< "$check")"
 
-            if [[ "$conclusion" != "success" ]]; then
-              printf 'Required check %s is %s for %s.\n' \
-                "$check_name" "$conclusion" "$RELEASE_SHA" >&2
-              exit 1
+              if [[ "$status" == "completed" && "$conclusion" == "success" ]]; then
+                printf 'Passed: %s\n' "$check_name"
+              elif [[ "$status" == "completed" ]]; then
+                printf 'Required check %s ended with %s for %s.\n' \
+                  "$check_name" "${conclusion:-no conclusion}" "$RELEASE_SHA" >&2
+                exit 1
+              else
+                printf 'Waiting for required check %s (%s).\n' "$check_name" "$status"
+                pending=true
+              fi
+            done
+
+            if [[ "$pending" == "false" ]]; then
+              printf 'All required CI and security checks passed for the release commit.\n'
+              exit 0
             fi
+
+            sleep 15
           done
 
-          printf 'All required CI and security checks passed for the release commit.\n'
+          printf 'Timed out waiting for required checks for %s.\n' "$RELEASE_SHA" >&2
+          exit 1
 
   publish:
     name: Build and publish immutable images
