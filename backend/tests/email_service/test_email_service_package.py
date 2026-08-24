@@ -20,6 +20,7 @@ def test_package_reexports_public_senders():
     assert callable(email_service.send_erasure_request_received_email)
     assert callable(email_service.send_erasure_request_resolved_email)
     assert callable(email_service.send_invoice_email)
+    assert callable(email_service.send_client_email)
 
 
 def test_package_keeps_private_aliases():
@@ -73,6 +74,28 @@ def test_invoice_via_package_api(tmp_path: Path, monkeypatch):
     )
 
     assert delivered["message"]["Subject"] == "Factura INV-1 - Issuer"
+
+
+def test_client_email_via_package_api_escapes_message_and_keeps_internal_recipients(monkeypatch):
+    delivered = capture_send(monkeypatch)
+
+    assert email_service.send_client_email(
+        recipient_emails=["client@example.com"],
+        recipient_name="<Client>",
+        subject="Hello",
+        custom_message="<b>Message</b>",
+        reply_to_email="admin@example.com",
+        copy_emails=["copy@example.com"],
+        sender_copy_email="owner@example.com",
+    )
+
+    message = delivered["message"]
+    assert message["To"] == "client@example.com"
+    assert message["Cc"] == "copy@example.com"
+    assert message["Bcc"] == "owner@example.com"
+    assert message["Reply-To"] == "admin@example.com"
+    assert "&lt;Client&gt;" in html_body(message)
+    assert "&lt;b&gt;Message&lt;/b&gt;" in html_body(message)
 
 
 def test_erasure_via_package_api(monkeypatch):

@@ -4,6 +4,7 @@ import { ChevronRight, MapPin, Search, UserCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DataListTable } from "@/components/ui/data-list-table";
 import { Input } from "@/components/ui/input";
 import { Location } from "@/services/location.service";
 import { TaskItem } from "@/services/task.service";
@@ -23,6 +24,9 @@ type ClientDetailTasksTabProps = {
         status_in_progress?: string;
         status_completed?: string;
         no_tasks?: string;
+        task?: string;
+        assignment?: string;
+        open_task?: string;
     };
     onViewTaskDetails: (task: TaskItem) => void;
     onClose: () => void;
@@ -66,68 +70,50 @@ export function ClientDetailTasksTab({
                 </select>
             </div>
 
-            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                {filteredTasks.length === 0 ? (
-                    <div className="text-center py-8 text-xs font-semibold text-[var(--text-muted)] italic">
-                        {labels.no_tasks || "No tasks found with current filters."}
-                    </div>
-                ) : (
-                    filteredTasks.map(task => {
-                        const taskLoc = locations.find(l => l.id === task.location_id);
-                        return (
-                            <div
-                                key={task.id}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-2 bg-[var(--bg-secondary)]/30 border border-[var(--border-soft)] rounded-2xl hover:border-[var(--border-color)] transition-colors"
-                            >
-                                <div className="min-w-0 flex-1 sm:pr-4">
-                                    <span className="text-xs font-black text-[var(--text-main)] truncate block">
-                                        {task.title}
-                                    </span>
-                                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-3xs font-semibold text-[var(--text-muted)]">
-                                        <span className="flex items-center gap-0.5">
-                                            <MapPin className="w-2.5 h-2.5 shrink-0 text-accent" />
-                                            {taskLoc?.name || `Loc #${task.location_id}`}
-                                        </span>
-                                        <span>·</span>
-                                        <span className="flex items-center gap-0.5">
-                                            <UserCheck className="w-2.5 h-2.5 shrink-0 text-accent" />
-                                            {getAssigneeName(task.user_id)}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 shrink-0">
-                                    <Badge
-                                        className={`text-[9px] px-2 py-0.5 font-bold uppercase rounded-full ${
-                                            task.status === "completed"
-                                                ? "bg-accent/10 text-accent border border-accent/20"
-                                                : task.status === "progress"
-                                                  ? "bg-accent/10 text-accent border border-accent/20"
-                                                  : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20"
-                                        }`}
-                                    >
-                                        {task.status === "completed"
-                                            ? "Completed"
-                                            : task.status === "progress"
-                                              ? "In progress"
-                                              : "Pending"}
-                                    </Badge>
-                                    <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => {
-                                            onClose();
-                                            onViewTaskDetails(task);
-                                        }}
-                                        className="h-8 w-8 p-0 rounded-xl hover:bg-[var(--bg-tertiary)]"
-                                    >
-                                        <ChevronRight className="w-4 h-4 text-[var(--text-main)]" />
-                                    </Button>
-                                </div>
-                            </div>
-                        );
-                    })
-                )}
-            </div>
+            <DataListTable
+                variant="plain"
+                className="max-h-[300px] overflow-y-auto pr-1"
+                items={filteredTasks}
+                getRowKey={(task) => task.id}
+                gridClassName="grid-cols-[minmax(13rem,1.25fr)_minmax(10rem,.9fr)_7rem_2.25rem]"
+                columns={[
+                    { key: "task", label: labels.task || "Task" },
+                    { key: "assignment", label: labels.assignment || "Assignment" },
+                    { key: "status", label: labels.all_statuses || "Status", className: "text-right" },
+                    { key: "open", label: <span className="sr-only">{labels.open_task || "Open task"}</span>, className: "text-right" },
+                ]}
+                empty={<p className="py-8 text-center text-xs font-semibold text-[var(--text-muted)]">{labels.no_tasks || "No tasks found with current filters."}</p>}
+                renderCompactRow={(task) => <TaskRow task={task} locations={locations} getAssigneeName={getAssigneeName} labels={labels} onOpen={() => { onClose(); onViewTaskDetails(task); }} compact />}
+                renderDesktopRow={(task) => <TaskRow task={task} locations={locations} getAssigneeName={getAssigneeName} labels={labels} onOpen={() => { onClose(); onViewTaskDetails(task); }} />}
+            />
         </div>
     );
+}
+
+function TaskRow({
+    task,
+    locations,
+    getAssigneeName,
+    labels,
+    onOpen,
+    compact = false,
+}: {
+    task: TaskItem;
+    locations: Location[];
+    getAssigneeName: (userId: number | null) => string;
+    labels: ClientDetailTasksTabProps["labels"];
+    onOpen: () => void;
+    compact?: boolean;
+}) {
+    const taskLocation = locations.find((location) => location.id === task.location_id);
+    const isCompleted = task.status === "completed";
+    const statusLabel = isCompleted ? (labels.status_completed || "Completed") : task.status === "progress" ? (labels.status_in_progress || "In progress") : (labels.status_pending || "Pending");
+    const statusClassName = isCompleted ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : task.status === "progress" ? "border border-accent/20 bg-accent/10 text-accent" : "border border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400";
+    const action = <Button size="icon-xs" variant="ghost" onClick={onOpen} aria-label={labels.open_task || "Open task"}><ChevronRight className="h-4 w-4" /></Button>;
+
+    if (compact) {
+        return <div className="flex items-center gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p><p className="mt-1 flex items-center gap-1.5 truncate text-xs text-[var(--text-muted)]"><MapPin className="h-3 w-3 shrink-0 text-accent" />{taskLocation?.name || `#${task.location_id}`}<span>·</span><UserCheck className="h-3 w-3 shrink-0 text-accent" />{getAssigneeName(task.user_id)}</p></div><div className="flex shrink-0 items-center gap-2"><Badge className={`text-[9px] font-bold uppercase ${statusClassName}`}>{statusLabel}</Badge>{action}</div></div>;
+    }
+
+    return <><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p><p className="mt-1 flex items-center gap-1.5 truncate text-xs text-[var(--text-muted)]"><MapPin className="h-3 w-3 shrink-0 text-accent" />{taskLocation?.name || `#${task.location_id}`}</p></div><p className="flex min-w-0 items-center gap-1.5 truncate text-xs text-[var(--text-muted)]"><UserCheck className="h-3.5 w-3.5 shrink-0 text-accent" />{getAssigneeName(task.user_id)}</p><div className="flex justify-end"><Badge className={`text-[9px] font-bold uppercase ${statusClassName}`}>{statusLabel}</Badge></div><div className="flex justify-end">{action}</div></>;
 }

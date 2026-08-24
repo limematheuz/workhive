@@ -1,73 +1,123 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ClientService, Client } from "@/services/client.service";
-import { ClientsTable } from "@/components/clients/ClientsTable";
-import { CreateClientSheet } from "@/components/clients/CreateClientSheet";
-import { EditClientSheet } from "@/components/clients/EditClientSheet";
-import { useDictionary } from "@/lib/dictionary-context";
-import { useUser } from "@/lib/user-context";
-import { toast } from "@/lib/toast";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Building2, Loader2 } from "lucide-react";
+
 import { ClientDetailDialog } from "@/components/clients/ClientDetailDialog";
 import { ClientTaskDetailDialog } from "@/components/clients/ClientTaskDetailDialog";
-import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
+import { ClientsTable } from "@/components/clients/ClientsTable";
+import { ClientWorkspaceExportButton } from "@/components/clients/ClientWorkspaceExportButton";
+import { ClientWorkspaceFilters } from "@/components/clients/ClientWorkspaceFilters";
+import { ClientWorkspaceStats } from "@/components/clients/ClientWorkspaceStats";
+import { CreateClientSheet } from "@/components/clients/CreateClientSheet";
+import { EditClientSheet } from "@/components/clients/EditClientSheet";
 import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
-import { Location } from "@/services/location.service";
-import { TaskItem } from "@/services/task.service";
-import { Building2, Search, SlidersHorizontal } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { PageHeader } from "@/components/ui/page-header";
-import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
-import { POLL_INTERVALS } from "@/lib/polling";
-import {
-    filterClients,
-    type ClientStatusFilter,
-} from "@/lib/client-filters";
+import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { PageHeader } from "@/components/ui/page-header";
+import { canViewFinance } from "@/domain/access/roles";
+import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useDictionary } from "@/lib/dictionary-context";
+import {
+    buildClientWorkspace,
+    filterClientWorkspaceRows,
+    getClientWorkspaceMonthlyRevenue,
+    getClientWorkspaceCities,
+    summarizeClientWorkspaceRows,
+    type ClientWorkspaceFilter,
+} from "@/lib/client-workspace";
+import { POLL_INTERVALS } from "@/lib/polling";
+import { toast } from "@/lib/toast";
+import { useUser } from "@/lib/user-context";
+import { ClientService, type Client } from "@/services/client.service";
+import { InvoiceService } from "@/services/invoice.service";
+import { LocationService, type Location } from "@/services/location.service";
+import { TaskService, type TaskItem } from "@/services/task.service";
+import type { Invoice } from "@/types/invoice";
+
+const EMPTY_FILTERS: ClientWorkspaceFilter = {
+    search: "",
+    status: "all",
+    clientType: "all",
+    city: "",
+    contact: "all",
+};
 
 export default function ClientsPage() {
     const { dict } = useDictionary();
-    const { user } = useUser();
+    const { user, loading: userLoading } = useUser();
     const [clients, setClients] = useState<Client[]>([]);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<ClientStatusFilter>("active");
+    const [locations, setLocations] = useState<Location[]>([]);
+    const [tasks, setTasks] = useState<TaskItem[]>([]);
+    const [invoices, setInvoices] = useState<Invoice[] | undefined>(undefined);
+    const [filters, setFilters] = useState<ClientWorkspaceFilter>(EMPTY_FILTERS);
+    const [loading, setLoading] = useState(true);
+    const [workspaceReferenceDate] = useState(() => new Date());
+    const hasLoadedRef = useRef(false);
 
     const isReadOnly = user?.role?.name === "viewer" || user?.role?.name === "manager";
-
+    const canViewClientFinancials = canViewFinance(user) && Boolean(user?.company_id);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [editSheetOpen, setEditSheetOpen] = useState(false);
-
     const deletingClientRef = useRef<Client | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-
     const [detailsClient, setDetailsClient] = useState<Client | null>(null);
     const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-
     const [tasksLocation, setTasksLocation] = useState<Location | null>(null);
     const [tasksSheetOpen, setTasksSheetOpen] = useState(false);
-
     const [viewingTask, setViewingTask] = useState<TaskItem | null>(null);
     const [backToClient, setBackToClient] = useState(false);
 
     const loadClients = useCallback(async () => {
+        if (userLoading || !user) return;
+        const isInitialLoad = !hasLoadedRef.current;
+        if (isInitialLoad) setLoading(true);
+
         try {
-            const data = await ClientService.getClients(null);
-            setClients(data);
-        } catch (error) {
-            console.error("Error loading clients", error);
-            toast.error("Error loading clients");
+            const [clientData, locationData, taskData, invoiceData] = await Promise.all([
+                ClientService.getClients(null),
+                LocationService.getLocations().catch(() => [] as Location[]),
+                TaskService.getAllTaskItems().catch(() => [] as TaskItem[]),
+                canViewClientFinancials
+                    ? InvoiceService.getAllInvoices().catch(() => undefined)
+                    : Promise.resolve(undefined),
+            ]);
+            setClients(clientData);
+            setLocations(locationData);
+            setTasks(taskData);
+            setInvoices(invoiceData);
+        } catch {
+            if (isInitialLoad) toast.error(dict.clients.workspace.load_error);
+        } finally {
+            hasLoadedRef.current = true;
+            setLoading(false);
         }
-    }, []);
+    }, [canViewClientFinancials, dict.clients.workspace.load_error, user, userLoading]);
 
     useEffect(() => {
-        const timeoutId = window.setTimeout(() => {
-            void loadClients();
-        }, 0);
+        if (userLoading || !user) return;
+        const timeoutId = window.setTimeout(() => void loadClients(), 0);
         return () => window.clearTimeout(timeoutId);
-    }, [loadClients]);
+    }, [loadClients, user, userLoading]);
 
     useBackgroundPolling(loadClients, POLL_INTERVALS.clients);
+
+    const workspace = useMemo(
+        () => buildClientWorkspace({ clients, locations, tasks, invoices, referenceDate: workspaceReferenceDate }),
+        [clients, invoices, locations, tasks, workspaceReferenceDate],
+    );
+    const visibleRows = useMemo(() => filterClientWorkspaceRows(workspace.rows, filters), [filters, workspace.rows]);
+    const visibleSummary = useMemo(
+        () => summarizeClientWorkspaceRows(visibleRows, workspace.summary.hasFinancialData),
+        [visibleRows, workspace.summary.hasFinancialData],
+    );
+    const monthlyRevenue = useMemo(
+        () => getClientWorkspaceMonthlyRevenue(invoices, visibleRows, workspaceReferenceDate),
+        [invoices, visibleRows, workspaceReferenceDate],
+    );
+    const cities = useMemo(() => getClientWorkspaceCities(workspace.rows), [workspace.rows]);
+    const detailsRow = workspace.rows.find((row) => row.client.id === detailsClient?.id) ?? null;
 
     const handleEdit = (client: Client) => {
         setEditingClient(client);
@@ -82,23 +132,9 @@ export default function ClientsPage() {
     const handleToggleActive = async (client: Client) => {
         try {
             await ClientService.updateClient(client.id, { is_active: !client.is_active });
-            setClients((current) =>
-                current.map((item) =>
-                    item.id === client.id
-                        ? { ...item, is_active: !client.is_active }
-                        : item
-                )
-            );
-            setDetailsClient((current) =>
-                current?.id === client.id
-                    ? { ...current, is_active: !client.is_active }
-                    : current
-            );
-            toast.success(
-                client.is_active
-                    ? "Cliente desactivado."
-                    : "Cliente activado."
-            );
+            setClients((current) => current.map((item) => item.id === client.id ? { ...item, is_active: !client.is_active } : item));
+            setDetailsClient((current) => current?.id === client.id ? { ...current, is_active: !client.is_active } : current);
+            toast.success(client.is_active ? dict.clients.workspace.deactivated : dict.clients.workspace.activated);
             void loadClients();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : dict.clients.form.update_error_toast);
@@ -114,7 +150,7 @@ export default function ClientsPage() {
             toast.success(dict.clients.form.delete_success_toast);
             setDeleteDialogOpen(false);
             deletingClientRef.current = null;
-            loadClients();
+            void loadClients();
         } catch {
             toast.error(dict.clients.form.delete_error_toast);
         } finally {
@@ -122,68 +158,65 @@ export default function ClientsPage() {
         }
     };
 
-    const filteredClients = filterClients(clients, searchTerm, statusFilter);
-
     return (
-        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
-            <PageHeader
-                icon={Building2}
-                title={dict.clients.title}
-                subtitle={dict.clients.subtitle || "Gestiona los clientes de tu empresa y su información de facturación y contacto."}
-                className="mb-8"
-                actions={!isReadOnly ? <CreateClientSheet onClientCreated={loadClients} /> : undefined}
-            />
+        <div className="dashboard-page-content px-3 py-4 sm:px-5 lg:px-7">
+            <div className="mx-auto max-w-[112rem] space-y-5">
+                <PageHeader
+                    icon={Building2}
+                    title={dict.clients.title}
+                    subtitle={dict.clients.workspace.subtitle}
+                    actions={(
+                        <>
+                            <ClientWorkspaceExportButton
+                                rows={visibleRows}
+                                includeFinancialData={workspace.summary.hasFinancialData}
+                                year={workspaceReferenceDate.getFullYear()}
+                            />
+                            {!isReadOnly && <CreateClientSheet onClientCreated={loadClients} />}
+                        </>
+                    )}
+                />
 
-            <div className="flex flex-col md:flex-row gap-3 items-stretch mb-6 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-                    <Input
-                        type="text"
-                        placeholder={dict.clients.search_placeholder || "Buscar por nombre, NIF/CIF, email..."}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-[var(--bg-secondary)] border-[var(--border-soft)] text-[var(--text-main)] placeholder-[var(--text-muted)] focus-visible:ring-1 focus-visible:ring-[var(--border-color)]"
-                    />
-                </div>
-                <div className="relative md:w-52">
-                    <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <select
-                        aria-label={dict.clients.filter_status_label}
-                        value={statusFilter}
-                        onChange={(event) => setStatusFilter(event.target.value as typeof statusFilter)}
-                        className="h-9 w-full rounded-md border border-[var(--border-soft)] bg-[var(--bg-secondary)] pl-10 pr-3 text-sm font-semibold text-[var(--text-main)] outline-none"
-                    >
-                        <option value="active">{dict.clients.filter_active}</option>
-                        <option value="inactive">{dict.clients.filter_inactive}</option>
-                        <option value="all">{dict.clients.filter_all}</option>
-                    </select>
-                </div>
+                {loading ? (
+                    <section className="billing-surface flex min-h-80 flex-col items-center justify-center gap-3 rounded-[26px]">
+                        <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
+                        <p className="text-sm text-[var(--text-muted)]">{dict.clients.workspace.loading}</p>
+                    </section>
+                ) : (
+                    <>
+                        <ClientWorkspaceStats summary={visibleSummary} monthlyRevenue={monthlyRevenue} />
+                        {!workspace.summary.hasFinancialData && (
+                            <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-muted)]">
+                                {dict.clients.workspace.financial_access_hint}
+                            </p>
+                        )}
+                        <ClientWorkspaceFilters filters={filters} cities={cities} onChange={setFilters} />
+                        <ClientsTable
+                            rows={visibleRows}
+                            onEdit={handleEdit}
+                            onDelete={handleDeleteClick}
+                            onToggleActive={handleToggleActive}
+                            onDetails={(client) => {
+                                setDetailsClient(client);
+                                setDetailsDialogOpen(true);
+                            }}
+                        />
+                    </>
+                )}
             </div>
 
-            <ClientsTable
-                clients={filteredClients}
-                onEdit={handleEdit}
-                onDelete={handleDeleteClick}
-                onToggleActive={handleToggleActive}
-                onDetails={(client) => {
-                    setDetailsClient(client);
-                    setDetailsDialogOpen(true);
-                }}
-            />
-
-            <EditClientSheet
-                client={editingClient}
-                open={editSheetOpen}
-                onOpenChange={setEditSheetOpen}
-                onClientUpdated={loadClients}
-            />
-
+            <EditClientSheet client={editingClient} open={editSheetOpen} onOpenChange={setEditSheetOpen} onClientUpdated={loadClients} />
             <ClientDetailDialog
                 client={detailsClient}
+                workspaceRow={detailsRow}
+                locations={locations}
+                tasks={tasks}
+                invoices={invoices ?? []}
+                financialDataAvailable={workspace.summary.hasFinancialData}
                 open={detailsDialogOpen}
                 onOpenChange={setDetailsDialogOpen}
-                onViewLocationTasks={(loc) => {
-                    setTasksLocation(loc);
+                onViewLocationTasks={(location) => {
+                    setTasksLocation(location);
                     setTasksSheetOpen(true);
                 }}
                 onViewTaskDetails={(task) => {
@@ -196,15 +229,7 @@ export default function ClientsPage() {
                 onDeleteClient={handleDeleteClick}
                 canManage={!isReadOnly}
             />
-
-            <LocationTasksSheet
-                location={tasksLocation}
-                open={tasksSheetOpen}
-                onOpenChange={setTasksSheetOpen}
-                initialCreateForm={false}
-                readOnly={true}
-            />
-
+            <LocationTasksSheet location={tasksLocation} open={tasksSheetOpen} onOpenChange={setTasksSheetOpen} initialCreateForm={false} readOnly />
             <ClientTaskDetailDialog
                 task={viewingTask}
                 showBackToClient={backToClient}
@@ -215,7 +240,6 @@ export default function ClientsPage() {
                     setBackToClient(false);
                 }}
             />
-
             <DeleteConfirmDialog
                 open={deleteDialogOpen}
                 onOpenChange={(open) => {

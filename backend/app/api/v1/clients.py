@@ -1,12 +1,15 @@
-from fastapi import Depends, APIRouter, status
+from fastapi import Depends, APIRouter, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.services import client_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
-from app.schemas.client import ClientCreate, ClientUpdate, ClientResponse
+from app.schemas.client import ClientCreate, ClientEmailRequest, ClientUpdate, ClientResponse
 from app.models.user import User
+from app.services import audit_service
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 
 router = APIRouter()
 
@@ -66,6 +69,41 @@ def update_client(
     return client_service.update_client(
         db, company_id, client_id, client_update
     )
+
+
+@router.post("/{client_id}/send-email")
+def send_client_email(
+    client_id: int,
+    data: ClientEmailRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    company_id = scoped_company_id(current_user)
+    enforce_rate_limit(
+        request,
+        "client-email",
+        settings.INVOICE_EMAIL_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=f"{current_user.id}:{client_id}",
+    )
+    client, recipient_email = client_service.email_client(
+        db,
+        company_id,
+        client_id,
+        data,
+        sender_email=current_user.email,
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=client.company_id,
+        action="client.emailed",
+        entity_type="client",
+        entity_id=client.id,
+        request=request,
+    )
+    return {"status": "sent", "recipient_email": recipient_email}
 
 
 @router.delete("/{client_id}", response_model=ClientResponse)

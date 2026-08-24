@@ -1,7 +1,18 @@
-import { apiFetch } from "@/lib/api"
+import { apiFetch, extractErrorMessage } from "@/lib/api"
 import { Client } from "@/types/client"
 
 export type { Client };
+
+export type ClientEmailPayload = {
+    recipient_emails: string[];
+    copy_emails: string[];
+    subject?: string;
+    message?: string;
+    send_copy: boolean;
+    save_recipients: boolean;
+    save_recipient_to_client_id?: number;
+    locale: "es" | "en";
+};
 
 export const ClientService = {
     getClients: async (isActive: boolean | null = true): Promise<Client[]> => {
@@ -59,6 +70,17 @@ export const ClientService = {
         })
         if (!response.ok) {
             throw new Error("Error deleting client")
+        }
+        return await response.json()
+    },
+
+    sendClientEmail: async (id: number, data: ClientEmailPayload): Promise<{ status: string; recipient_email: string }> => {
+        const response = await apiFetch(`/api/v1/clients/${id}/send-email`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        })
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error sending client email"))
         }
         return await response.json()
     }

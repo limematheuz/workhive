@@ -10,5 +10,5 @@ export const POLL_INTERVALS = {
     sidebarTaskCount: 10_000,
     tasks: 1_000,
     collaborations: 1_000,
-    clients: 1_000,
+    clients: 10_000,
 } as const;
