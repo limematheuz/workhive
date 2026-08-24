@@ -64,7 +64,7 @@ export function PublicLanding() {
             <header className="flex items-center justify-between gap-4">
                 <AuthLogo className="w-40 sm:w-52" priority />
                 <Link
-                    href="https://app.workhive.es/login"
+                    href="/login"
                     className="inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--border-soft)] bg-[var(--bg-card)] px-5 text-sm font-bold text-[var(--text-main)] shadow-sm ui-motion hover:border-accent/40"
                 >
                     {copy.access}
@@ -82,7 +82,7 @@ export function PublicLanding() {
                     </p>
                     <div className="flex flex-col gap-3 sm:flex-row">
                         <Link
-                            href="https://app.workhive.es/login"
+                            href="/login"
                             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-black px-6 text-sm font-bold text-white shadow-lg ui-motion hover:opacity-85"
                         >
                             {copy.access}

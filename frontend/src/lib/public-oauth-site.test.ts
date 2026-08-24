@@ -6,6 +6,7 @@ import {
     getCanonicalAppHost,
     isAppOnlyPath,
     isPublicSiteHost,
+    shouldRedirectPublicAppRoute,
 } from "./public-site.ts";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
@@ -20,7 +21,8 @@ test("public landing explains WorkHive and optional Google Calendar access", () 
     assert.match(landing, /Integración opcional con Google Calendar/);
     assert.match(landing, /consentimiento explícito/);
     assert.match(landing, /no vende datos de Google/);
-    assert.match(landing, /https:\/\/app\.workhive\.es\/login/);
+    assert.doesNotMatch(landing, /https:\/\/app\.workhive\.es/);
+    assert.equal(landing.match(/href="\/login"/g)?.length, 2);
     assert.match(route, /isPublicSiteHost\(host\)/);
     assert.match(route, /return <PublicLanding \/>/);
     assert.equal(
@@ -111,11 +113,30 @@ test("application routes cannot remain on the public marketing host", () => {
         assert.equal(isAppOnlyPath(path), false, `${path} must remain public`);
     }
 
-    assert.match(proxy, /isPublicSiteHost\(request\.headers\.get\("host"\)\)/);
-    assert.match(proxy, /isAppOnlyPath\(pathname\)/);
+    assert.match(proxy, /shouldRedirectPublicAppRoute\(request\.headers\.get\("host"\), pathname\)/);
     assert.match(proxy, /NextResponse\.redirect\(appUrl, 308\)/);
     assert.match(compose, /APP_DOMAIN: \$\{APP_DOMAIN:\?Define APP_DOMAIN\}/);
     assert.equal(getCanonicalAppHost("app.workhive.es", "workhive.es"), "app.workhive.es");
     assert.equal(getCanonicalAppHost(undefined, "workhive.es"), "app.workhive.es");
     assert.equal(getCanonicalAppHost(undefined, "workhive.es."), "app.workhive.es");
+});
+
+test("login and registration remain available on the direct local development server", () => {
+    for (const path of ["/login", "/register"]) {
+        assert.equal(
+            shouldRedirectPublicAppRoute("localhost:3000", path, "development", "localhost"),
+            false,
+            `${path} must stay on localhost during direct Next.js development`,
+        );
+        assert.equal(
+            shouldRedirectPublicAppRoute("workhive.es", path, "production", "workhive.es"),
+            true,
+            `${path} must redirect from the public production domain`,
+        );
+        assert.equal(
+            shouldRedirectPublicAppRoute("app.workhive.es", path, "production", "workhive.es"),
+            false,
+            `${path} must remain on the production application domain`,
+        );
+    }
 });
