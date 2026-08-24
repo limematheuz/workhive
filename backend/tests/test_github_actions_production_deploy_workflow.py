@@ -23,6 +23,7 @@ def test_production_deployment_is_manual_main_only_and_serialized():
 
     assert workflow["on"]["workflow_dispatch"]["inputs"]["release_tag"]["required"] == "true"
     assert workflow["jobs"]["deploy"]["if"] == "github.ref == 'refs/heads/main'"
+    assert "environment" not in workflow["jobs"]["deploy"]
     assert workflow["concurrency"] == {
         "group": "workhive-production-deploy",
         "cancel-in-progress": "false",
@@ -61,8 +62,8 @@ def test_production_deployment_can_only_request_the_custom_document_for_one_inst
     assert request_step["env"]["INSTANCE_ID"] == (
         "${{ vars.PRODUCTION_EC2_INSTANCE_ID }}"
     )
-    assert request_step["env"]["RELEASE_REF"] == "${{ inputs.release_tag }}"
-    assert '--parameters "ReleaseRef=${RELEASE_REF}"' in command
+    assert request_step["env"]["RELEASE_TAG"] == "${{ inputs.release_tag }}"
+    assert '--parameters "ReleaseTag=${RELEASE_TAG}"' in command
     assert "AWS-RunShellScript" not in command
     assert "--commands" not in command
     assert "ssh " not in command
@@ -73,8 +74,7 @@ def test_production_deployment_defends_against_invalid_input_and_waits_for_ssm_r
     validate_step = workflow_steps(workflow)[0]
     wait_step = workflow_steps(workflow)[3]
 
-    assert "^(v(0|[1-9][0-9]*)" in validate_step["run"]
-    assert "[0-9a-f]{40}" in validate_step["run"]
+    assert "^v(0|[1-9][0-9]*)" in validate_step["run"]
     assert "aws ssm get-command-invocation" in wait_step["run"]
     assert "Success)" in wait_step["run"]
     assert "Pending|InProgress|Delayed" in wait_step["run"]
