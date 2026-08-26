@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, LogIn, LogOut, ShieldCheck } from "lucide-react";
@@ -20,6 +20,7 @@ import { ApiResponseError } from "@/lib/api";
 import { useDictionary } from "@/lib/dictionary-context";
 import { authService } from "@/services/auth.service";
 import { CollaborationService } from "@/services/collaboration.service";
+import { companyInvitationTokenService } from "@/services/company-invitation-token.service";
 
 type AccessState =
     | "reading"
@@ -33,18 +34,8 @@ type AccessState =
     | "error";
 type Decision = "accepted" | "declined" | null;
 
-const INVITATION_TOKEN_STORAGE_KEY = "workhive:company-collaboration-invitation-token";
-
 function normalizeInvitationCode(code: string) {
     return code.replace(/[^a-z0-9]/gi, "").toUpperCase();
-}
-
-function clearStoredInvitationToken() {
-    try {
-        window.sessionStorage.removeItem(INVITATION_TOKEN_STORAGE_KEY);
-    } catch {
-        // There is no persisted invitation state to remove.
-    }
 }
 
 function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string }) {
@@ -73,27 +64,16 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
     useEffect(() => {
         const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get("token");
         const queryToken = searchParams.get("token");
-        let storedToken = "";
-        try {
-            storedToken = window.sessionStorage.getItem(INVITATION_TOKEN_STORAGE_KEY) || "";
-        } catch {
-            // Browser storage is optional; the fragment remains available if it is disabled.
-        }
-        const invitationToken = fragmentToken || queryToken || storedToken;
+        const invitationToken = fragmentToken || queryToken || initialToken;
         if ((fragmentToken || queryToken) && invitationToken) {
-            try {
-                window.sessionStorage.setItem(INVITATION_TOKEN_STORAGE_KEY, invitationToken);
-                window.history.replaceState(null, "", "/accept-company-invitation");
-            } catch {
-                // Keep the token in the fragment for browsers that block session storage.
-            }
+            window.history.replaceState(null, "", "/accept-company-invitation");
         }
         const timeoutId = window.setTimeout(() => {
             setToken(invitationToken);
             setAccessState(invitationToken ? "checking" : "error");
         }, 0);
         return () => window.clearTimeout(timeoutId);
-    }, [searchParams]);
+    }, [initialToken, searchParams]);
 
     useEffect(() => {
         if (accessState !== "checking" || !token) return;
@@ -176,7 +156,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
             } else {
                 await CollaborationService.declineCompanyInvitationWithoutAccount(token, normalizedCode);
             }
-            clearStoredInvitationToken();
+            void companyInvitationTokenService.clear();
             setDecision("declined");
         } catch (error) {
             toast.error(errorMessage(error, true));
@@ -191,7 +171,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
         setSubmitting("accept");
         try {
             await CollaborationService.acceptCompanyInvitation(token, normalizedCode);
-            clearStoredInvitationToken();
+            void companyInvitationTokenService.clear();
             setDecision("accepted");
             window.setTimeout(() => router.replace("/dashboard/users?tab=companies"), 1600);
         } catch (error) {
@@ -226,7 +206,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
                     password: data.password,
                 });
             }
-            clearStoredInvitationToken();
+            void companyInvitationTokenService.clear();
             setDecision("accepted");
             window.setTimeout(() => router.replace(accessState === "new-account" ? "/login" : "/dashboard/users?tab=companies"), 1600);
         } catch (error) {
@@ -239,7 +219,17 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
     const signOut = async () => {
         try {
             await authService.logout();
+            await companyInvitationTokenService.persist(token);
             router.replace("/login?next=%2Faccept-company-invitation");
+        } catch {
+            toast.error(text.error);
+        }
+    };
+
+    const continueToLogin = async () => {
+        try {
+            await companyInvitationTokenService.persist(token);
+            router.push("/login?next=%2Faccept-company-invitation");
         } catch {
             toast.error(text.error);
         }
@@ -258,7 +248,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
                 ) : !token || accessState === "error" ? (
                     <InvitationMessage title={errorStatus === 429 ? text.rateLimitTitle : errorStatus === 410 ? text.expiredTitle : text.invalidTitle} message={message || text.invalid} />
                 ) : accessState === "sign-in" ? (
-                    <InvitationAction title={text.existingTitle} message={text.existing} buttonLabel={text.signIn} icon={LogIn} href="/login?next=%2Faccept-company-invitation" />
+                    <InvitationAction title={text.existingTitle} message={text.existing} buttonLabel={text.signIn} icon={LogIn} onClick={() => void continueToLogin()} />
                 ) : accessState === "wrong-account" ? (
                     <InvitationAction title={text.wrongTitle} message={text.wrong} buttonLabel={text.otherAccount} icon={LogOut} onClick={() => void signOut()} />
                 ) : accessState === "non-admin" ? (

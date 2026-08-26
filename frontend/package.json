@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types src/lib/*.test.ts",
     "test:e2e": "playwright test",
-    "doctor": "pnpm dlx react-doctor@0.9.12 . --blocking warning --scope full"
+    "doctor": "react-doctor . --blocking warning --scope full"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
@@ -47,6 +47,7 @@
     "@types/topojson-client": "^3.1.5",
     "eslint": "^9",
     "eslint-config-next": "16.2.11",
+    "react-doctor": "0.9.12",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

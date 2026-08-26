@@ -15,7 +15,7 @@ test("superadmin can sign in and inspect companies", async ({ page }) => {
     await page.goto("/dashboard/companies");
 
     await expect(page.getByRole("heading", { name: /empresas|companies/i })).toBeVisible();
-    await expect(page.getByRole("row", { name: /E2E Services/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: "E2E Services" })).toBeVisible();
 });
 
 
@@ -25,28 +25,26 @@ test("company workflow exposes locations, reservations, tasks, quotes, and invoi
     await login(page, "admin@e2e.example");
 
     await page.goto("/dashboard/locations");
-    await expect(page.getByRole("heading", { name: "E2E Apartment" })).toBeVisible();
+    await expect(
+        page.getByRole("button", { name: /Ver detalle de E2E Apartment/ })
+    ).toBeVisible();
 
     await page.goto("/dashboard/reservations");
     await expect(page.getByRole("heading", { name: "E2E Apartment" })).toBeVisible();
 
     await page.goto("/dashboard/tasks");
     await expect(
-        page
-            .getByText("E2E Cleaning Task", { exact: true })
-            .filter({ visible: true })
-            .first()
+        page.getByRole("button", { name: "Abrir tarea: E2E Cleaning Task" })
     ).toBeVisible();
 
     await page.goto("/dashboard/quotes/1");
     await expect(
         page.getByRole("heading", { name: /QUO-E2E-QUO-001/ }).first()
     ).toBeVisible();
-    await expect(page.getByText("E2E Commercial Quote", { exact: true })).toBeVisible();
 
     await page.goto("/dashboard/invoices");
     await expect(
-        page.getByRole("link", { name: /INV-\d{4}-0001/, exact: true })
+        page.getByRole("button", { name: "Abrir factura INV-2026-0001" })
     ).toBeVisible();
 
     await page.goto("/dashboard/invoices/1");

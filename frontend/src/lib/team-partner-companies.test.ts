@@ -7,7 +7,9 @@ const source = (path: string) => readFileSync(new URL(path, import.meta.url), "u
 test("Team keeps people and partner companies separate", () => {
     const page = source("../app/dashboard/users/page.tsx");
     const service = source("../services/collaboration.service.ts");
-    const acceptance = source("../app/(auth)/accept-company-invitation/page.tsx");
+    const acceptance = source("../app/(auth)/accept-company-invitation/AcceptCompanyInvitationClient.tsx");
+    const invitationTokenService = source("../services/company-invitation-token.service.ts");
+    const invitationTokenRoute = source("../app/api/company-invitation-token/route.ts");
     const signupWizard = source("../components/collaborations/CompanyInvitationSignupWizard.tsx");
     const workerAcceptance = source("../app/(auth)/accept-invitation/page.tsx");
     const passwordCreation = source("../components/auth/PasswordCreationFields.tsx");
@@ -50,7 +52,11 @@ test("Team keeps people and partner companies separate", () => {
     assert.match(acceptance, /non-admin/);
     assert.match(acceptance, /CompanyInvitationSignupWizard/);
     assert.match(acceptance, /window\.location\.hash/);
-    assert.match(acceptance, /sessionStorage/);
+    assert.match(acceptance, /companyInvitationTokenService\.persist/);
+    assert.match(invitationTokenService, /company-invitation-token/);
+    assert.doesNotMatch(acceptance, /sessionStorage/);
+    assert.match(invitationTokenRoute, /httpOnly: true/);
+    assert.match(invitationTokenRoute, /sameSite: "lax"/);
     assert.doesNotMatch(acceptance, /login\?next=.*token/);
     assert.match(acceptance, /Código del correo/);
     assert.match(acceptance, /Email code/);
