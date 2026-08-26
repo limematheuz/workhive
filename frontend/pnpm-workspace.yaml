@@ -20,6 +20,3 @@ ignoredBuiltDependencies:
 
 allowBuilds:
   unrs-resolver: false
-
-allowBuilds:
-  unrs-resolver: set this to true or false

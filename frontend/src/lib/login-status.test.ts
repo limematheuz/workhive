@@ -30,7 +30,7 @@ test("success redirect delay waits for phrase animation", () => {
 
 test("login status feedback reuses one panel for fail and success (accent blue)", () => {
     const feedback = read("../components/auth/LoginStatusFeedback.tsx");
-    const login = read("../app/(auth)/login/page.tsx");
+    const login = read("../app/(auth)/login/LoginPageClient.tsx");
     const es = JSON.parse(read("../dictionaries/es.json"));
     const en = JSON.parse(read("../dictionaries/en.json"));
 
