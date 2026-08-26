@@ -23,6 +23,9 @@ export interface CompanyOnboardingInput {
         city: string;
         postal_code: string;
         location_type: OnboardingLocationType;
+        profile: {
+            site_type: string;
+        };
     };
 }
 
@@ -41,6 +44,19 @@ export function defaultLocationTypeForModel(
     operatingModel: OperatingModel,
 ): OnboardingLocationType {
     return DEFAULT_LOCATION_TYPES[operatingModel];
+}
+
+/**
+ * The operating model is a company preference, not an authorization role.
+ * The profile only gives the canonical location workspace a sensible starting
+ * point; administrators can refine it in the normal location editor.
+ */
+export function defaultLocationProfileForModel(
+    operatingModel: OperatingModel,
+): { site_type: string } {
+    return operatingModel === "service_provider"
+        ? { site_type: "other" }
+        : { site_type: "tourist_apartment" };
 }
 
 export function shouldShowCompanyOnboarding(
@@ -74,6 +90,7 @@ export function buildCompanyOnboardingInput(
             city: fields.city.trim(),
             postal_code: fields.postalCode.trim(),
             location_type: fields.locationType,
+            profile: defaultLocationProfileForModel(operatingModel),
         },
     };
 }

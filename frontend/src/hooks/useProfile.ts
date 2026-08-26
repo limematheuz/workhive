@@ -96,7 +96,6 @@ export function useProfile() {
     const [companyExpenses, setCompanyExpenses] = useState<CompanyExpense[]>([]);
     const [activeCompanySessions, setActiveCompanySessions] = useState<ActiveCompanySession[]>([]);
     const [companyName, setCompanyName] = useState<string>("");
-    const [partnerCode, setPartnerCode] = useState<string>("");
     const [activeTab, setActiveTab] = useState<"sessions" | "tasks" | "team">("sessions");
 
     const [loading, setLoading] = useState(true);
@@ -294,13 +293,11 @@ export function useProfile() {
                 try {
                     const comp = await CompanyService.getCompany(user.company_id);
                     setCompanyName(comp.name);
-                    setPartnerCode(comp.partner_code || "");
                 } catch (e) {
                     console.error("Failed to fetch company name:", e);
                 }
             } else {
                 setCompanyName("");
-                setPartnerCode("");
             }
         } catch (err: unknown) {
             console.error("Error loading profile data:", err);
@@ -410,7 +407,6 @@ export function useProfile() {
         allCompanyTasks,
         activeCompanySessions,
         companyName,
-        partnerCode,
         activeTab,
         setActiveTab,
         loading,

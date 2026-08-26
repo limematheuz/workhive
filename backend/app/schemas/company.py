@@ -3,6 +3,8 @@ from typing import Literal
 from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 
 from app.core.banking import normalize_swift_bic
+from app.schemas.location_access import LocationAccessInput
+from app.schemas.location_workspace import LocationProfileInput, LocationSpaceInput
 from app.schemas.user import validate_user_password
 
 
@@ -97,6 +99,9 @@ class CompanyOnboardingLocationCreate(BaseModel):
         "exterior",
         "other",
     ]
+    profile: LocationProfileInput | None = None
+    access: LocationAccessInput | None = None
+    spaces: list[LocationSpaceInput] = Field(default_factory=list, max_length=500)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -123,7 +128,6 @@ class CompanyResponse(CompanyBase):
     contact_email: EmailStr | None = None
     onboarding_completed: bool
     operating_model: str | None = None
-    partner_code: str | None = None
     subscription_plan: str = "none"
     subscription_status: str = "inactive"
     trial_started_at: datetime | None = None

@@ -59,7 +59,7 @@ def _capture_invitation(monkeypatch) -> dict[str, object]:
 
 
 def _invitation_token(sent: dict[str, object]) -> str:
-    return parse_qs(urlparse(str(sent["invitation_url"])).query)["token"][0]
+    return parse_qs(urlparse(str(sent["invitation_url"])).fragment)["token"][0]
 
 
 def _accept_payload(token: str, code: str) -> dict[str, object]:

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-    getCollaborationNotificationKey,
     addDismissedNotificationKey,
     getDismissedNotificationKeys,
     getPrivacyRequestNotificationKey,
@@ -15,10 +14,6 @@ import {
 
 test("notification keys include entity and state so new events reappear", () => {
     assert.equal(getTaskNotificationKey({ id: 7, status: "accepted" } as never), "task:7:accepted");
-    assert.equal(
-        getCollaborationNotificationKey({ id: 8, status: "pending" } as never),
-        "collaboration:8:pending",
-    );
     assert.equal(
         getReservationNotificationKey({ id: 9, status: "cancelled" } as never),
         "reservation:9:cancelled",

@@ -16,7 +16,6 @@ export interface Company {
     swift_bic?: string | null;
     default_payment_notes?: string | null;
     default_document_terms?: string | null;
-    partner_code?: string;
     subscription_plan?: "trial" | "free" | "pro" | "none" | string;
     subscription_status?: "trialing" | "active" | "inactive" | "expired" | "canceled" | string;
     trial_started_at?: string | null;

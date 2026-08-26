@@ -3,6 +3,7 @@ import type { Client } from "@/services/client.service";
 import type { Company } from "@/services/company.service";
 import type { QuoteCreate } from "@/services/quote.service";
 import type { Quote } from "@/types/quote";
+import { priceExcludingTax } from "./billing-calculations.ts";
 
 export const DEFAULT_QUOTE_TAX_RATE = 0.21;
 
@@ -42,6 +43,10 @@ export function getQuoteIssuerFieldsFromCompany(company: Company): BillingPartyF
         name: company.name || "",
         taxId: company.tax_id || "",
         address: company.address || "",
+        postalCode: "",
+        city: "",
+        province: "",
+        country: "",
         phone: company.phone || "",
         email: company.email || "",
         bank: company.bank_account || "",
@@ -50,23 +55,14 @@ export function getQuoteIssuerFieldsFromCompany(company: Company): BillingPartyF
 }
 
 export function getQuoteRecipientFieldsFromClient(client: Client): BillingPartyFields {
-    const cityParts = [
-        client.postal_code?.trim(),
-        client.city?.trim(),
-    ].filter(Boolean);
-    const cityLine = [
-        cityParts.join(" "),
-        client.country?.trim(),
-    ].filter(Boolean).join(", ");
-    const addressLines = [
-        client.address?.trim(),
-        cityLine,
-    ].filter(Boolean);
-
     return {
         name: client.name || "",
         taxId: client.legal_number || "",
-        address: addressLines.join("\n"),
+        address: client.address || "",
+        postalCode: client.postal_code || "",
+        city: client.city || "",
+        province: client.province || "",
+        country: client.country || "",
         phone: client.phone || "",
         email: client.email || "",
     };
@@ -127,10 +123,14 @@ export function buildQuotePayload(params: {
 
 export function buildQuoteItemsSnapshot(
     concepts: QuoteFormConceptRow[],
+    taxRate: number = DEFAULT_QUOTE_TAX_RATE,
+    pricesIncludeTax = false,
 ): Array<{ description: string; quantity: number; unit_price: number }> {
     return concepts.map((concept) => ({
         description: concept.description.trim(),
         quantity: concept.quantity,
-        unit_price: concept.unitPrice,
+        unit_price: pricesIncludeTax
+            ? priceExcludingTax(concept.unitPrice, taxRate)
+            : concept.unitPrice,
     }));
 }

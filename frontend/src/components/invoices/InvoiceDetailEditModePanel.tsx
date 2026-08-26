@@ -1,9 +1,18 @@
 import { BillingPartyCard } from "@/components/billing/BillingPartyCard";
-import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { BillingPartyField, BillingPartyFields } from "@/lib/billing-party";
 import { INVOICE_PAYMENT_METHODS } from "@/lib/invoice-payment-methods";
 import type { InvoicePaymentMethod } from "@/types/invoice";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 type InvoiceDetailEditModePanelProps = {
     dict: Dictionary;
@@ -11,12 +20,14 @@ type InvoiceDetailEditModePanelProps = {
     editingIssueDate: string;
     editingDueDate: string;
     editingPaymentMethod: InvoicePaymentMethod;
+    editingPricesIncludeTax: boolean;
     editingIssuerFields: BillingPartyFields;
     editingRecipientFields: BillingPartyFields;
     onEditingInvoiceNumberChange: (value: string) => void;
     onEditingIssueDateChange: (value: string) => void;
     onEditingDueDateChange: (value: string) => void;
     onEditingPaymentMethodChange: (value: InvoicePaymentMethod) => void;
+    onEditingPricesIncludeTaxChange: (value: boolean) => void;
     onEditIssuerFieldChange: (field: BillingPartyField, value: string) => void;
     onEditRecipientFieldChange: (field: BillingPartyField, value: string) => void;
 };
@@ -27,12 +38,14 @@ export function InvoiceDetailEditModePanel({
     editingIssueDate,
     editingDueDate,
     editingPaymentMethod,
+    editingPricesIncludeTax,
     editingIssuerFields,
     editingRecipientFields,
     onEditingInvoiceNumberChange,
     onEditingIssueDateChange,
     onEditingDueDateChange,
     onEditingPaymentMethodChange,
+    onEditingPricesIncludeTaxChange,
     onEditIssuerFieldChange,
     onEditRecipientFieldChange,
 }: InvoiceDetailEditModePanelProps) {
@@ -49,7 +62,7 @@ export function InvoiceDetailEditModePanel({
                     <label htmlFor="invoice-edit-final-number" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.final_number}
                     </label>
-                    <input
+                    <Input
                         id="invoice-edit-final-number"
                         type="text"
                         value={editingInvoiceNumber}
@@ -63,44 +76,52 @@ export function InvoiceDetailEditModePanel({
                     <label htmlFor="invoice-edit-issue-date" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.issue_date}
                     </label>
-                    <input
+                    <DatePicker
                         id="invoice-edit-issue-date"
-                        type="date"
                         aria-label={dict.invoices.issue_date}
                         value={editingIssueDate}
-                        onChange={(event) => onEditingIssueDateChange(event.target.value)}
-                        required
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        onValueChange={onEditingIssueDateChange}
+                        className="h-11"
                     />
                 </div>
                 <div className="space-y-1">
                     <label htmlFor="invoice-edit-due-date" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.due_date}
                     </label>
-                    <input
+                    <DatePicker
                         id="invoice-edit-due-date"
-                        type="date"
                         aria-label={dict.invoices.due_date}
                         value={editingDueDate}
-                        onChange={(event) => onEditingDueDateChange(event.target.value)}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        onValueChange={onEditingDueDateChange}
+                        className="h-11"
                     />
                 </div>
                 <div className="space-y-1">
                     <label htmlFor="invoice-edit-payment-method" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.payment_method}
                     </label>
-                    <DocumentFormSelect
-                        id="invoice-edit-payment-method"
+                    <Select
                         value={editingPaymentMethod}
-                        onChange={(event) => onEditingPaymentMethodChange(event.target.value as InvoicePaymentMethod)}
+                        onValueChange={(value) => onEditingPaymentMethodChange(value as InvoicePaymentMethod)}
                     >
-                        {INVOICE_PAYMENT_METHODS.map((method) => (
-                            <option key={method} value={method}>{dict.invoices.payment_methods[method]}</option>
-                        ))}
-                    </DocumentFormSelect>
+                        <SelectTrigger id="invoice-edit-payment-method" className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {INVOICE_PAYMENT_METHODS.map((method) => (
+                                <SelectItem key={method} value={method}>{dict.invoices.payment_methods[method]}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
+            <label className="mb-5 flex cursor-pointer items-center justify-between rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2.5">
+                <span>
+                    <span className="block text-xs font-semibold text-[var(--text-main)]">IVA incluido en el total</span>
+                    <span className="mt-0.5 block text-[10px] text-[var(--text-muted)]">{editingPricesIncludeTax ? "Los precios editables incluyen IVA" : "Los precios editables son sin IVA"}</span>
+                </span>
+                <Checkbox checked={editingPricesIncludeTax} onCheckedChange={(checked) => onEditingPricesIncludeTaxChange(checked === true)} />
+            </label>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <BillingPartyCard
                     type="issuer"

@@ -53,7 +53,7 @@ test("React Doctor scans the full frontend and blocks every finding", () => {
 test("the local React Doctor command matches the blocking CI policy", () => {
     assert.match(
         packageJson,
-        /"doctor": "pnpm dlx react-doctor@0\.9\.12 \. --blocking warning --scope full"/,
+        /"doctor": "react-doctor \. --blocking warning --scope full"/,
     );
 });
 

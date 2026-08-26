@@ -23,6 +23,7 @@ from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.reservation import Reservation
 from app.models.company_collaboration import CompanyCollaboration
+from app.models.company_collaboration_invitation import CompanyCollaborationInvitation
 from app.models.stripe_webhook_event import StripeWebhookEvent
 from app.models.fiscal_invoice_record import FiscalInvoiceRecord
 from app.models.company_fiscal_settings import CompanyFiscalSettings

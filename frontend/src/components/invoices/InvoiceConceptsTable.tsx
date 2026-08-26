@@ -2,8 +2,16 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Copy, Plus, Shirt, Trash2 } from "lucide-react";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { BriefcaseBusiness, Copy, Plus, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useInvoiceForm";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { formatHoursShort } from "@/lib/format-hours";
@@ -14,13 +22,14 @@ interface InvoiceConceptsTableProps {
     dict: Dictionary;
     handleAddManualRow: () => void;
     handleDuplicateRow: (id: string) => void;
-    handleAddExternalLaundryRow: () => void;
+    handleAddExternalLaundryRow: (description?: string) => void;
     handleUpdateRow: <Field extends keyof ConceptRow>(
         id: string,
         field: Field,
         value: ConceptRow[Field]
     ) => void;
     handleDeleteRow: (id: string) => void;
+    pricesIncludeTax: boolean;
 }
 
 export function InvoiceConceptsTable({
@@ -31,7 +40,10 @@ export function InvoiceConceptsTable({
     handleAddExternalLaundryRow,
     handleUpdateRow,
     handleDeleteRow,
+    pricesIncludeTax,
 }: InvoiceConceptsTableProps) {
+    const [externalService, setExternalService] = React.useState("");
+
     return (
         <section className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -44,17 +56,26 @@ export function InvoiceConceptsTable({
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleAddExternalLaundryRow}
-                        className="text-[11px]"
-                        title="Añadir una línea facturable de lavandería hecha por una empresa externa"
+                    <Select
+                        value={externalService}
+                        onValueChange={(description) => {
+                            handleAddExternalLaundryRow(description);
+                            setExternalService("");
+                        }}
                     >
-                        <Shirt className="w-3.5 h-3.5" />
-                        Lavandería externa
-                    </Button>
+                        <SelectTrigger
+                            aria-label="Añadir servicio externo"
+                            className="h-10 min-w-52 border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] px-3 text-xs font-semibold text-[var(--btn-secondary-text)]"
+                        >
+                            <BriefcaseBusiness className="h-4 w-4 shrink-0" aria-hidden="true" />
+                            <SelectValue placeholder="Añadir servicio externo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Servicio externo">Servicio externo</SelectItem>
+                            <SelectItem value="Lavandería">Lavandería</SelectItem>
+                            <SelectItem value="Otro servicio">Otro servicio</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 
@@ -63,9 +84,9 @@ export function InvoiceConceptsTable({
                     <thead>
                         <tr className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border-soft)] text-3xs uppercase font-bold tracking-wider text-[var(--text-muted)] select-none">
                             <th className="py-2.5 px-3">{dict.invoices?.col_description || "Descripción"}</th>
-                            <th className="py-2.5 px-2 text-right w-28">{dict.invoices?.col_price || "Precio (€)"}</th>
+                            <th className="py-2.5 px-2 text-right w-28">{pricesIncludeTax ? "Precio c/ IVA (€)" : (dict.invoices?.col_price || "Precio (€)")}</th>
                             <th className="py-2.5 px-2 text-center w-24">{dict.invoices?.col_qty || "Cantidad"}</th>
-                            <th className="py-2.5 px-2 text-right w-24">{dict.invoices?.col_total || "Total"}</th>
+                            <th className="py-2.5 px-2 text-right w-24">{pricesIncludeTax ? "Total c/ IVA" : (dict.invoices?.col_total || "Total")}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border-soft)] text-xs">
@@ -130,7 +151,7 @@ export function InvoiceConceptsTable({
                                             >
                                                 {isHourly ? "€ / h" : "Precio"}
                                             </label>
-                                            <input
+                                            <Input
                                                 id={`invoice-concept-${row.id}-price`}
                                                 type="number"
                                                 step="0.01"
@@ -150,7 +171,7 @@ export function InvoiceConceptsTable({
                                             >
                                                 {isHourly ? "Horas" : "Cant."}
                                             </label>
-                                            <input
+                                            <Input
                                                 id={`invoice-concept-${row.id}-quantity`}
                                                 type="number"
                                                 step="any"

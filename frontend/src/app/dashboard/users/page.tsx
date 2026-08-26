@@ -1,9 +1,12 @@
 "use client";
 
 import { startTransition, useState, useEffect, useCallback, useEffectEvent } from "react";
-import { Loader2, Trash2, UserPlus, Users } from "lucide-react";
+import { Building2, Loader2, Trash2, UserPlus, Users } from "lucide-react";
 
+import { CollaborationManagementPanel } from "@/components/collaborations/CollaborationManagementPanel";
+import { CompanyInvitationDialog } from "@/components/collaborations/CompanyInvitationDialog";
 import { TeamListSection } from "@/components/users/TeamListSection";
+import { TeamInvitationChooserDialog } from "@/components/users/TeamInvitationChooserDialog";
 import { UserCreateDialog } from "@/components/users/UserCreateDialog";
 import { UserEditDialog } from "@/components/users/UserEditDialog";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
@@ -17,6 +20,8 @@ import { UserService } from "@/services/user.service";
 import { User } from "@/types/user";
 import { getUserDeletionErrorMessage } from "@/lib/user-deletion";
 import { COMPANY_ASSIGNABLE_ROLE_NAMES } from "@/components/users/user-role-utils";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
 
 type EditDialogState = {
     open: boolean;
@@ -28,6 +33,9 @@ type DeleteDialogState = {
     submitting: boolean;
 };
 
+type TeamView = "people" | "companies";
+type PeopleScope = "all" | "internal" | "accountants";
+
 export default function TeamPage() {
     const { dict } = useDictionary();
     const { user: currentUser, loading: userLoading } = useUser();
@@ -35,6 +43,11 @@ export default function TeamPage() {
     const [roles, setRoles] = useState<Role[]>([]);
     const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
     const [defaultRoleId, setDefaultRoleId] = useState<string>("");
+    const [teamView, setTeamView] = useState<TeamView>("people");
+    const [peopleScope, setPeopleScope] = useState<PeopleScope>("all");
+    const [invitationChooserOpen, setInvitationChooserOpen] = useState(false);
+    const [companyInvitationOpen, setCompanyInvitationOpen] = useState(false);
+    const [companyInvitationRefreshKey, setCompanyInvitationRefreshKey] = useState(0);
 
     const [createOpen, setCreateOpen] = useState<boolean>(false);
     const [edit, setEdit] = useState<EditDialogState>({ open: false, user: null });
@@ -42,6 +55,15 @@ export default function TeamPage() {
         target: null,
         submitting: false,
     });
+
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => {
+            if (new URLSearchParams(window.location.search).get("tab") === "companies") {
+                setTeamView("companies");
+            }
+        }, 0);
+        return () => window.clearTimeout(timeoutId);
+    }, []);
 
     const loading = userLoading || catalogStatus === "idle" || catalogStatus === "loading";
 
@@ -115,10 +137,15 @@ export default function TeamPage() {
         }
     };
 
-    const filteredTeam = team.filter((member) => {
+    const companyTeam = team.filter((member) => {
         if (!currentUser) return true;
         if (currentUser.role?.name === "superadmin") return true;
         return member.role?.name !== "superadmin";
+    });
+    const filteredTeam = companyTeam.filter((member) => {
+        if (peopleScope === "all") return true;
+        if (peopleScope === "accountants") return member.role?.name === "accountant";
+        return member.role?.name !== "accountant";
     });
 
     const roleLabels = {
@@ -130,31 +157,63 @@ export default function TeamPage() {
         role_viewer: dict.users.role_viewer,
     };
 
+    const openCompanyInvitation = () => setCompanyInvitationOpen(true);
+
     return (
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={Users}
                 title={dict.users.list_title}
-                subtitle={dict.users.subtitle || "Agrega trabajadores a tu empresa, edita sus permisos y suspende accesos."}
+                subtitle={dict.users.team_page_subtitle}
                 className="mb-8"
                 actions={(
                     <button
                         type="button"
-                        onClick={() => setCreateOpen(true)}
+                        onClick={() => setInvitationChooserOpen(true)}
                         className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
                     >
                         <UserPlus className="w-4 h-4" />
-                        {dict.users.new_worker}
+                        {dict.users.invite}
                     </button>
                 )}
             />
 
-            {loading ? (
+            <PremiumTabs
+                className="mb-5"
+                tabs={[
+                    { id: "people", label: dict.users.people, icon: Users },
+                    { id: "companies", label: dict.users.partner_companies, icon: Building2 },
+                ]}
+                activeTab={teamView}
+                onChange={setTeamView}
+            />
+
+            {teamView === "people" && loading ? (
                 <div className="flex flex-col items-center justify-center py-20 gap-3">
                     <Loader2 className="w-8 h-8 text-accent animate-spin" />
-                    <span className="text-xs text-[var(--text-muted)]">{dict.dashboard.users_loading || "Cargando personal..."}</span>
+                    <span className="text-xs text-[var(--text-muted)]">{dict.dashboard.users_loading}</span>
                 </div>
-            ) : (
+            ) : teamView === "people" ? (
+                <>
+                    <div className="mb-4 flex justify-end">
+                        <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-muted)]">
+                            {dict.users.people_view_label}
+                            <DocumentFormSelect
+                                value={peopleScope}
+                                onChange={(event) => setPeopleScope(event.target.value as PeopleScope)}
+                                className="h-10 min-w-52 py-0"
+                            >
+                                <option value="all">{dict.users.all_people}</option>
+                                <option value="internal">{dict.users.internal_team}</option>
+                                <option value="accountants">{dict.users.accountants}</option>
+                            </DocumentFormSelect>
+                        </label>
+                    </div>
+                    {peopleScope === "accountants" && (
+                        <p className="mb-4 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-[var(--text-muted)]">
+                            {dict.users.accountants_info}
+                        </p>
+                    )}
                 <TeamListSection
                     team={filteredTeam}
                     currentUser={currentUser}
@@ -168,12 +227,37 @@ export default function TeamPage() {
                         status_inactive: dict.users.status_inactive,
                         you: dict.users.you,
                         empty: dict.users.empty,
+                        list_title: dict.users.team_list_title,
+                        list_subtitle: dict.users.team_list_subtitle,
+                        member_one: dict.users.member_one,
+                        member_many: dict.users.member_many,
+                        action_edit: dict.users.action_edit,
+                        action_delete: dict.users.action_delete,
                         ...roleLabels,
                     }}
                     onEdit={handleEditClick}
                     onDelete={(user) => setDeleteState({ target: user, submitting: false })}
                 />
+                </>
+            ) : (
+                <CollaborationManagementPanel
+                    refreshKey={companyInvitationRefreshKey}
+                />
             )}
+
+            <TeamInvitationChooserDialog
+                open={invitationChooserOpen}
+                onOpenChange={setInvitationChooserOpen}
+                onInvitePerson={() => setCreateOpen(true)}
+                onInviteCompany={openCompanyInvitation}
+                canInviteCompany={currentUser?.role?.name === "admin" && Boolean(currentUser.company_id)}
+            />
+
+            <CompanyInvitationDialog
+                open={companyInvitationOpen}
+                onOpenChange={setCompanyInvitationOpen}
+                onSent={() => setCompanyInvitationRefreshKey((current) => current + 1)}
+            />
 
             <UserCreateDialog
                 open={createOpen}
@@ -184,6 +268,7 @@ export default function TeamPage() {
                 labels={{
                     new_worker: dict.users.new_worker,
                     new_worker_desc: dict.users.new_worker_desc,
+                    worker_invitation_steps: dict.users.worker_invitation_steps,
                     full_name: dict.users.full_name,
                     full_name_placeholder: dict.users.full_name_placeholder,
                     email: dict.users.email,
@@ -234,8 +319,8 @@ export default function TeamPage() {
                 )}
                 onConfirm={handleDeleteWorker}
                 isDeleting={deleteState.submitting}
-                confirmText="Eliminar definitivamente"
-                cancelText="Cancelar"
+                confirmText={dict.users.action_delete}
+                cancelText={dict.clients.form.cancel}
                 confirmIcon={Trash2}
                 confirmVariant="danger"
             />

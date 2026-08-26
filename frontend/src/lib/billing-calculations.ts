@@ -16,6 +16,31 @@ export interface BillingTotals {
     totalAmount: number;
 }
 
+export function roundCurrency(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export function priceExcludingTax(priceIncludingTax: number, taxRate: number): number {
+    const rate = normalizeTaxRate(taxRate);
+    return rate === 0 ? priceIncludingTax : roundCurrency(priceIncludingTax / (1 + rate));
+}
+
+export function priceIncludingTax(priceExcludingTax: number, taxRate: number): number {
+    return roundCurrency(priceExcludingTax * (1 + normalizeTaxRate(taxRate)));
+}
+
+export function priceForTaxMode(
+    price: number,
+    taxRate: number,
+    fromIncludesTax: boolean,
+    toIncludesTax: boolean,
+): number {
+    if (fromIncludesTax === toIncludesTax) return price;
+    return toIncludesTax
+        ? priceIncludingTax(price, taxRate)
+        : priceExcludingTax(price, taxRate);
+}
+
 export function normalizeTaxRate(rate: number | null | undefined): number {
     if (rate == null || Number.isNaN(rate)) {
         return 0.21;
@@ -58,15 +83,26 @@ export function calculatePerLineTaxTotals(
     discountPercent = 0,
     equivalenceSurchargePercent = 0,
     retentionPercent = 0,
+    pricesIncludeTax = false,
 ): BillingTotals {
+    const taxExclusiveLines = pricesIncludeTax
+        ? lines.map((line) => ({
+            ...line,
+            unitPrice: priceExcludingTax(line.unitPrice, line.taxRate || 0),
+        }))
+        : lines;
     const subtotal = lines.reduce(
         (acc, line) => acc + line.quantity * line.unitPrice,
         0,
     );
-    const discountAmount = subtotal * (discountPercent / 100);
-    const baseAmount = subtotal - discountAmount;
+    const taxableSubtotal = taxExclusiveLines.reduce(
+        (acc, line) => acc + line.quantity * line.unitPrice,
+        0,
+    );
+    const discountAmount = taxableSubtotal * (discountPercent / 100);
+    const baseAmount = taxableSubtotal - discountAmount;
 
-    const taxAmount = lines.reduce((acc, line) => {
+    const taxAmount = taxExclusiveLines.reduce((acc, line) => {
         const lineSubtotal = line.quantity * line.unitPrice;
         const lineBase = lineSubtotal * (1 - discountPercent / 100);
         return acc + lineBase * normalizeTaxRate(line.taxRate);
@@ -92,14 +128,21 @@ export function calculateDocumentTaxTotals(
     discountPercent = 0,
     equivalenceSurchargePercent = 0,
     retentionPercent = 0,
+    pricesIncludeTax = false,
 ): BillingTotals {
     const subtotal = lines.reduce(
         (acc, line) => acc + line.quantity * line.unitPrice,
         0,
     );
-    const discountAmount = subtotal * (discountPercent / 100);
-    const baseAmount = subtotal - discountAmount;
     const normalizedTaxRate = normalizeTaxRate(taxRate);
+    const taxableSubtotal = pricesIncludeTax
+        ? lines.reduce(
+            (acc, line) => acc + line.quantity * priceExcludingTax(line.unitPrice, normalizedTaxRate),
+            0,
+        )
+        : subtotal;
+    const discountAmount = taxableSubtotal * (discountPercent / 100);
+    const baseAmount = taxableSubtotal - discountAmount;
     const taxAmount = baseAmount * normalizedTaxRate;
     const surchargeAmount = baseAmount * (equivalenceSurchargePercent / 100);
     const retentionAmount = baseAmount * (retentionPercent / 100);

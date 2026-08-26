@@ -1,7 +1,6 @@
 import hashlib
 import secrets
 import smtplib
-import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -33,14 +32,6 @@ def _utcnow() -> datetime:
 
 def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
-
-
-def _generate_partner_code(db: Session, company_name: str) -> str:
-    clean_name = "".join(char for char in company_name if char.isalnum()).upper()[:4] or "COMP"
-    code = f"WH-{clean_name}-{uuid.uuid4().hex[:6].upper()}"
-    while db.query(Company).filter(Company.partner_code == code).first():
-        code = f"WH-{clean_name}-{uuid.uuid4().hex[:6].upper()}"
-    return code
 
 
 def list_trial_requests(db: Session, current_user: User) -> list[TrialRequest]:
@@ -191,7 +182,6 @@ def approve_trial_request(
         address=approval.address,
         phone=approval.phone,
         email=approval.company_email or request.email,
-        partner_code=_generate_partner_code(db, request.company_name),
         is_active=True,
         onboarding_completed=False,
         subscription_plan="trial" if is_trial else approval.access_mode,

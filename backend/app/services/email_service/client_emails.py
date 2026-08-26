@@ -31,14 +31,13 @@ def send_client_email(
     safe_content = escape(content).replace("\n", "<br>")
     html_body = base_layout(
         f"""
-{heading("Message from WorkHive")}
+{heading(escape(subject or "WorkHive"))}
 {lead(f"Hello {safe_name},")}
 <p style="margin:0;font-size:14px;line-height:22px;color:#111827;">{safe_content}</p>
 """,
-        preview_text=content[:140],
+        preview_text=subject or "WorkHive",
         locale="en",
     )
-    plain_text = plain_body([f"Hello {recipient_name},", "", content])
-    message.set_content(plain_text)
+    message.set_content(plain_body([f"Hello {recipient_name},", "", content]))
     message.add_alternative(html_body, subtype="html")
     return transport.send_email(message)

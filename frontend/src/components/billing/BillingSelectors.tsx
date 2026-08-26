@@ -1,7 +1,13 @@
 "use client";
 
-import React from "react";
 import type { Dictionary } from "@/lib/dictionary-context";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     EQUIVALENCE_SURCHARGE_OPTIONS,
     RETENTION_OPTIONS,
@@ -15,7 +21,7 @@ import {
 } from "@/lib/billing-calculations";
 
 const selectClassName =
-    "w-28 bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-1.5 py-1 text-xs outline-none text-right font-mono";
+    "h-10 w-28 justify-between font-mono text-xs";
 
 interface TaxRateSelectProps {
     value: number;
@@ -25,18 +31,21 @@ interface TaxRateSelectProps {
 
 export function TaxRateSelect({ value, onChange, className }: TaxRateSelectProps) {
     return (
-        <select
-            aria-label="Tipo de IVA"
+        <Select
             value={taxRateToOptionValue(value)}
-            onChange={(e) => onChange(parseTaxRateOptionValue(e.target.value))}
-            className={className ?? selectClassName}
+            onValueChange={(nextValue) => onChange(parseTaxRateOptionValue(nextValue))}
         >
-            {TAX_RATE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                    {option.label}
-                </option>
-            ))}
-        </select>
+            <SelectTrigger aria-label="Tipo de IVA" className={className ?? selectClassName}>
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+                {TAX_RATE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
     );
 }
 
@@ -56,18 +65,21 @@ function PercentSelect({
     className,
 }: PercentSelectProps) {
     return (
-        <select
-            aria-label="Porcentaje"
+        <Select
             value={percentToOptionValue(value)}
-            onChange={(e) => onChange(parsePercentOptionValue(e.target.value))}
-            className={className ?? selectClassName}
+            onValueChange={(nextValue) => onChange(parsePercentOptionValue(nextValue))}
         >
-            {options.map((option) => (
-                <option key={option.value} value={option.value}>
-                    {option.label ?? getInvoiceLabel(dict, option.labelKey) ?? option.fallback}
-                </option>
-            ))}
-        </select>
+            <SelectTrigger aria-label="Porcentaje" className={className ?? selectClassName}>
+                <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+                {options.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                        {option.label ?? getInvoiceLabel(dict, option.labelKey) ?? option.fallback}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
     );
 }
 

@@ -50,6 +50,75 @@ test("quotes and invoices share one document totals component", () => {
     assert.doesNotMatch(invoiceSidebar, /InvoiceSummary/);
 });
 
+test("document tax controls use local shadcn select and checkbox primitives", () => {
+    const summary = source("../components/billing/DocumentSummary.tsx");
+    const selectors = source("../components/billing/BillingSelectors.tsx");
+
+    assert.match(summary, /from "@\/components\/ui\/checkbox"/);
+    assert.match(summary, /from "@\/components\/ui\/label"/);
+    assert.match(summary, /htmlFor="document-prices-include-tax"/);
+    assert.match(selectors, /from "@\/components\/ui\/select"/);
+    assert.match(selectors, /<SelectTrigger/);
+    assert.doesNotMatch(selectors, /<select/);
+});
+
+test("quote and invoice form controls use the local shadcn primitives", () => {
+    const inputSources = [
+        source("../components/billing/BillingPartyCard.tsx"),
+        source("../components/billing/DocumentSummary.tsx"),
+        source("../components/quotes/QuoteItemsTable.tsx"),
+        source("../components/invoices/InvoiceConceptsTable.tsx"),
+        source("../components/invoices/InvoiceDetailItemsSection.tsx"),
+        source("../components/invoices/InvoiceDetailEditModePanel.tsx"),
+        source("../components/invoices/InvoiceableJobsSection.tsx"),
+    ];
+    const selectSources = [
+        source("../components/quotes/QuoteFormDetailsSection.tsx"),
+        source("../components/invoices/InvoiceCreateSheetDetails.tsx"),
+        source("../components/invoices/InvoiceConceptsTable.tsx"),
+        source("../components/invoices/InvoiceDetailEditModePanel.tsx"),
+        source("../components/invoices/InvoiceableJobsSection.tsx"),
+    ];
+
+    for (const formSource of [...inputSources, ...selectSources]) {
+        assert.doesNotMatch(formSource, /<(?:input|select)\b/);
+    }
+    for (const inputSource of inputSources) {
+        assert.match(inputSource, /@\/components\/ui\/input/);
+    }
+    for (const selectSource of selectSources) {
+        assert.match(selectSource, /@\/components\/ui\/select/);
+        assert.match(selectSource, /<SelectTrigger/);
+    }
+});
+
+test("invoice dates use the shared shadcn date picker instead of browser date controls", () => {
+    const createDetails = source("../components/invoices/InvoiceCreateSheetDetails.tsx");
+    const editPanel = source("../components/invoices/InvoiceDetailEditModePanel.tsx");
+    const datePicker = source("../components/ui/date-picker.tsx");
+
+    for (const formSource of [createDetails, editPanel]) {
+        assert.match(formSource, /from "@\/components\/ui\/date-picker"/);
+        assert.match(formSource, /<DatePicker/);
+        assert.doesNotMatch(formSource, /type="date"/);
+    }
+    assert.match(datePicker, /<Calendar/);
+    assert.match(datePicker, /<Popover/);
+    assert.match(datePicker, /<InputGroup/);
+    assert.match(datePicker, /<InputGroupInput/);
+    assert.match(datePicker, /parseTypedDate/);
+});
+
+test("invoice list filters use the shared shadcn input and select controls", () => {
+    const filters = source("../components/invoices/InvoicesFiltersBar.tsx");
+
+    assert.match(filters, /from "@\/components\/ui\/input"/);
+    assert.match(filters, /from "@\/components\/ui\/select"/);
+    assert.match(filters, /<Input/);
+    assert.match(filters, /<SelectTrigger/);
+    assert.doesNotMatch(filters, /<select\b/);
+});
+
 test("document form dialog overrides sm:max-w-lg and uses container layout", () => {
     const quoteForm = source("../components/quotes/QuoteCreateSheet.tsx");
     const sharedShell = source("../components/billing/DocumentFormDialog.tsx");

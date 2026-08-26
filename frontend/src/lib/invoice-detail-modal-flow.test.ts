@@ -13,7 +13,8 @@ test("invoices open their detail in a modal with a fixed action header", () => {
 
     assert.match(workspace, /const \[selectedInvoiceId, setSelectedInvoiceId\]/);
     assert.match(page, /onOpenInvoice: setSelectedInvoiceId/);
-    assert.match(page, /<Dialog open=\{selectedInvoiceId !== null\}/);
+    assert.match(page, /function InvoiceDetailDialog/);
+    assert.match(page, /<Dialog open=\{invoiceId !== null\}/);
     assert.doesNotMatch(page, /router\.push\(`\/dashboard\/invoices/);
     assert.doesNotMatch(list, /href=\{`\/dashboard\/invoices/);
     assert.match(view, /flex-none p-3 pb-0/);

@@ -40,6 +40,8 @@ export function QuoteCreateSheet({
         discount,
         setDiscount,
         taxRateGlobal,
+        pricesIncludeTax,
+        setPricesIncludeTax,
         equivalenceSurcharge,
         setEquivalenceSurcharge,
         retention,
@@ -94,6 +96,8 @@ export function QuoteCreateSheet({
             setDiscount={setDiscount}
             taxRateGlobal={taxRateGlobal}
             handleGlobalTaxRateChange={handleGlobalTaxRateChange}
+            pricesIncludeTax={pricesIncludeTax}
+            setPricesIncludeTax={setPricesIncludeTax}
             equivalenceSurcharge={equivalenceSurcharge}
             setEquivalenceSurcharge={setEquivalenceSurcharge}
             retention={retention}
@@ -145,6 +149,7 @@ export function QuoteCreateSheet({
                         handleDuplicateRow={handleDuplicateRow}
                         handleUpdateRow={handleUpdateRow}
                         handleDeleteRow={handleDeleteRow}
+                        pricesIncludeTax={pricesIncludeTax}
                     />
                     <QuoteFormAdvancedSection
                         dict={dict}

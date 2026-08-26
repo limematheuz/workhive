@@ -5,7 +5,6 @@ import { PremiumTabs } from "@/components/ui/premium-tabs";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { NotificationTab } from "./notification-utils";
 import {
-    getCollaborationNotificationKey,
     getPrivacyRequestNotificationKey,
     getReservationNotificationKey,
     getTaskNotificationKey,
@@ -38,7 +37,6 @@ export function NotificationPopoverContent({
         alertPersistentNotifications,
         primaryTaskNotifications,
         alertTaskNotifications,
-        primaryCollaborationNotifications,
         privacyRequestNotifications,
         secondaryReservationNotifications,
         upcomingArrivalNotifications,
@@ -51,7 +49,6 @@ export function NotificationPopoverContent({
         getNotificationPreview,
         handleClearActiveTab,
         handleTaskNotificationClick,
-        handleCollaborationNotificationClick,
         handlePrivacyRequestClick,
         handleReservationNotificationClick,
         handleUpcomingArrivalClick,
@@ -99,10 +96,6 @@ export function NotificationPopoverContent({
                     <div className="space-y-2">
                         {activeTab === "primary" && <>
                             {primaryPersistentNotifications.map((notification) => <NotificationItem key={`persistent:${notification.id}`} type="persistent" data={notification} notificationKey={`persistent:${notification.id}`} openingNotificationKey={openingNotificationKey} onClick={() => void handlePersistentNotificationClick(notification)} dict={dict} locale={locale} />)}
-                            {primaryCollaborationNotifications.map((collaboration) => {
-                                const notificationKey = getCollaborationNotificationKey(collaboration);
-                                return <NotificationItem key={notificationKey} type="collaboration" data={collaboration} notificationKey={notificationKey} openingNotificationKey={openingNotificationKey} onClick={() => void handleCollaborationNotificationClick(collaboration)} dict={dict} locale={locale} />;
-                            })}
                             {privacyRequestNotifications.map((request) => {
                                 const notificationKey = getPrivacyRequestNotificationKey(request);
                                 return <NotificationItem key={notificationKey} type="privacy-request" data={request} notificationKey={notificationKey} openingNotificationKey={openingNotificationKey} onClick={() => handlePrivacyRequestClick(request)} dict={dict} locale={locale} />;

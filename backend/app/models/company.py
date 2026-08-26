@@ -22,7 +22,6 @@ class Company(Base):
     is_active = Column(Boolean, default=True)
     onboarding_completed = Column(Boolean, default=False, nullable=False)
     operating_model = Column(String(30), nullable=True)
-    partner_code = Column(String(50), unique=True, nullable=True, index=True)
     subscription_plan = Column(String(30), nullable=False, default="none")
     subscription_status = Column(String(30), nullable=False, default="inactive", index=True)
     trial_started_at = Column(DateTime(timezone=True), nullable=True)

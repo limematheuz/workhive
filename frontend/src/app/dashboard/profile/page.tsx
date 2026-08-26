@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Briefcase, Loader2, AlertCircle, Building, Copy, Edit3, Sparkles } from "lucide-react";
-import { toast } from "sonner";
+import { Mail, Briefcase, Loader2, AlertCircle, Building, Edit3, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -97,35 +96,6 @@ export default function ProfilePage() {
                                     >
                                         <Building className="h-3 w-3" aria-hidden="true" />
                                         {state.companyName || `#${state.user.company_id}`}
-                                    </Badge>
-                                )}
-                                {state.partnerCode && (
-                                    <Badge
-                                        variant="outline"
-                                        className="gap-1.5 border-accent/20 bg-[color-mix(in_srgb,var(--accent-color)_10%,transparent)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-main)]"
-                                    >
-                                        <span>
-                                            {state.locale === "es" ? "Código Partner" : "Partner Code"}:{" "}
-                                            <span className="select-all font-mono font-bold text-accent">
-                                                {state.partnerCode}
-                                            </span>
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(state.partnerCode);
-                                                toast.success(
-                                                    state.locale === "es"
-                                                        ? "Código de partner copiado"
-                                                        : "Partner code copied",
-                                                );
-                                            }}
-                                            className="inline-flex cursor-pointer items-center justify-center text-accent transition-colors hover:text-[var(--text-main)]"
-                                            title={state.locale === "es" ? "Copiar Código" : "Copy code"}
-                                            aria-label={state.locale === "es" ? "Copiar Código" : "Copy code"}
-                                        >
-                                            <Copy className="h-3.5 w-3.5" />
-                                        </button>
                                     </Badge>
                                 )}
                             </div>

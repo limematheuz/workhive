@@ -16,6 +16,7 @@ type QuoteFormLinesSectionProps = {
         value: ConceptRow[Field],
     ) => void;
     handleDeleteRow: (id: string) => void;
+    pricesIncludeTax: boolean;
 };
 
 export function QuoteFormLinesSection({
@@ -25,6 +26,7 @@ export function QuoteFormLinesSection({
     handleDuplicateRow,
     handleUpdateRow,
     handleDeleteRow,
+    pricesIncludeTax,
 }: QuoteFormLinesSectionProps) {
     return (
         <DocumentFormSection
@@ -38,6 +40,7 @@ export function QuoteFormLinesSection({
                 handleDuplicateRow={handleDuplicateRow}
                 handleUpdateRow={handleUpdateRow}
                 handleDeleteRow={handleDeleteRow}
+                pricesIncludeTax={pricesIncludeTax}
                 embedded
             />
         </DocumentFormSection>

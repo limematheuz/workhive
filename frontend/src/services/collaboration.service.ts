@@ -1,16 +1,142 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
-import { CompanyCollaboration } from "@/types/collaboration";
+import {
+    CompanyCollaboration,
+    CompanyCollaborationInvitation,
+} from "@/types/collaboration";
 import { Company } from "@/types/company";
 
 export const CollaborationService = {
-    getPartnerCode: async (): Promise<string> => {
-        const response = await apiFetch("/api/v1/collaborations/code", {
+    getCompanyInvitationActivationStatus: async (token: string): Promise<"create_account" | "sign_in"> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/activation-status", {
+            method: "POST",
+            body: JSON.stringify({ token }),
+        });
+        await assertApiResponseOk(response, "Could not read the company invitation");
+        const data = await response.json() as { mode: "create_account" | "sign_in" };
+        return data.mode;
+    },
+
+    getSentCompanyInvitations: async (): Promise<CompanyCollaborationInvitation[]> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/sent", {
             method: "GET",
             cache: "no-store",
         });
-        await assertApiResponseOk(response, "No se pudo obtener el código de partner");
-        const data = await response.json();
-        return data.partner_code;
+        await assertApiResponseOk(response, "Could not load company invitations");
+        return response.json();
+    },
+
+    inviteCompanyByEmail: async (
+        email: string,
+        roleType: "service_provider" | "property_manager",
+    ): Promise<void> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations", {
+            method: "POST",
+            body: JSON.stringify({ email, role_type: roleType }),
+        });
+        await assertApiResponseOk(response, "Could not send the company invitation");
+    },
+
+    verifyCompanyInvitationAccess: async (token: string): Promise<void> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/verify-access", {
+            method: "POST",
+            body: JSON.stringify({ token }),
+        });
+        await assertApiResponseOk(response, "Could not verify the company invitation access");
+    },
+
+    verifyCompanyInvitationCode: async (
+        token: string,
+        verificationCode: string,
+    ): Promise<string> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/verify-code", {
+            method: "POST",
+            body: JSON.stringify({ token, verification_code: verificationCode }),
+        });
+        await assertApiResponseOk(response, "Could not verify the company invitation code");
+        const data = await response.json() as { email: string };
+        return data.email;
+    },
+
+    activateCompanyInvitation: async (payload: {
+        token: string;
+        verificationCode: string;
+        fullName: string;
+        companyName: string;
+        taxId: string;
+        address: string;
+        phone: string;
+        password: string;
+    }): Promise<void> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/activate", {
+            method: "POST",
+            body: JSON.stringify({
+                token: payload.token,
+                verification_code: payload.verificationCode,
+                full_name: payload.fullName,
+                company_name: payload.companyName,
+                tax_id: payload.taxId,
+                address: payload.address,
+                phone: payload.phone,
+                password: payload.password,
+                accept_terms: true,
+                accept_privacy: true,
+            }),
+        });
+        await assertApiResponseOk(response, "Could not activate the company invitation");
+    },
+
+    activateCompanyInvitationForExistingAccount: async (payload: {
+        token: string;
+        verificationCode: string;
+        companyName: string;
+        taxId: string;
+        address: string;
+        phone: string;
+    }): Promise<void> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/activate-existing-account", {
+            method: "POST",
+            body: JSON.stringify({
+                token: payload.token,
+                verification_code: payload.verificationCode,
+                company_name: payload.companyName,
+                tax_id: payload.taxId,
+                address: payload.address,
+                phone: payload.phone,
+            }),
+        });
+        await assertApiResponseOk(response, "Could not activate the company invitation");
+    },
+
+    acceptCompanyInvitation: async (token: string, verificationCode: string): Promise<CompanyCollaboration> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/accept", {
+            method: "POST",
+            body: JSON.stringify({ token, verification_code: verificationCode }),
+        });
+        await assertApiResponseOk(response, "Could not accept the company invitation");
+        return response.json();
+    },
+
+    declineCompanyInvitation: async (token: string, verificationCode: string): Promise<void> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/decline", {
+            method: "POST",
+            body: JSON.stringify({ token, verification_code: verificationCode }),
+        });
+        await assertApiResponseOk(response, "Could not decline the company invitation");
+    },
+
+    declineCompanyInvitationWithoutAccount: async (token: string, verificationCode: string): Promise<void> => {
+        const response = await apiFetch("/api/v1/collaborations/invitations/decline-external", {
+            method: "POST",
+            body: JSON.stringify({ token, verification_code: verificationCode }),
+        });
+        await assertApiResponseOk(response, "Could not decline the company invitation");
+    },
+
+    revokeCompanyInvitation: async (id: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/collaborations/invitations/${id}`, {
+            method: "DELETE",
+        });
+        await assertApiResponseOk(response, "Could not revoke the company invitation");
     },
 
     getCollaborations: async (): Promise<CompanyCollaboration[]> => {
@@ -31,71 +157,10 @@ export const CollaborationService = {
         return await response.json();
     },
 
-    getPendingRequests: async (): Promise<CompanyCollaboration[]> => {
-        const response = await apiFetch("/api/v1/collaborations/requests/pending", {
-            method: "GET",
-            cache: "no-store",
-        });
-        await assertApiResponseOk(response, "No se pudieron cargar las solicitudes pendientes");
-        return await response.json();
-    },
-
-    getSentRequests: async (): Promise<CompanyCollaboration[]> => {
-        const response = await apiFetch("/api/v1/collaborations/requests/sent", {
-            method: "GET",
-            cache: "no-store",
-        });
-        await assertApiResponseOk(response, "No se pudieron cargar las solicitudes enviadas");
-        return await response.json();
-    },
-
-    sendCollaborationRequest: async (
-        partnerCode: string,
-        roleType: string = "service_provider"
-    ): Promise<CompanyCollaboration> => {
-        const response = await apiFetch("/api/v1/collaborations/requests", {
-            method: "POST",
-            body: JSON.stringify({
-                partner_code: partnerCode.trim().toUpperCase(),
-                role_type: roleType,
-            }),
-        });
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || "No se pudo enviar la solicitud de vinculación");
-        }
-        return await response.json();
-    },
-
-    acceptRequest: async (id: number): Promise<CompanyCollaboration> => {
-        const response = await apiFetch(`/api/v1/collaborations/requests/${id}/accept`, {
-            method: "POST",
-        });
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || "No se pudo aceptar la solicitud");
-        }
-        return await response.json();
-    },
-
-    rejectRequest: async (id: number): Promise<CompanyCollaboration> => {
-        const response = await apiFetch(`/api/v1/collaborations/requests/${id}/reject`, {
-            method: "POST",
-        });
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || "No se pudo rechazar la solicitud");
-        }
-        return await response.json();
-    },
-
     deleteCollaboration: async (id: number): Promise<void> => {
         const response = await apiFetch(`/api/v1/collaborations/${id}`, {
             method: "DELETE",
         });
-        if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.detail || "No se pudo eliminar la colaboración");
-        }
+        await assertApiResponseOk(response, "Could not remove the company collaboration");
     },
 };

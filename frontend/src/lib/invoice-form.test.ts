@@ -10,6 +10,7 @@ import {
     getDefaultInvoiceDueDate,
     getIssuerFieldsFromCompany,
     getRecipientFieldsFromClient,
+    hasHourlyTaskWithoutRate,
     resolveInvoiceClientId,
 } from "./invoice-form.ts";
 
@@ -87,7 +88,11 @@ test("billing party fields from client include fiscal address data", () => {
     assert.deepEqual(fields, {
         name: "Port Blanc",
         taxId: "B55370720",
-        address: "Carrer del Gregal, 52\n17130 Girona, España",
+        address: "Carrer del Gregal, 52",
+        postalCode: "17130",
+        city: "Girona",
+        province: "",
+        country: "España",
         phone: "621261405",
         email: "port@example.com",
     });
@@ -128,6 +133,7 @@ test("invoice draft payload maps concept rows and optional fields", () => {
         customIssuerInfo: "Issuer",
         customRecipientInfo: "Recipient",
         signatureUrl: null,
+        pricesIncludeTax: false,
         concepts: [{
             id: "task-1",
             description: "Limpieza",
@@ -153,6 +159,65 @@ test("invoice draft payload maps concept rows and optional fields", () => {
     }]);
 });
 
+test("invoice draft converts a tax-inclusive entered price before persistence", () => {
+    const payload = buildInvoiceDraftPayload({
+        selectedClientId: "25",
+        issueDate: "2026-06-23",
+        dueDate: "",
+        invoiceNumber: "",
+        discount: 0,
+        equivalenceSurcharge: 0,
+        retention: 0,
+        paymentMethod: "bank_transfer",
+        notesEnabled: true,
+        notes: "",
+        termsEnabled: true,
+        terms: "",
+        shippingAddress: "",
+        customIssuerInfo: "",
+        customRecipientInfo: "",
+        signatureUrl: null,
+        pricesIncludeTax: true,
+        concepts: [{
+            id: "manual-1",
+            description: "Servicio",
+            quantity: 1,
+            unitPrice: 380,
+            taxRate: 0.21,
+        }],
+    });
+
+    assert.equal(payload.items[0]?.unit_price, 314.05);
+});
+
 test("invoice due date defaults to fifteen days after issue date", () => {
     assert.equal(getDefaultInvoiceDueDate("2026-06-23"), "2026-07-08");
+});
+
+test("hourly task concepts require a positive rate before creating the invoice", () => {
+    assert.equal(hasHourlyTaskWithoutRate([{
+        id: "task-1",
+        description: "Limpieza",
+        quantity: 2,
+        unitPrice: 0,
+        taxRate: 0.21,
+        task_item_id: 1,
+        pricing_mode: "hourly",
+    }]), true);
+    assert.equal(hasHourlyTaskWithoutRate([{
+        id: "manual-1",
+        description: "Servicio",
+        quantity: 1,
+        unitPrice: 0,
+        taxRate: 0.21,
+    }]), false);
+    assert.equal(hasHourlyTaskWithoutRate([{
+        id: "task-2",
+        description: "Limpieza",
+        quantity: 2,
+        unitPrice: 20,
+        taxRate: 0.21,
+        task_item_id: 2,
+        pricing_mode: "hourly",
+    }]), false);
 });

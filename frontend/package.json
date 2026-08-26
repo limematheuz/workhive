@@ -3,7 +3,7 @@
   "version": "1.5.1",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.30.3",
+  "packageManager": "pnpm@11.19.0",
   "scripts": {
     "dev": "next dev",
     "prebuild": "node copy-favicon.mjs",
@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types src/lib/*.test.ts",
     "test:e2e": "playwright test",
-    "doctor": "pnpm dlx react-doctor@0.9.12 . --blocking warning --scope full"
+    "doctor": "react-doctor . --blocking warning --scope full"
   },
   "dependencies": {
     "@fullcalendar/core": "^6.1.20",
@@ -24,11 +24,13 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "d3-geo": "^3.1.1",
+    "date-fns": "^4.4.0",
     "lucide-react": "^1.16.0",
     "next": "16.2.11",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
+    "react-day-picker": "^10.0.1",
     "react-dom": "19.2.4",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
@@ -39,19 +41,14 @@
     "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "^4",
     "@types/d3-geo": "^3.1.0",
-    "@types/node": "^20",
+    "@types/node": "^24.0.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/topojson-client": "^3.1.5",
     "eslint": "^9",
-    "eslint-config-next": "16.2.6",
+    "eslint-config-next": "16.2.11",
+    "react-doctor": "0.9.12",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "pnpm": {
-    "overrides": {
-      "postcss": "8.5.14",
-      "sharp": "0.35.0"
-    }
   }
 }

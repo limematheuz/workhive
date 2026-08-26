@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     buildCompanyOnboardingInput,
+    defaultLocationProfileForModel,
     defaultLocationTypeForModel,
     isOnboardingLocationComplete,
 } from "../domain/onboarding/cleaning-onboarding.ts";
@@ -11,6 +12,18 @@ test("operating models choose a useful location default", () => {
     assert.equal(defaultLocationTypeForModel("service_provider"), "private");
     assert.equal(defaultLocationTypeForModel("property_manager"), "real_estate");
     assert.equal(defaultLocationTypeForModel("hybrid"), "real_estate");
+});
+
+test("operating models use the canonical location profile without changing user permissions", () => {
+    assert.deepEqual(defaultLocationProfileForModel("service_provider"), {
+        site_type: "other",
+    });
+    assert.deepEqual(defaultLocationProfileForModel("property_manager"), {
+        site_type: "tourist_apartment",
+    });
+    assert.deepEqual(defaultLocationProfileForModel("hybrid"), {
+        site_type: "tourist_apartment",
+    });
 });
 
 test("onboarding payload trims fields and exposes no tenant identifiers", () => {
@@ -30,6 +43,9 @@ test("onboarding payload trims fields and exposes no tenant identifiers", () => 
             city: "L'Escala",
             postal_code: "17130",
             location_type: "real_estate",
+            profile: {
+                site_type: "tourist_apartment",
+            },
         },
     });
     assert.equal("company_id" in payload, false);

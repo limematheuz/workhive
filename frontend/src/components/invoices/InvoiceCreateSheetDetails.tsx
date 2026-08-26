@@ -4,13 +4,20 @@ import { BillingPartyCard, BillingPartyFields } from "@/components/billing/Billi
 import { DocumentFormAdvancedPanel } from "@/components/billing/DocumentFormAdvancedPanel";
 import {
     DocumentFormInput,
-    DocumentFormSelect,
     DocumentFormTextarea,
 } from "@/components/billing/DocumentFormControls";
 import { DocumentFormField } from "@/components/billing/DocumentFormField";
 import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { InvoiceConceptsTable } from "./InvoiceConceptsTable";
 import { InvoiceAdditionalInfo } from "./InvoiceAdditionalInfo";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { Client } from "@/services/client.service";
 import type { InvoiceableTask } from "@/services/invoice.service";
 import type { ConceptRow } from "@/hooks/useInvoiceForm";
@@ -40,13 +47,14 @@ interface InvoiceCreateSheetDetailsProps {
     concepts: ConceptRow[];
     handleAddManualRow: () => void;
     handleDuplicateRow: (id: string) => void;
-    handleAddExternalLaundryRow: () => void;
+    handleAddExternalLaundryRow: (description?: string) => void;
     handleUpdateRow: <Field extends keyof ConceptRow>(
         id: string,
         field: Field,
         value: ConceptRow[Field]
     ) => void;
     handleDeleteRow: (id: string) => void;
+    pricesIncludeTax: boolean;
     notesEnabled: boolean;
     setNotesEnabled: (value: boolean) => void;
     notes: string;
@@ -89,6 +97,7 @@ export function InvoiceCreateSheetDetails({
     handleAddExternalLaundryRow,
     handleUpdateRow,
     handleDeleteRow,
+    pricesIncludeTax,
     notesEnabled,
     setNotesEnabled,
     notes,
@@ -132,23 +141,26 @@ export function InvoiceCreateSheetDetails({
                                 <span className="truncate">{lockedClientLabel}</span>
                             </div>
                         ) : (
-                            <DocumentFormSelect
-                                id="invoice-client"
+                            <Select
                                 value={selectedClientId}
-                                onChange={(e) => setSelectedClientId(e.target.value)}
-                                required
-                                aria-label={dict.invoices?.client_select}
+                                onValueChange={setSelectedClientId}
                             >
-                                <option value="" disabled>
-                                    {dict.invoices?.client_select_placeholder || "-- Selecciona un cliente --"}
-                                </option>
-                                {clients.map((client) => (
-                                    <option key={client.id} value={client.id}>
-                                        {client.name}
-                                        {client.legal_number?.trim() ? ` (${client.legal_number.trim()})` : ""}
-                                    </option>
-                                ))}
-                            </DocumentFormSelect>
+                                <SelectTrigger
+                                    id="invoice-client"
+                                    aria-label={dict.invoices?.client_select}
+                                    className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm"
+                                >
+                                    <SelectValue placeholder={dict.invoices?.client_select_placeholder || "-- Selecciona un cliente --"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {clients.map((client) => (
+                                        <SelectItem key={client.id} value={client.id.toString()}>
+                                            {client.name}
+                                            {client.legal_number?.trim() ? ` (${client.legal_number.trim()})` : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         )}
                     </DocumentFormField>
 
@@ -171,12 +183,10 @@ export function InvoiceCreateSheetDetails({
                             id="invoice-issue-date"
                             label={`${dict.invoices?.issue_date || "Fecha de emisión"} *`}
                         >
-                            <DocumentFormInput
+                            <DatePicker
                                 id="invoice-issue-date"
-                                type="date"
                                 value={issueDate}
-                                onChange={(event) => setIssueDate(event.target.value)}
-                                required
+                                onValueChange={setIssueDate}
                                 aria-label={dict.invoices?.issue_date}
                             />
                         </DocumentFormField>
@@ -184,11 +194,10 @@ export function InvoiceCreateSheetDetails({
                             id="invoice-due-date"
                             label={dict.invoices?.due_date || "Fecha de vencimiento"}
                         >
-                            <DocumentFormInput
+                            <DatePicker
                                 id="invoice-due-date"
-                                type="date"
                                 value={dueDate}
-                                onChange={(event) => setDueDate(event.target.value)}
+                                onValueChange={setDueDate}
                                 max={maxDueDate}
                                 aria-label={dict.invoices?.due_date}
                             />
@@ -197,17 +206,21 @@ export function InvoiceCreateSheetDetails({
                             id="invoice-payment-method"
                             label={dict.invoices?.payment_method || "Forma de pago"}
                         >
-                            <DocumentFormSelect
-                                id="invoice-payment-method"
+                            <Select
                                 value={paymentMethod}
-                                onChange={(event) => setPaymentMethod(event.target.value as InvoicePaymentMethod)}
+                                onValueChange={(value) => setPaymentMethod(value as InvoicePaymentMethod)}
                             >
-                                {INVOICE_PAYMENT_METHODS.map((method) => (
-                                    <option key={method} value={method}>
-                                        {getInvoicePaymentMethodLabel(method, dict.invoices.payment_methods)}
-                                    </option>
-                                ))}
-                            </DocumentFormSelect>
+                                <SelectTrigger id="invoice-payment-method" className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {INVOICE_PAYMENT_METHODS.map((method) => (
+                                        <SelectItem key={method} value={method}>
+                                            {getInvoicePaymentMethodLabel(method, dict.invoices.payment_methods)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </DocumentFormField>
                     </div>
                 </div>
@@ -221,6 +234,7 @@ export function InvoiceCreateSheetDetails({
                 handleAddExternalLaundryRow={handleAddExternalLaundryRow}
                 handleUpdateRow={handleUpdateRow}
                 handleDeleteRow={handleDeleteRow}
+                pricesIncludeTax={pricesIncludeTax}
             />
 
             <DocumentFormAdvancedPanel

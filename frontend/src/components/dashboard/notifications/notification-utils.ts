@@ -1,7 +1,6 @@
 "use client";
 
 import type { TaskItem } from "@/types/user";
-import type { CompanyCollaboration } from "@/types/collaboration";
 import type { Reservation } from "@/types/reservation";
 import type { PrivacyRequest } from "@/services/privacy.service";
 
@@ -68,7 +67,6 @@ export const dismissTaskNotification = (userId: number, task: TaskItem) => {
         { taskItemId: task.id },
     );
 };
-export const getCollaborationNotificationKey = (collaboration: CompanyCollaboration) => `collaboration:${collaboration.id}:${collaboration.status}`;
 export const getReservationNotificationKey = (reservation: Reservation) => (
     reservation.status === "cancelled"
         ? `reservation:${reservation.id}:cancelled`

@@ -41,7 +41,7 @@ def _normalize_email(email: str) -> str:
     return email.strip().lower()
 
 
-def _validate_invited_role(db: Session, role_id: int, inviter: User) -> None:
+def _validate_invited_role(db: Session, role_id: int, inviter: User):
     role = role_repo.get_role(db, role_id)
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
@@ -55,6 +55,7 @@ def _validate_invited_role(db: Session, role_id: int, inviter: User) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only superadmins can assign the superadmin role",
         )
+    return role
 
 
 def create_invitation(
@@ -79,7 +80,7 @@ def create_invitation(
             status_code=status.HTTP_409_CONFLICT,
             detail="This email already has a WorkHive account",
         )
-    _validate_invited_role(db, payload.role_id, inviter)
+    invited_role = _validate_invited_role(db, payload.role_id, inviter)
     require_active_user_capacity(db, inviter.company)
 
     existing = (
@@ -123,9 +124,7 @@ def create_invitation(
         )
         db.add(invitation)
 
-    invitation_url = (
-        f"{settings.FRONTEND_URL.rstrip('/')}/accept-invitation?token={token}"
-    )
+    invitation_url = f"{settings.FRONTEND_URL.rstrip('/')}/accept-invitation#token={token}"
     try:
         sent = email_service.send_worker_invitation_email(
             recipient_email=email,
@@ -134,6 +133,7 @@ def create_invitation(
             invitation_url=invitation_url,
             verification_code=code,
             expires_at=expires_at,
+            role_name=invited_role.name,
         )
     except (OSError, TimeoutError, ConnectionError, smtplib.SMTPException) as error:
         logger.warning(

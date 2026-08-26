@@ -29,7 +29,6 @@ export const ORDERED_PLAIN_HREFS = [
     "/dashboard/reservations",
     "/dashboard/locations",
     "/dashboard/users",
-    "/dashboard/collaborations",
     "/dashboard/companies",
     "/dashboard/integrations",
     "/dashboard/roles",
@@ -178,16 +177,6 @@ function buildNavLinks(
                           <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 2v4m8-4v4M3 10h18M5 4h14a2 2 0 012 2v13a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 15a2 2 0 114 0 2 2 0 01-4 0zm4 0h5m-2 0v2" />
-                          </svg>
-                      ),
-                  },
-                  {
-                      href: "/dashboard/collaborations",
-                      label: dict.dashboard.active_collaborators || "Colaboradores",
-                      exact: false,
-                      icon: (
-                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                           </svg>
                       ),
                   },

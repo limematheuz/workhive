@@ -63,8 +63,31 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
     const [locationCity, setLocationCity] = React.useState("")
     const [locationPostalCode, setLocationPostalCode] = React.useState("")
     const [result, setResult] = React.useState<CompanyOnboardingResult | null>(null)
+    const [modelLoading, setModelLoading] = React.useState(Boolean(user.company_id))
+    const selectedModelManually = React.useRef(false)
 
     const onboardingKey = `workhive_onboarding_done_${user.id}`
+
+    React.useEffect(() => {
+        if (!user.company_id) return
+        let cancelled = false
+        void CompanyService.getCompany(user.company_id)
+            .then((company) => {
+                if (
+                    !cancelled
+                    && !selectedModelManually.current
+                    && (company.operating_model === "service_provider"
+                        || company.operating_model === "property_manager"
+                        || company.operating_model === "hybrid")
+                ) {
+                    setOperatingModel(company.operating_model)
+                    setLocationType(defaultLocationTypeForModel(company.operating_model))
+                }
+            })
+            .catch(() => {})
+            .finally(() => { if (!cancelled) setModelLoading(false) })
+        return () => { cancelled = true }
+    }, [user.company_id])
 
     const closeOnboarding = React.useCallback((destination?: string) => {
         localStorage.setItem(onboardingKey, "true")
@@ -75,6 +98,7 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
     }, [onComplete, onboardingKey, router, user.id])
 
     const selectOperatingModel = (model: OperatingModel) => {
+        selectedModelManually.current = true
         setOperatingModel(model)
         setLocationType(defaultLocationTypeForModel(model))
     }
@@ -161,6 +185,12 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
             ? dict.onboarding.checklist_hybrid
             : dict.onboarding.checklist_provider
 
+    const locationIntro = operatingModel === "property_manager"
+        ? dict.onboarding.location_intro_manager
+        : operatingModel === "hybrid"
+            ? dict.onboarding.location_intro_hybrid
+            : dict.onboarding.location_intro_provider
+
     const stepIndex = step === "model" ? 0 : step === "location" ? 1 : 2
     const steps = [
         { label: dict.onboarding.modal_step_model, icon: BriefcaseBusiness },
@@ -174,12 +204,14 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
         createStarterSetup,
         dict,
         loading,
+        modelLoading,
         locationAddress,
         locationCity,
         locationName,
         locationOptions,
         locationPostalCode,
         locationType,
+        locationIntro,
         modelOptions,
         operatingModel,
         result,
@@ -213,12 +245,14 @@ function OnboardingModalContent({
         createStarterSetup,
         dict,
         loading,
+        modelLoading,
         locationAddress,
         locationCity,
         locationName,
         locationOptions,
         locationPostalCode,
         locationType,
+        locationIntro,
         modelOptions,
         operatingModel,
         result,
@@ -247,7 +281,7 @@ function OnboardingModalContent({
                 <button
                     type="button"
                     onClick={() => step === "ready" ? closeOnboarding() : void completeWithoutLocation()}
-                    disabled={loading}
+                    disabled={loading || modelLoading}
                     aria-label={dict.onboarding.modal_btn_later}
                     data-slot="dialog-close"
                     className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-main)] transition-colors disabled:opacity-50"
@@ -296,32 +330,42 @@ function OnboardingModalContent({
 
                     <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 sm:px-8">
                         {step === "model" && (
-                            <div className="grid gap-3 lg:grid-cols-3">
-                                {modelOptions.map((option) => {
-                                    const Icon = option.icon
-                                    const active = operatingModel === option.id
-                                    return (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            onClick={() => selectOperatingModel(option.id)}
-                                            aria-pressed={active}
-                                            className={`glass-panel min-h-44 rounded-2xl p-5 text-left transition-colors ${active ? "surface-glass-card-accent !border-accent" : "hover:!border-accent/50"}`}
-                                        >
-                                            <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? "bg-accent text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"}`}>
-                                                <Icon className="h-5 w-5" />
-                                            </span>
-                                            <span className="mt-5 block text-sm font-black text-[var(--text-main)]">{option.label}</span>
-                                            <span className="mt-2 block text-xs leading-relaxed text-[var(--text-muted)]">{option.description}</span>
-                                        </button>
-                                    )
-                                })}
+                            <div className="space-y-5">
+                                <div className="grid gap-3 lg:grid-cols-3">
+                                    {modelOptions.map((option) => {
+                                        const Icon = option.icon
+                                        const active = operatingModel === option.id
+                                        return (
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => selectOperatingModel(option.id)}
+                                                aria-pressed={active}
+                                                className={`glass-panel min-h-44 rounded-2xl p-5 text-left transition-colors ${active ? "surface-glass-card-accent !border-accent" : "hover:!border-accent/50"}`}
+                                            >
+                                                <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${active ? "bg-accent text-white" : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"}`}>
+                                                    <Icon className="h-5 w-5" />
+                                                </span>
+                                                <span className="mt-5 block text-sm font-black text-[var(--text-main)]">{option.label}</span>
+                                                <span className="mt-2 block text-xs leading-relaxed text-[var(--text-muted)]">{option.description}</span>
+                                            </button>
+                                        )
+                                    })}
+                                </div>
+                                <div className="grid gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4 text-xs text-[var(--text-muted)] sm:grid-cols-3">
+                                    {[dict.onboarding.model_company_setting, dict.onboarding.model_permissions_unchanged, dict.onboarding.model_change_later].map((item) => (
+                                        <p key={item} className="flex gap-2 leading-relaxed"><Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />{item}</p>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                         {step === "location" && (
                             <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_280px]">
                                 <div className="space-y-5">
+                                    <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm leading-relaxed text-[var(--text-muted)]">
+                                        {locationIntro}
+                                    </div>
                                     <div>
                                         <Label className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.onboarding.space_type}</Label>
                                         <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -398,7 +442,7 @@ function OnboardingModalContent({
                                 <button type="button" onClick={() => void completeWithoutLocation()} disabled={loading} className="h-10 px-3 text-sm font-semibold text-[var(--text-muted)] hover:text-[var(--text-main)] disabled:opacity-50">
                                     {dict.onboarding.modal_btn_later}
                                 </button>
-                                <PrimaryButton onClick={() => setStep("location")} label={dict.onboarding.next} icon={ArrowRight} />
+                                <PrimaryButton onClick={() => setStep("location")} label={dict.onboarding.next} icon={ArrowRight} disabled={modelLoading} />
                             </>
                         )}
                         {step === "location" && (

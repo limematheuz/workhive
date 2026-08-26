@@ -2,6 +2,7 @@ import { Plus, Trash2 } from "lucide-react";
 
 import { TaxRateSelect } from "@/components/billing/BillingSelectors";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { EditBillingTotals } from "@/components/invoices/invoice-detail-document-types";
 import type { EditingInvoiceItem } from "@/hooks/useInvoiceDetail";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -18,6 +19,7 @@ type InvoiceDetailItemsSectionProps = {
     onEditItemChange: (index: number, field: keyof EditingInvoiceItem, value: string | number) => void;
     onRemoveEditItem: (index: number) => void;
     onAddEditItem: () => void;
+    pricesIncludeTax: boolean;
 };
 
 export function InvoiceDetailItemsSection({
@@ -29,6 +31,7 @@ export function InvoiceDetailItemsSection({
     onEditItemChange,
     onRemoveEditItem,
     onAddEditItem,
+    pricesIncludeTax,
 }: InvoiceDetailItemsSectionProps) {
     return (
         <div className="mt-5">
@@ -44,9 +47,9 @@ export function InvoiceDetailItemsSection({
                     <div className="grid min-w-[720px] grid-cols-[1fr_60px_90px_60px_80px_36px] gap-2 bg-[color-mix(in_srgb,var(--accent-color)_12%,var(--bg-tertiary))] px-2 py-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         <span className="px-1">{dict.invoices.concept}</span>
                         <span className="text-center">{dict.invoices.quantity}</span>
-                        <span className="text-right">{dict.invoices.price}</span>
+                        <span className="text-right">{pricesIncludeTax ? "Precio c/ IVA" : dict.invoices.price}</span>
                         <span className="text-center">{dict.invoices.tax}</span>
-                        <span className="text-right">{dict.invoices.subtotal}</span>
+                        <span className="text-right">{pricesIncludeTax ? "Total c/ IVA" : dict.invoices.subtotal}</span>
                         <span />
                     </div>
 
@@ -57,14 +60,14 @@ export function InvoiceDetailItemsSection({
                                 key={item.clientKey}
                                 className="grid min-w-[720px] grid-cols-[1fr_60px_90px_60px_80px_36px] items-center gap-2 rounded-xl bg-[var(--bg-tertiary)]/70 px-2 py-2"
                             >
-                                <input
+                                <Input
                                     type="text"
                                     value={item.description}
                                     onChange={(e) => onEditItemChange(index, "description", e.target.value)}
                                     placeholder={dict.invoices.line_description_placeholder}
                                     className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2 py-1.5 text-xs outline-none focus:border-accent transition-colors"
                                 />
-                                <input
+                                <Input
                                     type="number"
                                     min="0"
                                     step="0.01"
@@ -73,7 +76,7 @@ export function InvoiceDetailItemsSection({
                                     onChange={(e) => onEditItemChange(index, "quantity", parseFloat(e.target.value) || 0)}
                                     className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-accent transition-colors font-mono"
                                 />
-                                <input
+                                <Input
                                     type="number"
                                     min="0"
                                     step="0.01"

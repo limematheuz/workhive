@@ -48,6 +48,8 @@ export function InvoiceCreateSheet({
         discount,
         setDiscount,
         taxRateGlobal,
+        pricesIncludeTax,
+        setPricesIncludeTax,
         equivalenceSurcharge,
         setEquivalenceSurcharge,
         retention,
@@ -128,6 +130,7 @@ export function InvoiceCreateSheet({
             handleAddExternalLaundryRow={handleAddExternalLaundryRow}
             handleUpdateRow={handleUpdateRow}
             handleDeleteRow={handleDeleteRow}
+            pricesIncludeTax={pricesIncludeTax}
             notesEnabled={notesEnabled}
             setNotesEnabled={setNotesEnabled}
             notes={notes}
@@ -160,6 +163,8 @@ export function InvoiceCreateSheet({
             setDiscount={setDiscount}
             taxRateGlobal={taxRateGlobal}
             handleGlobalTaxRateChange={handleGlobalTaxRateChange}
+            pricesIncludeTax={pricesIncludeTax}
+            setPricesIncludeTax={setPricesIncludeTax}
             equivalenceSurcharge={equivalenceSurcharge}
             setEquivalenceSurcharge={setEquivalenceSurcharge}
             retention={retention}

@@ -33,6 +33,7 @@ export type InvoiceDetailDocumentProps = {
     editingIssueDate: string;
     editingDueDate: string;
     editingPaymentMethod: InvoicePaymentMethod;
+    editingPricesIncludeTax: boolean;
     editingIssuerFields: BillingPartyFields;
     editingRecipientFields: BillingPartyFields;
     editingItems: EditingInvoiceItem[];
@@ -59,6 +60,7 @@ export type InvoiceDetailDocumentProps = {
     onEditingIssueDateChange: (value: string) => void;
     onEditingDueDateChange: (value: string) => void;
     onEditingPaymentMethodChange: (value: InvoicePaymentMethod) => void;
+    onEditingPricesIncludeTaxChange: (value: boolean) => void;
     onEditIssuerFieldChange: (field: BillingPartyField, value: string) => void;
     onEditRecipientFieldChange: (field: BillingPartyField, value: string) => void;
     onEditItemChange: (index: number, field: keyof EditingInvoiceItem, value: string | number) => void;

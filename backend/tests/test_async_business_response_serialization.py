@@ -219,8 +219,6 @@ async def test_async_business_endpoints_serialize_nested_relations_without_500(
         f"/api/v1/companies/{seed['company_id']}",
         "/api/v1/collaborations/",
         "/api/v1/collaborations/service-providers",
-        "/api/v1/collaborations/requests/pending",
-        "/api/v1/collaborations/requests/sent",
         "/api/v1/invoices/",
         "/api/v1/invoices/?limit=500",
         f"/api/v1/invoices/{seed['invoice_id']}",

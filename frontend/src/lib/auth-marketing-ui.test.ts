@@ -7,7 +7,7 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("auth marketing pages share AuthShell glass chrome", () => {
     const shell = read("../components/auth/AuthShell.tsx");
     const card = read("../components/auth/AuthGlassCard.tsx");
-    const login = read("../app/(auth)/login/page.tsx");
+    const login = read("../app/(auth)/login/LoginPageClient.tsx");
     const register = read("../app/(auth)/register/page.tsx");
     const forgot = read("../app/(auth)/forgot-password/page.tsx");
     const subscription = read("../app/subscription/page.tsx");
@@ -86,7 +86,7 @@ test("auth dictionaries expose short access and pricing copy", () => {
 });
 
 test("login offers Google button chrome without wiring OAuth", () => {
-    const login = read("../app/(auth)/login/page.tsx");
+    const login = read("../app/(auth)/login/LoginPageClient.tsx");
     const feedback = read("../components/auth/LoginStatusFeedback.tsx");
     assert.match(login, /google_button/);
     assert.match(login, /google_soon/);

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { calculatePerLineTaxTotals } from "./billing-calculations.ts";
+import {
+    calculateDocumentTaxTotals,
+    calculatePerLineTaxTotals,
+    priceExcludingTax,
+    priceIncludingTax,
+} from "./billing-calculations.ts";
 
 function assertMoney(actual: number, expected: number) {
     assert.ok(Math.abs(actual - expected) < 0.000001);
@@ -40,4 +45,21 @@ test("manual lines, discounts, surcharge and retention share the same totals", (
     assertMoney(totals.surchargeAmount, 5.85);
     assertMoney(totals.retentionAmount, 2.25);
     assertMoney(totals.totalAmount, 137.25);
+});
+
+test("tax-inclusive prices calculate the same fiscal base and total", () => {
+    const totals = calculateDocumentTaxTotals(
+        [{ quantity: 1, unitPrice: 380 }],
+        0.21,
+        0,
+        0,
+        0,
+        true,
+    );
+
+    assert.equal(priceExcludingTax(380, 0.21), 314.05);
+    assert.equal(priceIncludingTax(314.05, 0.21), 380);
+    assertMoney(totals.baseAmount, 314.05);
+    assertMoney(totals.taxAmount, 65.9505);
+    assertMoney(totals.totalAmount, 380.0005);
 });

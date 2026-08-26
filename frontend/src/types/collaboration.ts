@@ -12,3 +12,12 @@ export interface CompanyCollaboration {
     initiator: Company;
     partner: Company;
 }
+
+export interface CompanyCollaborationInvitation {
+    id: number;
+    email: string;
+    role_type: "service_provider" | "property_manager";
+    status: "pending" | "accepted" | "declined" | "expired" | "revoked" | string;
+    expires_at: string;
+    created_at: string;
+}

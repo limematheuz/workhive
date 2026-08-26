@@ -12,6 +12,8 @@ from app.schemas.company import (
     CompanyOnboardingComplete,
     CompanyOnboardingResponse,
 )
+from app.schemas.location import LocationCreate
+from app.services import location_service
 
 
 @dataclass(frozen=True)
@@ -85,6 +87,10 @@ def complete_company_onboarding(
         .first()
     )
     if company.onboarding_completed and (existing_location or not data.location):
+        if company.operating_model != data.operating_model:
+            company.operating_model = data.operating_model
+            db.add(company)
+            db.commit()
         existing_template = None
         if existing_location:
             existing_template = (
@@ -117,16 +123,16 @@ def complete_company_onboarding(
         company.onboarding_completed = True
 
         if data.location:
-            location = Location(
-                **data.location.model_dump(),
-                client_id=None,
-                owner_company_id=company_id,
-                managing_company_id=company_id,
-                max_capacity=0,
-                is_active=True,
+            location = location_service.create_location_in_transaction(
+                db,
+                company_id,
+                LocationCreate(
+                    **data.location.model_dump(),
+                    client_id=None,
+                    default_service_provider_id=None,
+                    is_active=True,
+                ),
             )
-            db.add(location)
-            db.flush()
 
             template = (
                 db.query(TemplateTask)

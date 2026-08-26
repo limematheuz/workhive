@@ -2,7 +2,11 @@ from datetime import datetime, timezone
 
 from tests.email_service.helpers import capture_send, html_body, plain_body
 
-from app.services.email_service import access_emails
+from app.services.email_service import (
+    access_emails,
+    company_collaboration_emails,
+    worker_invitation_emails,
+)
 
 
 def test_trial_verification_email_escapes_fields(monkeypatch):
@@ -98,19 +102,20 @@ def test_worker_invitation_email_includes_code_and_expiry(monkeypatch):
     delivered = capture_send(monkeypatch)
     expires_at = datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc)
 
-    assert access_emails.send_worker_invitation_email(
+    assert worker_invitation_emails.send_worker_invitation_email(
         recipient_email="worker@example.com",
         recipient_name="<Worker>",
         company_name="<Acme>",
         invitation_url='https://example.com/invite?x=<y>',
         verification_code="AB12CD",
         expires_at=expires_at,
+        role_name="viewer",
     )
 
     message = delivered["message"]
     html = html_body(message)
     plain = plain_body(message)
-    assert "Invitación para unirte a <Acme>" in message["Subject"]
+    assert "Te han invitado a WorkHive: <Acme>" == message["Subject"]
     assert "AB12CD" in plain
     assert "&lt;Worker&gt;" in html
     assert "&lt;Acme&gt;" in html
@@ -121,14 +126,34 @@ def test_worker_invitation_email_includes_code_and_expiry(monkeypatch):
 def test_worker_invitation_email_without_name(monkeypatch):
     delivered = capture_send(monkeypatch)
 
-    assert access_emails.send_worker_invitation_email(
+    assert worker_invitation_emails.send_worker_invitation_email(
         recipient_email="worker@example.com",
         recipient_name="",
         company_name="Acme",
         invitation_url="https://example.com/invite",
         verification_code="ZZ99",
         expires_at=datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc),
+        role_name="accountant",
     )
 
     plain = plain_body(delivered["message"])
     assert plain.startswith("Hola,")
+    assert "área financiera" in plain
+
+
+def test_company_invitation_describes_the_selected_relationship(monkeypatch):
+    delivered = capture_send(monkeypatch)
+    expires_at = datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc)
+
+    assert company_collaboration_emails.send_company_collaboration_invitation_email(
+        recipient_email="company@example.com",
+        inviter_company_name="Acme",
+        invitation_url="https://example.com/invite#token=secret",
+        verification_code="AB12CD34EF",
+        expires_at=expires_at,
+        role_type="property_manager",
+    )
+
+    message = delivered["message"]
+    assert "solicitar servicios" in message["Subject"]
+    assert "inmobiliaria" in plain_body(message)

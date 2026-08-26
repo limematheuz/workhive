@@ -57,7 +57,11 @@ test("quote recipient fields include fiscal address data", () => {
     assert.deepEqual(getQuoteRecipientFieldsFromClient(client), {
         name: "Port Blanc",
         taxId: "B55370720",
-        address: "Carrer del Gregal, 52\n17130 Girona, España",
+        address: "Carrer del Gregal, 52",
+        postalCode: "17130",
+        city: "Girona",
+        province: "",
+        country: "España",
         phone: "621261405",
         email: "port@example.com",
     });
@@ -118,5 +122,13 @@ test("quote item snapshot contains every current row and no UI identifiers", () 
     assert.deepEqual(result, [
         { description: "Updated", quantity: 2, unit_price: 15 },
         { description: "New", quantity: 1, unit_price: 20 },
+    ]);
+});
+
+test("quote snapshots convert tax-inclusive entered prices to taxable bases", () => {
+    assert.deepEqual(buildQuoteItemsSnapshot([
+        { id: "1", description: "Servicio", quantity: 1, unitPrice: 380, taxRate: 0.21 },
+    ], 0.21, true), [
+        { description: "Servicio", quantity: 1, unit_price: 314.05 },
     ]);
 });
