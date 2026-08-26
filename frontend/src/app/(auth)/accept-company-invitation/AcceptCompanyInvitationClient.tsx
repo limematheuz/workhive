@@ -47,7 +47,7 @@ function clearStoredInvitationToken() {
     }
 }
 
-function AcceptCompanyInvitationContent() {
+function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { locale } = useDictionary();
@@ -361,6 +361,6 @@ function InvitationMessage({ title, message, success = false }: { title: string;
     return <div className="space-y-3 py-5 text-center"><CheckCircle2 className={`mx-auto h-10 w-10 ${success ? "text-accent" : "text-[var(--text-muted)]"}`} /><h1 className="text-xl font-bold text-[var(--text-main)]">{title}</h1><p className="text-sm leading-6 text-[var(--text-muted)]">{message}</p></div>;
 }
 
-export default function AcceptCompanyInvitationPage() {
-    return <Suspense fallback={<div className="min-h-dvh bg-[var(--bg-primary)]" />}><AcceptCompanyInvitationContent /></Suspense>;
+export default function AcceptCompanyInvitationClient({ initialToken }: { initialToken: string }) {
+    return <AcceptCompanyInvitationContent initialToken={initialToken} />;
 }

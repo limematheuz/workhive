@@ -11,6 +11,31 @@ import { InvoicesTabPanels } from "@/components/invoices/InvoicesTabPanels";
 import { useInvoicesWorkspace } from "@/components/invoices/use-invoices-workspace";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
+type InvoiceDetailDialogProps = {
+    invoiceId: number | null
+    onClose: () => void
+    onInvoiceChanged: () => void
+}
+
+function InvoiceDetailDialog({ invoiceId, onClose, onInvoiceChanged }: InvoiceDetailDialogProps) {
+    return (
+        <Dialog open={invoiceId !== null} onOpenChange={(open) => {
+            if (!open) onClose()
+        }}>
+            <DialogContent className="flex h-[min(94vh,calc(100%-1rem))] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl lg:max-w-7xl">
+                <DialogTitle className="sr-only">Detalle de factura</DialogTitle>
+                {invoiceId !== null && (
+                    <InvoiceDetailView
+                        invoiceId={invoiceId}
+                        embedded
+                        onChanged={onInvoiceChanged}
+                    />
+                )}
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function InvoicesPage() {
     const workspace = useInvoicesWorkspace();
     const {
@@ -125,17 +150,14 @@ export default function InvoicesPage() {
                     initialTasks={createSheet.tasks}
                 />
 
-                <Dialog open={selectedInvoiceId !== null} onOpenChange={(open) => {
-                    if (!open) {
-                        setSelectedInvoiceId(null);
-                        void loadInvoices();
-                    }
-                }}>
-                    <DialogContent className="flex h-[min(94vh,calc(100%-1rem))] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl lg:max-w-7xl">
-                        <DialogTitle className="sr-only">{dict.invoices.detail_title}</DialogTitle>
-                        {selectedInvoiceId !== null ? <InvoiceDetailView invoiceId={selectedInvoiceId} embedded onChanged={() => void loadInvoices()} /> : null}
-                    </DialogContent>
-                </Dialog>
+                <InvoiceDetailDialog
+                    invoiceId={selectedInvoiceId}
+                    onClose={() => {
+                        setSelectedInvoiceId(null)
+                        void loadInvoices()
+                    }}
+                    onInvoiceChanged={() => void loadInvoices()}
+                />
             </div>
         </div>
     );
