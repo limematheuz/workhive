@@ -9,7 +9,11 @@ import { Quote } from "@/types/quote";
 import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
 import { BillingPartyFields } from "@/components/billing/BillingPartyCard";
-import { calculateDocumentTaxTotals, normalizeTaxRate } from "@/lib/billing-calculations";
+import {
+    calculateDocumentTaxTotals,
+    normalizeTaxRate,
+    priceForTaxMode,
+} from "@/lib/billing-calculations";
 import {
     BillingPartyField,
     formatBillingParty,
@@ -62,6 +66,10 @@ export function useQuoteForm({
     const [issuerName, setIssuerName] = useState<string>("");
     const [issuerTaxId, setIssuerTaxId] = useState<string>("");
     const [issuerAddress, setIssuerAddress] = useState<string>("");
+    const [issuerPostalCode, setIssuerPostalCode] = useState<string>("");
+    const [issuerCity, setIssuerCity] = useState<string>("");
+    const [issuerProvince, setIssuerProvince] = useState<string>("");
+    const [issuerCountry, setIssuerCountry] = useState<string>("");
     const [issuerPhone, setIssuerPhone] = useState<string>("");
     const [issuerEmail, setIssuerEmail] = useState<string>("");
     const [issuerBank, setIssuerBank] = useState<string>("");
@@ -71,6 +79,10 @@ export function useQuoteForm({
     const [recipientName, setRecipientName] = useState<string>("");
     const [recipientTaxId, setRecipientTaxId] = useState<string>("");
     const [recipientAddress, setRecipientAddress] = useState<string>("");
+    const [recipientPostalCode, setRecipientPostalCode] = useState<string>("");
+    const [recipientCity, setRecipientCity] = useState<string>("");
+    const [recipientProvince, setRecipientProvince] = useState<string>("");
+    const [recipientCountry, setRecipientCountry] = useState<string>("");
     const [recipientPhone, setRecipientPhone] = useState<string>("");
     const [recipientEmail, setRecipientEmail] = useState<string>("");
     const [isEditingRecipient, setIsEditingRecipient] = useState<boolean>(false);
@@ -81,6 +93,7 @@ export function useQuoteForm({
 
     const [discount, setDiscount] = useState<number>(0);
     const [taxRateGlobal, setTaxRateGlobal] = useState<number>(DEFAULT_QUOTE_TAX_RATE);
+    const [pricesIncludeTax, setPricesIncludeTax] = useState<boolean>(false);
     const [equivalenceSurcharge, setEquivalenceSurcharge] = useState<number>(0);
     const [retention, setRetention] = useState<number>(0);
 
@@ -102,6 +115,10 @@ export function useQuoteForm({
         setRecipientName("");
         setRecipientTaxId("");
         setRecipientAddress("");
+        setRecipientPostalCode("");
+        setRecipientCity("");
+        setRecipientProvince("");
+        setRecipientCountry("");
         setRecipientPhone("");
         setRecipientEmail("");
         setCustomRecipientInfo("");
@@ -113,6 +130,10 @@ export function useQuoteForm({
         setRecipientName(recipient.name);
         setRecipientTaxId(recipient.taxId);
         setRecipientAddress(recipient.address);
+        setRecipientPostalCode(recipient.postalCode || "");
+        setRecipientCity(recipient.city || "");
+        setRecipientProvince(recipient.province || "");
+        setRecipientCountry(recipient.country || "");
         setRecipientPhone(recipient.phone);
         setRecipientEmail(recipient.email);
         setCustomRecipientInfo(formatBillingParty(recipient));
@@ -165,6 +186,10 @@ export function useQuoteForm({
                         setIssuerName(parsed.name);
                         setIssuerTaxId(parsed.taxId);
                         setIssuerAddress(parsed.address);
+                        setIssuerPostalCode(parsed.postalCode || "");
+                        setIssuerCity(parsed.city || "");
+                        setIssuerProvince(parsed.province || "");
+                        setIssuerCountry(parsed.country || "");
                         setIssuerPhone(parsed.phone);
                         setIssuerEmail(parsed.email);
                         setIssuerBank(parsed.bank || "");
@@ -176,6 +201,10 @@ export function useQuoteForm({
                         setRecipientName(parsed.name);
                         setRecipientTaxId(parsed.taxId);
                         setRecipientAddress(parsed.address);
+                        setRecipientPostalCode(parsed.postalCode || "");
+                        setRecipientCity(parsed.city || "");
+                        setRecipientProvince(parsed.province || "");
+                        setRecipientCountry(parsed.country || "");
                         setRecipientPhone(parsed.phone);
                         setRecipientEmail(parsed.email);
 
@@ -195,6 +224,10 @@ export function useQuoteForm({
                         setIssuerName(issuer.name);
                         setIssuerTaxId(issuer.taxId);
                         setIssuerAddress(issuer.address);
+                        setIssuerPostalCode(issuer.postalCode || "");
+                        setIssuerCity(issuer.city || "");
+                        setIssuerProvince(issuer.province || "");
+                        setIssuerCountry(issuer.country || "");
                         setIssuerPhone(issuer.phone);
                         setIssuerEmail(issuer.email);
                         setIssuerBank(issuer.bank || "");
@@ -261,6 +294,19 @@ export function useQuoteForm({
         setConcepts(prev => prev.map(row => ({ ...row, taxRate: normalizedRate })));
     };
 
+    const handlePricesIncludeTaxChange = (nextValue: boolean) => {
+        setConcepts((current) => current.map((concept) => ({
+            ...concept,
+            unitPrice: priceForTaxMode(
+                concept.unitPrice,
+                taxRateGlobal,
+                pricesIncludeTax,
+                nextValue,
+            ),
+        })));
+        setPricesIncludeTax(nextValue);
+    };
+
     const billingTotals = calculateDocumentTaxTotals(
         concepts.map((concept) => ({
             quantity: concept.quantity,
@@ -270,6 +316,7 @@ export function useQuoteForm({
         discount,
         equivalenceSurcharge,
         retention,
+        pricesIncludeTax,
     );
     const {
         subtotal,
@@ -326,7 +373,7 @@ export function useQuoteForm({
             });
             const quoteSnapshot = {
                 ...quotePayload,
-                items: buildQuoteItemsSnapshot(concepts),
+                items: buildQuoteItemsSnapshot(concepts, taxRateGlobal, pricesIncludeTax),
             };
 
             if (quoteToEdit) {
@@ -359,6 +406,7 @@ export function useQuoteForm({
         setValidUntil("");
         setDiscount(0);
         setTaxRateGlobal(DEFAULT_QUOTE_TAX_RATE);
+        setPricesIncludeTax(false);
         setEquivalenceSurcharge(0);
         setRetention(0);
         setNotes("");
@@ -377,6 +425,10 @@ export function useQuoteForm({
         setIssuerName(updatedFields.name);
         setIssuerTaxId(updatedFields.taxId);
         setIssuerAddress(updatedFields.address);
+        setIssuerPostalCode(updatedFields.postalCode || "");
+        setIssuerCity(updatedFields.city || "");
+        setIssuerProvince(updatedFields.province || "");
+        setIssuerCountry(updatedFields.country || "");
         setIssuerPhone(updatedFields.phone);
         setIssuerEmail(updatedFields.email);
         setIssuerBank(updatedFields.bank || "");
@@ -389,6 +441,10 @@ export function useQuoteForm({
         setRecipientName(updatedFields.name);
         setRecipientTaxId(updatedFields.taxId);
         setRecipientAddress(updatedFields.address);
+        setRecipientPostalCode(updatedFields.postalCode || "");
+        setRecipientCity(updatedFields.city || "");
+        setRecipientProvince(updatedFields.province || "");
+        setRecipientCountry(updatedFields.country || "");
         setRecipientPhone(updatedFields.phone);
         setRecipientEmail(updatedFields.email);
         setCustomRecipientInfo(formatBillingParty(updatedFields));
@@ -398,6 +454,10 @@ export function useQuoteForm({
         name: issuerName,
         taxId: issuerTaxId,
         address: issuerAddress,
+        postalCode: issuerPostalCode,
+        city: issuerCity,
+        province: issuerProvince,
+        country: issuerCountry,
         phone: issuerPhone,
         email: issuerEmail,
         bank: issuerBank,
@@ -408,6 +468,10 @@ export function useQuoteForm({
         name: recipientName,
         taxId: recipientTaxId,
         address: recipientAddress,
+        postalCode: recipientPostalCode,
+        city: recipientCity,
+        province: recipientProvince,
+        country: recipientCountry,
         phone: recipientPhone,
         email: recipientEmail,
     };
@@ -433,6 +497,8 @@ export function useQuoteForm({
         setDiscount,
         taxRateGlobal,
         setTaxRateGlobal,
+        pricesIncludeTax,
+        setPricesIncludeTax: handlePricesIncludeTaxChange,
         equivalenceSurcharge,
         setEquivalenceSurcharge,
         retention,

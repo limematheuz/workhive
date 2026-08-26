@@ -9,7 +9,11 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
 import { BillingPartyFields } from "@/components/billing/BillingPartyCard";
-import { calculatePerLineTaxTotals, normalizeTaxRate } from "@/lib/billing-calculations";
+import {
+    calculatePerLineTaxTotals,
+    normalizeTaxRate,
+    priceForTaxMode,
+} from "@/lib/billing-calculations";
 import {
     BillingPartyField,
     formatBillingParty,
@@ -30,6 +34,7 @@ import {
     forceInvoiceTasksClientId,
     getDefaultInvoiceDueDate,
     getIssuerFieldsFromCompany,
+    hasHourlyTaskWithoutRate,
     getRecipientFieldsFromClient,
     getTodayIsoDate,
     InvoiceFormConceptRow,
@@ -81,6 +86,10 @@ export function useInvoiceForm({
     const [issuerName, setIssuerName] = useState<string>("");
     const [issuerTaxId, setIssuerTaxId] = useState<string>("");
     const [issuerAddress, setIssuerAddress] = useState<string>("");
+    const [issuerPostalCode, setIssuerPostalCode] = useState<string>("");
+    const [issuerCity, setIssuerCity] = useState<string>("");
+    const [issuerProvince, setIssuerProvince] = useState<string>("");
+    const [issuerCountry, setIssuerCountry] = useState<string>("");
     const [issuerPhone, setIssuerPhone] = useState<string>("");
     const [issuerEmail, setIssuerEmail] = useState<string>("");
     const [issuerBank, setIssuerBank] = useState<string>("");
@@ -90,6 +99,10 @@ export function useInvoiceForm({
     const [recipientName, setRecipientName] = useState<string>("");
     const [recipientTaxId, setRecipientTaxId] = useState<string>("");
     const [recipientAddress, setRecipientAddress] = useState<string>("");
+    const [recipientPostalCode, setRecipientPostalCode] = useState<string>("");
+    const [recipientCity, setRecipientCity] = useState<string>("");
+    const [recipientProvince, setRecipientProvince] = useState<string>("");
+    const [recipientCountry, setRecipientCountry] = useState<string>("");
     const [recipientPhone, setRecipientPhone] = useState<string>("");
     const [recipientEmail, setRecipientEmail] = useState<string>("");
     const [isEditingRecipient, setIsEditingRecipient] = useState<boolean>(false);
@@ -98,6 +111,7 @@ export function useInvoiceForm({
 
     const [discount, setDiscount] = useState<number>(0);
     const [taxRateGlobal, setTaxRateGlobal] = useState<number>(DEFAULT_INVOICE_TAX_RATE);
+    const [pricesIncludeTax, setPricesIncludeTax] = useState<boolean>(false);
     const taxRateGlobalRef = useRef(DEFAULT_INVOICE_TAX_RATE);
     const [equivalenceSurcharge, setEquivalenceSurcharge] = useState<number>(0);
     const [retention, setRetention] = useState<number>(0);
@@ -135,6 +149,10 @@ export function useInvoiceForm({
         setRecipientName("");
         setRecipientTaxId("");
         setRecipientAddress("");
+        setRecipientPostalCode("");
+        setRecipientCity("");
+        setRecipientProvince("");
+        setRecipientCountry("");
         setRecipientPhone("");
         setRecipientEmail("");
         setCustomRecipientInfo("");
@@ -146,6 +164,10 @@ export function useInvoiceForm({
         setRecipientName(recipient.name);
         setRecipientTaxId(recipient.taxId);
         setRecipientAddress(recipient.address);
+        setRecipientPostalCode(recipient.postalCode || "");
+        setRecipientCity(recipient.city || "");
+        setRecipientProvince(recipient.province || "");
+        setRecipientCountry(recipient.country || "");
         setRecipientPhone(recipient.phone);
         setRecipientEmail(recipient.email);
         setCustomRecipientInfo(formatBillingParty(recipient));
@@ -262,7 +284,11 @@ export function useInvoiceForm({
 
                     setIssuerName(issuer.name);
                     setIssuerTaxId(issuer.taxId);
-                    setIssuerAddress(issuer.address);
+                        setIssuerAddress(issuer.address);
+                        setIssuerPostalCode(issuer.postalCode || "");
+                        setIssuerCity(issuer.city || "");
+                        setIssuerProvince(issuer.province || "");
+                        setIssuerCountry(issuer.country || "");
                     setIssuerPhone(issuer.phone);
                     setIssuerEmail(issuer.email);
                     setIssuerBank(issuer.bank || "");
@@ -343,10 +369,10 @@ export function useInvoiceForm({
         })));
     };
 
-    const handleAddExternalLaundryRow = () => {
+    const handleAddExternalLaundryRow = (description = "Servicio externo") => {
         setConcepts(prev => [
             ...prev,
-            createInvoiceConceptRow(taxRateGlobal, "external-laundry"),
+            createInvoiceConceptRow(taxRateGlobal, "external-service", description),
         ]);
     };
 
@@ -378,6 +404,19 @@ export function useInvoiceForm({
         setConcepts(prev => prev.map(row => ({ ...row, taxRate: normalizedRate })));
     };
 
+    const handlePricesIncludeTaxChange = (nextValue: boolean) => {
+        setConcepts((current) => current.map((concept) => ({
+            ...concept,
+            unitPrice: priceForTaxMode(
+                concept.unitPrice,
+                concept.taxRate,
+                pricesIncludeTax,
+                nextValue,
+            ),
+        })));
+        setPricesIncludeTax(nextValue);
+    };
+
     const billingTotals = calculatePerLineTaxTotals(
         concepts.map((concept) => ({
             quantity: concept.quantity,
@@ -387,6 +426,7 @@ export function useInvoiceForm({
         discount,
         equivalenceSurcharge,
         retention,
+        pricesIncludeTax,
     );
     const {
         subtotal,
@@ -421,6 +461,10 @@ export function useInvoiceForm({
             toast.error(messages[lineError]);
             return;
         }
+        if (hasHourlyTaskWithoutRate(concepts)) {
+            toast.error("Añade una tarifa horaria positiva en la tarea antes de facturarla.");
+            return;
+        }
         try {
             setSubmitting(true);
 
@@ -441,6 +485,7 @@ export function useInvoiceForm({
                 customIssuerInfo,
                 customRecipientInfo,
                 signatureUrl,
+                pricesIncludeTax,
                 concepts,
             }));
 
@@ -448,7 +493,6 @@ export function useInvoiceForm({
             onInvoiceCreated();
             onOpenChange(false);
         } catch (error: unknown) {
-            console.error("Error creating invoice", error);
             toast.error(getErrorMessage(error, dict.invoices.error_create));
         } finally {
             setSubmitting(false);
@@ -460,6 +504,10 @@ export function useInvoiceForm({
         setIssuerName(updatedFields.name);
         setIssuerTaxId(updatedFields.taxId);
         setIssuerAddress(updatedFields.address);
+        setIssuerPostalCode(updatedFields.postalCode || "");
+        setIssuerCity(updatedFields.city || "");
+        setIssuerProvince(updatedFields.province || "");
+        setIssuerCountry(updatedFields.country || "");
         setIssuerPhone(updatedFields.phone);
         setIssuerEmail(updatedFields.email);
         setIssuerBank(updatedFields.bank || "");
@@ -472,6 +520,10 @@ export function useInvoiceForm({
         setRecipientName(updatedFields.name);
         setRecipientTaxId(updatedFields.taxId);
         setRecipientAddress(updatedFields.address);
+        setRecipientPostalCode(updatedFields.postalCode || "");
+        setRecipientCity(updatedFields.city || "");
+        setRecipientProvince(updatedFields.province || "");
+        setRecipientCountry(updatedFields.country || "");
         setRecipientPhone(updatedFields.phone);
         setRecipientEmail(updatedFields.email);
         setCustomRecipientInfo(formatBillingParty(updatedFields));
@@ -481,6 +533,10 @@ export function useInvoiceForm({
         name: issuerName,
         taxId: issuerTaxId,
         address: issuerAddress,
+        postalCode: issuerPostalCode,
+        city: issuerCity,
+        province: issuerProvince,
+        country: issuerCountry,
         phone: issuerPhone,
         email: issuerEmail,
         bank: issuerBank,
@@ -491,6 +547,10 @@ export function useInvoiceForm({
         name: recipientName,
         taxId: recipientTaxId,
         address: recipientAddress,
+        postalCode: recipientPostalCode,
+        city: recipientCity,
+        province: recipientProvince,
+        country: recipientCountry,
         phone: recipientPhone,
         email: recipientEmail,
     };
@@ -522,6 +582,8 @@ export function useInvoiceForm({
         setDiscount,
         taxRateGlobal,
         setTaxRateGlobal,
+        pricesIncludeTax,
+        setPricesIncludeTax: handlePricesIncludeTaxChange,
         equivalenceSurcharge,
         setEquivalenceSurcharge,
         retention,

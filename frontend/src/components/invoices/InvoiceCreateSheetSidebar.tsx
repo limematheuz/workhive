@@ -21,6 +21,8 @@ interface InvoiceCreateSheetSidebarProps {
     setDiscount: (value: number) => void;
     taxRateGlobal: number;
     handleGlobalTaxRateChange: (value: number) => void;
+    pricesIncludeTax: boolean;
+    setPricesIncludeTax: (value: boolean) => void;
     equivalenceSurcharge: number;
     setEquivalenceSurcharge: (value: number) => void;
     retention: number;
@@ -46,6 +48,8 @@ export function InvoiceCreateSheetSidebar({
     setDiscount,
     taxRateGlobal,
     handleGlobalTaxRateChange,
+    pricesIncludeTax,
+    setPricesIncludeTax,
     equivalenceSurcharge,
     setEquivalenceSurcharge,
     retention,
@@ -76,6 +80,8 @@ export function InvoiceCreateSheetSidebar({
                 setDiscount={setDiscount}
                 taxRateGlobal={taxRateGlobal}
                 handleGlobalTaxRateChange={handleGlobalTaxRateChange}
+                pricesIncludeTax={pricesIncludeTax}
+                setPricesIncludeTax={setPricesIncludeTax}
                 equivalenceSurcharge={equivalenceSurcharge}
                 setEquivalenceSurcharge={setEquivalenceSurcharge}
                 retention={retention}

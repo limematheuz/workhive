@@ -99,6 +99,52 @@ def test_admin_onboarding_creates_tenant_scoped_operating_base(client, db):
     )
 
 
+def test_onboarding_uses_the_location_workspace_contract(client, db):
+    company = _company(db, "Workspace")
+    admin = _user(db, company, 1, "admin")
+    payload = _payload()
+    payload["location"].update(
+        {
+            "profile": {
+                "site_type": "tourist_apartment",
+                "internal_code": "MAR-01",
+                "attributes": {"has_terrace": True},
+            },
+            "access": {
+                "permitted_days": ["mon", "tue"],
+                "access_method": "key",
+                "keys_available": True,
+            },
+            "spaces": [
+                {
+                    "name": "Baño principal",
+                    "space_type": "bathroom",
+                    "tasks": [
+                        {
+                            "title": "Limpiar lavabo",
+                            "category": "cleaning",
+                            "estimated_minutes": 5,
+                        }
+                    ],
+                }
+            ],
+        }
+    )
+
+    response = client.post(
+        f"/api/v1/companies/{company.id}/onboarding/complete",
+        headers=_headers(admin),
+        json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    location = db.query(Location).filter(Location.id == response.json()["location_id"]).one()
+    assert location.profile.site_type == "tourist_apartment"
+    assert location.profile.internal_code == "MAR-01"
+    assert [space.name for space in location.zones] == ["Baño principal"]
+    assert location.zones[0].tasks[0].title == "Limpiar lavabo"
+
+
 def test_company_onboarding_is_idempotent(client, db):
     company = _company(db, "Repeat")
     admin = _user(db, company, 1, "admin")
@@ -125,6 +171,31 @@ def test_company_onboarding_is_idempotent(client, db):
     assert second.json()["location_name"] == "Apartamento Marina"
     assert db.query(Location).filter(Location.owner_company_id == company.id).count() == 1
     assert db.query(TemplateTask).filter(TemplateTask.company_id == company.id).count() == 1
+
+
+def test_onboarding_reconfigures_the_company_model_without_creating_more_data(client, db):
+    company = _company(db, "Model")
+    admin = _user(db, company, 1, "admin")
+    headers = _headers(admin)
+
+    first = client.post(
+        f"/api/v1/companies/{company.id}/onboarding/complete",
+        headers=headers,
+        json=_payload(),
+    )
+    updated = client.post(
+        f"/api/v1/companies/{company.id}/onboarding/complete",
+        headers=headers,
+        json={"operating_model": "hybrid"},
+    )
+
+    assert first.status_code == 200
+    assert updated.status_code == 200
+    assert updated.json()["operating_model"] == "hybrid"
+    assert updated.json()["created"] is False
+    assert db.query(Location).filter(Location.owner_company_id == company.id).count() == 1
+    db.refresh(company)
+    assert company.operating_model == "hybrid"
 
 
 def test_onboarding_rejects_cross_tenant_and_non_admin_access(client, db):

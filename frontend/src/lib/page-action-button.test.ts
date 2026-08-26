@@ -87,7 +87,7 @@ test("OperationsCalendar does not duplicate Nueva Tarea page CTA", () => {
 test("create CTA Plus icons rely on gap-1.5 without mr-2", () => {
     const client = read("../components/clients/CreateClientSheet.tsx");
     const location = read("../components/locations/CreateLocationSheet.tsx");
-    const button = read("../components/ui/button.tsx");
+    const button = read("../components/ui/button-variants.ts");
 
     assert.match(client, /<Plus className="h-4 w-4" \/>/);
     assert.doesNotMatch(client, /Plus className="[^"]*mr-2/);

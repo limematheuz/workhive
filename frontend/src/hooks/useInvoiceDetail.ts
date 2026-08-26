@@ -1,7 +1,11 @@
 import { startTransition, useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
 import { redirect } from "next/navigation";
 
-import { calculatePerLineTaxTotals } from "@/lib/billing-calculations";
+import {
+    calculatePerLineTaxTotals,
+    priceExcludingTax,
+    priceForTaxMode,
+} from "@/lib/billing-calculations";
 import {
     BillingPartyField,
     BillingPartyFields,
@@ -46,6 +50,10 @@ const EMPTY_BILLING_PARTY_FIELDS: BillingPartyFields = {
     name: "",
     taxId: "",
     address: "",
+    postalCode: "",
+    city: "",
+    province: "",
+    country: "",
     phone: "",
     email: "",
     bank: "",
@@ -115,6 +123,10 @@ function editableIssuerFields(invoice: Invoice, company: Company | null): Billin
         name: String(snapshot.name || company?.name || ""),
         taxId: String(snapshot.tax_id || company?.tax_id || ""),
         address: String(snapshot.address || company?.address || ""),
+        postalCode: String(snapshot.postal_code || ""),
+        city: String(snapshot.city || ""),
+        province: String(snapshot.province || ""),
+        country: String(snapshot.country || ""),
         phone: String(snapshot.phone || company?.phone || ""),
         email: String(snapshot.email || company?.email || ""),
         bank: String(snapshot.bank_account || company?.bank_account || ""),
@@ -127,22 +139,14 @@ function editableRecipientFields(invoice: Invoice, client: Client | null): Billi
         return parseBillingParty(invoice.custom_recipient_info);
     }
     const snapshot = invoice.recipient_snapshot || {};
-    const cityParts = [
-        String(snapshot.postal_code || client?.postal_code || "").trim(),
-        String(snapshot.city || client?.city || "").trim(),
-    ].filter(Boolean);
-    const cityLine = [
-        cityParts.join(" "),
-        String(snapshot.country || client?.country || "").trim(),
-    ].filter(Boolean).join(", ");
-    const address = [
-        String(snapshot.address || client?.address || "").trim(),
-        cityLine,
-    ].filter(Boolean).join("\n");
     return {
         name: String(snapshot.name || client?.name || ""),
         taxId: String(snapshot.tax_id || client?.legal_number || ""),
-        address,
+        address: String(snapshot.address || client?.address || ""),
+        postalCode: String(snapshot.postal_code || client?.postal_code || ""),
+        city: String(snapshot.city || client?.city || ""),
+        province: String(snapshot.province || client?.province || ""),
+        country: String(snapshot.country || client?.country || ""),
         phone: String(snapshot.phone || client?.phone || ""),
         email: String(snapshot.email || client?.email || ""),
     };
@@ -198,6 +202,7 @@ export function useInvoiceDetail(invoiceId: number) {
     const [editingIssueDate, setEditingIssueDate] = useState("");
     const [editingDueDate, setEditingDueDate] = useState("");
     const [editingPaymentMethod, setEditingPaymentMethod] = useState<InvoicePaymentMethod>("bank_transfer");
+    const [editingPricesIncludeTax, setEditingPricesIncludeTax] = useState(false);
     const [editingIssuerFields, setEditingIssuerFields] = useState<BillingPartyFields>(
         EMPTY_BILLING_PARTY_FIELDS
     );
@@ -431,6 +436,7 @@ export function useInvoiceDetail(invoiceId: number) {
         setEditingIssueDate(toDateInputValue(invoice.issue_date));
         setEditingDueDate(toDateInputValue(invoice.due_date));
         setEditingPaymentMethod(invoice.payment_method || "bank_transfer");
+        setEditingPricesIncludeTax(false);
         setEditingIssuerFields(editableIssuerFields(invoice, company));
         setEditingRecipientFields(editableRecipientFields(invoice, client));
         setEditingItems(
@@ -472,6 +478,7 @@ export function useInvoiceDetail(invoiceId: number) {
         setEditingIssueDate("");
         setEditingDueDate("");
         setEditingPaymentMethod("bank_transfer");
+        setEditingPricesIncludeTax(false);
         setEditingIssuerFields(EMPTY_BILLING_PARTY_FIELDS);
         setEditingRecipientFields(EMPTY_BILLING_PARTY_FIELDS);
         setEditingItems([]);
@@ -526,6 +533,19 @@ export function useInvoiceDetail(invoiceId: number) {
         );
     };
 
+    const handleEditingPricesIncludeTaxChange = (nextValue: boolean) => {
+        setEditingItems((current) => current.map((item) => ({
+            ...item,
+            unit_price: priceForTaxMode(
+                item.unit_price,
+                item.tax_rate,
+                editingPricesIncludeTax,
+                nextValue,
+            ),
+        })));
+        setEditingPricesIncludeTax(nextValue);
+    };
+
     const handleSaveDraft = async () => {
         if (!invoice) return;
         const lineError = validateDocumentLines(
@@ -563,7 +583,9 @@ export function useInvoiceDetail(invoiceId: number) {
                 items: editingItems.map((item) => ({
                     description: item.description.trim(),
                     quantity: item.quantity,
-                    unit_price: item.unit_price,
+                    unit_price: editingPricesIncludeTax
+                        ? priceExcludingTax(item.unit_price, item.tax_rate)
+                        : item.unit_price,
                     tax_rate: item.tax_rate,
                     task_item_id: item.task_item_id,
                 })),
@@ -575,6 +597,7 @@ export function useInvoiceDetail(invoiceId: number) {
             setEditingIssueDate("");
             setEditingDueDate("");
             setEditingPaymentMethod("bank_transfer");
+            setEditingPricesIncludeTax(false);
             setEditingIssuerFields(EMPTY_BILLING_PARTY_FIELDS);
             setEditingRecipientFields(EMPTY_BILLING_PARTY_FIELDS);
             setEditingItems([]);
@@ -599,10 +622,11 @@ export function useInvoiceDetail(invoiceId: number) {
                     })),
                     invoice.discount || 0,
                     invoice.equivalence_surcharge || 0,
-                    invoice.retention || 0
+                    invoice.retention || 0,
+                    editingPricesIncludeTax,
                 )
                 : null,
-        [editingItems, invoice]
+        [editingItems, editingPricesIncludeTax, invoice]
     );
 
     const invoiceParties = useMemo(() => {
@@ -686,6 +710,8 @@ export function useInvoiceDetail(invoiceId: number) {
         setEditingDueDate,
         editingPaymentMethod,
         setEditingPaymentMethod,
+        editingPricesIncludeTax,
+        setEditingPricesIncludeTax: handleEditingPricesIncludeTaxChange,
         editingIssuerFields,
         editingRecipientFields,
         editingItems,

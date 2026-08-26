@@ -3,6 +3,14 @@
 import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 import type { Client } from "@/services/client.service";
 
@@ -66,7 +74,7 @@ export function InvoicesFiltersBar({
                 <label className="relative block">
                     <span className="sr-only">{labels.search_invoice_placeholder}</span>
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
-                    <input
+                    <Input
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
                         placeholder={labels.search_invoice_placeholder}
@@ -75,33 +83,45 @@ export function InvoicesFiltersBar({
                 </label>
                 <label className="block">
                     <span className="sr-only">{labels.filter_all_clients || "Todos los clientes"}</span>
-                    <select
-                        aria-label={labels.filter_all_clients || "Todos los clientes"}
+                    <Select
                         value={selectedClientId}
-                        onChange={(e) => onClientChange(e.target.value)}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        onValueChange={(value) => onClientChange(value === "__all-clients__" ? "" : value)}
                     >
-                        <option value="">{labels.filter_all_clients || "Todos los clientes"}</option>
-                        {clients.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger
+                            aria-label={labels.filter_all_clients || "Todos los clientes"}
+                            className="h-11 w-full"
+                        >
+                            <SelectValue placeholder={labels.filter_all_clients || "Todos los clientes"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__all-clients__">{labels.filter_all_clients || "Todos los clientes"}</SelectItem>
+                            {clients.map((client) => (
+                                <SelectItem key={client.id} value={client.id.toString()}>{client.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </label>
                 <label className="block">
                     <span className="sr-only">{labels.filter_all_statuses || "Todos los estados"}</span>
-                    <select
-                        aria-label={labels.filter_all_statuses || "Todos los estados"}
+                    <Select
                         value={selectedStatus}
-                        onChange={(e) => onStatusChange(e.target.value)}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        onValueChange={(value) => onStatusChange(value === "__all-statuses__" ? "" : value)}
                     >
-                        <option value="">{labels.filter_all_statuses || "Todos los estados"}</option>
-                        <option value="draft">{labels.status_draft}</option>
-                        <option value="issued">{labels.status_issued}</option>
-                        <option value="paid">{labels.status_paid}</option>
-                        <option value="overdue">{labels.status_overdue}</option>
-                        <option value="cancelled">{labels.status_cancelled}</option>
-                    </select>
+                        <SelectTrigger
+                            aria-label={labels.filter_all_statuses || "Todos los estados"}
+                            className="h-11 w-full"
+                        >
+                            <SelectValue placeholder={labels.filter_all_statuses || "Todos los estados"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__all-statuses__">{labels.filter_all_statuses || "Todos los estados"}</SelectItem>
+                            <SelectItem value="draft">{labels.status_draft}</SelectItem>
+                            <SelectItem value="issued">{labels.status_issued}</SelectItem>
+                            <SelectItem value="paid">{labels.status_paid}</SelectItem>
+                            <SelectItem value="overdue">{labels.status_overdue}</SelectItem>
+                            <SelectItem value="cancelled">{labels.status_cancelled}</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </label>
                 <label className="block">
                     <span className="sr-only">{monthLabel}</span>

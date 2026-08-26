@@ -3,6 +3,14 @@
 import { BriefcaseBusiness, CheckSquare, Loader2, Receipt, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import type { InvoiceableTask as InvoiceableJob } from "@/services/invoice.service";
 import type { Client } from "@/services/client.service";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -266,7 +274,7 @@ export function InvoiceableJobsSection({
                         <label className="relative block md:col-span-2">
                             <span className="sr-only">{labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}</span>
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
-                            <input
+                            <Input
                                 value={search}
                                 onChange={(e) => onSearchChange(e.target.value)}
                                 placeholder={labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}
@@ -275,44 +283,44 @@ export function InvoiceableJobsSection({
                         </label>
                         <label className="block">
                             <span className="sr-only">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</span>
-                            <select
-                                aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"}
+                            <Select
                                 value={partyFilter}
-                                onChange={(e) => onPartyFilterChange(e.target.value)}
-                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                                onValueChange={(value) => onPartyFilterChange(value === "__all-parties__" ? "" : value)}
                             >
-                                <option value="">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</option>
-                                <optgroup label={labels.clients_group || "Clientes"}>
+                                <SelectTrigger aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"} className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold">
+                                    <SelectValue placeholder={labels.filter_all_parties || "Todos los clientes y colaboradores"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__all-parties__">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</SelectItem>
                                     {clients.map((c) => (
-                                        <option key={c.id} value={`client:${c.id}`}>{c.name}</option>
+                                        <SelectItem key={c.id} value={`client:${c.id}`}>{c.name}</SelectItem>
                                     ))}
-                                </optgroup>
-                                {collaboratorOptions.length > 0 && (
-                                    <optgroup label={labels.collaborators_group || "Colaboradores"}>
-                                        {collaboratorOptions.map(([id, name]) => (
-                                            <option key={id} value={`collaborator:${id}`}>{name}</option>
-                                        ))}
-                                    </optgroup>
-                                )}
-                            </select>
+                                    {collaboratorOptions.map(([id, name]) => (
+                                        <SelectItem key={id} value={`collaborator:${id}`}>{name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </label>
                         <label className="block">
                             <span className="sr-only">Filtrar por estado de facturación</span>
-                            <select
-                                aria-label="Filtrar por estado de facturación"
+                            <Select
                                 value={invoiceFilter}
-                                onChange={(e) => onInvoiceFilterChange(e.target.value as "all" | "pending" | "invoiced")}
-                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                                onValueChange={(value) => onInvoiceFilterChange(value as "all" | "pending" | "invoiced")}
                             >
-                                <option value="pending">{labels.filter_uninvoiced_jobs || "Pendientes de facturar"}</option>
-                                <option value="invoiced">{labels.filter_invoiced_jobs || "Ya facturados"}</option>
-                                <option value="all">{labels.filter_all_jobs || "Todos"}</option>
-                            </select>
+                                <SelectTrigger aria-label="Filtrar por estado de facturación" className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="pending">{labels.filter_uninvoiced_jobs || "Pendientes de facturar"}</SelectItem>
+                                    <SelectItem value="invoiced">{labels.filter_invoiced_jobs || "Ya facturados"}</SelectItem>
+                                    <SelectItem value="all">{labels.filter_all_jobs || "Todos"}</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             <label className="block min-w-0">
                                 <span className="sr-only">Fecha desde</span>
-                                <input
+                                <Input
                                     type="date"
                                     aria-label="Fecha desde"
                                     value={dateFrom}
@@ -322,7 +330,7 @@ export function InvoiceableJobsSection({
                             </label>
                             <label className="block min-w-0">
                                 <span className="sr-only">Fecha hasta</span>
-                                <input
+                                <Input
                                     type="date"
                                     aria-label="Fecha hasta"
                                     value={dateTo}

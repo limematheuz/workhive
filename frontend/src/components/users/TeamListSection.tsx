@@ -27,6 +27,12 @@ type TeamListSectionProps = {
         role_manager?: string;
         role_installer?: string;
         role_viewer?: string;
+        list_title: string;
+        list_subtitle: string;
+        member_one: string;
+        member_many: string;
+        action_edit: string;
+        action_delete: string;
     };
     onEdit: (user: User) => void;
     onDelete: (user: User) => void;
@@ -58,13 +64,13 @@ export function TeamListSection({
 
     const actionOptions = (worker: User) => [
         {
-            label: "Editar",
+            label: labels.action_edit,
             icon: Edit2,
             onClick: () => onEdit(worker),
             variant: "edit" as const,
         },
         {
-            label: "Eliminar definitivamente",
+            label: labels.action_delete,
             icon: Trash2,
             onClick: () => onDelete(worker),
             variant: "delete" as const,
@@ -90,9 +96,9 @@ export function TeamListSection({
             gridClassName={GRID}
             desktopFrom="lg"
             header={{
-                title: "Equipo",
-                subtitle: "Gestiona roles y acceso de los miembros.",
-                countLabel: `${team.length} ${team.length === 1 ? "miembro" : "miembros"}`,
+                title: labels.list_title,
+                subtitle: labels.list_subtitle,
+                countLabel: `${team.length} ${team.length === 1 ? labels.member_one : labels.member_many}`,
             }}
             columns={[
                 { key: "name", label: labels.full_name },
@@ -158,7 +164,7 @@ export function TeamListSection({
                                 <span className="text-xs font-medium text-[var(--text-muted)]">-</span>
                             )
                         ) : (
-                            <span className="text-xs font-medium text-[var(--text-muted)]">Tú</span>
+                            <span className="text-xs font-medium text-[var(--text-muted)]">{labels.you || "-"}</span>
                         )}
                     </div>
                 </>

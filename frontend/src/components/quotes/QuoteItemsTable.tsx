@@ -3,6 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useQuoteForm";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -20,6 +21,7 @@ interface QuoteItemsTableProps {
     handleDeleteRow: (id: string) => void;
     /** When true, parent section owns title/surface — table only. */
     embedded?: boolean;
+    pricesIncludeTax?: boolean;
 }
 
 export function QuoteItemsTable({
@@ -30,6 +32,7 @@ export function QuoteItemsTable({
     handleUpdateRow,
     handleDeleteRow,
     embedded = false,
+    pricesIncludeTax = false,
 }: QuoteItemsTableProps) {
     return (
         <div className={embedded ? "space-y-3" : "space-y-3 pt-2"}>
@@ -46,9 +49,9 @@ export function QuoteItemsTable({
                     <thead>
                         <tr className="border-b border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-3xs font-bold uppercase tracking-wider text-[var(--text-muted)] select-none">
                             <th className="px-3 py-2.5">{dict.invoices?.col_description || "Descripción"}</th>
-                            <th className="w-24 px-2 py-2.5 text-right">{dict.invoices?.col_price || "Precio (€)"}</th>
+                            <th className="w-24 px-2 py-2.5 text-right">{pricesIncludeTax ? "Precio c/ IVA (€)" : (dict.invoices?.col_price || "Precio (€)")}</th>
                             <th className="w-20 px-2 py-2.5 text-center">{dict.invoices?.col_qty || "Cantidad"}</th>
-                            <th className="w-24 px-2 py-2.5 text-right">{dict.invoices?.col_total || "Total"}</th>
+                            <th className="w-24 px-2 py-2.5 text-right">{pricesIncludeTax ? "Total c/ IVA" : (dict.invoices?.col_total || "Total")}</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--border-soft)] text-xs">
@@ -97,7 +100,7 @@ export function QuoteItemsTable({
                                         <label className="sr-only" htmlFor={`quote-concept-${row.id}-price`}>
                                             {dict.invoices?.col_price || "Precio (€)"}
                                         </label>
-                                        <input
+                                        <Input
                                             id={`quote-concept-${row.id}-price`}
                                             type="number"
                                             step="0.01"
@@ -113,7 +116,7 @@ export function QuoteItemsTable({
                                         <label className="sr-only" htmlFor={`quote-concept-${row.id}-quantity`}>
                                             {dict.invoices?.col_qty || "Cantidad"}
                                         </label>
-                                        <input
+                                        <Input
                                             id={`quote-concept-${row.id}-quantity`}
                                             type="number"
                                             step="any"

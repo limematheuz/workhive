@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.exc import IntegrityError
@@ -70,17 +69,6 @@ def get_company(db: Session, company_id: int, current_user: User) -> Company:
             status_code=status.HTTP_404_NOT_FOUND, detail="Company not found"
         )
 
-    # Ensure partner_code is generated if not present
-    if not existing_company.partner_code:
-        from app.services import collaboration_service
-        collaboration_service.get_or_generate_partner_code(db, existing_company.id)
-        existing_company = company_repo.get_company_by_id(db, company_id)
-        if not existing_company:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Company not found",
-            )
-
     return existing_company
 
 
@@ -137,10 +125,6 @@ def create_company(
     db.commit()
     db.refresh(new_company)
     
-    # Generate partner code immediately
-    from app.services import collaboration_service
-    collaboration_service.get_or_generate_partner_code(db, new_company.id)
-    
     admin_role = role_repo.get_role_by_name(db, "admin")
     if not admin_role:
         raise HTTPException(
@@ -180,14 +164,6 @@ def provision_company(
             detail="Role 'admin' not configured in database",
         )
 
-    clean_name = (
-        "".join(char for char in provision_data.name if char.isalnum()).upper()[:4]
-        or "COMP"
-    )
-    partner_code = f"WH-{clean_name}-{uuid.uuid4().hex[:6].upper()}"
-    while db.query(Company).filter(Company.partner_code == partner_code).first():
-        partner_code = f"WH-{clean_name}-{uuid.uuid4().hex[:6].upper()}"
-
     now = datetime.now(timezone.utc)
     trial_days = provision_data.trial_days or 14
     is_trial = provision_data.subscription_plan == "trial"
@@ -197,7 +173,6 @@ def provision_company(
         address=provision_data.address,
         phone=provision_data.phone,
         email=provision_data.email,
-        partner_code=partner_code,
         is_active=True,
         onboarding_completed=False,
         subscription_plan=provision_data.subscription_plan,

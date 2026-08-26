@@ -7,7 +7,10 @@ from app.services.email_service.access_emails import (
     send_trial_expiring_email,
     send_trial_expiring_superadmin_email,
     send_trial_verification_email,
-    send_worker_invitation_email,
+)
+from app.services.email_service.company_collaboration_emails import (
+    send_company_collaboration_decision_email,
+    send_company_collaboration_invitation_email,
 )
 from app.services.email_service.auth_emails import (
     send_email_change_verification_email,
@@ -20,6 +23,7 @@ from app.services.email_service.privacy_emails import (
     send_erasure_request_received_email,
     send_erasure_request_resolved_email,
 )
+from app.services.email_service.worker_invitation_emails import send_worker_invitation_email
 
 
 def test_button_escapes_url_and_label():
@@ -141,6 +145,8 @@ def test_all_transactional_email_builders_use_shared_base_layout():
         send_trial_expiring_email,
         send_trial_expiring_superadmin_email,
         send_worker_invitation_email,
+        send_company_collaboration_invitation_email,
+        send_company_collaboration_decision_email,
         send_contact_email,
         send_invoice_email,
         send_erasure_request_received_email,
@@ -158,4 +164,4 @@ def test_all_transactional_email_builders_use_shared_base_layout():
         assert "from app.services.email_service.layout import" in source
 
     # Keep the public builder list intentional so new emails stay on the shared shell.
-    assert len(builders) == 12
+    assert len(builders) == 14

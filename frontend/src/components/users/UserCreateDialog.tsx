@@ -1,8 +1,12 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
+import {
+    DocumentFormSelect,
+    documentControlClassName,
+} from "@/components/billing/DocumentFormControls";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -12,6 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type { Role } from "@/services/role.service";
@@ -28,6 +33,7 @@ type UserCreateDialogProps = {
     labels: {
         new_worker: string;
         new_worker_desc: string;
+        worker_invitation_steps: string[];
         full_name: string;
         full_name_placeholder: string;
         email: string;
@@ -120,57 +126,66 @@ export function UserCreateDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md max-h-[90vh] flex flex-col p-0 overflow-hidden">
+            <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden p-0 sm:max-w-lg">
                 <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
-                    <DialogHeader className="p-6 border-b border-[var(--border-soft)] flex-shrink-0">
-                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
-                            {labels.new_worker}
-                        </DialogTitle>
-                        <DialogDescription>{labels.new_worker_desc}</DialogDescription>
+                    <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] px-6 py-5">
+                        <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                            <UserPlus className="h-5 w-5" aria-hidden="true" />
+                        </span>
+                        <DialogTitle className="text-xl font-bold">{labels.new_worker}</DialogTitle>
+                        <DialogDescription className="leading-6">{labels.new_worker_desc}</DialogDescription>
                     </DialogHeader>
 
-                    <div className="p-6 overflow-y-auto flex-1 space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="cFullName" className="text-[var(--text-main)]">{labels.full_name}</Label>
-                            <input
+                    <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+                        <ul className="space-y-2 rounded-xl border border-accent/15 bg-accent/5 p-3 text-xs leading-5 text-[var(--text-muted)]">
+                            {labels.worker_invitation_steps.map((step) => (
+                                <li key={step} className="flex gap-2">
+                                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
+                                    <span>{step}</span>
+                                </li>
+                            ))}
+                        </ul>
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="cFullName" className="text-[var(--text-main)]">{labels.full_name}</Label>
+                                <Input
                                 id="cFullName"
                                 type="text"
                                 value={form.fullName}
                                 onChange={(e) => setForm((current) => ({ ...current, fullName: e.target.value }))}
                                 placeholder={labels.full_name_placeholder}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] placeholder-[var(--text-muted)] rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--border-color)] transition-colors"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="cEmail" className="text-[var(--text-main)]">{labels.email}</Label>
-                            <input
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cEmail" className="text-[var(--text-main)]">{labels.email}</Label>
+                                <Input
                                 id="cEmail"
                                 type="email"
                                 value={form.email}
                                 required
                                 onChange={(e) => setForm((current) => ({ ...current, email: e.target.value }))}
                                 placeholder={labels.email_placeholder}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] placeholder-[var(--text-muted)] rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--border-color)] transition-colors"
-                            />
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="cRoleId" className="text-[var(--text-main)]">{labels.role}</Label>
-                            <select
+                            <DocumentFormSelect
                                 id="cRoleId"
                                 aria-label={labels.role}
                                 value={form.roleId}
                                 required
                                 onChange={(e) => setForm((current) => ({ ...current, roleId: e.target.value }))}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-md px-3 py-2 text-sm outline-none"
+                                className={documentControlClassName}
                             >
                                 {roles.map((r) => (
                                     <option key={r.id} value={r.id}>{getRoleText(r.name, roleLabels)}</option>
                                 ))}
-                            </select>
+                            </DocumentFormSelect>
                         </div>
                     </div>
 
-                    <div className="dialog-glass-chrome p-6 pt-4 flex gap-3 border-t border-[var(--border-soft)] flex-shrink-0">
+                    <div className="dialog-glass-chrome flex shrink-0 gap-3 border-t border-[var(--border-soft)] px-6 py-4">
                         <Button
                             type="button"
                             variant="outline"

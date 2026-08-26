@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 interface InvoiceAdditionalInfoProps {
@@ -45,12 +46,11 @@ export function InvoiceAdditionalInfo({
                         <Label className="text-xs text-[var(--text-main)] font-semibold">{notesLabel}</Label>
                         <div className="flex items-center gap-1.5">
                             <span className="text-3xs text-[var(--text-muted)]">{notesEnabled ? (dict.invoices?.yes || "Sí") : (dict.invoices?.no || "No")}</span>
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={notesEnabled}
-                                onChange={(e) => setNotesEnabled(e.target.checked)}
+                                onCheckedChange={(checked) => setNotesEnabled(checked === true)}
                                 aria-label={notesLabel}
-                                className="w-8 h-4 rounded-full bg-[var(--bg-secondary)] border-[var(--border-color)] checked:bg-accent accent-accent cursor-pointer"
+                                className="size-5 rounded-md border-[var(--border-color)] bg-[var(--bg-card-solid)] shadow-none data-[state=checked]:border-accent data-[state=checked]:bg-accent"
                             />
                         </div>
                     </div>
@@ -71,12 +71,11 @@ export function InvoiceAdditionalInfo({
                         <Label className="text-xs text-[var(--text-main)] font-semibold">{termsLabel}</Label>
                         <div className="flex items-center gap-1.5">
                             <span className="text-3xs text-[var(--text-muted)]">{termsEnabled ? (dict.invoices?.yes || "Sí") : (dict.invoices?.no || "No")}</span>
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={termsEnabled}
-                                onChange={(e) => setTermsEnabled(e.target.checked)}
+                                onCheckedChange={(checked) => setTermsEnabled(checked === true)}
                                 aria-label={termsLabel}
-                                className="w-8 h-4 rounded-full bg-[var(--bg-secondary)] border-[var(--border-color)] checked:bg-accent accent-accent cursor-pointer"
+                                className="size-5 rounded-md border-[var(--border-color)] bg-[var(--bg-card-solid)] shadow-none data-[state=checked]:border-accent data-[state=checked]:bg-accent"
                             />
                         </div>
                     </div>

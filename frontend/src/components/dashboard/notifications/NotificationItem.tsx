@@ -2,7 +2,6 @@
 
 import { BellRing, MapPin, ShieldAlert } from "lucide-react";
 
-import type { CompanyCollaboration } from "@/types/collaboration";
 import type { Reservation } from "@/types/reservation";
 import type { TaskItem } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -12,7 +11,6 @@ import type { PersistentNotification } from "@/services/notification.service";
 type NotificationType =
     | "persistent"
     | "persistent-alert"
-    | "collaboration"
     | "arrival"
     | "task"
     | "task-rejected"
@@ -22,7 +20,7 @@ type NotificationType =
 
 interface NotificationItemProps {
     type: NotificationType;
-    data: PersistentNotification | TaskItem | CompanyCollaboration | Reservation | PrivacyRequest;
+    data: PersistentNotification | TaskItem | Reservation | PrivacyRequest;
     notificationKey: string;
     openingNotificationKey: string | null;
     onClick: () => void;
@@ -79,8 +77,6 @@ export function NotificationItem({
             return <PersistentNotificationItem notification={data as PersistentNotification} {...sharedProps} />;
         case "persistent-alert":
             return <PersistentNotificationItem notification={data as PersistentNotification} danger {...sharedProps} />;
-        case "collaboration":
-            return <CollaborationNotificationItem collaboration={data as CompanyCollaboration} {...sharedProps} />;
         case "arrival":
             return <ArrivalNotificationItem reservation={data as Reservation} {...sharedProps} />;
         case "task":
@@ -168,58 +164,6 @@ function PersistentNotificationItem({
                     : categoryLabel}
             </p>
         </NotificationButton>
-    );
-}
-
-function CollaborationNotificationItem({
-    collaboration,
-    dict,
-    locale,
-    ...props
-}: NotificationContentProps & { collaboration: CompanyCollaboration }) {
-    const message = dict.notifications?.messages?.collab_request;
-    const collaboratorName = collaboration.initiator?.name || (locale === "en" ? "Unknown" : "Desconocida");
-
-    return (
-        <NotificationButton {...props} className="border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 hover:bg-[var(--bg-tertiary)]">
-            <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                    <p className="text-sm font-black text-[var(--text-main)]">
-                        {dict.notifications?.types?.link_request || "Solicitud de vinculación"}
-                    </p>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-wide text-[var(--text-muted)]">
-                        {dict.notifications?.types?.collaboration || "Colaboración"}
-                    </p>
-                    <p className="mt-1.5 text-xs font-semibold leading-relaxed text-[var(--text-muted)]">
-                        {message ? (
-                            <CollaborationMessage template={message} collaboratorName={collaboratorName} />
-                        ) : locale === "en" ? (
-                            <>Company <span className="font-bold text-[var(--text-main)]">{collaboratorName}</span> wants to collaborate with you.</>
-                        ) : (
-                            <>La empresa <span className="font-bold text-[var(--text-main)]">{collaboratorName}</span> quiere colaborar contigo.</>
-                        )}
-                    </p>
-                </div>
-                <NotificationBadge>{dict.notifications?.messages?.collab_pending || "Pendiente"}</NotificationBadge>
-            </div>
-        </NotificationButton>
-    );
-}
-
-function CollaborationMessage({
-    template,
-    collaboratorName,
-}: {
-    template: string;
-    collaboratorName: string;
-}) {
-    const [beforeName = "", ...afterNameParts] = template.split("{name}");
-    return (
-        <>
-            {beforeName}
-            <span className="font-bold text-[var(--text-main)]">{collaboratorName}</span>
-            {afterNameParts.join(collaboratorName)}
-        </>
     );
 }
 

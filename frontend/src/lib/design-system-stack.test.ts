@@ -29,6 +29,7 @@ test("the interface uses local shadcn-style primitives and no competing componen
 test("the document workspace uses semantic action variants without altering global surfaces", () => {
     const globals = source("../app/globals.css");
     const button = source("../components/ui/button.tsx");
+    const buttonVariants = source("../components/ui/button-variants.ts");
     const invoiceActionBar = source("../components/invoices/InvoiceDetailActionBar.tsx");
     const invoiceItems = source("../components/invoices/InvoiceDetailItemsSection.tsx");
     const invoiceNotice = source("../components/invoices/InvoiceNoticeCard.tsx");
@@ -43,8 +44,9 @@ test("the document workspace uses semantic action variants without altering glob
     assert.match(globals, /\.billing-surface\s*\{\s*background-color: var\(--surface-card-bg\);\s*box-shadow:/);
     assert.match(globals, /\.billing-block\s*\{\s*background-color: var\(--bg-tertiary\);/);
     assert.doesNotMatch(globals, /--bg-primary: #f4f6f8/);
-    assert.match(button, /select:/);
-    assert.match(button, /dangerSoft:/);
+    assert.match(button, /button-variants/);
+    assert.match(buttonVariants, /select:/);
+    assert.match(buttonVariants, /dangerSoft:/);
     assert.match(invoiceActions, /tone === "neutral".*backdrop-blur-xl/);
     assert.match(invoiceActionBar, /bg-\[var\(--bg-tertiary\)\]/);
     assert.doesNotMatch(invoiceActionBar, /ArrowLeft|next\/link/);

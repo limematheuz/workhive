@@ -74,6 +74,11 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [outcome, setOutcome] = useState<LoginOutcome>({ kind: "idle" });
+    const [returnTo] = useState(() => {
+        if (typeof window === "undefined") return "/dashboard";
+        const next = new URLSearchParams(window.location.search).get("next");
+        return next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+    });
 
     const successPhrases = resolveLoginStatusPhrases(
         "success",
@@ -91,10 +96,10 @@ export default function LoginPage() {
         if (outcome.kind !== "success") return;
         const delay = loginStatusRedirectDelayMs(successPhrases.length);
         const timer = window.setTimeout(() => {
-            window.location.assign("/dashboard");
+            window.location.assign(returnTo);
         }, delay);
         return () => window.clearTimeout(timer);
-    }, [outcome.kind, successPhrases.length]);
+    }, [outcome.kind, returnTo, successPhrases.length]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();

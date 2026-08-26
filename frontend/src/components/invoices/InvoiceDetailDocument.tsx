@@ -21,6 +21,7 @@ export function InvoiceDetailDocument({
     editingIssueDate,
     editingDueDate,
     editingPaymentMethod,
+    editingPricesIncludeTax,
     editingIssuerFields,
     editingRecipientFields,
     editingItems,
@@ -47,6 +48,7 @@ export function InvoiceDetailDocument({
     onEditingIssueDateChange,
     onEditingDueDateChange,
     onEditingPaymentMethodChange,
+    onEditingPricesIncludeTaxChange,
     onEditIssuerFieldChange,
     onEditRecipientFieldChange,
     onEditItemChange,
@@ -62,12 +64,14 @@ export function InvoiceDetailDocument({
                     editingIssueDate={editingIssueDate}
                     editingDueDate={editingDueDate}
                     editingPaymentMethod={editingPaymentMethod}
+                    editingPricesIncludeTax={editingPricesIncludeTax}
                     editingIssuerFields={editingIssuerFields}
                     editingRecipientFields={editingRecipientFields}
                     onEditingInvoiceNumberChange={onEditingInvoiceNumberChange}
                     onEditingIssueDateChange={onEditingIssueDateChange}
                     onEditingDueDateChange={onEditingDueDateChange}
                     onEditingPaymentMethodChange={onEditingPaymentMethodChange}
+                    onEditingPricesIncludeTaxChange={onEditingPricesIncludeTaxChange}
                     onEditIssuerFieldChange={onEditIssuerFieldChange}
                     onEditRecipientFieldChange={onEditRecipientFieldChange}
                 />
@@ -112,6 +116,7 @@ export function InvoiceDetailDocument({
                             onEditItemChange={onEditItemChange}
                             onRemoveEditItem={onRemoveEditItem}
                             onAddEditItem={onAddEditItem}
+                            pricesIncludeTax={editingPricesIncludeTax}
                         />
 
                         {!isEditMode && (

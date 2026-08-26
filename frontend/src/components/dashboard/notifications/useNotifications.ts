@@ -4,10 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TaskItem, TaskService } from "@/services/task.service";
 import { Location, LocationService } from "@/services/location.service";
-import { CollaborationService } from "@/services/collaboration.service";
 import { ReservationService } from "@/services/reservation.service";
 import { PrivacyRequest, PrivacyService } from "@/services/privacy.service";
-import { CompanyCollaboration } from "@/types/collaboration";
 import { Reservation } from "@/types/reservation";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -16,7 +14,6 @@ import {
     getDismissedNotificationKeys,
     persistDismissedNotificationKeys,
     getTaskNotificationKey,
-    getCollaborationNotificationKey,
     getReservationNotificationKey,
     getUpcomingArrivalNotificationKey,
     getPrivacyRequestNotificationKey,
@@ -64,7 +61,6 @@ export function useNotifications({
     const router = useRouter();
     const [notificationTasks, setNotificationTasks] = useState<TaskItem[]>([]);
     const [notificationLocations, setNotificationLocations] = useState<Location[]>([]);
-    const [notificationCollabs, setNotificationCollabs] = useState<CompanyCollaboration[]>([]);
     const [notificationReservations, setNotificationReservations] = useState<Reservation[]>([]);
     const [privacyRequests, setPrivacyRequests] = useState<PrivacyRequest[]>([]);
     const [upcomingArrivals, setUpcomingArrivals] = useState<Reservation[]>([]);
@@ -80,7 +76,7 @@ export function useNotifications({
         const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
         const canReadCompanyPrivacy = isCompanyAdminRole(roleName);
 
-        const [tasks, requestedTasks, rejectedTasks, locations, collabs, reservations, arrivals, privacy, persistent] = await Promise.all([
+        const [tasks, requestedTasks, rejectedTasks, locations, reservations, arrivals, privacy, persistent] = await Promise.all([
             TaskService.getTaskItems({ userId }).catch(() => [] as TaskItem[]),
             isManagerOrAdmin
                 ? TaskService.getTaskItems({ status: "requested" }).catch(() => [] as TaskItem[])
@@ -89,9 +85,6 @@ export function useNotifications({
                 ? TaskService.getTaskItems({ status: "rejected" }).catch(() => [] as TaskItem[])
                 : Promise.resolve([] as TaskItem[]),
             LocationService.getLocations().catch(() => [] as Location[]),
-            isManagerOrAdmin
-                ? CollaborationService.getPendingRequests().catch(() => [] as CompanyCollaboration[])
-                : Promise.resolve([] as CompanyCollaboration[]),
             isManagerOrAdmin
                 ? ReservationService.getReservations().catch(() => [] as Reservation[])
                 : Promise.resolve([] as Reservation[]),
@@ -115,11 +108,6 @@ export function useNotifications({
             )
         );
         setNotificationLocations(locations);
-        setNotificationCollabs(
-            [...collabs].sort(
-                (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
-            )
-        );
         setNotificationReservations(
             [...reservations].sort(
                 (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
@@ -272,10 +260,6 @@ export function useNotifications({
         ].filter((id): id is number => typeof id === "number"))
     ), [primaryTaskNotifications]);
 
-    const primaryCollaborationNotifications = useMemo(() => notificationCollabs.filter(
-        collaboration => !dismissedNotificationKeySet.has(getCollaborationNotificationKey(collaboration))
-    ), [notificationCollabs, dismissedNotificationKeySet]);
-
     const secondaryReservationNotifications = useMemo(() => notificationReservations.filter(reservation => (
         reservation.owner_company_id === companyId
         && reservation.status === "cancelled"
@@ -297,7 +281,6 @@ export function useNotifications({
 
     const primaryNotificationCount = primaryPersistentNotifications.length
         + primaryTaskNotifications.length
-        + primaryCollaborationNotifications.length
         + upcomingArrivalNotifications.length
         + privacyRequestNotifications.length;
 
@@ -381,7 +364,6 @@ export function useNotifications({
             ? [
                 ...primaryTaskNotifications.map(getTaskNotificationKey),
                 ...relatedArrivalKeys,
-                ...primaryCollaborationNotifications.map(getCollaborationNotificationKey),
                 ...upcomingArrivalNotifications.map(getUpcomingArrivalNotificationKey),
                 ...privacyRequestNotifications.map(getPrivacyRequestNotificationKey),
             ]
@@ -399,7 +381,6 @@ export function useNotifications({
     }, [
         primaryTaskNotifications,
         upcomingArrivals,
-        primaryCollaborationNotifications,
         upcomingArrivalNotifications,
         privacyRequestNotifications,
         alertTaskNotifications,
@@ -481,24 +462,6 @@ export function useNotifications({
         }
     }, [upcomingArrivals, dismissNotifications, getNotificationHref, loadNotifications, setIsNotificationsOpen, router, userId]);
 
-    const handleCollaborationNotificationClick = useCallback(async (collaboration: CompanyCollaboration) => {
-        const notificationKey = getCollaborationNotificationKey(collaboration);
-        setOpeningNotificationKey(notificationKey);
-
-        try {
-            const currentRequests = await CollaborationService.getPendingRequests();
-            dismissNotifications([notificationKey]);
-            if (currentRequests.some(request => request.id === collaboration.id)) {
-                setIsNotificationsOpen(false);
-                router.push("/dashboard/collaborations");
-            }
-        } catch {
-            dismissNotifications([notificationKey]);
-        } finally {
-            setOpeningNotificationKey(null);
-        }
-    }, [dismissNotifications, setIsNotificationsOpen, router]);
-
     const handleReservationNotificationClick = useCallback(async (reservation: Reservation) => {
         const notificationKey = getReservationNotificationKey(reservation);
         setOpeningNotificationKey(notificationKey);
@@ -542,7 +505,6 @@ export function useNotifications({
         alertPersistentNotifications,
         primaryTaskNotifications,
         alertTaskNotifications,
-        primaryCollaborationNotifications,
         privacyRequestNotifications,
         secondaryReservationNotifications,
         upcomingArrivalNotifications,
@@ -556,7 +518,6 @@ export function useNotifications({
         getNotificationPreview,
         handleClearActiveTab,
         handleTaskNotificationClick,
-        handleCollaborationNotificationClick,
         handleReservationNotificationClick,
         handleUpcomingArrivalClick,
         handlePrivacyRequestClick,

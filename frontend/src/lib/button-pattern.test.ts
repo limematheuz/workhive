@@ -5,7 +5,7 @@ import test from "node:test";
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("shared buttons use the profile export dimensions and semantic palette", () => {
-    const button = read("../components/ui/button.tsx");
+    const button = read("../components/ui/button-variants.ts");
 
     assert.match(button, /rounded-xl text-xs font-semibold/);
     assert.match(button, /default: "px-5 py-2.5/);

@@ -32,6 +32,11 @@ const COLUMNS: DataListColumn[] = [
     { key: "irpf", label: "", className: "text-right" },
 ];
 
+function getFiscalActivityLabel(template: string, period: FiscalPeriodSummary) {
+    return template.replace("{invoices}", period.issued_invoice_count.toString())
+        .replace("{expenses}", period.registered_expense_count.toString());
+}
+
 export default function FiscalSummaryPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
@@ -93,10 +98,6 @@ export default function FiscalSummaryPage() {
             ? text.vat_credit
             : text.vat_balanced;
 
-    const activityLabel = (period: FiscalPeriodSummary) => text.activity.replace(
-        "{invoices}", period.issued_invoice_count.toString(),
-    ).replace("{expenses}", period.registered_expense_count.toString());
-
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
             <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-4">
@@ -144,7 +145,7 @@ export default function FiscalSummaryPage() {
                     gridClassName="grid-cols-[minmax(5rem,.7fr)_minmax(8rem,.95fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)]"
                     header={{ title: text.periods_title, subtitle: text.periods_subtitle }}
                     desktopFrom="lg"
-                    rowAriaLabel={(period) => `${period.label}: ${activityLabel(period)}`}
+                    rowAriaLabel={(period) => `${period.label}: ${getFiscalActivityLabel(text.activity, period)}`}
                     renderDesktopRow={(period) => (
                         <>
                             <span className="font-mono text-xs font-semibold text-[var(--text-main)]">{period.label}</span>
@@ -160,7 +161,7 @@ export default function FiscalSummaryPage() {
                             <div className="flex items-start justify-between gap-3">
                                 <div>
                                     <p className="font-mono text-xs font-semibold text-[var(--text-main)]">{period.label}</p>
-                                    <p className="mt-1 text-[11px] text-[var(--text-muted)]">{activityLabel(period)}</p>
+                                    <p className="mt-1 text-[11px] text-[var(--text-muted)]">{getFiscalActivityLabel(text.activity, period)}</p>
                                 </div>
                                 <strong className="font-mono text-sm text-[var(--text-main)]">{formatCurrency(period.estimated_vat_balance)}</strong>
                             </div>

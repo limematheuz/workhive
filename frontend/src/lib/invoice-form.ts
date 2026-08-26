@@ -6,6 +6,7 @@ import type {
     InvoiceableTask,
 } from "@/services/invoice.service";
 import type { InvoicePaymentMethod } from "@/types/invoice";
+import { priceExcludingTax } from "./billing-calculations.ts";
 
 export const DEFAULT_INVOICE_TAX_RATE = 0.21;
 export const DEFAULT_INVOICE_DUE_DAYS = 15;
@@ -74,6 +75,10 @@ export function getIssuerFieldsFromCompany(company: Company): BillingPartyFields
         name: company.name || "",
         taxId: company.tax_id || "",
         address: company.address || "",
+        postalCode: "",
+        city: "",
+        province: "",
+        country: "",
         phone: company.phone || "",
         email: company.email || "",
         bank: company.bank_account || "",
@@ -82,23 +87,14 @@ export function getIssuerFieldsFromCompany(company: Company): BillingPartyFields
 }
 
 export function getRecipientFieldsFromClient(client: Client): BillingPartyFields {
-    const cityParts = [
-        client.postal_code?.trim(),
-        client.city?.trim(),
-    ].filter(Boolean);
-    const cityLine = [
-        cityParts.join(" "),
-        client.country?.trim(),
-    ].filter(Boolean).join(", ");
-    const addressLines = [
-        client.address?.trim(),
-        cityLine,
-    ].filter(Boolean);
-
     return {
         name: client.name || "",
         taxId: client.legal_number || "",
-        address: addressLines.join("\n"),
+        address: client.address || "",
+        postalCode: client.postal_code || "",
+        city: client.city || "",
+        province: client.province || "",
+        country: client.country || "",
         phone: client.phone || "",
         email: client.email || "",
     };
@@ -106,13 +102,12 @@ export function getRecipientFieldsFromClient(client: Client): BillingPartyFields
 
 export function createInvoiceConceptRow(
     taxRate: number,
-    kind: "manual" | "external-laundry" = "manual",
+    kind: "manual" | "external-service" = "manual",
+    description = "",
 ): InvoiceFormConceptRow {
     return {
         id: `${kind}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        description: kind === "external-laundry"
-            ? "Lavandería externa\nServicio subcontratado"
-            : "",
+        description: kind === "external-service" ? description : "",
         unitPrice: 0,
         quantity: 1,
         taxRate,
@@ -120,6 +115,14 @@ export function createInvoiceConceptRow(
         pricing_mode: "fixed",
         worked_seconds: null,
     };
+}
+
+export function hasHourlyTaskWithoutRate(concepts: InvoiceFormConceptRow[]): boolean {
+    return concepts.some((concept) => (
+        concept.task_item_id != null
+        && concept.pricing_mode === "hourly"
+        && (!Number.isFinite(concept.unitPrice) || concept.unitPrice <= 0)
+    ));
 }
 
 export function buildInvoiceDraftPayload(params: {
@@ -139,6 +142,7 @@ export function buildInvoiceDraftPayload(params: {
     customIssuerInfo: string;
     customRecipientInfo: string;
     signatureUrl: string | null;
+    pricesIncludeTax: boolean;
     concepts: InvoiceFormConceptRow[];
 }): InvoiceDraftCreate {
     return {
@@ -159,7 +163,9 @@ export function buildInvoiceDraftPayload(params: {
         items: params.concepts.map((concept) => ({
             description: concept.description || "Línea de concepto",
             quantity: concept.quantity,
-            unit_price: concept.unitPrice,
+            unit_price: params.pricesIncludeTax
+                ? priceExcludingTax(concept.unitPrice, concept.taxRate)
+                : concept.unitPrice,
             tax_rate: concept.taxRate,
             task_item_id: concept.task_item_id,
         })),

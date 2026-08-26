@@ -52,8 +52,6 @@ def send_trial_verification_email(
     message.set_content(plain_text)
     message.add_alternative(html_body, subtype="html")
     return transport.send_email(message)
-
-
 def send_account_request_notification(
     *,
     recipient_email: str,
@@ -210,59 +208,5 @@ def send_trial_expiring_superadmin_email(
             ]
         )
     )
-    message.add_alternative(html_body, subtype="html")
-    return transport.send_email(message)
-
-
-def send_worker_invitation_email(
-    *,
-    recipient_email: str,
-    recipient_name: str,
-    company_name: str,
-    invitation_url: str,
-    verification_code: str,
-    expires_at: datetime,
-) -> bool:
-    b = _BRAND
-    safe_name = escape(recipient_name) or ""
-    safe_company = escape(company_name)
-    safe_code = escape(verification_code)
-    expires_text = expires_at.astimezone().strftime("%d/%m/%Y %H:%M")
-    greeting = (
-        f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>,'
-        if safe_name
-        else "Hola,"
-    )
-    html_body = base_layout(
-        f"""
-{heading("Te han invitado a WorkHive")}
-{lead(f'{greeting} te han invitado a unirte al equipo de <strong style="color:{b["text"]};">{safe_company}</strong>.')}
-{muted_note("Abre el enlace y usa este código de verificación:")}
-<p style="margin:12px 0 8px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b["text"]};text-align:center;">
-  {safe_code}
-</p>
-{button(invitation_url, "Crear mi acceso")}
-{muted_note(f"La invitación caduca el {escape(expires_text)}. No compartas el código con nadie.")}
-{fallback_link(invitation_url)}
-""",
-        preview_text=f"Invitación para unirte a {company_name} en WorkHive",
-    )
-    plain_text = plain_body(
-        [
-            f"Hola {recipient_name}," if recipient_name else "Hola,",
-            "",
-            f"Te han invitado a unirte al equipo de {company_name} en WorkHive.",
-            f"Código de verificación: {verification_code}",
-            f"Crea tu acceso aquí: {invitation_url}",
-            f"La invitación caduca el {expires_text}.",
-            "",
-            "No compartas este código con nadie.",
-        ]
-    )
-    message = EmailMessage()
-    message["Subject"] = f"Invitación para unirte a {company_name} en WorkHive"
-    message["From"] = transport.from_address("Acceso")
-    message["To"] = recipient_email
-    message.set_content(plain_text)
     message.add_alternative(html_body, subtype="html")
     return transport.send_email(message)

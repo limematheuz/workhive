@@ -7,6 +7,9 @@ import {
 } from "@/components/billing/BillingSelectors";
 import { ChevronDown } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface DocumentSummaryProps {
     dict: Dictionary;
@@ -16,6 +19,8 @@ interface DocumentSummaryProps {
     setDiscount: (value: number) => void;
     taxRateGlobal: number;
     handleGlobalTaxRateChange: (value: number) => void;
+    pricesIncludeTax: boolean;
+    setPricesIncludeTax: (value: boolean) => void;
     equivalenceSurcharge: number;
     setEquivalenceSurcharge: (value: number) => void;
     retention: number;
@@ -35,6 +40,8 @@ export function DocumentSummary({
     setDiscount,
     taxRateGlobal,
     handleGlobalTaxRateChange,
+    pricesIncludeTax,
+    setPricesIncludeTax,
     equivalenceSurcharge,
     setEquivalenceSurcharge,
     retention,
@@ -58,7 +65,7 @@ export function DocumentSummary({
             <div className="space-y-3 p-4 text-xs">
                 <div className="flex justify-between font-medium">
                     <span className="text-[var(--text-muted)]">
-                        {dict.invoices?.subtotal_desc || "Subtotal"}
+                        {pricesIncludeTax ? "Precio introducido (IVA incluido)" : (dict.invoices?.subtotal_desc || "Subtotal")}
                     </span>
                     <span className="font-mono font-semibold text-[var(--text-main)]">
                         {subtotal.toFixed(2)} €
@@ -75,6 +82,21 @@ export function DocumentSummary({
                     />
                 </div>
 
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-3">
+                    <Label htmlFor="document-prices-include-tax" className="min-w-0 cursor-pointer space-y-1">
+                        <span className="block text-xs font-semibold text-[var(--text-main)]">IVA incluido en el total</span>
+                        <span className="block text-[10px] leading-4 text-[var(--text-muted)]">
+                            {pricesIncludeTax ? "El precio que escribes ya incluye el IVA" : "El precio que escribes es sin IVA"}
+                        </span>
+                    </Label>
+                    <Checkbox
+                        id="document-prices-include-tax"
+                        checked={pricesIncludeTax}
+                        onCheckedChange={(checked) => setPricesIncludeTax(checked === true)}
+                        className="size-5 rounded-md border-[var(--border-color)] bg-[var(--bg-card-solid)] shadow-none data-[state=checked]:border-accent data-[state=checked]:bg-accent"
+                    />
+                </div>
+
                 <details className="group rounded-xl bg-[var(--bg-tertiary)]">
                     <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 font-semibold text-[var(--text-main)] marker:hidden">
                         Ajustes fiscales avanzados
@@ -86,7 +108,7 @@ export function DocumentSummary({
                                 {dict.invoices?.global_discount || "Descuento"}
                             </span>
                             <div className="relative flex w-24 items-center">
-                                <input
+                                <Input
                                     type="number"
                                     min="0"
                                     max="100"

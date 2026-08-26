@@ -3,7 +3,12 @@
 import { ArrowRightLeft, Loader2, Users, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
+import { useDictionary } from "@/lib/dictionary-context";
 import { CompanyCollaboration } from "@/types/collaboration";
+import { useState } from "react";
+
+type PartnerTypeFilter = "all" | "service_provider" | "property_manager";
 
 type ActiveCollaboratorsPanelProps = {
     collaborations: CompanyCollaboration[];
@@ -18,6 +23,22 @@ export function ActiveCollaboratorsPanel({
     companyId,
     onUnlink,
 }: ActiveCollaboratorsPanelProps) {
+    const { dict } = useDictionary();
+    const [partnerTypeFilter, setPartnerTypeFilter] = useState<PartnerTypeFilter>("all");
+    const collaborationWithPartnerType = collaborations.map((collab) => {
+        const isInitiator = collab.initiator_company_id === companyId;
+        const partnerType = isInitiator
+            ? collab.role_type
+            : collab.role_type === "service_provider"
+              ? "property_manager"
+              : "service_provider";
+
+        return { collab, isInitiator, partnerType };
+    });
+    const visibleCollaborations = collaborationWithPartnerType.filter(
+        ({ partnerType }) => partnerTypeFilter === "all" || partnerType === partnerTypeFilter,
+    );
+
     return (
         <section className="billing-surface billing-surface-accent-pad relative overflow-hidden rounded-[24px]">
             <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
@@ -29,10 +50,10 @@ export function ActiveCollaboratorsPanel({
                     </span>
                     <div>
                         <h2 className="text-base font-semibold text-[var(--text-main)]">
-                            Mis colaboradores activos
+                            {dict.collaborations.active_title}
                         </h2>
                         <p className="mt-0.5 text-xs leading-5 text-[var(--text-muted)]">
-                            Empresas vinculadas con las que compartes lugares y servicios.
+                            {dict.collaborations.active_description}
                         </p>
                     </div>
                 </header>
@@ -45,26 +66,37 @@ export function ActiveCollaboratorsPanel({
                     <div className="billing-block rounded-2xl px-5 py-10 text-center">
                         <ArrowRightLeft className="mx-auto mb-2.5 h-7 w-7 text-[var(--text-muted)]" />
                         <p className="text-sm font-medium text-[var(--text-muted)]">
-                            No tienes colaboradores vinculados actualmente
+                            {dict.collaborations.no_active}
                         </p>
                     </div>
                 ) : (
+                    <>
+                        {collaborations.length > 1 && (
+                            <div className="flex justify-end">
+                                <DocumentFormSelect
+                                    aria-label={dict.collaborations.relationship}
+                                    value={partnerTypeFilter}
+                                    onChange={(event) => setPartnerTypeFilter(event.target.value as PartnerTypeFilter)}
+                                    className="h-10 w-auto min-w-48 py-0"
+                                >
+                                    <option value="all">{dict.collaborations.all}</option>
+                                    <option value="service_provider">{dict.collaborations.service_provider}</option>
+                                    <option value="property_manager">{dict.collaborations.property_manager}</option>
+                                </DocumentFormSelect>
+                            </div>
+                        )}
+                        {visibleCollaborations.length === 0 ? (
+                            <div className="billing-block rounded-2xl px-5 py-8 text-center text-sm text-[var(--text-muted)]">
+                                {dict.collaborations.no_filter_matches}
+                            </div>
+                        ) : (
                     <div className="grid grid-cols-1 gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-                        {collaborations.map((collab) => {
-                            const isInitiator = collab.initiator_company_id === companyId;
+                        {visibleCollaborations.map(({ collab, isInitiator, partnerType }) => {
                             const partnerCompany = isInitiator ? collab.partner : collab.initiator;
                             const partnerEmail = partnerCompany.contact_email || partnerCompany.email;
-
-                            let relationDesc = "";
-                            if (collab.role_type === "service_provider") {
-                                relationDesc = isInitiator
-                                    ? "Empresa proveedora de servicios"
-                                    : "Empresa que solicita tus servicios";
-                            } else {
-                                relationDesc = isInitiator
-                                    ? "Empresa que solicita tus servicios"
-                                    : "Empresa proveedora de servicios";
-                            }
+                            const relationDesc = partnerType === "service_provider"
+                                ? dict.collaborations.service_provider
+                                : dict.collaborations.property_manager;
 
                             return (
                                 <article
@@ -84,14 +116,14 @@ export function ActiveCollaboratorsPanel({
                                             variant="outline"
                                             className="shrink-0 border-accent/25 bg-accent/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-accent"
                                         >
-                                            Activo
+                                            {dict.collaborations.active}
                                         </Badge>
                                     </div>
 
                                     <dl className="space-y-1.5 border-t border-[var(--border-soft)] pt-2.5 text-xs">
                                         {partnerCompany.tax_id && (
                                             <div className="flex justify-between gap-3">
-                                                <dt className="text-[var(--text-muted)]">CIF/NIF</dt>
+                                                <dt className="text-[var(--text-muted)]">{dict.collaborations.tax_id}</dt>
                                                 <dd className="font-medium text-[var(--text-main)]">
                                                     {partnerCompany.tax_id}
                                                 </dd>
@@ -99,7 +131,7 @@ export function ActiveCollaboratorsPanel({
                                         )}
                                         {partnerEmail && (
                                             <div className="flex justify-between gap-3">
-                                                <dt className="shrink-0 text-[var(--text-muted)]">Email</dt>
+                                                <dt className="shrink-0 text-[var(--text-muted)]">{dict.users.email}</dt>
                                                 <dd className="break-all text-right font-medium text-[var(--text-main)]">
                                                     {partnerEmail}
                                                 </dd>
@@ -107,7 +139,7 @@ export function ActiveCollaboratorsPanel({
                                         )}
                                         {partnerCompany.phone && (
                                             <div className="flex justify-between gap-3">
-                                                <dt className="text-[var(--text-muted)]">Teléfono</dt>
+                                                <dt className="text-[var(--text-muted)]">{dict.collaborations.phone}</dt>
                                                 <dd className="font-medium text-[var(--text-main)]">
                                                     {partnerCompany.phone}
                                                 </dd>
@@ -123,13 +155,15 @@ export function ActiveCollaboratorsPanel({
                                             onClick={() => onUnlink(collab)}
                                         >
                                             <XCircle className="h-3.5 w-3.5" />
-                                            Desvincular
+                                            {dict.collaborations.unlink}
                                         </Button>
                                     </div>
                                 </article>
                             );
                         })}
                     </div>
+                        )}
+                    </>
                 )}
             </div>
         </section>

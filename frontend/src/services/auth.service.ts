@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 import { clearSessionCache, setCsrfToken } from "@/lib/auth";
 import { getVisitorId } from "@/lib/visitor-id";
 import { buildInvitationAcceptancePayload } from "@/lib/user-invitation";
@@ -10,9 +10,7 @@ export const authService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("Failed to fetch user profile");
-        }
+        await assertApiResponseOk(response, "Failed to fetch user profile");
         return await response.json();
     },
 

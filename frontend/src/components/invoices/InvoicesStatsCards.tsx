@@ -30,6 +30,11 @@ type InvoicesStatsCardsProps = {
     };
 };
 
+function getTrend(current: number, previous: number, comparisonDirection?: "higher" | "lower") {
+    const value = getPercentageChange(current, previous);
+    return value === null ? undefined : { value, comparisonDirection };
+}
+
 export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, labels }: InvoicesStatsCardsProps) {
     const cards = [
         {
