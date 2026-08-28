@@ -22,12 +22,10 @@ def get_role(db: Session, role_id: int) -> Role:
 
 def create_role(db: Session, role_data: RoleCreate, current_user: User) -> Role:
     require_platform_superadmin(current_user)
-    existing_role = role_repo.get_role_by_name(db, role_data.name)
-    if existing_role:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="Role already exists"
-        )
-    return role_repo.create_role(db, role_data)
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="Global roles are frozen. Configure company permission profiles instead.",
+    )
 
 
 def update_role(
@@ -37,5 +35,7 @@ def update_role(
     current_user: User,
 ) -> Role:
     require_platform_superadmin(current_user)
-    db_role = get_role(db, role_id)
-    return role_repo.update_role(db, db_role, role_data)
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="Global roles are frozen. Configure company permission profiles instead.",
+    )

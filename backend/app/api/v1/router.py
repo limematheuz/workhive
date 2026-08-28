@@ -34,6 +34,7 @@ from app.api.v1.sales_ledger import router as sales_ledger_router
 from app.api.v1.accounting_exports import router as accounting_exports_router
 from app.api.v1.fiscal_summary import router as fiscal_summary_router
 from app.api.v1.client_profitability import router as client_profitability_router
+from app.api.v1.organization import router as organization_router
 
 api_router = APIRouter()
 
@@ -116,3 +117,4 @@ api_router.include_router(
 api_router.include_router(calendar_router, prefix="/calendar", tags=["calendar"])
 api_router.include_router(privacy_router, prefix="/privacy", tags=["privacy"])
 api_router.include_router(traffic_router, prefix="/traffic", tags=["traffic"])
+api_router.include_router(organization_router, prefix="/organization", tags=["organization"])

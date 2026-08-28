@@ -23,6 +23,7 @@ class User(Base):
 
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     company = relationship("Company", back_populates="users")
+    company_memberships = relationship("CompanyMembership", back_populates="user")
 
     work_sessions = relationship("WorkSession", back_populates="user")
 

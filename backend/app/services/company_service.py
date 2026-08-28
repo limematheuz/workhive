@@ -45,7 +45,11 @@ from app.services.user_scope import (
     is_platform_superadmin,
     require_platform_superadmin,
 )
-from app.services import company_update_policy_service
+from app.services import (
+    company_enterprise_access_cleanup_service,
+    company_update_policy_service,
+    organization_bootstrap_service,
+)
 
 
 def get_companies(db: Session, current_user: User, skip: int = 0, limit: int = 100) -> list[Company]:
@@ -133,6 +137,8 @@ def create_company(
         )
     creator.role = admin_role
     creator.company = new_company
+    db.flush()
+    organization_bootstrap_service.ensure_user_membership(db, creator)
     db.commit()
     db.refresh(creator)
     db.expire(creator, ["role", "company"])
@@ -193,6 +199,8 @@ def provision_company(
             company_id=company.id,
         )
         db.add(owner)
+        db.flush()
+        organization_bootstrap_service.ensure_user_membership(db, owner)
         db.commit()
         db.refresh(company)
         return company
@@ -432,6 +440,11 @@ def delete_company_permanently(
         )
         db.query(Client).filter(Client.company_id == company_id).delete(
             synchronize_session=False
+        )
+
+        company_enterprise_access_cleanup_service.delete_company_enterprise_access_data(
+            db,
+            company_id,
         )
         for user in company_users:
             db.delete(user)
