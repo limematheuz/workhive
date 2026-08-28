@@ -24,6 +24,17 @@ test("backend url strips trailing slashes and prefers private backend url", () =
     );
 });
 
+test("development proxy falls back to the local backend when env is absent", () => {
+    assert.equal(
+        getConfiguredBackendUrl({ NODE_ENV: "development" }),
+        "http://localhost:8000",
+    );
+});
+
+test("production proxy never invents a backend url", () => {
+    assert.equal(getConfiguredBackendUrl({ NODE_ENV: "production" }), "");
+});
+
 test("proxy target keeps path and query on backend origin", () => {
     const target = buildProxyTarget(
         "https://api.workhive.test/base",
