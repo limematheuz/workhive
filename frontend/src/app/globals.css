@@ -947,7 +947,7 @@ a#tv-attr-logo {
 }
 
 .light-mode input:not(.dialog-compact-control),
-.light-mode textarea {
+.light-mode textarea:not(.dialog-compact-control) {
   background-color: rgba(255, 255, 255, 0.5);
 }
 
