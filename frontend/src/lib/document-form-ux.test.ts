@@ -208,6 +208,9 @@ test("quote list filters and actions use local shadcn controls", () => {
     assert.doesNotMatch(filters, /<(?:select|label)\b/);
     assert.match(list, /from "@\/components\/ui\/button"/);
     assert.doesNotMatch(list, /<button\b/);
+    assert.match(list, /border-0 bg-transparent/);
+    assert.match(list, /shadow-none/);
+    assert.match(list, /hover:no-underline/);
     assert.match(page, /from "@\/components\/ui\/button"/);
     assert.doesNotMatch(page, /<button\b/);
 });
