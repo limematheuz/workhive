@@ -10,6 +10,14 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import type { QuoteClientRegistrationInput } from "@/lib/quote-client-registration"
 
 interface RegisterClientDialogProps {
@@ -69,18 +77,21 @@ function OpenRegisterClientDialog({
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="quote-client-type">Tipo *</Label>
-                        <select
-                            id="quote-client-type"
+                        <Select
                             value={client.client_type}
-                            onChange={(event) => update(
+                            onValueChange={(value) => update(
                                 "client_type",
-                                event.target.value as QuoteClientRegistrationInput["client_type"],
+                                value as QuoteClientRegistrationInput["client_type"],
                             )}
-                            className="h-10 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 text-sm text-[var(--text-main)]"
                         >
-                            <option value="individual">Particular</option>
-                            <option value="business">Empresa</option>
-                        </select>
+                            <SelectTrigger id="quote-client-type" className="h-10 w-full rounded-xl px-3 text-sm">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="individual">Particular</SelectItem>
+                                <SelectItem value="business">Empresa</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="quote-client-tax-id">NIF/CIF</Label>
@@ -115,28 +126,30 @@ function OpenRegisterClientDialog({
                         <Input id="quote-client-phone" maxLength={20} value={client.phone || ""} onChange={(event) => update("phone", event.target.value || null)} />
                     </div>
                     <div className="sm:col-span-2 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5 pt-2">
-                        <button
+                        <Button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            className="px-4 py-2 text-xs font-semibold bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] border border-[var(--btn-cancel-border)] rounded-xl ui-motion cursor-pointer"
+                            variant="dangerSoft"
+                            className="cursor-pointer hover:translate-y-0 hover:shadow-none"
                         >
                             Cancelar
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="button"
                             disabled={loading}
                             onClick={onAcceptOnly}
-                            className="px-4 py-2 text-xs font-semibold bg-[var(--bg-tertiary)] text-[var(--text-main)] border border-[var(--border-soft)] rounded-xl ui-motion cursor-pointer"
+                            variant="outline"
+                            className="cursor-pointer hover:translate-y-0 hover:shadow-none"
                         >
                             Aceptar sin registrar
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 text-xs font-semibold bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)] rounded-xl ui-motion cursor-pointer"
+                            className="cursor-pointer hover:translate-y-0 hover:shadow-none"
                         >
                             Registrar y aceptar
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </DialogContent>

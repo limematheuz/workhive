@@ -4,6 +4,7 @@ import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
     Select,
     SelectContent,
@@ -71,17 +72,17 @@ export function InvoicesFiltersBar({
                 )}
             </div>
             <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem_11rem]">
-                <label className="relative block">
+                <div className="relative block">
                     <span className="sr-only">{labels.search_invoice_placeholder}</span>
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                     <Input
                         value={search}
                         onChange={(e) => onSearchChange(e.target.value)}
                         placeholder={labels.search_invoice_placeholder}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] pl-10 pr-3 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                        className="h-11 w-full rounded-xl pl-10 pr-3 text-sm"
                     />
-                </label>
-                <label className="block">
+                </div>
+                <div className="block">
                     <span className="sr-only">{labels.filter_all_clients || "Todos los clientes"}</span>
                     <Select
                         value={selectedClientId}
@@ -100,8 +101,8 @@ export function InvoicesFiltersBar({
                             ))}
                         </SelectContent>
                     </Select>
-                </label>
-                <label className="block">
+                </div>
+                <div className="block">
                     <span className="sr-only">{labels.filter_all_statuses || "Todos los estados"}</span>
                     <Select
                         value={selectedStatus}
@@ -122,17 +123,17 @@ export function InvoicesFiltersBar({
                             <SelectItem value="cancelled">{labels.status_cancelled}</SelectItem>
                         </SelectContent>
                     </Select>
-                </label>
-                <label className="block">
+                </div>
+                <div className="block">
                     <span className="sr-only">{monthLabel}</span>
-                    <input
-                        type="month"
-                        value={month}
-                        onChange={(e) => onMonthChange(e.target.value)}
+                    <DatePicker
+                        id="invoices-month-filter"
+                        value={month ? `${month}-01` : ""}
+                        onValueChange={(value) => onMonthChange(value.slice(0, 7))}
                         aria-label={monthLabel}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        className="h-11 w-full rounded-xl text-sm font-semibold"
                     />
-                </label>
+                </div>
             </div>
         </section>
     );

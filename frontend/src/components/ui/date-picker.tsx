@@ -68,7 +68,7 @@ function DatePicker({
 
   return (
     <div className="style-vega w-full">
-      <InputGroup className={cn("h-11", className)}>
+      <InputGroup className={cn("h-11 border-[var(--border-color)] bg-[var(--bg-primary)] shadow-none", className)}>
         <InputGroupInput
           {...props}
           className="dialog-compact-control !border-0 !bg-transparent !shadow-none focus:!border-0 focus:!shadow-none"

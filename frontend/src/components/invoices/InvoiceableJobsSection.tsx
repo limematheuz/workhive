@@ -4,6 +4,9 @@ import { BriefcaseBusiness, CheckSquare, Loader2, Receipt, RotateCcw, Search, Sl
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
     Select,
     SelectContent,
@@ -99,14 +102,14 @@ function JobRow({
         : null;
 
     return (
-        <button
+        <Button
             type="button"
             disabled={disabled}
             onClick={onToggle}
             aria-pressed={selected}
             aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
             className={cn(
-                "billing-block w-full rounded-2xl text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40",
+                "h-auto w-full rounded-2xl border-0 bg-transparent text-left shadow-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 hover:translate-y-0 hover:bg-transparent hover:shadow-none",
                 selected && "ring-2 ring-accent/45",
                 disabled ? "cursor-not-allowed opacity-55" : "cursor-pointer hover:brightness-[0.985] active:scale-[0.995]",
                 compact ? "p-4" : "grid grid-cols-[2.25rem_minmax(12rem,1.4fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)] items-center gap-3 px-3.5 py-3.5",
@@ -124,7 +127,7 @@ function JobRow({
                                 "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
                                 selected
                                     ? "border-accent bg-accent text-white"
-                                    : "border-[var(--border-color)] bg-[var(--bg-card-solid)]",
+                                    : "border-[var(--border-color)] bg-[var(--bg-primary)]",
                             )}
                             aria-hidden="true"
                         >
@@ -159,7 +162,7 @@ function JobRow({
                             "flex h-5 w-5 items-center justify-center rounded-md border",
                             selected
                                 ? "border-accent bg-accent text-white"
-                                : "border-[var(--border-color)] bg-[var(--bg-card-solid)]",
+                                : "border-[var(--border-color)] bg-[var(--bg-primary)]",
                         )}
                         aria-hidden="true"
                     >
@@ -194,7 +197,7 @@ function JobRow({
                     </div>
                 </>
             )}
-        </button>
+        </Button>
     );
 }
 
@@ -271,23 +274,23 @@ export function InvoiceableJobsSection({
                         )}
                     </div>
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
-                        <label className="relative block md:col-span-2">
+                        <div className="relative block md:col-span-2">
                             <span className="sr-only">{labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}</span>
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
                             <Input
                                 value={search}
                                 onChange={(e) => onSearchChange(e.target.value)}
                                 placeholder={labels.search_jobs_placeholder || "Buscar por trabajo, cliente o casa..."}
-                                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] pl-10 pr-3 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                                className="h-11 w-full rounded-xl pl-10 pr-3 text-sm"
                             />
-                        </label>
-                        <label className="block">
+                        </div>
+                        <div className="block">
                             <span className="sr-only">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</span>
                             <Select
                                 value={partyFilter}
                                 onValueChange={(value) => onPartyFilterChange(value === "__all-parties__" ? "" : value)}
                             >
-                                <SelectTrigger aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"} className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold">
+                                <SelectTrigger aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"} className="h-11 w-full rounded-xl px-3 text-sm font-semibold">
                                     <SelectValue placeholder={labels.filter_all_parties || "Todos los clientes y colaboradores"} />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -300,14 +303,14 @@ export function InvoiceableJobsSection({
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </label>
-                        <label className="block">
+                        </div>
+                        <div className="block">
                             <span className="sr-only">Filtrar por estado de facturación</span>
                             <Select
                                 value={invoiceFilter}
                                 onValueChange={(value) => onInvoiceFilterChange(value as "all" | "pending" | "invoiced")}
                             >
-                                <SelectTrigger aria-label="Filtrar por estado de facturación" className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold">
+                                <SelectTrigger aria-label="Filtrar por estado de facturación" className="h-11 w-full rounded-xl px-3 text-sm font-semibold">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -316,28 +319,26 @@ export function InvoiceableJobsSection({
                                     <SelectItem value="all">{labels.filter_all_jobs || "Todos"}</SelectItem>
                                 </SelectContent>
                             </Select>
-                        </label>
+                        </div>
                         <div className="grid grid-cols-2 gap-2">
-                            <label className="block min-w-0">
+                            <div className="block min-w-0">
                                 <span className="sr-only">Fecha desde</span>
-                                <Input
-                                    type="date"
+                                <DatePicker
                                     aria-label="Fecha desde"
                                     value={dateFrom}
-                                    onChange={(e) => onDateFromChange(e.target.value)}
-                                    className="h-11 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-2 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                                    onValueChange={onDateFromChange}
+                                    className="h-11 w-full min-w-0 rounded-xl text-sm"
                                 />
-                            </label>
-                            <label className="block min-w-0">
+                            </div>
+                            <div className="block min-w-0">
                                 <span className="sr-only">Fecha hasta</span>
-                                <Input
-                                    type="date"
+                                <DatePicker
                                     aria-label="Fecha hasta"
                                     value={dateTo}
-                                    onChange={(e) => onDateToChange(e.target.value)}
-                                    className="h-11 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-2 text-sm text-[var(--text-main)] outline-none transition focus:border-accent"
+                                    onValueChange={onDateToChange}
+                                    className="h-11 w-full min-w-0 rounded-xl text-sm"
                                 />
-                            </label>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -369,26 +370,20 @@ export function InvoiceableJobsSection({
                                 />
                             ))}
                         </div>
-                        <div className="hidden space-y-2.5 p-3 md:block">
-                            <div className="grid grid-cols-[2.25rem_minmax(12rem,1.4fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)] gap-3 px-3.5 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                <span aria-hidden="true" />
-                                <span>{labels.task_title || "Trabajo"}</span>
-                                <span>{labels.client || "Cliente"}</span>
-                                <span>{labels.location_label || "Casa / ubicación"}</span>
-                                <span>{labels.col_date || "Fecha"}</span>
-                                <span className="text-right">{labels.price || "Importe"}</span>
-                                <span className="text-center">{labels.title || "Factura"}</span>
-                            </div>
-                            {tasks.map((task) => (
-                                <JobRow
-                                    key={task.id}
-                                    task={task}
-                                    selected={selectedJobIdSet.has(task.id)}
-                                    disabled={task.is_invoiced}
-                                    onToggle={() => onToggleJob(task)}
-                                    labels={labels}
-                                />
-                            ))}
+                        <div className="hidden overflow-x-auto p-3 md:block">
+                            <Table className="min-w-[940px] table-fixed text-left">
+                                <colgroup><col className="w-12" /><col className="w-[29%]" /><col className="w-[16%]" /><col className="w-[20%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[11%]" /></colgroup>
+                                <TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"><TableHead aria-hidden="true" /><TableHead>{labels.task_title || "Trabajo"}</TableHead><TableHead>{labels.client || "Cliente"}</TableHead><TableHead>{labels.location_label || "Casa / ubicación"}</TableHead><TableHead>{labels.col_date || "Fecha"}</TableHead><TableHead className="text-right">{labels.price || "Importe"}</TableHead><TableHead className="text-center">{labels.title || "Factura"}</TableHead></TableRow></TableHeader>
+                                <TableBody>{tasks.map((task) => {
+                                    const selected = selectedJobIdSet.has(task.id);
+                                    const billing = resolveTaskInvoiceBilling(task);
+                                    const amount = resolveTaskInvoiceAmount(task);
+                                    const personSeconds = resolveTaskPersonSeconds(task);
+                                    const workersLine = formatWorkerHoursLine(task.workers, formatHoursShort);
+                                    const quantity = task.pricing_mode === "hourly" ? `${formatHoursShort(personSeconds)} × ${formatCurrency(billing.unitPrice)}/h` : `${labels.quantity || "Cant."} ${billing.quantity} ${task.unit}`;
+                                    return <TableRow key={task.id} onClick={() => !task.is_invoiced && onToggleJob(task)} className={cn("border-0 bg-transparent", task.is_invoiced ? "opacity-55" : "cursor-pointer hover:bg-[var(--bg-secondary)]/45", selected && "bg-accent/5")}><TableCell onClick={(event) => event.stopPropagation()}><Checkbox checked={selected} disabled={task.is_invoiced} onCheckedChange={() => onToggleJob(task)} aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`} /></TableCell><TableCell><p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p><p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{quantity}{personSeconds > 0 ? ` · Horas-persona ${formatHoursShort(personSeconds)}` : ""}</p>{workersLine && <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">{workersLine}</p>}</TableCell><TableCell className="truncate text-sm text-[var(--text-muted)]">{task.clientName}</TableCell><TableCell className="truncate text-sm text-[var(--text-muted)]">{task.locationName}</TableCell><TableCell className="text-sm text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(amount)}</TableCell><TableCell className="text-center"><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${task.is_invoiced ? "bg-accent/10 text-accent" : "bg-[var(--bg-primary)] text-[var(--text-muted)]"}`}>{task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}</span></TableCell></TableRow>;
+                                })}</TableBody>
+                            </Table>
                         </div>
                     </>
                 )}

@@ -1,5 +1,6 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export interface TabOption<T extends string> {
     id: T;
@@ -29,8 +30,9 @@ export function PremiumTabs<T extends string>({
     const fit = layout === "fit";
 
     return (
-        <div
-            className={`flex w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
+        <Tabs value={activeTab} onValueChange={(id) => onChange(id as T)}>
+        <TabsList
+            className={`flex h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
                 fit
                     ? "overflow-hidden"
                     : "snap-x overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
@@ -40,10 +42,9 @@ export function PremiumTabs<T extends string>({
                 const isActive = activeTab === tab.id;
                 const Icon = tab.icon;
                 return (
-                    <button
-                        type="button"
+                    <TabsTrigger
                         key={tab.id}
-                        onClick={() => onChange(tab.id)}
+                        value={tab.id}
                         title={typeof tab.label === "string" ? tab.label : undefined}
                         className={`flex flex-1 items-center justify-center rounded-xl border-none py-2 text-xs font-bold uppercase tracking-wider ui-motion cursor-pointer select-none ${
                             fit
@@ -83,9 +84,10 @@ export function PremiumTabs<T extends string>({
                                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
                             </span>
                         )}
-                    </button>
+                    </TabsTrigger>
                 );
             })}
-        </div>
+        </TabsList>
+        </Tabs>
     );
 }

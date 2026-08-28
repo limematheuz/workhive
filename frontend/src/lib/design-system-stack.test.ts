@@ -55,6 +55,8 @@ test("the document workspace uses semantic action variants without altering glob
     assert.match(invoiceNotice, /tone === "warning" && "bg-\[color-mix/);
     assert.match(invoiceNotice, /var\(--bg-tertiary\)/);
     assert.match(invoiceList, /Facturas registradas/);
-    assert.match(invoiceList, /DataListTable/);
-    assert.doesNotMatch(invoiceList, /TableHeader/);
+    assert.match(invoiceList, /from "@\/components\/ui\/table"/);
+    assert.match(invoiceList, /<TableHeader>/);
+    assert.match(invoiceList, /<TableBody>/);
+    assert.doesNotMatch(invoiceList, /DataListTable/);
 });

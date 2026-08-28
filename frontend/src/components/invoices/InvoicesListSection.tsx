@@ -1,169 +1,33 @@
 "use client";
 
-import { Edit3, Eye, FileText } from "lucide-react";
-
+import { Edit3, Eye, FileText, Loader2 } from "lucide-react";
 import { getStatusBadgeClass } from "@/components/invoices/invoice-status-utils";
 import { ActionPopover } from "@/components/ui/action-popover";
-import { DataListTable } from "@/components/ui/data-list-table";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrency, formatDate, formatInvoiceNumber } from "@/lib/format";
 import type { Invoice } from "@/types/invoice";
 
 type InvoicesListSectionProps = {
-    invoices: Invoice[];
-    loading: boolean;
-    loadingLabel: string;
-    emptyLabel: string;
+    invoices: Invoice[]; loading: boolean; loadingLabel: string; emptyLabel: string;
     getClientName: (clientId: number) => string;
     getStatusText: (status: Invoice["status"]) => string;
     onOpenInvoice: (invoiceId: number) => void;
-    labels: {
-        rectification: string;
-        issue_date: string;
-        due_date: string;
-        client: string;
-        total: string;
-        status: string;
-        actions: string;
-    };
+    labels: { rectification: string; issue_date: string; due_date: string; client: string; total: string; status: string; actions: string };
 };
 
-const GRID =
-    "grid-cols-[minmax(11rem,1.2fr)_minmax(10rem,1fr)_minmax(10rem,.9fr)_minmax(7rem,.65fr)_7.5rem_5.5rem]";
-
 function getInvoiceActions(invoice: Invoice, onOpenInvoice: (invoiceId: number) => void) {
-    return [
-        {
-            label: "Ver detalle",
-            icon: Eye,
-            onClick: () => onOpenInvoice(invoice.id),
-        },
-        ...(invoice.status === "draft"
-            ? [{
-                label: "Editar",
-                icon: Edit3,
-                onClick: () => onOpenInvoice(invoice.id),
-                variant: "edit" as const,
-            }]
-            : []),
-    ];
+    return [{ label: "Ver detalle", icon: Eye, onClick: () => onOpenInvoice(invoice.id) }, ...(invoice.status === "draft" ? [{ label: "Editar", icon: Edit3, onClick: () => onOpenInvoice(invoice.id), variant: "edit" as const }] : [])];
 }
 
-export function InvoicesListSection({
-    invoices,
-    loading,
-    loadingLabel,
-    emptyLabel,
-    getClientName,
-    getStatusText,
-    onOpenInvoice,
-    labels,
-}: InvoicesListSectionProps) {
-    return (
-        <DataListTable
-            items={invoices}
-            getRowKey={(invoice) => invoice.id}
-            loading={loading}
-            loadingLabel={loadingLabel}
-            gridClassName={GRID}
-            onRowClick={(invoice) => onOpenInvoice(invoice.id)}
-            rowAriaLabel={(invoice) => `Abrir factura ${formatInvoiceNumber(invoice.invoice_number)}`}
-            header={{
-                title: "Facturas registradas",
-                subtitle: "Pulsa una fila para abrir el detalle, descargar o enviar.",
-                countLabel: `${invoices.length} ${invoices.length === 1 ? "factura" : "facturas"}`,
-            }}
-            columns={[
-                { key: "document", label: "Documento" },
-                { key: "client", label: labels.client },
-                { key: "issue", label: labels.issue_date },
-                { key: "total", label: labels.total },
-                { key: "status", label: labels.status },
-                { key: "actions", label: labels.actions, className: "text-right" },
-            ]}
-            empty={(
-                <>
-                    <FileText className="mx-auto h-8 w-8 text-[var(--btn-secondary-text)]" aria-hidden="true" />
-                    <h2 className="mt-3 text-sm font-semibold text-[var(--text-main)]">No hay facturas que mostrar</h2>
-                    <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{emptyLabel}</p>
-                </>
-            )}
-            renderCompactRow={(invoice) => (
-                <>
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={(event) => {
-                                    event.stopPropagation()
-                                    onOpenInvoice(invoice.id)
-                                }}
-                                className="font-mono text-sm font-semibold text-accent hover:underline"
-                            >
-                                {formatInvoiceNumber(invoice.invoice_number)}
-                            </button>
-                                <span className={`inline-flex rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase ${getStatusBadgeClass(invoice.status)}`}>
-                                    {getStatusText(invoice.status)}
-                                </span>
-                            </div>
-                            <p className="mt-1.5 truncate text-sm font-semibold text-[var(--text-main)]">{getClientName(invoice.client_id)}</p>
-                        </div>
-                        <div className="flex shrink-0 items-center" onClick={(event) => event.stopPropagation()}>
-                            <ActionPopover align="end" options={getInvoiceActions(invoice, onOpenInvoice)} />
-                        </div>
-                    </div>
-                    <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1.5 border-t border-[var(--border-soft)] pt-2.5 text-xs">
-                        <p className="text-[var(--text-muted)]">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide">{labels.issue_date}</span>
-                            <span className="mt-0.5 block">{formatDate(invoice.issue_date)}</span>
-                            {invoice.due_date && (
-                                <span className="mt-0.5 block text-[11px]">Vence {formatDate(invoice.due_date)}</span>
-                            )}
-                        </p>
-                        <p className="text-right text-[var(--text-muted)]">
-                            <span className="block text-[10px] font-semibold uppercase tracking-wide">{labels.total}</span>
-                            <span className="mt-0.5 block font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(invoice.total_amount)}</span>
-                        </p>
-                    </div>
-                </>
-            )}
-            renderDesktopRow={(invoice) => (
-                <>
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 shrink-0 text-[var(--btn-secondary-text)]" aria-hidden="true" />
-                            <button
-                                type="button"
-                                onClick={() => onOpenInvoice(invoice.id)}
-                                className="truncate font-mono text-sm font-semibold text-accent hover:underline"
-                            >
-                                {formatInvoiceNumber(invoice.invoice_number)}
-                            </button>
-                        </div>
-                        {invoice.is_rectification && (
-                            <span className="mt-1 inline-flex rounded-full border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--btn-cancel-text)]">
-                                {labels.rectification}
-                            </span>
-                        )}
-                    </div>
-                    <p className="truncate text-sm font-semibold text-[var(--text-main)]">{getClientName(invoice.client_id)}</p>
-                    <div className="min-w-0 text-xs leading-tight text-[var(--text-muted)]">
-                        <span className="block truncate tabular-nums text-[var(--text-main)]">{formatDate(invoice.issue_date)}</span>
-                        {invoice.due_date && (
-                            <span className="mt-0.5 block truncate text-[11px]">Vence {formatDate(invoice.due_date)}</span>
-                        )}
-                    </div>
-                    <p className="font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(invoice.total_amount)}</p>
-                    <div>
-                        <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase ${getStatusBadgeClass(invoice.status)}`}>
-                            {getStatusText(invoice.status)}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-end" onClick={(event) => event.stopPropagation()}>
-                        <ActionPopover align="end" options={getInvoiceActions(invoice, onOpenInvoice)} />
-                    </div>
-                </>
-            )}
-        />
-    );
+export function InvoicesListSection({ invoices, loading, loadingLabel, emptyLabel, getClientName, getStatusText, onOpenInvoice, labels }: InvoicesListSectionProps) {
+    if (loading) return <section className="billing-surface flex min-h-64 items-center justify-center gap-3 rounded-[26px]"><Loader2 className="size-6 animate-spin text-accent" /><span className="text-xs text-[var(--text-muted)]">{loadingLabel}</span></section>;
+
+    return <section className="billing-surface overflow-hidden rounded-[26px]">
+        <header className="px-5 py-4"><h2 className="text-sm font-semibold text-[var(--text-main)]">Facturas registradas</h2><p className="mt-1 text-xs text-[var(--text-muted)]">Pulsa una fila para abrir el detalle, descargar o enviar.</p></header>
+        {invoices.length === 0 ? <div className="px-5 py-16 text-center"><FileText className="mx-auto size-8 text-[var(--btn-secondary-text)]" /><h3 className="mt-3 text-sm font-semibold text-[var(--text-main)]">No hay facturas que mostrar</h3><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{emptyLabel}</p></div> : <>
+            <div className="space-y-2.5 p-3 md:hidden">{invoices.map((invoice) => <Button key={invoice.id} type="button" variant="ghost" onClick={() => onOpenInvoice(invoice.id)} className="billing-block h-auto w-full justify-start rounded-2xl p-3 text-left hover:translate-y-0 hover:shadow-none"><span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-3"><span className="min-w-0"><span className="block font-mono text-sm font-semibold text-accent">{formatInvoiceNumber(invoice.invoice_number)}</span><span className="mt-1 block truncate text-sm font-semibold text-[var(--text-main)]">{getClientName(invoice.client_id)}</span></span><span className={`rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase ${getStatusBadgeClass(invoice.status)}`}>{getStatusText(invoice.status)}</span></span><span className="mt-2 block border-t border-[var(--border-soft)] pt-2 text-xs text-[var(--text-muted)]">{formatDate(invoice.issue_date)} · <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(invoice.total_amount)}</span></span></span></Button>)}</div>
+            <div className="hidden overflow-x-auto p-3 md:block"><Table className="min-w-[760px] table-fixed text-left"><colgroup><col className="w-[25%]" /><col className="w-[19%]" /><col className="w-[20%]" /><col className="w-[12%]" /><col className="w-[15%]" /><col className="w-[9%]" /></colgroup><TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"><TableHead>Documento</TableHead><TableHead>{labels.client}</TableHead><TableHead>{labels.issue_date}</TableHead><TableHead className="text-right">{labels.total}</TableHead><TableHead>{labels.status}</TableHead><TableHead className="text-right">{labels.actions}</TableHead></TableRow></TableHeader><TableBody>{invoices.map((invoice) => <TableRow key={invoice.id} className="cursor-pointer bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55" onClick={() => onOpenInvoice(invoice.id)}><TableCell><div className="flex items-center gap-2"><FileText className="size-4 shrink-0 text-[var(--btn-secondary-text)]" /><Button type="button" variant="link" onClick={(event) => { event.stopPropagation(); onOpenInvoice(invoice.id); }} className="h-auto border-0 bg-transparent p-0 font-mono text-sm font-semibold text-accent shadow-none hover:bg-transparent hover:shadow-none">{formatInvoiceNumber(invoice.invoice_number)}</Button></div>{invoice.is_rectification && <span className="mt-1 inline-flex rounded-full border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--btn-cancel-text)]">{labels.rectification}</span>}</TableCell><TableCell className="truncate font-semibold text-[var(--text-main)]">{getClientName(invoice.client_id)}</TableCell><TableCell className="text-xs text-[var(--text-muted)]"><span className="block text-[var(--text-main)]">{formatDate(invoice.issue_date)}</span>{invoice.due_date && <span className="mt-0.5 block text-[11px]">Vence {formatDate(invoice.due_date)}</span>}</TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(invoice.total_amount)}</TableCell><TableCell><span className={`inline-flex rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase ${getStatusBadgeClass(invoice.status)}`}>{getStatusText(invoice.status)}</span></TableCell><TableCell className="text-right" onClick={(event) => event.stopPropagation()}><ActionPopover align="end" options={getInvoiceActions(invoice, onOpenInvoice)} /></TableCell></TableRow>)}</TableBody></Table></div>
+        </>}
+    </section>;
 }
