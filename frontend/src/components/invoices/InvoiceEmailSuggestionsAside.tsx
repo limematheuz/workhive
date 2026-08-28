@@ -2,6 +2,7 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 
 import type { EmailSuggestion } from "./invoice-email-utils";
 import { initials } from "./invoice-email-utils";
+import { Button } from "@/components/ui/button";
 
 type InvoiceEmailSuggestionsAsideProps = {
     isLoadingClients: boolean;
@@ -48,10 +49,11 @@ export function InvoiceEmailSuggestionsAside({
                 ) : canAddTypedEmails || emailSuggestions.length ? (
                     <>
                         {canAddTypedEmails && (
-                            <button
+                            <Button
                                 type="button"
                                 onClick={() => onAddRecipients(validTypedEmails)}
-                                className="flex w-full items-center gap-3 border-b border-[var(--border-soft)] px-4 py-3 text-left transition hover:bg-accent/5"
+                                variant="ghost"
+                                className="h-auto w-full justify-start gap-3 rounded-none border-b border-[var(--border-soft)] px-4 py-3 text-left hover:bg-accent/5"
                             >
                                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white">
                                     <Plus className="h-4 w-4" />
@@ -64,7 +66,7 @@ export function InvoiceEmailSuggestionsAside({
                                         {validTypedEmails.join(", ")}
                                     </span>
                                 </span>
-                            </button>
+                            </Button>
                         )}
 
                         {emailSuggestions.map((suggestion) => (
@@ -72,10 +74,11 @@ export function InvoiceEmailSuggestionsAside({
                                 key={suggestion.key}
                                 className="group flex items-center gap-1 border-b border-[var(--border-soft)] pr-2 last:border-b-0 hover:bg-[var(--bg-secondary)]"
                             >
-                                <button
+                                <Button
                                     type="button"
                                     onClick={() => onAddRecipients([suggestion.email])}
-                                    className="flex min-w-0 flex-1 items-center gap-3 px-2 py-3 text-left"
+                                    variant="ghost"
+                                    className="h-auto min-w-0 flex-1 justify-start gap-3 rounded-none px-2 py-3 text-left"
                                 >
                                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--bg-secondary)] text-xs font-black text-[var(--text-main)] ring-1 ring-[var(--border-soft)]">
                                         {initials(suggestion.name)}
@@ -93,17 +96,19 @@ export function InvoiceEmailSuggestionsAside({
                                             {suggestion.meta}
                                         </span>
                                     </span>
-                                </button>
+                                </Button>
                                 {suggestion.source === "contact" && suggestion.savedContactId ? (
-                                    <button
+                                    <Button
                                         type="button"
                                         onClick={() => onDeleteSavedContact(suggestion.savedContactId!)}
-                                        className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent p-2 text-[var(--text-muted)] transition hover:border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--btn-cancel-border)]"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="shrink-0 rounded-lg border border-transparent text-[var(--text-muted)] hover:border-[var(--btn-cancel-border)] hover:bg-[var(--btn-cancel-bg)] hover:text-[var(--btn-cancel-text)]"
                                         aria-label={invoiceText.email_remove_saved.replace("{email}", suggestion.email)}
                                         title={invoiceText.email_remove_saved.replace("{email}", suggestion.email)}
                                     >
                                         <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    </Button>
                                 ) : null}
                             </div>
                         ))}

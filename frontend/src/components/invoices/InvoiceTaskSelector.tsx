@@ -2,7 +2,9 @@
 
 import React from "react";
 import { Label } from "@/components/ui/label";
-import { Loader2, Check, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, Package } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { formatHoursShort } from "@/lib/format-hours";
 import {
@@ -39,15 +41,16 @@ export function InvoiceTaskSelector({
                     {dict.invoices?.client_jobs || "Trabajos del Cliente"}
                 </Label>
                 {availableTasks.length > 0 && (
-                    <button
+                    <Button
                         type="button"
                         onClick={handleToggleAll}
-                        className="text-xs text-accent hover:underline font-medium border-none bg-transparent cursor-pointer"
+                        variant="link"
+                        className="h-auto p-0 text-xs font-medium text-accent"
                     >
                         {selectedTaskIds.length === availableTasks.length
                             ? (dict.invoices?.deselect_all || "Deseleccionar todo")
                             : (dict.invoices?.select_all || "Seleccionar todo")}
-                    </button>
+                    </Button>
                 )}
             </div>
 
@@ -64,7 +67,7 @@ export function InvoiceTaskSelector({
                         const personSeconds = resolveTaskPersonSeconds(task);
                         const workersLine = formatWorkerHoursLine(task.workers, formatHoursShort);
                         return (
-                            <div
+                            <Button
                                 key={task.id}
                                 role="checkbox"
                                 aria-checked={isChecked}
@@ -77,22 +80,15 @@ export function InvoiceTaskSelector({
                                         handleToggleTask(task);
                                     }
                                 }}
-                                className={`flex items-start gap-2 p-2.5 rounded-xl border border-[var(--border-soft)] cursor-pointer select-none transition-colors ${
+                                variant="ghost"
+                                className={`h-auto w-full items-start justify-start gap-2 rounded-xl border border-[var(--border-soft)] p-2.5 text-left hover:translate-y-0 hover:shadow-none ${
                                     isChecked
                                         ? "bg-[var(--bg-primary)] border-accent/40"
                                         : "bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)]"
                                 }`}
                             >
                                 <div className="mt-0.5">
-                                    <div
-                                        className={`w-3.5 h-3.5 rounded border flex items-center justify-center ui-motion ${
-                                            isChecked
-                                                ? "bg-accent border-accent text-white"
-                                                : "border-[var(--border-color)] bg-[var(--bg-primary)]"
-                                        }`}
-                                    >
-                                        {isChecked && <Check className="w-2.5 h-2.5 stroke-[3px]" />}
-                                    </div>
+                                    <Checkbox checked={isChecked} aria-hidden="true" tabIndex={-1} className="pointer-events-none size-3.5" />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-semibold text-[var(--text-main)] truncate">
@@ -134,7 +130,7 @@ export function InvoiceTaskSelector({
                                         </p>
                                     )}
                                 </div>
-                            </div>
+                            </Button>
                         );
                     })}
                 </div>

@@ -4,6 +4,8 @@ import { Loader2, Plus } from "lucide-react";
 import type { EmailSuggestion } from "./invoice-email-utils";
 import { initials } from "./invoice-email-utils";
 import { InvoiceEmailChip } from "./InvoiceEmailChip";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type InvoiceEmailRecipientFieldProps = {
     recipients: string[];
@@ -55,7 +57,7 @@ export function InvoiceEmailRecipientField({
                         removeLabel={removeLabel}
                     />
                 ))}
-                <input
+                <Input
                     type="email"
                     id="document-email-to"
                     name="document-email-to"
@@ -67,7 +69,7 @@ export function InvoiceEmailRecipientField({
                     onKeyDown={onRecipientKeyDown}
                     onBlur={onSearchBlur}
                     placeholder={recipients.length ? "" : searchPlaceholder}
-                    className="invoice-email-token-input min-w-[12rem] flex-1 bg-transparent px-1 py-1.5 text-sm text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)]"
+                    className="invoice-email-token-input min-w-[12rem] flex-1 border-0 bg-transparent px-1 py-1.5 shadow-none focus-visible:ring-0"
                 />
             </div>
             {isRecipientMenuOpen && (canAddTypedEmails || emailSuggestions.length > 0 || isLoadingClients) && (
@@ -79,11 +81,12 @@ export function InvoiceEmailRecipientField({
                         </div>
                     )}
                     {canAddTypedEmails && (
-                        <button
+                        <Button
                             type="button"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => onAddRecipients(validTypedEmails)}
-                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-accent/5"
+                            variant="ghost"
+                            className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-accent/5"
                         >
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white">
                                 <Plus className="h-4 w-4" />
@@ -96,15 +99,16 @@ export function InvoiceEmailRecipientField({
                                     {validTypedEmails.join(", ")}
                                 </span>
                             </span>
-                        </button>
+                        </Button>
                     )}
                     {emailSuggestions.map((suggestion) => (
-                        <button
+                        <Button
                             key={suggestion.key}
                             type="button"
                             onMouseDown={(event) => event.preventDefault()}
                             onClick={() => onAddRecipients([suggestion.email])}
-                            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-[var(--bg-secondary)]"
+                            variant="ghost"
+                            className="h-auto w-full justify-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-[var(--bg-secondary)]"
                         >
                             <span
                                 className={[
@@ -129,7 +133,7 @@ export function InvoiceEmailRecipientField({
                             <span className="hidden shrink-0 rounded-full bg-[var(--bg-secondary)] px-2 py-1 text-[10px] font-bold text-[var(--text-muted)] sm:inline-flex">
                                 {suggestion.meta}
                             </span>
-                        </button>
+                        </Button>
                     ))}
                 </div>
             )}
