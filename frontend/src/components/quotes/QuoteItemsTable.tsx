@@ -4,6 +4,8 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { ConceptRow } from "@/hooks/useQuoteForm";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -45,61 +47,65 @@ export function QuoteItemsTable({
             )}
 
             <div className={embedded ? "overflow-x-auto rounded-2xl bg-[var(--bg-tertiary)]/65" : "billing-surface overflow-hidden rounded-[24px]"}>
-                <table className="w-full min-w-[32rem] border-collapse text-left">
-                    <thead>
-                        <tr className="border-b border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-3xs font-bold uppercase tracking-wider text-[var(--text-muted)] select-none">
-                            <th className="px-3 py-2.5">{dict.invoices?.col_description || "Descripción"}</th>
-                            <th className="w-24 px-2 py-2.5 text-right">{pricesIncludeTax ? "Precio c/ IVA (€)" : (dict.invoices?.col_price || "Precio (€)")}</th>
-                            <th className="w-20 px-2 py-2.5 text-center">{dict.invoices?.col_qty || "Cantidad"}</th>
-                            <th className="w-24 px-2 py-2.5 text-right">{pricesIncludeTax ? "Total c/ IVA" : (dict.invoices?.col_total || "Total")}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border-soft)] text-xs">
+                <Table className="w-full min-w-[32rem] border-collapse text-left">
+                    <TableHeader>
+                        <TableRow className="bg-[var(--bg-tertiary)] text-3xs font-bold uppercase tracking-wider text-[var(--text-muted)] select-none">
+                            <TableHead className="px-3 py-2.5">{dict.invoices?.col_description || "Descripción"}</TableHead>
+                            <TableHead className="w-24 px-2 py-2.5 text-right">{pricesIncludeTax ? "Precio c/ IVA (€)" : (dict.invoices?.col_price || "Precio (€)")}</TableHead>
+                            <TableHead className="w-20 px-2 py-2.5 text-center">{dict.invoices?.col_qty || "Cantidad"}</TableHead>
+                            <TableHead className="w-24 px-2 py-2.5 text-right">{pricesIncludeTax ? "Total c/ IVA" : (dict.invoices?.col_total || "Total")}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-[var(--border-soft)] text-xs">
                         {concepts.length > 0 ? (
                             concepts.map((row) => (
-                                <tr key={row.id} className="hover:bg-[var(--bg-secondary)]/30">
-                                    <td className="py-2 px-3">
+                                <TableRow key={row.id} className="hover:bg-[var(--bg-secondary)]/30">
+                                    <TableCell className="py-2 px-3">
                                         <div className="flex items-start gap-2">
                                             <div className="min-w-0 flex-1">
-                                                <label className="sr-only" htmlFor={`quote-concept-${row.id}-description`}>
+                                                <Label className="sr-only" htmlFor={`quote-concept-${row.id}-description`}>
                                                     {dict.invoices?.col_description || "Descripción"}
-                                                </label>
-                                                <textarea
+                                                </Label>
+                                                <Textarea
                                                     id={`quote-concept-${row.id}-description`}
                                                     value={row.description}
                                                     onChange={(e) => handleUpdateRow(row.id, "description", e.target.value)}
                                                     rows={Math.max(2, Math.min(5, row.description.split("\n").length || 2))}
-                                                    className="w-full resize-none bg-transparent border-none leading-relaxed text-xs text-[var(--text-main)] outline-none focus:ring-0"
+                                                    className="min-h-16 w-full resize-none rounded-lg px-2 py-1.5 text-xs leading-relaxed"
                                                     placeholder="Servicio, detalles incluidos y exclusiones relevantes"
                                                     required
                                                 />
                                             </div>
                                             <div className="flex shrink-0 items-center gap-1 pt-0.5">
-                                                <button
+                                                <Button
                                                     type="button"
                                                     onClick={() => handleDuplicateRow(row.id)}
                                                     aria-label="Duplicar línea"
                                                     title="Duplicar línea"
-                                                    className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
+                                                    variant="secondary"
+                                                    size="icon-xs"
+                                                    className="size-8 cursor-pointer shadow-none hover:translate-y-0 hover:shadow-none"
                                                 >
                                                     <Copy className="h-3.5 w-3.5" />
-                                                </button>
-                                                <button
+                                                </Button>
+                                                <Button
                                                     type="button"
                                                     onClick={() => handleDeleteRow(row.id)}
                                                     aria-label="Eliminar línea"
                                                     title="Eliminar línea"
-                                                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] transition-colors hover:bg-[var(--btn-cancel-hover-bg)]"
+                                                    variant="dangerSoft"
+                                                    size="icon-xs"
+                                                    className="cursor-pointer shadow-none hover:translate-y-0 hover:shadow-none"
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
-                                                </button>
+                                                </Button>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td className="py-2 px-2">
-                                        <label className="sr-only" htmlFor={`quote-concept-${row.id}-price`}>
+                                    </TableCell>
+                                    <TableCell className="py-2 px-2">
+                                        <Label className="sr-only" htmlFor={`quote-concept-${row.id}-price`}>
                                             {dict.invoices?.col_price || "Precio (€)"}
-                                        </label>
+                                        </Label>
                                         <Input
                                             id={`quote-concept-${row.id}-price`}
                                             type="number"
@@ -107,40 +113,40 @@ export function QuoteItemsTable({
                                             data-price-input
                                             value={row.unitPrice || ""}
                                             onChange={(e) => handleUpdateRow(row.id, "unitPrice", parseFloat(e.target.value) || 0)}
-                                            className="w-full bg-transparent border-none outline-none text-right focus:ring-0 text-xs font-mono text-[var(--text-main)]"
+                                            className="h-8 w-full rounded-lg px-2 text-right text-xs font-mono"
                                             placeholder="0.00"
                                             required
                                         />
-                                    </td>
-                                    <td className="py-2 px-2">
-                                        <label className="sr-only" htmlFor={`quote-concept-${row.id}-quantity`}>
+                                    </TableCell>
+                                    <TableCell className="py-2 px-2">
+                                        <Label className="sr-only" htmlFor={`quote-concept-${row.id}-quantity`}>
                                             {dict.invoices?.col_qty || "Cantidad"}
-                                        </label>
+                                        </Label>
                                         <Input
                                             id={`quote-concept-${row.id}-quantity`}
                                             type="number"
                                             step="any"
                                             value={row.quantity || ""}
                                             onChange={(e) => handleUpdateRow(row.id, "quantity", parseFloat(e.target.value) || 0)}
-                                            className="w-full bg-transparent border-none outline-none text-center focus:ring-0 text-xs font-mono text-[var(--text-main)]"
+                                            className="h-8 w-full rounded-lg px-2 text-center text-xs font-mono"
                                             placeholder="1"
                                             required
                                         />
-                                    </td>
-                                    <td className="py-2 px-2 text-right font-mono font-semibold text-[var(--text-main)]">
+                                    </TableCell>
+                                    <TableCell className="py-2 px-2 text-right font-mono font-semibold text-[var(--text-main)]">
                                         {(row.unitPrice * row.quantity).toFixed(2)} €
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             ))
                         ) : (
-                            <tr>
-                                <td colSpan={4} className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/10">
+                            <TableRow>
+                                <TableCell colSpan={4} className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/10">
                                     {dict.quotes?.no_concepts || "No hay conceptos. Pulsa \"+ Añadir Concepto\" para comenzar."}
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         )}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Full-width add line button below the table */}

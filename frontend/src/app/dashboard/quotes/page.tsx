@@ -5,6 +5,7 @@ import { redirect, useRouter, useSearchParams } from "next/navigation";
 import { FileText, Loader2, Plus } from "lucide-react";
 
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { QuoteCreateSheet } from "@/components/quotes/QuoteCreateSheet";
@@ -203,14 +204,14 @@ function QuotesPageContent() {
                 subtitle={dict.quotes?.list_subtitle ?? "Crea y gestiona presupuestos para tus clientes."}
                 className="mb-8"
                 actions={(
-                    <button
+                    <Button
                         type="button"
                         onClick={() => setIsCreateOpen(true)}
-                        className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
+                        className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer hover:translate-y-0 hover:shadow-none`}
                     >
                         <Plus className="w-4 h-4" />
                         {dict.quotes?.new_quote ?? "Nuevo Presupuesto"}
-                    </button>
+                    </Button>
                 )}
             />
 

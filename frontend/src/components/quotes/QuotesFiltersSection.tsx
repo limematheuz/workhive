@@ -3,6 +3,14 @@
 import { Filter, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import type { Client } from "@/services/client.service";
 
 type QuotesFiltersSectionProps = {
@@ -47,36 +55,44 @@ export function QuotesFiltersSection({
                 )}
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <label className="block">
-                    <span className="sr-only">Todos los clientes</span>
-                    <select
+                <div className="block">
+                    <Label className="sr-only">Todos los clientes</Label>
+                    <Select
                         aria-label="Todos los clientes"
                         value={selectedClientId || "all"}
-                        onChange={(e) => onClientChange(e.target.value === "all" ? "" : e.target.value)}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        onValueChange={(value) => onClientChange(value === "all" ? "" : value)}
                     >
-                        <option value="all">Todos los clientes</option>
+                        <SelectTrigger aria-label="Todos los clientes" className="h-11 w-full rounded-xl px-3 text-sm font-semibold">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="all">Todos los clientes</SelectItem>
                         {clients.map((c) => (
-                            <option key={c.id} value={c.id.toString()}>{c.name}</option>
+                            <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
                         ))}
-                    </select>
-                </label>
-                <label className="block">
-                    <span className="sr-only">Todos los estados</span>
-                    <select
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="block">
+                    <Label className="sr-only">Todos los estados</Label>
+                    <Select
                         aria-label="Todos los estados"
                         value={selectedStatus || "all"}
-                        onChange={(e) => onStatusChange(e.target.value === "all" ? "" : e.target.value)}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        onValueChange={(value) => onStatusChange(value === "all" ? "" : value)}
                     >
-                        <option value="all">Todos los estados</option>
-                        <option value="draft">{statusLabels.draft}</option>
-                        <option value="sent">{statusLabels.sent}</option>
-                        <option value="accepted">{statusLabels.accepted}</option>
-                        <option value="rejected">{statusLabels.rejected}</option>
-                        <option value="expired">{statusLabels.expired}</option>
-                    </select>
-                </label>
+                        <SelectTrigger aria-label="Todos los estados" className="h-11 w-full rounded-xl px-3 text-sm font-semibold">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Todos los estados</SelectItem>
+                            <SelectItem value="draft">{statusLabels.draft}</SelectItem>
+                            <SelectItem value="sent">{statusLabels.sent}</SelectItem>
+                            <SelectItem value="accepted">{statusLabels.accepted}</SelectItem>
+                            <SelectItem value="rejected">{statusLabels.rejected}</SelectItem>
+                            <SelectItem value="expired">{statusLabels.expired}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
         </section>
     );
