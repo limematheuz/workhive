@@ -6,10 +6,8 @@ function source(path: string): string {
     return readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-test("shared DataListTable powers invoice, quote, client, expense, user, profile, service catalog, roles, companies and traffic lists", () => {
+test("shared DataListTable powers the remaining generic data lists", () => {
     const table = source("../components/ui/data-list-table.tsx");
-    const invoices = source("../components/invoices/InvoicesListSection.tsx");
-    const quotes = source("../components/quotes/QuotesListSection.tsx");
     const clients = source("../components/clients/ClientsTable.tsx");
     const expenses = source("../components/expenses/ExpensesListSection.tsx");
     const users = source("../components/users/TeamListSection.tsx");
@@ -26,8 +24,6 @@ test("shared DataListTable powers invoice, quote, client, expense, user, profile
     assert.match(table, /variant\?: "surface" \| "plain"/);
 
     for (const [name, file] of [
-        ["invoices", invoices],
-        ["quotes", quotes],
         ["clients", clients],
         ["expenses", expenses],
         ["users", users],
@@ -53,4 +49,17 @@ test("shared DataListTable powers invoice, quote, client, expense, user, profile
 
     assert.match(integrations, /DataListTable/);
     assert.doesNotMatch(integrations, /surface-glass-card/);
+});
+
+test("invoice and quote lists use the shared shadcn table primitive", () => {
+    const invoices = source("../components/invoices/InvoicesListSection.tsx");
+    const quotes = source("../components/quotes/QuotesListSection.tsx");
+    const jobs = source("../components/invoices/InvoiceableJobsSection.tsx");
+
+    for (const [name, file] of [["invoices", invoices], ["quotes", quotes], ["invoiceable jobs", jobs]] as const) {
+        assert.match(file, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
+        assert.match(file, /<TableHeader>/, `${name} should render a TableHeader`);
+        assert.match(file, /<TableBody>/, `${name} should render a TableBody`);
+        assert.doesNotMatch(file, /DataListTable/, `${name} should not use the generic list table`);
+    }
 });

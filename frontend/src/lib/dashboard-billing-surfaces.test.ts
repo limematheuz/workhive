@@ -23,19 +23,24 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     assert.match(globals, /\.billing-block\s*\{\s*background-color: var\(--bg-tertiary\);/);
 
     assert.match(invoicesStats, /SummaryMetricCard/);
-    assert.match(invoicesList, /DataListTable/);
+    assert.match(invoicesList, /from "@\/components\/ui\/table"/);
+    assert.match(invoicesList, /<TableHeader>/);
+    assert.match(invoicesList, /<TableBody>/);
     assert.match(invoicesList, /Pulsa una fila para abrir/);
     assert.doesNotMatch(invoicesList, /ChevronRight/);
     assert.match(invoicesList, /Vence /);
 
-    assert.match(jobs, /billing-block/);
     assert.match(jobs, /billing-surface/);
     assert.match(jobs, /aria-pressed/);
-    assert.doesNotMatch(jobs, /from "@\/components\/ui\/table"/);
+    assert.match(jobs, /from "@\/components\/ui\/table"/);
+    assert.match(jobs, /<TableHeader>/);
+    assert.match(jobs, /<TableBody>/);
 
     assert.match(quotesFilters, /billing-surface/);
-    assert.match(quotesFilters, /bg-\[var\(--bg-card-solid\)\]/);
-    assert.match(quotesList, /DataListTable/);
+    assert.match(quotesFilters, /<SelectTrigger/);
+    assert.match(quotesList, /from "@\/components\/ui\/table"/);
+    assert.match(quotesList, /<TableHeader>/);
+    assert.match(quotesList, /<TableBody>/);
     assert.match(quotesList, /Presupuestos registrados/);
 
     assert.match(analytics, /billing-block/);
