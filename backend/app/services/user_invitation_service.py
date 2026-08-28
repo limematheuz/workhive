@@ -14,7 +14,7 @@ from app.models.user_invitation import UserInvitation
 from app.repositories import role as role_repo
 from app.repositories import user as user_repo
 from app.schemas.user_invitation import UserInvitationAccept, UserInvitationCreate
-from app.services import email_service, privacy_service
+from app.services import email_service, organization_bootstrap_service, privacy_service
 from app.services.subscription_policy import require_active_user_capacity
 from app.services.user_scope import is_superadmin
 
@@ -218,6 +218,8 @@ def accept_invitation(
     invitation.status = ACCEPTED_STATUS
     invitation.accepted_at = _utcnow()
     db.add(user)
+    db.flush()
+    organization_bootstrap_service.ensure_user_membership(db, user)
     db.commit()
     db.refresh(user)
     privacy_service.record_registration_acknowledgements(

@@ -19,7 +19,7 @@ from app.schemas.trial_request import (
     TrialRequestCreate,
     TrialRequestReject,
 )
-from app.services import email_service
+from app.services import email_service, organization_bootstrap_service
 from app.services.user_scope import require_platform_superadmin
 
 
@@ -203,6 +203,7 @@ def approve_trial_request(
     )
     db.add(owner)
     db.flush()
+    organization_bootstrap_service.ensure_user_membership(db, owner)
 
     reset_token = create_password_reset_token(owner.email)
     reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={reset_token}"

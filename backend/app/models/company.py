@@ -35,6 +35,10 @@ class Company(Base):
     )
 
     users = relationship("User", back_populates="company")
+    memberships = relationship("CompanyMembership", back_populates="company")
+    departments = relationship("Department", back_populates="company")
+    teams = relationship("Team", back_populates="company")
+    permission_profiles = relationship("PermissionProfile", back_populates="company")
     clients = relationship("Client", back_populates="company")
 
     invoices = relationship("Invoice", back_populates="company")

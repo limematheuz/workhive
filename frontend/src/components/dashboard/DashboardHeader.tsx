@@ -58,6 +58,8 @@ export function DashboardHeader({ onToggleSidebar, onLogout }: DashboardHeaderPr
                 ? dict.dashboard.calendar
             : pathname.includes("/dashboard/integrations")
                 ? dict.dashboard.integrations
+            : pathname.includes("/dashboard/organization")
+                ? "Organización y accesos"
             : pathname.includes("/dashboard/clients")
                 ? dict.dashboard.clients
                 : pathname.includes("/dashboard/locations")

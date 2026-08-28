@@ -1,0 +1,109 @@
+from datetime import datetime, timezone
+
+from sqlalchemy.orm import Session
+
+from app.models.permission_profile import (
+    MembershipPermissionProfileAssignment,
+    MembershipPermissionProfileScope,
+)
+from app.models.user import User
+from app.repositories import organization as organization_repo
+from app.schemas.organization import (
+    OrganizationMemberProfileAssignmentsUpdate,
+    OrganizationMemberResponse,
+)
+from app.services.organization_member_service import member_response
+from app.services.organization_service_shared import (
+    CAPABILITY_MEMBERS_MANAGE,
+    CAPABILITY_SCOPES_MANAGE,
+    conflict,
+    not_found,
+    require_capability,
+)
+
+
+def replace_member_profile_assignments(
+    db: Session,
+    membership_id: int,
+    payload: OrganizationMemberProfileAssignmentsUpdate,
+    current_user: User,
+) -> OrganizationMemberResponse:
+    company_id = require_capability(db, current_user, CAPABILITY_MEMBERS_MANAGE)
+    require_capability(db, current_user, CAPABILITY_SCOPES_MANAGE)
+    membership = organization_repo.get_company_membership(
+        db,
+        company_id=company_id,
+        membership_id=membership_id,
+    )
+    if not membership:
+        not_found("Company member")
+    profile_ids = [assignment.permission_profile_id for assignment in payload.assignments]
+    profiles = {
+        profile.id: profile
+        for profile in organization_repo.list_permission_profiles(db, company_id)
+        if profile.id in profile_ids
+    }
+    if len(profiles) != len(profile_ids):
+        not_found("Permission profile")
+    if any(profile.is_system for profile in profiles.values()):
+        conflict("System permission profiles are assigned only through the administrator class")
+    if any(not profile.is_active for profile in profiles.values()):
+        conflict("Inactive permission profiles cannot be assigned")
+
+    now = datetime.now(timezone.utc)
+    for assignment in organization_repo.list_profile_assignments(
+        db,
+        company_id=company_id,
+        membership_id=membership.id,
+    ):
+        if not assignment.permission_profile.is_system:
+            assignment.is_active = False
+            assignment.revoked_at = now
+            db.add(assignment)
+
+    for input_assignment in payload.assignments:
+        for scope in input_assignment.scopes:
+            if not organization_repo.is_valid_scope_target(
+                db,
+                company_id=company_id,
+                scope_type=scope.scope_type,
+                scope_id=scope.scope_id,
+            ):
+                conflict("A permission scope must belong to the same company")
+        assignment = organization_repo.get_permission_profile_assignment(
+            db,
+            company_id=company_id,
+            membership_id=membership.id,
+            profile_id=input_assignment.permission_profile_id,
+        )
+        if not assignment:
+            assignment = MembershipPermissionProfileAssignment(
+                company_id=company_id,
+                company_membership_id=membership.id,
+                permission_profile_id=input_assignment.permission_profile_id,
+                assigned_by_user_id=current_user.id,
+                is_active=True,
+            )
+            db.add(assignment)
+            db.flush()
+        else:
+            assignment.is_active = True
+            assignment.revoked_at = None
+            assignment.assigned_by_user_id = current_user.id
+            db.add(assignment)
+            db.query(MembershipPermissionProfileScope).filter(
+                MembershipPermissionProfileScope.profile_assignment_id == assignment.id
+            ).delete(synchronize_session=False)
+            db.flush()
+        for scope in input_assignment.scopes:
+            db.add(
+                MembershipPermissionProfileScope(
+                    company_id=company_id,
+                    profile_assignment_id=assignment.id,
+                    scope_type=scope.scope_type,
+                    scope_id=scope.scope_id,
+                )
+            )
+    db.commit()
+    db.refresh(membership)
+    return member_response(db, company_id=company_id, membership=membership)
