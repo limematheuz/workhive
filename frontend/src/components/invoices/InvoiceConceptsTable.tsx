@@ -4,6 +4,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
     Select,
     SelectContent,
@@ -79,17 +80,17 @@ export function InvoiceConceptsTable({
                 </div>
             </div>
 
-            <div className="overflow-hidden rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-[var(--bg-secondary)]/50 border-b border-[var(--border-soft)] text-3xs uppercase font-bold tracking-wider text-[var(--text-muted)] select-none">
-                            <th className="py-2.5 px-3">{dict.invoices?.col_description || "Descripción"}</th>
-                            <th className="py-2.5 px-2 text-right w-28">{pricesIncludeTax ? "Precio c/ IVA (€)" : (dict.invoices?.col_price || "Precio (€)")}</th>
-                            <th className="py-2.5 px-2 text-center w-24">{dict.invoices?.col_qty || "Cantidad"}</th>
-                            <th className="py-2.5 px-2 text-right w-24">{pricesIncludeTax ? "Total c/ IVA" : (dict.invoices?.col_total || "Total")}</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--border-soft)] text-xs">
+            <div className="overflow-hidden rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-tertiary)]">
+                <Table className="w-full border-collapse text-left">
+                    <TableHeader>
+                        <TableRow className="bg-[var(--bg-secondary)]/50 text-3xs uppercase font-bold tracking-wider text-[var(--text-muted)] select-none">
+                            <TableHead className="py-2.5 px-3">{dict.invoices?.col_description || "Descripción"}</TableHead>
+                            <TableHead className="py-2.5 px-2 text-right w-28">{pricesIncludeTax ? "Precio c/ IVA (€)" : (dict.invoices?.col_price || "Precio (€)")}</TableHead>
+                            <TableHead className="py-2.5 px-2 text-center w-24">{dict.invoices?.col_qty || "Cantidad"}</TableHead>
+                            <TableHead className="py-2.5 px-2 text-right w-24">{pricesIncludeTax ? "Total c/ IVA" : (dict.invoices?.col_total || "Total")}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody className="divide-y divide-[var(--border-soft)] text-xs">
                         {concepts.length > 0 ? (
                             concepts.map((row) => {
                                 const isHourly = row.pricing_mode === "hourly";
@@ -98,8 +99,8 @@ export function InvoiceConceptsTable({
                                     ? formatHoursShort(row.worked_seconds)
                                     : null;
                                 return (
-                                    <tr key={row.id} className="odd:bg-[var(--bg-secondary)]/15 hover:bg-[var(--btn-secondary-bg)]/40">
-                                        <td className="px-3 py-2.5 align-middle">
+                                    <TableRow key={row.id} className="odd:bg-[var(--bg-secondary)]/15 hover:bg-[var(--btn-secondary-bg)]/40">
+                                        <TableCell className="px-3 py-2.5 align-middle">
                                             <div className="flex items-start gap-2">
                                                 <div className="min-w-0 flex-1 space-y-2">
                                                     <InvoiceConceptDescriptionField
@@ -123,34 +124,38 @@ export function InvoiceConceptsTable({
                                                     ) : null}
                                                 </div>
                                                 <div className="flex shrink-0 items-center gap-1">
-                                                    <button
+                                                    <Button
                                                         type="button"
                                                         onClick={() => handleDuplicateRow(row.id)}
                                                         aria-label="Duplicar línea"
                                                         title="Duplicar línea"
-                                                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition-colors hover:bg-[var(--btn-secondary-hover-bg)]"
+                                                        variant="secondary"
+                                                        size="icon-xs"
+                                                        className="cursor-pointer shadow-none hover:translate-y-0 hover:shadow-none"
                                                     >
                                                         <Copy className="h-3.5 w-3.5" />
-                                                    </button>
-                                                    <button
+                                                    </Button>
+                                                    <Button
                                                         type="button"
                                                         onClick={() => handleDeleteRow(row.id)}
                                                         aria-label="Eliminar línea"
                                                         title="Eliminar línea"
-                                                        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] transition-colors hover:bg-[var(--btn-cancel-hover-bg)]"
+                                                        variant="dangerSoft"
+                                                        size="icon-xs"
+                                                        className="cursor-pointer shadow-none hover:translate-y-0 hover:shadow-none"
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
-                                                    </button>
+                                                    </Button>
                                                 </div>
                                             </div>
-                                        </td>
-                                        <td className="px-2 py-2.5 align-middle">
-                                            <label
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 align-middle">
+                                            <Label
                                                 htmlFor={`invoice-concept-${row.id}-price`}
                                                 className="mb-1 block text-right text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"
                                             >
                                                 {isHourly ? "€ / h" : "Precio"}
-                                            </label>
+                                            </Label>
                                             <Input
                                                 id={`invoice-concept-${row.id}-price`}
                                                 type="number"
@@ -159,18 +164,18 @@ export function InvoiceConceptsTable({
                                                 value={row.unitPrice || ""}
                                                 onChange={(e) => handleUpdateRow(row.id, "unitPrice", parseFloat(e.target.value) || 0)}
                                                 readOnly={taskPricingLocked}
-                                                className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-right font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent read-only:bg-[var(--bg-secondary)]"
+                                                className="dialog-compact-control h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-right font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent read-only:bg-[var(--bg-secondary)]"
                                                 placeholder={isHourly ? "20.00" : "0.00"}
                                                 required
                                             />
-                                        </td>
-                                        <td className="px-2 py-2.5 align-middle">
-                                            <label
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 align-middle">
+                                            <Label
                                                 htmlFor={`invoice-concept-${row.id}-quantity`}
                                                 className="mb-1 block text-center text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"
                                             >
                                                 {isHourly ? "Horas" : "Cant."}
-                                            </label>
+                                            </Label>
                                             <Input
                                                 id={`invoice-concept-${row.id}-quantity`}
                                                 type="number"
@@ -178,26 +183,26 @@ export function InvoiceConceptsTable({
                                                 value={row.quantity || ""}
                                                 onChange={(e) => handleUpdateRow(row.id, "quantity", parseFloat(e.target.value) || 0)}
                                                 readOnly={taskPricingLocked}
-                                                className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-center font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent read-only:bg-[var(--bg-secondary)]"
+                                                className="dialog-compact-control h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-center font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent read-only:bg-[var(--bg-secondary)]"
                                                 placeholder="1"
                                                 required
                                             />
-                                        </td>
-                                        <td className="px-2 py-2.5 align-middle text-right font-mono text-sm font-semibold text-[var(--text-main)]">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 align-middle text-right font-mono text-sm font-semibold text-[var(--text-main)]">
                                             {(row.unitPrice * row.quantity).toFixed(2)} €
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 );
                             })
                         ) : (
-                            <tr>
-                                <td colSpan={4} className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/10">
+                            <TableRow>
+                                <TableCell colSpan={4} className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)]/10">
                                     {dict.invoices?.no_concepts || "No hay conceptos. Selecciona tareas pendientes a la derecha o pulsa \"+ Añadir Concepto\"."}
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         )}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
 
             <Button

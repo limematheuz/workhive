@@ -3,6 +3,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 interface InvoiceAdditionalInfoProps {
@@ -50,18 +51,18 @@ export function InvoiceAdditionalInfo({
                                 checked={notesEnabled}
                                 onCheckedChange={(checked) => setNotesEnabled(checked === true)}
                                 aria-label={notesLabel}
-                                className="size-5 rounded-md border-[var(--border-color)] bg-[var(--bg-card-solid)] shadow-none data-[state=checked]:border-accent data-[state=checked]:bg-accent"
+                                className="size-5 rounded-md data-[state=checked]:border-accent data-[state=checked]:bg-accent"
                             />
                         </div>
                     </div>
                     {notesEnabled && (
-                        <textarea
+                        <Textarea
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows={4}
                             aria-label={dict.invoices?.payment_notes || "Notas de Pago"}
                             placeholder={isQuote ? "Servicios incluidos, detalles relevantes y observaciones para el cliente" : undefined}
-                            className="min-h-32 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                            className="dialog-compact-control min-h-32 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] shadow-none outline-none transition-colors focus:border-accent"
                         />
                     )}
                 </div>
@@ -75,18 +76,18 @@ export function InvoiceAdditionalInfo({
                                 checked={termsEnabled}
                                 onCheckedChange={(checked) => setTermsEnabled(checked === true)}
                                 aria-label={termsLabel}
-                                className="size-5 rounded-md border-[var(--border-color)] bg-[var(--bg-card-solid)] shadow-none data-[state=checked]:border-accent data-[state=checked]:bg-accent"
+                                className="size-5 rounded-md data-[state=checked]:border-accent data-[state=checked]:bg-accent"
                             />
                         </div>
                     </div>
                     {termsEnabled && (
-                        <textarea
+                        <Textarea
                             value={terms}
                             onChange={(e) => setTerms(e.target.value)}
                             rows={4}
                             aria-label={dict.invoices?.terms_conditions || "Términos y condiciones"}
                             placeholder={isQuote ? "Validez, forma de pago, horarios y servicios no incluidos" : undefined}
-                            className="min-h-32 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                            className="dialog-compact-control min-h-32 w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-main)] shadow-none outline-none transition-colors focus:border-accent"
                         />
                     )}
                 </div>

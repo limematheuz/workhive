@@ -9,6 +9,7 @@ import type { Dictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
 import type { Invoice } from "@/types/invoice";
 import { InvoiceConceptDescriptionView } from "./InvoiceConceptDescription";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type InvoiceDetailItemsSectionProps = {
     dict: Dictionary;
@@ -65,7 +66,7 @@ export function InvoiceDetailItemsSection({
                                     value={item.description}
                                     onChange={(e) => onEditItemChange(index, "description", e.target.value)}
                                     placeholder={dict.invoices.line_description_placeholder}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2 py-1.5 text-xs outline-none focus:border-accent transition-colors"
+                                    className="w-full rounded-lg px-2 py-1.5 text-xs"
                                 />
                                 <Input
                                     type="number"
@@ -74,7 +75,7 @@ export function InvoiceDetailItemsSection({
                                     aria-label={dict.invoices.col_qty}
                                     value={item.quantity}
                                     onChange={(e) => onEditItemChange(index, "quantity", parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2 py-1.5 text-xs text-center outline-none focus:border-accent transition-colors font-mono"
+                                    className="w-full rounded-lg px-2 py-1.5 text-center text-xs font-mono"
                                 />
                                 <Input
                                     type="number"
@@ -84,12 +85,12 @@ export function InvoiceDetailItemsSection({
                                     aria-label={dict.invoices.price}
                                     value={item.unit_price}
                                     onChange={(e) => onEditItemChange(index, "unit_price", parseFloat(e.target.value) || 0)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2 py-1.5 text-xs text-right outline-none focus:border-accent transition-colors font-mono"
+                                    className="w-full rounded-lg px-2 py-1.5 text-right text-xs font-mono"
                                 />
                                 <TaxRateSelect
                                     value={item.tax_rate}
                                     onChange={(rate) => onEditItemChange(index, "tax_rate", rate)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-1 py-1.5 text-xs text-center outline-none focus:border-accent transition-colors cursor-pointer"
+                                    className="w-full cursor-pointer rounded-lg px-1 py-1.5 text-center text-xs"
                                 />
                                 <span className="text-xs text-right font-semibold text-[var(--text-main)] font-mono">
                                     {formatCurrency(lineSubtotal)}
@@ -157,53 +158,53 @@ export function InvoiceDetailItemsSection({
             ) : (
                 <div className="-mx-2 overflow-x-auto px-2">
                     <div className="min-w-[620px] overflow-hidden rounded-2xl bg-[var(--bg-tertiary)]/65">
-                    <table className="w-full table-fixed border-collapse text-left text-[11px]">
-                        <thead>
-                            <tr className="bg-[color-mix(in_srgb,var(--accent-color)_16%,var(--bg-secondary))] text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)] print:bg-neutral-100 print:text-neutral-600">
-                                <th className="px-3 py-2.5">{dict.invoices.concept}</th>
-                                <th className="w-14 px-2 py-2 text-center">{dict.invoices.quantity}</th>
-                                <th className="w-24 px-2 py-2 text-right">{dict.invoices.price}</th>
-                                <th className="w-14 px-2 py-2 text-center">{dict.invoices.tax}</th>
-                                <th className="w-28 px-3 py-2.5 text-right">{dict.invoices.subtotal}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/35 print:divide-neutral-200">
+                    <Table className="w-full table-fixed border-collapse text-left text-[11px]">
+                        <TableHeader>
+                            <TableRow className="bg-[color-mix(in_srgb,var(--accent-color)_16%,var(--bg-secondary))] text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)] print:bg-neutral-100 print:text-neutral-600">
+                                <TableHead className="px-3 py-2.5">{dict.invoices.concept}</TableHead>
+                                <TableHead className="w-14 px-2 py-2 text-center">{dict.invoices.quantity}</TableHead>
+                                <TableHead className="w-24 px-2 py-2 text-right">{dict.invoices.price}</TableHead>
+                                <TableHead className="w-14 px-2 py-2 text-center">{dict.invoices.tax}</TableHead>
+                                <TableHead className="w-28 px-3 py-2.5 text-right">{dict.invoices.subtotal}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-white/35 print:divide-neutral-200">
                             {invoice.items && invoice.items.length > 0 ? (
                                 invoice.items.map((item, idx) => (
-                                    <tr
+                                    <TableRow
                                         key={item.id}
                                         className={`transition-colors hover:bg-[var(--bg-secondary)] print:text-black ${
                                             idx % 2 === 0 ? "bg-[var(--bg-secondary)]/65" : "bg-[var(--bg-tertiary)]/85 print:bg-neutral-50"
                                         }`}
                                     >
-                                        <td className="px-3 py-3 leading-5 text-[var(--text-main)] print:text-black">
+                                        <TableCell className="px-3 py-3 leading-5 text-[var(--text-main)] print:text-black">
                                             <div className="border-l-2 border-[var(--accent-color)] pl-2.5">
                                                 <InvoiceConceptDescriptionView description={item.description} />
                                             </div>
-                                        </td>
-                                        <td className="px-2 py-2.5 text-center font-mono font-semibold text-[var(--text-muted)] print:text-black">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 text-center font-mono font-semibold text-[var(--text-muted)] print:text-black">
                                             {item.quantity}
-                                        </td>
-                                        <td className="px-2 py-2.5 text-right font-mono text-[var(--text-muted)] print:text-black">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 text-right font-mono text-[var(--text-muted)] print:text-black">
                                             {formatCurrency(item.unit_price)}
-                                        </td>
-                                        <td className="px-2 py-2.5 text-center font-mono text-[var(--text-muted)] print:text-black">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 text-center font-mono text-[var(--text-muted)] print:text-black">
                                             {(item.tax_rate * 100).toFixed(0)}%
-                                        </td>
-                                        <td className="px-3 py-2.5 text-right font-mono font-semibold text-[var(--text-main)] print:text-black">
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2.5 text-right font-mono font-semibold text-[var(--text-main)] print:text-black">
                                             {formatCurrency(item.subtotal)}
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))
                             ) : (
-                                <tr>
-                                    <td colSpan={5} className="py-8 text-center text-[var(--text-muted)] print:text-black font-medium">
+                                <TableRow>
+                                    <TableCell colSpan={5} className="py-8 text-center text-[var(--text-muted)] print:text-black font-medium">
                                         {dict.invoices.empty_invoice_lines}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                     </div>
                 </div>
             )}
