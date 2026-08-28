@@ -3,11 +3,13 @@
 import type { ComponentProps } from "react";
 
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { formControlSurfaceClassName } from "@/components/ui/control-styles";
 import { cn } from "@/lib/utils";
 
 /** Dialog-friendly control sizing; global dialog CSS still supplies surface colors. */
 export const documentControlClassName =
-    "h-11 min-h-11 w-full min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] shadow-none";
+    "h-11 min-h-11 w-full min-w-0 rounded-xl px-3 text-sm";
 
 export function DocumentFormInput({
     className,
@@ -23,7 +25,7 @@ export function DocumentFormSelect({
     return (
         <select
             data-slot="select"
-            className={cn(documentControlClassName, "appearance-auto", className)}
+            className={cn(formControlSurfaceClassName, documentControlClassName, "appearance-auto", className)}
             {...props}
         />
     );
@@ -32,10 +34,9 @@ export function DocumentFormSelect({
 export function DocumentFormTextarea({
     className,
     ...props
-}: ComponentProps<"textarea">) {
+}: ComponentProps<typeof Textarea>) {
     return (
-        <textarea
-            data-slot="textarea"
+        <Textarea
             className={cn(
                 documentControlClassName,
                 "h-auto min-h-[4.5rem] resize-y py-2.5 leading-5",

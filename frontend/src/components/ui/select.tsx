@@ -5,6 +5,7 @@ import { Check, ChevronDown } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { formControlSurfaceClassName } from "@/components/ui/control-styles"
 
 function Select({ ...props }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />
@@ -23,7 +24,8 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       className={cn(
-        "flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-medium text-[var(--text-main)] shadow-sm outline-none transition-colors hover:bg-[var(--bg-tertiary)] focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/25 disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-[var(--text-muted)] [&>span]:line-clamp-1",
+        "flex h-10 w-full items-center justify-between gap-2 rounded-xl border px-3 text-sm font-medium outline-none transition-colors hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-50 data-[placeholder]:text-[var(--text-muted)] [&>span]:line-clamp-1",
+        formControlSurfaceClassName,
         className,
       )}
       {...props}

@@ -93,7 +93,7 @@ export function DocumentSummary({
                         id="document-prices-include-tax"
                         checked={pricesIncludeTax}
                         onCheckedChange={(checked) => setPricesIncludeTax(checked === true)}
-                        className="size-5 rounded-md border-[var(--border-color)] bg-[var(--bg-card-solid)] shadow-none data-[state=checked]:border-accent data-[state=checked]:bg-accent"
+                        className="size-5 rounded-md data-[state=checked]:border-accent data-[state=checked]:bg-accent"
                     />
                 </div>
 
@@ -117,7 +117,7 @@ export function DocumentSummary({
                                         setDiscount(Number(event.target.value) || 0)
                                     }
                                     aria-label={dict.invoices?.global_discount || "Descuento"}
-                                    className="block w-full min-w-0 rounded-lg border border-[var(--border-color)] bg-[var(--bg-card-solid)] py-1 pl-2 pr-6 text-right font-mono text-xs text-[var(--text-main)] outline-none"
+                                    className="block w-full min-w-0 rounded-lg py-1 pl-2 pr-6 text-right font-mono text-xs"
                                 />
                                 <span className="absolute right-2 font-mono text-2xs text-[var(--text-muted)]">
                                     %

@@ -5,6 +5,7 @@ import { CheckIcon } from "lucide-react";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
+import { formControlSurfaceClassName } from "@/components/ui/control-styles";
 
 function Checkbox({
     className,
@@ -14,7 +15,8 @@ function Checkbox({
         <CheckboxPrimitive.Root
             data-slot="checkbox"
             className={cn(
-                "peer flex size-5 shrink-0 items-center justify-center rounded-md border border-[var(--border-soft)] bg-[var(--bg-card)] shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[var(--accent-color)] data-[state=checked]:bg-[var(--accent-color)] data-[state=checked]:text-white",
+                "peer flex size-5 shrink-0 items-center justify-center rounded-md border outline-none transition disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:border-[var(--accent-color)] data-[state=checked]:bg-[var(--accent-color)] data-[state=checked]:text-white",
+                formControlSurfaceClassName,
                 className,
             )}
             {...props}
