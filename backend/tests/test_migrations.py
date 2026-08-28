@@ -85,6 +85,20 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("calendar_ownership_requests")
         }
+        company_membership_columns = {
+            column["name"] for column in inspector.get_columns("company_memberships")
+        }
+        department_columns = {
+            column["name"] for column in inspector.get_columns("departments")
+        }
+        team_columns = {column["name"] for column in inspector.get_columns("teams")}
+        permission_profile_columns = {
+            column["name"] for column in inspector.get_columns("permission_profiles")
+        }
+        permission_scope_columns = {
+            column["name"]
+            for column in inspector.get_columns("membership_permission_profile_scopes")
+        }
         calendar_connection_unique_constraints = {
             tuple(constraint["column_names"])
             for constraint in inspector.get_unique_constraints(
@@ -160,7 +174,174 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "reviewed_by_user_id",
         "status",
     } <= ownership_request_columns
+    assert {
+        "user_id",
+        "company_id",
+        "access_class",
+        "status",
+        "started_at",
+        "ended_at",
+    } <= company_membership_columns
+    assert {"company_id", "parent_department_id", "name", "code", "is_active"} <= department_columns
+    assert {"company_id", "department_id", "name", "code", "is_active"} <= team_columns
+    assert {"company_id", "name", "is_system", "is_active"} <= permission_profile_columns
+    assert {"company_id", "profile_assignment_id", "scope_type", "scope_id"} <= permission_scope_columns
     assert ("company_id",) in calendar_connection_unique_constraints
+
+
+@pytest.mark.skipif(
+    not os.getenv("MIGRATION_TEST_DATABASE_URL"),
+    reason="PostgreSQL migration contract runs in CI",
+)
+def test_enterprise_access_migration_backfills_legacy_company_users():
+    config = Config("alembic.ini")
+    engine = _migration_engine()
+    suffix = uuid4().hex[:10]
+    try:
+        command.downgrade(config, "h8i9j0k1l2m3")
+        with engine.begin() as connection:
+            company_id = connection.execute(
+                text(
+                    """
+                    INSERT INTO companies (name, tax_id, address, phone, email)
+                    VALUES (:name, :tax_id, 'Migration address', '600000011', :email)
+                    RETURNING id
+                    """
+                ),
+                {
+                    "name": f"Enterprise access {suffix}",
+                    "tax_id": f"ACCESS-{suffix}",
+                    "email": f"access-{suffix}@example.test",
+                },
+            ).scalar_one()
+            role_ids = {
+                role_name: connection.execute(
+                    text("SELECT id FROM roles WHERE name = :role_name"),
+                    {"role_name": role_name},
+                ).scalar_one()
+                for role_name in ("admin", "manager", "viewer", "accountant", "superadmin")
+            }
+            for role_name in ("admin", "manager", "viewer", "accountant"):
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO users (
+                            email, hashed_password, full_name, role_id,
+                            company_id, is_active
+                        ) VALUES (
+                            :email, 'unused', :full_name, :role_id,
+                            :company_id, :is_active
+                        )
+                        """
+                    ),
+                    {
+                        "email": f"enterprise-{role_name}-{suffix}@example.test",
+                        "full_name": role_name,
+                        "role_id": role_ids[role_name],
+                        "company_id": company_id,
+                        "is_active": role_name != "viewer",
+                    },
+                )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO users (
+                        email, hashed_password, full_name, role_id, is_active
+                    ) VALUES (:email, 'unused', 'Platform', :role_id, true)
+                    """
+                ),
+                {
+                    "email": f"enterprise-platform-{suffix}@example.test",
+                    "role_id": role_ids["superadmin"],
+                },
+            )
+
+        command.upgrade(config, "head")
+        with engine.connect() as connection:
+            memberships = connection.execute(
+                text(
+                    """
+                    SELECT users.email, memberships.access_class, memberships.status
+                    FROM company_memberships AS memberships
+                    JOIN users ON users.id = memberships.user_id
+                    WHERE users.email LIKE :email_pattern
+                    ORDER BY users.email
+                    """
+                ),
+                {"email_pattern": f"enterprise-%-{suffix}@example.test"},
+            ).mappings().all()
+            permission_codes = connection.execute(
+                text("SELECT code FROM permission_definitions ORDER BY code")
+            ).scalars().all()
+            administrator_profile = connection.execute(
+                text(
+                    """
+                    SELECT profiles.is_system, count(profile_permissions.permission_definition_id)
+                    FROM permission_profiles AS profiles
+                    LEFT JOIN permission_profile_permissions AS profile_permissions
+                      ON profile_permissions.permission_profile_id = profiles.id
+                    WHERE profiles.company_id = :company_id
+                      AND profiles.name = 'Administrador de empresa'
+                    GROUP BY profiles.id, profiles.is_system
+                    """
+                ),
+                {"company_id": company_id},
+            ).mappings().one()
+            administrator_scope = connection.execute(
+                text(
+                    """
+                    SELECT scopes.scope_type, scopes.scope_id
+                    FROM membership_permission_profile_assignments AS assignments
+                    JOIN company_memberships AS memberships
+                      ON memberships.id = assignments.company_membership_id
+                    JOIN membership_permission_profile_scopes AS scopes
+                      ON scopes.profile_assignment_id = assignments.id
+                    JOIN users ON users.id = memberships.user_id
+                    WHERE users.email = :email
+                      AND assignments.is_active = true
+                    """
+                ),
+                {"email": f"enterprise-admin-{suffix}@example.test"},
+            ).mappings().all()
+
+        assert [dict(membership) for membership in memberships] == [
+            {
+                "email": f"enterprise-accountant-{suffix}@example.test",
+                "access_class": "responsible",
+                "status": "active",
+            },
+            {
+                "email": f"enterprise-admin-{suffix}@example.test",
+                "access_class": "admin",
+                "status": "active",
+            },
+            {
+                "email": f"enterprise-manager-{suffix}@example.test",
+                "access_class": "responsible",
+                "status": "active",
+            },
+            {
+                "email": f"enterprise-viewer-{suffix}@example.test",
+                "access_class": "worker",
+                "status": "suspended",
+            },
+        ]
+        assert {
+            "access.members.manage",
+            "access.profiles.manage",
+            "organization.departments.manage",
+            "organization.teams.manage",
+        } <= set(permission_codes)
+        assert dict(administrator_profile) == {
+            "is_system": True,
+            "count": len(permission_codes),
+        }
+        assert [dict(scope) for scope in administrator_scope] == [
+            {"scope_type": "company", "scope_id": company_id}
+        ]
+    finally:
+        command.upgrade(config, "head")
+        engine.dispose()
 
 
 @pytest.mark.skipif(

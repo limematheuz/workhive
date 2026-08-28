@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { CalendarDays, CloudCog, FileText, LineChart, ShieldAlert } from "lucide-react";
+import { CalendarDays, CloudCog, FileText, LineChart, Network, ShieldAlert } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = {
@@ -29,6 +29,7 @@ export const ORDERED_PLAIN_HREFS = [
     "/dashboard/reservations",
     "/dashboard/locations",
     "/dashboard/users",
+    "/dashboard/organization",
     "/dashboard/companies",
     "/dashboard/integrations",
     "/dashboard/roles",
@@ -205,6 +206,12 @@ function buildNavLinks(
         },
         ...(isCompanyAdmin
             ? [
+                  {
+                      href: "/dashboard/organization",
+                      label: "Organización",
+                      exact: false,
+                      icon: <Network className="h-5 w-5 flex-shrink-0" />,
+                  },
                   {
                       href: "/dashboard/quotes",
                       label: dict.quotes?.nav_label ?? "Presupuestos",
