@@ -27,6 +27,7 @@ import {
     getInvoiceStatusMeta,
     statusActionMeta,
 } from "@/components/invoices/invoice-detail-utils";
+import { Button } from "@/components/ui/button";
 
 type InvoiceDetailActionBarProps = {
     dict: Dictionary;
@@ -89,19 +90,21 @@ export function InvoiceDetailActionBar({
         nextStates.map((state) => {
             const meta = statusActionMeta(state, dict);
             return (
-                <button
+                <Button
                     type="button"
                     key={state}
                     onClick={() => onStatusChange(state)}
                     disabled={updatingStatus}
+                    variant="ghost"
+                    size="sm"
                     className={cn(
-                        "min-h-10 rounded-xl border px-3.5 text-center text-[12px] font-semibold leading-tight transition disabled:cursor-not-allowed disabled:opacity-70",
+                        "min-h-10 rounded-xl border px-3.5 text-center text-[12px] font-semibold leading-tight transition hover:translate-y-0 hover:shadow-none disabled:cursor-not-allowed disabled:opacity-70",
                         meta.className,
                     )}
                 >
                     {updatingStatus ? <Loader2 className="mr-2 inline h-3.5 w-3.5 animate-spin" /> : null}
                     {meta.label}
-                </button>
+                </Button>
             );
         });
 
@@ -109,20 +112,21 @@ export function InvoiceDetailActionBar({
         <>
             {editMode && (
                 <>
-                    <button
+                    <Button
                         type="button"
                         onClick={onDiscardEdit}
                         disabled={savingDraft}
-                        className={cn(actionButtonClass("secondary"), "w-full sm:w-auto")}
+                        variant="secondary"
+                        className={cn(actionButtonClass("secondary"), "w-full hover:translate-y-0 hover:shadow-none sm:w-auto")}
                     >
                         <X className="h-4 w-4" />
                         {dict.invoices.discard}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
                         onClick={onSaveDraft}
                         disabled={savingDraft}
-                        className={cn(actionButtonClass("primary"), "w-full sm:w-auto")}
+                        className={cn(actionButtonClass("primary"), "w-full hover:translate-y-0 hover:shadow-none sm:w-auto")}
                     >
                         {savingDraft ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -130,29 +134,30 @@ export function InvoiceDetailActionBar({
                             <Check className="h-4 w-4" />
                         )}
                         {dict.invoices.save_changes}
-                    </button>
+                    </Button>
                 </>
             )}
 
             {!invoice.is_rectification && ["issued", "paid", "overdue"].includes(invoice.status) && (
-                <button
+                <Button
                     type="button"
                     onClick={onOpenRectification}
-                    className={cn(actionButtonClass("primary"), "w-full sm:w-auto")}
+                    className={cn(actionButtonClass("primary"), "w-full hover:translate-y-0 hover:shadow-none sm:w-auto")}
                 >
                     <FileX2 className="h-4 w-4" />
                     {dict.invoices.create_rectification}
-                </button>
+                </Button>
             )}
 
             {["draft", "issued", "paid", "overdue", "rectified"].includes(invoice.status) && (
-                <button
+                <Button
                     type="button"
                     onClick={onOpenEmailDialog}
                     disabled={sendingEmail}
+                    variant={invoice.status === "draft" ? "select" : "outline"}
                     className={cn(
                         actionButtonClass(invoice.status === "draft" ? "select" : "neutral"),
-                        "w-full sm:w-auto",
+                        "w-full hover:translate-y-0 hover:shadow-none sm:w-auto",
                     )}
                 >
                     {sendingEmail ? (
@@ -161,47 +166,50 @@ export function InvoiceDetailActionBar({
                         <Mail className="h-4 w-4" />
                     )}
                     {invoice.status === "draft" ? dict.invoices.send_proforma : dict.invoices.send_email}
-                </button>
+                </Button>
             )}
 
             {fiscalRecord && !["accepted", "accepted_with_errors"].includes(fiscalRecord.submission_status) && (
-                <button
+                <Button
                     type="button"
                     onClick={() => void onSubmitFiscal()}
                     disabled={submittingFiscal || !fiscalReadiness?.submission_available}
                     title={!fiscalReadiness?.submission_available ? dict.invoices.fiscal_not_configured : undefined}
+                    variant="outline"
                     className={cn(
                         actionButtonClass(!fiscalReadiness?.submission_available ? "disabled" : "neutral"),
-                        "w-full sm:w-auto",
+                        "w-full hover:translate-y-0 hover:shadow-none sm:w-auto",
                     )}
                 >
                     {submittingFiscal ? <Loader2 className="h-4 w-4 animate-spin" /> : <CloudUpload className="h-4 w-4" />}
                     {dict.invoices.submit_aeat}
-                </button>
+                </Button>
             )}
 
             {facturaeReadiness?.unsigned_generation_available && (
-                <button
+                <Button
                     type="button"
                     onClick={() => void onFacturae(false)}
                     disabled={generatingFacturae}
-                    className={cn(actionButtonClass("neutral"), "w-full sm:w-auto")}
+                    variant="outline"
+                    className={cn(actionButtonClass("neutral"), "w-full hover:translate-y-0 hover:shadow-none sm:w-auto")}
                 >
                     {generatingFacturae ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
                     {dict.invoices.download_facturae}
-                </button>
+                </Button>
             )}
 
             {facturaeReadiness?.signed_generation_available && (
-                <button
+                <Button
                     type="button"
                     onClick={() => void onFacturae(true)}
                     disabled={generatingFacturae}
-                    className={cn(actionButtonClass("neutral"), "w-full sm:w-auto")}
+                    variant="outline"
+                    className={cn(actionButtonClass("neutral"), "w-full hover:translate-y-0 hover:shadow-none sm:w-auto")}
                 >
                     {generatingFacturae ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
                     {dict.invoices.download_signed_facturae}
-                </button>
+                </Button>
             )}
         </>
     );
@@ -228,11 +236,11 @@ export function InvoiceDetailActionBar({
                     </h1>
                 </div>
 
-                <button
+                <Button
                     type="button"
                     onClick={() => void onPdfAction()}
                     disabled={downloadingPdf}
-                    className={cn(actionButtonClass("primary"), "w-full xl:w-auto xl:min-w-[13rem]")}
+                    className={cn(actionButtonClass("primary"), "w-full hover:translate-y-0 hover:shadow-none xl:w-auto xl:min-w-[13rem]")}
                 >
                     {downloadingPdf ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -244,7 +252,7 @@ export function InvoiceDetailActionBar({
                     {invoice.status === "draft"
                         ? dict.invoices.print_pdf
                         : dict.invoices.download_final_pdf}
-                </button>
+                </Button>
             </header>
 
             <section className="mt-4 grid gap-2 md:grid-cols-2 xl:grid-cols-4">

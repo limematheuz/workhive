@@ -137,9 +137,13 @@ export function InvoiceCreateSheetDetails({
                         label={`${dict.invoices?.client_select || "Cliente"} *`}
                     >
                         {isClientLocked ? (
-                            <div className="flex h-11 min-w-0 items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)]">
-                                <span className="truncate">{lockedClientLabel}</span>
-                            </div>
+                            <DocumentFormInput
+                                id="invoice-client"
+                                value={lockedClientLabel}
+                                readOnly
+                                aria-readonly="true"
+                                className="dialog-compact-control bg-[var(--bg-primary)]"
+                            />
                         ) : (
                             <Select
                                 value={selectedClientId}
@@ -148,7 +152,7 @@ export function InvoiceCreateSheetDetails({
                                 <SelectTrigger
                                     id="invoice-client"
                                     aria-label={dict.invoices?.client_select}
-                                    className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm"
+                                    className="h-11 w-full rounded-xl px-3 text-sm"
                                 >
                                     <SelectValue placeholder={dict.invoices?.client_select_placeholder || "-- Selecciona un cliente --"} />
                                 </SelectTrigger>
@@ -176,7 +180,7 @@ export function InvoiceCreateSheetDetails({
                                 onChange={(event) => setInvoiceNumber(event.target.value)}
                                 placeholder="Opcional"
                                 maxLength={50}
-                                className="font-mono"
+                                className="dialog-compact-control bg-[var(--bg-primary)] font-mono"
                             />
                         </DocumentFormField>
                         <DocumentFormField
@@ -210,7 +214,7 @@ export function InvoiceCreateSheetDetails({
                                 value={paymentMethod}
                                 onValueChange={(value) => setPaymentMethod(value as InvoicePaymentMethod)}
                             >
-                                <SelectTrigger id="invoice-payment-method" className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm">
+                                <SelectTrigger id="invoice-payment-method" className="h-11 w-full rounded-xl px-3 text-sm">
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -269,6 +273,7 @@ export function InvoiceCreateSheetDetails({
                         onChange={(event) => setShippingAddress(event.target.value)}
                         rows={2}
                         maxLength={500}
+                        className="dialog-compact-control bg-[var(--bg-primary)]"
                         placeholder={dict.invoices?.shipping_address_placeholder || "Solo si difiere de la dirección fiscal"}
                     />
                 </DocumentFormField>

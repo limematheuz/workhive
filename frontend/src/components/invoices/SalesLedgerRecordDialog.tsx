@@ -6,6 +6,10 @@ import { FilePenLine, Loader2, Pencil, Plus } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import { parseMoneyInput } from "@/lib/sales-ledger";
 import type { SalesLedgerEntry, SalesLedgerManualRecordInput } from "@/services/sales-ledger.service";
@@ -40,7 +44,7 @@ function initialForm(entry: SalesLedgerEntry | null): FormState {
     };
 }
 
-const inputClassName = "h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-accent";
+const inputClassName = "h-11 w-full rounded-xl px-3 text-sm";
 
 export function SalesLedgerRecordDialog({
     entry,
@@ -92,25 +96,28 @@ export function SalesLedgerRecordDialog({
 
                         <div className="grid gap-4 overflow-y-auto px-5 py-5 sm:grid-cols-2 sm:px-6">
                             <Field label={copy.invoice_number} htmlFor="ledger-document-number">
-                                <input id="ledger-document-number" required maxLength={50} value={form.documentNumber} onChange={(event) => setForm((current) => ({ ...current, documentNumber: event.target.value }))} className={inputClassName} />
+                                <Input id="ledger-document-number" required maxLength={50} value={form.documentNumber} onChange={(event) => setForm((current) => ({ ...current, documentNumber: event.target.value }))} className={inputClassName} />
                             </Field>
                             <Field label={copy.ledger_date} htmlFor="ledger-entry-date">
-                                <input id="ledger-entry-date" required type="date" value={form.entryDate} onChange={(event) => setForm((current) => ({ ...current, entryDate: event.target.value }))} className={inputClassName} />
+                                <DatePicker id="ledger-entry-date" required value={form.entryDate} onValueChange={(entryDate) => setForm((current) => ({ ...current, entryDate }))} className={inputClassName} />
                             </Field>
                             <Field label={copy.client} htmlFor="ledger-client-name" className="sm:col-span-2">
-                                <input id="ledger-client-name" required maxLength={160} value={form.clientName} onChange={(event) => setForm((current) => ({ ...current, clientName: event.target.value }))} className={inputClassName} />
+                                <Input id="ledger-client-name" required maxLength={160} value={form.clientName} onChange={(event) => setForm((current) => ({ ...current, clientName: event.target.value }))} className={inputClassName} />
                             </Field>
                             <Field label={copy.ledger_base} htmlFor="ledger-base-amount">
-                                <input id="ledger-base-amount" required inputMode="decimal" value={form.baseAmount} onChange={(event) => setForm((current) => ({ ...current, baseAmount: event.target.value }))} placeholder="0,00" className={inputClassName} />
+                                <Input id="ledger-base-amount" required inputMode="decimal" value={form.baseAmount} onChange={(event) => setForm((current) => ({ ...current, baseAmount: event.target.value }))} placeholder="0,00" className={inputClassName} />
                             </Field>
                             <Field label={copy.ledger_vat} htmlFor="ledger-tax-amount">
-                                <input id="ledger-tax-amount" required inputMode="decimal" value={form.taxAmount} onChange={(event) => setForm((current) => ({ ...current, taxAmount: event.target.value }))} placeholder="0,00" className={inputClassName} />
+                                <Input id="ledger-tax-amount" required inputMode="decimal" value={form.taxAmount} onChange={(event) => setForm((current) => ({ ...current, taxAmount: event.target.value }))} placeholder="0,00" className={inputClassName} />
                             </Field>
                             <Field label={copy.ledger_collected} htmlFor="ledger-payment-status" className="sm:col-span-2">
-                                <select id="ledger-payment-status" value={form.paymentStatus} onChange={(event) => setForm((current) => ({ ...current, paymentStatus: event.target.value as FormState["paymentStatus"] }))} className={inputClassName}>
-                                    <option value="pending">{copy.ledger_status_pending}</option>
-                                    <option value="paid">{copy.ledger_status_paid}</option>
-                                </select>
+                                <Select value={form.paymentStatus} onValueChange={(paymentStatus) => setForm((current) => ({ ...current, paymentStatus: paymentStatus as FormState["paymentStatus"] }))}>
+                                    <SelectTrigger id="ledger-payment-status" className={inputClassName}><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="pending">{copy.ledger_status_pending}</SelectItem>
+                                        <SelectItem value="paid">{copy.ledger_status_paid}</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </Field>
                         </div>
 
@@ -150,9 +157,9 @@ export function SalesLedgerRecordDialog({
 
 function Field({ label, htmlFor, className, children }: { label: string; htmlFor: string; className?: string; children: ReactNode }) {
     return (
-        <label htmlFor={htmlFor} className={`flex min-w-0 flex-col gap-1.5 ${className ?? ""}`}>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">{label}</span>
+        <div className={`flex min-w-0 flex-col gap-1.5 ${className ?? ""}`}>
+            <Label htmlFor={htmlFor} className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">{label}</Label>
             {children}
-        </label>
+        </div>
     );
 }
