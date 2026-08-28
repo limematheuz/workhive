@@ -10,4 +10,7 @@ test("getMe preserves an unauthenticated response for invitation flows", () => {
 
     assert.match(source, /import \{ apiFetch, assertApiResponseOk/);
     assert.match(source, /await assertApiResponseOk\(response, "Failed to fetch user profile"\)/);
+    assert.match(source, /response\.status === 401/);
+    assert.match(source, /response\.status >= 500/);
+    assert.match(source, /extractErrorMessage\(response, "Could not sign in\."\)/);
 });
