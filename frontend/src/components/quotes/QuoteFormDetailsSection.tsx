@@ -5,6 +5,7 @@ import {
 } from "@/components/billing/DocumentFormControls";
 import { DocumentFormField } from "@/components/billing/DocumentFormField";
 import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
+import { DatePicker } from "@/components/ui/date-picker";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Client } from "@/services/client.service";
 import {
@@ -63,7 +64,7 @@ export function QuoteFormDetailsSection({
                             <SelectTrigger
                                 id="quote-client"
                                 aria-label={dict.quotes?.client_label || "Cliente"}
-                                className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm"
+                                className="h-11 w-full rounded-xl px-3 text-sm"
                             >
                                 <SelectValue placeholder={dict.quotes?.new_unregistered_client || "-- Nuevo Cliente / No registrado --"} />
                             </SelectTrigger>
@@ -85,11 +86,10 @@ export function QuoteFormDetailsSection({
                         id="quote-valid-until"
                         label={dict.quotes?.valid_until_label || "Válido hasta"}
                     >
-                        <DocumentFormInput
+                        <DatePicker
                             id="quote-valid-until"
-                            type="date"
                             value={validUntil}
-                            onChange={(event) => setValidUntil(event.target.value)}
+                            onValueChange={setValidUntil}
                             aria-label={dict.quotes?.valid_until_label || "Válido hasta"}
                         />
                     </DocumentFormField>

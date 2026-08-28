@@ -1,4 +1,5 @@
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type InvoiceEmailChipProps = {
     email: string;
@@ -23,14 +24,16 @@ export function InvoiceEmailChip({
             ].join(" ")}
         >
             <span className="truncate">{email}</span>
-            <button
+            <Button
                 type="button"
                 onClick={() => onRemove(email)}
-                className="rounded-full text-current/55 transition hover:text-current"
+                variant="ghost"
+                size="icon-xs"
+                className="rounded-full text-current/55 hover:text-current"
                 aria-label={removeLabel.replace("{email}", email)}
             >
                 <X className="h-3.5 w-3.5" />
-            </button>
+            </Button>
         </span>
     );
 }

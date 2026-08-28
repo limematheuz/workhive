@@ -16,6 +16,16 @@ import {
     DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Label } from "@/components/ui/label";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/errors";
 
 interface RectificationModalProps {
@@ -106,35 +116,36 @@ export function RectificationModal({
 
                     {/* Reason, required by law */}
                     <div className="space-y-1.5">
-                        <label htmlFor="rectification-reason-code" className="text-2xs uppercase font-bold text-[var(--text-muted)]">
+                        <Label htmlFor="rectification-reason-code" className="text-2xs uppercase font-bold text-[var(--text-muted)]">
                             {dict.invoices.rectification_reason_code_label}
-                        </label>
-                        <select
-                            id="rectification-reason-code"
+                        </Label>
+                        <Select
                             value={reasonCode}
-                            onChange={(event) => setReasonCode(event.target.value)}
-                            required
-                            aria-label={dict.invoices.rectification_reason_code_label}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent transition-colors"
+                            onValueChange={setReasonCode}
                         >
-                            {Object.entries(dict.rectification_reason_codes).map(([code, label]) => (
-                                <option key={code} value={code}>{code} · {label}</option>
-                            ))}
-                        </select>
+                            <SelectTrigger id="rectification-reason-code" aria-label={dict.invoices.rectification_reason_code_label} className="h-11 w-full text-xs">
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(dict.rectification_reason_codes).map(([code, label]) => (
+                                    <SelectItem key={code} value={code}>{code} · {label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="space-y-1.5">
-                        <label htmlFor="rectification-reason" className="text-2xs uppercase font-bold text-[var(--text-muted)]">
+                        <Label htmlFor="rectification-reason" className="text-2xs uppercase font-bold text-[var(--text-muted)]">
                             {dict.invoices.rectification_reason_label}
-                        </label>
-                        <textarea
+                        </Label>
+                        <Textarea
                             id="rectification-reason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             placeholder={dict.invoices.rectification_reason_placeholder}
                             rows={3}
                             required
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent transition-colors resize-none"
+                            className="w-full resize-none text-xs"
                         />
                         <p className="text-2xs text-[var(--text-muted)] flex items-center gap-1.5">
                             <AlertTriangle className="w-3 h-3 shrink-0" />
@@ -144,17 +155,16 @@ export function RectificationModal({
 
                     {/* Issue date */}
                     <div className="space-y-1.5">
-                        <label htmlFor="rectification-issue-date" className="text-2xs uppercase font-bold text-[var(--text-muted)]">
+                        <Label htmlFor="rectification-issue-date" className="text-2xs uppercase font-bold text-[var(--text-muted)]">
                             {dict.invoices.rectification_issue_date_label}
-                        </label>
-                        <input
+                        </Label>
+                        <DatePicker
                             id="rectification-issue-date"
-                            type="date"
                             value={issueDate}
-                            onChange={(e) => setIssueDate(e.target.value)}
+                            onValueChange={setIssueDate}
                             required
                             aria-label={dict.invoices.rectification_issue_date_label}
-                            className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent transition-colors"
+                            className="w-full text-xs"
                         />
                     </div>
 

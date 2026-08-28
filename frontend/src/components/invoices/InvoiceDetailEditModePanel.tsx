@@ -6,6 +6,7 @@ import type { InvoicePaymentMethod } from "@/types/invoice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Select,
     SelectContent,
@@ -59,9 +60,9 @@ export function InvoiceDetailEditModePanel({
             </header>
             <div className="mb-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div className="space-y-1">
-                    <label htmlFor="invoice-edit-final-number" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <Label htmlFor="invoice-edit-final-number" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.final_number}
-                    </label>
+                    </Label>
                     <Input
                         id="invoice-edit-final-number"
                         type="text"
@@ -69,13 +70,13 @@ export function InvoiceDetailEditModePanel({
                         onChange={(event) => onEditingInvoiceNumberChange(event.target.value)}
                         placeholder={dict.invoices.optional_final_number_placeholder}
                         maxLength={50}
-                        className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 font-mono text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent"
+                        className="h-11 w-full rounded-xl px-3 font-mono text-sm"
                     />
                 </div>
                 <div className="space-y-1">
-                    <label htmlFor="invoice-edit-issue-date" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <Label htmlFor="invoice-edit-issue-date" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.issue_date}
-                    </label>
+                    </Label>
                     <DatePicker
                         id="invoice-edit-issue-date"
                         aria-label={dict.invoices.issue_date}
@@ -85,9 +86,9 @@ export function InvoiceDetailEditModePanel({
                     />
                 </div>
                 <div className="space-y-1">
-                    <label htmlFor="invoice-edit-due-date" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <Label htmlFor="invoice-edit-due-date" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.due_date}
-                    </label>
+                    </Label>
                     <DatePicker
                         id="invoice-edit-due-date"
                         aria-label={dict.invoices.due_date}
@@ -97,14 +98,14 @@ export function InvoiceDetailEditModePanel({
                     />
                 </div>
                 <div className="space-y-1">
-                    <label htmlFor="invoice-edit-payment-method" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                    <Label htmlFor="invoice-edit-payment-method" className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.invoices.payment_method}
-                    </label>
+                    </Label>
                     <Select
                         value={editingPaymentMethod}
                         onValueChange={(value) => onEditingPaymentMethodChange(value as InvoicePaymentMethod)}
                     >
-                        <SelectTrigger id="invoice-edit-payment-method" className="h-11 w-full rounded-xl border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm">
+                        <SelectTrigger id="invoice-edit-payment-method" className="h-11 w-full rounded-xl px-3 text-sm">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -115,13 +116,13 @@ export function InvoiceDetailEditModePanel({
                     </Select>
                 </div>
             </div>
-            <label className="mb-5 flex cursor-pointer items-center justify-between rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2.5">
-                <span>
+            <div className="mb-5 flex items-center justify-between rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2.5">
+                <Label htmlFor="invoice-edit-prices-include-tax" className="cursor-pointer">
                     <span className="block text-xs font-semibold text-[var(--text-main)]">IVA incluido en el total</span>
                     <span className="mt-0.5 block text-[10px] text-[var(--text-muted)]">{editingPricesIncludeTax ? "Los precios editables incluyen IVA" : "Los precios editables son sin IVA"}</span>
-                </span>
-                <Checkbox checked={editingPricesIncludeTax} onCheckedChange={(checked) => onEditingPricesIncludeTaxChange(checked === true)} />
-            </label>
+                </Label>
+                <Checkbox id="invoice-edit-prices-include-tax" checked={editingPricesIncludeTax} onCheckedChange={(checked) => onEditingPricesIncludeTaxChange(checked === true)} />
+            </div>
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <BillingPartyCard
                     type="issuer"

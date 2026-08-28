@@ -7,9 +7,14 @@ import type {
     BillingPartyFields,
 } from "@/lib/billing-party";
 import { normalizeSwiftBicInput } from "@/lib/banking";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export type { BillingPartyFields } from "@/lib/billing-party";
+
+const partyInputClassName =
+    "dialog-compact-control w-full rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-xs text-[var(--text-main)] shadow-none outline-none focus:border-accent";
 
 interface BillingPartyCardProps {
     type: "issuer" | "recipient";
@@ -42,13 +47,15 @@ export function BillingPartyCard({
                 <div className="flex justify-between items-center">
                     <span className="font-extrabold text-[var(--text-muted)] uppercase tracking-wider text-3xs">{labelTitle}</span>
                     {canToggleEditing && (
-                        <button
+                        <Button
                             type="button"
                             onClick={() => setIsEditing(!isEditing)}
-                            className="text-3xs bg-[var(--bg-tertiary)] hover:bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-[var(--text-main)] font-extrabold px-2.5 py-1 rounded-lg ui-motion cursor-pointer uppercase tracking-wider"
+                            variant="ghost"
+                            size="xs"
+                            className="h-auto cursor-pointer rounded-lg border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-2.5 py-1 text-3xs font-extrabold uppercase tracking-wider shadow-none hover:translate-y-0 hover:bg-[var(--bg-secondary)] hover:shadow-none"
                         >
                             {isEditing ? (dict.invoices?.done || "Listo") : (dict.invoices?.edit || "Editar")}
-                        </button>
+                        </Button>
                     )}
                 </div>
                 {!isEditing ? (
@@ -111,123 +118,123 @@ export function BillingPartyCard({
                     <div className="space-y-2 pt-1 flex-1">
                         <div className="grid grid-cols-2 gap-2">
                             <div className="space-y-0.5">
-                                <label htmlFor={`${type}-party-name`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_name || "Nombre"}</label>
+                                <Label htmlFor={`${type}-party-name`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_name || "Nombre"}</Label>
                                 <Input
                                     id={`${type}-party-name`}
                                     type="text" 
                                     aria-label={dict.invoices?.field_name || "Nombre"}
                                     value={structuredFields.name} 
                                     onChange={(e) => onChangeField("name", e.target.value)} 
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                             <div className="space-y-0.5">
-                                <label htmlFor={`${type}-party-tax-id`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_tax_id || "NIF/CIF"}</label>
+                                <Label htmlFor={`${type}-party-tax-id`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_tax_id || "NIF/CIF"}</Label>
                                 <Input
                                     id={`${type}-party-tax-id`}
                                     type="text" 
                                     aria-label={dict.invoices?.field_tax_id || "NIF/CIF"}
                                     value={structuredFields.taxId} 
                                     onChange={(e) => onChangeField("taxId", e.target.value)} 
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent font-mono"
+                                    className={`${partyInputClassName} font-mono`}
                                 />
                             </div>
                         </div>
                         <div className="space-y-0.5">
-                            <label htmlFor={`${type}-party-address`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_address || "Dirección"}</label>
+                            <Label htmlFor={`${type}-party-address`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_address || "Dirección"}</Label>
                             <Input
                                 id={`${type}-party-address`}
                                 type="text" 
                                 aria-label={dict.invoices?.field_address || "Dirección"}
                                 value={structuredFields.address} 
                                 onChange={(e) => onChangeField("address", e.target.value)} 
-                                className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                className={partyInputClassName}
                             />
                         </div>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[7rem_1fr]">
                             <div className="space-y-0.5">
-                                <label htmlFor={`${type}-party-postal-code`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">CP</label>
+                                <Label htmlFor={`${type}-party-postal-code`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">CP</Label>
                                 <Input
                                     id={`${type}-party-postal-code`}
                                     type="text"
                                     aria-label="Código postal"
                                     value={structuredFields.postalCode || ""}
                                     onChange={(e) => onChangeField("postalCode", e.target.value)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                             <div className="space-y-0.5">
-                                <label htmlFor={`${type}-party-city`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Ciudad</label>
+                                <Label htmlFor={`${type}-party-city`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Ciudad</Label>
                                 <Input
                                     id={`${type}-party-city`}
                                     type="text"
                                     aria-label="Ciudad"
                                     value={structuredFields.city || ""}
                                     onChange={(e) => onChangeField("city", e.target.value)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                         </div>
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                             <div className="space-y-0.5">
-                                <label htmlFor={`${type}-party-province`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Provincia</label>
+                                <Label htmlFor={`${type}-party-province`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">Provincia</Label>
                                 <Input
                                     id={`${type}-party-province`}
                                     type="text"
                                     aria-label="Provincia"
                                     value={structuredFields.province || ""}
                                     onChange={(e) => onChangeField("province", e.target.value)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                             <div className="space-y-0.5">
-                                <label htmlFor={`${type}-party-country`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">País</label>
+                                <Label htmlFor={`${type}-party-country`} className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">País</Label>
                                 <Input
                                     id={`${type}-party-country`}
                                     type="text"
                                     aria-label="País"
                                     value={structuredFields.country || ""}
                                     onChange={(e) => onChangeField("country", e.target.value)}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             <div className="space-y-0.5">
-                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_phone || "Teléfono"}</label>
+                                <Label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_phone || "Teléfono"}</Label>
                                 <Input
                                     type="text" 
                                     aria-label={dict.invoices?.field_phone || "Teléfono"}
                                     value={structuredFields.phone} 
                                     onChange={(e) => onChangeField("phone", e.target.value)} 
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                             <div className="space-y-0.5">
-                                <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_email || "Email"}</label>
+                                <Label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_email || "Email"}</Label>
                                 <Input
                                     type="email" 
                                     aria-label={dict.invoices?.field_email || "Email"}
                                     value={structuredFields.email} 
                                     onChange={(e) => onChangeField("email", e.target.value)} 
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                                    className={partyInputClassName}
                                 />
                             </div>
                         </div>
                         {isIssuer && (
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                                 <div className="space-y-0.5">
-                                    <label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_bank || "Banco / IBAN"}</label>
+                                    <Label className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">{dict.invoices?.field_bank || "Banco / IBAN"}</Label>
                                     <Input
                                         type="text"
                                         aria-label={dict.invoices?.field_bank || "Banco / IBAN"}
                                         value={structuredFields.bank || ""}
                                         onChange={(e) => onChangeField("bank", e.target.value)}
-                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent font-mono"
+                                        className={`${partyInputClassName} font-mono`}
                                     />
                                 </div>
                                 <div className="space-y-0.5">
-                                    <label htmlFor="issuer-swift-bic" className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">SWIFT / BIC</label>
+                                    <Label htmlFor="issuer-swift-bic" className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider">SWIFT / BIC</Label>
                                     <Input
                                         id="issuer-swift-bic"
                                         type="text"
@@ -237,7 +244,7 @@ export function BillingPartyCard({
                                         maxLength={11}
                                         pattern="[A-Za-z]{4}[A-Za-z]{2}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?"
                                         title="8 u 11 caracteres: entidad, país y código BIC"
-                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-accent font-mono uppercase"
+                                        className={`${partyInputClassName} font-mono uppercase`}
                                     />
                                 </div>
                             </div>

@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { MoreVertical } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MoreHorizontal } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 export interface PopoverOption {
@@ -31,41 +32,30 @@ export function ActionPopover({
     className,
 }: ActionPopoverProps) {
     return (
-        <Popover>
-            <PopoverTrigger asChild>
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
                 {trigger || (
-                    <button
+                    <Button
                         type="button"
                         aria-label={triggerLabel}
+                        variant="ghost"
+                        size="icon-xs"
                         className={cn(
-                            "p-1.5 rounded-lg hover:bg-[var(--bg-tertiary)] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center outline-none",
+                            "border-0 bg-transparent text-[var(--text-muted)] shadow-none hover:bg-transparent hover:text-[var(--text-main)] hover:shadow-none",
                             className
                         )}
                     >
-                        <MoreVertical className="w-4 h-4" />
-                    </button>
+                        <MoreHorizontal className="w-4 h-4" />
+                    </Button>
                 )}
-            </PopoverTrigger>
-            <PopoverContent align={align} className="w-40 p-1">
-                <div className="flex flex-col gap-0.5">
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align={align} className="w-40">
                     {options.map((opt) => {
                         const Icon = opt.icon;
                         const isDelete = opt.variant === "delete";
                         const isEdit = opt.variant === "edit";
                         const isDeactivate = opt.variant === "deactivate";
                         const optionKey = opt.href ?? `${opt.label}-${opt.variant ?? "default"}-${opt.disabled ? "disabled" : "enabled"}`;
-
-                        const optionClass = cn(
-                            "group flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold border-none bg-transparent cursor-pointer transition-colors rounded-lg text-left no-underline select-none outline-none",
-                            isDelete
-                                ? "text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)]"
-                                : isDeactivate
-                                ? "text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)]"
-                                : isEdit
-                                ? "text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-bg)]"
-                                : "text-[var(--text-main)] hover:bg-[var(--bg-tertiary)]",
-                            opt.disabled && "opacity-50 pointer-events-none"
-                        );
 
                         const iconClass = cn(
                             "h-3.5 w-3.5 shrink-0",
@@ -87,26 +77,26 @@ export function ActionPopover({
 
                         if (opt.href && !opt.disabled) {
                             return (
-                                <Link key={optionKey} href={opt.href} className={optionClass}>
-                                    {content}
-                                </Link>
+                                <DropdownMenuItem key={optionKey} asChild>
+                                    <Link href={opt.href}>{content}</Link>
+                                </DropdownMenuItem>
                             );
                         }
 
                         return (
-                            <button
-                                key={optionKey}
-                                type="button"
+                            <React.Fragment key={optionKey}>
+                            {isDelete && <DropdownMenuSeparator />}
+                            <DropdownMenuItem
                                 disabled={opt.disabled}
                                 onClick={opt.onClick}
-                                className={optionClass}
+                                variant={isDelete || isDeactivate ? "destructive" : "default"}
                             >
                                 {content}
-                            </button>
+                            </DropdownMenuItem>
+                            </React.Fragment>
                         );
                     })}
-                </div>
-            </PopoverContent>
-        </Popover>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

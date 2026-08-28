@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
     composeInvoiceConceptDescription,
     parseInvoiceConceptDescription,
@@ -103,10 +107,10 @@ export function InvoiceConceptDescriptionField({
             <div className="space-y-2">
                 <div className="grid gap-2 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_6.5rem]">
                     <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-title`}>
+                        <Label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-title`}>
                             {label}
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             id={`${id}-title`}
                             value={draft.title}
                             onChange={(event) => {
@@ -117,14 +121,14 @@ export function InvoiceConceptDescriptionField({
                             placeholder={placeholder || "Servicio"}
                             required
                             autoFocus
-                            className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-xs font-semibold text-[var(--text-main)] outline-none focus:border-accent"
+                            className="dialog-compact-control h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-xs font-semibold text-[var(--text-main)] shadow-none outline-none focus:border-accent"
                         />
                     </div>
                     <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-location`}>
+                        <Label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-location`}>
                             Ubicación
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             id={`${id}-location`}
                             value={draft.location || ""}
                             onChange={(event) => {
@@ -133,14 +137,14 @@ export function InvoiceConceptDescriptionField({
                                 publish(next);
                             }}
                             placeholder="Casa / local"
-                            className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                            className="dialog-compact-control h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 text-xs text-[var(--text-main)] shadow-none outline-none focus:border-accent"
                         />
                     </div>
                     <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-date`}>
+                        <Label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-date`}>
                             Fecha
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             id={`${id}-date`}
                             value={draft.date || ""}
                             onChange={(event) => {
@@ -149,17 +153,17 @@ export function InvoiceConceptDescriptionField({
                                 publish(next);
                             }}
                             placeholder="dd/mm/aaaa"
-                            className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                            className="dialog-compact-control h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 font-mono text-xs text-[var(--text-main)] shadow-none outline-none focus:border-accent"
                         />
                     </div>
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-[8.5rem_minmax(0,1fr)]">
                     <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-team`}>
+                        <Label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-team`}>
                             Tiempo equipo
-                        </label>
-                        <input
+                        </Label>
+                        <Input
                             id={`${id}-team`}
                             value={draft.teamTime || ""}
                             onChange={(event) => {
@@ -168,14 +172,14 @@ export function InvoiceConceptDescriptionField({
                                 publish(next);
                             }}
                             placeholder="1h 30m"
-                            className="h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 font-mono text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                            className="dialog-compact-control h-8 w-full rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 font-mono text-xs text-[var(--text-main)] shadow-none outline-none focus:border-accent"
                         />
                     </div>
                     <div className="space-y-1">
-                        <label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-workers`}>
+                        <Label className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]" htmlFor={`${id}-workers`}>
                             Equipo (Nombre: tiempo)
-                        </label>
-                        <textarea
+                        </Label>
+                        <Textarea
                             id={`${id}-workers`}
                             value={workersText}
                             onChange={(event) => {
@@ -183,20 +187,22 @@ export function InvoiceConceptDescriptionField({
                                 publish(draft, event.target.value);
                             }}
                             rows={Math.max(2, Math.min(4, workersText.split("\n").length || 2))}
-                            className="w-full resize-y rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-1.5 font-mono text-[11px] leading-5 text-[var(--text-main)] outline-none focus:border-accent"
+                            className="dialog-compact-control w-full resize-y rounded-lg border border-[var(--border-soft)] bg-[var(--bg-primary)] px-2 py-1.5 font-mono text-[11px] leading-5 text-[var(--text-main)] shadow-none outline-none focus:border-accent"
                             placeholder={"Andrea: 1h 2m\nOwnet: 8m"}
                         />
                     </div>
                 </div>
 
                 {isStructured && (
-                    <button
+                    <Button
                         type="button"
                         onClick={() => setEditing(false)}
-                        className="text-3xs font-semibold text-accent hover:underline"
+                        variant="link"
+                        size="xs"
+                        className="h-auto border-transparent px-0 py-0 text-3xs font-semibold shadow-none hover:translate-y-0 hover:shadow-none"
                     >
                         Listo
-                    </button>
+                    </Button>
                 )}
             </div>
         );
@@ -254,13 +260,15 @@ export function InvoiceConceptDescriptionField({
                 </p>
             )}
 
-            <button
+            <Button
                 type="button"
                 onClick={() => setEditing(true)}
-                className="text-3xs font-semibold text-accent hover:underline"
+                variant="link"
+                size="xs"
+                className="h-auto border-transparent px-0 py-0 text-3xs font-semibold shadow-none hover:translate-y-0 hover:shadow-none"
             >
                 Editar
-            </button>
+            </Button>
         </div>
     );
 }
