@@ -4,6 +4,7 @@ import { splitStoredTaxAmount } from "@/lib/billing-calculations";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
 import type { Quote } from "@/types/quote";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 type QuoteDetailItemsProps = {
     quote: Quote;
@@ -25,51 +26,51 @@ export function QuoteDetailItems({ quote, dict }: QuoteDetailItemsProps) {
         <div className="space-y-5">
             <div className="-mx-1 overflow-x-auto px-1">
                 <div className="min-w-[560px] overflow-hidden rounded-2xl bg-[var(--bg-tertiary)]/65">
-                    <table className="w-full table-fixed border-collapse text-left text-[11px]">
-                        <thead>
-                            <tr className="bg-[color-mix(in_srgb,var(--accent-color)_16%,var(--bg-secondary))] text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
-                                <th className="px-3 py-2.5">{dict.invoices?.concept || "Concepto"}</th>
-                                <th className="w-14 px-2 py-2 text-center">{dict.invoices?.quantity || "Cant."}</th>
-                                <th className="w-24 px-2 py-2 text-right">{dict.invoices?.price || "Precio"}</th>
-                                <th className="w-14 px-2 py-2 text-center">{dict.invoices?.tax || "IVA"}</th>
-                                <th className="w-28 px-3 py-2.5 text-right">{dict.invoices?.subtotal || "Subtotal"}</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/35">
+                    <Table className="w-full table-fixed border-collapse text-left text-[11px]">
+                        <TableHeader>
+                            <TableRow className="bg-[color-mix(in_srgb,var(--accent-color)_16%,var(--bg-secondary))] text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                                <TableHead className="px-3 py-2.5">{dict.invoices?.concept || "Concepto"}</TableHead>
+                                <TableHead className="w-14 px-2 py-2 text-center">{dict.invoices?.quantity || "Cant."}</TableHead>
+                                <TableHead className="w-24 px-2 py-2 text-right">{dict.invoices?.price || "Precio"}</TableHead>
+                                <TableHead className="w-14 px-2 py-2 text-center">{dict.invoices?.tax || "IVA"}</TableHead>
+                                <TableHead className="w-28 px-3 py-2.5 text-right">{dict.invoices?.subtotal || "Subtotal"}</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody className="divide-y divide-white/35">
                             {quote.items.length > 0 ? (
                                 quote.items.map((item, idx) => (
-                                    <tr
+                                    <TableRow
                                         key={item.id}
                                         className={idx % 2 === 0 ? "bg-[var(--bg-secondary)]/65" : "bg-[var(--bg-tertiary)]/85"}
                                     >
-                                        <td className="px-3 py-3 font-semibold leading-5 text-[var(--text-main)]">
+                                        <TableCell className="px-3 py-3 font-semibold leading-5 text-[var(--text-main)]">
                                             <span className="block border-l-2 border-[var(--accent-color)] pl-2.5 whitespace-pre-wrap break-words">
                                                 {item.description}
                                             </span>
-                                        </td>
-                                        <td className="px-2 py-2.5 text-center font-mono font-semibold text-[var(--text-muted)]">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 text-center font-mono font-semibold text-[var(--text-muted)]">
                                             {item.quantity}
-                                        </td>
-                                        <td className="px-2 py-2.5 text-right font-mono text-[var(--text-muted)]">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 text-right font-mono text-[var(--text-muted)]">
                                             {formatCurrency(item.unit_price)}
-                                        </td>
-                                        <td className="px-2 py-2.5 text-center font-mono text-[var(--text-muted)]">
+                                        </TableCell>
+                                        <TableCell className="px-2 py-2.5 text-center font-mono text-[var(--text-muted)]">
                                             {taxPercent}%
-                                        </td>
-                                        <td className="px-3 py-2.5 text-right font-mono font-semibold text-[var(--text-main)]">
+                                        </TableCell>
+                                        <TableCell className="px-3 py-2.5 text-right font-mono font-semibold text-[var(--text-main)]">
                                             {formatCurrency(item.subtotal)}
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))
                             ) : (
-                                <tr>
-                                    <td colSpan={5} className="py-8 text-center font-medium text-[var(--text-muted)]">
+                                <TableRow>
+                                    <TableCell colSpan={5} className="py-8 text-center font-medium text-[var(--text-muted)]">
                                         {dict.quotes?.items_label || "Sin líneas"}
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
                             )}
-                        </tbody>
-                    </table>
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
 
