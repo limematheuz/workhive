@@ -23,7 +23,9 @@ class Company(Base):
     onboarding_completed = Column(Boolean, default=False, nullable=False)
     operating_model = Column(String(30), nullable=True)
     subscription_plan = Column(String(30), nullable=False, default="none")
-    subscription_status = Column(String(30), nullable=False, default="inactive", index=True)
+    subscription_status = Column(
+        String(30), nullable=False, default="inactive", index=True
+    )
     trial_started_at = Column(DateTime(timezone=True), nullable=True)
     trial_ends_at = Column(DateTime(timezone=True), nullable=True)
     trial_expiry_notice_sent_at = Column(DateTime(timezone=True), nullable=True)
@@ -69,6 +71,10 @@ class Company(Base):
     )
     template_tasks = relationship(
         "TemplateTask", back_populates="company", cascade="all, delete-orphan"
+    )
+    subscriptions = relationship("CompanySubscription", back_populates="company")
+    entitlement_overrides = relationship(
+        "CompanyEntitlementOverride", back_populates="company"
     )
 
     @property

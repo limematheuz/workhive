@@ -15,7 +15,7 @@ from app.repositories import role as role_repo
 from app.repositories import user as user_repo
 from app.schemas.user_invitation import UserInvitationAccept, UserInvitationCreate
 from app.services import email_service, organization_bootstrap_service, privacy_service
-from app.services.subscription_policy import require_active_user_capacity
+from app.services.entitlement_service import require_internal_member_capacity
 from app.services.user_scope import is_superadmin
 
 
@@ -44,7 +44,9 @@ def _normalize_email(email: str) -> str:
 def _validate_invited_role(db: Session, role_id: int, inviter: User):
     role = role_repo.get_role(db, role_id)
     if not role:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Role not found"
+        )
     if inviter.role.name == "manager" and role.name != "viewer":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -81,7 +83,6 @@ def create_invitation(
             detail="This email already has a WorkHive account",
         )
     invited_role = _validate_invited_role(db, payload.role_id, inviter)
-    require_active_user_capacity(db, inviter.company)
 
     existing = (
         db.query(UserInvitation)
@@ -124,7 +125,9 @@ def create_invitation(
         )
         db.add(invitation)
 
-    invitation_url = f"{settings.FRONTEND_URL.rstrip('/')}/accept-invitation#token={token}"
+    invitation_url = (
+        f"{settings.FRONTEND_URL.rstrip('/')}/accept-invitation#token={token}"
+    )
     try:
         sent = email_service.send_worker_invitation_email(
             recipient_email=email,
@@ -204,7 +207,20 @@ def accept_invitation(
             status_code=status.HTTP_409_CONFLICT,
             detail="The invited company is no longer available",
         )
-    require_active_user_capacity(db, company)
+    invited_role = role_repo.get_role(db, invitation.role_id)
+    access_class = organization_bootstrap_service.legacy_role_name_access_class(
+        invited_role.name if invited_role else None
+    )
+    if access_class is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The invitation role cannot be assigned to an internal seat",
+        )
+    require_internal_member_capacity(
+        db,
+        company_id=company.id,
+        access_class=access_class,
+    )
 
     user = User(
         email=invitation.email,

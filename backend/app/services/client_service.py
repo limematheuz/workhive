@@ -4,6 +4,12 @@ from app.schemas.client import ClientCreate, ClientEmailRequest, ClientUpdate
 from app.repositories import client as client_repo
 from fastapi import HTTPException, status
 from app.services import email_service, invoice_email_contact_service
+from app.services.entitlement_service import require_company_feature
+
+
+def _require_clients_feature(db: Session, company_id: int | None) -> None:
+    if company_id is not None:
+        require_company_feature(db, company_id=company_id, code="features.clients")
 
 
 def get_clients(
@@ -13,10 +19,12 @@ def get_clients(
     limit: int = 100,
     is_active: bool | None = True,
 ) -> list[Client]:
+    _require_clients_feature(db, company_id)
     return client_repo.get_all_clients(db, company_id, skip, limit, is_active)
 
 
 def get_client(db: Session, company_id: int | None, client_id: int) -> Client:
+    _require_clients_feature(db, company_id)
     client = client_repo.get_client_by_id(db, client_id, company_id)
     if not client:
         raise HTTPException(
@@ -27,6 +35,7 @@ def get_client(db: Session, company_id: int | None, client_id: int) -> Client:
 
 
 def create_client(db: Session, client_data: ClientCreate) -> Client:
+    _require_clients_feature(db, client_data.company_id)
     if client_data.legal_number:
         existing_client = client_repo.get_client_by_legal_number(
             db, client_data.company_id, client_data.legal_number
@@ -41,6 +50,7 @@ def create_client(db: Session, client_data: ClientCreate) -> Client:
 def update_client(
     db: Session, company_id: int | None, client_id: int, client_update: ClientUpdate
 ) -> Client:
+    _require_clients_feature(db, company_id)
     db_client = client_repo.get_client_by_id(db, client_id, company_id)
     if not db_client:
         raise HTTPException(
@@ -61,6 +71,7 @@ def update_client(
 
 
 def delete_client(db: Session, company_id: int | None, client_id: int) -> Client:
+    _require_clients_feature(db, company_id)
     db_client = client_repo.get_client_by_id(db, client_id, company_id)
     if not db_client:
         raise HTTPException(
@@ -77,6 +88,7 @@ def email_client(
     *,
     sender_email: str | None = None,
 ) -> tuple[Client, str]:
+    _require_clients_feature(db, company_id)
     client = get_client(db, company_id, client_id)
     recipient_emails = list(dict.fromkeys(str(email).strip() for email in data.recipient_emails if str(email).strip()))
     if data.save_recipient_to_client_id not in (None, client.id):

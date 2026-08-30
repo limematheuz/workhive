@@ -32,6 +32,10 @@ def get_all_companies(db: Session, skip: int = 0, limit: int = 100) -> list[Comp
     )
 
 
+def count_all_companies(db: Session) -> int:
+    return db.query(Company).count()
+
+
 def create_company(db: Session, company_data: CompanyCreate) -> Company:
     db_company = Company(**company_data.model_dump())
     db.add(db_company)

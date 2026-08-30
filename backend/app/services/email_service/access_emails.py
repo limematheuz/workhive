@@ -110,7 +110,15 @@ def send_trial_approved_email(
             f"Tu prueba estará activa hasta el {trial_ends_at.date().isoformat()}."
         )
     else:
-        access_text = "Tu acceso Pro ya está activo."
+        plan_names = {
+            "basic": "Basic",
+            "medium": "Medium",
+            "top": "Top",
+            "mega": "Enterprise",
+            "custom": "Custom",
+        }
+        plan_name = plan_names.get(access_mode, "WorkHive")
+        access_text = f"Tu plan {plan_name} ya está activo."
 
     html_body = base_layout(
         f"""

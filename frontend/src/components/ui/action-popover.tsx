@@ -53,20 +53,19 @@ export function ActionPopover({
                     {options.map((opt) => {
                         const Icon = opt.icon;
                         const isDelete = opt.variant === "delete";
-                        const isEdit = opt.variant === "edit";
                         const isDeactivate = opt.variant === "deactivate";
                         const optionKey = opt.href ?? `${opt.label}-${opt.variant ?? "default"}-${opt.disabled ? "disabled" : "enabled"}`;
 
+                        const isDestructive = isDelete || isDeactivate;
                         const iconClass = cn(
                             "h-3.5 w-3.5 shrink-0",
-                            isDelete
-                                ? "text-[var(--btn-cancel-text)] group-hover:text-[var(--btn-cancel-hover-text)]"
-                                : isDeactivate
+                            isDestructive
                                 ? "text-[var(--btn-cancel-text)]"
-                                : isEdit
-                                ? "text-[var(--btn-secondary-text)]"
-                                : "text-[var(--text-muted)]"
+                                : "text-accent"
                         );
+                        const itemClass = isDestructive
+                            ? undefined
+                            : "text-accent data-[highlighted]:bg-accent/10 data-[highlighted]:text-accent";
 
                         const content = (
                             <>
@@ -77,7 +76,7 @@ export function ActionPopover({
 
                         if (opt.href && !opt.disabled) {
                             return (
-                                <DropdownMenuItem key={optionKey} asChild>
+                                <DropdownMenuItem key={optionKey} asChild className={itemClass}>
                                     <Link href={opt.href}>{content}</Link>
                                 </DropdownMenuItem>
                             );
@@ -89,7 +88,8 @@ export function ActionPopover({
                             <DropdownMenuItem
                                 disabled={opt.disabled}
                                 onClick={opt.onClick}
-                                variant={isDelete || isDeactivate ? "destructive" : "default"}
+                                variant={isDestructive ? "destructive" : "default"}
+                                className={itemClass}
                             >
                                 {content}
                             </DropdownMenuItem>

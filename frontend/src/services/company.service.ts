@@ -15,8 +15,13 @@ export interface CompanyProvisionData {
     owner_email: string;
     /** Temporary owner access code collected in the UI (mapped to API on submit). */
     owner_access_code: string;
-    subscription_plan?: "trial" | "pro";
+    subscription_plan?: "trial" | "basic" | "medium" | "top" | "mega" | "custom";
     trial_days?: number | null;
+}
+
+export interface CompanyPage {
+    items: Company[];
+    total: number;
 }
 
 export interface CompanyOnboardingResult {
@@ -30,12 +35,26 @@ export interface CompanyOnboardingResult {
 }
 
 export const CompanyService = {
+    getCompaniesPage: async (skip: number = 0, limit: number = 10): Promise<CompanyPage> => {
+        const response = await apiFetch(`/api/v1/companies/?skip=${skip}&limit=${limit}`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se han podido cargar las empresas");
+        const items = await response.json() as Company[];
+        const headerTotal = Number(response.headers.get("X-Total-Count"));
+        return {
+            items,
+            total: Number.isFinite(headerTotal) ? headerTotal : items.length,
+        };
+    },
+
     getCompanies: async (skip: number = 0, limit: number = 100): Promise<Company[]> => {
         const response = await apiFetch(`/api/v1/companies/?skip=${skip}&limit=${limit}`, {
             method: "GET",
             cache: "no-store",
         });
-        await assertApiResponseOk(response, "Error fetching companies");
+        await assertApiResponseOk(response, "No se han podido cargar las empresas");
         return await response.json();
     },
 
@@ -44,7 +63,7 @@ export const CompanyService = {
             method: "GET",
             cache: "no-store",
         });
-        await assertApiResponseOk(response, "Error fetching company");
+        await assertApiResponseOk(response, "No se ha podido cargar la empresa");
         return await response.json();
     },
 
@@ -53,7 +72,7 @@ export const CompanyService = {
             method: "GET",
             cache: "no-store",
         });
-        await assertApiResponseOk(response, "Error fetching company members");
+        await assertApiResponseOk(response, "No se han podido cargar las personas de la empresa");
         return await response.json();
     },
 

@@ -3,6 +3,7 @@ from app.core.config import settings
 from app.core.rate_limit import rate_limiter
 from app.core.security import get_password_hash
 from app.models.trial_request import TrialRequest
+from app.models.company import Company
 from app.models.user import User
 
 
@@ -116,6 +117,56 @@ def test_superadmin_can_approve_verified_trial_request(client, db, monkeypatch):
     assert data["created_company_id"] is not None
     assert data["created_user_id"] is not None
     assert "setup_url" in delivered
+    company = db.get(Company, data["created_company_id"])
+    assert company.subscription_plan == "top"
+    assert company.subscription_status == "trialing"
+
+
+def test_superadmin_can_approve_verified_request_with_enterprise_plan(client, db, monkeypatch):
+    delivered = {}
+
+    monkeypatch.setattr(
+        "app.services.email_service.send_trial_verification_email",
+        lambda **kwargs: delivered.setdefault("verification_url", kwargs["verification_url"]) or True,
+    )
+    monkeypatch.setattr(
+        "app.services.email_service.send_trial_approved_email",
+        lambda **kwargs: delivered.setdefault("access_mode", kwargs["access_mode"]) or True,
+    )
+
+    client.post(
+        "/api/v1/trial-requests/",
+        json={
+            "full_name": "Enterprise Owner",
+            "email": "enterprise.owner@example.com",
+            "company_name": "Enterprise Clean",
+            "phone": "622222222",
+        },
+    )
+    token = delivered["verification_url"].split("trial_verification=", 1)[1]
+    client.post("/api/v1/trial-requests/verify", json={"token": token})
+
+    headers = _superadmin_headers(client, db)
+    trial_request = db.query(TrialRequest).filter_by(email="enterprise.owner@example.com").one()
+    approved = client.post(
+        f"/api/v1/trial-requests/{trial_request.id}/approve",
+        headers=headers,
+        json={
+            "access_mode": "mega",
+            "tax_id": "B33333333",
+            "address": "Enterprise Street 3",
+            "phone": "622222222",
+        },
+    )
+
+    assert approved.status_code == 200
+    data = approved.json()
+    assert data["approval_mode"] == "mega"
+    assert data["approved_trial_days"] is None
+    company = db.get(Company, data["created_company_id"])
+    assert company.subscription_plan == "mega"
+    assert company.subscription_status == "active"
+    assert delivered["access_mode"] == "mega"
 
 
 def test_trial_verification_is_rate_limited(client, monkeypatch):

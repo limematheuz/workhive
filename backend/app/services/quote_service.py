@@ -13,8 +13,13 @@ from app.schemas.quote import (
     QuoteEmailRequest,
     QuoteUpdate,
 )
-from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate
+from app.schemas.quote_item import QuoteItemCreate
 from app.services import email_service, invoice_email_contact_service
+from app.services.quote_policy_service import (
+    assert_quote_content_editable,
+    get_quote_or_404,
+    require_quotes_feature,
+)
 from app.services.quote_pdf import generate_quote_email_pdf
 
 VALID_TRANSITIONS: dict[str, list[str]] = {
@@ -24,26 +29,7 @@ VALID_TRANSITIONS: dict[str, list[str]] = {
     "rejected": [],
     "expired": [],
 }
-# Email moves draft → sent; commercial content remains editable until accepted/closed.
-CONTENT_EDITABLE_STATUSES = frozenset({"draft", "sent"})
 logger = logging.getLogger(__name__)
-
-
-def _assert_quote_content_editable(quote) -> None:
-    if quote.status not in CONTENT_EDITABLE_STATUSES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot edit content of an accepted, rejected, or expired quote",
-        )
-
-
-def _get_quote_or_404(db: Session, company_id: int, quote_id: int):
-    quote = quote_repo.get_quote(db, company_id, quote_id)
-    if not quote:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found"
-        )
-    return quote
 
 
 def _validate_client(db: Session, company_id: int, client_id: int) -> None:
@@ -62,11 +48,13 @@ def get_quotes(
     skip: int = 0,
     limit: int = 100,
 ):
+    require_quotes_feature(db, company_id)
     return quote_repo.get_quotes(db, company_id, client_id, quote_status, skip, limit)
 
 
 def get_quote(db: Session, company_id: int, quote_id: int):
-    return _get_quote_or_404(db, company_id, quote_id)
+    require_quotes_feature(db, company_id)
+    return get_quote_or_404(db, company_id, quote_id)
 
 
 def get_quote_pdf(
@@ -74,7 +62,8 @@ def get_quote_pdf(
     company_id: int,
     quote_id: int,
 ):
-    quote = _get_quote_or_404(db, company_id, quote_id)
+    require_quotes_feature(db, company_id)
+    quote = get_quote_or_404(db, company_id, quote_id)
     if not quote.items:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -110,7 +99,8 @@ def email_quote(
     *,
     sender_email: str | None = None,
 ):
-    quote = _get_quote_or_404(db, company_id, quote_id)
+    require_quotes_feature(db, company_id)
+    quote = get_quote_or_404(db, company_id, quote_id)
     if quote.status not in {"draft", "sent"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -194,6 +184,7 @@ def email_quote(
 
 
 def create_quote(db: Session, company_id: int, data: QuoteCreate):
+    require_quotes_feature(db, company_id)
     if data.client_id is not None:
         _validate_client(db, company_id, data.client_id)
     try:
@@ -253,7 +244,7 @@ def _validate_quote_update(
 
     content_fields = data.model_fields_set - {"status"}
     if content_fields:
-        _assert_quote_content_editable(quote)
+        assert_quote_content_editable(quote)
 
 
 def _replace_quote_items(db: Session, quote, items: list[QuoteItemCreate]) -> None:
@@ -271,6 +262,7 @@ def _replace_quote_items(db: Session, quote, items: list[QuoteItemCreate]) -> No
 
 
 def update_quote(db: Session, company_id: int, quote_id: int, data: QuoteUpdate):
+    require_quotes_feature(db, company_id)
     quote = quote_repo.get_quote_for_update(db, company_id, quote_id)
     if quote is None:
         raise HTTPException(
@@ -298,6 +290,7 @@ def accept_quote(
     quote_id: int,
     data: QuoteAcceptRequest,
 ):
+    require_quotes_feature(db, company_id)
     quote = quote_repo.get_quote_for_update(db, company_id, quote_id)
     if quote is None:
         raise HTTPException(
@@ -350,7 +343,8 @@ def accept_quote(
 
 
 def delete_quote(db: Session, company_id: int, quote_id: int) -> None:
-    quote = _get_quote_or_404(db, company_id, quote_id)
+    require_quotes_feature(db, company_id)
+    quote = get_quote_or_404(db, company_id, quote_id)
     if quote.status not in ("draft",):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -358,79 +352,6 @@ def delete_quote(db: Session, company_id: int, quote_id: int) -> None:
         )
     try:
         quote_repo.delete_quote(db, quote)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-
-
-# ---- Quote Items ----
-
-
-def get_quote_items(db: Session, company_id: int, quote_id: int):
-    _get_quote_or_404(db, company_id, quote_id)
-    return quote_item_repo.get_quote_items(db, quote_id)
-
-
-def create_quote_item(
-    db: Session, company_id: int, quote_id: int, data: QuoteItemCreate
-):
-    quote = _get_quote_or_404(db, company_id, quote_id)
-    _assert_quote_content_editable(quote)
-    try:
-        item = quote_item_repo.create_quote_item(
-            db,
-            quote=quote,
-            description=data.description,
-            quantity=data.quantity,
-            unit_price=data.unit_price,
-        )
-        quote_repo.recalculate_totals(db, quote)
-        db.commit()
-        db.refresh(item)
-        return item
-    except Exception:
-        db.rollback()
-        raise
-
-
-def update_quote_item(
-    db: Session, company_id: int, quote_id: int, item_id: int, data: QuoteItemUpdate
-):
-    quote = _get_quote_or_404(db, company_id, quote_id)
-    _assert_quote_content_editable(quote)
-    # Find the item
-    item = next((i for i in quote.items if i.id == item_id), None)
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Quote item not found"
-        )
-    update_data = data.model_dump(exclude_unset=True)
-    try:
-        item = quote_item_repo.update_quote_item(db, item, **update_data)
-        quote_repo.recalculate_totals(db, quote)
-        db.commit()
-        db.refresh(item)
-        return item
-    except Exception:
-        db.rollback()
-        raise
-
-
-def delete_quote_item(
-    db: Session, company_id: int, quote_id: int, item_id: int
-) -> None:
-    quote = _get_quote_or_404(db, company_id, quote_id)
-    _assert_quote_content_editable(quote)
-    item = next((i for i in quote.items if i.id == item_id), None)
-    if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Quote item not found"
-        )
-    try:
-        quote_item_repo.delete_quote_item(db, item)
-        db.expire(quote, ["items"])
-        quote_repo.recalculate_totals(db, quote)
         db.commit()
     except Exception:
         db.rollback()

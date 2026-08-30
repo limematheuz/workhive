@@ -11,6 +11,12 @@ from app.repositories import company as company_repo
 from fastapi import HTTPException, status
 from app.services import location_access_service
 from app.services import location_workspace_service
+from app.services.entitlement_service import require_company_feature
+
+
+def _require_locations_feature(db: Session, company_id: int | None) -> None:
+    if company_id is not None:
+        require_company_feature(db, company_id=company_id, code="features.locations")
 
 
 def _validate_default_service_provider(
@@ -101,10 +107,12 @@ def get_locations(
     skip: int = 0,
     limit: int = 100,
 ) -> list[Location]:
+    _require_locations_feature(db, company_id)
     return location_repo.get_locations_by_client(db, company_id, client_id, skip, limit)
 
 
 def get_location(db: Session, location_id: int, company_id: int | None) -> Location:
+    _require_locations_feature(db, company_id)
     location = location_repo.get_location_by_id(db, location_id, company_id)
     if not location:
         raise HTTPException(
@@ -119,6 +127,7 @@ def get_location_service_providers(
     current_user: User,
     location_id: int,
 ):
+    _require_locations_feature(db, current_user.company_id)
     location_access_service.require_accessible_location(
         db,
         current_user,
@@ -178,6 +187,7 @@ def get_location_service_providers(
 def create_location_in_transaction(
     db: Session, company_id: int | None, location_data: LocationCreate
 ) -> Location:
+    _require_locations_feature(db, company_id)
     if location_data.client_id is not None:
         client = client_repo.get_client_by_id(
             db, location_data.client_id, company_id
@@ -233,6 +243,7 @@ def create_location_in_transaction(
 def create_location(
     db: Session, company_id: int | None, location_data: LocationCreate
 ) -> Location:
+    _require_locations_feature(db, company_id)
     try:
         location = create_location_in_transaction(db, company_id, location_data)
         db.commit()
@@ -246,6 +257,7 @@ def create_location(
 def update_location(
     db: Session, location_id: int, location_update: LocationUpdate, company_id: int | None
 ) -> Location:
+    _require_locations_feature(db, company_id)
     db_location = location_repo.get_location_by_id(db, location_id, company_id)
     if not db_location:
         raise HTTPException(
@@ -308,6 +320,7 @@ def update_location(
 
 
 def delete_location(db: Session, location_id: int, company_id: int | None) -> Location:
+    _require_locations_feature(db, company_id)
     db_location = location_repo.get_location_by_id(db, location_id, company_id)
     if not db_location:
         raise HTTPException(

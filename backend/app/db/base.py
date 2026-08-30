@@ -13,7 +13,11 @@ from app.models.template_task import TemplateTask
 from app.models.location_template import LocationTemplate
 from app.models.work_session import WorkSession
 from app.models.task_item import TaskItem
-from app.models.task_structure import TaskAssignment, TaskChecklistAssignment, TaskChecklistItem
+from app.models.task_structure import (
+    TaskAssignment,
+    TaskChecklistAssignment,
+    TaskChecklistItem,
+)
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.quote import Quote
@@ -57,4 +61,12 @@ from app.models.permission_profile import (
     PermissionDefinition,
     PermissionProfile,
     PermissionProfilePermission,
+)
+from app.models.subscription_entitlement import (
+    CompanyEntitlementOverride,
+    CompanySubscription,
+    EntitlementChangeAudit,
+    PlanCatalogAudit,
+    PlanEntitlement,
+    SubscriptionPlan,
 )

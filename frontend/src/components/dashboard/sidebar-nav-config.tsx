@@ -55,6 +55,19 @@ export type SidebarNavUserFlags = {
     canViewFinance: boolean;
     isAccountant: boolean;
     userIsPlatformSuperadmin: boolean;
+    enabledFeatures?: ReadonlySet<string> | null;
+};
+
+const NAVIGATION_FEATURES: Record<string, string> = {
+    "/dashboard/clients": "features.clients",
+    "/dashboard/locations": "features.locations",
+    "/dashboard/tasks": "features.work_orders",
+    "/dashboard/calendar": "features.planning",
+    "/dashboard/live-work": "features.time_tracking",
+    "/dashboard/reservations": "features.planning",
+    "/dashboard/organization": "features.organization",
+    "/dashboard/quotes": "features.quotes",
+    "/dashboard/invoices": "features.invoices",
 };
 
 function buildNavLinks(
@@ -296,11 +309,19 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         flags.userIsPlatformSuperadmin,
     );
 
-    const visibleNavLinks = flags.userIsPlatformSuperadmin
+    const roleVisibleNavLinks = flags.userIsPlatformSuperadmin
         ? navLinks.filter(link => PLATFORM_SUPERADMIN_HREFS.has(link.href))
         : flags.isAccountant
             ? navLinks.filter(link => ACCOUNTANT_HREFS.has(link.href))
-        : navLinks;
+            : navLinks;
+
+    const enabledFeatures = flags.enabledFeatures;
+    const visibleNavLinks = enabledFeatures == null || flags.userIsPlatformSuperadmin || flags.isAccountant
+        ? roleVisibleNavLinks
+        : roleVisibleNavLinks.filter((link) => {
+            const feature = NAVIGATION_FEATURES[link.href];
+            return !feature || enabledFeatures.has(feature);
+        });
 
     const linkByHref = new Map(visibleNavLinks.map(link => [link.href, link]));
     const buildGroup = (

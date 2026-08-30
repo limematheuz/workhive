@@ -5,6 +5,7 @@ from app.api.v1.clients import router as clients_router
 from app.api.v1.locations import router as locations_router
 from app.api.v1.roles import router as roles_router
 from app.api.v1.companies import router as companies_router
+from app.api.v1.company_plan_access import router as company_plan_access_router
 from app.api.v1.template_tasks import router as template_tasks_router
 from app.api.v1.location_templates import router as location_templates_router
 from app.api.v1.location_zones import router as location_zones_router
@@ -59,6 +60,9 @@ api_router.include_router(
     reservations_router, prefix="/reservations", tags=["reservations"]
 )
 api_router.include_router(roles_router, prefix="/roles", tags=["roles"])
+api_router.include_router(
+    company_plan_access_router, prefix="/companies", tags=["company-plan-access"]
+)
 api_router.include_router(companies_router, prefix="/companies", tags=["companies"])
 api_router.include_router(
     template_tasks_router, prefix="/template-tasks", tags=["template-tasks"]

@@ -47,7 +47,7 @@ def test_trial_approved_email_trial_mode_includes_end_date(monkeypatch):
     assert "Crear contraseña" in html_body(delivered["message"]) or "setup" in plain
 
 
-def test_trial_approved_email_pro_mode_without_trial_date(monkeypatch):
+def test_trial_approved_email_paid_plan_without_trial_date(monkeypatch):
     delivered = capture_send(monkeypatch)
 
     assert access_emails.send_trial_approved_email(
@@ -55,12 +55,12 @@ def test_trial_approved_email_pro_mode_without_trial_date(monkeypatch):
         recipient_name="User",
         company_name="Acme",
         setup_url="https://example.com/setup",
-        access_mode="pro",
+        access_mode="mega",
         trial_ends_at=None,
     )
 
     plain = plain_body(delivered["message"])
-    assert "Tu acceso Pro ya está activo." in plain
+    assert "Tu plan Enterprise ya está activo." in plain
 
 
 def test_trial_expiry_warning_emails_use_shared_professional_layout(monkeypatch):

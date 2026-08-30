@@ -26,7 +26,8 @@ test("invoice and company services cover the failing analytics and profile reads
     assert.match(invoiceSource, /getInvoices/);
     assert.match(invoiceSource, /assertApiResponseOk\(response,\s*"Error fetching invoices"\)/);
     assert.match(companySource, /getCompany/);
-    assert.match(companySource, /assertApiResponseOk\(response,\s*"Error fetching company"\)/);
+    assert.match(companySource, /assertApiResponseOk\(response,\s*"No se ha podido cargar la empresa"\)/);
+    assert.match(companySource, /No se han podido cargar las personas de la empresa/);
 });
 
 test("task service covers rejected-status reads used by notifications", () => {

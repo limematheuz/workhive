@@ -27,7 +27,7 @@ Capacidades objetivo:
   trabajador.
 - Calidad: inspecciones, evidencias, incidencias, reclamaciones y acciones
   correctivas.
-- Planes Básico, Mediano, Top, Mega y A medida.
+- Planes Basic, Medium, Top, Enterprise y Custom.
 - UI con los componentes y patrones shadcn/ui del repositorio.
 
 ## 2. Principios no negociables
@@ -270,13 +270,41 @@ Códigos iniciales de módulo:
 
 Límites iniciales:
 
-- max_active_members.
-- max_admin_seats.
-- max_manager_seats.
-- max_worker_seats.
-- max_departments, max_teams y max_locations.
+- Administradores, responsables y trabajadores internos, cada uno por separado.
+- Departamentos y equipos.
+- Accesos externos de portal y accesos de gestoría.
 
-La prueba usa Mega y trialing sigue siendo un estado de suscripción, no plan.
+La prueba usa Top; `trialing` sigue siendo un estado de suscripción, no un
+plan.
+
+Implementación aprobada para esta etapa:
+
+- Catálogo versionado Basic, Medium, Top, Enterprise y Custom; los cuatro planes
+  estándar no se alteran sobre contratos existentes.
+- Cada empresa conserva su historial de plan, las excepciones aprobadas y el
+  motivo y actor de cada cambio.
+- Las excepciones se aplican sobre módulos o límites, no sobre permisos de una
+  persona: el permiso y el ámbito siguen siendo controles independientes.
+- Las cuotas de administradores, responsables, trabajadores, departamentos y
+  equipos se verifican en backend antes de crear, activar o promocionar.
+- Una invitación pendiente no consume plaza: la plaza se valida cuando esa
+  persona acepta y se convierte en miembro activo.
+- La prueba mantiene todas las capacidades Top; los contactos de portal no
+  son plazas internas.
+- Solo el Superadmin de plataforma puede cambiar el plan, activar una prueba
+  o conceder una excepción por empresa. El administrador de la empresa no
+  puede acceder a esa configuración comercial.
+- La edición de datos de empresa y la gestión de plan son flujos separados.
+  La pantalla de plan muestra nombres comprensibles de capacidades, uso actual,
+  excepciones vigentes e historial, sin exponer códigos internos al usuario.
+- La tarifa comercial vive separada del plan. Cada tarifa aprobada enlazará un
+  precio de Stripe con Basic, Medium, Top o Enterprise; Custom se activa por
+  contrato y nunca por compra automática. Mientras se migra Stripe, sus eventos
+  históricos se normalizan al plan actual antes de guardarse.
+
+La migración es aditiva y conserva las suscripciones actuales. Como las
+migraciones locales SQLite no prueban PostgreSQL, antes de una PR se ejecutará
+la migración y el backfill en CI o una base PostgreSQL real.
 
 ### 6.3 Clientes, Comercial, Catálogo y Contratos
 
@@ -375,26 +403,44 @@ accidental de menú.
 
 ## 8. Planes y cuotas
 
+Un plan comercial determina qué módulos y capacidad puede contratar una
+empresa. Una tarifa determina el precio, moneda, periodo, impuestos,
+descuentos y cobro de ese plan. Son entidades distintas: los permisos de una
+persona no determinan ni sustituyen ninguna de las dos. La primera fundación
+incluye planes, límites, prueba y excepciones auditadas; la tarifa y cobro se
+construirán después sobre esta relación estable. "Sin acceso" es un estado de
+suscripción, nunca un plan.
+
 ### 8.1 Confirmado
 
-- Básico, Mediano, Top, Mega y A medida.
-- Toda persona activa cuenta como plaza.
-- Prueba temporal igual a Mega.
-- Básico: 1 admin, 2 managers y 5 trabajadores.
-- Top: referencia de 10 admins, 20 managers y 100 trabajadores.
-- Departamentos necesarios para organizaciones grandes.
-- A medida configura módulos y límites para toda la empresa.
+| Plan | Administradores | Responsables | Trabajadores | Departamentos | Equipos |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Básico | 1 | 2 | 5 | 1 | 2 |
+| Mediano | 3 | 8 | 25 | 5 | 10 |
+| Top | 10 | 20 | 100 | 25 | 50 |
+| Enterprise | 25 | 75 | 500 | 100 | 250 |
+| A medida | Según contrato | Según contrato | Según contrato | Según contrato | Según contrato |
 
-### 8.2 Pendiente de aprobación
-
-1. Límite exacto de Mediano.
-2. Límite exacto de Mega.
-3. Plan mínimo para departamentos, perfiles configurables, calidad avanzada,
-   inventario, RRHH e integraciones.
-4. Si Básico queda en ocho plazas o sube a diez con otra distribución.
-5. Política al alcanzar cupo: bloquear, invitación pendiente o exceso temporal
-   auditado.
-6. Si Comercial ve presupuesto sin importe o no lo ve por completo.
+- La prueba temporal usa Top.
+- Cada clase de plaza se controla por separado; no existe un límite global que
+  permita sustituir trabajadores por administradores.
+- Las invitaciones pendientes no consumen plaza. Se bloquea la aceptación si
+  al convertirla en persona activa se supera su límite.
+- Básico cubre operación esencial. Mediano añade catálogo, recurrencia,
+  planificación, exportación básica y portal de cliente. Top suma calidad,
+  rentabilidad, inventario, RRHH, portales de partner y gestoría,
+  integraciones y aprobaciones. Enterprise añade estructura corporativa, sucursales,
+  API e integraciones avanzadas. A medida activa únicamente lo contratado.
+- Departamentos, perfiles configurables y equipos forman parte de la base de
+  organización; la suscripción decide su capacidad y los módulos disponibles.
+- Todo cambio manual de plan, estado de acceso, función o capacidad exige una
+  confirmación con resumen de diferencias, motivo y reconocimiento explícito
+  del impacto; el backend conserva el actor, el motivo y los valores anterior
+  y posterior en la auditoría.
+- No se puede bajar una capacidad por debajo del uso actual ni programar la
+  caducidad de una excepción si al terminar deja recursos activos fuera de
+  cuota. Una segunda aprobación para cambios comerciales de alto riesgo queda
+  como evolución posterior, no como sustituto de estas protecciones.
 
 ## 9. Orden de implementación
 
@@ -403,7 +449,7 @@ accidental de menú.
 - Aprobar este documento y las decisiones pendientes.
 - Crear catálogo único de permisos, módulos y clases de plaza.
 - Inventariar datos sin usar datos reales en pruebas.
-- Preparar empresa demo Mega con departamentos ficticios.
+- Preparar empresa demo Enterprise con departamentos ficticios.
 - Definir compatibilidad API y migraciones.
 
 Salida: decisiones aprobadas, fixtures, mapa de migración y contrato de permisos.
@@ -424,7 +470,7 @@ Pruebas de salida:
 - Aislamiento por departamento/equipo/ubicación.
 - Denegación directa de API.
 - Límites concurrentes de plazas.
-- Básico, Mega, prueba y A medida.
+- Básico, Top, prueba y A medida.
 - Auditoría de cada cambio de permiso/entitlement.
 
 ### Fase 2 — Clientes y Comercial
@@ -547,20 +593,22 @@ Escenario Enterprise mínimo:
 | Seguridad depende de UI | Autorización siempre en backend. |
 | Mezcla de trabajo local | PR por fase y preservación de cambios ajenos. |
 
-## 13. Aprobaciones antes de Fase 1
+## 13. Decisiones incorporadas en Fase 1
 
-La primera implementación necesita confirmar:
+Decisiones confirmadas para la Fundación Enterprise:
 
 1. CompanyMembership será la fuente futura de pertenencia y cuota; User queda
    como identidad global.
 2. Los roles actuales se conservan como clases de plaza y los permisos diarios
    viven en perfiles configurables por empresa.
-3. Prueba igual a Mega.
-4. Límites de Mediano, Mega y distribución final de Básico.
-5. Desde qué plan se habilitan departamentos/perfiles personalizados.
-6. Visibilidad Comercial de presupuestos.
+3. La prueba usa Top y los límites de todos los planes quedan definidos en la
+   tabla anterior.
+4. Departamentos, perfiles y equipos están disponibles desde la base; el plan
+   limita su capacidad y los módulos habilitados.
+5. Comercial no ve precios, costes, facturación ni margen salvo un permiso y
+   ámbito explícitos.
 7. Toda corrección de tiempo exige motivo, aprobación y auditoría.
 
-Tras estas aprobaciones, la primera PR será exclusivamente la Fundación
-Enterprise. No incluirá aún el rediseño de Clientes, Ubicaciones o Trabajos:
-así el cambio es verificable, testeable y seguro.
+Esta etapa queda exclusivamente en la Fundación Enterprise. No incluye aún el
+rediseño de Clientes, Ubicaciones o Trabajos: así el cambio es verificable,
+testeable y seguro.

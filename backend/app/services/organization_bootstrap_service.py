@@ -17,8 +17,7 @@ from app.repositories import organization as organization_repo
 ADMIN_PROFILE_NAME = "Administrador de empresa"
 
 
-def legacy_role_access_class(user: User) -> str | None:
-    role_name = user.role.name if user.role else None
+def legacy_role_name_access_class(role_name: str | None) -> str | None:
     return {
         "admin": "admin",
         "manager": "responsible",
@@ -27,7 +26,13 @@ def legacy_role_access_class(user: User) -> str | None:
     }.get(role_name)
 
 
-def ensure_company_administrator_profile(db: Session, company_id: int) -> PermissionProfile:
+def legacy_role_access_class(user: User) -> str | None:
+    return legacy_role_name_access_class(user.role.name if user.role else None)
+
+
+def ensure_company_administrator_profile(
+    db: Session, company_id: int
+) -> PermissionProfile:
     profile = organization_repo.get_system_administrator_profile(db, company_id)
     if profile:
         return profile
@@ -134,7 +139,8 @@ def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
                 update(MembershipPermissionProfileAssignment)
                 .where(
                     MembershipPermissionProfileAssignment.company_id == user.company_id,
-                    MembershipPermissionProfileAssignment.company_membership_id == membership.id,
+                    MembershipPermissionProfileAssignment.company_membership_id
+                    == membership.id,
                     MembershipPermissionProfileAssignment.permission_profile_id
                     == administrator_profile.id,
                 )

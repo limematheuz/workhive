@@ -8,7 +8,8 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { useDictionary } from "@/lib/dictionary-context";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
@@ -39,9 +40,43 @@ const TRIAL_REQUEST_STATUS_STYLES: Record<string, string> = {
     expired: "border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]",
 };
 
+const COPY = {
+    title: "Solicitudes de acceso",
+    subtitle: "Verificación de email, aprobación y activación de cuenta.",
+    ready: (count: number) => `${count} listas para revisar`,
+    loading: "Cargando solicitudes de acceso…",
+    empty: "No hay solicitudes de acceso para revisar.",
+    status: {
+        pending_email_verification: "Pendiente de verificar email",
+        email_verified: "Lista para revisar",
+        approved: "Aprobada",
+        rejected: "Rechazada",
+        expired: "Caducada",
+    } as Record<string, string>,
+    approve: "Aprobar",
+    reject: "Rechazar",
+    approveTitle: "Aprobar solicitud de acceso",
+    initialPlan: "Plan inicial",
+    trialDays: "Días de prueba",
+    taxId: "CIF / NIF",
+    phone: "Teléfono",
+    companyEmail: "Email de la empresa",
+    owner: "Administrador de la empresa",
+    address: "Dirección legal",
+    cancel: "Cancelar",
+    approveSubmit: "Aprobar solicitud",
+    approving: "Aprobando…",
+    rejectTitle: "Rechazar solicitud de acceso",
+    rejectNote: "Nota opcional sobre la decisión",
+    rejecting: "Rechazando…",
+    approved: "Solicitud aprobada. Se ha enviado un email seguro para crear la contraseña.",
+    rejected: "Solicitud rechazada.",
+    loadError: "No se han podido cargar las solicitudes de acceso.",
+    approveError: "No se ha podido aprobar la solicitud de acceso.",
+    rejectError: "No se ha podido rechazar la solicitud de acceso.",
+};
+
 export function TrialRequestsPanel() {
-    const { dict } = useDictionary();
-    const t = dict.companies;
     const { user } = useUser();
     const [requests, setRequests] = useState<TrialRequest[]>([]);
     const [loading, setLoading] = useState(true);
@@ -50,14 +85,6 @@ export function TrialRequestsPanel() {
     const [rejectTarget, setRejectTarget] = useState<TrialRequest | null>(null);
     const [rejectNote, setRejectNote] = useState("");
     const [submitting, setSubmitting] = useState(false);
-
-    const statusLabels: Record<string, string> = {
-        pending_email_verification: t.request_status_pending_email,
-        email_verified: t.request_status_email_verified,
-        approved: t.request_status_approved,
-        rejected: t.request_status_rejected,
-        expired: t.request_status_expired,
-    };
 
     const pendingCount = useMemo(
         () => requests.filter((request) => request.status === "email_verified").length,
@@ -73,11 +100,11 @@ export function TrialRequestsPanel() {
             const data = await TrialRequestService.list();
             setRequests(data);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : t.requests_load_error);
+            toast.error(error instanceof Error ? error.message : COPY.loadError);
         } finally {
             setLoading(false);
         }
-    }, [t.requests_load_error]);
+    }, []);
 
     useEffect(() => {
         if (!isPlatformSuperadmin(user)) {
@@ -106,9 +133,9 @@ export function TrialRequestsPanel() {
             const updated = await TrialRequestService.approve(selectedRequest.id, approvalForm);
             setRequests((prev) => prev.filter((request) => request.id !== updated.id));
             setSelectedRequest(null);
-            toast.success(t.request_approve_success);
+            toast.success(COPY.approved);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : t.request_approve_error);
+            toast.error(error instanceof Error ? error.message : COPY.approveError);
         } finally {
             setSubmitting(false);
         }
@@ -122,9 +149,9 @@ export function TrialRequestsPanel() {
             setRequests((prev) => prev.filter((request) => request.id !== updated.id));
             setRejectTarget(null);
             setRejectNote("");
-            toast.success(t.request_reject_success);
+            toast.success(COPY.rejected);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : t.request_reject_error);
+            toast.error(error instanceof Error ? error.message : COPY.rejectError);
         } finally {
             setSubmitting(false);
         }
@@ -139,10 +166,10 @@ export function TrialRequestsPanel() {
                     </span>
                     <div>
                         <h3 className="text-sm font-semibold text-[var(--text-main)]">
-                            {t.requests_title}
+                            {COPY.title}
                         </h3>
                         <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                            {t.requests_subtitle}
+                            {COPY.subtitle}
                         </p>
                     </div>
                 </div>
@@ -150,15 +177,15 @@ export function TrialRequestsPanel() {
                     variant="outline"
                     className="w-fit border-accent/25 bg-accent/10 px-2.5 py-1 text-[10px] font-semibold text-accent"
                 >
-                    {t.requests_ready.replace("{count}", String(pendingCount))}
+                    {COPY.ready(pendingCount)}
                 </Badge>
             </div>
 
             {loading ? (
-                <p className="py-4 text-center text-xs text-[var(--text-muted)]">{t.requests_loading}</p>
+                <p className="py-4 text-center text-xs text-[var(--text-muted)]">{COPY.loading}</p>
             ) : visibleRequests.length === 0 ? (
                 <div className="billing-block rounded-2xl px-4 py-6 text-center">
-                    <p className="text-sm text-[var(--text-muted)]">{t.requests_empty}</p>
+                    <p className="text-sm text-[var(--text-muted)]">{COPY.empty}</p>
                 </div>
             ) : (
                 <div className="space-y-2">
@@ -177,7 +204,7 @@ export function TrialRequestsPanel() {
                                             variant="outline"
                                             className={`${TRIAL_REQUEST_STATUS_STYLES[request.status] || TRIAL_REQUEST_STATUS_STYLES.expired} text-[10px] font-semibold uppercase`}
                                         >
-                                            {statusLabels[request.status] || request.status}
+                                            {COPY.status[request.status] || request.status}
                                         </Badge>
                                     </div>
                                     <p className="mt-1 text-xs text-[var(--text-muted)]">
@@ -197,7 +224,7 @@ export function TrialRequestsPanel() {
                                         onClick={() => openApproval(request)}
                                     >
                                         <CheckCircle2 className="h-4 w-4" />
-                                        {t.request_approve}
+                                        {COPY.approve}
                                     </Button>
                                     <Button
                                         size="sm"
@@ -206,7 +233,7 @@ export function TrialRequestsPanel() {
                                         onClick={() => setRejectTarget(request)}
                                     >
                                         <XCircle className="h-4 w-4" />
-                                        {t.request_reject}
+                                        {COPY.reject}
                                     </Button>
                                 </div>
                             </div>
@@ -216,53 +243,59 @@ export function TrialRequestsPanel() {
             )}
 
             <Dialog open={Boolean(selectedRequest)} onOpenChange={(open) => !open && setSelectedRequest(null)}>
-                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[640px]">
+                <DialogContent className="max-h-[calc(100vh-1rem)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] overflow-y-auto sm:max-w-[640px]">
                     <form onSubmit={handleApprove} className="space-y-5">
                         <DialogHeader>
-                            <DialogTitle>{t.request_approve_title}</DialogTitle>
+                            <DialogTitle>{COPY.approveTitle}</DialogTitle>
                             <p className="text-sm text-[var(--text-muted)]">
                                 {selectedRequest?.company_name} · {selectedRequest?.email}
                             </p>
                         </DialogHeader>
                         <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label>{t.request_access_mode}</Label>
-                                <select
-                                    aria-label={t.request_access_mode}
+                            <div className="min-w-0 space-y-2">
+                                <Label htmlFor="trial-request-plan">{COPY.initialPlan}</Label>
+                                <Select
                                     value={approvalForm.access_mode}
-                                    onChange={(event) => setApprovalForm({
+                                    onValueChange={(value) => setApprovalForm({
                                         ...approvalForm,
-                                        access_mode: event.target.value as ApprovalForm["access_mode"],
+                                        access_mode: value as ApprovalForm["access_mode"],
                                     })}
-                                    className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 text-sm"
                                 >
-                                    <option value="trial">{t.request_access_trial}</option>
-                                    <option value="pro">{t.request_access_pro}</option>
-                                </select>
+                                    <SelectTrigger id="trial-request-plan"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="trial">Prueba (Top)</SelectItem>
+                                        <SelectItem value="basic">Basic</SelectItem>
+                                        <SelectItem value="medium">Medium</SelectItem>
+                                        <SelectItem value="top">Top</SelectItem>
+                                        <SelectItem value="mega">Enterprise</SelectItem>
+                                        <SelectItem value="custom">Personalizado</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <TrialInput
-                                label={t.request_trial_days}
+                                id="trial-request-trial-days"
+                                label={COPY.trialDays}
                                 type="number"
                                 disabled={approvalForm.access_mode !== "trial"}
                                 value={approvalForm.trial_days?.toString() || ""}
                                 onChange={(value) => setApprovalForm({ ...approvalForm, trial_days: Number(value) || 14 })}
                             />
-                            <TrialInput label={t.cif} value={approvalForm.tax_id} onChange={(tax_id) => setApprovalForm({ ...approvalForm, tax_id })} />
-                            <TrialInput label={t.phone} value={approvalForm.phone} onChange={(phone) => setApprovalForm({ ...approvalForm, phone })} />
-                            <TrialInput label={t.email_label} type="email" value={approvalForm.company_email || ""} onChange={(company_email) => setApprovalForm({ ...approvalForm, company_email })} />
-                            <TrialInput label={t.request_owner} value={approvalForm.owner_full_name || ""} onChange={(owner_full_name) => setApprovalForm({ ...approvalForm, owner_full_name })} />
-                            <TrialInput label={t.address_label} value={approvalForm.address} onChange={(address) => setApprovalForm({ ...approvalForm, address })} wide />
+                            <TrialInput id="trial-request-tax-id" label={COPY.taxId} value={approvalForm.tax_id} onChange={(tax_id) => setApprovalForm({ ...approvalForm, tax_id })} />
+                            <TrialInput id="trial-request-phone" label={COPY.phone} value={approvalForm.phone} onChange={(phone) => setApprovalForm({ ...approvalForm, phone })} />
+                            <TrialInput id="trial-request-company-email" label={COPY.companyEmail} type="email" value={approvalForm.company_email || ""} onChange={(company_email) => setApprovalForm({ ...approvalForm, company_email })} />
+                            <TrialInput id="trial-request-owner" label={COPY.owner} value={approvalForm.owner_full_name || ""} onChange={(owner_full_name) => setApprovalForm({ ...approvalForm, owner_full_name })} />
+                            <TrialInput id="trial-request-address" label={COPY.address} value={approvalForm.address} onChange={(address) => setApprovalForm({ ...approvalForm, address })} wide />
                         </div>
                         <DialogFooter>
                             <Button
                                 type="button"
-                                variant="secondary"
+                                variant="outline"
                                 onClick={() => setSelectedRequest(null)}
                             >
-                                {t.cancel}
+                                {COPY.cancel}
                             </Button>
                             <Button type="submit" disabled={submitting}>
-                                {submitting ? t.request_approving : t.request_approve_submit}
+                                {submitting ? COPY.approving : COPY.approveSubmit}
                             </Button>
                         </DialogFooter>
                     </form>
@@ -270,35 +303,35 @@ export function TrialRequestsPanel() {
             </Dialog>
 
             <Dialog open={Boolean(rejectTarget)} onOpenChange={(open) => !open && setRejectTarget(null)}>
-                <DialogContent>
+                <DialogContent className="w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] sm:max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>{t.request_reject_title}</DialogTitle>
+                        <DialogTitle>{COPY.rejectTitle}</DialogTitle>
                     </DialogHeader>
-                    <label className="sr-only" htmlFor="trial-rejection-note">
-                        {t.request_reject_note}
-                    </label>
-                    <textarea
+                    <Label className="sr-only" htmlFor="trial-rejection-note">
+                        {COPY.rejectNote}
+                    </Label>
+                    <Textarea
                         id="trial-rejection-note"
                         value={rejectNote}
                         onChange={(event) => setRejectNote(event.target.value)}
-                        className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm"
-                        placeholder={t.request_reject_note}
+                        className="min-h-28"
+                        placeholder={COPY.rejectNote}
                     />
                     <DialogFooter>
                         <Button
                             type="button"
-                            variant="secondary"
+                            variant="outline"
                             onClick={() => setRejectTarget(null)}
                         >
-                            {t.cancel}
+                            {COPY.cancel}
                         </Button>
                         <Button
                             type="button"
                             disabled={submitting}
                             onClick={handleReject}
-                            className="rounded-xl border border-red-600 bg-red-600 text-white shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-700 hover:bg-red-700 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:ring-2 focus-visible:ring-red-500/40"
+                            variant="destructive"
                         >
-                            {t.request_reject}
+                            {submitting ? COPY.rejecting : COPY.reject}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -308,6 +341,7 @@ export function TrialRequestsPanel() {
 }
 
 function TrialInput({
+    id,
     label,
     value,
     onChange,
@@ -315,6 +349,7 @@ function TrialInput({
     disabled = false,
     wide = false,
 }: {
+    id: string;
     label: string;
     value: string;
     onChange: (value: string) => void;
@@ -323,9 +358,10 @@ function TrialInput({
     wide?: boolean;
 }) {
     return (
-        <div className={`space-y-2 ${wide ? "sm:col-span-2" : ""}`}>
-            <Label>{label}</Label>
+        <div className={`min-w-0 space-y-2 ${wide ? "sm:col-span-2" : ""}`}>
+            <Label htmlFor={id}>{label}</Label>
             <Input
+                id={id}
                 type={type}
                 required={!disabled}
                 disabled={disabled}

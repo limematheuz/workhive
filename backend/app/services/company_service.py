@@ -1,33 +1,10 @@
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.models.audit_log import AuditLog
-from app.models.calendar_governance import (
-    CalendarOwnershipRequest,
-    CompanyCalendarSettings,
-    PlatformCalendarConfig,
-)
-from app.models.calendar_sync_job import CalendarSyncJob
-from app.models.client import Client
 from app.models.company import Company
-from app.models.company_collaboration import CompanyCollaboration
-from app.models.data_subject_request import DataSubjectRequest
-from app.models.fiscal_invoice_record import FiscalInvoiceRecord
-from app.models.google_calendar_connection import GoogleCalendarConnection
-from app.models.invoice import Invoice
-from app.models.location import Location
-from app.models.location_company_access import LocationCompanyAccess
-from app.models.location_template import LocationTemplate
-from app.models.privacy_consent import PrivacyConsent
-from app.models.quote import Quote
 from app.models.reservation import Reservation
-from app.models.task_calendar_event import TaskCalendarEvent
 from app.models.task_item import TaskItem
-from app.models.template_task import TemplateTask
-from app.models.trial_request import TrialRequest
 from app.models.user import User
-from app.models.work_session import WorkSession
 from app.schemas.company import (
     CompanyCreate,
     CompanyMemberResponse,
@@ -46,19 +23,31 @@ from app.services.user_scope import (
     require_platform_superadmin,
 )
 from app.services import (
-    company_enterprise_access_cleanup_service,
+    company_entitlement_service,
+    company_deletion_service,
     company_update_policy_service,
     organization_bootstrap_service,
 )
 
 
-def get_companies(db: Session, current_user: User, skip: int = 0, limit: int = 100) -> list[Company]:
+def get_companies(
+    db: Session, current_user: User, skip: int = 0, limit: int = 100
+) -> list[Company]:
     if is_platform_superadmin(current_user):
         return company_repo.get_all_companies(db, skip, limit)
     if not current_user.company_id:
         return []
     my_company = company_repo.get_company_by_id(db, current_user.company_id)
     return [my_company] if my_company else []
+
+
+def count_companies(db: Session, current_user: User) -> int:
+    """Return a tenant-safe total for the platform companies list."""
+    if is_platform_superadmin(current_user):
+        return company_repo.count_all_companies(db)
+    if current_user.company_id is None:
+        return 0
+    return int(company_repo.get_company_by_id(db, current_user.company_id) is not None)
 
 
 def get_company(db: Session, company_id: int, current_user: User) -> Company:
@@ -99,9 +88,7 @@ def get_company_members(
     ]
 
 
-def create_company(
-    db: Session, company_data: CompanyCreate, creator: User
-) -> Company:
+def create_company(db: Session, company_data: CompanyCreate, creator: User) -> Company:
     if not settings.ALLOW_PUBLIC_REGISTRATION:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -121,14 +108,22 @@ def create_company(
 
     now = datetime.now(timezone.utc)
     new_company = company_repo.create_company(db, company_data)
-    new_company.subscription_plan = "trial"
+    # Trial is a Top subscription with a temporary status, not a plan code.
+    new_company.subscription_plan = "top"
     new_company.subscription_status = "trialing"
     new_company.trial_started_at = now
     new_company.trial_ends_at = now + timedelta(days=14)
     db.add(new_company)
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        new_company,
+        reason="company.self_service_created",
+        actor_user_id=creator.id,
+        now=now,
+    )
     db.commit()
     db.refresh(new_company)
-    
+
     admin_role = role_repo.get_role_by_name(db, "admin")
     if not admin_role:
         raise HTTPException(
@@ -171,8 +166,12 @@ def provision_company(
         )
 
     now = datetime.now(timezone.utc)
-    trial_days = provision_data.trial_days or 14
     is_trial = provision_data.subscription_plan == "trial"
+    trial_days = provision_data.trial_days or 14
+    # "Trial" is not a product plan.  Every trial uses Top and only its status
+    # and end date make it a trial.  This is the same representation used by
+    # the entitlement resolver and the platform plan-management screen.
+    effective_plan = "top" if is_trial else provision_data.subscription_plan
     company = Company(
         name=provision_data.name,
         tax_id=provision_data.tax_id,
@@ -181,7 +180,7 @@ def provision_company(
         email=provision_data.email,
         is_active=True,
         onboarding_completed=False,
-        subscription_plan=provision_data.subscription_plan,
+        subscription_plan=effective_plan,
         subscription_status="trialing" if is_trial else "active",
         trial_started_at=now if is_trial else None,
         trial_ends_at=now + timedelta(days=trial_days) if is_trial else None,
@@ -201,6 +200,13 @@ def provision_company(
         db.add(owner)
         db.flush()
         organization_bootstrap_service.ensure_user_membership(db, owner)
+        company_entitlement_service.synchronize_company_subscription(
+            db,
+            company,
+            reason="company.provisioned",
+            actor_user_id=current_user.id,
+            now=now,
+        )
         db.commit()
         db.refresh(company)
         return company
@@ -237,9 +243,11 @@ def update_company(
             )
 
     update_payload = company_update.model_dump(exclude_unset=True)
-    update_payload = company_update_policy_service.normalize_platform_subscription_update(
-        update_payload,
-        platform_superadmin=is_platform_superadmin(current_user),
+    update_payload = (
+        company_update_policy_service.normalize_platform_subscription_update(
+            update_payload,
+            platform_superadmin=is_platform_superadmin(current_user),
+        )
     )
     should_revoke_company_sessions = (
         company_update_policy_service.requires_session_revocation(
@@ -249,6 +257,20 @@ def update_company(
 
     normalized_update = CompanyUpdate.model_validate(update_payload)
     updated_company = company_repo.update_company(db, db_company, normalized_update)
+    if {
+        "subscription_plan",
+        "subscription_status",
+        "trial_started_at",
+        "trial_ends_at",
+    } & set(company_update.model_fields_set):
+        company_entitlement_service.synchronize_company_subscription(
+            db,
+            updated_company,
+            reason="company.subscription_updated",
+            actor_user_id=current_user.id,
+        )
+        db.commit()
+        db.refresh(updated_company)
     if should_revoke_company_sessions:
         (
             db.query(User)
@@ -269,193 +291,10 @@ def delete_company_permanently(
     current_user: User,
 ) -> None:
     require_platform_superadmin(current_user)
-    db_company = company_repo.get_company_by_id(db, company_id)
-    if not db_company:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Company not found",
-        )
-
-    company_users = db.query(User).filter(User.company_id == company_id).all()
-    company_user_ids = [user.id for user in company_users]
-    location_ids = [
-        location_id
-        for (location_id,) in db.query(Location.id)
-        .filter(
-            (Location.owner_company_id == company_id)
-            | (Location.managing_company_id == company_id)
-            | (Location.default_service_provider_id == company_id)
-        )
-        .all()
-    ]
-    work_session_count = (
-        db.query(WorkSession)
-        .filter(
-            (WorkSession.user_id.in_(company_user_ids))
-            | (WorkSession.location_id.in_(location_ids))
-        )
-        .count()
-        if company_user_ids or location_ids
-        else 0
+    company_deletion_service.delete_empty_company_permanently(
+        db,
+        company_id=company_id,
     )
-    protected_count = (
-        db.query(Invoice).filter(Invoice.company_id == company_id).count()
-        + db.query(Quote).filter(Quote.company_id == company_id).count()
-        + db.query(FiscalInvoiceRecord)
-        .filter(FiscalInvoiceRecord.company_id == company_id)
-        .count()
-        + db.query(Reservation)
-        .filter(
-            (Reservation.owner_company_id == company_id)
-            | (Reservation.assigned_company_id == company_id)
-            | (Reservation.location_id.in_(location_ids))
-        )
-        .count()
-        + db.query(TaskItem)
-        .filter(
-            (TaskItem.company_id == company_id)
-            | (TaskItem.location_id.in_(location_ids))
-        )
-        .count()
-        + work_session_count
-    )
-    if protected_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                "Company has tasks, reservations, quotes, invoices or fiscal records. "
-                "Deactivate it instead to preserve legal history."
-            ),
-        )
-
-    try:
-        if company_user_ids:
-            db.query(PlatformCalendarConfig).filter(
-                PlatformCalendarConfig.updated_by_user_id.in_(company_user_ids)
-            ).update(
-                {PlatformCalendarConfig.updated_by_user_id: None},
-                synchronize_session=False,
-            )
-            db.query(CalendarOwnershipRequest).filter(
-                (
-                    CalendarOwnershipRequest.requester_user_id.in_(
-                        company_user_ids
-                    )
-                )
-                | (
-                    CalendarOwnershipRequest.reviewed_by_user_id.in_(
-                        company_user_ids
-                    )
-                )
-            ).delete(synchronize_session=False)
-            db.query(CompanyCalendarSettings).filter(
-                CompanyCalendarSettings.owner_user_id.in_(company_user_ids)
-            ).delete(synchronize_session=False)
-            db.query(TrialRequest).filter(
-                TrialRequest.approved_by_user_id.in_(company_user_ids)
-            ).update({TrialRequest.approved_by_user_id: None}, synchronize_session=False)
-            db.query(TrialRequest).filter(
-                TrialRequest.created_user_id.in_(company_user_ids)
-            ).update({TrialRequest.created_user_id: None}, synchronize_session=False)
-            db.query(AuditLog).filter(
-                AuditLog.actor_user_id.in_(company_user_ids)
-            ).update({AuditLog.actor_user_id: None}, synchronize_session=False)
-            db.query(DataSubjectRequest).filter(
-                DataSubjectRequest.requested_by_user_id.in_(company_user_ids)
-            ).update({DataSubjectRequest.requested_by_user_id: None}, synchronize_session=False)
-            db.query(DataSubjectRequest).filter(
-                DataSubjectRequest.resolved_by_user_id.in_(company_user_ids)
-            ).update({DataSubjectRequest.resolved_by_user_id: None}, synchronize_session=False)
-            db.query(PrivacyConsent).filter(
-                PrivacyConsent.user_id.in_(company_user_ids)
-            ).delete(synchronize_session=False)
-            db.query(CalendarSyncJob).filter(
-                CalendarSyncJob.user_id.in_(company_user_ids)
-            ).delete(synchronize_session=False)
-            db.query(TaskCalendarEvent).filter(
-                TaskCalendarEvent.user_id.in_(company_user_ids)
-            ).delete(synchronize_session=False)
-            db.query(GoogleCalendarConnection).filter(
-                (GoogleCalendarConnection.connected_by_user_id.in_(company_user_ids))
-                | (GoogleCalendarConnection.owner_user_id.in_(company_user_ids))
-            ).delete(synchronize_session=False)
-
-        db.query(TrialRequest).filter(
-            TrialRequest.created_company_id == company_id
-        ).update({TrialRequest.created_company_id: None}, synchronize_session=False)
-        db.query(AuditLog).filter(AuditLog.company_id == company_id).update(
-            {AuditLog.company_id: None}, synchronize_session=False
-        )
-        db.query(DataSubjectRequest).filter(
-            DataSubjectRequest.company_id == company_id
-        ).update({DataSubjectRequest.company_id: None}, synchronize_session=False)
-        db.query(PrivacyConsent).filter(
-            PrivacyConsent.company_id == company_id
-        ).update({PrivacyConsent.company_id: None}, synchronize_session=False)
-        db.query(CompanyCollaboration).filter(
-            (CompanyCollaboration.initiator_company_id == company_id)
-            | (CompanyCollaboration.partner_company_id == company_id)
-        ).delete(synchronize_session=False)
-        db.query(LocationCompanyAccess).filter(
-            LocationCompanyAccess.company_id == company_id
-        ).delete(synchronize_session=False)
-        db.query(CalendarSyncJob).filter(
-            CalendarSyncJob.company_id == company_id
-        ).delete(synchronize_session=False)
-        db.query(TaskCalendarEvent).filter(
-            TaskCalendarEvent.company_id == company_id
-        ).delete(synchronize_session=False)
-        db.query(GoogleCalendarConnection).filter(
-            GoogleCalendarConnection.company_id == company_id
-        ).delete(synchronize_session=False)
-        db.query(CalendarOwnershipRequest).filter(
-            CalendarOwnershipRequest.company_id == company_id
-        ).delete(synchronize_session=False)
-        db.query(CompanyCalendarSettings).filter(
-            CompanyCalendarSettings.company_id == company_id
-        ).delete(synchronize_session=False)
-
-        template_ids = [
-            template_id
-            for (template_id,) in db.query(TemplateTask.id)
-            .filter(TemplateTask.company_id == company_id)
-            .all()
-        ]
-        if template_ids:
-            db.query(LocationTemplate).filter(
-                LocationTemplate.template_task_id.in_(template_ids)
-            ).delete(synchronize_session=False)
-        if location_ids:
-            db.query(LocationCompanyAccess).filter(
-                LocationCompanyAccess.location_id.in_(location_ids)
-            ).delete(synchronize_session=False)
-            db.query(LocationTemplate).filter(
-                LocationTemplate.location_id.in_(location_ids)
-            ).delete(synchronize_session=False)
-            db.query(Location).filter(Location.id.in_(location_ids)).delete(
-                synchronize_session=False
-            )
-        db.query(TemplateTask).filter(TemplateTask.company_id == company_id).delete(
-            synchronize_session=False
-        )
-        db.query(Client).filter(Client.company_id == company_id).delete(
-            synchronize_session=False
-        )
-
-        company_enterprise_access_cleanup_service.delete_company_enterprise_access_data(
-            db,
-            company_id,
-        )
-        for user in company_users:
-            db.delete(user)
-        db.delete(db_company)
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Company still has related records. Deactivate it instead.",
-        )
 
 
 def get_company_expenses(

@@ -2,26 +2,28 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { redirect } from "next/navigation";
-import { Building2, Plus, Power, RotateCcw, Trash2, Pencil } from "lucide-react";
+import { Building2, Plus, Power, RotateCcw, Trash2, Pencil, ShieldCheck, SlidersHorizontal } from "lucide-react";
 
 import { CompaniesListSection } from "@/components/companies/CompaniesListSection";
 import type { CompanyMember } from "@/components/companies/company-members";
 import { CompanyEditDialog, type CompanyEditFormData } from "@/components/companies/CompanyEditDialog";
+import { CompanyPlanAccessDialog } from "@/components/companies/CompanyPlanAccessDialog";
+import { PlanCatalogEditorDialog } from "@/components/companies/PlanCatalogEditorDialog";
 import {
     CompanyProvisionDialog,
     type CompanyProvisionData,
 } from "@/components/companies/CompanyProvisionDialog";
 import { TrialRequestsPanel } from "@/components/companies/TrialRequestsPanel";
-import { formatDateForInput, isCompanyAccessEnabled } from "@/components/companies/company-utils";
+import { isCompanyAccessEnabled } from "@/components/companies/company-utils";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import type { PopoverOption } from "@/components/ui/action-popover";
-import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
+import type { CompanyPlanAccess } from "@/services/company-plan-access.service";
 import { CompanyService, type Company } from "@/services/company.service";
 
 const EMPTY_FORM: CompanyEditFormData = {
@@ -32,9 +34,6 @@ const EMPTY_FORM: CompanyEditFormData = {
     email: "",
     bank_account: "",
     swift_bic: "",
-    subscription_plan: "trial",
-    subscription_status: "trialing",
-    trial_ends_at: "",
 };
 
 const EMPTY_PROVISION: CompanyProvisionData = {
@@ -51,13 +50,17 @@ const EMPTY_PROVISION: CompanyProvisionData = {
 };
 
 function useCompaniesAdminController() {
-    const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const [companies, setCompanies] = useState<Company[]>([]);
+    const [companyTotal, setCompanyTotal] = useState(0);
+    const [companyPage, setCompanyPage] = useState(1);
+    const [companyPageSize, setCompanyPageSize] = useState(10);
     const [loading, setLoading] = useState(true);
     const selectedCompanyRef = useRef<Company | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isProvisionOpen, setIsProvisionOpen] = useState(false);
+    const [isPlanCatalogOpen, setIsPlanCatalogOpen] = useState(false);
+    const [planAccessTarget, setPlanAccessTarget] = useState<Company | null>(null);
     const [statusTarget, setStatusTarget] = useState<Company | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
     const [submitting, setSubmitting] = useState(false);
@@ -67,18 +70,18 @@ function useCompaniesAdminController() {
     const [formData, setFormData] = useState<CompanyEditFormData>(EMPTY_FORM);
     const [provisionData, setProvisionData] = useState<CompanyProvisionData>(EMPTY_PROVISION);
 
-    const fetchCompanies = useCallback(async () => {
+    const fetchCompanies = useCallback(async (page = companyPage, pageSize = companyPageSize) => {
         try {
             setLoading(true);
-            const data = await CompanyService.getCompanies();
-            setCompanies(data);
+            const data = await CompanyService.getCompaniesPage((page - 1) * pageSize, pageSize);
+            setCompanies(data.items);
+            setCompanyTotal(data.total);
         } catch (error) {
-            console.error(error);
-            toast.error(dict.companies.toast_error_load);
+            toast.error(error instanceof Error ? error.message : "No se han podido cargar las empresas");
         } finally {
             setLoading(false);
         }
-    }, [dict.companies.toast_error_load]);
+    }, [companyPage, companyPageSize]);
 
     useEffect(() => {
         if (userLoading || !isPlatformSuperadmin(user)) return;
@@ -102,9 +105,6 @@ function useCompaniesAdminController() {
             email: company.email || "",
             bank_account: company.bank_account || company.iban || "",
             swift_bic: company.swift_bic || "",
-            subscription_plan: company.subscription_plan || "none",
-            subscription_status: company.subscription_status || "inactive",
-            trial_ends_at: formatDateForInput(company.trial_ends_at),
         });
         setIsEditOpen(true);
     };
@@ -113,19 +113,20 @@ function useCompaniesAdminController() {
         e.preventDefault();
         try {
             setSubmitting(true);
-            const created = await CompanyService.provisionCompany({
+            await CompanyService.provisionCompany({
                 ...provisionData,
-                subscription_plan: provisionData.subscription_plan as "trial" | "pro",
+                subscription_plan: provisionData.subscription_plan,
                 trial_days: provisionData.subscription_plan === "trial"
                     ? Number(provisionData.trial_days || 14)
                     : null,
             });
-            setCompanies((prev) => [...prev, created]);
+            setCompanyPage(1);
+            await fetchCompanies(1, companyPageSize);
             setIsProvisionOpen(false);
             setProvisionData(EMPTY_PROVISION);
-            toast.success("Empresa y propietario activados correctamente");
+            toast.success("Empresa y administrador activados");
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo activar la empresa");
+            toast.error(error instanceof Error ? error.message : "No se ha podido activar la empresa");
         } finally {
             setSubmitting(false);
         }
@@ -140,20 +141,15 @@ function useCompaniesAdminController() {
             setSubmitting(true);
             const updated = await CompanyService.updateCompany(selectedCompany.id, {
                 ...formData,
-                subscription_plan: formData.subscription_plan as Company["subscription_plan"],
-                subscription_status: formData.subscription_status as Company["subscription_status"],
-                trial_ends_at: formData.subscription_plan === "trial" && formData.trial_ends_at
-                    ? new Date(`${formData.trial_ends_at}T23:59:59`).toISOString()
-                    : null,
             });
-            toast.success(dict.companies.toast_success_update);
+            toast.success("Datos de empresa guardados");
             setCompanies((prev) =>
                 prev.map((c) => (c.id === selectedCompany.id ? updated : c))
             );
             setIsEditOpen(false);
             selectedCompanyRef.current = null;
         } catch (error: unknown) {
-            toast.error(error instanceof Error ? error.message : dict.companies.toast_error_update);
+            toast.error(error instanceof Error ? error.message : "No se han podido guardar los datos de empresa");
         } finally {
             setSubmitting(false);
         }
@@ -164,11 +160,14 @@ function useCompaniesAdminController() {
         try {
             setSubmitting(true);
             await CompanyService.deleteCompany(deleteTarget.id);
-            setCompanies((prev) => prev.filter((company) => company.id !== deleteTarget.id));
-            toast.success("Empresa eliminada definitivamente");
+            const remaining = Math.max(companyTotal - 1, 0);
+            const nextPage = Math.min(companyPage, Math.max(1, Math.ceil(remaining / companyPageSize)));
+            setCompanyPage(nextPage);
+            await fetchCompanies(nextPage, companyPageSize);
+            toast.success("Empresa eliminada permanentemente");
             setDeleteTarget(null);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo eliminar la empresa");
+            toast.error(error instanceof Error ? error.message : "No se ha podido eliminar la empresa");
         } finally {
             setSubmitting(false);
         }
@@ -181,21 +180,18 @@ function useCompaniesAdminController() {
             setSubmitting(true);
             const updated = await CompanyService.updateCompany(statusTarget.id, {
                 is_active: !hasAccess,
-                subscription_plan: hasAccess ? "none" : "pro",
-                subscription_status: hasAccess ? "inactive" : "active",
-                trial_ends_at: null,
             });
             setCompanies((prev) =>
                 prev.map((company) => (company.id === updated.id ? updated : company))
             );
             toast.success(
                 isCompanyAccessEnabled(updated)
-                    ? "Empresa reactivada. Sus usuarios pueden volver a acceder."
-                    : "Empresa desactivada. Se conserva todo su histórico."
+                    ? "Empresa reactivada. Sus personas ya pueden acceder de nuevo."
+                    : "Empresa desactivada. Su historial se ha conservado."
             );
             setStatusTarget(null);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo cambiar el estado de la empresa");
+            toast.error(error instanceof Error ? error.message : "No se ha podido cambiar el estado de la empresa");
         } finally {
             setSubmitting(false);
         }
@@ -214,30 +210,57 @@ function useCompaniesAdminController() {
             setMembersByCompany((current) => ({ ...current, [company.id]: members }));
         } catch (error) {
             setExpandedCompanyId(null);
-            toast.error(dict.companies.members_error);
-            console.error(error);
+            toast.error(error instanceof Error ? error.message : "No se han podido cargar las personas de la empresa");
         } finally {
             setLoadingCompanyId(null);
         }
+    };
+
+    const handlePlanAccessUpdated = (access: CompanyPlanAccess) => {
+        const applyAccess = (company: Company): Company => company.id === access.company_id
+            ? {
+                ...company,
+                subscription_plan: access.subscription.plan_code,
+                subscription_status: access.subscription.status,
+                trial_ends_at: access.subscription.trial_ends_at,
+            }
+            : company;
+        setCompanies((current) => current.map(applyAccess));
+        setPlanAccessTarget((current) => current ? applyAccess(current) : null);
+    };
+
+    const handlePageChange = (nextPage: number) => {
+        setCompanyPage(nextPage);
+    };
+
+    const handlePageSizeChange = (nextPageSize: number) => {
+        setCompanyPage(1);
+        setCompanyPageSize(nextPageSize);
     };
 
     const getCompanyActions = (company: Company): PopoverOption[] => {
         const hasAccess = isCompanyAccessEnabled(company);
         return [
             {
-                label: dict.companies.edit,
+                label: "Plan",
+                icon: ShieldCheck,
+                variant: "edit",
+                onClick: () => setPlanAccessTarget(company),
+            },
+            {
+                label: "Editar",
                 icon: Pencil,
                 variant: "edit",
                 onClick: () => handleEditClick(company),
             },
             {
-                label: hasAccess ? dict.companies.deactivate : dict.companies.reactivate,
+                label: hasAccess ? "Desactivar" : "Reactivar",
                 icon: hasAccess ? Power : RotateCcw,
                 variant: hasAccess ? "deactivate" : "edit",
                 onClick: () => setStatusTarget(company),
             },
             {
-                label: dict.companies.delete,
+                label: "Eliminar",
                 icon: Trash2,
                 variant: "delete",
                 onClick: () => setDeleteTarget(company),
@@ -247,28 +270,37 @@ function useCompaniesAdminController() {
 
     return {
         companies,
+        companyPage,
+        companyPageSize,
+        companyTotal,
         deleteTarget,
-        dict,
         expandedCompanyId,
         formData,
         getCompanyActions,
         handleDeleteCompany,
         handleFormSubmit,
+        handlePlanAccessUpdated,
+        handlePageChange,
+        handlePageSizeChange,
         handleProvisionSubmit,
         handleStatusChange,
         handleToggleMembers,
         isEditOpen,
         isProvisionOpen,
+        isPlanCatalogOpen,
         loading,
         loadingCompanyId,
         membersByCompany,
         provisionData,
+        planAccessTarget,
         selectedCompanyRef,
         setDeleteTarget,
         setFormData,
         setIsEditOpen,
         setIsProvisionOpen,
+        setIsPlanCatalogOpen,
         setProvisionData,
+        setPlanAccessTarget,
         setStatusTarget,
         statusTarget,
         submitting,
@@ -302,27 +334,36 @@ function CompaniesAdminPageContent({
 }) {
     const {
         companies,
+        companyPage,
+        companyPageSize,
+        companyTotal,
         deleteTarget,
-        dict,
         expandedCompanyId,
         formData,
         getCompanyActions,
         handleDeleteCompany,
         handleFormSubmit,
+        handlePlanAccessUpdated,
+        handlePageChange,
+        handlePageSizeChange,
         handleProvisionSubmit,
         handleStatusChange,
         handleToggleMembers,
         isEditOpen,
         isProvisionOpen,
+        isPlanCatalogOpen,
         loadingCompanyId,
         membersByCompany,
         provisionData,
+        planAccessTarget,
         selectedCompanyRef,
         setDeleteTarget,
         setFormData,
         setIsEditOpen,
         setIsProvisionOpen,
+        setIsPlanCatalogOpen,
         setProvisionData,
+        setPlanAccessTarget,
         setStatusTarget,
         statusTarget,
         submitting,
@@ -332,18 +373,24 @@ function CompaniesAdminPageContent({
         <div className="mx-auto max-w-7xl space-y-4 px-[3%] py-6 text-[var(--text-main)] md:p-8">
             <PageHeader
                 icon={Building2}
-                title={dict.companies.title}
-                subtitle={dict.companies.subtitle}
+                title="Administración de empresas"
+                subtitle="Vista global de todas las empresas registradas en WorkHive."
                 titleAs="h2"
                 className="mb-0"
                 actions={(
-                    <Button
-                        onClick={() => setIsProvisionOpen(true)}
-                        className={PAGE_ACTION_BUTTON_PRIMARY}
-                    >
-                        <Plus className="h-4 w-4" />
-                        {dict.companies.new_company}
-                    </Button>
+                    <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setIsPlanCatalogOpen(true)}>
+                            <SlidersHorizontal className="h-4 w-4" />
+                            Gestionar planes
+                        </Button>
+                        <Button
+                            onClick={() => setIsProvisionOpen(true)}
+                            className={PAGE_ACTION_BUTTON_PRIMARY}
+                        >
+                            <Plus className="h-4 w-4" />
+                            Nueva empresa
+                        </Button>
+                    </div>
                 )}
             />
 
@@ -351,26 +398,31 @@ function CompaniesAdminPageContent({
 
             <CompaniesListSection
                 companies={companies}
-                emptyLabel={dict.companies.empty}
+                total={companyTotal}
+                page={companyPage}
+                pageSize={companyPageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                emptyLabel="Todavía no se ha activado ninguna empresa."
                 labels={{
-                    listTitle: dict.companies.list_title,
-                    listSubtitle: dict.companies.list_subtitle,
-                    countOne: dict.companies.count_one,
-                    countMany: dict.companies.count_many,
-                    name: dict.companies.name,
-                    cif: dict.companies.cif,
-                    email: dict.companies.email,
-                    phone: dict.companies.phone,
-                    status: dict.companies.status,
-                    actions: dict.companies.actions,
-                    active: dict.companies.active,
-                    inactive: dict.companies.inactive,
-                    viewTeam: dict.companies.view_team,
-                    admins: dict.companies.admins,
-                    workers: dict.companies.workers,
-                    noAdmins: dict.companies.no_admins,
-                    noWorkers: dict.companies.no_workers,
-                    memberInactive: dict.companies.member_inactive,
+                    listTitle: "Empresas activadas",
+                    listSubtitle: "Pulsa el nombre de una empresa para ver a sus administradores y trabajadores.",
+                    countOne: "empresa",
+                    countMany: "empresas",
+                    name: "Empresa",
+                    cif: "CIF / NIF",
+                    email: "Contacto principal",
+                    phone: "Teléfono",
+                    status: "Plan y estado",
+                    actions: "Acciones",
+                    active: "Activa",
+                    inactive: "Sin acceso",
+                    viewTeam: "Ver personas",
+                    admins: "Administradores",
+                    workers: "Trabajadores",
+                    noAdmins: "No hay administradores",
+                    noWorkers: "No hay trabajadores",
+                    memberInactive: "Inactiva",
                 }}
                 getCompanyActions={getCompanyActions}
                 expandedCompanyId={expandedCompanyId}
@@ -388,13 +440,24 @@ function CompaniesAdminPageContent({
                 onSubmit={handleProvisionSubmit}
             />
 
+            <CompanyPlanAccessDialog
+                company={planAccessTarget}
+                onOpenChange={(open) => !open && setPlanAccessTarget(null)}
+                onUpdated={handlePlanAccessUpdated}
+            />
+
+            <PlanCatalogEditorDialog
+                open={isPlanCatalogOpen}
+                onOpenChange={setIsPlanCatalogOpen}
+            />
+
             <DeleteConfirmDialog
                 open={statusTarget !== null}
                 onOpenChange={(open) => !open && setStatusTarget(null)}
                 title={statusTarget && isCompanyAccessEnabled(statusTarget) ? "¿Desactivar empresa?" : "¿Reactivar empresa?"}
                 description={statusTarget && isCompanyAccessEnabled(statusTarget)
-                    ? `Los usuarios de ${statusTarget.name} dejarán de poder acceder. No se eliminarán tareas, facturas, clientes ni histórico.`
-                    : `Los usuarios de ${statusTarget?.name || "esta empresa"} podrán volver a iniciar sesión y utilizar sus datos existentes.`}
+                    ? `Las personas de ${statusTarget.name} ya no podrán acceder. Se conservarán los trabajos, facturas, clientes e historial.`
+                    : `Las personas de ${statusTarget?.name || "esta empresa"} podrán volver a acceder y utilizar sus datos existentes.`}
                 onConfirm={handleStatusChange}
                 isDeleting={submitting}
                 confirmText={statusTarget && isCompanyAccessEnabled(statusTarget) ? "Desactivar empresa" : "Reactivar empresa"}
@@ -406,11 +469,11 @@ function CompaniesAdminPageContent({
             <DeleteConfirmDialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => !open && setDeleteTarget(null)}
-                title="¿Eliminar empresa para siempre?"
-                description={`Esta acción es irreversible. Se borrará ${deleteTarget?.name || "esta empresa"} solo si no tiene tareas, reservas, facturas, presupuestos o registros fiscales.`}
+                title="¿Eliminar empresa permanentemente?"
+                description={`Esta acción no se puede deshacer. ${deleteTarget?.name || "Esta empresa"} solo se puede eliminar si no tiene trabajos, reservas, facturas, presupuestos ni registros fiscales.`}
                 onConfirm={handleDeleteCompany}
                 isDeleting={submitting}
-                confirmText="Eliminar definitivamente"
+                confirmText="Eliminar permanentemente"
                 cancelText="Cancelar"
                 confirmIcon={Trash2}
                 confirmVariant="danger"
@@ -427,17 +490,17 @@ function CompaniesAdminPageContent({
                 submitting={submitting}
                 onSubmit={handleFormSubmit}
                 labels={{
-                    editTitle: dict.companies.edit_title,
-                    name: dict.companies.name_label,
-                    cif: dict.companies.cif,
-                    phone: dict.companies.phone,
-                    email: dict.companies.email_label,
-                    address: dict.companies.address_label,
-                    iban: dict.companies.iban_label,
-                    swiftBic: dict.companies.swift_bic_label,
-                    cancel: dict.companies.cancel,
-                    saving: dict.companies.saving,
-                    save: dict.companies.save,
+                    editTitle: "Editar empresa",
+                    name: "Nombre / razón social",
+                    cif: "CIF / NIF",
+                    phone: "Teléfono",
+                    email: "Email de la empresa",
+                    address: "Dirección legal",
+                    iban: "IBAN",
+                    swiftBic: "SWIFT / BIC",
+                    cancel: "Cancelar",
+                    saving: "Guardando…",
+                    save: "Guardar cambios",
                 }}
             />
         </div>

@@ -1,6 +1,15 @@
 import { apiFetch, extractErrorMessage } from "@/lib/api";
 
-export type BillingPlan = "business" | "pro" | "lifetime";
+// Legacy checkout values stay here only while the public pricing screen is
+// migrated. New callers must use the canonical commercial plans.
+export type BillingPlan =
+    | "basic"
+    | "medium"
+    | "top"
+    | "mega"
+    | "business"
+    | "pro"
+    | "lifetime";
 
 export const billingService = {
     createCheckout: async (plan: BillingPlan): Promise<string> => {

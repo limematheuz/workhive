@@ -22,7 +22,7 @@ from app.schemas.invoice_item import (
     InvoiceItemUpdate,
     InvoiceItemResponse,
 )
-from app.services import invoice_service
+from app.services import invoice_fiscal_record_service, invoice_service
 from app.services import invoice_item_service
 from app.services import audit_service
 from app.services import facturae_service
@@ -238,7 +238,7 @@ async def read_invoice_fiscal_record(
     current_user: User = AsyncActiveAdmin,
 ):
     return await db.run_sync(
-        lambda sync_db: invoice_service.get_fiscal_record(
+        lambda sync_db: invoice_fiscal_record_service.get_fiscal_record(
             sync_db, current_user.company_id, invoice_id
         )
     )
@@ -250,7 +250,7 @@ def download_invoice_fiscal_xml(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    record = invoice_service.get_fiscal_record(
+    record = invoice_fiscal_record_service.get_fiscal_record(
         db,
         current_user.company_id,
         invoice_id,
@@ -283,7 +283,7 @@ def submit_invoice_fiscal_record(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    record = invoice_service.submit_fiscal_record(
+    record = invoice_fiscal_record_service.submit_fiscal_record(
         db,
         current_user.company_id,
         invoice_id,
@@ -318,7 +318,7 @@ def cancel_invoice_fiscal_record(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    record = invoice_service.cancel_fiscal_invoice(
+    record = invoice_fiscal_record_service.cancel_fiscal_invoice(
         db,
         current_user.company_id,
         invoice_id,

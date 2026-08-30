@@ -7,6 +7,7 @@ from app.models.user import User
 from app.repositories import async_task_item as async_task_item_repo
 from app.repositories import task_item as task_item_repo
 from app.schemas.task_item import TaskItemResponse
+from app.services.entitlement_service import require_company_feature
 from app.services import location_access_service
 
 
@@ -20,6 +21,24 @@ _SENSITIVE_BILLING_FIELDS = {
 }
 
 
+def _require_work_orders_feature(db: Session, company_id: int | None) -> None:
+    if company_id is not None:
+        require_company_feature(db, company_id=company_id, code="features.work_orders")
+
+
+async def _require_work_orders_feature_async(
+    db: AsyncSession, company_id: int | None
+) -> None:
+    if company_id is not None:
+        await db.run_sync(
+            lambda sync_db: require_company_feature(
+                sync_db,
+                company_id=company_id,
+                code="features.work_orders",
+            )
+        )
+
+
 def get_task_items(
     db: Session,
     company_id: int,
@@ -30,6 +49,7 @@ def get_task_items(
     limit: int = 100,
     include_requested: bool = False,
 ) -> list[TaskItem]:
+    _require_work_orders_feature(db, company_id)
     return task_item_repo.get_task_items(
         db,
         company_id,
@@ -52,6 +72,7 @@ async def get_task_items_async(
     limit: int = 100,
     include_requested: bool = False,
 ) -> list[TaskItem]:
+    await _require_work_orders_feature_async(db, company_id)
     return await async_task_item_repo.get_task_items(
         db,
         company_id,
@@ -69,6 +90,7 @@ async def get_task_item_async(
     current_user: User,
     task_item_id: int,
 ) -> TaskItem:
+    await _require_work_orders_feature_async(db, current_user.company_id)
     existing = await async_task_item_repo.get_task_item(
         db,
         current_user.company_id,
@@ -83,6 +105,7 @@ async def get_task_item_async(
 
 
 def get_task_item(db: Session, current_user: User, task_item_id: int) -> TaskItem:
+    _require_work_orders_feature(db, current_user.company_id)
     existing = task_item_repo.get_task_item(db, current_user.company_id, task_item_id)
     if not existing:
         raise HTTPException(

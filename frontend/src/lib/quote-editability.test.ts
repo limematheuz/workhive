@@ -24,11 +24,15 @@ test("quote edit entry points use shared content-editability rule", () => {
         new URL("../../../backend/app/services/quote_service.py", import.meta.url),
         "utf8",
     );
+    const quotePolicy = readFileSync(
+        new URL("../../../backend/app/services/quote_policy_service.py", import.meta.url),
+        "utf8",
+    );
 
     assert.match(list, /isQuoteContentEditable\(quote\.status\)/);
     assert.doesNotMatch(actions, /isQuoteContentEditable|edit_quote|onEdit/);
     assert.match(detailHook, /isQuoteContentEditable\(quote\.status\)/);
-    assert.match(backend, /CONTENT_EDITABLE_STATUSES = frozenset\(\{"draft", "sent"\}\)/);
-    assert.match(backend, /_assert_quote_content_editable/);
+    assert.match(quotePolicy, /CONTENT_EDITABLE_STATUSES = frozenset\(\{"draft", "sent"\}\)/);
+    assert.match(quotePolicy, /assert_quote_content_editable/);
     assert.doesNotMatch(backend, /Cannot replace items of a non-draft quote/);
 });

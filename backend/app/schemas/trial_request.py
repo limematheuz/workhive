@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
@@ -14,7 +15,8 @@ class TrialRequestCreate(BaseModel):
 
 
 class TrialRequestApprove(BaseModel):
-    access_mode: str = Field(default="trial", pattern="^(trial|pro)$")
+    # A trial is a Top subscription with a trialing status, never its own plan.
+    access_mode: Literal["trial", "basic", "medium", "top", "mega", "custom"] = "trial"
     trial_days: int | None = Field(default=14, ge=1, le=365)
     tax_id: str = Field(min_length=3, max_length=20)
     address: str = Field(min_length=3, max_length=255)

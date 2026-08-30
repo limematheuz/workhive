@@ -9,8 +9,7 @@ from app.api.deps import get_async_db, get_db
 from app.models.role import Role
 from app.core.config import settings
 from app.core.rate_limit import rate_limiter
-
-
+from app.services.entitlement_catalog import seed_default_plan_catalog
 
 
 SQLALCHEMY_TEST_DATABASE_URL = "sqlite://"
@@ -106,6 +105,7 @@ def db():
         Role(id=5, name="accountant", description="External accountant"),
     ]
     session.add_all(roles)
+    seed_default_plan_catalog(session)
     session.commit()
 
     try:

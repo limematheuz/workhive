@@ -19,7 +19,11 @@ from app.schemas.trial_request import (
     TrialRequestCreate,
     TrialRequestReject,
 )
-from app.services import email_service, organization_bootstrap_service
+from app.services import (
+    company_entitlement_service,
+    email_service,
+    organization_bootstrap_service,
+)
 from app.services.user_scope import require_platform_superadmin
 
 
@@ -152,14 +156,18 @@ def approve_trial_request(
 
     request = db.get(TrialRequest, request_id)
     if not request:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trial request not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Trial request not found"
+        )
     if request.status != "email_verified":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Only verified trial requests can be approved",
         )
     if company_repo.get_company_by_tax_id(db, approval.tax_id):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tax ID already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Tax ID already exists"
+        )
     if user_repo.get_user_by_email(db, request.email):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -175,6 +183,7 @@ def approve_trial_request(
 
     now = _utcnow()
     is_trial = approval.access_mode == "trial"
+    effective_plan = "top" if is_trial else approval.access_mode
     trial_days = approval.trial_days if is_trial else None
     company = Company(
         name=request.company_name,
@@ -184,10 +193,12 @@ def approve_trial_request(
         email=approval.company_email or request.email,
         is_active=True,
         onboarding_completed=False,
-        subscription_plan="trial" if is_trial else approval.access_mode,
+        subscription_plan=effective_plan,
         subscription_status="trialing" if is_trial else "active",
         trial_started_at=now if is_trial else None,
-        trial_ends_at=now + timedelta(days=trial_days) if is_trial and trial_days else None,
+        trial_ends_at=now + timedelta(days=trial_days)
+        if is_trial and trial_days
+        else None,
     )
     db.add(company)
     db.flush()
@@ -204,9 +215,18 @@ def approve_trial_request(
     db.add(owner)
     db.flush()
     organization_bootstrap_service.ensure_user_membership(db, owner)
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        company,
+        reason="trial_request.approved",
+        actor_user_id=approver.id,
+        now=now,
+    )
 
     reset_token = create_password_reset_token(owner.email)
-    reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={reset_token}"
+    reset_url = (
+        f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={reset_token}"
+    )
     try:
         sent = email_service.send_trial_approved_email(
             recipient_email=owner.email,
@@ -248,7 +268,9 @@ def reject_trial_request(
 
     request = db.get(TrialRequest, request_id)
     if not request:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trial request not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Trial request not found"
+        )
     if request.status == "approved":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

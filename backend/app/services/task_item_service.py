@@ -27,6 +27,7 @@ from app.services import (
     task_update_policy_service,
 )
 from app.services.company_client_service import ensure_company_as_client
+from app.services.entitlement_service import require_company_feature
 from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.task_item_read_service import (
@@ -37,6 +38,15 @@ from app.services.task_item_read_service import (
     get_task_items,  # noqa: F401 - public compatibility re-export
     get_task_items_async,  # noqa: F401 - public compatibility re-export
 )
+
+
+def _require_work_orders_feature(db: Session, current_user: User) -> None:
+    if current_user.company_id is not None:
+        require_company_feature(
+            db,
+            company_id=current_user.company_id,
+            code="features.work_orders",
+        )
 
 
 def _mark_task_completed(
@@ -88,6 +98,7 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
 def create_task_item(
     db: Session, current_user: User, task_item_data: TaskItemCreate
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     location_access_service.require_location_capability(
         db, current_user, task_item_data.location_id, "can_manage_tasks"
     )
@@ -187,6 +198,7 @@ def create_task_item(
 def update_task_item(
     db: Session, current_user: User, task_item_id: int, task_data: TaskItemUpdate
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     db_task_item = task_update_policy_service.require_mutable_task_for_update(
         db,
         current_user,
@@ -291,6 +303,7 @@ def start_task_work(
     start_longitude: float | None = None,
     start_accuracy_meters: float | None = None,
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     if start_latitude is None or start_longitude is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -392,6 +405,7 @@ def accept_task_item(
     task_item_id: int,
     accept_data: TaskAcceptRequest,
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
     if task.company_id != current_user.company_id:
         raise HTTPException(
@@ -518,6 +532,7 @@ def reject_task_item(
     current_user: User,
     task_item_id: int,
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
     if current_user.role.name not in {"admin", "manager"}:
         raise HTTPException(
@@ -635,6 +650,7 @@ def finish_task_work(
     current_user: User,
     task_item_id: int,
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
     was_completed = task.status == "completed"
     _require_finishable_user_assignment(task, current_user.id)
@@ -665,6 +681,7 @@ def update_task_checklist_item(
     checklist_item_id: int,
     item_data: TaskChecklistItemUpdate,
 ) -> TaskItem:
+    _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
     was_completed = task.status == "completed"
     if task.company_id != current_user.company_id:
@@ -700,6 +717,7 @@ def update_task_checklist_item(
 
 
 def delete_task_item(db: Session, current_user: User, task_item_id: int) -> None:
+    _require_work_orders_feature(db, current_user)
     db_task_item = task_item_repo.get_task_item(
         db, current_user.company_id, task_item_id
     )

@@ -54,7 +54,8 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.doesNotMatch(globals, /--sidebar-active-shadow/);
 
     assert.match(taskCard, /billing-block/);
-    assert.match(companies, /DataListTable/);
+    assert.match(companies, /billing-surface/);
+    assert.match(companies, /from "@\/components\/ui\/table"/);
     assert.doesNotMatch(companies, /surface-glass-card/);
     assert.match(header, /billing-surface/);
     assert.match(header, /header-popover-layer/);

@@ -9,6 +9,7 @@ from app.models.company import Company
 from app.models.privacy_consent import PrivacyConsent
 from app.models.user import User
 from app.models.user_invitation import UserInvitation
+from app.services import company_entitlement_service, organization_bootstrap_service
 from credentials import TEST_SECRET, login_form
 
 
@@ -271,17 +272,31 @@ def test_acceptance_rechecks_company_capacity(client, db, monkeypatch):
     company = db.get(Company, company_id)
     company.subscription_plan = "free"
     company.subscription_status = "active"
-    db.commit()
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        company,
+        reason="test.plan_changed",
+    )
     sent = _capture_invitation(monkeypatch)
     assert client.post(
         "/api/v1/user-invitations/",
         headers=headers,
         json={"email": "capacity-worker@workhive.com", "role_id": 3},
     ).status_code == 202
-    db.add_all([
-        User(email="capacity-one@workhive.com", hashed_password=get_password_hash(TEST_SECRET), role_id=3, company_id=company_id, is_active=True),
-        User(email="capacity-two@workhive.com", hashed_password=get_password_hash(TEST_SECRET), role_id=3, company_id=company_id, is_active=True),
-    ])
+    workers = [
+        User(
+            email=f"capacity-worker-{index}@workhive.com",
+            hashed_password=get_password_hash(TEST_SECRET),
+            role_id=3,
+            company_id=company_id,
+            is_active=True,
+        )
+        for index in range(1, 6)
+    ]
+    db.add_all(workers)
+    db.flush()
+    for worker in workers:
+        organization_bootstrap_service.ensure_user_membership(db, worker)
     db.commit()
     response = client.post(
         "/api/v1/user-invitations/accept",
