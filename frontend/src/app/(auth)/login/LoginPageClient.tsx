@@ -74,6 +74,7 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [outcome, setOutcome] = useState<LoginOutcome>({ kind: "idle" });
+    const [checkingExistingSession, setCheckingExistingSession] = useState(true);
 
     const successPhrases = resolveLoginStatusPhrases(
         "success",
@@ -88,6 +89,24 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
     const locked = submitting || outcome.kind === "success";
 
     useEffect(() => {
+        let cancelled = false;
+
+        void authService.getMe()
+            .then(() => {
+                if (!cancelled) {
+                    window.location.replace(returnTo);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) setCheckingExistingSession(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [returnTo]);
+
+    useEffect(() => {
         if (outcome.kind !== "success") return;
         const delay = loginStatusRedirectDelayMs(successPhrases.length);
         const timer = window.setTimeout(() => {
@@ -95,6 +114,14 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
         }, delay);
         return () => window.clearTimeout(timer);
     }, [outcome.kind, returnTo, successPhrases.length]);
+
+    if (checkingExistingSession) {
+        return (
+            <AuthShell contentClassName="my-auto flex items-center justify-center">
+                <Loader2 className="h-7 w-7 animate-spin text-accent" aria-label={t.loading} />
+            </AuthShell>
+        );
+    }
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
