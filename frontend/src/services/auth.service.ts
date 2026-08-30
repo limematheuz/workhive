@@ -30,7 +30,13 @@ export const authService = {
         });
 
         if (!response.ok) {
-            throw new Error("Invalid Credentials. Check your email and password.");
+            if (response.status === 401) {
+                throw new Error("Invalid Credentials. Check your email and password.");
+            }
+            if (response.status >= 500) {
+                throw new Error("The authentication service is temporarily unavailable. Please try again.");
+            }
+            throw new Error(await extractErrorMessage(response, "Could not sign in."));
         }
         const data = await response.json() as { csrf_token?: string };
         if (data.csrf_token) {

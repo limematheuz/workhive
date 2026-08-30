@@ -17,14 +17,21 @@ const ALLOWED_REQUEST_HEADERS = [
     "x-request-id",
 ];
 
-type ProxyEnv = Partial<Record<"BACKEND_URL" | "NEXT_PUBLIC_API_URL", string>>;
+type ProxyEnv = Partial<Record<"BACKEND_URL" | "NEXT_PUBLIC_API_URL" | "NODE_ENV", string>>;
 
 export function getConfiguredBackendUrl(env: ProxyEnv = process.env as ProxyEnv): string {
-    return (
+    const configuredUrl = (
         env.BACKEND_URL
         || env.NEXT_PUBLIC_API_URL
         || ""
     ).replace(/\/+$/, "");
+
+    if (configuredUrl || env.NODE_ENV !== "development") return configuredUrl;
+
+    // Local worktrees may not have an ignored .env.local yet. Keep the
+    // development server usable while production still requires explicit
+    // backend configuration.
+    return "http://localhost:8000";
 }
 
 export function buildProxyTarget(

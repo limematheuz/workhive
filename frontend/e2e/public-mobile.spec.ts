@@ -102,6 +102,24 @@ test("login fits a mobile viewport with full-width controls", async ({ page }) =
     expect(emailBox?.width ?? 0).toBeGreaterThan(280);
 });
 
+test("login distinguishes an unavailable backend from invalid credentials", async ({ page }) => {
+    await page.route("**/api/v1/auth/login", async (route) => {
+        await route.fulfill({
+            status: 503,
+            contentType: "application/json",
+            body: JSON.stringify({ detail: "Backend service is not configured" }),
+        });
+    });
+
+    await page.goto("/login");
+    await page.locator("#login-email").fill("admin@example.com");
+    await page.locator("#login-password").fill("valid-looking-password");
+    await page.locator('form').getByRole("button", { name: /Iniciar sesión/i }).click();
+
+    await expect(page.getByText(/authentication service is temporarily unavailable/i)).toBeVisible();
+    await expect(page.getByText(/Invalid Credentials/i)).not.toBeVisible();
+});
+
 test("subscription page document-scrolls to the bottom CTA on mobile", async ({
     page,
 }) => {
