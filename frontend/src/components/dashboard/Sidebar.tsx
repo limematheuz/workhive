@@ -61,11 +61,13 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
         void CompanyPlanAccessService.getCurrentEntitlements()
             .then((access) => {
                 if (!cancelled) {
-                    setEnabledFeatures(new Set(
-                        access.entitlements
-                            .filter((item) => item.value_type === "boolean" && item.value === true)
-                            .map((item) => item.code),
-                    ));
+                    const enabled = new Set<string>();
+                    for (const entitlement of access.entitlements) {
+                        if (entitlement.value_type === "boolean" && entitlement.value === true) {
+                            enabled.add(entitlement.code);
+                        }
+                    }
+                    setEnabledFeatures(enabled);
                 }
             })
             .catch(() => {

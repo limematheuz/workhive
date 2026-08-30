@@ -13,6 +13,7 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     const members = source("../components/companies/CompanyMembersPanel.tsx");
     const provision = source("../components/companies/CompanyProvisionDialog.tsx");
     const planAccess = source("../components/companies/CompanyPlanAccessDialog.tsx");
+    const planAccessLogic = source("../components/companies/useCompanyPlanAccessDialog.ts");
     const planCatalogEditor = source("../components/companies/PlanCatalogEditorDialog.tsx");
     const entitlementEditor = source("../components/companies/EntitlementConfigurationEditor.tsx");
     const commercialConfirmation = source("../components/companies/CommercialChangeConfirmationDialog.tsx");
@@ -70,11 +71,11 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     assert.match(planAccess, /from "@\/components\/ui\/dialog"/);
     assert.match(planAccess, /from "@\/components\/ui\/select"/);
     assert.match(planAccess, /from "@\/components\/ui\/textarea"/);
-    assert.match(planAccess, /replaceCustomization/);
+    assert.match(planAccessLogic, /replaceCustomization/);
     assert.match(planAccess, /CommercialChangeConfirmationDialog/);
     assert.match(planAccess, /Confirmar cambio de plan/);
     assert.match(planAccess, /Confirmar configuración personalizada/);
-    assert.match(planAccess, /base_entitlements/);
+    assert.match(planAccessLogic, /base_entitlements/);
     assert.match(planAccess, /hover:bg-accent\/10/);
     assert.match(planAccess, /Personalizar funciones y capacidad/);
     assert.match(planAccess, /max-h-\[calc\(100vh-1rem\)\].*flex-col.*overflow-hidden/);
@@ -93,6 +94,6 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     assert.match(entitlementEditor, /Aumentar \$\{item.label\}/);
     assert.match(commercialConfirmation, /AlertDialog/);
     assert.match(commercialConfirmation, /He revisado el impacto y autorizo este cambio/);
-    assert.match(commercialConfirmation, /entitlementChanges/);
+    assert.match(source("../components/companies/commercial-change-utils.ts"), /entitlementChanges/);
     assert.match(alertDialog, /AlertDialogPrimitive/);
 });
