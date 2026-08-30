@@ -124,20 +124,6 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
         };
     }, [accessState, errorMessage, token]);
 
-    const verifyCode = async (code: string) => {
-        const normalizedCode = normalizeInvitationCode(code);
-        if (!token || !normalizedCode) {
-            toast.error(text.codeRequired);
-            throw new Error("Missing verification code");
-        }
-        try {
-            return await CollaborationService.verifyCompanyInvitationCode(token, normalizedCode);
-        } catch (error) {
-            toast.error(errorMessage(error, true));
-            throw error;
-        }
-    };
-
     const decline = async (code: string): Promise<void> => {
         const normalizedCode = normalizeInvitationCode(code);
         if (!token || !normalizedCode) {
