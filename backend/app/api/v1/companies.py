@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.pagination import PaginationLimit, PaginationOffset
@@ -30,16 +30,20 @@ router = APIRouter()
 
 @router.get("/", response_model=list[CompanyResponse])
 async def read_companies(
+    response: Response,
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
-    return await db.run_sync(
-        lambda sync_db: company_service.get_companies(
-            sync_db, current_user, skip, limit
+    companies, total = await db.run_sync(
+        lambda sync_db: (
+            company_service.get_companies(sync_db, current_user, skip, limit),
+            company_service.count_companies(sync_db, current_user),
         )
     )
+    response.headers["X-Total-Count"] = str(total)
+    return companies
 
 
 @router.post(

@@ -73,6 +73,12 @@ class Settings(BaseSettings):
     BILLING_ENABLED: bool = False
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
+    # New commercial plans. Legacy Business/Pro/Lifetime keys stay as a
+    # temporary fallback while existing Stripe products are migrated.
+    STRIPE_BASIC_PRICE_ID: str | None = None
+    STRIPE_MEDIUM_PRICE_ID: str | None = None
+    STRIPE_TOP_PRICE_ID: str | None = None
+    STRIPE_ENTERPRISE_PRICE_ID: str | None = None
     STRIPE_BUSINESS_PRICE_ID: str | None = None
     STRIPE_PRO_PRICE_ID: str | None = None
     STRIPE_LIFETIME_PRICE_ID: str | None = None
@@ -230,15 +236,14 @@ class Settings(BaseSettings):
                 "Public registration requires EMAIL_ENABLED and ACCOUNT_REQUEST_RECIPIENT_EMAIL"
             )
 
-        if self.BILLING_ENABLED and not all(
-            [
-                self.STRIPE_SECRET_KEY,
-                self.STRIPE_WEBHOOK_SECRET,
-                self.STRIPE_BUSINESS_PRICE_ID,
-                self.STRIPE_PRO_PRICE_ID,
-            ]
+        if self.BILLING_ENABLED and (
+            not self.STRIPE_SECRET_KEY
+            or not self.STRIPE_WEBHOOK_SECRET
+            or not self.stripe_price_ids
         ):
-            raise ValueError("Billing requires Stripe secret, webhook secret, and price IDs")
+            raise ValueError(
+                "Billing requires Stripe secret, webhook secret, and at least one plan price ID"
+            )
 
         if self.VERIFACTU_ENABLED and not all(
             [
@@ -318,9 +323,10 @@ class Settings(BaseSettings):
     @property
     def stripe_price_ids(self) -> dict[str, str]:
         prices = {
-            "business": self.STRIPE_BUSINESS_PRICE_ID,
-            "pro": self.STRIPE_PRO_PRICE_ID,
-            "lifetime": self.STRIPE_LIFETIME_PRICE_ID,
+            "basic": self.STRIPE_BASIC_PRICE_ID,
+            "medium": self.STRIPE_MEDIUM_PRICE_ID or self.STRIPE_BUSINESS_PRICE_ID,
+            "top": self.STRIPE_TOP_PRICE_ID or self.STRIPE_PRO_PRICE_ID,
+            "mega": self.STRIPE_ENTERPRISE_PRICE_ID,
         }
         return {key: value for key, value in prices.items() if value}
 

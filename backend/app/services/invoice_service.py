@@ -8,14 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.client import Client
-from app.models.fiscal_invoice_record import FiscalInvoiceRecord
 from app.models.invoice import Invoice
 from app.models.task_item import TaskItem
 from app.repositories import client as client_repo
 from app.repositories import invoice as invoice_repo
 from app.repositories import invoice_item as invoice_item_repo
 from app.schemas.invoice import (
-    FiscalCancellationRequest,
     InvoiceCreate,
     InvoiceDraftCreate,
     InvoiceEmailRequest,
@@ -29,7 +27,6 @@ from app.services import (
     invoice_email_contact_service,
 )
 from app.services.invoice_fiscal import (
-    create_cancellation_record,
     party_snapshots,
     issue_invoice_in_transaction,
 )
@@ -49,11 +46,16 @@ from app.services.invoice_tasks import (  # noqa: F401
     validate_invoice_client_for_linked_tasks,
     validate_task_for_invoice,
 )
+from app.services.entitlement_service import require_company_feature
 
 
 RECTIFIABLE_STATUSES = {"issued", "paid", "overdue"}
 PAYMENT_STATUSES = {"issued", "paid", "overdue"}
 logger = logging.getLogger(__name__)
+
+
+def _require_invoices_feature(db: Session, company_id: int) -> None:
+    require_company_feature(db, company_id=company_id, code="features.invoices")
 
 
 def get_invoices(
@@ -64,12 +66,14 @@ def get_invoices(
     skip: int = 0,
     limit: int = 100,
 ) -> list[Invoice]:
+    _require_invoices_feature(db, company_id)
     return invoice_repo.get_invoices(
         db, company_id, client_id, invoice_status, skip, limit
     )
 
 
 def get_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice:
+    _require_invoices_feature(db, company_id)
     existing = invoice_repo.get_invoice(db, company_id, invoice_id)
     if not existing:
         raise HTTPException(
@@ -113,6 +117,7 @@ def _ensure_invoice_number_available(
 def create_invoice(
     db: Session, company_id: int, invoice_data: InvoiceCreate
 ) -> Invoice:
+    _require_invoices_feature(db, company_id)
     _validate_client(db, company_id, invoice_data.client_id)
     _ensure_invoice_number_available(db, company_id, invoice_data.invoice_number)
     try:
@@ -133,6 +138,7 @@ def create_invoice(
 def create_invoice_draft(
     db: Session, company_id: int, data: InvoiceDraftCreate
 ) -> Invoice:
+    _require_invoices_feature(db, company_id)
     try:
         _validate_client(db, company_id, data.client_id)
         _ensure_invoice_number_available(db, company_id, data.invoice_number)
@@ -169,6 +175,7 @@ def create_invoice_draft(
 
 
 def issue_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice:
+    _require_invoices_feature(db, company_id)
     invoice = (
         db.query(Invoice)
         .filter(Invoice.company_id == company_id, Invoice.id == invoice_id)
@@ -345,86 +352,6 @@ def email_invoice(
             recipient_emails,
         )
     return invoice, ", ".join(recipient_emails)
-
-
-def get_fiscal_record(
-    db: Session, company_id: int, invoice_id: int
-) -> FiscalInvoiceRecord:
-    invoice = get_invoice(db, company_id, invoice_id)
-    record = (
-        db.query(FiscalInvoiceRecord)
-        .filter(FiscalInvoiceRecord.invoice_id == invoice.id)
-        .order_by(FiscalInvoiceRecord.id.desc())
-        .first()
-    )
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="The invoice has not been issued and has no fiscal record",
-        )
-    return record
-
-
-def submit_fiscal_record(
-    db: Session,
-    company_id: int,
-    invoice_id: int,
-) -> FiscalInvoiceRecord:
-    record = fiscal_submission_service.latest_invoice_record(
-        db,
-        company_id,
-        invoice_id,
-    )
-    return fiscal_submission_service.submit_fiscal_record(
-        db,
-        company_id,
-        record.id,
-    )
-
-
-def cancel_fiscal_invoice(
-    db: Session,
-    company_id: int,
-    invoice_id: int,
-    data: FiscalCancellationRequest,
-) -> FiscalInvoiceRecord:
-    if not data.confirm_no_real_operation:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=(
-                "Fiscal cancellation is only for an invoice issued without a "
-                "real operation; use a rectifying invoice otherwise"
-            ),
-        )
-    invoice = (
-        db.query(Invoice)
-        .filter(
-            Invoice.id == invoice_id,
-            Invoice.company_id == company_id,
-        )
-        .with_for_update()
-        .first()
-    )
-    if not invoice:
-        raise HTTPException(status_code=404, detail="Invoice not found")
-    try:
-        record = create_cancellation_record(
-            db,
-            invoice,
-            reason=data.reason,
-        )
-        db.commit()
-        db.refresh(record)
-        if settings.VERIFACTU_AUTO_SUBMIT:
-            record = fiscal_submission_service.submit_fiscal_record(
-                db,
-                company_id,
-                record.id,
-            )
-        return record
-    except Exception:
-        db.rollback()
-        raise
 
 
 def _validate_invoice_update_links(
@@ -612,6 +539,7 @@ def create_rectification_invoice(
     original_invoice_id: int,
     data: RectificationCreate,
 ) -> Invoice:
+    _require_invoices_feature(db, company_id)
     original = (
         db.query(Invoice)
         .filter(

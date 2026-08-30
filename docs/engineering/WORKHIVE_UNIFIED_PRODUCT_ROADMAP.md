@@ -275,8 +275,22 @@ campo.
 
 ### Planes de suscripción
 
-Habrá cuatro planes: Pequeñas empresas, Medianas, Grandes y Extra grandes,
-además de un plan a medida.
+Habrá cuatro planes: Basic, Medium, Top y Enterprise, además de un plan
+Custom. Son los mismos para cualquier tamaño de empresa: cambian las
+capacidades y funciones activas, no la aplicación que utiliza el cliente.
+
+Un plan y una tarifa no son la misma cosa. El plan define módulos y capacidad;
+la tarifa define precio, moneda, periodicidad, impuestos, descuentos y estado
+de cobro. En esta primera base ya se gestionan planes, prueba, límites y
+excepciones auditadas. La tarifa comercial y el cobro se añadirán sobre esa
+base, sin volver a mezclar precios con permisos. "Sin acceso" tampoco es un
+plan: es el estado de una suscripción cancelada, vencida o desactivada.
+
+La integración de pago solo podrá ofrecer un plan cuando tenga asignado su
+precio real de Stripe. Mientras se migra el catálogo comercial anterior, los
+eventos antiguos se traducen a Basic, Medium o Top sin guardar los nombres
+anteriores en nuevas empresas. Custom no tendrá compra automática: se activa
+solo después de un acuerdo comercial y deja siempre motivo e historial.
 
 - Las plazas internas de administrador, responsable y trabajador cuentan para
   la suscripción. Los contactos de portal, partners, inmobiliarias y
@@ -285,20 +299,19 @@ además de un plan a medida.
 - Los gestores contables tampoco ocupan plazas internas, pero cada plan tendrá
   un límite de accesos de gestoría. Así su uso profesional está controlado y
   no se convierte en un dashboard completo gratuito.
-- El plan Pequeñas empresas parte de 1 administrador, 2 responsables y 5
-  trabajadores.
-- El plan Grandes empresas tendrá como referencia 10 administradores, 20
-  responsables y 100 trabajadores.
-- Los límites exactos de Medianas y Extra grandes se decidirán antes de
-  programarlos.
-- La prueba gratuita usará todas las capacidades de Extra grandes.
+- Basic parte de 1 administrador, 2 responsables y 5 trabajadores. Medium
+  admite 3, 8 y 25; Top 10, 20 y 100; y Enterprise 25, 75 y 500.
+- La prueba gratuita usa siempre las capacidades de Top y tiene una fecha de
+  fin. No es un plan independiente.
 - El plan a medida permitirá activar o bloquear módulos y ajustar límites para
   una empresa concreta.
 - Los límites se comprobarán realmente antes de crear usuarios o usar una
   función. No será solo un botón oculto.
 
 Los departamentos, perfiles personalizados, calidad avanzada, inventario, RRHH
-e integraciones se activarán según el plan que se apruebe.
+e integraciones se activarán según el plan que se apruebe. El plan decide qué
+puede contratar la empresa; los permisos y ámbitos deciden qué puede hacer
+cada persona dentro de ese plan.
 
 ### Clientes y Comercial
 
@@ -602,9 +615,9 @@ Al terminar:
 4. Un prospecto se convierte en cliente sin duplicar sus datos.
 5. El presupuesto aprobado creará un contrato, no un trabajo directamente.
 6. Cada corrección de fichaje tendrá motivo, aprobación e historial.
-7. La prueba gratuita tendrá las funciones de Extra grandes.
-8. Hay que decidir los límites de los planes Medianas y Extra grandes, y desde
-   qué plan se activan departamentos, perfiles, calidad, inventario y RRHH.
+7. La prueba gratuita tendrá siempre las funciones y límites de Top.
+8. Los límites de Basic, Medium, Top y Enterprise están definidos. Cada módulo
+   se activa por plan o mediante una excepción auditada para Custom.
 9. Comercial no verá precios, costes, facturas ni margen; Administración o
    Finanzas aprobará la parte económica del presupuesto.
 10. Cada fase se probará en vivo antes de abrir PR y fusionar.

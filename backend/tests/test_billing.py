@@ -11,12 +11,14 @@ from app.core.security import get_password_hash
 from app.models.company import Company
 from app.models.user import User
 from app.models.stripe_webhook_event import StripeWebhookEvent
-from app.services import billing_service
-from app.services import user_service
-from app.services.subscription_policy import (
-    evaluate_company_access,
-    require_active_user_capacity,
+from app.services import (
+    billing_service,
+    company_entitlement_service,
+    organization_bootstrap_service,
+    user_service,
 )
+from app.services.entitlement_catalog import default_plan_values, legacy_plan_code
+from app.services.subscription_policy import evaluate_company_access
 from app.schemas.user import UserUpdate
 from credentials import TEST_SECRET, login_form
 
@@ -73,7 +75,7 @@ def test_stripe_webhook_updates_company_subscription(db, monkeypatch):
 
     db.refresh(company)
     assert event_type == "customer.subscription.updated"
-    assert company.subscription_plan == "business"
+    assert company.subscription_plan == "medium"
     assert company.subscription_status == "active"
     assert company.stripe_customer_id == "cus_123"
     assert company.stripe_subscription_id == "sub_123"
@@ -179,26 +181,61 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
     monkeypatch.setattr(settings, "BILLING_ENABLED", True)
     monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
     monkeypatch.setattr(settings, "STRIPE_BUSINESS_PRICE_ID", "price_business")
-    monkeypatch.setattr(
-        billing_service,
-        "_stripe_post",
-        lambda path, data: {
+    captured: dict[str, str] = {}
+
+    def fake_stripe_post(path: str, data: dict[str, str]):
+        captured.update(data)
+        return {
             "url": (
                 "https://checkout.stripe.com/test-session"
                 if path == "/checkout/sessions"
                 else "https://billing.stripe.com/test-portal"
             )
-        },
-    )
+        }
+
+    monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
 
     assert (
         billing_service.create_checkout_session(company, "business")
         == "https://checkout.stripe.com/test-session"
     )
+    assert captured["metadata[plan]"] == "medium"
     assert (
         billing_service.create_customer_portal(company)
         == "https://billing.stripe.com/test-portal"
     )
+
+
+def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):
+    company = Company(
+        name="Enterprise Billing Company",
+        tax_id="BILLING-ENTERPRISE",
+        address="Test address",
+        phone="000000008",
+        email="enterprise-billing@example.com",
+    )
+    db.add(company)
+    db.commit()
+
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_ENTERPRISE_PRICE_ID", "price_enterprise")
+    captured: dict[str, str] = {}
+
+    def fake_stripe_post(path: str, data: dict[str, str]):
+        captured.update(data)
+        return {"url": "https://checkout.stripe.com/enterprise-session"}
+
+    monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
+
+    assert (
+        billing_service.create_checkout_session(company, "mega")
+        == "https://checkout.stripe.com/enterprise-session"
+    )
+    assert captured["mode"] == "subscription"
+    assert captured["line_items[0][price]"] == "price_enterprise"
+    assert captured["metadata[plan]"] == "mega"
+    assert captured["subscription_data[metadata][plan]"] == "mega"
 
 
 def test_lifetime_checkout_uses_payment_mode(db, monkeypatch):
@@ -230,7 +267,7 @@ def test_lifetime_checkout_uses_payment_mode(db, monkeypatch):
     )
     assert captured["mode"] == "payment"
     assert captured["line_items[0][price]"] == "price_lifetime"
-    assert captured["metadata[plan]"] == "lifetime"
+    assert captured["metadata[plan]"] == "top"
     assert "subscription_data[metadata][plan]" not in captured
 
 
@@ -279,35 +316,23 @@ def test_lifetime_checkout_webhook_activates_company(db, monkeypatch):
 
     db.refresh(company)
     assert event_type == "checkout.session.completed"
-    assert company.subscription_plan == "lifetime"
+    assert company.subscription_plan == "top"
     assert company.subscription_status == "active"
     assert company.stripe_customer_id == "cus_lifetime"
 
 
-def test_subscription_access_policy_and_plan_limit(db, monkeypatch):
+def test_subscription_access_policy_and_trial_member_limits(db, monkeypatch):
     company = Company(
         name="Trial Company",
         tax_id="BILLING-4",
         address="Test address",
         phone="000000003",
         email="trial@example.com",
-        subscription_plan="trial",
+        subscription_plan="top",
         subscription_status="trialing",
     )
     db.add(company)
     db.flush()
-    db.add_all(
-        [
-            User(
-                email=f"trial-{index}@example.com",
-                hashed_password="unused",
-                role_id=1 if index == 0 else 3,
-                company_id=company.id,
-                is_active=True,
-            )
-            for index in range(5)
-        ]
-    )
     db.commit()
 
     monkeypatch.setattr(settings, "SUBSCRIPTION_ENFORCEMENT_ENABLED", True)
@@ -318,9 +343,10 @@ def test_subscription_access_policy_and_plan_limit(db, monkeypatch):
     assert access.allowed is False
     assert access.reason == "past_due"
 
-    with pytest.raises(HTTPException) as error:
-        require_active_user_capacity(db, company)
-    assert error.value.status_code == 409
+    assert legacy_plan_code("trial") == "top"
+    assert default_plan_values("trial")["limits.internal_admins"] == 10
+    assert default_plan_values("trial")["limits.internal_responsibles"] == 20
+    assert default_plan_values("trial")["limits.internal_workers"] == 100
 
 
 def test_billing_recovery_routes_remain_available_when_access_is_blocked(
@@ -364,6 +390,11 @@ def test_billing_recovery_routes_remain_available_when_access_is_blocked(
     assert summary.status_code == 200
     assert summary.json()["access_allowed"] is False
     assert summary.json()["access_reason"] == "past_due"
+    assert summary.json()["internal_member_limits"] == {
+        "administrators": 3,
+        "responsibles": 8,
+        "workers": 25,
+    }
 
     monkeypatch.setattr(
         billing_service,
@@ -382,8 +413,8 @@ def test_reactivating_user_cannot_bypass_plan_limit(db):
         address="Test address",
         phone="000000005",
         email="limited@example.com",
-        subscription_plan="trial",
-        subscription_status="trialing",
+        subscription_plan="free",
+        subscription_status="active",
     )
     db.add(company)
     db.flush()
@@ -395,7 +426,7 @@ def test_reactivating_user_cannot_bypass_plan_limit(db):
             company_id=company.id,
             is_active=True,
         )
-        for index in range(5)
+        for index in range(6)
     ]
     inactive_user = User(
         email="limited-inactive@example.com",
@@ -405,6 +436,14 @@ def test_reactivating_user_cannot_bypass_plan_limit(db):
         is_active=False,
     )
     db.add_all([*users, inactive_user])
+    db.flush()
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        company,
+        reason="test.plan_changed",
+    )
+    for user in [*users, inactive_user]:
+        organization_bootstrap_service.ensure_user_membership(db, user)
     db.commit()
 
     with pytest.raises(HTTPException) as error:
@@ -415,3 +454,49 @@ def test_reactivating_user_cannot_bypass_plan_limit(db):
             users[0],
         )
     assert error.value.status_code == 409
+
+
+def test_reactivating_user_activates_their_membership_when_capacity_allows(db):
+    company = Company(
+        name="Reactivation Company",
+        tax_id="BILLING-REACTIVATE",
+        address="Test address",
+        phone="000000005",
+        email="reactivate@example.com",
+        subscription_plan="free",
+        subscription_status="active",
+    )
+    admin = User(
+        email="reactivation-admin@example.com",
+        hashed_password="unused",
+        role_id=1,
+        company=company,
+        is_active=True,
+    )
+    worker = User(
+        email="reactivation-worker@example.com",
+        hashed_password="unused",
+        role_id=3,
+        company=company,
+        is_active=False,
+    )
+    db.add_all([company, admin, worker])
+    db.flush()
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        company,
+        reason="test.plan_changed",
+    )
+    organization_bootstrap_service.ensure_user_membership(db, admin)
+    membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    db.commit()
+
+    updated = user_service.update_user(
+        db,
+        worker.id,
+        UserUpdate(is_active=True),
+        admin,
+    )
+
+    assert updated.is_active is True
+    assert membership.status == "active"

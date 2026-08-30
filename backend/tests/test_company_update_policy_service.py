@@ -69,8 +69,8 @@ def test_platform_subscription_transition_is_normalized():
         platform_superadmin=True,
         now=now,
     )
-    pro = company_update_policy_service.normalize_platform_subscription_update(
-        {"subscription_plan": "pro", "trial_ends_at": now},
+    enterprise = company_update_policy_service.normalize_platform_subscription_update(
+        {"subscription_plan": "mega", "trial_ends_at": now},
         platform_superadmin=True,
         now=now,
     )
@@ -81,12 +81,12 @@ def test_platform_subscription_transition_is_normalized():
     )
 
     assert trial == {
-        "subscription_plan": "trial",
+        "subscription_plan": "top",
         "subscription_status": "trialing",
         "trial_started_at": now,
     }
-    assert pro == {
-        "subscription_plan": "pro",
+    assert enterprise == {
+        "subscription_plan": "mega",
         "subscription_status": "active",
         "trial_started_at": None,
         "trial_ends_at": None,
@@ -100,7 +100,7 @@ def test_platform_subscription_transition_is_normalized():
 
 
 def test_non_platform_payload_stays_unchanged_and_access_updates_revoke_sessions():
-    payload = {"subscription_plan": "pro"}
+    payload = {"subscription_plan": "mega"}
 
     assert company_update_policy_service.normalize_platform_subscription_update(
         payload,

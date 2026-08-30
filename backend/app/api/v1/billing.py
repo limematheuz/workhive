@@ -12,9 +12,13 @@ from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.company import Company
 from app.models.user import User
-from app.schemas.billing import CheckoutSessionCreate, HostedBillingUrl, SubscriptionSummary
-from app.services import billing_service
-from app.services.subscription_policy import active_user_limit, evaluate_company_access
+from app.schemas.billing import (
+    CheckoutSessionCreate,
+    HostedBillingUrl,
+    SubscriptionSummary,
+)
+from app.services import billing_service, entitlement_service
+from app.services.subscription_policy import evaluate_company_access
 
 
 router = APIRouter()
@@ -48,6 +52,7 @@ async def subscription_summary(
 def _subscription_summary(db: Session, current_user: User) -> SubscriptionSummary:
     company = _current_company(db, current_user)
     access = evaluate_company_access(company)
+    entitlements = entitlement_service.resolve_effective_entitlements(db, company)
     active_users = (
         db.query(User)
         .filter(
@@ -59,11 +64,17 @@ def _subscription_summary(db: Session, current_user: User) -> SubscriptionSummar
     return SubscriptionSummary(
         plan=company.subscription_plan,
         status=company.subscription_status,
-        trial_ends_at=company.trial_ends_at.isoformat() if company.trial_ends_at else None,
+        trial_ends_at=company.trial_ends_at.isoformat()
+        if company.trial_ends_at
+        else None,
         access_allowed=access.allowed,
         access_reason=access.reason,
         active_users=active_users,
-        max_active_users=active_user_limit(company.subscription_plan),
+        internal_member_limits={
+            "administrators": int(entitlements.values["limits.internal_admins"]),
+            "responsibles": int(entitlements.values["limits.internal_responsibles"]),
+            "workers": int(entitlements.values["limits.internal_workers"]),
+        },
     )
 
 

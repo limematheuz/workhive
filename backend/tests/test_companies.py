@@ -93,6 +93,8 @@ def test_superadmin_can_provision_company_and_owner(client, db):
     )
 
     assert response.status_code == 201
+    assert response.json()["subscription_plan"] == "top"
+    assert response.json()["subscription_status"] == "trialing"
     company_id = response.json()["id"]
     owner_login = client.post(
         "/api/v1/auth/login",
@@ -125,10 +127,50 @@ def test_superadmin_can_provision_company_and_owner(client, db):
         "/api/v1/companies/",
         headers={"Authorization": f"Bearer {token}"},
     )
+    assert int(companies_response.headers["X-Total-Count"]) >= 1
     assert any(
         company["id"] == company_id and company["is_active"] is False
         for company in companies_response.json()
     )
+
+
+def test_superadmin_can_provision_an_enterprise_plan(client, db):
+    superadmin = User(
+        email="superadmin-enterprise@workhive.com",
+        hashed_password=get_password_hash(TEST_SUPER),
+        full_name="WorkHive Admin",
+        role_id=4,
+        company_id=None,
+        is_active=True,
+    )
+    db.add(superadmin)
+    db.commit()
+    login = client.post(
+        "/api/v1/auth/login",
+        data=login_form(superadmin.email, TEST_SUPER),
+    )
+
+    response = client.post(
+        "/api/v1/companies/provision",
+        headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+        json=with_owner_credential(
+            {
+                "name": "Enterprise Cleaning",
+                "tax_id": "B12340001",
+                "address": "Enterprise Avenue 1",
+                "phone": "600000002",
+                "email": "office@enterprise-cleaning.com",
+                "owner_full_name": "Enterprise Owner",
+                "owner_email": "owner@enterprise-cleaning.com",
+                "subscription_plan": "mega",
+                "trial_days": None,
+            }
+        ),
+    )
+
+    assert response.status_code == 201
+    assert response.json()["subscription_plan"] == "mega"
+    assert response.json()["subscription_status"] == "active"
 
 
 def test_superadmin_can_revoke_subscription_access_and_sessions(client, db):
@@ -242,6 +284,14 @@ def test_only_superadmin_can_list_all_company_members(client, db):
                 company_id=company_id,
                 is_active=False,
             ),
+            User(
+                email="deleted+members@invalid.workhive.local",
+                hashed_password=get_password_hash(TEST_TEMP),
+                full_name="Deleted user",
+                role_id=3,
+                company_id=company_id,
+                is_active=False,
+            ),
         ]
     )
     db.commit()
@@ -257,6 +307,7 @@ def test_only_superadmin_can_list_all_company_members(client, db):
         ("manager", True),
         ("viewer", False),
     }
+    assert all("invalid.workhive.local" not in member["email"] for member in response.json())
     assert all("hashed_password" not in member for member in response.json())
 
     owner_login = client.post(

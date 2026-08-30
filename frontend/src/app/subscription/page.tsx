@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useDictionary } from "@/lib/dictionary-context";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
@@ -8,10 +9,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Check, Crown, Shield, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { authService } from "@/services/auth.service";
 
 export default function SubscriptionPage() {
     const { dict } = useDictionary();
     const t = dict.auth;
+    const [hasSession, setHasSession] = useState(false);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        void authService.getMe()
+            .then(() => {
+                if (!cancelled) setHasSession(true);
+            })
+            .catch(() => {
+                if (!cancelled) setHasSession(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const plans = [
         {
@@ -62,11 +81,11 @@ export default function SubscriptionPage() {
             contentClassName="my-auto max-w-7xl py-6"
         >
             <Link
-                href="/login"
+                href={hasSession ? "/dashboard" : "/login"}
                 className="group mb-6 inline-flex w-fit items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion"
             >
                 <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                {t.back_to_login}
+                {hasSession ? t.back_to_dashboard : t.back_to_login}
             </Link>
 
             <div className="mx-auto mb-8 max-w-3xl text-center lg:mb-10">

@@ -1,5 +1,6 @@
 import { ShieldCheck, UserRound } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { groupCompanyMembers, type CompanyMember } from "./company-members";
 
 type CompanyMembersPanelProps = {
@@ -68,9 +69,9 @@ function MemberGroup({
                                 <p className="truncate text-[var(--text-muted)]">{member.email}</p>
                             </div>
                             {!member.is_active && (
-                                <span className="shrink-0 rounded-full bg-[var(--bg-tertiary)] px-2 py-0.5 text-2xs font-bold text-[var(--text-muted)]">
+                                <Badge variant="outline" className="shrink-0 border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[10px] text-[var(--text-muted)]">
                                     {inactiveLabel}
-                                </span>
+                                </Badge>
                             )}
                         </li>
                     ))}

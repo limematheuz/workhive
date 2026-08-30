@@ -4,7 +4,13 @@ from pydantic import BaseModel, HttpUrl
 
 
 class CheckoutSessionCreate(BaseModel):
-    plan: Literal["business", "pro", "lifetime"]
+    # Legacy choices remain accepted during the public pricing-page migration.
+    # They are converted to their canonical plan before checkout metadata is
+    # persisted, so no new company keeps a legacy plan code.
+    plan: Literal[
+        "basic", "medium", "top", "mega",
+        "business", "pro", "lifetime",
+    ]
 
 
 class HostedBillingUrl(BaseModel):
@@ -18,4 +24,4 @@ class SubscriptionSummary(BaseModel):
     access_allowed: bool
     access_reason: str
     active_users: int
-    max_active_users: int | None = None
+    internal_member_limits: dict[str, int]

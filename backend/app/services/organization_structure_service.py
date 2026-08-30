@@ -21,6 +21,10 @@ from app.services.organization_service_shared import (
     not_found,
     require_capability,
 )
+from app.services.entitlement_service import (
+    require_department_capacity,
+    require_team_capacity,
+)
 
 
 def list_departments(db: Session, current_user: User) -> list[DepartmentResponse]:
@@ -59,6 +63,7 @@ def create_department(
     db: Session, payload: DepartmentCreate, current_user: User
 ) -> DepartmentResponse:
     company_id = require_capability(db, current_user, CAPABILITY_DEPARTMENTS_MANAGE)
+    require_department_capacity(db, company_id=company_id)
     validate_department_parent(
         db,
         company_id=company_id,
@@ -116,7 +121,9 @@ def list_teams(db: Session, current_user: User) -> list[TeamResponse]:
     ]
 
 
-def validate_team_department(db: Session, company_id: int, department_id: int | None) -> None:
+def validate_team_department(
+    db: Session, company_id: int, department_id: int | None
+) -> None:
     if department_id is not None and not organization_repo.get_department(
         db, company_id=company_id, department_id=department_id
     ):
@@ -125,6 +132,7 @@ def validate_team_department(db: Session, company_id: int, department_id: int | 
 
 def create_team(db: Session, payload: TeamCreate, current_user: User) -> TeamResponse:
     company_id = require_capability(db, current_user, CAPABILITY_TEAMS_MANAGE)
+    require_team_capacity(db, company_id=company_id)
     validate_team_department(db, company_id, payload.department_id)
     team = Team(company_id=company_id, **payload.model_dump())
     db.add(team)

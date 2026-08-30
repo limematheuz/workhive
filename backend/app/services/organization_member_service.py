@@ -16,6 +16,7 @@ from app.schemas.organization import (
     OrganizationMemberUpdate,
 )
 from app.services import organization_bootstrap_service
+from app.services.entitlement_service import require_internal_member_capacity
 from app.services.organization_service_shared import (
     CAPABILITY_MEMBERS_MANAGE,
     CAPABILITY_MEMBERS_READ,
@@ -210,8 +211,14 @@ def update_member(
         next_access_class != "admin" or next_status != "active"
     ):
         conflict("You cannot remove or suspend your own company administration access")
-    if membership.user.role and membership.user.role.name == "accountant" and payload.access_class:
-        conflict("The accountant role will move through the dedicated external portal migration")
+    if (
+        membership.user.role
+        and membership.user.role.name == "accountant"
+        and payload.access_class
+    ):
+        conflict(
+            "The accountant role will move through the dedicated external portal migration"
+        )
     if (
         membership.access_class == "admin"
         and membership.status == "active"
@@ -219,13 +226,28 @@ def update_member(
         and active_admin_count(db, company_id) == 1
     ):
         conflict("A company must keep at least one active administrator")
+    if next_status == "active" and (
+        membership.status != "active" or next_access_class != membership.access_class
+    ):
+        require_internal_member_capacity(
+            db,
+            company_id=company_id,
+            access_class=next_access_class,
+            exclude_membership_id=membership.id,
+        )
 
     membership.access_class = next_access_class
     membership.status = next_status
     membership.user.is_active = next_status == "active"
     db.add_all([membership, membership.user])
-    if payload.access_class and membership.user.role and membership.user.role.name != "accountant":
-        role_name = {"admin": "admin", "responsible": "manager", "worker": "viewer"}[payload.access_class]
+    if (
+        payload.access_class
+        and membership.user.role
+        and membership.user.role.name != "accountant"
+    ):
+        role_name = {"admin": "admin", "responsible": "manager", "worker": "viewer"}[
+            payload.access_class
+        ]
         legacy_role = role_repo.get_role_by_name(db, role_name)
         if not legacy_role:
             raise HTTPException(
@@ -237,11 +259,17 @@ def update_member(
         db.add(membership.user)
     if payload.department_ids is not None:
         replace_department_memberships(
-            db, company_id=company_id, membership_id=membership.id, department_ids=payload.department_ids
+            db,
+            company_id=company_id,
+            membership_id=membership.id,
+            department_ids=payload.department_ids,
         )
     if payload.team_ids is not None:
         replace_team_memberships(
-            db, company_id=company_id, membership_id=membership.id, team_ids=payload.team_ids
+            db,
+            company_id=company_id,
+            membership_id=membership.id,
+            team_ids=payload.team_ids,
         )
     organization_bootstrap_service.ensure_user_membership(db, membership.user)
     db.commit()

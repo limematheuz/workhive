@@ -38,10 +38,15 @@ def get_all_users(
 
 
 def get_company_members(db: Session, company_id: int) -> list[User]:
+    # Permanently removed legacy users retain an invalid placeholder address so
+    # their historical foreign keys stay intact. They are not people who can be
+    # managed from the company panel, and Pydantic correctly rejects that
+    # placeholder as an email address in the member response.
     return (
         db.query(User)
         .options(*user_response_load_options())
         .filter(User.company_id == company_id)
+        .filter(~User.email.endswith("@invalid.workhive.local"))
         .join(User.role)
         .filter(Role.name != "superadmin")
         .order_by(User.is_active.desc(), User.full_name.asc(), User.id.asc())
@@ -98,6 +103,18 @@ def update_user(db: Session, db_user: User, user_data: UserUpdate) -> User:
     db.commit()
     db.refresh(db_user)
     return db_user
+
+
+def revoke_company_sessions(db: Session, *, company_id: int) -> None:
+    """Invalidate active sessions after a platform-level access change."""
+    (
+        db.query(User)
+        .filter(User.company_id == company_id)
+        .update(
+            {User.session_version: User.session_version + 1},
+            synchronize_session=False,
+        )
+    )
 
 
 def has_protected_user_data(db: Session, user_id: int) -> bool:

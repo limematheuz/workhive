@@ -74,17 +74,27 @@ def normalize_platform_subscription_update(
     normalized_payload = update_payload.copy()
     plan = normalized_payload["subscription_plan"]
     if plan == "trial":
-        normalized_payload.setdefault("subscription_status", "trialing")
-        normalized_payload.setdefault("trial_started_at", now or datetime.now(timezone.utc))
-    elif plan == "pro":
         normalized_payload.update(
-            subscription_status="active",
-            trial_started_at=None,
-            trial_ends_at=None,
+            subscription_plan="top",
+            subscription_status="trialing",
+            trial_started_at=now or datetime.now(timezone.utc),
         )
     elif plan == "none":
         normalized_payload.update(
             subscription_status="inactive",
+            trial_started_at=None,
+            trial_ends_at=None,
+        )
+    else:
+        legacy_plan_map = {
+            "free": "basic",
+            "business": "medium",
+            "pro": "top",
+            "lifetime": "top",
+        }
+        normalized_payload["subscription_plan"] = legacy_plan_map.get(plan, plan)
+        normalized_payload.update(
+            subscription_status="active",
             trial_started_at=None,
             trial_ends_at=None,
         )

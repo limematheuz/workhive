@@ -32,7 +32,7 @@ export type TrialRequestCreate = {
 };
 
 export type TrialRequestApprove = {
-    access_mode: "trial" | "pro";
+    access_mode: "trial" | "basic" | "medium" | "top" | "mega" | "custom";
     trial_days?: number;
     tax_id: string;
     address: string;

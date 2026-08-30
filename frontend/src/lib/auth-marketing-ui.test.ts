@@ -8,6 +8,8 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     const shell = read("../components/auth/AuthShell.tsx");
     const card = read("../components/auth/AuthGlassCard.tsx");
     const login = read("../app/(auth)/login/LoginPageClient.tsx");
+    const loginForm = read("../components/auth/LoginFormPanel.tsx");
+    const loginMarketing = read("../components/auth/LoginMarketingPanel.tsx");
     const register = read("../app/(auth)/register/page.tsx");
     const forgot = read("../app/(auth)/forgot-password/page.tsx");
     const subscription = read("../app/subscription/page.tsx");
@@ -24,9 +26,12 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     assert.doesNotMatch(shell, /items-center overflow-x-(?:hidden|clip)/);
     assert.match(card, /glass-sheet-bg/);
     assert.match(login, /AuthShell/);
-    assert.match(login, /AuthGlassCard/);
-    assert.match(login, /billing-surface/);
-    assert.match(login, /request_access/);
+    assert.match(login, /LoginFormPanel/);
+    assert.match(login, /LoginMarketingPanel/);
+    assert.match(loginForm, /AuthGlassCard/);
+    assert.match(loginForm, /billing-surface/);
+    assert.match(loginForm, /request_access/);
+    assert.match(loginMarketing, /AuthLogo/);
     assert.match(register, /AuthShell/);
     assert.match(register, /billing-surface/);
     assert.match(register, /billing-block/);
@@ -87,14 +92,16 @@ test("auth dictionaries expose short access and pricing copy", () => {
 
 test("login offers Google button chrome without wiring OAuth", () => {
     const login = read("../app/(auth)/login/LoginPageClient.tsx");
+    const loginForm = read("../components/auth/LoginFormPanel.tsx");
     const feedback = read("../components/auth/LoginStatusFeedback.tsx");
-    assert.match(login, /google_button/);
-    assert.match(login, /google_soon/);
-    assert.match(login, /LoginStatusFeedback/);
+    assert.match(login, /LoginFormPanel/);
+    assert.match(loginForm, /google_button/);
+    assert.match(loginForm, /google_soon/);
+    assert.match(loginForm, /LoginStatusFeedback/);
     assert.match(feedback, /LoginSuccessIllustration/);
     assert.match(feedback, /LoginErrorIllustration/);
     assert.match(feedback, /text-accent/);
-    assert.doesNotMatch(login, /authService\.loginWithGoogle|oauth|signInWithPopup/);
+    assert.doesNotMatch(loginForm, /authService\.loginWithGoogle|oauth|signInWithPopup/);
 });
 
 test("subscription highlights Pro without clipping the recommended badge", () => {

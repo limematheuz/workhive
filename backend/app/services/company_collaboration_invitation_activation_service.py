@@ -18,7 +18,7 @@ from app.schemas.collaboration import (
     CompanyCollaborationInvitationActivateExistingAccount,
     CompanyCollaborationInvitationActivationStatus,
 )
-from app.services import privacy_service
+from app.services import company_entitlement_service, privacy_service
 from app.services.company_collaboration_invitation_access import (
     find_pending_invitation_by_token,
     require_valid_verification_code,
@@ -32,7 +32,11 @@ def activation_status(
     token: str,
 ) -> CompanyCollaborationInvitationActivationStatus:
     invitation = find_pending_invitation_by_token(db, token)
-    mode = "sign_in" if user_repo.get_user_by_email(db, invitation.email) else "create_account"
+    mode = (
+        "sign_in"
+        if user_repo.get_user_by_email(db, invitation.email)
+        else "create_account"
+    )
     return CompanyCollaborationInvitationActivationStatus(mode=mode)
 
 
@@ -146,7 +150,9 @@ def _create_company_and_accept(
     marketing_consent: bool = False,
 ):
     if company_repo.get_company_by_tax_id(db, tax_id):
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tax ID already exists")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="Tax ID already exists"
+        )
     admin_role = role_repo.get_role_by_name(db, "admin")
     if not admin_role:
         raise HTTPException(
@@ -168,7 +174,9 @@ def _create_company_and_accept(
             if invitation.role_type == "property_manager"
             else "service_provider"
         ),
-        subscription_plan="trial",
+        # Collaboration activation starts the same canonical Top trial as the
+        # other company-creation paths.
+        subscription_plan="top",
         subscription_status="trialing",
         trial_started_at=now,
         trial_ends_at=now + timedelta(days=14),
@@ -178,7 +186,9 @@ def _create_company_and_accept(
         db.flush()
         if existing_user is None:
             if password is None or request is None:
-                raise RuntimeError("Password and request are required for a new invitation account")
+                raise RuntimeError(
+                    "Password and request are required for a new invitation account"
+                )
             accepting_user = User(
                 email=invitation.email,
                 full_name=full_name.strip(),
@@ -204,6 +214,13 @@ def _create_company_and_accept(
             accepting_user.company_id = company.id
             accepting_user.email_verified_at = accepting_user.email_verified_at or now
             db.flush()
+        company_entitlement_service.synchronize_company_subscription(
+            db,
+            company,
+            reason="collaboration.company_created",
+            actor_user_id=accepting_user.id,
+            now=now,
+        )
         return accept_for_company(
             db,
             invitation=invitation,

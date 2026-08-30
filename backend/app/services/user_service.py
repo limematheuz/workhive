@@ -9,7 +9,8 @@ from app.repositories import task_item as task_item_repo
 from app.repositories import role as role_repo
 from app.core.security import get_password_hash, verify_password
 from app.services import task_assignment_service
-from app.services.subscription_policy import require_active_user_capacity
+from app.services.entitlement_service import require_internal_member_capacity
+from app.services import organization_bootstrap_service
 from app.services.user_scope import is_superadmin
 from datetime import datetime, timedelta, timezone
 import calendar
@@ -80,16 +81,21 @@ def update_user(
             detail="Not enough permissions to change user activation",
         )
 
-    if (
+    activating_user = (
         user_data.is_active is True
         and not db_user.is_active
         and db_user.company is not None
-    ):
-        require_active_user_capacity(
-            db,
-            db_user.company,
-            exclude_user_id=db_user.id,
-        )
+    )
+    membership = None
+    if activating_user:
+        membership = organization_bootstrap_service.ensure_user_membership(db, db_user)
+        if membership:
+            require_internal_member_capacity(
+                db,
+                company_id=db_user.company_id,
+                access_class=membership.access_class,
+                exclude_membership_id=membership.id,
+            )
 
     if user_data.password is not None:
         if not is_own_profile:
@@ -138,7 +144,13 @@ def update_user(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Only superadmins can assign the superadmin role",
                 )
-    return user_repo.update_user(db, db_user, user_data)
+    updated_user = user_repo.update_user(db, db_user, user_data)
+    if activating_user and membership:
+        membership.status = "active"
+        db.add(membership)
+        db.commit()
+        db.refresh(updated_user)
+    return updated_user
 
 
 def get_user_stats(

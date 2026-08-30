@@ -12,7 +12,7 @@ def _trial_company(db, *, ends_at: datetime) -> tuple[Company, User, User]:
         address="Calle Trial 1",
         phone="600000000",
         email="company@example.com",
-        subscription_plan="trial",
+        subscription_plan="top",
         subscription_status="trialing",
         trial_started_at=ends_at - timedelta(days=14),
         trial_ends_at=ends_at,

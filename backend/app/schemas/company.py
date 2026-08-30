@@ -9,6 +9,7 @@ from app.schemas.user import validate_user_password
 
 
 OperatingModel = Literal["service_provider", "property_manager", "hybrid"]
+ProvisionPlanCode = Literal["trial", "basic", "medium", "top", "mega", "custom"]
 
 
 class CompanyBase(BaseModel):
@@ -51,7 +52,11 @@ class CompanyProvisionCreate(BaseModel):
     owner_full_name: str
     owner_email: EmailStr
     owner_password: str = Field(min_length=8)
-    subscription_plan: Literal["trial", "pro"] = "trial"
+    # A trial is a commercial status that always runs on Top; paid companies
+    # store their actual plan code.  Keeping the distinction in this transport
+    # contract prevents the old "trial/pro" selector from leaking back into
+    # subscription management.
+    subscription_plan: ProvisionPlanCode = "trial"
     trial_days: int | None = Field(default=14, ge=1, le=365)
 
     @field_validator("owner_password")
@@ -76,7 +81,12 @@ class CompanyUpdate(BaseModel):
     default_document_terms: str | None = None
     is_active: bool | None = None
     onboarding_completed: bool | None = None
-    subscription_plan: Literal["trial", "pro", "none"] | None = None
+    # Keep legacy inputs readable for older integrations, but normalize them
+    # in the service before persistence. New callers use the product plans.
+    subscription_plan: Literal[
+        "trial", "pro", "free", "business", "lifetime", "none",
+        "basic", "medium", "top", "mega", "custom",
+    ] | None = None
     subscription_status: Literal["trialing", "active", "inactive", "expired", "canceled"] | None = None
     trial_started_at: datetime | None = None
     trial_ends_at: datetime | None = None

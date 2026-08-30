@@ -13,9 +13,14 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.company import Company
 from app.models.stripe_webhook_event import StripeWebhookEvent
+from app.services import company_entitlement_service
+from app.services.entitlement_catalog import legacy_plan_code
 
 
 STRIPE_API_URL = "https://api.stripe.com/v1"
+_CHECKOUT_PLAN_CODES = frozenset(
+    {"basic", "medium", "top", "mega", "business", "pro", "lifetime"}
+)
 
 
 def _require_billing_configuration() -> None:
@@ -50,15 +55,30 @@ def _stripe_post(path: str, data: dict[str, str]) -> dict[str, Any]:
 
 
 def create_checkout_session(company: Company, plan: str) -> str:
-    price_id = settings.stripe_price_ids.get(plan)
+    requested_plan = plan.strip().lower()
+    if requested_plan not in _CHECKOUT_PLAN_CODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="The requested plan is not available for checkout",
+        )
+    canonical_plan = legacy_plan_code(requested_plan)
+    # Keep already-created lifetime checkout links working only while the
+    # public pricing page is migrated. The subscription itself still becomes
+    # canonical Top when Stripe confirms payment.
+    is_legacy_lifetime = requested_plan == "lifetime"
+    price_id = (
+        settings.STRIPE_LIFETIME_PRICE_ID
+        if is_legacy_lifetime
+        else settings.stripe_price_ids.get(canonical_plan)
+    )
     if not price_id:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Stripe price is not configured for plan {plan}",
+            detail=f"Stripe price is not configured for plan {canonical_plan}",
         )
 
     frontend_url = settings.FRONTEND_URL.rstrip("/")
-    is_one_time = plan == "lifetime"
+    is_one_time = is_legacy_lifetime
     payload = {
         "mode": "payment" if is_one_time else "subscription",
         "line_items[0][price]": price_id,
@@ -68,12 +88,12 @@ def create_checkout_session(company: Company, plan: str) -> str:
         "client_reference_id": str(company.id),
         "customer_email": company.email,
         "metadata[company_id]": str(company.id),
-        "metadata[plan]": plan,
+        "metadata[plan]": canonical_plan,
         "allow_promotion_codes": "true",
     }
     if not is_one_time:
         payload["subscription_data[metadata][company_id]"] = str(company.id)
-        payload["subscription_data[metadata][plan]"] = plan
+        payload["subscription_data[metadata][plan]"] = canonical_plan
     session = _stripe_post("/checkout/sessions", payload)
     checkout_url = session.get("url")
     if not checkout_url:
@@ -229,10 +249,10 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
         company.stripe_customer_id = stripe_object.get("customer")
         company.stripe_subscription_id = stripe_object.get("subscription")
         metadata = stripe_object.get("metadata") or {}
-        plan = metadata.get("plan", company.subscription_plan)
+        plan = legacy_plan_code(metadata.get("plan", company.subscription_plan))
         company.subscription_plan = plan
         # One-time lifetime purchases have no subscription invoices to mark active.
-        if plan == "lifetime" or stripe_object.get("mode") == "payment":
+        if stripe_object.get("mode") == "payment":
             company.subscription_status = "active"
         else:
             company.subscription_status = "pending"
@@ -240,7 +260,9 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
         company.stripe_customer_id = stripe_object.get("customer")
         company.stripe_subscription_id = stripe_object.get("id")
         metadata = stripe_object.get("metadata") or {}
-        company.subscription_plan = metadata.get("plan", company.subscription_plan)
+        company.subscription_plan = legacy_plan_code(
+            metadata.get("plan", company.subscription_plan)
+        )
         company.subscription_status = stripe_object.get("status", "inactive")
         company.trial_ends_at = _datetime_from_unix(stripe_object.get("trial_end"))
         if event_type == "customer.subscription.deleted":
@@ -254,5 +276,10 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
         return event_type
 
     db.add(company)
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        company,
+        reason=f"stripe.{event_type}",
+    )
     db.commit()
     return event_type

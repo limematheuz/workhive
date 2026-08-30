@@ -19,6 +19,7 @@ import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
 import { NotificationService } from "@/services/notification.service";
+import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import {
     countUnreadTaskReportNotifications,
 } from "@/lib/task-reporting";
@@ -39,6 +40,7 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
     const [taskPendingCount, setTaskPendingCount] = useState(0);
     const [reportAlertsCount, setReportAlertsCount] = useState(0);
+    const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
         sales: true,
         finance: true,
@@ -49,6 +51,33 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
     const userCanViewFinance = canViewFinance(user);
     const isAccountant = isAccountantRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
+
+    useEffect(() => {
+        if (!user || userIsPlatformSuperadmin || isAccountant) {
+            startTransition(() => setEnabledFeatures(null));
+            return;
+        }
+        let cancelled = false;
+        void CompanyPlanAccessService.getCurrentEntitlements()
+            .then((access) => {
+                if (!cancelled) {
+                    const enabled = new Set<string>();
+                    for (const entitlement of access.entitlements) {
+                        if (entitlement.value_type === "boolean" && entitlement.value === true) {
+                            enabled.add(entitlement.code);
+                        }
+                    }
+                    setEnabledFeatures(enabled);
+                }
+            })
+            .catch(() => {
+                // Keep navigation visible if a transient read fails; backend remains authoritative.
+                if (!cancelled) setEnabledFeatures(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [isAccountant, user, userIsPlatformSuperadmin]);
 
     const fetchPendingRequests = useCallback(async () => {
         try {
@@ -129,6 +158,7 @@ export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
         canViewFinance: userCanViewFinance,
         isAccountant,
         userIsPlatformSuperadmin,
+        enabledFeatures,
     });
 
     return (

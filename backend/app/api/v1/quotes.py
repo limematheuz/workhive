@@ -14,7 +14,7 @@ from app.schemas.quote import (
     QuoteUpdate,
 )
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate, QuoteItemResponse
-from app.services import audit_service, quote_service
+from app.services import audit_service, quote_item_service, quote_service
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.services.user_scope import is_platform_superadmin
@@ -176,7 +176,7 @@ async def read_quote_items(
     current_user: User = AsyncActiveAdmin,
 ):
     return await db.run_sync(
-        lambda sync_db: quote_service.get_quote_items(
+        lambda sync_db: quote_item_service.get_quote_items(
             sync_db,
             current_user.company_id,
             quote_id,
@@ -195,7 +195,7 @@ def create_quote_item(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    return quote_service.create_quote_item(
+    return quote_item_service.create_quote_item(
         db, current_user.company_id, quote_id, item_data
     )
 
@@ -208,7 +208,7 @@ def update_quote_item(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    return quote_service.update_quote_item(
+    return quote_item_service.update_quote_item(
         db, current_user.company_id, quote_id, item_id, item_data
     )
 
@@ -220,6 +220,6 @@ def delete_quote_item(
     db: Session = Depends(get_db),
     current_user: User = ActiveAdmin,
 ):
-    quote_service.delete_quote_item(
+    quote_item_service.delete_quote_item(
         db, current_user.company_id, quote_id, item_id
     )

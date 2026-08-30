@@ -5,6 +5,7 @@ import {
     getCanonicalAppHost,
     shouldRedirectPublicAppRoute,
 } from "@/lib/public-site";
+import { requiresAuthenticatedSession } from "@/lib/auth-routes";
 
 function getApiOrigin(): string {
     if (process.env.NODE_ENV === "production") return "";
@@ -91,10 +92,11 @@ export function proxy(request: NextRequest) {
         token = undefined;
     }
 
-    const isDashboardRoute = pathname.startsWith("/dashboard");
+    const requiresSession = requiresAuthenticatedSession(pathname);
 
-    if (isDashboardRoute && !token) {
+    if (requiresSession && !token) {
         const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
         const response = NextResponse.redirect(loginUrl);
         response.cookies.set("auth_token", "", { maxAge: 0, path: "/" });
         return applySecurityHeaders(response, contentSecurityPolicy);

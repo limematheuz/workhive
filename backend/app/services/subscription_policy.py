@@ -2,19 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
-
 from app.core.config import settings
 from app.models.company import Company
-from app.models.user import User
-
-
-PLAN_ACTIVE_USER_LIMITS = {
-    "free": 3,
-    "trial": 5,
-    "pro": 25,
-    "lifetime": 25,
-}
 
 PAYMENT_BLOCKED_STATUSES = {
     "canceled",
@@ -46,10 +35,6 @@ def subscription_error_code(reason: str) -> str:
 class SubscriptionAccess:
     allowed: bool
     reason: str
-
-
-def active_user_limit(plan: str) -> int | None:
-    return PLAN_ACTIVE_USER_LIMITS.get(plan)
 
 
 def evaluate_company_access(
@@ -98,29 +83,3 @@ def require_company_access(company: Company) -> None:
         ),
         headers={"X-WorkHive-Error-Code": subscription_error_code(access.reason)},
     )
-
-
-def require_active_user_capacity(
-    db: Session,
-    company: Company,
-    *,
-    exclude_user_id: int | None = None,
-) -> None:
-    limit = active_user_limit(company.subscription_plan)
-    if limit is None:
-        return
-
-    query = db.query(User).filter(
-        User.company_id == company.id,
-        User.is_active.is_(True),
-    )
-    if exclude_user_id is not None:
-        query = query.filter(User.id != exclude_user_id)
-    if query.count() >= limit:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Your {company.subscription_plan} plan allows up to "
-                f"{limit} active users"
-            ),
-        )

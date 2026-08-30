@@ -10,7 +10,8 @@ test("companies admin surfaces use billing shells without changing dashboard bac
     const trials = read("../components/companies/TrialRequestsPanel.tsx");
     const globals = read("../app/globals.css");
 
-    assert.match(list, /DataListTable/);
+    assert.match(list, /billing-surface/);
+    assert.match(list, /from "@\/components\/ui\/table"/);
     assert.doesNotMatch(list, /surface-glass-card/);
     assert.match(members, /billing-block/);
     assert.doesNotMatch(members, /glass-panel/);
