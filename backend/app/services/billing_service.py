@@ -92,11 +92,14 @@ def create_checkout_session(company: Company, plan: str) -> str:
         "success_url": f"{frontend_url}/dashboard/profile?billing=success",
         "cancel_url": f"{frontend_url}/subscription?billing=canceled",
         "client_reference_id": str(company.id),
-        "customer_email": company.email,
         "metadata[company_id]": str(company.id),
         "metadata[plan]": canonical_plan,
         "allow_promotion_codes": "true",
     }
+    if company.stripe_customer_id:
+        payload["customer"] = company.stripe_customer_id
+    else:
+        payload["customer_email"] = company.email
     if not is_one_time:
         payload["subscription_data[metadata][company_id]"] = str(company.id)
         payload["subscription_data[metadata][plan]"] = canonical_plan

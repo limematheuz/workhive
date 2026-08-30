@@ -1,46 +1,93 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 
-// Legacy checkout values stay here only while the public pricing screen is
-// migrated. New callers must use the canonical commercial plans.
-export type BillingPlan =
-    | "basic"
-    | "medium"
-    | "top"
-    | "mega"
-    | "business"
-    | "pro"
-    | "lifetime";
+export type PublicPlanCode = "basic" | "medium" | "top" | "mega";
+
+export const PUBLIC_PLAN_CODES: PublicPlanCode[] = [
+    "basic",
+    "medium",
+    "top",
+    "mega",
+];
+
+export function isPublicPlanCode(value: string | null): value is PublicPlanCode {
+    return value !== null && PUBLIC_PLAN_CODES.includes(value as PublicPlanCode);
+}
+
+export type PublicPlanEntitlement = {
+    code: string;
+    value_type: "boolean" | "integer";
+    value: boolean | number;
+};
+
+export type PublicPlan = {
+    code: PublicPlanCode;
+    version: number;
+    entitlements: PublicPlanEntitlement[];
+    checkout_available: boolean;
+};
+
+export type CompanyPurchaseCheckoutInput = {
+    plan: PublicPlanCode;
+    company_name: string;
+    tax_id: string;
+    address: string;
+    postal_code?: string;
+    city?: string;
+    province?: string;
+    phone: string;
+    company_email: string;
+    owner_full_name: string;
+    owner_email: string;
+    accept_terms: boolean;
+    accept_privacy: boolean;
+    marketing_consent: boolean;
+};
 
 export const billingService = {
-    createCheckout: async (plan: BillingPlan): Promise<string> => {
+    listPublicPlans: async (): Promise<PublicPlan[]> => {
+        const response = await apiFetch("/api/v1/billing/plans", {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar los planes disponibles.");
+        return (await response.json()) as PublicPlan[];
+    },
+
+    createCheckout: async (plan: PublicPlanCode): Promise<string> => {
         const response = await apiFetch("/api/v1/billing/checkout", {
             method: "POST",
             body: JSON.stringify({ plan }),
         });
-        if (!response.ok) {
-            throw new Error(
-                await extractErrorMessage(
-                    response,
-                    "No se pudo iniciar el pago seguro"
-                )
-            );
-        }
+        await assertApiResponseOk(response, "No se pudo iniciar el pago seguro.");
         const payload = (await response.json()) as { url: string };
         return payload.url;
+    },
+
+    createCompanyPurchaseCheckout: async (
+        input: CompanyPurchaseCheckoutInput,
+    ): Promise<string> => {
+        const response = await apiFetch("/api/v1/billing/purchases/checkout", {
+            method: "POST",
+            body: JSON.stringify(input),
+        });
+        await assertApiResponseOk(response, "No se pudo iniciar el pago seguro.");
+        const payload = (await response.json()) as { url: string };
+        return payload.url;
+    },
+
+    activateCompanyPurchase: async (token: string, password: string): Promise<void> => {
+        const response = await apiFetch("/api/v1/billing/purchases/activate", {
+            method: "POST",
+            body: JSON.stringify({ token, password }),
+        });
+        await assertApiResponseOk(response, "No se pudo activar la empresa.");
     },
 
     createPortal: async (): Promise<string> => {
         const response = await apiFetch("/api/v1/billing/portal", {
             method: "POST",
         });
-        if (!response.ok) {
-            throw new Error(
-                await extractErrorMessage(
-                    response,
-                    "No se pudo abrir el portal de facturación"
-                )
-            );
-        }
+        await assertApiResponseOk(response, "No se pudo abrir el portal de facturación.");
         const payload = (await response.json()) as { url: string };
         return payload.url;
     },

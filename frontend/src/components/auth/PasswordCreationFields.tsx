@@ -15,11 +15,12 @@ type PasswordCreationFieldsProps = {
     locale: string;
     password: string;
     confirmPassword: string;
-    acceptLegal: boolean;
+    acceptLegal?: boolean;
     onPasswordChange: (value: string) => void;
     onConfirmPasswordChange: (value: string) => void;
-    onAcceptLegalChange: (accepted: boolean) => void;
+    onAcceptLegalChange?: (accepted: boolean) => void;
     idPrefix: string;
+    showLegal?: boolean;
 };
 
 export function PasswordCreationFields({
@@ -31,6 +32,7 @@ export function PasswordCreationFields({
     onConfirmPasswordChange,
     onAcceptLegalChange,
     idPrefix,
+    showLegal = true,
 }: PasswordCreationFieldsProps) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -75,12 +77,14 @@ export function PasswordCreationFields({
                 showLabel={text.show}
                 hideLabel={text.hide}
             />
-            <div className="flex items-start gap-3 rounded-xl bg-[var(--bg-secondary)] p-4 text-sm leading-6 text-[var(--text-muted)]">
-                <Checkbox id={`${idPrefix}-legal`} checked={acceptLegal} onCheckedChange={(checked) => onAcceptLegalChange(checked === true)} />
-                <Label htmlFor={`${idPrefix}-legal`} className="cursor-pointer font-normal leading-6">
-                    {text.legal} <Link className="text-accent underline underline-offset-2" href="/terms" target="_blank">{text.terms}</Link>{" · "}<Link className="text-accent underline underline-offset-2" href="/privacy" target="_blank">{text.privacy}</Link>
-                </Label>
-            </div>
+            {showLegal && (
+                <div className="flex items-start gap-3 rounded-xl bg-[var(--bg-secondary)] p-4 text-sm leading-6 text-[var(--text-muted)]">
+                    <Checkbox id={`${idPrefix}-legal`} checked={acceptLegal} onCheckedChange={(checked) => onAcceptLegalChange?.(checked === true)} />
+                    <Label htmlFor={`${idPrefix}-legal`} className="cursor-pointer font-normal leading-6">
+                        {text.legal} <Link className="text-accent underline underline-offset-2" href="/terms" target="_blank">{text.terms}</Link>{" · "}<Link className="text-accent underline underline-offset-2" href="/privacy" target="_blank">{text.privacy}</Link>
+                    </Label>
+                </div>
+            )}
         </div>
     );
 }

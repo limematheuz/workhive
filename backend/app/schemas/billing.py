@@ -68,6 +68,19 @@ class CompanyPurchaseActivationResponse(BaseModel):
     company_id: int
 
 
+class PublicPlanEntitlement(BaseModel):
+    code: str
+    value_type: Literal["boolean", "integer"]
+    value: bool | int
+
+
+class PublicPlanCatalogResponse(BaseModel):
+    code: Literal["basic", "medium", "top", "mega"]
+    version: int
+    entitlements: list[PublicPlanEntitlement]
+    checkout_available: bool
+
+
 class SubscriptionSummary(BaseModel):
     plan: str
     status: str

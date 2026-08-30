@@ -35,7 +35,7 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     assert.match(register, /AuthShell/);
     assert.match(register, /billing-surface/);
     assert.match(register, /billing-block/);
-    assert.match(register, /contact\?reason=trial/);
+    assert.match(register, /href="\/subscription"/);
     assert.match(forgot, /AuthShell/);
     assert.match(subscription, /AuthShell/);
     assert.match(checkout, /AuthShell/);
@@ -54,40 +54,22 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     assert.doesNotMatch(contactAside, /glass-sheet-bg/);
 });
 
-test("auth dictionaries expose short access and pricing copy", () => {
+test("auth dictionaries expose the commercial purchase copy in both languages", () => {
     const es = JSON.parse(read("../dictionaries/es.json"));
     const en = JSON.parse(read("../dictionaries/en.json"));
 
     assert.equal(es.auth.request_access, "Solicitar acceso");
     assert.equal(en.auth.request_access, "Request access");
-    assert.equal(es.auth.plan_trial_name, "Evaluación asistida");
-    assert.equal(en.auth.plan_trial_name, "Assisted evaluation");
-    assert.equal(es.auth.plan_lifetime_name, "Licencia vitalicia");
-    assert.equal(en.auth.plan_lifetime_name, "Lifetime access");
-    assert.equal(es.auth.plan_lifetime_price, "2999€");
-    assert.equal(es.auth.select_lifetime, "Continuar con pago único");
-    assert.equal(en.auth.select_lifetime, "Continue with one-time payment");
-    assert.doesNotMatch(es.auth.select_lifetime, /comprar/i);
-    assert.doesNotMatch(en.auth.select_lifetime, /buy/i);
+    assert.equal(es.subscription.plan_names.basic, "Base");
+    assert.equal(en.subscription.plan_names.mega, "Enterprise");
+    assert.equal(es.subscription.custom_title, "Plan personalizado");
+    assert.equal(en.subscription.custom_title, "Custom plan");
     assert.equal(es.auth.contact_support_email, "info@workhive.es");
     assert.equal(es.auth.contact_location_value, "España");
     assert.equal(en.auth.contact_location_value, "Spain");
-    assert.ok(Array.isArray(es.auth.plan_pro_features));
-    assert.ok(Array.isArray(en.auth.plan_pro_features));
-    assert.ok(Array.isArray(es.auth.plan_lifetime_features));
-    assert.ok(Array.isArray(en.auth.plan_lifetime_features));
-    assert.match(es.auth.pricing_subtitle, /tres opciones/i);
-    assert.match(en.auth.pricing_subtitle, /three options/i);
-    assert.doesNotMatch(es.auth.plan_trial_features.join(" "), /Hasta 5 operarios/i);
-    assert.doesNotMatch(en.auth.plan_trial_features.join(" "), /Up to 5 active workers/i);
-    assert.match(es.auth.register_company_desc, /producto completo durante 14 días/i);
-    assert.match(en.auth.register_company_desc, /full product access for 14 days/i);
-    assert.match(es.auth.contact_trial_subtitle, /Producto completo durante 14 días/i);
-    assert.match(en.auth.contact_trial_subtitle, /Full product for 14 days/i);
     assert.match(es.auth.forgot_sent_body, /\{email\}/);
-    assert.match(en.auth.checkout_body, /\{plan\}/);
-    assert.doesNotMatch(es.auth.register_trial_title, /prueba gratuita/i);
-    assert.doesNotMatch(en.auth.register_trial_title, /free trial/i);
+    assert.match(es.subscription.checkout_intro, /Stripe/);
+    assert.match(en.subscription.checkout_intro, /Stripe/);
 });
 
 test("login offers Google button chrome without wiring OAuth", () => {
@@ -104,27 +86,25 @@ test("login offers Google button chrome without wiring OAuth", () => {
     assert.doesNotMatch(loginForm, /authService\.loginWithGoogle|oauth|signInWithPopup/);
 });
 
-test("subscription highlights Pro without clipping the recommended badge", () => {
+test("subscription uses the versioned public catalog and guided Stripe purchase flow", () => {
     const subscription = read("../app/subscription/page.tsx");
-    const card = read("../components/auth/AuthGlassCard.tsx");
-    const es = JSON.parse(read("../dictionaries/es.json"));
-    assert.match(card, /overflow-visible/);
-    assert.match(subscription, /-top-3 right-5/);
-    assert.match(subscription, /Badge/);
-    assert.match(subscription, /billing-surface/);
-    assert.match(subscription, /lg:grid-cols-3/);
-    assert.match(subscription, /plan=lifetime/);
-    assert.match(subscription, /bg-accent/);
-    assert.equal(es.auth.plan_pro_price, "19,99€");
-    assert.equal(es.auth.select_lifetime, "Continuar con pago único");
-});
-
-test("checkout accepts lifetime plan alongside Pro", () => {
     const checkout = read("../app/subscription/checkout/page.tsx");
+    const catalog = read("../components/subscription/PlanCatalog.tsx");
+    const activation = read("../app/activate-purchase/page.tsx");
     const billing = read("../services/billing.service.ts");
-    assert.match(billing, /"lifetime"/);
-    assert.match(checkout, /requestedPlan === "lifetime"/);
-    assert.match(checkout, /plan_lifetime_name/);
+    assert.match(subscription, /billingService\.listPublicPlans/);
+    assert.match(subscription, /PlanCatalog/);
+    assert.match(catalog, /checkout_available/);
+    assert.match(catalog, /plan-custom/);
+    assert.match(catalog, /entitlements/);
+    assert.match(checkout, /createCompanyPurchaseCheckout/);
+    assert.match(checkout, /billingService\.createCheckout/);
+    assert.match(checkout, /from "@\/components\/ui\/checkbox"/);
+    assert.match(checkout, /from "@\/components\/ui\/input"/);
+    assert.match(checkout, /from "@\/components\/ui\/button"/);
+    assert.match(activation, /activateCompanyPurchase/);
+    assert.match(activation, /replaceState/);
+    assert.doesNotMatch(billing, /"lifetime"/);
 });
 
 test("register and contact stay mobile-first with tinted surfaces", () => {

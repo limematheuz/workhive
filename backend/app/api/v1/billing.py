@@ -18,6 +18,7 @@ from app.schemas.billing import (
     CompanyPurchaseCheckout,
     CheckoutSessionCreate,
     HostedBillingUrl,
+    PublicPlanCatalogResponse,
     SubscriptionSummary,
 )
 from app.services import (
@@ -25,6 +26,7 @@ from app.services import (
     billing_service,
     company_purchase_activation_service,
     entitlement_service,
+    public_plan_catalog_service,
 )
 from app.services.subscription_policy import evaluate_company_access
 
@@ -84,6 +86,11 @@ def _subscription_summary(db: Session, current_user: User) -> SubscriptionSummar
             "workers": int(entitlements.values["limits.internal_workers"]),
         },
     )
+
+
+@router.get("/plans", response_model=list[PublicPlanCatalogResponse])
+def list_public_plans(db: Session = Depends(get_db)):
+    return public_plan_catalog_service.list_purchasable_plans(db)
 
 
 @router.post("/checkout", response_model=HostedBillingUrl)

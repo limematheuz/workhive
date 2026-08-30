@@ -4,16 +4,13 @@ function isDashboardPath(pathname: string): boolean {
     return pathname === "/dashboard" || pathname.startsWith("/dashboard/");
 }
 
-function isSubscriptionCheckoutPath(pathname: string): boolean {
-    return pathname === "/subscription/checkout";
-}
-
 /**
  * Paths that need a signed-in user before they can perform their action.
- * Public pages intentionally stay visitable while a session is active.
+ * The purchase checkout remains public: a new customer has no session until
+ * Stripe confirms payment and the one-time activation link creates the owner.
  */
 export function requiresAuthenticatedSession(pathname: string): boolean {
-    return isDashboardPath(pathname) || isSubscriptionCheckoutPath(pathname);
+    return isDashboardPath(pathname);
 }
 
 /**
@@ -41,8 +38,7 @@ export function resolvePostLoginPath(
     const pathname = candidate.pathname;
     const isSupported =
         isDashboardPath(pathname) ||
-        pathname === "/accept-company-invitation" ||
-        isSubscriptionCheckoutPath(pathname);
+        pathname === "/accept-company-invitation";
 
     return isSupported
         ? `${pathname}${candidate.search}`

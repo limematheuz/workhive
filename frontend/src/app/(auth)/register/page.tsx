@@ -59,7 +59,7 @@ function RegisterPageContent() {
                     </div>
 
                     <Link
-                        href="/contact?reason=trial"
+                        href="/subscription"
                         className="billing-block group flex min-w-0 gap-3 rounded-2xl border border-[var(--border-soft)] p-3.5 ui-motion hover:border-accent/35 sm:gap-3.5 sm:p-4"
                     >
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
@@ -89,7 +89,7 @@ function RegisterPageContent() {
                             <Link href="/subscription">{t.see_plans}</Link>
                         </Button>
                         <Button asChild variant="secondary" size="lg" className="h-12 w-full rounded-2xl sm:h-11 sm:w-auto">
-                            <Link href="/contact?reason=trial">{t.contact_cta}</Link>
+                            <Link href="/contact">{t.contact_cta}</Link>
                         </Button>
                     </div>
                 </div>

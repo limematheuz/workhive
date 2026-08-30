@@ -224,11 +224,37 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
         billing_service.create_checkout_session(company, "business")
         == "https://checkout.stripe.com/test-session"
     )
+    assert captured["customer"] == "cus_hosted"
+    assert "customer_email" not in captured
     assert captured["metadata[plan]"] == "medium"
     assert (
         billing_service.create_customer_portal(company)
         == "https://billing.stripe.com/test-portal"
     )
+
+
+def test_public_plan_catalog_matches_the_active_purchasable_versions(
+    client, monkeypatch
+):
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    monkeypatch.setattr(settings, "STRIPE_MEDIUM_PRICE_ID", "price_medium")
+    monkeypatch.setattr(settings, "STRIPE_TOP_PRICE_ID", "price_top")
+    monkeypatch.setattr(settings, "STRIPE_ENTERPRISE_PRICE_ID", "price_mega")
+
+    response = client.get("/api/v1/billing/plans")
+
+    assert response.status_code == 200, response.text
+    plans = response.json()
+    assert [plan["code"] for plan in plans] == ["basic", "medium", "top", "mega"]
+    assert all(plan["checkout_available"] for plan in plans)
+    basic = plans[0]
+    assert basic["version"] == 1
+    assert {item["code"] for item in basic["entitlements"]} == set(
+        default_plan_values("basic")
+    )
+    assert all("label" not in item for item in basic["entitlements"])
 
 
 def test_public_company_checkout_stores_an_intent_without_creating_a_tenant(
@@ -512,6 +538,7 @@ def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):
     )
     assert captured["mode"] == "subscription"
     assert captured["line_items[0][price]"] == "price_enterprise"
+    assert captured["customer_email"] == "enterprise-billing@example.com"
     assert captured["metadata[plan]"] == "mega"
     assert captured["subscription_data[metadata][plan]"] == "mega"
 
