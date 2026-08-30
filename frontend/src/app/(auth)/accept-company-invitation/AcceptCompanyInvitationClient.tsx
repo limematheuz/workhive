@@ -9,10 +9,6 @@ import { toast } from "sonner";
 import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { AuthShell } from "@/components/auth/AuthShell";
-import {
-    CompanyInvitationSignupData,
-    CompanyInvitationSignupWizard,
-} from "@/components/collaborations/CompanyInvitationSignupWizard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,9 +21,8 @@ import { companyInvitationTokenService } from "@/services/company-invitation-tok
 type AccessState =
     | "reading"
     | "checking"
-    | "new-account"
     | "sign-in"
-    | "existing-no-company"
+    | "requires-subscription"
     | "ready"
     | "non-admin"
     | "wrong-account"
@@ -45,7 +40,6 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
     const [token, setToken] = useState("");
     const [accessState, setAccessState] = useState<AccessState>("reading");
     const [verificationCode, setVerificationCode] = useState("");
-    const [initialFullName, setInitialFullName] = useState("");
     const [submitting, setSubmitting] = useState<"accept" | "decline" | null>(null);
     const [decision, setDecision] = useState<Decision>(null);
     const [message, setMessage] = useState("");
@@ -83,8 +77,8 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
             try {
                 const mode = await CollaborationService.getCompanyInvitationActivationStatus(token);
                 if (!active) return;
-                if (mode === "create_account") {
-                    setAccessState("new-account");
+                if (mode === "requires_subscription") {
+                    setAccessState("requires-subscription");
                     return;
                 }
 
@@ -92,8 +86,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
                     const user = await authService.getMe();
                     if (!active) return;
                     if (user.company_id === null) {
-                        setInitialFullName(user.full_name || "");
-                        setAccessState("existing-no-company");
+                        setAccessState("requires-subscription");
                         return;
                     }
                     if (user.role?.name !== "admin") {
@@ -107,6 +100,8 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
                     if (!active) return;
                     if (error instanceof ApiResponseError && error.status === 401) {
                         setAccessState("sign-in");
+                    } else if (error instanceof ApiResponseError && error.status === 402) {
+                        setAccessState("requires-subscription");
                     } else if (error instanceof ApiResponseError && error.status === 403) {
                         setAccessState("wrong-account");
                     } else {
@@ -181,41 +176,6 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
         }
     };
 
-    const activateCompanyAccount = async (data: CompanyInvitationSignupData) => {
-        if (!token) return;
-        setSubmitting("accept");
-        try {
-            if (accessState === "existing-no-company") {
-                await CollaborationService.activateCompanyInvitationForExistingAccount({
-                    token,
-                    verificationCode: data.verificationCode,
-                    companyName: data.companyName,
-                    taxId: data.taxId,
-                    address: data.address,
-                    phone: data.phone,
-                });
-            } else {
-                await CollaborationService.activateCompanyInvitation({
-                    token,
-                    verificationCode: data.verificationCode,
-                    fullName: data.fullName,
-                    companyName: data.companyName,
-                    taxId: data.taxId,
-                    address: data.address,
-                    phone: data.phone,
-                    password: data.password,
-                });
-            }
-            void companyInvitationTokenService.clear();
-            setDecision("accepted");
-            window.setTimeout(() => router.replace(accessState === "new-account" ? "/login" : "/dashboard/users?tab=companies"), 1600);
-        } catch (error) {
-            toast.error(errorMessage(error, true));
-        } finally {
-            setSubmitting(null);
-        }
-    };
-
     const signOut = async () => {
         try {
             await authService.logout();
@@ -235,8 +195,6 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
         }
     };
 
-    const isCompanySignup = accessState === "new-account" || accessState === "existing-no-company";
-
     return (
         <AuthShell contentClassName="my-auto w-full max-w-xl">
             <AuthGlassCard className="billing-surface border-[var(--border-soft)] p-6 sm:p-8">
@@ -249,22 +207,14 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
                     <InvitationMessage title={errorStatus === 429 ? text.rateLimitTitle : errorStatus === 410 ? text.expiredTitle : text.invalidTitle} message={message || text.invalid} />
                 ) : accessState === "sign-in" ? (
                     <InvitationAction title={text.existingTitle} message={text.existing} buttonLabel={text.signIn} icon={LogIn} onClick={() => void continueToLogin()} />
+                ) : accessState === "requires-subscription" ? (
+                    <InvitationAction title={text.subscriptionTitle} message={text.subscription} buttonLabel={text.subscriptionAction} icon={ShieldCheck} href="/subscription" />
                 ) : accessState === "wrong-account" ? (
                     <InvitationAction title={text.wrongTitle} message={text.wrong} buttonLabel={text.otherAccount} icon={LogOut} onClick={() => void signOut()} />
                 ) : accessState === "non-admin" ? (
                     <InvitationAction title={text.nonAdminTitle} message={text.nonAdmin} buttonLabel={text.otherAccount} icon={LogOut} onClick={() => void signOut()} />
                 ) : accessState === "ready" ? (
                     <CodeDecisionForm text={text} code={verificationCode} onCodeChange={setVerificationCode} onAccept={() => void acceptExistingCompany()} onDecline={() => void decline(verificationCode)} submitting={submitting} />
-                ) : isCompanySignup ? (
-                    <CompanyInvitationSignupWizard
-                        locale={locale}
-                        mode={accessState}
-                        initialFullName={initialFullName}
-                        submitting={submitting !== null}
-                        onVerifyCode={verifyCode}
-                        onDecline={decline}
-                        onComplete={activateCompanyAccount}
-                    />
                 ) : null}
             </AuthGlassCard>
         </AuthShell>
@@ -283,6 +233,9 @@ function invitationText(locale: string) {
         codeInvalid: "El código de verificación no es correcto. Revisa el correo e inténtalo de nuevo.",
         existingTitle: "Inicia sesión para continuar",
         existing: "Este correo ya tiene una cuenta de WorkHive. Inicia sesión con esa misma cuenta y confirma el código del correo.",
+        subscriptionTitle: "La empresa invitada necesita una suscripción",
+        subscription: "Las invitaciones entre empresas solo pueden aceptarse desde una empresa de WorkHive ya activa. Contrata un plan o inicia sesión con la cuenta administradora de tu empresa.",
+        subscriptionAction: "Ver planes",
         readyTitle: "Confirma el código del correo",
         ready: "Tu cuenta administradora puede aceptar esta invitación después de verificar el código enviado por correo.",
         wrongTitle: "Usa otra cuenta administradora",
@@ -311,6 +264,9 @@ function invitationText(locale: string) {
         codeInvalid: "The verification code is incorrect. Check the email and try again.",
         existingTitle: "Sign in to continue",
         existing: "This email already has a WorkHive account. Sign in with that account, then confirm the email code.",
+        subscriptionTitle: "The invited company needs a subscription",
+        subscription: "Company invitations can only be accepted by an existing active WorkHive company. Subscribe to a plan or sign in with your company's administrator account.",
+        subscriptionAction: "View plans",
         readyTitle: "Confirm the email code",
         ready: "Your administrator account can accept this invitation after verifying the code sent by email.",
         wrongTitle: "Use another administrator account",

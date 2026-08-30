@@ -16,6 +16,7 @@ from app.repositories import user as user_repo
 from app.schemas.user_invitation import UserInvitationAccept, UserInvitationCreate
 from app.services import email_service, organization_bootstrap_service, privacy_service
 from app.services.entitlement_service import require_internal_member_capacity
+from app.services.subscription_policy import require_company_access
 from app.services.user_scope import is_superadmin
 
 
@@ -75,6 +76,7 @@ def create_invitation(
             status_code=status.HTTP_409_CONFLICT,
             detail="A company is required to invite workers",
         )
+    require_company_access(inviter.company)
 
     email = _normalize_email(str(payload.email))
     if user_repo.get_user_by_email(db, email):
@@ -207,6 +209,7 @@ def accept_invitation(
             status_code=status.HTTP_409_CONFLICT,
             detail="The invited company is no longer available",
         )
+    require_company_access(company)
     invited_role = role_repo.get_role(db, invitation.role_id)
     access_class = organization_bootstrap_service.legacy_role_name_access_class(
         invited_role.name if invited_role else None

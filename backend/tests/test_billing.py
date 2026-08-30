@@ -343,6 +343,11 @@ def test_subscription_access_policy_and_trial_member_limits(db, monkeypatch):
     assert access.allowed is False
     assert access.reason == "past_due"
 
+    company.subscription_status = "pending"
+    access = evaluate_company_access(company)
+    assert access.allowed is False
+    assert access.reason == "pending"
+
     assert legacy_plan_code("trial") == "top"
     assert default_plan_values("trial")["limits.internal_admins"] == 10
     assert default_plan_values("trial")["limits.internal_responsibles"] == 20
@@ -404,6 +409,41 @@ def test_billing_recovery_routes_remain_available_when_access_is_blocked(
     portal = client.post("/api/v1/billing/portal", headers=headers)
     assert portal.status_code == 200
     assert portal.json()["url"] == "https://billing.stripe.com/test-recovery"
+
+
+def test_canceled_company_can_sign_in_only_for_billing_recovery(client, db, monkeypatch):
+    company = Company(
+        name="Canceled recovery company",
+        tax_id="BILLING-CANCELED-RECOVERY",
+        address="Test address",
+        phone="000000014",
+        email="canceled-recovery@example.com",
+        subscription_plan="medium",
+        subscription_status="canceled",
+        stripe_customer_id="cus_canceled_recovery",
+    )
+    db.add(company)
+    db.flush()
+    admin = User(
+        email="canceled-recovery-admin@example.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        role_id=1,
+        company_id=company.id,
+        is_active=True,
+    )
+    db.add(admin)
+    db.commit()
+
+    monkeypatch.setattr(settings, "SUBSCRIPTION_ENFORCEMENT_ENABLED", True)
+    login = client.post("/api/v1/auth/login", data=login_form(admin.email, TEST_SECRET))
+    assert login.status_code == 200, login.text
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    assert client.get("/api/v1/users/me", headers=headers).status_code == 402
+    summary = client.get("/api/v1/billing/subscription", headers=headers)
+    assert summary.status_code == 200
+    assert summary.json()["access_allowed"] is False
+    assert summary.json()["access_reason"] == "canceled"
 
 
 def test_reactivating_user_cannot_bypass_plan_limit(db):

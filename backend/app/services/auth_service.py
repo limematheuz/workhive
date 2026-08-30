@@ -11,7 +11,6 @@ from app.core.config import settings
 from app.services import email_service
 from app.services import privacy_service
 from app.services import security_token_service
-from app.services.subscription_policy import evaluate_company_access, subscription_error_code
 from app.services.user_scope import is_superadmin
 import logging
 import smtplib
@@ -106,23 +105,14 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
     if not is_superadmin(user) and user.company:
-        access = evaluate_company_access(user.company)
-        if not access.allowed and access.reason in {
-            "inactive",
-            "canceled",
-            "expired",
-            "trial_expired",
-        }:
-            raise HTTPException(
-                status_code=status.HTTP_402_PAYMENT_REQUIRED,
-                detail="Company access is not active",
-                headers={"X-WorkHive-Error-Code": subscription_error_code(access.reason)},
-            )
         if not user.company.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Company account is inactive",
             )
+    # A valid identity must still be able to reach the billing recovery routes
+    # after a cancellation, expiry, or payment failure. Operational routes use
+    # get_current_user(), which enforces the subscription separately.
     return user
 
 

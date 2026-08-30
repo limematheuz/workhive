@@ -306,6 +306,29 @@ def test_acceptance_rechecks_company_capacity(client, db, monkeypatch):
     assert db.query(User).filter(User.email == "capacity-worker@workhive.com").first() is None
 
 
+def test_acceptance_requires_an_active_company_subscription(client, db, monkeypatch):
+    headers, company_id = _register_company(client, "contract-gate")
+    sent = _capture_invitation(monkeypatch)
+    assert client.post(
+        "/api/v1/user-invitations/",
+        headers=headers,
+        json={"email": "contract-worker@workhive.com", "role_id": 3},
+    ).status_code == 202
+
+    company = db.get(Company, company_id)
+    company.subscription_status = "canceled"
+    db.commit()
+
+    response = client.post(
+        "/api/v1/user-invitations/accept",
+        json=_accept_payload(_invitation_token(sent), str(sent["verification_code"])),
+    )
+
+    assert response.status_code == 402
+    assert response.headers["X-WorkHive-Error-Code"] == "subscription.canceled"
+    assert db.query(User).filter(User.email == "contract-worker@workhive.com").first() is None
+
+
 def test_invitation_requires_legal_consent_and_audit_never_contains_secrets(client, db, monkeypatch):
     headers, company_id = _register_company(client, "consent")
     sent = _capture_invitation(monkeypatch)

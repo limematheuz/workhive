@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveAdmin, AuthenticatedUser, get_db
+from app.api.deps import ActiveAdmin, get_db
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
@@ -11,9 +11,6 @@ from app.schemas.collaboration import (
     CollaborationResponse,
     CompanyCollaborationInvitationAccept,
     CompanyCollaborationInvitationAccessCheck,
-    CompanyCollaborationInvitationActivate,
-    CompanyCollaborationInvitationActivateExistingAccount,
-    CompanyCollaborationInvitationActivated,
     CompanyCollaborationInvitationActivationStatus,
     CompanyCollaborationInvitationCreate,
     CompanyCollaborationInvitationCodeVerification,
@@ -84,21 +81,6 @@ def verify_company_invitation_code(
 def read_company_invitation_activation_status(payload: CompanyCollaborationInvitationAccessCheck, request: Request, db: Session = Depends(get_db)):
     enforce_rate_limit(request, "company-collaboration-invitation-status", settings.COMPANY_INVITATION_STATUS_RATE_LIMIT, settings.AUTH_RATE_LIMIT_WINDOW_SECONDS, identity=payload.token)
     return company_collaboration_invitation_activation_service.activation_status(db, payload.token)
-
-
-@router.post("/activate", response_model=CompanyCollaborationInvitationActivated, status_code=status.HTTP_201_CREATED)
-def activate_company_invitation_for_new_account(payload: CompanyCollaborationInvitationActivate, request: Request, db: Session = Depends(get_db)):
-    enforce_rate_limit(request, "company-collaboration-invitation-verification", settings.COMPANY_INVITATION_VERIFICATION_MAX_ATTEMPTS, settings.AUTH_RATE_LIMIT_WINDOW_SECONDS, identity=payload.token)
-    collaboration = company_collaboration_invitation_activation_service.activate_new_account(db, payload, request)
-    return CompanyCollaborationInvitationActivated(status=collaboration.status)
-
-
-@router.post("/activate-existing-account", response_model=CompanyCollaborationInvitationActivated)
-def activate_company_invitation_for_existing_account(payload: CompanyCollaborationInvitationActivateExistingAccount, request: Request, db: Session = Depends(get_db), current_user: User = AuthenticatedUser):
-    enforce_rate_limit(request, "company-collaboration-invitation-verification", settings.COMPANY_INVITATION_VERIFICATION_MAX_ATTEMPTS, settings.AUTH_RATE_LIMIT_WINDOW_SECONDS, identity=payload.token)
-    collaboration = company_collaboration_invitation_activation_service.activate_existing_account(db, payload, current_user)
-    audit_service.record_event(db, actor=current_user, company_id=current_user.company_id, action="company_collaboration.invitation_accepted", entity_type="company_collaboration", entity_id=collaboration.id, request=request, details={"role_type": collaboration.role_type})
-    return CompanyCollaborationInvitationActivated(status=collaboration.status)
 
 
 @router.post("/decline-external", status_code=status.HTTP_204_NO_CONTENT)

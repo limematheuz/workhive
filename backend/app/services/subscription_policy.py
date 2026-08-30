@@ -10,6 +10,7 @@ PAYMENT_BLOCKED_STATUSES = {
     "incomplete",
     "incomplete_expired",
     "inactive",
+    "pending",
     "past_due",
     "paused",
     "unpaid",
@@ -22,6 +23,7 @@ SUBSCRIPTION_ERROR_MESSAGES = {
     "canceled": "The company subscription has been canceled",
     "paused": "The company subscription is paused",
     "inactive": "The company does not have an active subscription",
+    "pending": "The company payment is awaiting confirmation",
     "incomplete": "The company subscription setup is incomplete",
     "incomplete_expired": "The incomplete company subscription has expired",
 }
@@ -61,7 +63,7 @@ def evaluate_company_access(
     if not settings.SUBSCRIPTION_ENFORCEMENT_ENABLED:
         return SubscriptionAccess(True, "enforcement_disabled")
 
-    if company.subscription_status in {"active", "pending"}:
+    if company.subscription_status == "active":
         return SubscriptionAccess(True, company.subscription_status)
 
     if company.subscription_status in PAYMENT_BLOCKED_STATUSES:

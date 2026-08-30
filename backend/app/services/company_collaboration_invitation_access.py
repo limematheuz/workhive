@@ -9,6 +9,7 @@ from app.models.company_collaboration_invitation import CompanyCollaborationInvi
 from app.models.user import User
 from app.services.company_collaboration_invitation_tokens import hash_invitation_secret
 from app.services.company_collaboration_invitation_tokens import normalize_verification_code
+from app.services.subscription_policy import require_company_access
 
 
 PENDING_STATUS = "pending"
@@ -31,6 +32,7 @@ def require_active_company(db: Session, company_id: int | None) -> Company:
             status_code=status.HTTP_409_CONFLICT,
             detail="Your company is inactive or unavailable",
         )
+    require_company_access(company)
     return company
 
 
