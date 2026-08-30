@@ -9,6 +9,7 @@ from app.models.location_profile import LocationProfile
 from app.models.location_access_profile import LocationAccessProfile
 from app.models.role import Role
 from app.models.company import Company
+from app.models.company_purchase_intent import CompanyPurchaseIntent
 from app.models.template_task import TemplateTask
 from app.models.location_template import LocationTemplate
 from app.models.work_session import WorkSession

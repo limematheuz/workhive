@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import time
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from fastapi import HTTPException
@@ -9,6 +10,7 @@ from fastapi import HTTPException
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.company import Company
+from app.models.company_purchase_intent import CompanyPurchaseIntent
 from app.models.user import User
 from app.models.stripe_webhook_event import StripeWebhookEvent
 from app.services import (
@@ -31,6 +33,29 @@ def stripe_signature(payload: bytes, secret: str, timestamp: int) -> str:
         hashlib.sha256,
     ).hexdigest()
     return f"t={timestamp},v1={digest}"
+
+
+def company_purchase_payload(
+    *,
+    plan: str = "basic",
+    owner_email: str = "new-owner@workhive.com",
+) -> dict[str, object]:
+    return {
+        "plan": plan,
+        "company_name": "Paid Company",
+        "tax_id": "PURCHASE-123",
+        "address": "Paid Street 1",
+        "postal_code": "08001",
+        "city": "Barcelona",
+        "province": "Barcelona",
+        "phone": "600000001",
+        "company_email": "billing@paid-company.example.com",
+        "owner_full_name": "Paid Owner",
+        "owner_email": owner_email,
+        "accept_terms": True,
+        "accept_privacy": True,
+        "marketing_consent": False,
+    }
 
 
 def test_stripe_webhook_updates_company_subscription(db, monkeypatch):
@@ -204,6 +229,259 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
         billing_service.create_customer_portal(company)
         == "https://billing.stripe.com/test-portal"
     )
+
+
+def test_public_company_checkout_stores_an_intent_without_creating_a_tenant(
+    client, db, monkeypatch
+):
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    captured: dict[str, str] = {}
+
+    def fake_stripe_post(path: str, data: dict[str, str]):
+        captured.update(data)
+        assert path == "/checkout/sessions"
+        return {
+            "id": "cs_paid_company",
+            "url": "https://checkout.stripe.com/paid-company-session",
+            "customer": "cus_paid_company",
+            "subscription": "sub_paid_company",
+        }
+
+    monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
+
+    response = client.post(
+        "/api/v1/billing/purchases/checkout",
+        json=company_purchase_payload(),
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["url"] == "https://checkout.stripe.com/paid-company-session"
+    purchase = db.query(CompanyPurchaseIntent).one()
+    assert db.query(Company).count() == 0
+    assert db.query(User).count() == 0
+    assert purchase.status == "checkout_created"
+    assert purchase.plan_code == "basic"
+    assert purchase.stripe_checkout_session_id == "cs_paid_company"
+    assert captured["client_reference_id"] == purchase.id
+    assert captured["metadata[company_purchase_id]"] == purchase.id
+    assert captured["subscription_data[metadata][company_purchase_id]"] == purchase.id
+
+
+def test_paid_company_purchase_activates_only_after_stripe_confirms_payment(
+    client, db, monkeypatch
+):
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_paid_company")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_post",
+        lambda *_: {
+            "id": "cs_paid_activation",
+            "url": "https://checkout.stripe.com/paid-activation-session",
+            "customer": "cus_paid_activation",
+            "subscription": "sub_paid_activation",
+        },
+    )
+    sent: dict[str, str] = {}
+    monkeypatch.setattr(
+        "app.services.email_service.send_paid_company_activation_email",
+        lambda **kwargs: sent.update(kwargs) or True,
+    )
+    assert client.post(
+        "/api/v1/billing/purchases/checkout",
+        json=company_purchase_payload(),
+    ).status_code == 201
+    purchase = db.query(CompanyPurchaseIntent).one()
+
+    event = {
+        "id": "evt_paid_company_checkout",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_paid_activation",
+                "mode": "subscription",
+                "payment_status": "paid",
+                "customer": "cus_paid_activation",
+                "subscription": "sub_paid_activation",
+                "metadata": {"company_purchase_id": purchase.id, "plan": "basic"},
+            }
+        },
+    }
+    webhook_payload = json.dumps(event, separators=(",", ":")).encode()
+    billing_service.process_webhook(
+        db,
+        webhook_payload,
+        stripe_signature(webhook_payload, "whsec_paid_company", int(time.time())),
+    )
+
+    db.refresh(purchase)
+    assert purchase.status == "paid"
+    assert purchase.activation_token_hash
+    assert db.query(Company).count() == 0
+    assert sent["recipient_email"] == "new-owner@workhive.com"
+    token = parse_qs(urlparse(sent["activation_url"]).query)["token"][0]
+
+    activation = client.post(
+        "/api/v1/billing/purchases/activate",
+        json={"token": token, "password": TEST_SECRET},
+    )
+    assert activation.status_code == 200, activation.text
+    company = db.get(Company, activation.json()["company_id"])
+    assert company is not None
+    assert company.subscription_plan == "basic"
+    assert company.subscription_status == "active"
+    assert company.stripe_customer_id == "cus_paid_activation"
+    assert company.stripe_subscription_id == "sub_paid_activation"
+    owner = db.query(User).filter(User.company_id == company.id).one()
+    assert owner.email == "new-owner@workhive.com"
+    assert owner.role.name == "admin"
+    assert client.post("/api/v1/auth/login", data=login_form(owner.email, TEST_SECRET)).status_code == 200
+    db.refresh(purchase)
+    assert purchase.status == "activated"
+    assert purchase.activated_company_id == company.id
+    assert purchase.activated_user_id == owner.id
+
+    repeated = client.post(
+        "/api/v1/billing/purchases/activate",
+        json={"token": token, "password": TEST_SECRET},
+    )
+    assert repeated.status_code == 409
+
+
+def test_unpaid_checkout_cannot_activate_a_company(client, db, monkeypatch):
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_unpaid_company")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_post",
+        lambda *_: {
+            "id": "cs_unpaid_activation",
+            "url": "https://checkout.stripe.com/unpaid-activation-session",
+        },
+    )
+    assert client.post(
+        "/api/v1/billing/purchases/checkout",
+        json=company_purchase_payload(),
+    ).status_code == 201
+    purchase = db.query(CompanyPurchaseIntent).one()
+    event = {
+        "id": "evt_unpaid_company_checkout",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_unpaid_activation",
+                "mode": "subscription",
+                "payment_status": "unpaid",
+                "metadata": {"company_purchase_id": purchase.id},
+            }
+        },
+    }
+    webhook_payload = json.dumps(event, separators=(",", ":")).encode()
+    billing_service.process_webhook(
+        db,
+        webhook_payload,
+        stripe_signature(webhook_payload, "whsec_unpaid_company", int(time.time())),
+    )
+
+    db.refresh(purchase)
+    assert purchase.status == "checkout_completed"
+    assert purchase.activation_token_hash is None
+    assert db.query(Company).count() == 0
+
+
+def test_expired_checkout_cannot_activate_a_company(client, db, monkeypatch):
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_expired_company")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_post",
+        lambda *_: {
+            "id": "cs_expired_activation",
+            "url": "https://checkout.stripe.com/expired-activation-session",
+        },
+    )
+    assert client.post(
+        "/api/v1/billing/purchases/checkout",
+        json=company_purchase_payload(),
+    ).status_code == 201
+    purchase = db.query(CompanyPurchaseIntent).one()
+    event = {
+        "id": "evt_expired_company_checkout",
+        "type": "checkout.session.expired",
+        "data": {"object": {"id": "cs_expired_activation"}},
+    }
+    webhook_payload = json.dumps(event, separators=(",", ":")).encode()
+    billing_service.process_webhook(
+        db,
+        webhook_payload,
+        stripe_signature(webhook_payload, "whsec_expired_company", int(time.time())),
+    )
+
+    db.refresh(purchase)
+    assert purchase.status == "expired"
+    assert purchase.activation_token_hash is None
+    assert db.query(Company).count() == 0
+
+
+def test_invoice_paid_uses_the_subscription_metadata_snapshot(
+    client, db, monkeypatch
+):
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_invoice_metadata")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_post",
+        lambda *_: {
+            "id": "cs_invoice_metadata",
+            "url": "https://checkout.stripe.com/invoice-metadata-session",
+        },
+    )
+    monkeypatch.setattr(
+        "app.services.email_service.send_paid_company_activation_email",
+        lambda **_: True,
+    )
+    assert client.post(
+        "/api/v1/billing/purchases/checkout",
+        json=company_purchase_payload(),
+    ).status_code == 201
+    purchase = db.query(CompanyPurchaseIntent).one()
+    event = {
+        "id": "evt_invoice_metadata",
+        "type": "invoice.paid",
+        "data": {
+            "object": {
+                "customer": "cus_invoice_metadata",
+                "parent": {
+                    "subscription_details": {
+                        "metadata": {"company_purchase_id": purchase.id},
+                        "subscription": "sub_invoice_metadata",
+                    }
+                },
+            }
+        },
+    }
+    webhook_payload = json.dumps(event, separators=(",", ":")).encode()
+    billing_service.process_webhook(
+        db,
+        webhook_payload,
+        stripe_signature(webhook_payload, "whsec_invoice_metadata", int(time.time())),
+    )
+
+    db.refresh(purchase)
+    assert purchase.status == "paid"
+    assert purchase.stripe_customer_id == "cus_invoice_metadata"
+    assert purchase.stripe_subscription_id == "sub_invoice_metadata"
+    assert purchase.activation_token_hash
 
 
 def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):

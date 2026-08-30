@@ -34,6 +34,15 @@ def get_active_plan(db: Session, *, code: str) -> SubscriptionPlan | None:
     )
 
 
+def get_plan_by_id(db: Session, *, plan_id: int) -> SubscriptionPlan | None:
+    return (
+        db.query(SubscriptionPlan)
+        .options(selectinload(SubscriptionPlan.entitlements))
+        .filter(SubscriptionPlan.id == plan_id)
+        .first()
+    )
+
+
 def list_active_plans(db: Session) -> list[SubscriptionPlan]:
     return (
         db.query(SubscriptionPlan)

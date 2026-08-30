@@ -125,6 +125,8 @@ async def enforce_csrf_for_cookie_sessions(request, call_next):
         f"{settings.API_V1_STR}/auth/forgot-password",
         f"{settings.API_V1_STR}/auth/reset-password",
         f"{settings.API_V1_STR}/auth/confirm-email-change",
+        f"{settings.API_V1_STR}/billing/purchases/checkout",
+        f"{settings.API_V1_STR}/billing/purchases/activate",
         f"{settings.API_V1_STR}/user-invitations/accept",
         f"{settings.API_V1_STR}/collaborations/invitations/activation-status",
         f"{settings.API_V1_STR}/collaborations/invitations/verify-code",

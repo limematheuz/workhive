@@ -19,6 +19,7 @@ from app.services.email_service.company_collaboration_emails import (
 from app.services.email_service.auth_emails import (
     send_email_change_verification_email,
     send_email_changed_notice,
+    send_paid_company_activation_email,
     send_password_reset_email,
 )
 from app.services.email_service.billing_emails import send_invoice_email
@@ -49,6 +50,7 @@ _send_email = send_email
 __all__ = [
     "settings",
     "send_password_reset_email",
+    "send_paid_company_activation_email",
     "send_email_change_verification_email",
     "send_email_changed_notice",
     "send_contact_email",

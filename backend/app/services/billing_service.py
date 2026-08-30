@@ -13,7 +13,13 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.company import Company
 from app.models.stripe_webhook_event import StripeWebhookEvent
-from app.services import company_entitlement_service
+from app.schemas.billing import CompanyPurchaseCheckout
+from app.services import (
+    company_entitlement_service,
+    company_purchase_activation_service,
+    company_purchase_checkout_service,
+    company_purchase_service,
+)
 from app.services.entitlement_catalog import legacy_plan_code
 
 
@@ -102,6 +108,20 @@ def create_checkout_session(company: Company, plan: str) -> str:
             detail="Stripe returned an invalid checkout session",
         )
     return str(checkout_url)
+
+
+def create_company_purchase_checkout(
+    db: Session,
+    checkout: CompanyPurchaseCheckout,
+) -> str:
+    """Start a hosted checkout without creating an unpaid WorkHive tenant."""
+
+    _require_billing_configuration()
+    return company_purchase_checkout_service.create_company_purchase_checkout(
+        db,
+        checkout,
+        stripe_post=_stripe_post,
+    )
 
 
 def create_customer_portal(company: Company) -> str:
@@ -238,6 +258,21 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
         db.flush()
     except IntegrityError:
         db.rollback()
+        return event_type
+
+    purchase_event = company_purchase_service.apply_stripe_event(
+        db,
+        event_type=event_type,
+        stripe_object=stripe_object,
+    )
+    if purchase_event is not None:
+        db.commit()
+        if purchase_event.activation_token:
+            company_purchase_activation_service.deliver_activation_email(
+                db,
+                purchase=purchase_event.intent,
+                activation_token=purchase_event.activation_token,
+            )
         return event_type
 
     company = _company_from_stripe_object(db, stripe_object)
