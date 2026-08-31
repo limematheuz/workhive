@@ -250,6 +250,34 @@ Las clases de plaza conservan Admin, Manager, Trabajador, Accountant y
 Superadmin de plataforma. Sirven para cuotas y límites no delegables. Los
 perfiles de empresa determinan los permisos cotidianos.
 
+#### Ciclo de cuenta, pertenencia y supresión
+
+La identidad de una persona y su pertenencia a una empresa son conceptos
+distintos. El administrador de una empresa no elimina una cuenta WorkHive: solo
+puede suspender o retirar su acceso a esa empresa.
+
+- **Suspender acceso** conserva la pertenencia y el historial, invalida las
+  sesiones y permite una reactivación posterior.
+- **Retirar de la empresa** cierra la pertenencia vigente, elimina los equipos,
+  departamentos, ámbitos y perfiles derivados, e impide acceder a los datos de
+  esa empresa. La identidad queda sin espacio de trabajo y puede aceptar una
+  futura invitación de forma segura.
+- **Solicitar supresión de cuenta y datos** es un derecho de la persona, no una
+  acción inmediata del administrador de empresa. Se valida mediante un enlace
+  enviado al correo, incluso cuando la persona ya no tiene una sesión o una
+  pertenencia activa.
+- La solicitud conserva la empresa de origen. La empresa revisa los datos de
+  los que es responsable; el superadmin de WorkHive ve todos los casos,
+  interviene como escalado y mantiene la auditoría, pero no borra por defecto
+  datos operativos de una empresa.
+- La resolución aprobada anonimiza la identidad y revoca todo acceso. Los
+  registros sujetos a retención legal o necesarios para la integridad operativa
+  se conservan con identidad disociada y con el motivo de la decisión auditado.
+
+La interfaz debe diferenciar expresamente **Suspender**, **Retirar de la
+empresa** y **Solicitar supresión**. No se presentará una eliminación de cuenta
+global como si fuera una baja ordinaria de personas.
+
 ### 6.2 Suscripción, planes y capacidades
 
 | Nueva entidad | Campos esenciales | Relaciones objetivo |
