@@ -1,10 +1,11 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
-import { Building2, Layers3, Loader2, Pencil, Plus, Power, ShieldCheck, Trash2, UserPlus, UsersRound } from "lucide-react";
+import { Building2, Layers3, Loader2, Pencil, Plus, Power, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { MemberAccessDialog } from "@/components/organization/MemberAccessDialog";
+import { PendingInvitationsPanel } from "@/components/organization/PendingInvitationsPanel";
 import { OrganizationDepartmentsPanel } from "@/components/organization/OrganizationDepartmentsPanel";
 import { OrganizationInvitePersonDialog } from "@/components/organization/OrganizationInvitePersonDialog";
 import { OrganizationTableFilters } from "@/components/organization/OrganizationTableFilters";
@@ -37,7 +38,6 @@ import {
     type PermissionProfileFilters,
 } from "@/lib/organization-filters";
 import { cn } from "@/lib/utils";
-import { getUserDeletionErrorMessage } from "@/lib/user-deletion";
 import { toast } from "@/lib/toast";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
@@ -50,7 +50,7 @@ import {
     type PermissionProfile,
 } from "@/services/organization.service";
 import { RoleService, type Role } from "@/services/role.service";
-import { UserService } from "@/services/user.service";
+import { UserService, type UserInvitation } from "@/services/user.service";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 type OrganizationTab = "people" | "departments" | "teams" | "profiles";
@@ -63,10 +63,11 @@ type OrganizationData = {
     teams: OrganizationTeam[];
     definitions: PermissionDefinition[];
     profiles: PermissionProfile[];
+    invitations: UserInvitation[];
 };
 
 const EMPTY_DATA: OrganizationData = {
-    members: [], departments: [], teams: [], definitions: [], profiles: [],
+    members: [], departments: [], teams: [], definitions: [], profiles: [], invitations: [],
 };
 export function OrganizationControlCenter() {
     const { dict } = useDictionary();
@@ -90,26 +91,29 @@ export function OrganizationControlCenter() {
 
     const companyId = user?.company_id ?? null;
     const canInvitePeople = user?.role?.name === "admin" || user?.role?.name === "manager";
-    const canDeletePeople = user?.role?.name === "admin";
+    const canRemovePeople = user?.role?.name === "admin";
     const load = useCallback(async () => {
         if (!companyId) return;
         setLoading(true);
         setLoadError(null);
         try {
-            const [members, departments, teams, definitions, profiles] = await Promise.all([
+            const [members, departments, teams, definitions, profiles, invitations] = await Promise.all([
                 OrganizationService.getMembers(),
                 OrganizationService.getDepartments(),
                 OrganizationService.getTeams(),
                 OrganizationService.getPermissionDefinitions(),
                 OrganizationService.getPermissionProfiles(),
+                canInvitePeople
+                    ? UserService.getInvitations()
+                    : Promise.resolve([] as UserInvitation[]),
             ]);
-            setData({ members, departments, teams, definitions, profiles });
+            setData({ members, departments, teams, definitions, profiles, invitations });
         } catch (error) {
             setLoadError(getErrorMessage(error, copy.load_error));
         } finally {
             setLoading(false);
         }
-    }, [companyId, copy.load_error]);
+    }, [canInvitePeople, companyId, copy.load_error]);
     const loadEvent = useEffectEvent(load);
 
     useEffect(() => {
@@ -141,20 +145,17 @@ export function OrganizationControlCenter() {
         }
     };
 
-    const deleteMember = async () => {
+    const removeMember = async () => {
         if (!deleteTarget) return;
         try {
             setDeleting(true);
-            await UserService.deleteUser(deleteTarget.user_id);
+            await OrganizationService.removeMember(deleteTarget.id);
             setSelectedMember(null);
             setDeleteTarget(null);
             await load();
-            toast.success(copy.people.delete_success);
+            toast.success(copy.people.remove_success);
         } catch (error) {
-            toast.error(getUserDeletionErrorMessage(error, {
-                blocked: copy.people.delete_blocked,
-                fallback: copy.people.delete_error,
-            }));
+            toast.error(getErrorMessage(error, copy.people.remove_error));
         } finally {
             setDeleting(false);
         }
@@ -239,7 +240,7 @@ export function OrganizationControlCenter() {
 
             {loading ? <LoadingState /> : loadError ? <RestrictedOrganizationState message={loadError} /> : (
                 <>
-                    {tab === "people" && <MembersTable members={data.members} departments={data.departments} teams={data.teams} onSelect={setSelectedMember} onDelete={setDeleteTarget} canDelete={canDeletePeople} currentUserId={user?.id} />}
+                    {tab === "people" && <MembersTable members={data.members} departments={data.departments} teams={data.teams} invitations={data.invitations} onInvitationChanged={load} onSelect={setSelectedMember} onDelete={setDeleteTarget} canDelete={canRemovePeople} currentUserId={user?.id} />}
                     {tab === "departments" && <OrganizationDepartmentsPanel departments={data.departments} onChanged={load} />}
                     {tab === "teams" && <OrganizationTeamsPanel teams={data.teams} departments={data.departments} members={data.members} onChanged={load} />}
                     {tab === "profiles" && (
@@ -283,7 +284,7 @@ export function OrganizationControlCenter() {
                     teams={data.teams}
                     profiles={data.profiles}
                     onSaved={load}
-                    canDelete={canDeletePeople && selectedMember?.user_id !== user?.id}
+                    canDelete={canRemovePeople && selectedMember?.user_id !== user?.id}
                     onRequestDelete={() => selectedMember && setDeleteTarget(selectedMember)}
                 />
             )}
@@ -292,16 +293,17 @@ export function OrganizationControlCenter() {
                     open
                     onOpenChange={setInviteDialogOpen}
                     roles={invitationRoles}
+                    onSent={load}
                 />
             )}
             <DeleteConfirmDialog
                 open={deleteTarget !== null}
                 onOpenChange={(open) => !open && setDeleteTarget(null)}
-                title={copy.people.delete_title}
-                description={copy.people.delete_description.replace("{email}", deleteTarget?.email || "")}
-                onConfirm={() => void deleteMember()}
+                title={copy.people.remove_title}
+                description={copy.people.remove_description.replace("{email}", deleteTarget?.email || "")}
+                onConfirm={() => void removeMember()}
                 isDeleting={deleting}
-                confirmText={copy.actions.permanently_delete}
+                confirmText={copy.people.remove_confirm}
                 cancelText={copy.actions.cancel}
             />
             <DeleteConfirmDialog
@@ -334,6 +336,8 @@ function MembersTable({
     members,
     departments,
     teams,
+    invitations,
+    onInvitationChanged,
     onSelect,
     onDelete,
     canDelete,
@@ -342,6 +346,8 @@ function MembersTable({
     members: OrganizationMember[];
     departments: OrganizationDepartment[];
     teams: OrganizationTeam[];
+    invitations: UserInvitation[];
+    onInvitationChanged: () => Promise<void>;
     onSelect: (member: OrganizationMember) => void;
     onDelete: (member: OrganizationMember) => void;
     canDelete: boolean;
@@ -370,6 +376,7 @@ function MembersTable({
     };
     return (
         <div className="space-y-6">
+            <PendingInvitationsPanel invitations={invitations} onChanged={onInvitationChanged} />
             <section className="billing-surface overflow-hidden rounded-[26px]">
                 <OrganizationTableFilters
                     search={filters.search}
@@ -520,7 +527,7 @@ function CurrentMemberRow({
     const actionOptions: PopoverOption[] = [
         { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onSelect(member) },
         ...(canDelete
-            ? [{ label: copy.actions.permanently_delete, icon: Trash2, variant: "delete" as const, onClick: () => onDelete(member) }]
+            ? [{ label: copy.people.remove_action, icon: UserMinus, variant: "delete" as const, onClick: () => onDelete(member) }]
             : []),
     ];
     return (

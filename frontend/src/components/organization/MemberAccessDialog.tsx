@@ -49,7 +49,7 @@ type MemberAccessDialogProps = {
 };
 
 const ACCESS_CLASSES: OrganizationAccessClass[] = ["admin", "responsible", "worker"];
-const MEMBERSHIP_STATUSES: OrganizationMembershipStatus[] = ["active", "suspended", "archived"];
+const MEMBERSHIP_STATUSES: OrganizationMembershipStatus[] = ["active", "suspended"];
 
 function buildAssignmentDrafts(
     member: OrganizationMember | null,

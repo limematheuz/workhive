@@ -178,6 +178,9 @@ export const OrganizationService = {
         method: "PATCH",
         body: JSON.stringify(payload),
     }),
+    removeMember: (membershipId: number) => request<void>(`/members/${membershipId}`, {
+        method: "DELETE",
+    }),
     replaceMemberProfileAssignments: (membershipId: number, assignments: Array<{
         permission_profile_id: number;
         scopes: Array<{ scope_type: OrganizationScopeType; scope_id: number }>;

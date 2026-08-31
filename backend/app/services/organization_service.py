@@ -1,6 +1,10 @@
 """Public organization service boundary composed from focused policies."""
 
-from app.services.organization_member_service import list_members, update_member
+from app.services.organization_member_service import (
+    list_members,
+    remove_member,
+    update_member,
+)
 from app.services.organization_permission_profile_service import (
     create_permission_profile,
     delete_permission_profile,
@@ -37,6 +41,7 @@ __all__ = [
     "list_teams",
     "replace_member_profile_assignments",
     "replace_team_members_for_team",
+    "remove_member",
     "update_department",
     "update_member",
     "update_permission_profile",

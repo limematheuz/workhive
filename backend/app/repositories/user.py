@@ -81,6 +81,21 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     )
 
 
+def get_latest_company_membership(db: Session, user_id: int) -> CompanyMembership | None:
+    """Return the latest company relationship for an identity without a workspace."""
+
+    return (
+        db.query(CompanyMembership)
+        .filter(CompanyMembership.user_id == user_id)
+        .order_by(
+            CompanyMembership.ended_at.desc(),
+            CompanyMembership.updated_at.desc(),
+            CompanyMembership.id.desc(),
+        )
+        .first()
+    )
+
+
 def create_user(db: Session, user_data: UserCreate) -> User:
     db_user = stage_user(db, user_data)
     db.commit()

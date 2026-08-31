@@ -146,6 +146,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "code_hash",
         "expires_at",
         "failed_attempts",
+        "rejoin_user_id",
     } <= invitation_columns
     assert "reported_issues" in task_columns
     # The task read endpoint serializes these fields for every list view. Keep

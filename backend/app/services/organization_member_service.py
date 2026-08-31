@@ -5,7 +5,10 @@ from sqlalchemy.orm import Session
 
 from app.models.company_membership import (
     CompanyMembership,
+    DepartmentMembership,
+    TeamMembership,
 )
+from app.models.permission_profile import MembershipPermissionProfileAssignment
 from app.models.user import User
 from app.repositories import organization as organization_repo
 from app.repositories import role as role_repo
@@ -138,6 +141,8 @@ def update_member(
         not_found("Company member")
     next_access_class = payload.access_class or membership.access_class
     next_status = payload.status or membership.status
+    if next_status == "archived":
+        conflict("Use the company removal action to retire a person from this company")
     if membership.user_id == current_user.id and (
         next_access_class != "admin" or next_status != "active"
     ):
@@ -211,3 +216,98 @@ def update_member(
     db.commit()
     db.refresh(membership)
     return member_response(db, company_id=company_id, membership=membership)
+
+
+def remove_member(
+    db: Session,
+    membership_id: int,
+    current_user: User,
+) -> None:
+    """Retire a person from one company without deleting their WorkHive identity.
+
+    A company administrator manages a membership, never another person's global
+    account.  The historical membership remains as evidence of the prior
+    relationship, while all active company-scoped access is revoked.
+    """
+
+    company_id = require_capability(db, current_user, CAPABILITY_MEMBERS_MANAGE)
+    membership = organization_repo.get_company_membership(
+        db,
+        company_id=company_id,
+        membership_id=membership_id,
+    )
+    if not membership or not membership.user:
+        not_found("Company member")
+    if membership.user_id == current_user.id:
+        conflict("You cannot remove yourself from the company")
+    if membership.status == "archived":
+        conflict("This person has already been removed from the company")
+    if (
+        membership.access_class == "admin"
+        and membership.status == "active"
+        and active_admin_count(db, company_id) == 1
+    ):
+        conflict("A company must keep at least one active administrator")
+
+    now = datetime.now(timezone.utc)
+    (
+        db.query(DepartmentMembership)
+        .filter(
+            DepartmentMembership.company_id == company_id,
+            DepartmentMembership.company_membership_id == membership.id,
+            DepartmentMembership.is_active.is_(True),
+        )
+        .update(
+            {
+                DepartmentMembership.is_active: False,
+                DepartmentMembership.is_primary: False,
+                DepartmentMembership.is_lead: False,
+            },
+            synchronize_session=False,
+        )
+    )
+    (
+        db.query(TeamMembership)
+        .filter(
+            TeamMembership.company_id == company_id,
+            TeamMembership.company_membership_id == membership.id,
+            TeamMembership.is_active.is_(True),
+        )
+        .update({TeamMembership.is_active: False}, synchronize_session=False)
+    )
+    (
+        db.query(MembershipPermissionProfileAssignment)
+        .filter(
+            MembershipPermissionProfileAssignment.company_id == company_id,
+            MembershipPermissionProfileAssignment.company_membership_id
+            == membership.id,
+            MembershipPermissionProfileAssignment.is_active.is_(True),
+        )
+        .update(
+            {
+                MembershipPermissionProfileAssignment.is_active: False,
+                MembershipPermissionProfileAssignment.revoked_at: now,
+            },
+            synchronize_session=False,
+        )
+    )
+
+    viewer_role = role_repo.get_role_by_name(db, "viewer")
+    if not viewer_role:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Legacy role 'viewer' not configured",
+        )
+
+    membership.status = "archived"
+    membership.ended_at = now
+    membership.user.company_id = None
+    membership.user.role_id = viewer_role.id
+    membership.user.role = viewer_role
+    # The person still owns a WorkHive identity and can sign in to manage their
+    # privacy requests or accept a new invitation.  Existing sessions are
+    # invalidated so the revoked company access cannot remain in a browser.
+    membership.user.is_active = True
+    membership.user.session_version += 1
+    db.add_all([membership, membership.user])
+    db.commit()

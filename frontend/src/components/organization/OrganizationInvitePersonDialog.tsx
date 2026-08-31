@@ -25,6 +25,7 @@ type OrganizationInvitePersonDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     roles: Role[];
+    onSent: () => void | Promise<void>;
 };
 
 const ACCESS_OPTIONS = ["admin", "manager", "viewer"] as const;
@@ -33,6 +34,7 @@ export function OrganizationInvitePersonDialog({
     open,
     onOpenChange,
     roles,
+    onSent,
 }: OrganizationInvitePersonDialogProps) {
     const { dict } = useDictionary();
     const copy = dict.organization.invite_dialog;
@@ -66,6 +68,7 @@ export function OrganizationInvitePersonDialog({
                 full_name: fullName.trim() || undefined,
                 role_id: Number(roleId),
             });
+            await onSent();
             toast.success(copy.sent);
             onOpenChange(false);
         } catch (error) {

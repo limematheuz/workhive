@@ -2051,7 +2051,40 @@
       "delete_description": "Esta acción es irreversible. {email} solo se eliminará si no conserva historial operativo ni controla integraciones.",
       "delete_blocked": "No se puede eliminar esta persona porque conserva historial operativo o controla una integración. Suspende su acceso para conservar los datos de la empresa.",
       "delete_error": "No se pudo eliminar esta persona.",
-      "delete_success": "Persona eliminada definitivamente."
+      "delete_success": "Persona eliminada definitivamente.",
+      "remove_action": "Retirar de la empresa",
+      "remove_title": "¿Retirar a esta persona de la empresa?",
+      "remove_description": "{email} dejará de acceder a esta empresa, sus equipos, departamentos y perfiles. Su cuenta WorkHive y sus datos personales no se eliminarán.",
+      "remove_confirm": "Retirar de la empresa",
+      "remove_error": "No se pudo retirar a esta persona de la empresa.",
+      "remove_success": "La persona ya no tiene acceso a esta empresa."
+    },
+    "invitations": {
+      "title": "Invitaciones pendientes y recientes",
+      "description": "Controla quién está pendiente de activar su acceso y renueva o cancela el enlace cuando sea necesario.",
+      "count_one": "invitación",
+      "count_many": "invitaciones",
+      "existing_account": "Cuenta existente",
+      "role_prefix": "Acceso inicial:",
+      "expires": "Caduca el {date}",
+      "created": "Creada el {date}",
+      "resend": "Reenviar",
+      "cancel": "Cancelar",
+      "statuses": {
+        "pending": "Pendiente",
+        "expired": "Caducada",
+        "canceled": "Cancelada"
+      },
+      "resend_title": "¿Reenviar esta invitación?",
+      "resend_description": "Se invalidará el enlace anterior de {email} y se enviará uno nuevo.",
+      "resend_confirm": "Reenviar invitación",
+      "resend_success": "La invitación se ha reenviado.",
+      "resend_error": "No se pudo reenviar la invitación.",
+      "cancel_title": "¿Cancelar esta invitación?",
+      "cancel_description": "{email} ya no podrá usar el enlace de invitación actual.",
+      "cancel_confirm": "Cancelar invitación",
+      "cancel_success": "La invitación se ha cancelado.",
+      "cancel_error": "No se pudo cancelar la invitación."
     },
     "departments": {
       "title": "Departamentos",

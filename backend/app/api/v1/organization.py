@@ -49,6 +49,25 @@ def update_member(
     return member
 
 
+@router.delete("/members/{membership_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_member(
+    membership_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveApplicationUser,
+):
+    organization_service.remove_member(db, membership_id, current_user)
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="organization.member_removed",
+        entity_type="company_membership",
+        entity_id=membership_id,
+        request=request,
+    )
+
+
 @router.put(
     "/members/{membership_id}/profile-assignments",
     response_model=OrganizationMemberResponse,

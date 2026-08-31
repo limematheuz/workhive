@@ -18,6 +18,10 @@ const filters = readFileSync(
     new URL("../components/organization/OrganizationTableFilters.tsx", import.meta.url),
     "utf8",
 );
+const pendingInvitations = readFileSync(
+    new URL("../components/organization/PendingInvitationsPanel.tsx", import.meta.url),
+    "utf8",
+);
 
 test("organization people uses the shared shadcn table and keeps anonymous history separate", () => {
     const peopleSection = controlCenter.slice(
@@ -41,14 +45,25 @@ test("organization enables invitations and uses the shared shadcn form primitive
     assert.match(controlCenter, /people: copy\.actions\.invite_person/);
     assert.match(controlCenter, /void openInvitation\(\)/);
     assert.doesNotMatch(controlCenter, /disabled=\{tab === "people"\}/);
-    assert.match(controlCenter, /UserService\.deleteUser/);
+    assert.match(controlCenter, /OrganizationService\.removeMember/);
     assert.match(invitationDialog, /@\/components\/ui\/dialog/);
     assert.match(invitationDialog, /@\/components\/ui\/input/);
     assert.match(invitationDialog, /@\/components\/ui\/select/);
     assert.match(invitationDialog, /<DialogContent compact className="max-h-\[90dvh\] max-w-xl overflow-y-auto">/);
     assert.doesNotMatch(invitationDialog, /overflow-x-hidden/);
     assert.match(invitationDialog, /UserService\.inviteUser/);
+    assert.match(invitationDialog, /await onSent\(\)/);
     assert.match(invitationDialog, /useDictionary/);
+});
+
+test("organization invitation status uses service calls and shadcn confirmation controls", () => {
+    assert.match(controlCenter, /PendingInvitationsPanel/);
+    assert.match(controlCenter, /UserService\.getInvitations/);
+    assert.match(pendingInvitations, /@\/components\/ui\/button/);
+    assert.match(pendingInvitations, /@\/components\/ui\/delete-confirm-dialog/);
+    assert.match(pendingInvitations, /UserService\.cancelInvitation/);
+    assert.match(pendingInvitations, /UserService\.inviteUser/);
+    assert.doesNotMatch(pendingInvitations, /<button/);
 });
 
 test("organization teams use the shared table while permission profiles expose real, safe actions", () => {

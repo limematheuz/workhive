@@ -2051,7 +2051,40 @@
       "delete_description": "This cannot be undone. {email} will only be deleted if they have no operational history and do not control integrations.",
       "delete_blocked": "This person cannot be deleted because they have operational history or control an integration. Suspend access to preserve company data.",
       "delete_error": "Could not delete this person.",
-      "delete_success": "Person permanently deleted."
+      "delete_success": "Person permanently deleted.",
+      "remove_action": "Remove from company",
+      "remove_title": "Remove this person from the company?",
+      "remove_description": "{email} will lose access to this company, its teams, departments, and profiles. Their WorkHive account and personal data will not be deleted.",
+      "remove_confirm": "Remove from company",
+      "remove_error": "Could not remove this person from the company.",
+      "remove_success": "This person no longer has access to the company."
+    },
+    "invitations": {
+      "title": "Pending and recent invitations",
+      "description": "Track who still needs to activate access and renew or cancel a link when needed.",
+      "count_one": "invitation",
+      "count_many": "invitations",
+      "existing_account": "Existing account",
+      "role_prefix": "Initial access:",
+      "expires": "Expires {date}",
+      "created": "Created {date}",
+      "resend": "Resend",
+      "cancel": "Cancel",
+      "statuses": {
+        "pending": "Pending",
+        "expired": "Expired",
+        "canceled": "Cancelled"
+      },
+      "resend_title": "Resend this invitation?",
+      "resend_description": "The existing invitation link for {email} will be invalidated and a new one sent.",
+      "resend_confirm": "Resend invitation",
+      "resend_success": "Invitation resent.",
+      "resend_error": "Could not resend the invitation.",
+      "cancel_title": "Cancel this invitation?",
+      "cancel_description": "{email} will no longer be able to use the current invitation link.",
+      "cancel_confirm": "Cancel invitation",
+      "cancel_success": "Invitation cancelled.",
+      "cancel_error": "Could not cancel the invitation."
     },
     "departments": {
       "title": "Departments",
