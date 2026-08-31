@@ -13,6 +13,7 @@ class CheckoutSessionCreate(BaseModel):
         "basic", "medium", "top", "mega",
         "business", "pro", "lifetime",
     ]
+    billing_interval: Literal["monthly", "annual"] = "monthly"
 
 
 class HostedBillingUrl(BaseModel):
@@ -23,6 +24,7 @@ class CompanyPurchaseCheckout(BaseModel):
     """Public data collected before a new customer is redirected to Stripe."""
 
     plan: Literal["basic", "medium", "top", "mega"]
+    billing_interval: Literal["monthly", "annual"] = "monthly"
     company_name: str = Field(min_length=2, max_length=100)
     tax_id: str = Field(min_length=3, max_length=20)
     address: str = Field(min_length=3, max_length=255)
@@ -74,11 +76,19 @@ class PublicPlanEntitlement(BaseModel):
     value: bool | int
 
 
+class PublicPlanPrice(BaseModel):
+    billing_interval: Literal["monthly", "annual"]
+    amount_cents: int
+    currency: Literal["EUR"]
+    tax_behavior: Literal["exclusive", "inclusive"]
+    checkout_available: bool
+
+
 class PublicPlanCatalogResponse(BaseModel):
     code: Literal["basic", "medium", "top", "mega"]
     version: int
     entitlements: list[PublicPlanEntitlement]
-    checkout_available: bool
+    prices: list[PublicPlanPrice]
 
 
 class SubscriptionSummary(BaseModel):

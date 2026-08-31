@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.company import Company
 from app.models.stripe_webhook_event import StripeWebhookEvent
+from app.repositories import subscription_entitlement as entitlement_repo
 from app.schemas.billing import CompanyPurchaseCheckout
 from app.services import (
     company_entitlement_service,
@@ -21,6 +22,7 @@ from app.services import (
     company_purchase_service,
 )
 from app.services.entitlement_catalog import legacy_plan_code
+from app.services.plan_pricing_service import require_price_for_interval
 
 
 STRIPE_API_URL = "https://api.stripe.com/v1"
@@ -60,7 +62,12 @@ def _stripe_post(path: str, data: dict[str, str]) -> dict[str, Any]:
         ) from exc
 
 
-def create_checkout_session(company: Company, plan: str) -> str:
+def create_checkout_session(
+    db: Session,
+    company: Company,
+    plan: str,
+    billing_interval: str = "monthly",
+) -> str:
     requested_plan = plan.strip().lower()
     if requested_plan not in _CHECKOUT_PLAN_CODES:
         raise HTTPException(
@@ -72,10 +79,17 @@ def create_checkout_session(company: Company, plan: str) -> str:
     # public pricing page is migrated. The subscription itself still becomes
     # canonical Top when Stripe confirms payment.
     is_legacy_lifetime = requested_plan == "lifetime"
+    active_plan = entitlement_repo.get_active_plan(db, code=canonical_plan)
+    if active_plan is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The requested plan is not currently available",
+        )
+    require_price_for_interval(active_plan, billing_interval)
     price_id = (
         settings.STRIPE_LIFETIME_PRICE_ID
         if is_legacy_lifetime
-        else settings.stripe_price_ids.get(canonical_plan)
+        else settings.stripe_price_id_for(canonical_plan, billing_interval)
     )
     if not price_id:
         raise HTTPException(
@@ -94,6 +108,7 @@ def create_checkout_session(company: Company, plan: str) -> str:
         "client_reference_id": str(company.id),
         "metadata[company_id]": str(company.id),
         "metadata[plan]": canonical_plan,
+        "metadata[billing_interval]": billing_interval,
         "allow_promotion_codes": "true",
     }
     if company.stripe_customer_id:
@@ -103,6 +118,7 @@ def create_checkout_session(company: Company, plan: str) -> str:
     if not is_one_time:
         payload["subscription_data[metadata][company_id]"] = str(company.id)
         payload["subscription_data[metadata][plan]"] = canonical_plan
+        payload["subscription_data[metadata][billing_interval]"] = billing_interval
     session = _stripe_post("/checkout/sessions", payload)
     checkout_url = session.get("url")
     if not checkout_url:

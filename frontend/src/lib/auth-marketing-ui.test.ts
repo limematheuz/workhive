@@ -95,10 +95,15 @@ test("subscription uses the versioned public catalog and guided Stripe purchase 
     assert.match(subscription, /billingService\.listPublicPlans/);
     assert.match(subscription, /PlanCatalog/);
     assert.match(catalog, /checkout_available/);
+    assert.match(catalog, /ToggleGroup/);
+    assert.match(catalog, /Collapsible/);
+    assert.match(catalog, /billing_interval/);
+    assert.match(catalog, /prices/);
     assert.match(catalog, /plan-custom/);
     assert.match(catalog, /entitlements/);
     assert.match(checkout, /createCompanyPurchaseCheckout/);
     assert.match(checkout, /billingService\.createCheckout/);
+    assert.match(checkout, /billing_interval/);
     assert.match(checkout, /from "@\/components\/ui\/checkbox"/);
     assert.match(checkout, /from "@\/components\/ui\/input"/);
     assert.match(checkout, /from "@\/components\/ui\/button"/);

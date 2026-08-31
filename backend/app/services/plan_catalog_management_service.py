@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.subscription_entitlement import (
     PlanCatalogAudit,
     PlanEntitlement,
+    PlanPrice,
     SubscriptionPlan,
 )
 from app.models.user import User
@@ -80,6 +81,16 @@ def update_standard_plan(
                 integer_value=(
                     value if isinstance(value, int) and not isinstance(value, bool) else None
                 ),
+            )
+        )
+    for price in current.prices:
+        db.add(
+            PlanPrice(
+                plan_id=next_plan.id,
+                billing_interval=price.billing_interval,
+                amount_cents=price.amount_cents,
+                currency=price.currency,
+                tax_behavior=price.tax_behavior,
             )
         )
     db.add(

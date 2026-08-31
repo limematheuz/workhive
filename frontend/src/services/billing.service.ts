@@ -1,6 +1,7 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
 
 export type PublicPlanCode = "basic" | "medium" | "top" | "mega";
+export type BillingInterval = "monthly" | "annual";
 
 export const PUBLIC_PLAN_CODES: PublicPlanCode[] = [
     "basic",
@@ -19,15 +20,24 @@ export type PublicPlanEntitlement = {
     value: boolean | number;
 };
 
+export type PublicPlanPrice = {
+    billing_interval: BillingInterval;
+    amount_cents: number;
+    currency: "EUR";
+    tax_behavior: "exclusive" | "inclusive";
+    checkout_available: boolean;
+};
+
 export type PublicPlan = {
     code: PublicPlanCode;
     version: number;
     entitlements: PublicPlanEntitlement[];
-    checkout_available: boolean;
+    prices: PublicPlanPrice[];
 };
 
 export type CompanyPurchaseCheckoutInput = {
     plan: PublicPlanCode;
+    billing_interval: BillingInterval;
     company_name: string;
     tax_id: string;
     address: string;
@@ -53,10 +63,13 @@ export const billingService = {
         return (await response.json()) as PublicPlan[];
     },
 
-    createCheckout: async (plan: PublicPlanCode): Promise<string> => {
+    createCheckout: async (
+        plan: PublicPlanCode,
+        billingInterval: BillingInterval,
+    ): Promise<string> => {
         const response = await apiFetch("/api/v1/billing/checkout", {
             method: "POST",
-            body: JSON.stringify({ plan }),
+            body: JSON.stringify({ plan, billing_interval: billingInterval }),
         });
         await assertApiResponseOk(response, "No se pudo iniciar el pago seguro.");
         const payload = (await response.json()) as { url: string };

@@ -38,10 +38,12 @@ def stripe_signature(payload: bytes, secret: str, timestamp: int) -> str:
 def company_purchase_payload(
     *,
     plan: str = "basic",
+    billing_interval: str = "monthly",
     owner_email: str = "new-owner@workhive.com",
 ) -> dict[str, object]:
     return {
         "plan": plan,
+        "billing_interval": billing_interval,
         "company_name": "Paid Company",
         "tax_id": "PURCHASE-123",
         "address": "Paid Street 1",
@@ -221,7 +223,7 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
     monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
 
     assert (
-        billing_service.create_checkout_session(company, "business")
+        billing_service.create_checkout_session(db, company, "business")
         == "https://checkout.stripe.com/test-session"
     )
     assert captured["customer"] == "cus_hosted"
@@ -238,19 +240,37 @@ def test_public_plan_catalog_matches_the_active_purchasable_versions(
 ):
     monkeypatch.setattr(settings, "BILLING_ENABLED", True)
     monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
-    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
-    monkeypatch.setattr(settings, "STRIPE_MEDIUM_PRICE_ID", "price_medium")
-    monkeypatch.setattr(settings, "STRIPE_TOP_PRICE_ID", "price_top")
-    monkeypatch.setattr(settings, "STRIPE_ENTERPRISE_PRICE_ID", "price_mega")
+    for plan_code in ("BASIC", "MEDIUM", "TOP", "ENTERPRISE"):
+        monkeypatch.setattr(
+            settings, f"STRIPE_{plan_code}_MONTHLY_PRICE_ID", f"price_{plan_code.lower()}_monthly"
+        )
+        monkeypatch.setattr(
+            settings, f"STRIPE_{plan_code}_ANNUAL_PRICE_ID", f"price_{plan_code.lower()}_annual"
+        )
 
     response = client.get("/api/v1/billing/plans")
 
     assert response.status_code == 200, response.text
     plans = response.json()
     assert [plan["code"] for plan in plans] == ["basic", "medium", "top", "mega"]
-    assert all(plan["checkout_available"] for plan in plans)
     basic = plans[0]
     assert basic["version"] == 1
+    assert basic["prices"] == [
+        {
+            "billing_interval": "monthly",
+            "amount_cents": 2900,
+            "currency": "EUR",
+            "tax_behavior": "exclusive",
+            "checkout_available": True,
+        },
+        {
+            "billing_interval": "annual",
+            "amount_cents": 28800,
+            "currency": "EUR",
+            "tax_behavior": "exclusive",
+            "checkout_available": True,
+        },
+    ]
     assert {item["code"] for item in basic["entitlements"]} == set(
         default_plan_values("basic")
     )
@@ -262,7 +282,7 @@ def test_public_company_checkout_stores_an_intent_without_creating_a_tenant(
 ):
     monkeypatch.setattr(settings, "BILLING_ENABLED", True)
     monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
-    monkeypatch.setattr(settings, "STRIPE_BASIC_PRICE_ID", "price_basic")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_ANNUAL_PRICE_ID", "price_basic_annual")
     captured: dict[str, str] = {}
 
     def fake_stripe_post(path: str, data: dict[str, str]):
@@ -279,7 +299,7 @@ def test_public_company_checkout_stores_an_intent_without_creating_a_tenant(
 
     response = client.post(
         "/api/v1/billing/purchases/checkout",
-        json=company_purchase_payload(),
+        json=company_purchase_payload(billing_interval="annual"),
     )
 
     assert response.status_code == 201, response.text
@@ -289,9 +309,12 @@ def test_public_company_checkout_stores_an_intent_without_creating_a_tenant(
     assert db.query(User).count() == 0
     assert purchase.status == "checkout_created"
     assert purchase.plan_code == "basic"
+    assert purchase.billing_interval == "annual"
     assert purchase.stripe_checkout_session_id == "cs_paid_company"
     assert captured["client_reference_id"] == purchase.id
     assert captured["metadata[company_purchase_id]"] == purchase.id
+    assert captured["metadata[billing_interval]"] == "annual"
+    assert captured["line_items[0][price]"] == "price_basic_annual"
     assert captured["subscription_data[metadata][company_purchase_id]"] == purchase.id
 
 
@@ -533,7 +556,7 @@ def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):
     monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
 
     assert (
-        billing_service.create_checkout_session(company, "mega")
+        billing_service.create_checkout_session(db, company, "mega")
         == "https://checkout.stripe.com/enterprise-session"
     )
     assert captured["mode"] == "subscription"
@@ -567,7 +590,7 @@ def test_lifetime_checkout_uses_payment_mode(db, monkeypatch):
     monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
 
     assert (
-        billing_service.create_checkout_session(company, "lifetime")
+        billing_service.create_checkout_session(db, company, "lifetime")
         == "https://checkout.stripe.com/lifetime-session"
     )
     assert captured["mode"] == "payment"

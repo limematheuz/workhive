@@ -15,7 +15,7 @@ import { billingService, type PublicPlan } from "@/services/billing.service";
 type LoadState = "loading" | "ready" | "error";
 
 export default function SubscriptionPage() {
-    const { dict } = useDictionary();
+    const { dict, locale } = useDictionary();
     const t = dict.subscription;
     const [plans, setPlans] = useState<PublicPlan[]>([]);
     const [loadState, setLoadState] = useState<LoadState>("loading");
@@ -64,7 +64,6 @@ export default function SubscriptionPage() {
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{t.plans_title}</h1>
                 <p className="mt-3 text-sm leading-6 text-[var(--text-muted)] sm:text-base">{t.plans_subtitle}</p>
-                <p className="mt-3 text-xs font-medium text-[var(--text-muted)]">{t.stripe_price_notice}</p>
             </header>
 
             {loadState === "loading" ? (
@@ -89,7 +88,7 @@ export default function SubscriptionPage() {
                     </Button>
                 </AuthGlassCard>
             ) : (
-                <PlanCatalog plans={plans} dictionary={t} />
+                <PlanCatalog plans={plans} dictionary={t} locale={locale} />
             )}
 
             <AuthGlassCard className="billing-surface mx-auto mt-6 max-w-3xl border-[var(--border-soft)] p-5 text-center sm:p-6">

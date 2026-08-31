@@ -26,6 +26,10 @@ class CompanyPurchaseIntent(Base):
             "status IN ('checkout_created', 'checkout_completed', 'paid', 'activated', 'expired', 'canceled')",
             name="ck_company_purchase_intent_status",
         ),
+        CheckConstraint(
+            "billing_interval IN ('monthly', 'annual')",
+            name="ck_company_purchase_intent_billing_interval",
+        ),
         UniqueConstraint(
             "stripe_checkout_session_id",
             name="uq_company_purchase_intent_checkout_session",
@@ -49,6 +53,7 @@ class CompanyPurchaseIntent(Base):
     )
     plan_code = Column(String(50), nullable=False, index=True)
     plan_version = Column(Integer, nullable=False)
+    billing_interval = Column(String(20), nullable=False, default="monthly")
 
     company_name = Column(String(100), nullable=False)
     tax_id = Column(String(20), nullable=False, index=True)

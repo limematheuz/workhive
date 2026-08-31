@@ -73,8 +73,16 @@ class Settings(BaseSettings):
     BILLING_ENABLED: bool = False
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
-    # New commercial plans. Legacy Business/Pro/Lifetime keys stay as a
-    # temporary fallback while existing Stripe products are migrated.
+    # Published commercial rates. The legacy monthly keys stay as a temporary
+    # fallback while existing Stripe products are migrated.
+    STRIPE_BASIC_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_BASIC_ANNUAL_PRICE_ID: str | None = None
+    STRIPE_MEDIUM_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_MEDIUM_ANNUAL_PRICE_ID: str | None = None
+    STRIPE_TOP_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_TOP_ANNUAL_PRICE_ID: str | None = None
+    STRIPE_ENTERPRISE_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_ENTERPRISE_ANNUAL_PRICE_ID: str | None = None
     STRIPE_BASIC_PRICE_ID: str | None = None
     STRIPE_MEDIUM_PRICE_ID: str | None = None
     STRIPE_TOP_PRICE_ID: str | None = None
@@ -239,7 +247,7 @@ class Settings(BaseSettings):
         if self.BILLING_ENABLED and (
             not self.STRIPE_SECRET_KEY
             or not self.STRIPE_WEBHOOK_SECRET
-            or not self.stripe_price_ids
+            or not self.stripe_price_ids_by_interval
         ):
             raise ValueError(
                 "Billing requires Stripe secret, webhook secret, and at least one plan price ID"
@@ -322,13 +330,41 @@ class Settings(BaseSettings):
 
     @property
     def stripe_price_ids(self) -> dict[str, str]:
+        """Compatibility map for monthly checkout callers during migration."""
+
         prices = {
-            "basic": self.STRIPE_BASIC_PRICE_ID,
-            "medium": self.STRIPE_MEDIUM_PRICE_ID or self.STRIPE_BUSINESS_PRICE_ID,
-            "top": self.STRIPE_TOP_PRICE_ID or self.STRIPE_PRO_PRICE_ID,
-            "mega": self.STRIPE_ENTERPRISE_PRICE_ID,
+            code: self.stripe_price_id_for(code, "monthly")
+            for code in ("basic", "medium", "top", "mega")
         }
         return {key: value for key, value in prices.items() if value}
+
+    @property
+    def stripe_price_ids_by_interval(self) -> dict[tuple[str, str], str]:
+        prices = {
+            (code, interval): self.stripe_price_id_for(code, interval)
+            for code in ("basic", "medium", "top", "mega")
+            for interval in ("monthly", "annual")
+        }
+        return {key: value for key, value in prices.items() if value}
+
+    def stripe_price_id_for(self, plan_code: str, billing_interval: str) -> str | None:
+        price_fields = {
+            ("basic", "monthly"): self.STRIPE_BASIC_MONTHLY_PRICE_ID
+            or self.STRIPE_BASIC_PRICE_ID,
+            ("basic", "annual"): self.STRIPE_BASIC_ANNUAL_PRICE_ID,
+            ("medium", "monthly"): self.STRIPE_MEDIUM_MONTHLY_PRICE_ID
+            or self.STRIPE_MEDIUM_PRICE_ID
+            or self.STRIPE_BUSINESS_PRICE_ID,
+            ("medium", "annual"): self.STRIPE_MEDIUM_ANNUAL_PRICE_ID,
+            ("top", "monthly"): self.STRIPE_TOP_MONTHLY_PRICE_ID
+            or self.STRIPE_TOP_PRICE_ID
+            or self.STRIPE_PRO_PRICE_ID,
+            ("top", "annual"): self.STRIPE_TOP_ANNUAL_PRICE_ID,
+            ("mega", "monthly"): self.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID
+            or self.STRIPE_ENTERPRISE_PRICE_ID,
+            ("mega", "annual"): self.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID,
+        }
+        return price_fields.get((plan_code, billing_interval))
 
     @property
     def facturae_certificate_path(self) -> str | None:

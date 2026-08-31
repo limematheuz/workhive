@@ -109,7 +109,9 @@ def create_checkout(
     )
     company = _current_company(db, current_user)
     return HostedBillingUrl(
-        url=billing_service.create_checkout_session(company, checkout.plan)
+        url=billing_service.create_checkout_session(
+            db, company, checkout.plan, checkout.billing_interval
+        )
     )
 
 

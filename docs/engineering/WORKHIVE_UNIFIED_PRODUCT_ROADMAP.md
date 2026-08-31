@@ -292,6 +292,23 @@ eventos antiguos se traducen a Basic, Medium o Top sin guardar los nombres
 anteriores en nuevas empresas. Custom no tendrá compra automática: se activa
 solo después de un acuerdo comercial y deja siempre motivo e historial.
 
+#### Tarifas publicadas y panel comercial de plataforma
+
+Cada versión de un plan tendrá sus tarifas mensuales y anuales publicadas por
+separado, en euros y sin IVA. El catálogo público muestra esas tarifas antes
+del pago y solo inicia Stripe si existe el `Price ID` de Stripe equivalente a
+la tarifa elegida. Así, el importe comunicado, el que se contrata y el que se
+audita permanecen alineados. La primera referencia comercial por empresa es:
+Basic 29 EUR/mes o 288 EUR/año; Medium 69 EUR/mes o 708 EUR/año; Top 129
+EUR/mes o 1.308 EUR/año; y Enterprise 249 EUR/mes o 2.508 EUR/año. Custom se
+presupuesta fuera del checkout automático.
+
+No existe todavía una ruta separada de suscripciones y analítica para
+superadmin. No se creará hasta dejar impecable el flujo de catálogo, pago,
+activación y cambios de plan. Después se añadirá un panel comercial dedicado,
+solo para superadmins de plataforma, con MRR, empresas activas, impagos,
+upgrades, churn e ingresos por plan.
+
 - Las plazas internas de administrador, responsable y trabajador cuentan para
   la suscripción. Los contactos de portal, partners, inmobiliarias y
   administradores de propiedades no ocupan esas plazas, pero cada plan tendrá límites propios

@@ -19,6 +19,7 @@ import { authService } from "@/services/auth.service";
 import {
     billingService,
     isPublicPlanCode,
+    type BillingInterval,
     type CompanyPurchaseCheckoutInput,
     type PublicPlanCode,
 } from "@/services/billing.service";
@@ -26,8 +27,12 @@ import {
 type SessionState = "checking" | "anonymous" | "existing";
 type TextField = Exclude<
     keyof CompanyPurchaseCheckoutInput,
-    "plan" | "accept_terms" | "accept_privacy" | "marketing_consent"
+    "plan" | "billing_interval" | "accept_terms" | "accept_privacy" | "marketing_consent"
 >;
+
+function isBillingInterval(value: string | null): value is BillingInterval {
+    return value === "monthly" || value === "annual";
+}
 
 function getCheckoutErrorMessage(error: unknown, t: ReturnType<typeof useDictionary>["dict"]["subscription"]): string {
     if (!(error instanceof ApiResponseError)) return t.checkout_error;
@@ -60,12 +65,17 @@ function CheckoutContent() {
     const { dict } = useDictionary();
     const t = dict.subscription;
     const requestedPlan = searchParams.get("plan");
+    const requestedInterval = searchParams.get("interval");
     const plan: PublicPlanCode | null = isPublicPlanCode(requestedPlan) ? requestedPlan : null;
+    const billingInterval: BillingInterval = isBillingInterval(requestedInterval)
+        ? requestedInterval
+        : "monthly";
     const [sessionState, setSessionState] = useState<SessionState>("checking");
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [form, setForm] = useState<CompanyPurchaseCheckoutInput>(() => ({
         plan: plan ?? "basic",
+        billing_interval: billingInterval,
         company_name: "",
         tax_id: "",
         address: "",
@@ -109,7 +119,7 @@ function CheckoutContent() {
         setError("");
         setSubmitting(true);
         try {
-            redirectToStripe(await billingService.createCheckout(plan));
+            redirectToStripe(await billingService.createCheckout(plan, billingInterval));
         } catch (checkoutError) {
             setError(getCheckoutErrorMessage(checkoutError, t));
             setSubmitting(false);
@@ -129,6 +139,7 @@ function CheckoutContent() {
             const checkoutUrl = await billingService.createCompanyPurchaseCheckout({
                 ...form,
                 plan,
+                billing_interval: billingInterval,
                 postal_code: form.postal_code || undefined,
                 city: form.city || undefined,
                 province: form.province || undefined,
@@ -163,7 +174,7 @@ function CheckoutContent() {
                     </div>
                     <div className="shrink-0 rounded-xl border border-accent/25 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent">
                         <span className="mr-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">{t.selected_plan}</span>
-                        {planName}
+                        {planName} · {t.billing_intervals[billingInterval]}
                     </div>
                 </div>
 

@@ -19,6 +19,7 @@ from app.services.company_purchase_activation_service import (
     hash_activation_token,
     utcnow,
 )
+from app.services.plan_pricing_service import require_price_for_interval
 
 
 PURCHASABLE_PLAN_CODES = frozenset({"basic", "medium", "top", "mega"})
@@ -77,6 +78,7 @@ def create_purchase_intent(
             status_code=status.HTTP_409_CONFLICT,
             detail="This plan is not available for purchase",
         )
+    require_price_for_interval(plan, payload.billing_interval)
     if company_repo.get_company_by_tax_id(db, payload.tax_id):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -92,6 +94,7 @@ def create_purchase_intent(
         plan_id=plan.id,
         plan_code=plan.code,
         plan_version=plan.version,
+        billing_interval=payload.billing_interval,
         company_name=payload.company_name,
         tax_id=payload.tax_id,
         address=payload.address,

@@ -18,7 +18,10 @@ from app.models.subscription_entitlement import (
 def get_plan(db: Session, *, code: str, version: int = 1) -> SubscriptionPlan | None:
     return (
         db.query(SubscriptionPlan)
-        .options(selectinload(SubscriptionPlan.entitlements))
+        .options(
+            selectinload(SubscriptionPlan.entitlements),
+            selectinload(SubscriptionPlan.prices),
+        )
         .filter(SubscriptionPlan.code == code, SubscriptionPlan.version == version)
         .first()
     )
@@ -27,7 +30,10 @@ def get_plan(db: Session, *, code: str, version: int = 1) -> SubscriptionPlan | 
 def get_active_plan(db: Session, *, code: str) -> SubscriptionPlan | None:
     return (
         db.query(SubscriptionPlan)
-        .options(selectinload(SubscriptionPlan.entitlements))
+        .options(
+            selectinload(SubscriptionPlan.entitlements),
+            selectinload(SubscriptionPlan.prices),
+        )
         .filter(SubscriptionPlan.code == code, SubscriptionPlan.is_active.is_(True))
         .order_by(SubscriptionPlan.version.desc(), SubscriptionPlan.id.desc())
         .first()
@@ -37,7 +43,10 @@ def get_active_plan(db: Session, *, code: str) -> SubscriptionPlan | None:
 def get_plan_by_id(db: Session, *, plan_id: int) -> SubscriptionPlan | None:
     return (
         db.query(SubscriptionPlan)
-        .options(selectinload(SubscriptionPlan.entitlements))
+        .options(
+            selectinload(SubscriptionPlan.entitlements),
+            selectinload(SubscriptionPlan.prices),
+        )
         .filter(SubscriptionPlan.id == plan_id)
         .first()
     )
@@ -46,7 +55,10 @@ def get_plan_by_id(db: Session, *, plan_id: int) -> SubscriptionPlan | None:
 def list_active_plans(db: Session) -> list[SubscriptionPlan]:
     return (
         db.query(SubscriptionPlan)
-        .options(selectinload(SubscriptionPlan.entitlements))
+        .options(
+            selectinload(SubscriptionPlan.entitlements),
+            selectinload(SubscriptionPlan.prices),
+        )
         .filter(SubscriptionPlan.is_active.is_(True))
         .order_by(SubscriptionPlan.code.asc(), SubscriptionPlan.version.desc())
         .all()

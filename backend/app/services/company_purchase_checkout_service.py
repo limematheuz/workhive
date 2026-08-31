@@ -21,7 +21,9 @@ def create_company_purchase_checkout(
 ) -> str:
     """Persist a purchase intent and return Stripe's hosted payment URL."""
 
-    price_id = settings.stripe_price_ids.get(checkout.plan)
+    price_id = settings.stripe_price_id_for(
+        checkout.plan, checkout.billing_interval
+    )
     if not price_id:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -41,9 +43,11 @@ def create_company_purchase_checkout(
             "customer_email": purchase.owner_email,
             "metadata[company_purchase_id]": purchase.id,
             "metadata[plan]": purchase.plan_code,
+            "metadata[billing_interval]": purchase.billing_interval,
             "allow_promotion_codes": "true",
             "subscription_data[metadata][company_purchase_id]": purchase.id,
             "subscription_data[metadata][plan]": purchase.plan_code,
+            "subscription_data[metadata][billing_interval]": purchase.billing_interval,
         },
     )
     checkout_url = session.get("url")
