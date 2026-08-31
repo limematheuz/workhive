@@ -57,8 +57,32 @@ export function DataTablePagination({ page, totalItems, pageSize, onPageChange, 
             </div>
             <Pagination className="mx-0 w-auto sm:ml-auto">
                 <PaginationContent>
-                    <PaginationItem><PaginationPrevious disabled={safePage === 1} onClick={() => onPageChange(safePage - 1)} aria-label={previousLabel} /></PaginationItem>
-                    <PaginationItem><PaginationNext disabled={safePage === totalPages} onClick={() => onPageChange(safePage + 1)} aria-label={nextLabel} /></PaginationItem>
+                    <PaginationItem>
+                        <PaginationPrevious
+                            href="#organization-list"
+                            iconOnly
+                            aria-label={previousLabel}
+                            aria-disabled={safePage === 1}
+                            className={safePage === 1 ? "pointer-events-none opacity-50" : undefined}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                if (safePage > 1) onPageChange(safePage - 1);
+                            }}
+                        />
+                    </PaginationItem>
+                    <PaginationItem>
+                        <PaginationNext
+                            href="#organization-list"
+                            iconOnly
+                            aria-label={nextLabel}
+                            aria-disabled={safePage === totalPages}
+                            className={safePage === totalPages ? "pointer-events-none opacity-50" : undefined}
+                            onClick={(event) => {
+                                event.preventDefault();
+                                if (safePage < totalPages) onPageChange(safePage + 1);
+                            }}
+                        />
+                    </PaginationItem>
                 </PaginationContent>
             </Pagination>
         </footer>

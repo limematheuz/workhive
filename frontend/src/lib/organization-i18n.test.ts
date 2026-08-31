@@ -25,6 +25,6 @@ test("organization and invitation flows use the shared English and Spanish dicti
     assert.match(controlCenter, /useDictionary/);
     assert.match(invitationDialog, /useDictionary/);
     assert.match(accessDialog, /useDictionary/);
-    assert.match(dictionaryContext, /DEFAULT_LOCALE: Locale = "en"/);
-    assert.match(dictionaryContext, /return stored === "es" \? "es" : "en"/);
+    assert.match(dictionaryContext, /DEFAULT_LOCALE: Locale = "es"/);
+    assert.match(dictionaryContext, /return stored === "en" \? "en" : "es"/);
 });
