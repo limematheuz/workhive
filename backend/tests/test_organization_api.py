@@ -115,6 +115,23 @@ def test_company_administrator_configures_departments_teams_and_profiles(client,
     }
 
 
+def test_all_organization_tab_reads_accept_get_requests(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "tab-reads")
+    admin = _bootstrap_admin(db, company, "tab-reads-admin")
+    headers = _headers(admin)
+
+    for path in (
+        "/api/v1/organization/members",
+        "/api/v1/organization/departments",
+        "/api/v1/organization/teams",
+        "/api/v1/organization/permission-definitions",
+        "/api/v1/organization/permission-profiles",
+    ):
+        response = client.get(path, headers=headers)
+        assert response.status_code == 200, response.text
+
+
 def test_profile_scopes_are_tenant_safe_and_do_not_grant_unrelated_company_access(
     client, db
 ):

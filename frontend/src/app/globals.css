@@ -1273,8 +1273,8 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 
 /* Unified uppercase bold labels inside modals */
-[data-slot="dialog-content"] label,
-[data-slot="sheet-content"] label {
+[data-slot="dialog-content"] label:not(:has([data-slot="checkbox"], input[type="checkbox"])),
+[data-slot="sheet-content"] label:not(:has([data-slot="checkbox"], input[type="checkbox"])) {
   font-size: 0.65rem !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;

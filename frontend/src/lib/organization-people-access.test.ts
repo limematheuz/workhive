@@ -112,6 +112,8 @@ test("organization tables paginate with the shared shadcn controls and keep perm
     assert.match(pagination, /@\/components\/ui\/pagination/);
     assert.match(pagination, /@\/components\/ui\/select/);
     assert.match(pagination, /\[10, 25, 50, 100\]/);
+    assert.match(pagination, /useId/);
+    assert.doesNotMatch(pagination, /if \(totalItems <= 20\) return null/);
 });
 
 test("organization tabs use shared shadcn text and select filters instead of custom controls", () => {

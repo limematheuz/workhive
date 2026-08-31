@@ -88,7 +88,7 @@ export function EntitlementConfigurationEditor({
                                 htmlFor={inputId}
                                 key={item.code}
                                 className={cn(
-                                    "flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-colors hover:border-accent/40 hover:bg-accent/5",
+                                    "flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left normal-case tracking-normal transition-colors hover:border-accent/40 hover:bg-accent/5",
                                     values[item.code] === true ? "border-accent/35 bg-accent/5" : "border-[var(--border-soft)]",
                                 )}
                             >
