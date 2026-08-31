@@ -277,6 +277,7 @@ def delete_user_permanently(db: Session, user_id: int, current_user: User) -> No
         _raise_user_delete_conflict()
 
     try:
+        user_repo.delete_user_access_configuration(db, db_user.id)
         user_repo.delete_user(db, db_user)
     except IntegrityError:
         _raise_user_delete_conflict()
