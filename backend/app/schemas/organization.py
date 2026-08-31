@@ -16,7 +16,9 @@ class OrganizationMemberProfileScopeInput(BaseModel):
 
 class OrganizationMemberProfileAssignmentInput(BaseModel):
     permission_profile_id: int = Field(gt=0)
-    scopes: list[OrganizationMemberProfileScopeInput] = Field(min_length=1, max_length=100)
+    scopes: list[OrganizationMemberProfileScopeInput] = Field(
+        min_length=1, max_length=100
+    )
 
     @model_validator(mode="after")
     def reject_duplicate_scopes(self) -> "OrganizationMemberProfileAssignmentInput":
@@ -48,6 +50,8 @@ class OrganizationMemberResponse(BaseModel):
     email: str
     access_class: AccessClass
     status: MembershipStatus
+    ended_at: datetime | None
+    is_anonymized: bool
     legacy_role_name: str | None
     department_ids: list[int]
     team_ids: list[int]
@@ -83,7 +87,9 @@ class OrganizationMemberProfileAssignmentsUpdate(BaseModel):
     ) -> list[OrganizationMemberProfileAssignmentInput]:
         profile_ids = [assignment.permission_profile_id for assignment in value]
         if len(set(profile_ids)) != len(profile_ids):
-            raise ValueError("A member cannot receive the same permission profile twice")
+            raise ValueError(
+                "A member cannot receive the same permission profile twice"
+            )
         return value
 
 
@@ -92,13 +98,18 @@ class DepartmentCreate(BaseModel):
     code: str | None = Field(default=None, max_length=50)
     parent_department_id: int | None = Field(default=None, gt=0)
 
-    @field_validator("name", "code")
+    @field_validator("name")
     @classmethod
-    def trim_text(cls, value: str | None) -> str | None:
-        if value is None:
-            return None
+    def trim_name(cls, value: str) -> str:
         normalized = value.strip()
-        return normalized or None
+        if not normalized:
+            raise ValueError("Name cannot be blank")
+        return normalized
+
+    @field_validator("code")
+    @classmethod
+    def trim_code(cls, value: str | None) -> str | None:
+        return value.strip() or None if value is not None else None
 
 
 class DepartmentUpdate(BaseModel):
@@ -107,13 +118,34 @@ class DepartmentUpdate(BaseModel):
     parent_department_id: int | None = Field(default=None, gt=0)
     is_active: bool | None = None
 
-    @field_validator("name", "code")
+    @field_validator("name")
     @classmethod
-    def trim_text(cls, value: str | None) -> str | None:
+    def trim_name(cls, value: str | None) -> str | None:
         if value is None:
             return None
         normalized = value.strip()
-        return normalized or None
+        if not normalized:
+            raise ValueError("Name cannot be blank")
+        return normalized
+
+    @field_validator("code")
+    @classmethod
+    def trim_code(cls, value: str | None) -> str | None:
+        return value.strip() or None if value is not None else None
+
+    @model_validator(mode="after")
+    def reject_explicit_null_name(self) -> "DepartmentUpdate":
+        if "name" in self.model_fields_set and self.name is None:
+            raise ValueError("Name cannot be null")
+        return self
+
+
+class DepartmentUsage(BaseModel):
+    child_departments: int
+    teams: int
+    member_assignments: int
+    profile_scopes: int
+    can_delete: bool
 
 
 class DepartmentResponse(BaseModel):
@@ -122,6 +154,7 @@ class DepartmentResponse(BaseModel):
     code: str | None
     parent_department_id: int | None
     is_active: bool
+    usage: DepartmentUsage
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -155,12 +188,35 @@ class TeamUpdate(BaseModel):
         return normalized or None
 
 
+class TeamMembersUpdate(BaseModel):
+    membership_ids: list[int] = Field(max_length=100)
+
+    @field_validator("membership_ids")
+    @classmethod
+    def reject_duplicate_ids(cls, value: list[int]) -> list[int]:
+        if any(identifier <= 0 for identifier in value):
+            raise ValueError("Identifiers must be positive")
+        if len(set(value)) != len(value):
+            raise ValueError("Identifiers cannot be duplicated")
+        return value
+
+
+class TeamUsage(BaseModel):
+    member_assignments: int
+    active_member_assignments: int
+    profile_scopes: int
+    active_profile_scopes: int
+    can_deactivate: bool
+    can_delete: bool
+
+
 class TeamResponse(BaseModel):
     id: int
     name: str
     code: str | None
     department_id: int | None
     is_active: bool
+    usage: TeamUsage
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -191,7 +247,9 @@ class PermissionProfileCreate(BaseModel):
     @classmethod
     def normalize_permission_codes(cls, value: list[str]) -> list[str]:
         normalized = [code.strip() for code in value]
-        if any(not code for code in normalized) or len(set(normalized)) != len(normalized):
+        if any(not code for code in normalized) or len(set(normalized)) != len(
+            normalized
+        ):
             raise ValueError("Permission codes must be unique and non-empty")
         return normalized
 
@@ -199,7 +257,9 @@ class PermissionProfileCreate(BaseModel):
 class PermissionProfileUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     description: str | None = Field(default=None, max_length=2_000)
-    permission_codes: list[str] | None = Field(default=None, min_length=1, max_length=100)
+    permission_codes: list[str] | None = Field(
+        default=None, min_length=1, max_length=100
+    )
     is_active: bool | None = None
 
     @field_validator("name", "description")
@@ -216,7 +276,9 @@ class PermissionProfileUpdate(BaseModel):
         if value is None:
             return None
         normalized = [code.strip() for code in value]
-        if any(not code for code in normalized) or len(set(normalized)) != len(normalized):
+        if any(not code for code in normalized) or len(set(normalized)) != len(
+            normalized
+        ):
             raise ValueError("Permission codes must be unique and non-empty")
         return normalized
 
@@ -228,5 +290,6 @@ class PermissionProfileResponse(BaseModel):
     is_system: bool
     is_active: bool
     permission_codes: list[str]
+    usage: dict[str, int | bool]
     created_at: datetime
     updated_at: datetime

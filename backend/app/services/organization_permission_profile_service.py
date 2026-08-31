@@ -20,7 +20,12 @@ from app.services.organization_service_shared import (
 )
 
 
-def profile_response(profile: PermissionProfile) -> PermissionProfileResponse:
+def profile_response(
+    db: Session, profile: PermissionProfile
+) -> PermissionProfileResponse:
+    usage = organization_repo.get_permission_profile_usage(
+        db=db, company_id=profile.company_id, profile_id=profile.id
+    )
     return PermissionProfileResponse(
         id=profile.id,
         name=profile.name,
@@ -32,6 +37,10 @@ def profile_response(profile: PermissionProfile) -> PermissionProfileResponse:
             for permission in profile.permissions
             if permission.permission_definition is not None
         ),
+        usage={
+            "assignments": usage["assignments"],
+            "can_delete": not profile.is_system and usage["assignments"] == 0,
+        },
         created_at=profile.created_at,
         updated_at=profile.updated_at,
     )
@@ -52,7 +61,7 @@ def list_permission_profiles(
 ) -> list[PermissionProfileResponse]:
     company_id = require_capability(db, current_user, CAPABILITY_PROFILES_READ)
     return [
-        profile_response(profile)
+        profile_response(db, profile)
         for profile in organization_repo.list_permission_profiles(db, company_id)
     ]
 
@@ -97,7 +106,7 @@ def create_permission_profile(
     )
     if not persisted:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return profile_response(persisted)
+    return profile_response(db, persisted)
 
 
 def update_permission_profile(
@@ -137,4 +146,26 @@ def update_permission_profile(
     )
     if not refreshed:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return profile_response(refreshed)
+    return profile_response(db, refreshed)
+
+
+def delete_permission_profile(
+    db: Session,
+    profile_id: int,
+    current_user: User,
+) -> None:
+    company_id = require_capability(db, current_user, CAPABILITY_PROFILES_MANAGE)
+    profile = organization_repo.get_permission_profile(
+        db, company_id=company_id, profile_id=profile_id
+    )
+    if not profile:
+        not_found("Permission profile")
+    if profile.is_system:
+        conflict("System permission profiles are managed by WorkHive")
+    usage = organization_repo.get_permission_profile_usage(
+        db, company_id=company_id, profile_id=profile_id
+    )
+    if usage["assignments"]:
+        conflict("This permission profile is still assigned to one or more people")
+    db.delete(profile)
+    db.commit()

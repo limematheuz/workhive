@@ -1,10 +1,10 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.company_membership import (
     CompanyMembership,
-    DepartmentMembership,
-    TeamMembership,
 )
 from app.models.user import User
 from app.repositories import organization as organization_repo
@@ -17,6 +17,12 @@ from app.schemas.organization import (
 )
 from app.services import organization_bootstrap_service
 from app.services.entitlement_service import require_internal_member_capacity
+from app.services.organization_department_membership_service import (
+    replace_department_memberships as replace_department_memberships_for_member,
+)
+from app.services.organization_team_membership_service import (
+    replace_team_memberships as replace_team_memberships_for_member,
+)
 from app.services.organization_service_shared import (
     CAPABILITY_MEMBERS_MANAGE,
     CAPABILITY_MEMBERS_READ,
@@ -24,6 +30,16 @@ from app.services.organization_service_shared import (
     not_found,
     require_capability,
 )
+
+
+def is_anonymized_member(user: User | None) -> bool:
+    if not user:
+        return True
+    return (
+        not user.is_active
+        and user.email.startswith("deleted+")
+        and user.email.endswith("@invalid.workhive.local")
+    )
 
 
 def member_response(
@@ -45,6 +61,8 @@ def member_response(
         email=user.email if user else "",
         access_class=membership.access_class,
         status=membership.status,
+        ended_at=membership.ended_at,
+        is_anonymized=is_anonymized_member(user),
         legacy_role_name=user.role.name if user and user.role else None,
         department_ids=sorted(
             assignment.department_id
@@ -104,93 +122,6 @@ def active_admin_count(db: Session, company_id: int) -> int:
     )
 
 
-def replace_department_memberships(
-    db: Session,
-    *,
-    company_id: int,
-    membership_id: int,
-    department_ids: list[int],
-) -> None:
-    departments = {
-        department.id: department
-        for department in organization_repo.list_departments(db, company_id)
-        if department.id in department_ids
-    }
-    if len(departments) != len(department_ids):
-        not_found("Department")
-    existing = {
-        assignment.department_id: assignment
-        for assignment in organization_repo.list_department_memberships(
-            db,
-            company_id=company_id,
-            membership_id=membership_id,
-        )
-    }
-    for department_id, assignment in existing.items():
-        if department_id not in department_ids:
-            assignment.is_active = False
-            assignment.is_primary = False
-            db.add(assignment)
-    for position, department_id in enumerate(department_ids):
-        assignment = existing.get(department_id)
-        if assignment:
-            assignment.is_active = True
-            assignment.is_primary = position == 0
-            db.add(assignment)
-        else:
-            db.add(
-                DepartmentMembership(
-                    company_id=company_id,
-                    department_id=department_id,
-                    company_membership_id=membership_id,
-                    is_primary=position == 0,
-                    is_active=True,
-                )
-            )
-
-
-def replace_team_memberships(
-    db: Session,
-    *,
-    company_id: int,
-    membership_id: int,
-    team_ids: list[int],
-) -> None:
-    teams = {
-        team.id: team
-        for team in organization_repo.list_teams(db, company_id)
-        if team.id in team_ids
-    }
-    if len(teams) != len(team_ids):
-        not_found("Team")
-    existing = {
-        assignment.team_id: assignment
-        for assignment in organization_repo.list_team_memberships(
-            db,
-            company_id=company_id,
-            membership_id=membership_id,
-        )
-    }
-    for team_id, assignment in existing.items():
-        if team_id not in team_ids:
-            assignment.is_active = False
-            db.add(assignment)
-    for team_id in team_ids:
-        assignment = existing.get(team_id)
-        if assignment:
-            assignment.is_active = True
-            db.add(assignment)
-        else:
-            db.add(
-                TeamMembership(
-                    company_id=company_id,
-                    team_id=team_id,
-                    company_membership_id=membership_id,
-                    is_active=True,
-                )
-            )
-
-
 def update_member(
     db: Session,
     membership_id: int,
@@ -236,8 +167,13 @@ def update_member(
             exclude_membership_id=membership.id,
         )
 
+    previous_status = membership.status
     membership.access_class = next_access_class
     membership.status = next_status
+    if next_status == "archived" and previous_status != "archived":
+        membership.ended_at = datetime.now(timezone.utc)
+    elif next_status == "active":
+        membership.ended_at = None
     membership.user.is_active = next_status == "active"
     db.add_all([membership, membership.user])
     if (
@@ -258,14 +194,14 @@ def update_member(
         membership.user.role = legacy_role
         db.add(membership.user)
     if payload.department_ids is not None:
-        replace_department_memberships(
+        replace_department_memberships_for_member(
             db,
             company_id=company_id,
             membership_id=membership.id,
             department_ids=payload.department_ids,
         )
     if payload.team_ids is not None:
-        replace_team_memberships(
+        replace_team_memberships_for_member(
             db,
             company_id=company_id,
             membership_id=membership.id,

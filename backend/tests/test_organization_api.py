@@ -115,7 +115,9 @@ def test_company_administrator_configures_departments_teams_and_profiles(client,
     }
 
 
-def test_profile_scopes_are_tenant_safe_and_do_not_grant_unrelated_company_access(client, db):
+def test_profile_scopes_are_tenant_safe_and_do_not_grant_unrelated_company_access(
+    client, db
+):
     _seed_permission_definitions(db)
     company = _company(db, "tenant-a")
     other_company = _company(db, "tenant-b")
@@ -193,7 +195,9 @@ def test_profile_scopes_are_tenant_safe_and_do_not_grant_unrelated_company_acces
     )
     assert own_scope.status_code == 200, own_scope.text
 
-    worker_members = client.get("/api/v1/organization/members", headers=_headers(worker))
+    worker_members = client.get(
+        "/api/v1/organization/members", headers=_headers(worker)
+    )
     assert worker_members.status_code == 403, worker_members.text
 
 
@@ -225,7 +229,9 @@ def test_demoting_an_administrator_revokes_the_global_administrator_profile(clie
     members = client.get("/api/v1/organization/members", headers=headers)
     assert members.status_code == 200, members.text
     second_membership_id = next(
-        member["id"] for member in members.json() if member["user_id"] == second_admin.id
+        member["id"]
+        for member in members.json()
+        if member["user_id"] == second_admin.id
     )
 
     response = client.patch(
@@ -237,3 +243,77 @@ def test_demoting_an_administrator_revokes_the_global_administrator_profile(clie
     assert response.json()["access_class"] == "responsible"
     assert response.json()["legacy_role_name"] == "manager"
     assert response.json()["profile_assignments"] == []
+
+
+def test_department_names_are_unique_after_normalization(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "normalized-department")
+    admin = _bootstrap_admin(db, company, "normalized-department-admin")
+    headers = _headers(admin)
+
+    first = client.post(
+        "/api/v1/organization/departments",
+        headers=headers,
+        json={"name": "Operaciones"},
+    )
+    assert first.status_code == 201, first.text
+
+    duplicate = client.post(
+        "/api/v1/organization/departments",
+        headers=headers,
+        json={"name": "  operáciones  "},
+    )
+    assert duplicate.status_code == 409, duplicate.text
+
+
+def test_team_roster_controls_deactivation_and_keeps_membership_history(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "team-roster")
+    admin = _bootstrap_admin(db, company, "team-roster-admin")
+    worker = _user(db, company, "team-roster-worker", role_id=3)
+    organization_bootstrap_service.ensure_user_membership(db, worker)
+    db.commit()
+    headers = _headers(admin)
+
+    team = client.post(
+        "/api/v1/organization/teams",
+        headers=headers,
+        json={"name": "Equipo de campo"},
+    )
+    assert team.status_code == 201, team.text
+
+    members = client.get("/api/v1/organization/members", headers=headers)
+    assert members.status_code == 200, members.text
+    worker_membership_id = next(
+        member["id"] for member in members.json() if member["user_id"] == worker.id
+    )
+
+    assign = client.put(
+        f"/api/v1/organization/teams/{team.json()['id']}/members",
+        headers=headers,
+        json={"membership_ids": [worker_membership_id]},
+    )
+    assert assign.status_code == 200, assign.text
+    assert assign.json()["usage"]["active_member_assignments"] == 1
+
+    deactivate_while_assigned = client.patch(
+        f"/api/v1/organization/teams/{team.json()['id']}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert deactivate_while_assigned.status_code == 409, deactivate_while_assigned.text
+
+    clear_roster = client.put(
+        f"/api/v1/organization/teams/{team.json()['id']}/members",
+        headers=headers,
+        json={"membership_ids": []},
+    )
+    assert clear_roster.status_code == 200, clear_roster.text
+
+    deactivated = client.patch(
+        f"/api/v1/organization/teams/{team.json()['id']}",
+        headers=headers,
+        json={"is_active": False},
+    )
+    assert deactivated.status_code == 200, deactivated.text
+    assert deactivated.json()["is_active"] is False
