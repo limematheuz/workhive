@@ -12,10 +12,7 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-    ToggleGroup,
-    ToggleGroupItem,
-} from "@/components/ui/toggle-group";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import type { Dictionary, Locale } from "@/lib/dictionary-context";
 import { cn } from "@/lib/utils";
 import type {
@@ -85,26 +82,20 @@ export function PlanCatalog({ plans, dictionary: t, locale }: PlanCatalogProps) 
             <div className="mb-6 flex flex-col items-center gap-2 text-center">
                 <span id="plan-catalogue-title" className="sr-only">{t.plans_title}</span>
                 <span className="text-xs font-semibold text-[var(--text-muted)]">{t.billing_toggle_label}</span>
-                <ToggleGroup
-                    type="single"
-                    value={billingInterval}
-                    onValueChange={(value) => {
-                        if (value === "monthly" || value === "annual") setBillingInterval(value);
-                    }}
-                    variant="outline"
-                    className="overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-1"
-                    aria-label={t.billing_toggle_label}
-                >
-                    <ToggleGroupItem value="monthly" className="rounded-lg px-5 text-sm data-[state=on]:bg-accent data-[state=on]:text-white data-[state=on]:hover:bg-accent">
-                        {t.billing_intervals.monthly}
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="annual" className="rounded-lg px-5 text-sm data-[state=on]:bg-accent data-[state=on]:text-white data-[state=on]:hover:bg-accent">
-                        {t.billing_intervals.annual}
-                    </ToggleGroupItem>
-                </ToggleGroup>
+                <div className="w-full max-w-sm">
+                    <PremiumTabs<BillingInterval>
+                        className="w-full"
+                        tabs={[
+                            { id: "monthly", label: t.billing_intervals.monthly },
+                            { id: "annual", label: t.billing_intervals.annual },
+                        ]}
+                        activeTab={billingInterval}
+                        onChange={setBillingInterval}
+                    />
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+            <div className="grid items-start grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
                 {orderedPlans.map((plan, index) => {
                     const previousPlan = index > 0 ? orderedPlans[index - 1] : undefined;
                     const features = featureEntitlements(plan);
@@ -135,7 +126,7 @@ export function PlanCatalog({ plans, dictionary: t, locale }: PlanCatalogProps) 
                         <AuthGlassCard
                             key={plan.code}
                             className={cn(
-                                "billing-surface flex min-w-0 flex-col border-[var(--border-soft)] p-5 sm:p-6 xl:col-span-2",
+                                "billing-surface self-start flex min-w-0 flex-col border-[var(--border-soft)] p-5 sm:p-6 xl:col-span-2",
                                 index === 3 && "xl:col-start-2",
                                 isRecommended && "border-accent/55 bg-[color-mix(in_srgb,var(--accent-color)_12%,var(--glass-sheet-bg))] shadow-[0_18px_48px_color-mix(in_srgb,var(--accent-color)_16%,transparent)] ring-1 ring-accent/40",
                             )}
@@ -155,11 +146,14 @@ export function PlanCatalog({ plans, dictionary: t, locale }: PlanCatalogProps) 
                                 )}
                             </div>
 
-                            <div className="mt-5 rounded-2xl border border-accent/20 bg-accent/5 p-4">
+                            <div className="mt-5 border-y border-[var(--border-soft)] py-4">
                                 {selectedPrice ? (
                                     <>
+                                        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                                            {t.price_per_company}
+                                        </p>
                                         <div className="flex items-end gap-1.5">
-                                            <span className="text-3xl font-bold tracking-tight text-[var(--text-main)]">
+                                            <span className="text-4xl font-bold tracking-tight text-[var(--text-main)]">
                                                 {formatCurrency(
                                                     billingInterval === "annual"
                                                         ? selectedPrice.amount_cents / 12
@@ -171,13 +165,21 @@ export function PlanCatalog({ plans, dictionary: t, locale }: PlanCatalogProps) 
                                                 {t.per_month}
                                             </span>
                                         </div>
-                                        <p className="mt-1 text-xs text-[var(--text-muted)]">{t.tax_exclusive}</p>
-                                        {billingInterval === "annual" && (
-                                            <p className="mt-2 text-xs font-semibold text-accent">
-                                                {t.billed_annually.replace("{amount}", formatCurrency(selectedPrice.amount_cents, locale))}
-                                                {annualSavings > 0 && ` · ${t.save_annually.replace("{amount}", formatCurrency(annualSavings, locale))}`}
-                                            </p>
-                                        )}
+                                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                                            <span className="text-[var(--text-muted)]">{t.tax_exclusive}</span>
+                                            {billingInterval === "annual" && (
+                                                <>
+                                                    <span className="text-[var(--text-muted)]">
+                                                        {t.billed_annually.replace("{amount}", formatCurrency(selectedPrice.amount_cents, locale))}
+                                                    </span>
+                                                    {annualSavings > 0 && (
+                                                        <Badge variant="outline" className="border-accent/30 bg-accent/10 px-2 py-0.5 text-[10px] font-bold text-accent hover:bg-accent/10">
+                                                            {t.save_annually.replace("{amount}", formatCurrency(annualSavings, locale))}
+                                                        </Badge>
+                                                    )}
+                                                </>
+                                            )}
+                                        </div>
                                     </>
                                 ) : (
                                     <p className="text-sm font-semibold text-[var(--text-main)]">{t.price_on_request}</p>
@@ -264,7 +266,7 @@ export function PlanCatalog({ plans, dictionary: t, locale }: PlanCatalogProps) 
                     );
                 })}
 
-                <AuthGlassCard className="billing-surface flex min-w-0 flex-col border-dashed border-accent/35 bg-[color-mix(in_srgb,var(--accent-color)_7%,var(--glass-sheet-bg))] p-5 sm:p-6 xl:col-span-2">
+                <AuthGlassCard className="billing-surface self-start flex min-w-0 flex-col border-dashed border-accent/35 bg-[color-mix(in_srgb,var(--accent-color)_7%,var(--glass-sheet-bg))] p-5 sm:p-6 xl:col-span-2">
                     <div className="flex size-10 items-center justify-center rounded-xl border border-accent/25 bg-accent/10 text-accent">
                         <Sparkles className="size-5" aria-hidden="true" />
                     </div>

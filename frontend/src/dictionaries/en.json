@@ -1003,6 +1003,7 @@
       "annual": "Annual"
     },
     "per_month": "/month",
+    "price_per_company": "Price per company",
     "tax_exclusive": "VAT not included",
     "billed_annually": "{amount} billed annually",
     "save_annually": "Save {amount} per year",

@@ -95,8 +95,9 @@ test("subscription uses the versioned public catalog and guided Stripe purchase 
     assert.match(subscription, /billingService\.listPublicPlans/);
     assert.match(subscription, /PlanCatalog/);
     assert.match(catalog, /checkout_available/);
-    assert.match(catalog, /ToggleGroup/);
+    assert.match(catalog, /PremiumTabs/);
     assert.match(catalog, /Collapsible/);
+    assert.match(catalog, /items-start/);
     assert.match(catalog, /billing_interval/);
     assert.match(catalog, /prices/);
     assert.match(catalog, /plan-custom/);

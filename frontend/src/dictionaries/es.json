@@ -1003,6 +1003,7 @@
       "annual": "Anual"
     },
     "per_month": "/mes",
+    "price_per_company": "Precio por empresa",
     "tax_exclusive": "IVA no incluido",
     "billed_annually": "{amount} facturados al año",
     "save_annually": "Ahorras {amount} al año",
