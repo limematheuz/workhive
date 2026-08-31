@@ -40,7 +40,6 @@ test("Team keeps people and partner companies separate", () => {
     assert.doesNotMatch(service, /activateCompanyInvitation/);
     assert.match(service, /declineCompanyInvitationWithoutAccount/);
     assert.match(service, /verifyCompanyInvitationAccess/);
-    assert.match(service, /verifyCompanyInvitationCode/);
     assert.match(service, /\/api\/v1\/collaborations\/invitations/);
     assert.match(acceptance, /acceptCompanyInvitation/);
     assert.match(acceptance, /requires-subscription/);
@@ -48,7 +47,7 @@ test("Team keeps people and partner companies separate", () => {
     assert.match(acceptance, /href="\/subscription"/);
     assert.match(acceptance, /verifyCompanyInvitationAccess/);
     assert.match(acceptance, /verificationCode/);
-    assert.match(acceptance, /verifyCompanyInvitationCode/);
+    assert.match(acceptance, /acceptCompanyInvitation\(token, normalizedCode\)/);
     assert.match(acceptance, /non-admin/);
     assert.doesNotMatch(acceptance, /CompanyInvitationSignupWizard/);
     assert.match(acceptance, /window\.location\.hash/);

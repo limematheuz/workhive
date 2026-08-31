@@ -43,6 +43,10 @@ function getCheckoutErrorMessage(error: unknown, t: ReturnType<typeof useDiction
     return t.checkout_error;
 }
 
+function redirectToStripe(checkoutUrl: string): void {
+    window.location.assign(getTrustedExternalUrl(checkoutUrl));
+}
+
 function EmptyPlanState() {
     const { dict } = useDictionary();
     const t = dict.subscription;
@@ -109,10 +113,6 @@ function CheckoutContent() {
 
     const updateField = (field: TextField, value: string) => {
         setForm((current) => ({ ...current, [field]: value }));
-    };
-
-    const redirectToStripe = (checkoutUrl: string) => {
-        window.location.assign(getTrustedExternalUrl(checkoutUrl));
     };
 
     const startExistingCheckout = async () => {
