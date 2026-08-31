@@ -6,13 +6,13 @@ import {
 import { Company } from "@/types/company";
 
 export const CollaborationService = {
-    getCompanyInvitationActivationStatus: async (token: string): Promise<"create_account" | "sign_in"> => {
+    getCompanyInvitationActivationStatus: async (token: string): Promise<"requires_subscription" | "sign_in"> => {
         const response = await apiFetch("/api/v1/collaborations/invitations/activation-status", {
             method: "POST",
             body: JSON.stringify({ token }),
         });
         await assertApiResponseOk(response, "Could not read the company invitation");
-        const data = await response.json() as { mode: "create_account" | "sign_in" };
+        const data = await response.json() as { mode: "requires_subscription" | "sign_in" };
         return data.mode;
     },
 
@@ -55,56 +55,6 @@ export const CollaborationService = {
         await assertApiResponseOk(response, "Could not verify the company invitation code");
         const data = await response.json() as { email: string };
         return data.email;
-    },
-
-    activateCompanyInvitation: async (payload: {
-        token: string;
-        verificationCode: string;
-        fullName: string;
-        companyName: string;
-        taxId: string;
-        address: string;
-        phone: string;
-        password: string;
-    }): Promise<void> => {
-        const response = await apiFetch("/api/v1/collaborations/invitations/activate", {
-            method: "POST",
-            body: JSON.stringify({
-                token: payload.token,
-                verification_code: payload.verificationCode,
-                full_name: payload.fullName,
-                company_name: payload.companyName,
-                tax_id: payload.taxId,
-                address: payload.address,
-                phone: payload.phone,
-                password: payload.password,
-                accept_terms: true,
-                accept_privacy: true,
-            }),
-        });
-        await assertApiResponseOk(response, "Could not activate the company invitation");
-    },
-
-    activateCompanyInvitationForExistingAccount: async (payload: {
-        token: string;
-        verificationCode: string;
-        companyName: string;
-        taxId: string;
-        address: string;
-        phone: string;
-    }): Promise<void> => {
-        const response = await apiFetch("/api/v1/collaborations/invitations/activate-existing-account", {
-            method: "POST",
-            body: JSON.stringify({
-                token: payload.token,
-                verification_code: payload.verificationCode,
-                company_name: payload.companyName,
-                tax_id: payload.taxId,
-                address: payload.address,
-                phone: payload.phone,
-            }),
-        });
-        await assertApiResponseOk(response, "Could not activate the company invitation");
     },
 
     acceptCompanyInvitation: async (token: string, verificationCode: string): Promise<CompanyCollaboration> => {

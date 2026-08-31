@@ -3,7 +3,12 @@ from datetime import datetime, timedelta, timezone
 from app.core.security import get_password_hash
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership
-from app.models.subscription_entitlement import EntitlementChangeAudit, PlanCatalogAudit
+from app.models.subscription_entitlement import (
+    EntitlementChangeAudit,
+    PlanCatalogAudit,
+    PlanPrice,
+    SubscriptionPlan,
+)
 from app.models.user import User
 from app.services import company_entitlement_service
 from credentials import TEST_SECRET, TEST_SUPER, login_form
@@ -264,6 +269,16 @@ def test_platform_superadmin_publishes_a_new_plan_version_without_changing_old_s
         for item in changed.json()["entitlements"]
         if item["code"] == "limits.internal_workers"
     )["value"] == 125
+    assert (
+        db.query(PlanPrice)
+        .join(SubscriptionPlan)
+        .filter(
+            SubscriptionPlan.code == "top",
+            SubscriptionPlan.version == changed.json()["version"],
+        )
+        .count()
+        == 2
+    )
     assert (
         db.query(PlanCatalogAudit)
         .filter_by(plan_code="top", reason="New public Top package")

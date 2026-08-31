@@ -333,7 +333,7 @@ def test_company_email_invitation_can_be_declined_and_notifies_both_companies(cl
     assert client.get("/api/v1/collaborations/", headers=inviter_headers).json() == []
 
 
-def test_new_company_can_activate_directly_from_a_valid_invitation(client, monkeypatch):
+def test_company_invitation_requires_an_existing_subscribed_company(client, db, monkeypatch):
     inviter_headers = _register_company(
         client,
         suffix="activation-inviter",
@@ -341,14 +341,9 @@ def test_new_company_can_activate_directly_from_a_valid_invitation(client, monke
         secret=TEST_SECRET_A,
     )
     delivery: dict[str, object] = {}
-    decisions: list[dict[str, object]] = []
     monkeypatch.setattr(
         "app.services.email_service.send_company_collaboration_invitation_email",
         lambda **kwargs: delivery.update(kwargs) or True,
-    )
-    monkeypatch.setattr(
-        "app.services.email_service.send_company_collaboration_decision_email",
-        lambda **kwargs: decisions.append(kwargs) or True,
     )
     assert client.post(
         "/api/v1/collaborations/invitations",
@@ -362,58 +357,12 @@ def test_new_company_can_activate_directly_from_a_valid_invitation(client, monke
         json={"token": payload["token"]},
     )
     assert status_response.status_code == 200, status_response.text
-    assert status_response.json() == {"mode": "create_account"}
-
-    rejected_code = client.post(
-        "/api/v1/collaborations/invitations/activate",
-        json={
-            **payload,
-            "verification_code": "WRONGCODE1",
-            "full_name": "New company admin",
-            "company_name": "New partner company",
-            "tax_id": "ACTIVATION-NEW",
-            "address": "Partner Street 2",
-            "phone": "600000002",
-            "password": TEST_SECRET_B,
-            "accept_terms": True,
-            "accept_privacy": True,
-        },
-    )
-    assert rejected_code.status_code == 400, rejected_code.text
-
-    activated = client.post(
-        "/api/v1/collaborations/invitations/activate",
-        json={
-            **payload,
-            "full_name": "New company admin",
-            "company_name": "New partner company",
-            "tax_id": "ACTIVATION-NEW",
-            "address": "Partner Street 2",
-            "phone": "600000002",
-            "password": TEST_SECRET_B,
-            "accept_terms": True,
-            "accept_privacy": True,
-        },
-    )
-    assert activated.status_code == 201, activated.text
-    assert activated.json() == {"status": "accepted"}
-    assert {item["recipient_email"] for item in decisions} == {
-        "activation-inviter@workhive.com",
-        "new-company-admin@workhive.com",
-    }
-
-    login = client.post(
-        "/api/v1/auth/login",
-        data=login_form("new-company-admin@workhive.com", TEST_SECRET_B),
-    )
-    assert login.status_code == 200, login.text
-    new_company_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
-    collaborations = client.get("/api/v1/collaborations/", headers=new_company_headers)
-    assert collaborations.status_code == 200, collaborations.text
-    assert collaborations.json()[0]["role_type"] == "property_manager"
+    assert status_response.json() == {"mode": "requires_subscription"}
+    assert db.query(User).filter(User.email == "new-company-admin@workhive.com").first() is None
+    assert "/api/v1/collaborations/invitations/activate" not in client.app.openapi()["paths"]
 
 
-def test_existing_companyless_account_can_finish_company_invitation_after_sign_in(client, monkeypatch):
+def test_companyless_account_is_directed_to_subscription_before_acceptance(client, monkeypatch):
     inviter_headers = _register_company(
         client,
         suffix="existing-account-inviter",
@@ -442,12 +391,6 @@ def test_existing_companyless_account_can_finish_company_invitation_after_sign_i
             TEST_SECRET_B,
         ),
     ).status_code == 201
-    login = client.post(
-        "/api/v1/auth/login",
-        data=login_form("companyless@workhive.com", TEST_SECRET_B),
-    )
-    assert login.status_code == 200, login.text
-    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
     assert client.post(
         "/api/v1/collaborations/invitations",
         headers=inviter_headers,
@@ -458,20 +401,7 @@ def test_existing_companyless_account_can_finish_company_invitation_after_sign_i
     assert client.post(
         "/api/v1/collaborations/invitations/activation-status",
         json={"token": payload["token"]},
-    ).json() == {"mode": "sign_in"}
-    response = client.post(
-        "/api/v1/collaborations/invitations/activate-existing-account",
-        headers=headers,
-        json={
-            **payload,
-            "company_name": "Existing user company",
-            "tax_id": "ACTIVATION-EXISTING",
-            "address": "Existing Street 3",
-            "phone": "600000003",
-        },
-    )
-    assert response.status_code == 200, response.text
-    assert response.json() == {"status": "accepted"}
+    ).json() == {"mode": "requires_subscription"}
 
 
 def test_new_recipient_can_decline_without_creating_an_account(client, monkeypatch):
@@ -576,65 +506,6 @@ def test_company_invitation_never_upgrades_an_internal_role_without_a_company(
     assert "administrator email" in response.json()["detail"]
 
 
-def test_existing_internal_account_cannot_activate_a_legacy_company_invitation(
-    client, db, monkeypatch
-):
-    inviter_headers = _register_company(
-        client,
-        suffix="legacy-role-inviter",
-        email="legacy-role-inviter@workhive.com",
-        secret=TEST_SECRET_A,
-    )
-    internal_email = "legacy-accountant@workhive.com"
-    assert client.post(
-        "/api/v1/auth/register",
-        json=with_credential(
-            {
-                "email": internal_email,
-                "full_name": "Legacy accountant",
-                "accept_terms": True,
-                "accept_privacy": True,
-                "policy_version": "2026-06-15",
-            },
-            TEST_SECRET_B,
-        ),
-    ).status_code == 201
-    login = client.post(
-        "/api/v1/auth/login",
-        data=login_form(internal_email, TEST_SECRET_B),
-    )
-    assert login.status_code == 200, login.text
-    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
-    delivery: dict[str, object] = {}
-    monkeypatch.setattr(
-        "app.services.email_service.send_company_collaboration_invitation_email",
-        lambda **kwargs: delivery.update(kwargs) or True,
-    )
-    assert client.post(
-        "/api/v1/collaborations/invitations",
-        headers=inviter_headers,
-        json={"email": internal_email},
-    ).status_code == 202
-    internal_user = db.query(User).filter(User.email == internal_email).one()
-    internal_user.role_id = 5
-    db.commit()
-
-    response = client.post(
-        "/api/v1/collaborations/invitations/activate-existing-account",
-        headers=headers,
-        json={
-            **_accept_payload(delivery),
-            "company_name": "Should not be created",
-            "tax_id": "LEGACY-ROLE-BLOCKED",
-            "address": "Blocked Street 1",
-            "phone": "600000005",
-        },
-    )
-
-    assert response.status_code == 409, response.text
-    assert "internal role" in response.json()["detail"]
-
-
 def test_company_invitation_verifies_the_email_code_before_account_creation(client, monkeypatch):
     inviter_headers = _register_company(
         client,
@@ -703,18 +574,47 @@ def test_reloading_invitation_status_does_not_block_code_verification(client, mo
     )
     assert limited.status_code == 429, limited.text
 
-    activated = client.post(
-        "/api/v1/collaborations/invitations/activate",
-        json={
-            **payload,
-            "full_name": "Status limit admin",
-            "company_name": "Status limit company",
-            "tax_id": "STATUS-LIMIT-NEW",
-            "address": "Status Street 1",
-            "phone": "600000004",
-            "password": TEST_SECRET_B,
-            "accept_terms": True,
-            "accept_privacy": True,
-        },
+    verified = client.post(
+        "/api/v1/collaborations/invitations/verify-code",
+        json=payload,
     )
-    assert activated.status_code == 201, activated.text
+    assert verified.status_code == 200, verified.text
+
+
+def test_company_invitation_acceptance_requires_active_subscription_for_both_companies(
+    client, db, monkeypatch
+):
+    inviter_headers = _register_company(
+        client,
+        suffix="contract-inviter",
+        email="contract-inviter@workhive.com",
+        secret=TEST_SECRET_A,
+    )
+    recipient_headers = _register_company(
+        client,
+        suffix="contract-recipient",
+        email="contract-recipient@workhive.com",
+        secret=TEST_SECRET_B,
+    )
+    delivery: dict[str, object] = {}
+    monkeypatch.setattr(
+        "app.services.email_service.send_company_collaboration_invitation_email",
+        lambda **kwargs: delivery.update(kwargs) or True,
+    )
+    assert client.post(
+        "/api/v1/collaborations/invitations",
+        headers=inviter_headers,
+        json={"email": "contract-recipient@workhive.com"},
+    ).status_code == 202
+
+    inviter = db.query(User).filter(User.email == "contract-inviter@workhive.com").one()
+    inviter.company.subscription_status = "canceled"
+    db.commit()
+
+    response = client.post(
+        "/api/v1/collaborations/invitations/accept",
+        headers=recipient_headers,
+        json=_accept_payload(delivery),
+    )
+    assert response.status_code == 402
+    assert response.headers["X-WorkHive-Error-Code"] == "subscription.canceled"

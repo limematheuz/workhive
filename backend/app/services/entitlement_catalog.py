@@ -4,8 +4,9 @@ from typing import TypeAlias
 
 from sqlalchemy.orm import Session
 
-from app.models.subscription_entitlement import PlanEntitlement, SubscriptionPlan
+from app.models.subscription_entitlement import PlanEntitlement, PlanPrice, SubscriptionPlan
 from app.repositories import subscription_entitlement as entitlement_repo
+from app.services.plan_pricing_service import DEFAULT_PLAN_PRICE_VALUES
 
 
 EntitlementValue: TypeAlias = bool | int
@@ -231,4 +232,15 @@ def seed_default_plan_catalog(db: Session) -> None:
                     else None,
                 )
             )
+        if code in DEFAULT_PLAN_PRICE_VALUES and not plan.prices:
+            for billing_interval, amount_cents in DEFAULT_PLAN_PRICE_VALUES[code].items():
+                db.add(
+                    PlanPrice(
+                        plan_id=plan.id,
+                        billing_interval=billing_interval,
+                        amount_cents=amount_cents,
+                        currency="EUR",
+                        tax_behavior="exclusive",
+                    )
+                )
     db.flush()

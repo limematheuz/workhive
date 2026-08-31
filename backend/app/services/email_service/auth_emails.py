@@ -128,3 +128,47 @@ def send_email_changed_notice(
     message.set_content(plain_text)
     message.add_alternative(html_body, subtype="html")
     return transport.send_email(message)
+
+
+def send_paid_company_activation_email(
+    *,
+    recipient_email: str,
+    recipient_name: str,
+    company_name: str,
+    plan_name: str,
+    activation_url: str,
+) -> bool:
+    """Send the one-time link that creates a paid customer's tenant."""
+
+    b = _BRAND
+    safe_name = escape(recipient_name)
+    safe_company_name = escape(company_name)
+    safe_plan_name = escape(plan_name)
+    html_body = base_layout(
+        f"""
+{heading("Tu empresa está lista para activarse")}
+{lead(f'Hola <strong style="color:{b["text"]};">{safe_name}</strong>, hemos confirmado el pago de <strong style="color:{b["text"]};">{safe_plan_name}</strong> para <strong style="color:{b["text"]};">{safe_company_name}</strong>.')}
+{button(activation_url, "Crear acceso seguro")}
+{muted_note("Este enlace es personal y caduca en 7 días. Al continuar elegirás la contraseña de la cuenta administradora.")}
+{fallback_link(activation_url)}
+""",
+        preview_text="Activa tu empresa en WorkHive",
+    )
+    plain_text = plain_body(
+        [
+            f"Hola {recipient_name},",
+            "",
+            f"Hemos confirmado el pago de {plan_name} para {company_name}.",
+            "Crea el acceso seguro de la cuenta administradora aquí:",
+            activation_url,
+            "",
+            "Este enlace es personal y caduca en 7 días.",
+        ]
+    )
+    message = EmailMessage()
+    message["Subject"] = "Activa tu empresa en WorkHive"
+    message["From"] = transport.from_address("Acceso")
+    message["To"] = recipient_email
+    message.set_content(plain_text)
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)

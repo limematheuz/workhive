@@ -231,7 +231,10 @@ def test_superadmin_can_revoke_subscription_access_and_sessions(client, db):
         "/api/v1/auth/login",
         data=login_form("admin@cancelled.com", TEST_TEMP),
     )
-    assert new_login.status_code == 402
+    assert new_login.status_code == 200
+    new_owner_headers = {"Authorization": f"Bearer {new_login.json()['access_token']}"}
+    blocked_operational_access = client.get("/api/v1/users/me", headers=new_owner_headers)
+    assert blocked_operational_access.status_code == 402
 
 
 def test_only_superadmin_can_list_all_company_members(client, db):

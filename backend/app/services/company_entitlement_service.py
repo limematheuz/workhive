@@ -39,10 +39,15 @@ def synchronize_company_subscription(
     actor_user_id: int | None = None,
     now: datetime | None = None,
     audit_action: str = "subscription.synchronized",
+    plan_id: int | None = None,
 ) -> CompanySubscription:
     current_time = now or _utcnow()
-    plan = entitlement_repo.get_active_plan(
-        db, code=legacy_plan_code(company.subscription_plan)
+    plan = (
+        entitlement_repo.get_plan_by_id(db, plan_id=plan_id)
+        if plan_id is not None
+        else entitlement_repo.get_active_plan(
+            db, code=legacy_plan_code(company.subscription_plan)
+        )
     )
     if plan is None:
         raise RuntimeError("The WorkHive plan catalogue is not installed")

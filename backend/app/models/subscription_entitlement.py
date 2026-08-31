@@ -43,6 +43,9 @@ class SubscriptionPlan(Base):
     entitlements = relationship(
         "PlanEntitlement", back_populates="plan", cascade="all, delete-orphan"
     )
+    prices = relationship(
+        "PlanPrice", back_populates="plan", cascade="all, delete-orphan"
+    )
     subscriptions = relationship("CompanySubscription", back_populates="plan")
 
 
@@ -86,6 +89,45 @@ class PlanEntitlement(Base):
     )
 
     plan = relationship("SubscriptionPlan", back_populates="entitlements")
+
+
+class PlanPrice(Base):
+    """One published commercial rate for a versioned WorkHive plan."""
+
+    __tablename__ = "plan_prices"
+    __table_args__ = (
+        CheckConstraint(
+            "billing_interval IN ('monthly', 'annual')",
+            name="ck_plan_price_billing_interval",
+        ),
+        CheckConstraint(
+            "amount_cents >= 0", name="ck_plan_price_amount_non_negative"
+        ),
+        CheckConstraint(
+            "tax_behavior IN ('exclusive', 'inclusive')",
+            name="ck_plan_price_tax_behavior",
+        ),
+        UniqueConstraint(
+            "plan_id", "billing_interval", name="uq_plan_price_plan_interval"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    plan_id = Column(
+        Integer,
+        ForeignKey("subscription_plans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    billing_interval = Column(String(20), nullable=False)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String(3), nullable=False, default="EUR")
+    tax_behavior = Column(String(20), nullable=False, default="exclusive")
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    plan = relationship("SubscriptionPlan", back_populates="prices")
 
 
 class PlanCatalogAudit(Base):
