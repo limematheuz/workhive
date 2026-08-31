@@ -7,6 +7,7 @@ import { ActionPopover, type PopoverOption } from "@/components/ui/action-popove
 import { MemberAccessDialog } from "@/components/organization/MemberAccessDialog";
 import { OrganizationDepartmentsPanel } from "@/components/organization/OrganizationDepartmentsPanel";
 import { OrganizationInvitePersonDialog } from "@/components/organization/OrganizationInvitePersonDialog";
+import { OrganizationTableFilters } from "@/components/organization/OrganizationTableFilters";
 import { OrganizationTeamsPanel } from "@/components/organization/OrganizationTeamsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,13 @@ import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getErrorMessage } from "@/lib/errors";
+import {
+    filterOrganizationMembers,
+    filterPermissionProfiles,
+    isHistoricalOrganizationMember,
+    type MemberFilters,
+    type PermissionProfileFilters,
+} from "@/lib/organization-filters";
 import { cn } from "@/lib/utils";
 import { getUserDeletionErrorMessage } from "@/lib/user-deletion";
 import { toast } from "@/lib/toast";
@@ -48,12 +56,6 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 type OrganizationTab = "people" | "departments" | "teams" | "profiles";
 type CreateKind = "department" | "team" | "profile" | null;
 const ORGANIZATION_PAGE_SIZE = 20;
-
-function isHistoricalMember(member: OrganizationMember) {
-    return member.status === "archived" || member.is_anonymized || (
-        member.email.startsWith("deleted+") && member.email.endsWith("@invalid.workhive.local")
-    );
-}
 
 type OrganizationData = {
     members: OrganizationMember[];
@@ -347,22 +349,76 @@ function MembersTable({
 }) {
     const { dict } = useDictionary();
     const copy = dict.organization.people;
-    const activeMembers = members.filter((member) => !isHistoricalMember(member) && member.status === "active");
-    const suspendedMembers = members.filter((member) => !isHistoricalMember(member) && member.status !== "active");
-    const historicalMembers = members.filter(isHistoricalMember);
+    const [filters, setFilters] = useState<MemberFilters>({
+        search: "",
+        accessClass: "all",
+        status: "all",
+    });
+    const filteredMembers = useMemo(
+        () => filterOrganizationMembers(members, filters),
+        [members, filters],
+    );
+    const activeMembers = filteredMembers.filter((member) => !isHistoricalOrganizationMember(member) && member.status === "active");
+    const suspendedMembers = filteredMembers.filter((member) => !isHistoricalOrganizationMember(member) && member.status === "suspended");
+    const historicalMembers = filteredMembers.filter(isHistoricalOrganizationMember);
+    const hasActiveFilters = filters.search.trim() !== "" || filters.accessClass !== "all" || filters.status !== "all";
+    const updateFilters = (update: Partial<MemberFilters>) => {
+        setFilters((current) => ({ ...current, ...update }));
+    };
+    const clearFilters = () => {
+        setFilters({ search: "", accessClass: "all", status: "all" });
+    };
     return (
         <div className="space-y-6">
-            <CurrentMembersTable
-                members={activeMembers}
-                title={copy.active_title}
-                subtitle={copy.active_description}
-                empty={copy.active_empty}
-                onSelect={onSelect}
-                onDelete={onDelete}
-                canDelete={canDelete}
-                currentUserId={currentUserId}
-            />
-            {suspendedMembers.length > 0 && (
+            <section className="billing-surface overflow-hidden rounded-[26px]">
+                <OrganizationTableFilters
+                    search={filters.search}
+                    onSearchChange={(search) => updateFilters({ search })}
+                    searchPlaceholder={dict.organization.filters.search_people}
+                    shownCount={filteredMembers.length}
+                    totalCount={members.length}
+                    summary={dict.organization.filters.summary}
+                    clearLabel={dict.organization.filters.clear}
+                    onClear={clearFilters}
+                    hasActiveFilters={hasActiveFilters}
+                >
+                    <Select value={filters.accessClass} onValueChange={(accessClass) => updateFilters({ accessClass: accessClass as MemberFilters["accessClass"] })}>
+                        <SelectTrigger className="h-10 w-full sm:w-44" aria-label={copy.columns.type}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{dict.organization.filters.all_access_classes}</SelectItem>
+                            <SelectItem value="admin">{dict.organization.access.admin}</SelectItem>
+                            <SelectItem value="responsible">{dict.organization.access.responsible}</SelectItem>
+                            <SelectItem value="worker">{dict.organization.access.worker}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={filters.status} onValueChange={(status) => updateFilters({ status: status as MemberFilters["status"] })}>
+                        <SelectTrigger className="h-10 w-full sm:w-44" aria-label={copy.columns.status}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{dict.organization.filters.all_statuses}</SelectItem>
+                            <SelectItem value="active">{dict.organization.access.active}</SelectItem>
+                            <SelectItem value="suspended">{dict.organization.access.suspended}</SelectItem>
+                            <SelectItem value="archived">{dict.organization.access.archived}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </OrganizationTableFilters>
+            </section>
+            {filteredMembers.length === 0 && members.length > 0 ? (
+                <OrganizationFilterEmptyState message={dict.organization.filters.empty} />
+            ) : (
+                <>
+                    {(activeMembers.length > 0 || members.length === 0) && (
+                        <CurrentMembersTable
+                            members={activeMembers}
+                            title={copy.active_title}
+                            subtitle={copy.active_description}
+                            empty={copy.active_empty}
+                            onSelect={onSelect}
+                            onDelete={onDelete}
+                            canDelete={canDelete}
+                            currentUserId={currentUserId}
+                        />
+                    )}
+                    {suspendedMembers.length > 0 && (
                 <CurrentMembersTable
                     members={suspendedMembers}
                     title={copy.suspended_title}
@@ -374,7 +430,9 @@ function MembersTable({
                     currentUserId={currentUserId}
                 />
             )}
-            {historicalMembers.length > 0 && <MemberHistoryTable members={historicalMembers} departments={departments} teams={teams} />}
+                    {historicalMembers.length > 0 && <MemberHistoryTable members={historicalMembers} departments={departments} teams={teams} />}
+                </>
+            )}
         </div>
     );
 }
@@ -605,15 +663,63 @@ function ProfilesTable({
         () => new Map(definitions.map((definition) => [definition.code, definition])),
         [definitions],
     );
-    const pagination = useDataTablePagination(profiles, ORGANIZATION_PAGE_SIZE);
+    const [filters, setFilters] = useState<PermissionProfileFilters>({
+        search: "",
+        type: "all",
+        status: "all",
+    });
+    const filteredProfiles = useMemo(
+        () => filterPermissionProfiles(profiles, filters),
+        [profiles, filters],
+    );
+    const pagination = useDataTablePagination(filteredProfiles, ORGANIZATION_PAGE_SIZE);
+    const hasActiveFilters = filters.search.trim() !== "" || filters.type !== "all" || filters.status !== "all";
+    const updateFilters = (update: Partial<PermissionProfileFilters>) => {
+        setFilters((current) => ({ ...current, ...update }));
+        pagination.setPage(1);
+    };
+    const clearFilters = () => {
+        setFilters({ search: "", type: "all", status: "all" });
+        pagination.setPage(1);
+    };
     return (
         <OrganizationTableShell
             title={copy.profiles.title}
             description={copy.profiles.description}
-            countLabel={`${profiles.length} ${profiles.length === 1 ? copy.profiles.count_one : copy.profiles.count_many}`}
-            empty={copy.profiles.empty}
-            hasItems={profiles.length > 0}
+            countLabel={`${filteredProfiles.length} ${filteredProfiles.length === 1 ? copy.profiles.count_one : copy.profiles.count_many}`}
         >
+            <OrganizationTableFilters
+                search={filters.search}
+                onSearchChange={(search) => updateFilters({ search })}
+                searchPlaceholder={copy.filters.search_profiles}
+                shownCount={filteredProfiles.length}
+                totalCount={profiles.length}
+                summary={copy.filters.summary}
+                clearLabel={copy.filters.clear}
+                onClear={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+            >
+                <Select value={filters.type} onValueChange={(type) => updateFilters({ type: type as PermissionProfileFilters["type"] })}>
+                    <SelectTrigger className="h-10 w-full sm:w-52" aria-label={copy.people.columns.type}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{copy.filters.all_profile_types}</SelectItem>
+                        <SelectItem value="system">{copy.filters.system_profiles}</SelectItem>
+                        <SelectItem value="custom">{copy.filters.custom_profiles}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={filters.status} onValueChange={(status) => updateFilters({ status: status as PermissionProfileFilters["status"] })}>
+                    <SelectTrigger className="h-10 w-full sm:w-44" aria-label={copy.people.columns.status}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{copy.filters.all_statuses}</SelectItem>
+                        <SelectItem value="active">{copy.access.active}</SelectItem>
+                        <SelectItem value="inactive">{copy.access.inactive}</SelectItem>
+                    </SelectContent>
+                </Select>
+            </OrganizationTableFilters>
+            {filteredProfiles.length === 0 ? (
+                <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{profiles.length === 0 ? copy.profiles.empty : copy.filters.empty}</p>
+            ) : (
+                <>
             <Table className="table-fixed text-left">
                 <TableHeader>
                     <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
@@ -674,7 +780,9 @@ function ProfilesTable({
                     })}
                 </TableBody>
             </Table>
-            <OrganizationTablePagination pagination={pagination} totalItems={profiles.length} />
+            <OrganizationTablePagination pagination={pagination} totalItems={filteredProfiles.length} />
+                </>
+            )}
         </OrganizationTableShell>
     );
 }
@@ -707,15 +815,11 @@ function OrganizationTableShell({
     title,
     description,
     countLabel,
-    empty,
-    hasItems,
     children,
 }: {
     title: string;
     description: string;
     countLabel: string;
-    empty: string;
-    hasItems: boolean;
     children: React.ReactNode;
 }) {
     return (
@@ -727,9 +831,13 @@ function OrganizationTableShell({
                 </div>
                 <p className="text-sm font-medium text-[var(--text-muted)]">{countLabel}</p>
             </header>
-            {hasItems ? children : <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{empty}</p>}
+            {children}
         </section>
     );
+}
+
+function OrganizationFilterEmptyState({ message }: { message: string }) {
+    return <section className="billing-surface rounded-[26px] px-5 py-16 text-center text-sm text-[var(--text-muted)]">{message}</section>;
 }
 
 function CreateOrganizationDialog({

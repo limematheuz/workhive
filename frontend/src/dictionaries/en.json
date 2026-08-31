@@ -1996,6 +1996,22 @@
       "suspended": "Suspended",
       "archived": "Archived"
     },
+    "filters": {
+      "search_people": "Search by name, email, or profile",
+      "search_departments": "Search by name or code",
+      "search_teams": "Search by name or code",
+      "search_profiles": "Search by name, description, or permission",
+      "all_access_classes": "All types",
+      "all_statuses": "All statuses",
+      "all_parent_departments": "All parent departments",
+      "all_departments": "All departments",
+      "all_profile_types": "All profile types",
+      "system_profiles": "System profiles",
+      "custom_profiles": "Custom profiles",
+      "clear": "Clear filters",
+      "summary": "{shown} of {total} results",
+      "empty": "No results match the selected filters."
+    },
     "people": {
       "invite_permission": "Only an administrator or manager can invite people.",
       "invite_roles_unavailable": "There are no access types available for invitations.",

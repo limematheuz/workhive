@@ -7,6 +7,7 @@ import { ActionPopover, type PopoverOption } from "@/components/ui/action-popove
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { OrganizationTableFilters } from "@/components/organization/OrganizationTableFilters";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import {
@@ -24,6 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { filterOrganizationTeams, type TeamFilters } from "@/lib/organization-filters";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import {
@@ -72,7 +74,25 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
     const [statusTarget, setStatusTarget] = useState<OrganizationTeam | null>(null);
     const [savingStatus, setSavingStatus] = useState(false);
     const [deleting, setDeleting] = useState(false);
-    const pagination = useDataTablePagination(teams, TEAMS_PAGE_SIZE);
+    const [filters, setFilters] = useState<TeamFilters>({
+        search: "",
+        status: "all",
+        departmentId: "all",
+    });
+    const filteredTeams = useMemo(
+        () => filterOrganizationTeams(teams, filters),
+        [teams, filters],
+    );
+    const pagination = useDataTablePagination(filteredTeams, TEAMS_PAGE_SIZE);
+    const hasActiveFilters = filters.search.trim() !== "" || filters.status !== "all" || filters.departmentId !== "all";
+    const updateFilters = (update: Partial<TeamFilters>) => {
+        setFilters((current) => ({ ...current, ...update }));
+        pagination.setPage(1);
+    };
+    const clearFilters = () => {
+        setFilters({ search: "", status: "all", departmentId: "all" });
+        pagination.setPage(1);
+    };
 
     const changeStatus = async () => {
         if (!statusTarget) return;
@@ -111,10 +131,38 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
                     <h2 className="text-sm font-semibold text-[var(--text-main)]">{copy.title}</h2>
                     <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.description}</p>
                 </div>
-                <p className="text-sm font-medium text-[var(--text-muted)]">{teams.length} {teams.length === 1 ? copy.count_one : copy.count_many}</p>
+                <p className="text-sm font-medium text-[var(--text-muted)]">{filteredTeams.length} {filteredTeams.length === 1 ? copy.count_one : copy.count_many}</p>
             </header>
-            {teams.length === 0 ? (
-                <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{copy.empty}</p>
+            <OrganizationTableFilters
+                search={filters.search}
+                onSearchChange={(search) => updateFilters({ search })}
+                searchPlaceholder={dict.organization.filters.search_teams}
+                shownCount={filteredTeams.length}
+                totalCount={teams.length}
+                summary={dict.organization.filters.summary}
+                clearLabel={dict.organization.filters.clear}
+                onClear={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+            >
+                <Select value={filters.status} onValueChange={(status) => updateFilters({ status: status as TeamFilters["status"] })}>
+                    <SelectTrigger className="h-10 w-full sm:w-44" aria-label={dict.organization.people.columns.status}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{dict.organization.filters.all_statuses}</SelectItem>
+                        <SelectItem value="active">{dict.organization.access.active}</SelectItem>
+                        <SelectItem value="inactive">{dict.organization.access.inactive}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={filters.departmentId} onValueChange={(departmentId) => updateFilters({ departmentId })}>
+                    <SelectTrigger className="h-10 w-full sm:w-60" aria-label={copy.department}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{dict.organization.filters.all_departments}</SelectItem>
+                        <SelectItem value="none">{copy.no_department}</SelectItem>
+                        {departments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+            </OrganizationTableFilters>
+            {filteredTeams.length === 0 ? (
+                <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{teams.length === 0 ? copy.empty : dict.organization.filters.empty}</p>
             ) : (
                 <>
                     <Table className="table-fixed text-left">
@@ -144,11 +192,11 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
                     </Table>
                     <DataTablePagination
                         page={pagination.page}
-                        totalItems={teams.length}
+                        totalItems={filteredTeams.length}
                         pageSize={pagination.pageSize}
                         onPageChange={pagination.setPage}
                         onPageSizeChange={pagination.setPageSize}
-                        summary={dict.organization.pagination.summary.replace("{from}", String((pagination.page - 1) * pagination.pageSize + 1)).replace("{to}", String(Math.min(pagination.page * pagination.pageSize, teams.length))).replace("{total}", String(teams.length))}
+                        summary={dict.organization.pagination.summary.replace("{from}", String((pagination.page - 1) * pagination.pageSize + 1)).replace("{to}", String(Math.min(pagination.page * pagination.pageSize, filteredTeams.length))).replace("{total}", String(filteredTeams.length))}
                         rowsPerPageLabel={dict.organization.pagination.rows_per_page}
                         previousLabel={dict.organization.pagination.previous}
                         nextLabel={dict.organization.pagination.next}

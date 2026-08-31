@@ -1996,6 +1996,22 @@
       "suspended": "Suspendido",
       "archived": "Archivado"
     },
+    "filters": {
+      "search_people": "Buscar por nombre, correo o perfil",
+      "search_departments": "Buscar por nombre o código",
+      "search_teams": "Buscar por nombre o código",
+      "search_profiles": "Buscar por nombre, descripción o permiso",
+      "all_access_classes": "Todos los tipos",
+      "all_statuses": "Todos los estados",
+      "all_parent_departments": "Todos los departamentos superiores",
+      "all_departments": "Todos los departamentos",
+      "all_profile_types": "Todos los tipos de perfil",
+      "system_profiles": "Perfiles del sistema",
+      "custom_profiles": "Perfiles personalizados",
+      "clear": "Limpiar filtros",
+      "summary": "{shown} de {total} resultados",
+      "empty": "No hay resultados con los filtros seleccionados."
+    },
     "people": {
       "invite_permission": "Solo un administrador o responsable puede invitar personas.",
       "invite_roles_unavailable": "No hay tipos de acceso disponibles para enviar invitaciones.",

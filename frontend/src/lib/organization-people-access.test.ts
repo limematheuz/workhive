@@ -14,6 +14,10 @@ const teamsPanel = readFileSync(
     new URL("../components/organization/OrganizationTeamsPanel.tsx", import.meta.url),
     "utf8",
 );
+const filters = readFileSync(
+    new URL("../components/organization/OrganizationTableFilters.tsx", import.meta.url),
+    "utf8",
+);
 
 test("organization people uses the shared shadcn table and keeps anonymous history separate", () => {
     const peopleSection = controlCenter.slice(
@@ -93,4 +97,23 @@ test("organization tables paginate with the shared shadcn controls and keep perm
     assert.match(pagination, /@\/components\/ui\/pagination/);
     assert.match(pagination, /@\/components\/ui\/select/);
     assert.match(pagination, /\[10, 25, 50, 100\]/);
+});
+
+test("organization tabs use shared shadcn text and select filters instead of custom controls", () => {
+    const departmentsPanel = readFileSync(
+        new URL("../components/organization/OrganizationDepartmentsPanel.tsx", import.meta.url),
+        "utf8",
+    );
+
+    assert.match(filters, /@\/components\/ui\/input/);
+    assert.match(filters, /@\/components\/ui\/button/);
+    assert.match(filters, /type="search"/);
+    assert.match(filters, /aria-live="polite"/);
+    assert.match(controlCenter, /filterOrganizationMembers/);
+    assert.match(controlCenter, /filterPermissionProfiles/);
+    assert.match(teamsPanel, /filterOrganizationTeams/);
+    assert.match(departmentsPanel, /filterOrganizationDepartments/);
+    assert.match(controlCenter, /@\/components\/ui\/select/);
+    assert.match(teamsPanel, /@\/components\/ui\/select/);
+    assert.match(departmentsPanel, /@\/components\/ui\/select/);
 });

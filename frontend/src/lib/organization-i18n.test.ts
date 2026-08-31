@@ -22,6 +22,10 @@ test("organization and invitation flows use the shared English and Spanish dicti
     assert.equal(es.organization.profiles.clear_category, "Deseleccionar todo");
     assert.equal(en.organization.profiles.select_category, "Select all");
     assert.equal(en.organization.profiles.clear_category, "Deselect all");
+    assert.equal(es.organization.filters.search_people, "Buscar por nombre, correo o perfil");
+    assert.equal(es.organization.filters.clear, "Limpiar filtros");
+    assert.equal(en.organization.filters.search_profiles, "Search by name, description, or permission");
+    assert.equal(en.organization.filters.summary, "{shown} of {total} results");
     assert.match(controlCenter, /useDictionary/);
     assert.match(invitationDialog, /useDictionary/);
     assert.match(accessDialog, /useDictionary/);
