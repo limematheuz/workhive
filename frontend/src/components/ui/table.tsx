@@ -18,8 +18,8 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return <tbody data-slot="table-body" className={cn("[&_tr:last-child]:border-0", className)} {...props} />
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
-  return <tr data-slot="table-row" className={cn("border-b border-[var(--border-soft)] transition-colors", className)} {...props} />
+function TableRow({ className, onClick, ...props }: React.ComponentProps<"tr">) {
+  return <tr data-slot="table-row" onClick={onClick} className={cn("border-b border-[var(--border-soft)] transition-[filter,background-color]", onClick && "cursor-pointer hover:brightness-[0.94]", className)} {...props} />
 }
 
 function TableHead({ className, ...props }: React.ComponentProps<"th">) {

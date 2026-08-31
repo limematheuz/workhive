@@ -53,21 +53,26 @@ function DialogContent({
   children,
   showCloseButton = true,
   overlayClassName,
+  compact = false,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
   overlayClassName?: string
+  /** Content-height dialog used for compact forms with an internal scroll area. */
+  compact?: boolean
 }) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay className={overlayClassName} />
       <DialogPrimitive.Content
-        data-slot="dialog-content"
+        data-slot={compact ? "dialog-content-standard" : "dialog-content"}
         aria-describedby={undefined}
         className={cn(
-          // Frosted translucent panel — fill/blur come from globals [data-slot="dialog-content"].
-          // Center with inset + margin (NOT transform): transform kills backdrop-filter.
-          "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-[28px] border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none sm:max-w-lg",
+          // Compact uses the stock shadcn positioning and deliberately avoids
+          // the app's frosted sheet overrides, which are designed for large sheets.
+          compact
+            ? "fixed top-1/2 left-1/2 z-[10001] grid w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[28px] border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] bg-[var(--bg-card-solid)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none"
+            : "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-[28px] border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none sm:max-w-lg",
           className
         )}
         {...props}
