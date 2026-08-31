@@ -61,7 +61,9 @@ test("organization teams use the shared table while permission profiles expose r
     assert.match(teamsPanel, /<DialogContent compact className="max-h-\[90dvh\] max-w-2xl overflow-y-auto">/);
     assert.doesNotMatch(teamsPanel, /overflow-x-hidden/);
     assert.match(teamsPanel, /dict\.organization\.access\[member\.access_class\]/);
-    assert.match(controlCenter, /<DialogContent compact className="permission-profile-dialog">/);
+    assert.match(controlCenter, /<DialogContent className="permission-profile-dialog[^\"]*overflow-hidden p-0">/);
+    assert.match(controlCenter, /max-h-\[min\(42dvh,23rem\)\] space-y-2 overflow-y-auto/);
+    assert.match(controlCenter, /<Field orientation="horizontal" className="items-center gap-3">/);
     assert.match(controlCenter, /function ProfilesTable/);
     assert.match(controlCenter, /copy\.profiles\.actions/);
     assert.match(controlCenter, /permissionLabel\(/);

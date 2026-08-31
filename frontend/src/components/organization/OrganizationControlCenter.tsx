@@ -11,7 +11,7 @@ import { OrganizationTeamsPanel } from "@/components/organization/OrganizationTe
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldContent, FieldGroup, FieldLabel, FieldLegend, FieldSet, FieldTitle } from "@/components/ui/field";
+import { Field, FieldLegend, FieldSet } from "@/components/ui/field";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import {
     Dialog,
@@ -809,94 +809,101 @@ function CreateOrganizationDialog({
     };
     return (
         <Dialog open={kind !== null || profile !== null} onOpenChange={onOpenChange}>
-            <DialogContent compact className="permission-profile-dialog">
-                <form onSubmit={handleSubmit} className="min-w-0 self-start space-y-4">
-                    <DialogHeader>
+            <DialogContent className="permission-profile-dialog max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden p-0">
+                <form onSubmit={handleSubmit} className="min-w-0">
+                    <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-4 pr-14 sm:px-6">
                         <DialogTitle>{title}</DialogTitle>
                         <DialogDescription>{profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-2">
-                        <Label htmlFor="organization-name">{copy.name}</Label>
-                        <Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required />
-                    </div>
-                    {!isProfile && (
+                    <div className="space-y-4 px-5 py-4 sm:px-6">
                         <div className="space-y-2">
-                            <Label htmlFor="organization-code">{copy.code_optional}</Label>
-                            <Input id="organization-code" value={code} onChange={(event) => setCode(event.target.value)} />
+                            <Label htmlFor="organization-name">{copy.name}</Label>
+                            <Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required />
                         </div>
-                    )}
-                    {kind === "department" && (
-                        <div className="space-y-2">
-                            <Label>{copy.parent_department_optional}</Label>
-                            <Select value={departmentId || "none"} onValueChange={setDepartmentId}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="none">{copy.no_parent_department}</SelectItem>
-                                    {activeDepartments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                    {kind === "team" && (
-                        <div className="space-y-2">
-                            <Label>{copy.department_optional}</Label>
-                            <Select value={departmentId} onValueChange={setDepartmentId}>
-                                <SelectTrigger><SelectValue placeholder={copy.no_department} /></SelectTrigger>
-                                <SelectContent>
-                                    {activeDepartments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-                    {isProfile && (
-                        <>
+                        {!isProfile && (
                             <div className="space-y-2">
-                                <Label htmlFor="organization-description">{copy.description_optional}</Label>
-                                <Input id="organization-description" value={description} onChange={(event) => setDescription(event.target.value)} />
+                                <Label htmlFor="organization-code">{copy.code_optional}</Label>
+                                <Input id="organization-code" value={code} onChange={(event) => setCode(event.target.value)} />
                             </div>
-                            <FieldSet className="gap-3">
-                                <FieldLegend variant="label" className="mb-0 text-[var(--text-main)]">{copy.permissions}</FieldLegend>
-                                <div className="max-h-[min(38dvh,22rem)] space-y-2 overflow-y-auto rounded-xl border border-[var(--border-soft)] p-2">
-                                    {definitionsByCategory.map(([category, categoryDefinitions]) => (
-                                        <section key={category} className="space-y-1">
-                                            <div className="flex items-center justify-between gap-3">
-                                                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]">
-                                                    {(profileCopy.permission_categories as Record<string, string>)[category] || category}
-                                                </h3>
-                                                <Button type="button" variant="ghost" size="sm" className="h-6 px-2 text-xs text-[var(--btn-secondary-text)] hover:text-[var(--btn-secondary-hover-text)]" onClick={() => toggleCategory(categoryDefinitions)}>
-                                                    {categoryDefinitions.every((definition) => selectedPermissionCodeSet.has(definition.code)) ? profileCopy.clear_category : profileCopy.select_category}
-                                                </Button>
-                                            </div>
-                                            <FieldGroup key={category} data-slot="checkbox-group" className="gap-1">
-                                            {categoryDefinitions.map((definition) => (
-                                                <FieldLabel
-                                                    key={definition.id}
-                                                    className={cn(
-                                                        "w-full cursor-pointer rounded-lg border px-2.5 py-2 [&>[data-slot=field]]:!p-0 transition-colors",
-                                                        selectedPermissionCodeSet.has(definition.code)
-                                                            ? "border-[color:var(--accent-color)]/60 bg-accent/10 text-[var(--text-main)]"
-                                                            : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
-                                                    )}
-                                                >
-                                                    <Field orientation="horizontal" className="items-center gap-2">
-                                                        <Checkbox
-                                                            id={`definition-${definition.id}`}
-                                                            checked={selectedPermissionCodeSet.has(definition.code)}
-                                                            onCheckedChange={(checked) => setPermissionCodes((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
-                                                            className="size-5"
-                                                        />
-                                                        <FieldContent><FieldTitle className="text-xs leading-4 sm:text-sm">{permissionLabel(definition.code, definition, dict.organization)}</FieldTitle></FieldContent>
-                                                    </Field>
-                                                </FieldLabel>
-                                            ))}
-                                            </FieldGroup>
-                                        </section>
-                                    ))}
+                        )}
+                        {kind === "department" && (
+                            <div className="space-y-2">
+                                <Label>{copy.parent_department_optional}</Label>
+                                <Select value={departmentId || "none"} onValueChange={setDepartmentId}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">{copy.no_parent_department}</SelectItem>
+                                        {activeDepartments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        {kind === "team" && (
+                            <div className="space-y-2">
+                                <Label>{copy.department_optional}</Label>
+                                <Select value={departmentId} onValueChange={setDepartmentId}>
+                                    <SelectTrigger><SelectValue placeholder={copy.no_department} /></SelectTrigger>
+                                    <SelectContent>
+                                        {activeDepartments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        {isProfile && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="organization-description">{copy.description_optional}</Label>
+                                    <Input id="organization-description" value={description} onChange={(event) => setDescription(event.target.value)} />
                                 </div>
-                            </FieldSet>
-                        </>
-                    )}
-                    <DialogFooter>
+                                <FieldSet className="gap-2">
+                                    <FieldLegend variant="label" className="mb-0 text-[var(--text-main)]">{copy.permissions}</FieldLegend>
+                                    <div className="max-h-[min(42dvh,23rem)] space-y-2 overflow-y-auto rounded-xl border border-[var(--border-soft)] p-2">
+                                        {definitionsByCategory.map(([category, categoryDefinitions]) => (
+                                            <section key={category} className="space-y-1">
+                                                <div className="flex min-h-7 items-center justify-between gap-3 px-0.5">
+                                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]">
+                                                        {(profileCopy.permission_categories as Record<string, string>)[category] || category}
+                                                    </h3>
+                                                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-[var(--btn-secondary-text)] hover:text-[var(--btn-secondary-hover-text)]" onClick={() => toggleCategory(categoryDefinitions)}>
+                                                        {categoryDefinitions.every((definition) => selectedPermissionCodeSet.has(definition.code)) ? profileCopy.clear_category : profileCopy.select_category}
+                                                    </Button>
+                                                </div>
+                                                <div className="space-y-1">
+                                                    {categoryDefinitions.map((definition) => {
+                                                        const isSelected = selectedPermissionCodeSet.has(definition.code);
+                                                        return (
+                                                            <Label
+                                                                key={definition.id}
+                                                                htmlFor={`definition-${definition.id}`}
+                                                                className={cn(
+                                                                    "w-full cursor-pointer rounded-lg border px-2.5 py-2 transition-colors",
+                                                                    isSelected
+                                                                        ? "border-[color:var(--accent-color)]/60 bg-accent/10"
+                                                                        : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
+                                                                )}
+                                                            >
+                                                                <Field orientation="horizontal" className="items-center gap-3">
+                                                                    <Checkbox
+                                                                        id={`definition-${definition.id}`}
+                                                                        checked={isSelected}
+                                                                        onCheckedChange={(checked) => setPermissionCodes((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
+                                                                    />
+                                                                    <span className="min-w-0 flex-1 text-xs leading-4 font-medium text-[var(--text-main)]">
+                                                                        {permissionLabel(definition.code, definition, dict.organization)}
+                                                                    </span>
+                                                                </Field>
+                                                            </Label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </section>
+                                        ))}
+                                    </div>
+                                </FieldSet>
+                            </>
+                        )}
+                    </div>
+                    <DialogFooter className="dialog-glass-chrome border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving || (isProfile && permissionCodes.length === 0)}>
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
