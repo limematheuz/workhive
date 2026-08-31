@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, Suspense, useEffect, useState } from "react";
+import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -8,8 +8,10 @@ import { toast } from "sonner";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { AuthTopControls } from "@/components/auth/AuthTopControls";
 import { PasswordCreationFields } from "@/components/auth/PasswordCreationFields";
+import { Button } from "@/components/ui/button";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getAuthErrorMessage } from "@/lib/auth-forms";
+import { resolveInvitationToken } from "@/lib/invitation-token";
 import { isStrongPassword } from "@/lib/password-strength";
 import { useThemeMode } from "@/lib/theme";
 import { authService } from "@/services/auth.service";
@@ -17,7 +19,8 @@ import { authService } from "@/services/auth.service";
 function AcceptInvitationContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [token, setToken] = useState("");
+    const [token, setToken] = useState<string | null>(null);
+    const hasReadInvitationToken = useRef(false);
     const { locale } = useDictionary();
     const [theme, setTheme] = useThemeMode();
     const [code, setCode] = useState("");
@@ -28,19 +31,21 @@ function AcceptInvitationContent() {
     const [accepted, setAccepted] = useState(false);
 
     useEffect(() => {
-        const tokenFromFragment = new URLSearchParams(window.location.hash.slice(1)).get("token");
-        const legacyToken = searchParams.get("token");
-        const invitationToken = tokenFromFragment || legacyToken || "";
-        if (tokenFromFragment || legacyToken) {
+        if (hasReadInvitationToken.current) return;
+        const invitation = resolveInvitationToken({
+            hash: window.location.hash,
+            queryToken: searchParams.get("token"),
+        });
+        hasReadInvitationToken.current = true;
+        setToken(invitation.token);
+        if (invitation.shouldClearUrl) {
             window.history.replaceState(null, "", "/accept-invitation");
         }
-        const timeoutId = window.setTimeout(() => setToken(invitationToken), 0);
-        return () => window.clearTimeout(timeoutId);
     }, [searchParams]);
 
     const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (submitting || password !== confirmPassword || !acceptLegal) return;
+        if (submitting || !token || password !== confirmPassword || !acceptLegal) return;
         setSubmitting(true);
         try {
             await authService.acceptWorkerInvitation(
@@ -64,6 +69,7 @@ function AcceptInvitationContent() {
     const invalid = !token || !/^\d{8}$/.test(code) || !isStrongPassword(password) || password !== confirmPassword || !acceptLegal;
     const text = locale === "es" ? {
         title: "Activa tu acceso",
+        checking: "Comprobando el enlace de invitación…",
         intro: "Introduce el código recibido por correo y crea tu contraseña.",
         code: "Código de verificación",
         password: "Contraseña",
@@ -76,6 +82,7 @@ function AcceptInvitationContent() {
         invalid: "El enlace de invitación no es válido. Pide a tu administrador que te envíe uno nuevo.",
     } : {
         title: "Activate your access",
+        checking: "Checking the invitation link…",
         intro: "Enter the code from your email and create your password.",
         code: "Verification code",
         password: "Password",
@@ -99,6 +106,8 @@ function AcceptInvitationContent() {
                         <h1 className="text-2xl font-black">{text.successTitle}</h1>
                         <p className="text-sm text-[var(--text-muted)]">{text.success}</p>
                     </div>
+                ) : token === null ? (
+                    <div className="py-6 text-center"><p className="text-sm text-[var(--text-muted)]">{text.checking}</p></div>
                 ) : !token ? (
                     <div className="space-y-3 py-6 text-center">
                         <MailCheck className="mx-auto h-12 w-12 text-red-500" />
@@ -132,9 +141,9 @@ function AcceptInvitationContent() {
                             onAcceptLegalChange={setAcceptLegal}
                             idPrefix="worker-invitation"
                         />
-                        <button type="submit" disabled={submitting || invalid} className="w-full rounded-xl bg-[var(--text-main)] py-3 font-semibold text-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+                        <Button type="submit" className="w-full" disabled={submitting || invalid}>
                             {submitting ? text.creating : text.submit}
-                        </button>
+                        </Button>
                     </form>
                 )}
             </section>

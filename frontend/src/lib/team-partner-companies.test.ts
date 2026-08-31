@@ -11,6 +11,7 @@ test("Team keeps people and partner companies separate", () => {
     const invitationTokenService = source("../services/company-invitation-token.service.ts");
     const invitationTokenRoute = source("../app/api/company-invitation-token/route.ts");
     const workerAcceptance = source("../app/(auth)/accept-invitation/page.tsx");
+    const invitationToken = source("./invitation-token.ts");
     const passwordCreation = source("../components/auth/PasswordCreationFields.tsx");
     const chooser = source("../components/users/TeamInvitationChooserDialog.tsx");
     const workerDialog = source("../components/users/UserCreateDialog.tsx");
@@ -50,7 +51,9 @@ test("Team keeps people and partner companies separate", () => {
     assert.match(acceptance, /acceptCompanyInvitation\(token, normalizedCode\)/);
     assert.match(acceptance, /non-admin/);
     assert.doesNotMatch(acceptance, /CompanyInvitationSignupWizard/);
-    assert.match(acceptance, /window\.location\.hash/);
+    assert.match(acceptance, /resolveInvitationToken/);
+    assert.match(workerAcceptance, /resolveInvitationToken/);
+    assert.match(invitationToken, /shouldClearUrl/);
     assert.match(acceptance, /companyInvitationTokenService\.persist/);
     assert.match(invitationTokenService, /company-invitation-token/);
     assert.doesNotMatch(acceptance, /sessionStorage/);
