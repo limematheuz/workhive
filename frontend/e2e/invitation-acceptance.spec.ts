@@ -17,7 +17,27 @@ test("worker invitation preserves a fragment token after URL cleanup and submits
 
     await page.goto(`/accept-invitation#token=${workerToken}`);
 
-    await expect(page.locator("#worker-invitation-password")).toBeVisible();
+    const passwordInput = page.locator("#worker-invitation-password");
+    const passwordGroup = passwordInput.locator("xpath=..");
+    const passwordVisibilityToggle = passwordGroup.getByRole("button");
+
+    await expect(passwordInput).toBeVisible();
+    await expect(passwordGroup).toHaveAttribute("data-slot", "input-group");
+    await expect(passwordVisibilityToggle).toBeVisible();
+    await expect(passwordVisibilityToggle).toHaveAccessibleName(/mostrar contraseña|show password/i);
+    const [groupBox, toggleBox] = await Promise.all([
+        passwordGroup.boundingBox(),
+        passwordVisibilityToggle.boundingBox(),
+    ]);
+    expect(groupBox).not.toBeNull();
+    expect(toggleBox).not.toBeNull();
+    expect(toggleBox!.x).toBeGreaterThanOrEqual(groupBox!.x);
+    expect(toggleBox!.x + toggleBox!.width).toBeLessThanOrEqual(groupBox!.x + groupBox!.width);
+    await expect(passwordInput).toHaveAttribute("type", "password");
+    await passwordVisibilityToggle.click();
+    await expect(passwordInput).toHaveAttribute("type", "text");
+    await expect(passwordVisibilityToggle).toHaveAttribute("aria-pressed", "true");
+    await expect(passwordVisibilityToggle).toHaveAccessibleName(/ocultar contraseña|hide password/i);
     await expect(page).toHaveURL(/\/accept-invitation$/);
 
     await page.locator('input[inputmode="numeric"]').fill("12345678");

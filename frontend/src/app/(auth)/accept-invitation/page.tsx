@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -9,6 +9,8 @@ import { AuthLogo } from "@/components/auth/AuthLogo";
 import { AuthTopControls } from "@/components/auth/AuthTopControls";
 import { PasswordCreationFields } from "@/components/auth/PasswordCreationFields";
 import { Button } from "@/components/ui/button";
+import { Field, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getAuthErrorMessage } from "@/lib/auth-forms";
 import { resolveInvitationToken } from "@/lib/invitation-token";
@@ -119,18 +121,20 @@ function AcceptInvitationContent() {
                             <h1 className="text-2xl font-black">{text.title}</h1>
                             <p className="mt-1 text-sm text-[var(--text-muted)]">{text.intro}</p>
                         </div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">
-                            {text.code}
-                            <input
+                        <Field className="gap-2">
+                            <FieldLabel htmlFor="worker-invitation-code">{text.code}</FieldLabel>
+                            <Input
+                                id="worker-invitation-code"
+                                type="text"
                                 inputMode="numeric"
                                 autoComplete="one-time-code"
                                 maxLength={8}
                                 required
                                 value={code}
-                                onChange={(event: ChangeEvent<HTMLInputElement>) => setCode(event.target.value.replace(/\D/g, ""))}
-                                className="mt-2 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-4 py-3 text-center font-mono text-xl tracking-[0.35em] text-[var(--text-main)] outline-none focus:border-accent/50"
+                                onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+                                className="h-12 text-center font-mono text-xl tracking-[0.35em]"
                             />
-                        </label>
+                        </Field>
                         <PasswordCreationFields
                             locale={locale}
                             password={password}

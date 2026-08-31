@@ -4,10 +4,14 @@ import Link from "next/link";
 import { Eye, EyeOff, KeyRound } from "lucide-react";
 import { useState } from "react";
 
-import { DocumentFormInput } from "@/components/billing/DocumentFormControls";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Field, FieldLabel } from "@/components/ui/field";
+import {
+    InputGroup,
+    InputGroupAddon,
+    InputGroupButton,
+    InputGroupInput,
+} from "@/components/ui/input-group";
 
 import { PasswordStrengthChecklist } from "./PasswordStrengthChecklist";
 
@@ -78,12 +82,12 @@ export function PasswordCreationFields({
                 hideLabel={text.hide}
             />
             {showLegal && (
-                <div className="flex items-start gap-3 rounded-xl bg-[var(--bg-secondary)] p-4 text-sm leading-6 text-[var(--text-muted)]">
+                <Field orientation="horizontal" className="items-start gap-3 rounded-xl bg-[var(--bg-secondary)] p-4 text-sm leading-6 text-[var(--text-muted)]">
                     <Checkbox id={`${idPrefix}-legal`} checked={acceptLegal} onCheckedChange={(checked) => onAcceptLegalChange?.(checked === true)} />
-                    <Label htmlFor={`${idPrefix}-legal`} className="cursor-pointer font-normal leading-6">
+                    <FieldLabel htmlFor={`${idPrefix}-legal`} className="cursor-pointer font-normal leading-6">
                         {text.legal} <Link className="text-accent underline underline-offset-2" href="/terms" target="_blank">{text.terms}</Link>{" · "}<Link className="text-accent underline underline-offset-2" href="/privacy" target="_blank">{text.privacy}</Link>
-                    </Label>
-                </div>
+                    </FieldLabel>
+                </Field>
             )}
         </div>
     );
@@ -100,13 +104,32 @@ function PasswordInput({ id, label, value, onChange, visible, onVisibilityChange
     hideLabel: string;
 }) {
     return (
-        <div className="space-y-2">
-            <Label htmlFor={id}>{label}</Label>
-            <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
-                <DocumentFormInput id={id} type={visible ? "text" : "password"} value={value} onChange={(event) => onChange(event.target.value)} autoComplete="new-password" className="pl-10 pr-11" required />
-                <Button type="button" variant="ghost" size="icon-xs" className="absolute right-1 top-1/2 -translate-y-1/2" aria-label={visible ? hideLabel : showLabel} onClick={() => onVisibilityChange(!visible)}>{visible ? <EyeOff /> : <Eye />}</Button>
-            </div>
-        </div>
+        <Field className="gap-2">
+            <FieldLabel htmlFor={id}>{label}</FieldLabel>
+            <InputGroup className="h-11">
+                <InputGroupAddon align="inline-start">
+                    <KeyRound aria-hidden="true" />
+                </InputGroupAddon>
+                <InputGroupInput
+                    id={id}
+                    type={visible ? "text" : "password"}
+                    value={value}
+                    onChange={(event) => onChange(event.target.value)}
+                    autoComplete="new-password"
+                    required
+                />
+                <InputGroupAddon align="inline-end">
+                    <InputGroupButton
+                        type="button"
+                        size="icon-sm"
+                        aria-label={visible ? hideLabel : showLabel}
+                        aria-pressed={visible}
+                        onClick={() => onVisibilityChange(!visible)}
+                    >
+                        {visible ? <EyeOff /> : <Eye />}
+                    </InputGroupButton>
+                </InputGroupAddon>
+            </InputGroup>
+        </Field>
     );
 }
