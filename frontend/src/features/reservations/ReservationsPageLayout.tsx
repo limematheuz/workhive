@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Inbox } from "lucide-react";
+import { Calendar, Inbox, Sparkles } from "lucide-react";
 
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { ReservationFormDialog } from "@/features/reservations/ReservationFormDialog";
@@ -215,5 +215,23 @@ export function ReservationsAccessDenied() {
         <div className="max-w-3xl mx-auto p-8 text-center text-sm text-[var(--text-muted)] font-semibold uppercase tracking-wider">
             Las reservas se gestionan desde cuentas administradoras o gestoras.
         </div>
+    );
+}
+
+export function ReservationsPlanRequired({ dict }: { dict: Dictionary }) {
+    const copy = dict.reservations?.plan_required;
+
+    return (
+        <main className="dashboard-page-content px-[3%] py-6 md:p-8">
+            <section className="mx-auto max-w-2xl rounded-3xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center shadow-sm">
+                <Sparkles className="mx-auto h-10 w-10 text-accent" />
+                <h1 className="mt-4 text-xl font-black text-[var(--text-main)]">
+                    {copy?.title || "Planificación no incluida"}
+                </h1>
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-[var(--text-muted)]">
+                    {copy?.description || "Las reservas y la coordinación avanzada están disponibles desde el plan Medio."}
+                </p>
+            </section>
+        </main>
     );
 }

@@ -94,10 +94,7 @@ export default function FinanceAnalyticsPage() {
     const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
 
     useEffect(() => {
-        if (userLoading || isPlatformSuperadmin(user) || !user?.company_id) {
-            setEnabledFeatures(null);
-            return;
-        }
+        if (userLoading || isPlatformSuperadmin(user) || !user?.company_id) return;
         let cancelled = false;
         void CompanyPlanAccessService.getCurrentEntitlements()
             .then((access) => {
@@ -118,8 +115,11 @@ export default function FinanceAnalyticsPage() {
         };
     }, [user, userLoading]);
 
-    const canViewProfitability = enabledFeatures?.has("features.profitability") ?? false;
-    const canDownloadAccountantPackage = enabledFeatures?.has("features.accountant_portal") ?? false;
+    const companyFeatures = userLoading || isPlatformSuperadmin(user) || !user?.company_id
+        ? null
+        : enabledFeatures;
+    const canViewProfitability = companyFeatures?.has("features.profitability") ?? false;
+    const canDownloadAccountantPackage = companyFeatures?.has("features.accountant_portal") ?? false;
 
     const loadAnalytics = useCallback(async () => {
         if (!canViewAnalytics) return;
@@ -178,7 +178,8 @@ export default function FinanceAnalyticsPage() {
 
     useEffect(() => {
         if (!canViewProfitability && activeTab === "profitability") {
-            setActiveTab("finance");
+            const timer = window.setTimeout(() => setActiveTab("finance"), 0);
+            return () => window.clearTimeout(timer);
         }
     }, [activeTab, canViewProfitability]);
 

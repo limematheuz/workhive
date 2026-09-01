@@ -42,6 +42,8 @@ def _company(db, name: str, tax_id: str) -> Company:
         address="Calle Test 1",
         phone="600000000",
         email=f"{tax_id.lower()}@test.com",
+        # Reservation workflows are covered by the Planning entitlement.
+        subscription_plan="pro",
     )
     db.add(company)
     db.commit()
@@ -141,6 +143,29 @@ def test_shared_company_admin_can_manage_reservations(db):
             ),
         )
     assert task_error.value.status_code == 403
+
+
+def test_basic_plan_cannot_read_or_manage_reservations(db):
+    company = _company(db, "Basic planning", "BASIC-PLANNING")
+    company.subscription_plan = "basic"
+    db.add(company)
+    db.commit()
+    admin = _user(db, company, role_id=1, email="basic-planning@test.com")
+    location = _location(db, company)
+
+    with pytest.raises(HTTPException) as read_error:
+        reservation_service.list_reservations(db, admin)
+    with pytest.raises(HTTPException) as write_error:
+        reservation_service.create_reservation(
+            db,
+            admin,
+            _reservation_data(location.id),
+        )
+
+    assert read_error.value.status_code == 403
+    assert write_error.value.status_code == 403
+    assert read_error.value.headers["X-WorkHive-Error-Code"] == "entitlement.feature_not_in_plan"
+    assert write_error.value.headers["X-WorkHive-Error-Code"] == "entitlement.feature_not_in_plan"
 
 
 def test_location_default_service_provider_can_be_changed_without_transferring_owner(db):

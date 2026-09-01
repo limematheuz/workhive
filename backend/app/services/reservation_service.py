@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -10,8 +10,9 @@ from app.repositories import reservation as reservation_repo
 from app.repositories import task_item as task_item_repo
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
 from app.services import location_access_service
-from app.services.company_client_service import ensure_company_as_client
-from app.services import task_lifecycle_notification_service
+from app.services import task_lifecycle_notification_service  # noqa: F401 - compatibility re-export
+from app.services.planning_access_service import require_user_planning
+from app.services.reservation_collaboration_service import record_external_service_request
 from app.services.reservation_tasks import (
     ensure_location_access,
     get_live_external_task_snapshot,  # noqa: F401 - compatibility re-export
@@ -40,31 +41,10 @@ from app.services.reservation_validation import (
 )
 
 
-def _record_external_service_request(
-    db: Session,
-    reservation: Reservation,
-    task: TaskItem,
-) -> None:
-    if task.company_id == reservation.owner_company_id:
-        return
-    reservation.service_request_sent_at = datetime.now(timezone.utc)
-    ensure_company_as_client(
-        db,
-        owner_company_id=task.company_id,
-        partner_company=reservation.owner_company,
-    )
-    db.add(reservation)
-    task_lifecycle_notification_service.notify_request_sent(
-        db,
-        reservation,
-        task,
-        commit=False,
-    )
-
-
 def create_reservation(
     db: Session, current_user: User, data: ReservationCreate
 ) -> Reservation:
+    require_user_planning(db, current_user)
     location_access_service.require_location_capability(
         db, current_user, data.location_id, "can_manage_reservations"
     )
@@ -108,7 +88,7 @@ def create_reservation(
                 data.cleaning_scheduled_at,
             )
             if data.assigned_company_id is not None and checkout_task is not None:
-                _record_external_service_request(db, reservation, checkout_task)
+                record_external_service_request(db, reservation, checkout_task)
         sync_location_reservation_chain(db, data.location_id)
         db.commit()
         db.refresh(reservation)
@@ -123,6 +103,7 @@ def dispatch_cleaning_request(
     current_user: User,
     reservation_id: int,
 ) -> Reservation:
+    require_user_planning(db, current_user)
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
@@ -179,7 +160,7 @@ def dispatch_cleaning_request(
             reservation.cleaning_scheduled_at,
         )
         if checkout_task is not None:
-            _record_external_service_request(db, reservation, checkout_task)
+            record_external_service_request(db, reservation, checkout_task)
         sync_location_reservation_chain(db, reservation.location_id)
         db.commit()
         db.refresh(reservation)
@@ -333,7 +314,7 @@ def _sync_updated_reservation_cleaning(
         cleaning_at,
     )
     if checkout_task is not None:
-        _record_external_service_request(db, reservation, checkout_task)
+        record_external_service_request(db, reservation, checkout_task)
 
 
 def _remove_updated_reservation_cleaning(
@@ -352,6 +333,7 @@ def _remove_updated_reservation_cleaning(
 def update_reservation(
     db: Session, current_user: User, reservation_id: int, data: ReservationUpdate
 ) -> Reservation:
+    require_user_planning(db, current_user)
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
@@ -425,6 +407,7 @@ def update_reservation(
 
 
 def delete_reservation(db: Session, current_user: User, reservation_id: int) -> None:
+    require_user_planning(db, current_user)
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")

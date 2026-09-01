@@ -79,7 +79,10 @@ _FEATURE_AVAILABILITY: dict[str, FeatureAvailability] = {
     # entitlement enforcement are complete.
     "features.service_catalog": "coming_soon",
     "features.recurrence": "coming_soon",
-    "features.planning": "coming_soon",
+    # The operational task calendar remains part of the core work-order flow.
+    # This entitlement protects the advanced planning tools: reservations and
+    # the company Google Calendar connection/synchronization workflow.
+    "features.planning": "available",
     "features.basic_exports": "coming_soon",
     "features.client_portal": "coming_soon",
     "features.quality": "coming_soon",

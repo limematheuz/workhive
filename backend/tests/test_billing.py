@@ -295,7 +295,7 @@ def test_public_plan_catalog_does_not_advertise_internal_or_future_features(clie
     }
     assert "features.profitability" in public_feature_codes
     assert "features.accountant_portal" in public_feature_codes
-    assert "features.planning" not in public_feature_codes
+    assert "features.planning" in public_feature_codes
     assert "features.integrations" not in public_feature_codes
 
 

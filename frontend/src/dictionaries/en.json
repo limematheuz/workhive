@@ -2797,6 +2797,10 @@
         "active": "Active",
         "history": "History"
       },
+      "plan_required": {
+        "title": "Planning is not included",
+        "description": "Reservations, inter-company requests, and Google Calendar synchronization are available from the Medium plan. The task calendar remains available to your whole company."
+      },
       "filters": {
         "search_placeholder": "Search property, address, provider, or notes...",
         "all_locations": "All properties",

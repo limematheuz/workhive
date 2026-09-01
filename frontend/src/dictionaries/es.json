@@ -2797,6 +2797,10 @@
         "active": "Vigentes",
         "history": "Historial"
       },
+      "plan_required": {
+        "title": "Planificación no incluida",
+        "description": "Las reservas, las solicitudes entre empresas y la sincronización con Google Calendar están disponibles desde el plan Medio. El calendario de tareas sigue disponible para toda la empresa."
+      },
       "filters": {
         "search_placeholder": "Buscar propiedad, dirección, proveedor o nota...",
         "all_locations": "Todas las propiedades",

@@ -324,6 +324,11 @@ upgrades, churn e ingresos por plan.
   una empresa concreta.
 - Los límites se comprobarán realmente antes de crear usuarios o usar una
   función. No será solo un botón oculto.
+- El calendario operativo de tareas pertenece a Órdenes de trabajo y se
+  conserva en todos los planes que lo incluyan. Planificación es el nivel
+  avanzado: reservas, solicitudes entre empresas y conexión o sincronización
+  con Google Calendar. Se comprueba en servidor, incluida la sincronización en
+  segundo plano, para que una URL directa no conceda acceso.
 
 Los departamentos, perfiles personalizados, calidad avanzada, inventario, RRHH
 e integraciones se activarán según el plan que se apruebe. El plan decide qué

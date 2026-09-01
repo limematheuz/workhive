@@ -933,6 +933,11 @@ def test_viewer_cannot_accept_by_updating_the_global_task_status(db):
 def test_upcoming_arrival_is_visible_to_owner_and_assigned_company(db):
     issuer = _company(db, "Inmobiliaria")
     receiver = _company(db, "Limpiezas")
+    # Upcoming arrivals belong to the paid Planning workflow.
+    issuer.subscription_plan = "pro"
+    receiver.subscription_plan = "pro"
+    db.add_all([issuer, receiver])
+    db.commit()
     issuer_admin = _user(db, issuer, "admin@inmo.test")
     receiver_admin = _user(db, receiver, "admin@clean.test")
     location = Location(

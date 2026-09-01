@@ -167,6 +167,7 @@ def sync_google_calendar(
         identity=str(current_user.id),
     )
     company_id = calendar_governance_service.require_company_calendar_role(
+        db,
         current_user,
         calendar_governance_service.COMPANY_CALENDAR_SYNC_ROLES,
     )
@@ -201,6 +202,7 @@ def disconnect_google_calendar(
     current_user: User = ActiveUser,
 ):
     company_id = calendar_governance_service.require_company_calendar_role(
+        db,
         current_user,
         {calendar_governance_service.COMPANY_CALENDAR_ADMIN_ROLE},
     )

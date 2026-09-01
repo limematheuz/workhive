@@ -457,8 +457,13 @@ suscripción, nunca un plan.
 - El catálogo público solo promete funciones que tienen módulo de cliente y
   control de entitlement verificado. En la primera publicación son
   Organización, Equipos, Clientes, Ubicaciones, Órdenes de trabajo, Control
-  horario, Presupuestos, Facturas, Rentabilidad y Portal de gestoría.
-- Catálogo de servicios, recurrencia, planificación, exportaciones, portales,
+  horario, Presupuestos, Facturas, Rentabilidad, Portal de gestoría y
+  Planificación.
+- El calendario operativo de tareas sigue perteneciendo a Órdenes de trabajo.
+  Planificación protege las reservas, solicitudes entre empresas y la conexión
+  o sincronización del calendario de empresa con Google Calendar, tanto en la
+  interfaz como en los servicios de servidor y procesos en segundo plano.
+- Catálogo de servicios, recurrencia, exportaciones, portales,
   calidad, inventario, RRHH, aprobaciones, delegaciones, estructura corporativa
   y API quedan marcados como `coming_soon`: pueden existir en el modelo, pero no
   se ofrecen ni se activan en nuevas contrataciones hasta completar su módulo y

@@ -20,6 +20,7 @@ from app.repositories import reservation as reservation_repo
 from app.schemas.reservation import ReservationResponse
 from app.schemas.work_session import WorkSessionStartLocationResponse
 from app.services import location_access_service
+from app.services.planning_access_service import require_user_planning
 from app.services.user_scope import (
     can_manage_company,
     is_platform_superadmin,
@@ -107,6 +108,7 @@ def list_reservations(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
 ) -> list[Reservation]:
+    require_user_planning(db, current_user)
     if is_platform_superadmin(current_user):
         return []
     location_ids = _accessible_location_ids(db, current_user)
@@ -125,6 +127,7 @@ def list_reservations(
 def list_upcoming_arrivals(
     db: Session, current_user: User, days: int = 3
 ) -> list[Reservation]:
+    require_user_planning(db, current_user)
     now = datetime.now(timezone.utc)
     until = now + timedelta(days=max(1, min(days, 3)))
     query = (
@@ -173,6 +176,7 @@ def list_upcoming_arrivals(
 def get_reservation(
     db: Session, current_user: User, reservation_id: int
 ) -> Reservation:
+    require_user_planning(db, current_user)
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")

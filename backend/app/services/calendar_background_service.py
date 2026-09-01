@@ -10,6 +10,7 @@ from app.models.calendar_sync_job import CalendarSyncJob
 from app.models.google_calendar_connection import GoogleCalendarConnection
 from app.services import calendar_sync_service
 from app.services import calendar_governance_service
+from app.services.planning_access_service import company_planning_enabled
 
 
 logger = logging.getLogger("workhive.calendar")
@@ -24,6 +25,8 @@ def sync_company_calendar(
 
     db = SessionLocal()
     try:
+        if not company_planning_enabled(db, company_id):
+            return
         if not calendar_governance_service.company_calendar_available(db):
             return
         connection = (
