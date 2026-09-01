@@ -11,6 +11,7 @@ class CheckoutSessionCreate(BaseModel):
         "basic", "medium", "top", "mega",
         "business", "pro", "lifetime",
     ]
+    billing_interval: Literal["monthly", "annual"] = "monthly"
 
 
 class HostedBillingUrl(BaseModel):

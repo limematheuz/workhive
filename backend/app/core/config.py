@@ -73,8 +73,18 @@ class Settings(BaseSettings):
     BILLING_ENABLED: bool = False
     STRIPE_SECRET_KEY: str | None = None
     STRIPE_WEBHOOK_SECRET: str | None = None
-    # New commercial plans. Legacy Business/Pro/Lifetime keys stay as a
-    # temporary fallback while existing Stripe products are migrated.
+    # Canonical commercial prices. Each billing interval is a distinct Stripe
+    # Price: a price amount/interval is immutable once customers use it.
+    STRIPE_BASIC_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_BASIC_ANNUAL_PRICE_ID: str | None = None
+    STRIPE_MEDIUM_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_MEDIUM_ANNUAL_PRICE_ID: str | None = None
+    STRIPE_TOP_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_TOP_ANNUAL_PRICE_ID: str | None = None
+    STRIPE_ENTERPRISE_MONTHLY_PRICE_ID: str | None = None
+    STRIPE_ENTERPRISE_ANNUAL_PRICE_ID: str | None = None
+    # Legacy single-price variables remain a temporary monthly fallback while
+    # existing Stripe products are migrated.
     STRIPE_BASIC_PRICE_ID: str | None = None
     STRIPE_MEDIUM_PRICE_ID: str | None = None
     STRIPE_TOP_PRICE_ID: str | None = None
@@ -239,10 +249,10 @@ class Settings(BaseSettings):
         if self.BILLING_ENABLED and (
             not self.STRIPE_SECRET_KEY
             or not self.STRIPE_WEBHOOK_SECRET
-            or not self.stripe_price_ids
+            or self.missing_canonical_stripe_price_ids
         ):
             raise ValueError(
-                "Billing requires Stripe secret, webhook secret, and at least one plan price ID"
+                "Billing requires Stripe secret, webhook secret, and every canonical plan price ID"
             )
 
         if self.VERIFACTU_ENABLED and not all(
@@ -322,13 +332,63 @@ class Settings(BaseSettings):
 
     @property
     def stripe_price_ids(self) -> dict[str, str]:
+        return {
+            plan_code: price_id
+            for plan_code in ("basic", "medium", "top", "mega")
+            if (price_id := self.stripe_price_id(plan_code, "monthly"))
+        }
+
+    @property
+    def missing_canonical_stripe_price_ids(self) -> tuple[str, ...]:
+        required = (
+            "STRIPE_BASIC_MONTHLY_PRICE_ID",
+            "STRIPE_BASIC_ANNUAL_PRICE_ID",
+            "STRIPE_MEDIUM_MONTHLY_PRICE_ID",
+            "STRIPE_MEDIUM_ANNUAL_PRICE_ID",
+            "STRIPE_TOP_MONTHLY_PRICE_ID",
+            "STRIPE_TOP_ANNUAL_PRICE_ID",
+            "STRIPE_ENTERPRISE_MONTHLY_PRICE_ID",
+            "STRIPE_ENTERPRISE_ANNUAL_PRICE_ID",
+        )
+        return tuple(name for name in required if not getattr(self, name))
+
+    def stripe_price_id(
+        self,
+        plan_code: str,
+        billing_interval: str = "monthly",
+    ) -> str | None:
+        if billing_interval not in {"monthly", "annual"}:
+            return None
+        interval_prices = {
+            "basic": {
+                "monthly": self.STRIPE_BASIC_MONTHLY_PRICE_ID,
+                "annual": self.STRIPE_BASIC_ANNUAL_PRICE_ID,
+            },
+            "medium": {
+                "monthly": self.STRIPE_MEDIUM_MONTHLY_PRICE_ID,
+                "annual": self.STRIPE_MEDIUM_ANNUAL_PRICE_ID,
+            },
+            "top": {
+                "monthly": self.STRIPE_TOP_MONTHLY_PRICE_ID,
+                "annual": self.STRIPE_TOP_ANNUAL_PRICE_ID,
+            },
+            "mega": {
+                "monthly": self.STRIPE_ENTERPRISE_MONTHLY_PRICE_ID,
+                "annual": self.STRIPE_ENTERPRISE_ANNUAL_PRICE_ID,
+            },
+        }
+        configured = interval_prices.get(plan_code, {}).get(billing_interval)
+        if configured:
+            return configured
+        if billing_interval == "annual":
+            return None
         prices = {
             "basic": self.STRIPE_BASIC_PRICE_ID,
             "medium": self.STRIPE_MEDIUM_PRICE_ID or self.STRIPE_BUSINESS_PRICE_ID,
             "top": self.STRIPE_TOP_PRICE_ID or self.STRIPE_PRO_PRICE_ID,
             "mega": self.STRIPE_ENTERPRISE_PRICE_ID,
         }
-        return {key: value for key, value in prices.items() if value}
+        return prices.get(plan_code)
 
     @property
     def facturae_certificate_path(self) -> str | None:

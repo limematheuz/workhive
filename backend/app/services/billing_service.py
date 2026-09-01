@@ -21,6 +21,20 @@ STRIPE_API_URL = "https://api.stripe.com/v1"
 _CHECKOUT_PLAN_CODES = frozenset(
     {"basic", "medium", "top", "mega", "business", "pro", "lifetime"}
 )
+_CHECKOUT_BILLING_INTERVALS = frozenset({"monthly", "annual"})
+_MANAGED_SUBSCRIPTION_STATUSES = frozenset(
+    {"active", "trialing", "pending", "past_due", "unpaid", "paused", "incomplete"}
+)
+_CANONICAL_STRIPE_PRICE_SPECS = {
+    ("basic", "monthly"): {"unit_amount": 2900, "interval": "month"},
+    ("basic", "annual"): {"unit_amount": 29000, "interval": "year"},
+    ("medium", "monthly"): {"unit_amount": 6900, "interval": "month"},
+    ("medium", "annual"): {"unit_amount": 69000, "interval": "year"},
+    ("top", "monthly"): {"unit_amount": 12900, "interval": "month"},
+    ("top", "annual"): {"unit_amount": 129000, "interval": "year"},
+    ("mega", "monthly"): {"unit_amount": 24900, "interval": "month"},
+    ("mega", "annual"): {"unit_amount": 249000, "interval": "year"},
+}
 
 
 def _require_billing_configuration() -> None:
@@ -54,12 +68,63 @@ def _stripe_post(path: str, data: dict[str, str]) -> dict[str, Any]:
         ) from exc
 
 
-def create_checkout_session(company: Company, plan: str) -> str:
+def _stripe_get(path: str) -> dict[str, Any]:
+    _require_billing_configuration()
+    try:
+        response = httpx.get(
+            f"{STRIPE_API_URL}{path}",
+            headers={"Authorization": f"Bearer {settings.STRIPE_SECRET_KEY}"},
+            timeout=15,
+        )
+        response.raise_for_status()
+        return response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Stripe could not verify the configured price",
+        ) from exc
+
+
+def _assert_canonical_stripe_price(
+    plan: str,
+    billing_interval: str,
+    price_id: str,
+) -> None:
+    expected = _CANONICAL_STRIPE_PRICE_SPECS.get((plan, billing_interval))
+    if not expected:
+        return
+
+    stripe_price = _stripe_get(f"/prices/{price_id}")
+    recurring = stripe_price.get("recurring") or {}
+    if (
+        stripe_price.get("active") is not True
+        or str(stripe_price.get("currency", "")).lower() != "eur"
+        or stripe_price.get("unit_amount") != expected["unit_amount"]
+        or recurring.get("interval") != expected["interval"]
+        or recurring.get("interval_count", 1) != 1
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The configured Stripe price does not match this WorkHive plan",
+        )
+
+
+def create_checkout_session(
+    company: Company,
+    plan: str,
+    billing_interval: str = "monthly",
+) -> str:
     requested_plan = plan.strip().lower()
     if requested_plan not in _CHECKOUT_PLAN_CODES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="The requested plan is not available for checkout",
+        )
+    requested_interval = billing_interval.strip().lower()
+    if requested_interval not in _CHECKOUT_BILLING_INTERVALS:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The requested billing interval is not available for checkout",
         )
     canonical_plan = legacy_plan_code(requested_plan)
     # Keep already-created lifetime checkout links working only while the
@@ -69,13 +134,26 @@ def create_checkout_session(company: Company, plan: str) -> str:
     price_id = (
         settings.STRIPE_LIFETIME_PRICE_ID
         if is_legacy_lifetime
-        else settings.stripe_price_ids.get(canonical_plan)
+        else settings.stripe_price_id(canonical_plan, requested_interval)
     )
     if not price_id:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Stripe price is not configured for plan {canonical_plan}",
         )
+
+    if (
+        not is_legacy_lifetime
+        and company.stripe_subscription_id
+        and company.subscription_status in _MANAGED_SUBSCRIPTION_STATUSES
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This company already has a managed subscription. Open the billing portal to change it.",
+        )
+
+    if not is_legacy_lifetime:
+        _assert_canonical_stripe_price(canonical_plan, requested_interval, price_id)
 
     frontend_url = settings.FRONTEND_URL.rstrip("/")
     is_one_time = is_legacy_lifetime
@@ -86,14 +164,19 @@ def create_checkout_session(company: Company, plan: str) -> str:
         "success_url": f"{frontend_url}/dashboard/profile?billing=success",
         "cancel_url": f"{frontend_url}/subscription?billing=canceled",
         "client_reference_id": str(company.id),
-        "customer_email": company.email,
         "metadata[company_id]": str(company.id),
         "metadata[plan]": canonical_plan,
+        "metadata[billing_interval]": requested_interval,
         "allow_promotion_codes": "true",
     }
+    if company.stripe_customer_id:
+        payload["customer"] = company.stripe_customer_id
+    else:
+        payload["customer_email"] = company.email
     if not is_one_time:
         payload["subscription_data[metadata][company_id]"] = str(company.id)
         payload["subscription_data[metadata][plan]"] = canonical_plan
+        payload["subscription_data[metadata][billing_interval]"] = requested_interval
     session = _stripe_post("/checkout/sessions", payload)
     checkout_url = session.get("url")
     if not checkout_url:

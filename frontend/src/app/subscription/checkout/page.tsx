@@ -9,26 +9,31 @@ import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { authAlertClass } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
 import { useDictionary } from "@/lib/dictionary-context";
-import { billingService, BillingPlan } from "@/services/billing.service";
+import {
+    billingService,
+    type BillingInterval,
+    type BillingPlan,
+} from "@/services/billing.service";
 import { getTrustedExternalUrl } from "@/lib/external-navigation";
+
+type CheckoutPlan = "basic" | "medium" | "top" | "mega";
 
 function CheckoutContent() {
     const searchParams = useSearchParams();
     const { dict } = useDictionary();
     const t = dict.auth;
     const requestedPlan = searchParams.get("plan");
-    const plan: BillingPlan =
-        requestedPlan === "pro"
-            ? "pro"
-            : requestedPlan === "lifetime"
-              ? "lifetime"
-              : "business";
-    const planName =
-        plan === "pro"
-            ? t.plan_pro_name
-            : plan === "lifetime"
-              ? t.plan_lifetime_name
-              : "Business";
+    const plan: CheckoutPlan = ["basic", "medium", "top", "mega"].includes(requestedPlan ?? "")
+        ? requestedPlan as CheckoutPlan
+        : "basic";
+    const requestedInterval = searchParams.get("interval");
+    const billingInterval: BillingInterval = requestedInterval === "annual" ? "annual" : "monthly";
+    const planName = {
+        basic: t.plan_basic_name,
+        medium: t.plan_medium_name,
+        top: t.plan_top_name,
+        mega: t.plan_enterprise_name,
+    }[plan];
     const [isRedirecting, setIsRedirecting] = useState(false);
     const [error, setError] = useState("");
 
@@ -36,7 +41,7 @@ function CheckoutContent() {
         setError("");
         setIsRedirecting(true);
         try {
-            const checkoutUrl = await billingService.createCheckout(plan);
+            const checkoutUrl = await billingService.createCheckout(plan as BillingPlan, billingInterval);
             window.location.assign(getTrustedExternalUrl(checkoutUrl));
         } catch (checkoutError) {
             setError(

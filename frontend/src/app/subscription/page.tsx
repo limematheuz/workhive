@@ -2,23 +2,52 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useDictionary } from "@/lib/dictionary-context";
-import { AuthShell } from "@/components/auth/AuthShell";
+import { Check, Crown, Shield, Sparkles } from "lucide-react";
 import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
+import { AuthShell } from "@/components/auth/AuthShell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Crown, Shield, Sparkles } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { authService } from "@/services/auth.service";
+import type { BillingPlan } from "@/services/billing.service";
+import { useDictionary } from "@/lib/dictionary-context";
+import { cn } from "@/lib/utils";
+
+type BillingInterval = "monthly" | "annual";
+
+type PublicPlan = {
+    id: "basic" | "medium" | "top" | "mega" | "custom";
+    icon: typeof Shield;
+    name: string;
+    description: string;
+    features: string[];
+    monthlyPrice: number | null;
+    annualPrice: number | null;
+    capacity: Array<{ label: string; value: string }>;
+    actionLabel: string;
+    contactHref: string;
+    checkoutPlan?: Extract<BillingPlan, "basic" | "medium" | "top" | "mega">;
+    popular?: boolean;
+    layoutClassName?: string;
+};
+
+function formatEuros(amount: number, locale: string): string {
+    return new Intl.NumberFormat(locale === "es" ? "es-ES" : "en-GB", {
+        style: "currency",
+        currency: "EUR",
+        maximumFractionDigits: 0,
+    }).format(amount);
+}
 
 export default function SubscriptionPage() {
-    const { dict } = useDictionary();
+    const { dict, locale } = useDictionary();
     const t = dict.auth;
     const [hasSession, setHasSession] = useState(false);
+    const [billingInterval, setBillingInterval] = useState<BillingInterval>("monthly");
+    const checkoutEnabled = process.env.NEXT_PUBLIC_BILLING_CHECKOUT_ENABLED === "true";
 
     useEffect(() => {
         let cancelled = false;
-
         void authService.getMe()
             .then(() => {
                 if (!cancelled) setHasSession(true);
@@ -26,187 +55,228 @@ export default function SubscriptionPage() {
             .catch(() => {
                 if (!cancelled) setHasSession(false);
             });
-
         return () => {
             cancelled = true;
         };
     }, []);
 
-    const plans = [
+    const plans: PublicPlan[] = [
         {
-            id: "trial" as const,
-            name: t.plan_trial_name,
-            price: t.plan_trial_price,
-            period: "",
-            desc: t.plan_trial_desc,
+            id: "basic",
             icon: Shield,
-            btnText: t.start_trial,
-            link: "/contact?reason=trial",
-            popular: false,
-            features: t.plan_trial_features,
-            tag: t.trial_tag,
+            name: t.plan_basic_name,
+            description: t.plan_basic_desc,
+            features: t.plan_basic_features,
+            monthlyPrice: 29,
+            annualPrice: 290,
+            capacity: [
+                { label: t.pricing_workers, value: "5" },
+                { label: t.pricing_admins, value: "1" },
+                { label: t.pricing_teams, value: "2" },
+            ],
+            actionLabel: t.pricing_request_access,
+            contactHref: "/contact?reason=plan-base",
+            checkoutPlan: "basic",
         },
         {
-            id: "pro" as const,
-            name: t.plan_pro_name,
-            price: t.plan_pro_price,
-            period: t.plan_pro_period,
-            desc: t.plan_pro_desc,
+            id: "medium",
             icon: Sparkles,
-            btnText: t.select_plan,
-            link: "/subscription/checkout?plan=pro",
-            popular: true,
-            features: t.plan_pro_features,
-            tag: undefined,
+            name: t.plan_medium_name,
+            description: t.plan_medium_desc,
+            features: t.plan_medium_features,
+            monthlyPrice: 69,
+            annualPrice: 690,
+            capacity: [
+                { label: t.pricing_workers, value: "25" },
+                { label: t.pricing_admins, value: "3" },
+                { label: t.pricing_teams, value: "10" },
+            ],
+            actionLabel: t.pricing_request_access,
+            contactHref: "/contact?reason=plan-medio",
+            checkoutPlan: "medium",
         },
         {
-            id: "lifetime" as const,
-            name: t.plan_lifetime_name,
-            price: t.plan_lifetime_price,
-            period: t.plan_lifetime_period,
-            desc: t.plan_lifetime_desc,
+            id: "top",
             icon: Crown,
-            btnText: t.select_lifetime,
-            link: "/subscription/checkout?plan=lifetime",
-            popular: false,
-            features: t.plan_lifetime_features,
-            tag: t.lifetime_tag,
+            name: t.plan_top_name,
+            description: t.plan_top_desc,
+            features: t.plan_top_features,
+            monthlyPrice: 129,
+            annualPrice: 1290,
+            capacity: [
+                { label: t.pricing_workers, value: "100" },
+                { label: t.pricing_admins, value: "10" },
+                { label: t.pricing_teams, value: "50" },
+            ],
+            actionLabel: t.pricing_request_access,
+            contactHref: "/contact?reason=plan-top",
+            checkoutPlan: "top",
+            popular: true,
+        },
+        {
+            id: "mega",
+            icon: Crown,
+            name: t.plan_enterprise_name,
+            description: t.plan_enterprise_desc,
+            features: t.plan_enterprise_features,
+            monthlyPrice: 249,
+            annualPrice: 2490,
+            capacity: [
+                { label: t.pricing_workers, value: "500" },
+                { label: t.pricing_admins, value: "25" },
+                { label: t.pricing_teams, value: "250" },
+            ],
+            actionLabel: t.pricing_talk_sales,
+            contactHref: "/contact?reason=plan-empresarial",
+            checkoutPlan: "mega",
+            layoutClassName: "xl:col-start-2",
+        },
+        {
+            id: "custom",
+            icon: Sparkles,
+            name: t.plan_custom_name,
+            description: t.plan_custom_desc,
+            features: t.plan_custom_features,
+            monthlyPrice: null,
+            annualPrice: null,
+            capacity: [
+                { label: t.pricing_workers, value: "—" },
+                { label: t.pricing_admins, value: "—" },
+                { label: t.pricing_teams, value: "—" },
+            ],
+            actionLabel: t.pricing_request_proposal,
+            contactHref: "/contact?reason=plan-personalizado",
         },
     ];
 
     return (
-        <AuthShell
-            wide
-            showFooter={false}
-            contentClassName="my-auto max-w-7xl py-6"
-        >
-            <Link
-                href={hasSession ? "/dashboard" : "/login"}
-                className="group mb-6 inline-flex w-fit items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion"
-            >
-                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                {hasSession ? t.back_to_dashboard : t.back_to_login}
-            </Link>
-
-            <div className="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
-                <h1 className="mb-2 text-3xl font-bold tracking-tight lg:text-4xl">
-                    {t.pricing_title}
-                </h1>
-                <p className="mb-4 text-sm text-[var(--text-muted)] lg:text-base">
-                    {t.pricing_subtitle}
-                </p>
-                <Badge
-                    variant="outline"
-                    className="rounded-full border-accent/30 bg-accent/12 px-4 py-1 text-xs font-semibold text-accent"
+        <AuthShell wide showFooter={false} contentClassName="py-6 sm:py-10">
+            <div className="mx-auto max-w-6xl">
+                <Link
+                    href={hasSession ? "/dashboard" : "/login"}
+                    className="group mb-8 inline-flex min-h-11 items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-main)] ui-motion"
                 >
-                    {t.pricing_badge}
-                </Badge>
-            </div>
+                    <span aria-hidden="true" className="text-base transition-transform group-hover:-translate-x-1">←</span>
+                    {hasSession ? t.back_to_dashboard : t.back_to_login}
+                </Link>
 
-            <div className="grid grid-cols-1 items-stretch gap-5 overflow-visible pt-3 sm:gap-6 md:grid-cols-1 lg:grid-cols-3 lg:gap-5 xl:gap-6">
-                {plans.map((plan) => {
-                    const Icon = plan.icon;
-                    const isPro = plan.id === "pro";
-                    return (
-                        <AuthGlassCard
-                            key={plan.id}
-                            className={cn(
-                                "billing-surface relative flex flex-col justify-between overflow-visible p-5 sm:p-6 xl:p-7 ui-motion hover:-translate-y-1",
-                                isPro
-                                    ? "z-[1] border-accent/55 bg-[color-mix(in_srgb,var(--accent-color)_14%,var(--glass-sheet-bg))] shadow-[0_28px_70px_color-mix(in_srgb,var(--accent-color)_32%,transparent)] ring-2 ring-accent/60 lg:scale-[1.03]"
-                                    : "border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--accent-color)_6%,var(--glass-sheet-bg))]",
-                            )}
-                        >
-                            {plan.popular && (
-                                <Badge
-                                    className="absolute -top-3 right-5 z-20 gap-1 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md shadow-accent/35 hover:bg-accent"
-                                >
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                    {t.popular_tag}
-                                </Badge>
-                            )}
+                <header className="mx-auto mb-8 max-w-3xl text-center sm:mb-10">
+                    <Badge variant="outline" className="rounded-full border-accent/30 bg-accent/12 px-4 py-1 text-xs font-semibold text-accent">
+                        {t.pricing_badge}
+                    </Badge>
+                    <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+                        {t.pricing_title}
+                    </h1>
+                    <p className="mt-3 text-sm leading-6 text-[var(--text-muted)] sm:text-base">
+                        {t.pricing_subtitle}
+                    </p>
+                    <div className="mx-auto mt-5 max-w-xs">
+                        <PremiumTabs
+                            activeTab={billingInterval}
+                            onChange={setBillingInterval}
+                            tabs={[
+                                { id: "monthly", label: t.pricing_monthly },
+                                { id: "annual", label: t.pricing_annual },
+                            ]}
+                        />
+                    </div>
+                    {billingInterval === "annual" && (
+                        <p className="mt-3 text-xs font-semibold text-accent">{t.pricing_annual_saving}</p>
+                    )}
+                </header>
 
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between gap-3">
-                                    <h2 className="text-xl font-bold xl:text-2xl">{plan.name}</h2>
-                                    <div
-                                        className={cn(
-                                            "rounded-2xl border p-2.5",
-                                            isPro
-                                                ? "border-accent/40 bg-accent/18 text-accent"
-                                                : "border-accent/25 bg-accent/10 text-accent",
-                                        )}
-                                    >
+                <div className="grid grid-cols-1 items-stretch gap-5 md:grid-cols-2 xl:grid-cols-6 xl:gap-6">
+                    {plans.map((plan) => {
+                        const Icon = plan.icon;
+                        const price = billingInterval === "monthly" ? plan.monthlyPrice : plan.annualPrice;
+                        const period = billingInterval === "monthly" ? t.pricing_per_month : t.pricing_per_year;
+                        const isCustom = price === null;
+                        const checkoutHref = plan.checkoutPlan
+                            ? `/subscription/checkout?plan=${plan.checkoutPlan}&interval=${billingInterval}`
+                            : null;
+                        const actionHref = checkoutEnabled && checkoutHref ? checkoutHref : plan.contactHref;
+                        const actionLabel = checkoutEnabled && checkoutHref
+                            ? t.pricing_choose_plan
+                            : plan.actionLabel;
+
+                        return (
+                            <AuthGlassCard
+                                key={plan.id}
+                                className={cn(
+                                    "billing-surface relative flex min-h-full flex-col overflow-visible p-5 sm:p-6 xl:col-span-2",
+                                    plan.layoutClassName,
+                                    plan.popular
+                                        ? "z-[1] border-accent/55 bg-[color-mix(in_srgb,var(--accent-color)_14%,var(--glass-sheet-bg))] shadow-[0_28px_70px_color-mix(in_srgb,var(--accent-color)_25%,transparent)] ring-2 ring-accent/60"
+                                        : isCustom
+                                          ? "border-dashed border-accent/45 bg-[color-mix(in_srgb,var(--accent-color)_8%,var(--glass-sheet-bg))]"
+                                          : "border-[var(--border-soft)] bg-[color-mix(in_srgb,var(--accent-color)_5%,var(--glass-sheet-bg))]",
+                                )}
+                            >
+                                {plan.popular && (
+                                    <Badge className="absolute -top-3 right-5 gap-1 rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md shadow-accent/35 hover:bg-accent">
+                                        <Sparkles className="h-3.5 w-3.5" />
+                                        {t.popular_tag}
+                                    </Badge>
+                                )}
+
+                                <div className="flex items-start justify-between gap-4">
+                                    <div>
+                                        <h2 className="text-2xl font-bold tracking-tight">{plan.name}</h2>
+                                        <p className="mt-2 min-h-12 text-sm leading-6 text-[var(--text-muted)]">{plan.description}</p>
+                                    </div>
+                                    <div className="shrink-0 rounded-2xl border border-accent/25 bg-accent/10 p-2.5 text-accent">
                                         <Icon className="h-5 w-5" strokeWidth={2.25} />
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-2">
-                                    <span
-                                        className={cn(
-                                            "font-extrabold tracking-tight",
-                                            isPro
-                                                ? "text-4xl xl:text-5xl"
-                                                : "text-3xl xl:text-4xl",
-                                        )}
-                                    >
-                                        {plan.price}
-                                    </span>
-                                    {plan.period && (
-                                        <span className="text-xs font-semibold text-[var(--text-muted)]">
-                                            {plan.period}
-                                        </span>
+                                <div className="mt-5 rounded-2xl border border-accent/20 bg-accent/8 px-4 py-3">
+                                    {isCustom ? (
+                                        <p className="text-3xl font-extrabold tracking-tight">{locale === "es" ? "A medida" : "Tailored"}</p>
+                                    ) : (
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-4xl font-extrabold tracking-tight">{formatEuros(price, locale)}</span>
+                                            <span className="text-sm font-semibold text-[var(--text-muted)]">{period}</span>
+                                        </div>
                                     )}
-                                    {plan.tag && (
-                                        <Badge
-                                            className="rounded-full bg-accent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-md shadow-accent/35 hover:bg-accent"
-                                        >
-                                            {plan.id === "trial" ? (
-                                                <Shield className="h-3.5 w-3.5" />
-                                            ) : (
-                                                <Crown className="h-3.5 w-3.5" />
-                                            )}
-                                            {plan.tag}
-                                        </Badge>
-                                    )}
+                                    <p className="mt-1 text-xs text-[var(--text-muted)]">{isCustom ? t.pricing_request_proposal : t.pricing_badge}</p>
                                 </div>
 
-                                <p className="text-sm leading-relaxed text-[var(--text-muted)]">
-                                    {plan.desc}
-                                </p>
+                                <section className="mt-5 border-t border-[var(--border-soft)] pt-5">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-accent">{t.pricing_features}</h3>
+                                    <ul className="mt-3 space-y-2.5">
+                                        {plan.features.map((feature) => (
+                                            <li key={feature} className="flex items-start gap-2 text-sm text-[var(--text-main)]">
+                                                <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" strokeWidth={2.5} />
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </section>
 
-                                <hr className="border-[var(--border-soft)]" />
+                                <section className="mt-5 border-t border-[var(--border-soft)] pt-5">
+                                    <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-accent">{t.pricing_capacity}</h3>
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                        {plan.capacity.map((item) => (
+                                            <div key={item.label} className="rounded-xl bg-[var(--bg-tertiary)]/55 px-2.5 py-3">
+                                                <p className="text-xl font-extrabold tracking-tight">{item.value}</p>
+                                                <p className="mt-1 text-[10px] font-medium leading-tight text-[var(--text-muted)]">{item.label}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="mt-3 text-xs leading-5 text-[var(--text-muted)]">{isCustom ? t.plan_custom_desc : t.pricing_limits_note}</p>
+                                </section>
 
-                                <ul className="space-y-2">
-                                    {plan.features.map((feature) => (
-                                        <li
-                                            key={feature}
-                                            className="flex items-start gap-2 text-sm text-[var(--text-muted)]"
-                                        >
-                                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                                            <span className="leading-snug">{feature}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div className="mt-6">
-                                <Button
-                                    asChild
-                                    size="lg"
-                                    variant={isPro ? "default" : "secondary"}
-                                    className={cn(
-                                        "h-12 w-full rounded-2xl text-sm",
-                                        isPro &&
-                                            "border-accent bg-accent text-white shadow-lg shadow-accent/30 hover:bg-accent-light",
-                                    )}
-                                >
-                                    <Link href={plan.link}>{plan.btnText}</Link>
+                                <Button asChild size="lg" variant={plan.popular ? "default" : "secondary"} className={cn("mt-6 h-12 w-full rounded-xl", plan.popular && "border-accent bg-accent text-white shadow-lg shadow-accent/30 hover:bg-accent-light")}>
+                                    <Link href={actionHref}>{actionLabel}</Link>
                                 </Button>
-                            </div>
-                        </AuthGlassCard>
-                    );
-                })}
+                            </AuthGlassCard>
+                        );
+                    })}
+                </div>
+
+                <p className="mx-auto mt-8 max-w-2xl text-center text-sm leading-6 text-[var(--text-muted)]">
+                    {checkoutEnabled ? t.pricing_checkout_note : t.pricing_launch_note}
+                </p>
             </div>
         </AuthShell>
     );

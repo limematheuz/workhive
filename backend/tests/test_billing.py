@@ -194,12 +194,24 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
         }
 
     monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_get",
+        lambda _path: {
+            "active": True,
+            "currency": "eur",
+            "unit_amount": 6900,
+            "recurring": {"interval": "month", "interval_count": 1},
+        },
+    )
 
     assert (
         billing_service.create_checkout_session(company, "business")
         == "https://checkout.stripe.com/test-session"
     )
     assert captured["metadata[plan]"] == "medium"
+    assert captured["customer"] == "cus_hosted"
+    assert "customer_email" not in captured
     assert (
         billing_service.create_customer_portal(company)
         == "https://billing.stripe.com/test-portal"
@@ -219,7 +231,8 @@ def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):
 
     monkeypatch.setattr(settings, "BILLING_ENABLED", True)
     monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
-    monkeypatch.setattr(settings, "STRIPE_ENTERPRISE_PRICE_ID", "price_enterprise")
+    monkeypatch.setattr(settings, "STRIPE_ENTERPRISE_MONTHLY_PRICE_ID", "price_enterprise_monthly")
+    monkeypatch.setattr(settings, "STRIPE_ENTERPRISE_ANNUAL_PRICE_ID", "price_enterprise_annual")
     captured: dict[str, str] = {}
 
     def fake_stripe_post(path: str, data: dict[str, str]):
@@ -227,15 +240,112 @@ def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):
         return {"url": "https://checkout.stripe.com/enterprise-session"}
 
     monkeypatch.setattr(billing_service, "_stripe_post", fake_stripe_post)
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_get",
+        lambda path: {
+            "active": True,
+            "currency": "eur",
+            "unit_amount": 249000 if path.endswith("annual") else 24900,
+            "recurring": {
+                "interval": "year" if path.endswith("annual") else "month",
+                "interval_count": 1,
+            },
+        },
+    )
 
     assert (
         billing_service.create_checkout_session(company, "mega")
         == "https://checkout.stripe.com/enterprise-session"
     )
     assert captured["mode"] == "subscription"
-    assert captured["line_items[0][price]"] == "price_enterprise"
+    assert captured["line_items[0][price]"] == "price_enterprise_monthly"
     assert captured["metadata[plan]"] == "mega"
+    assert captured["metadata[billing_interval]"] == "monthly"
     assert captured["subscription_data[metadata][plan]"] == "mega"
+    assert captured["customer_email"] == company.email
+    assert "customer" not in captured
+
+    captured.clear()
+    assert (
+        billing_service.create_checkout_session(company, "mega", "annual")
+        == "https://checkout.stripe.com/enterprise-session"
+    )
+    assert captured["line_items[0][price]"] == "price_enterprise_annual"
+    assert captured["metadata[billing_interval]"] == "annual"
+    assert captured["subscription_data[metadata][billing_interval]"] == "annual"
+
+
+def test_checkout_requires_an_existing_subscription_to_use_the_billing_portal(db, monkeypatch):
+    company = Company(
+        name="Managed subscription company",
+        tax_id="BILLING-MANAGED",
+        address="Test address",
+        phone="000000012",
+        email="managed@example.com",
+        stripe_customer_id="cus_managed",
+        stripe_subscription_id="sub_managed",
+        subscription_status="active",
+    )
+    db.add(company)
+    db.commit()
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_MONTHLY_PRICE_ID", "price_basic_monthly")
+
+    with pytest.raises(HTTPException, match="billing portal") as error:
+        billing_service.create_checkout_session(company, "basic")
+
+    assert error.value.status_code == 409
+
+
+def test_checkout_rejects_a_stripe_price_that_does_not_match_the_plan(db, monkeypatch):
+    company = Company(
+        name="Wrong price company",
+        tax_id="BILLING-WRONG-PRICE",
+        address="Test address",
+        phone="000000013",
+        email="wrong-price@example.com",
+    )
+    db.add(company)
+    db.commit()
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+    monkeypatch.setattr(settings, "STRIPE_BASIC_MONTHLY_PRICE_ID", "price_wrong")
+    monkeypatch.setattr(
+        billing_service,
+        "_stripe_get",
+        lambda _path: {
+            "active": True,
+            "currency": "eur",
+            "unit_amount": 6900,
+            "recurring": {"interval": "month", "interval_count": 1},
+        },
+    )
+
+    with pytest.raises(HTTPException, match="does not match") as error:
+        billing_service.create_checkout_session(company, "basic")
+
+    assert error.value.status_code == 409
+
+
+def test_checkout_rejects_an_unknown_billing_interval(db, monkeypatch):
+    company = Company(
+        name="Invalid interval company",
+        tax_id="BILLING-INVALID-INTERVAL",
+        address="Test address",
+        phone="000000011",
+        email="invalid-interval@example.com",
+    )
+    db.add(company)
+    db.commit()
+    monkeypatch.setattr(settings, "BILLING_ENABLED", True)
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test_local")
+
+    with pytest.raises(HTTPException, match="billing interval") as error:
+        billing_service.create_checkout_session(company, "basic", "quarterly")
+
+    assert error.value.status_code == 422
 
 
 def test_lifetime_checkout_uses_payment_mode(db, monkeypatch):

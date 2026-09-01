@@ -11,11 +11,16 @@ export type BillingPlan =
     | "pro"
     | "lifetime";
 
+export type BillingInterval = "monthly" | "annual";
+
 export const billingService = {
-    createCheckout: async (plan: BillingPlan): Promise<string> => {
+    createCheckout: async (
+        plan: BillingPlan,
+        billingInterval: BillingInterval = "monthly",
+    ): Promise<string> => {
         const response = await apiFetch("/api/v1/billing/checkout", {
             method: "POST",
-            body: JSON.stringify({ plan }),
+            body: JSON.stringify({ plan, billing_interval: billingInterval }),
         });
         if (!response.ok) {
             throw new Error(
