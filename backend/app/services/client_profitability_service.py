@@ -12,6 +12,7 @@ from app.schemas.client_profitability import (
     ClientProfitabilityResponse,
     ClientProfitabilityRow,
 )
+from app.services.entitlement_service import require_company_feature
 from app.services.reportable_sales_service import manual_records_without_workhive_invoice
 
 
@@ -161,6 +162,11 @@ def get_client_profitability(
     period: str,
     reference_date: date,
 ) -> ClientProfitabilityResponse:
+    require_company_feature(
+        db,
+        company_id=company_id,
+        code="features.profitability",
+    )
     current_start, current_end = _period_range(period, reference_date)
     previous_start, previous_end = _period_range(
         period,

@@ -11,6 +11,7 @@ from app.models.expense import Expense
 from app.models.invoice import Invoice
 from app.models.sales_ledger_record import SalesLedgerRecord
 from app.repositories import accountant_export as accountant_export_repo
+from app.services.entitlement_service import require_company_feature
 from app.services.reportable_sales_service import manual_records_without_workhive_invoice
 
 
@@ -237,6 +238,11 @@ Este paquete es un resumen operativo para la gestoria. Revise los datos antes de
 def build_accountant_export(
     db: Session, company_id: int, period: AccountantExportPeriod
 ) -> AccountantExport:
+    require_company_feature(
+        db,
+        company_id=company_id,
+        code="features.accountant_portal",
+    )
     invoices = accountant_export_repo.list_reportable_invoices(
         db, company_id, start=period.start, end=period.end
     )
