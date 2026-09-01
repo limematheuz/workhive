@@ -2177,6 +2177,7 @@
       "clear_category": "Deselect all",
       "reserved_for_administrators": "Company administrators only",
       "reserved_description": "This permission is protected and cannot be added to custom profiles.",
+      "permission_details": "View permission details",
       "recommended_for": "Recommended for",
       "company_scope_note": "All permissions apply only within this company. They never grant access to other companies or the WorkHive panel.",
       "permission_audiences": {

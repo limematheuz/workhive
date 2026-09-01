@@ -2177,6 +2177,7 @@
       "clear_category": "Deseleccionar todo",
       "reserved_for_administrators": "Solo administradores de empresa",
       "reserved_description": "Este permiso está protegido y no se puede añadir a perfiles personalizados.",
+      "permission_details": "Ver detalles del permiso",
       "recommended_for": "Recomendado para",
       "company_scope_note": "Todos los permisos se aplican solo dentro de esta empresa. Nunca dan acceso a otras empresas ni al panel de WorkHive.",
       "permission_audiences": {

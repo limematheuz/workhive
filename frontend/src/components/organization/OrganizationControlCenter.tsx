@@ -1,7 +1,7 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
-import { Building2, Layers3, Loader2, Pencil, Plus, Power, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
+import { Building2, ChevronDown, Layers3, Loader2, Pencil, Plus, Power, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { MemberAccessDialog } from "@/components/organization/MemberAccessDialog";
@@ -13,6 +13,7 @@ import { OrganizationTeamsPanel } from "@/components/organization/OrganizationTe
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FieldLegend, FieldSet } from "@/components/ui/field";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import {
@@ -981,9 +982,6 @@ function CreateOrganizationDialog({
                                 </div>
                                 <FieldSet className="gap-2">
                                     <FieldLegend variant="label" className="mb-0 text-[var(--text-main)]">{copy.permissions}</FieldLegend>
-                                    <p className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-secondary)]/35 px-3 py-2 text-xs leading-5 text-[var(--text-muted)]">
-                                        {profileCopy.company_scope_note}
-                                    </p>
                                     <div className="max-h-[min(42dvh,23rem)] space-y-2 overflow-y-auto rounded-xl border border-[var(--border-soft)] p-2">
                                         {definitionsByCategory.map(([category, categoryDefinitions]) => (
                                             <PermissionCategory
@@ -1040,9 +1038,6 @@ function PermissionCategory({
         (profileCopy.permission_guidance as Record<string, string>)[definition.code]
         || definition.description
     );
-    const audienceLabel = (audience: string) => (
-        (profileCopy.permission_audiences as Record<string, string>)[audience] || audience
-    );
 
     return (
         <section className="space-y-1">
@@ -1066,36 +1061,59 @@ function PermissionCategory({
                     const isSelected = selectedPermissionCodeSet.has(definition.code);
                     const canRemoveLegacySelection = definition.is_system_only && isSelected;
                     return (
-                        <Label
+                        <Collapsible
                             key={definition.id}
-                            htmlFor={`definition-${definition.id}`}
                             className={cn(
-                                "flex w-full min-w-0 items-start gap-3 rounded-lg border px-2.5 py-2 transition-colors",
+                                "w-full min-w-0 rounded-lg border transition-colors",
                                 isSelected
                                     ? "border-[color:var(--accent-color)]/60 bg-accent/10"
                                     : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
                                 definition.is_system_only && !canRemoveLegacySelection
-                                    ? "cursor-not-allowed opacity-75"
-                                    : "cursor-pointer",
+                                    ? "opacity-75"
+                                    : "",
                             )}
                         >
-                            <Checkbox
-                                id={`definition-${definition.id}`}
-                                className="mt-0.5 shrink-0"
-                                checked={isSelected}
-                                disabled={definition.is_system_only && !canRemoveLegacySelection}
-                                onCheckedChange={(checked) => onPermissionCodesChange((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
-                            />
-                            <span className="min-w-0 flex-1 space-y-1">
-                                <span className="flex flex-wrap items-center gap-1.5 text-xs font-medium leading-4 text-[var(--text-main)]">
-                                    <span>{permissionLabel(definition.code, definition, organizationCopy)}</span>
-                                    {definition.is_system_only && <Badge variant="outline" className="border-amber-500/45 bg-amber-500/10 px-1.5 py-0 text-[10px] font-medium leading-4 text-amber-950 dark:text-amber-100">{profileCopy.reserved_for_administrators}</Badge>}
-                                    {definition.recommended_for.map((audience) => <Badge key={audience} variant="outline" className="border-[color:var(--btn-secondary-text)]/35 px-1.5 py-0 text-[10px] font-medium leading-4 text-[var(--btn-secondary-text)]">{audienceLabel(audience)}</Badge>)}
-                                </span>
-                                <span className="block text-[11px] leading-4 text-[var(--text-muted)]">{permissionGuidance(definition)}</span>
-                                {definition.is_system_only && <span className="block text-[11px] leading-4 text-amber-800 dark:text-amber-200">{profileCopy.reserved_description}</span>}
-                            </span>
-                        </Label>
+                            <div className="flex min-w-0 items-center gap-3 px-3 py-2">
+                                <Checkbox
+                                    id={`definition-${definition.id}`}
+                                    className="shrink-0"
+                                    checked={isSelected}
+                                    disabled={definition.is_system_only && !canRemoveLegacySelection}
+                                    onCheckedChange={(checked) => onPermissionCodesChange((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
+                                />
+                                <Label
+                                    htmlFor={`definition-${definition.id}`}
+                                    className={cn(
+                                        "min-w-0 flex-1 cursor-pointer text-sm font-medium leading-5 text-[var(--text-main)]",
+                                        definition.is_system_only && !canRemoveLegacySelection && "cursor-not-allowed",
+                                    )}
+                                >
+                                    <span className="flex flex-wrap items-center gap-2">
+                                        <span>{permissionLabel(definition.code, definition, organizationCopy)}</span>
+                                        {definition.is_system_only && (
+                                            <Badge variant="outline" className="border-[var(--border-soft)] bg-[var(--bg-secondary)]/60 px-1.5 py-0 text-[10px] font-medium leading-4 text-[var(--text-muted)]">
+                                                {profileCopy.reserved_for_administrators}
+                                            </Badge>
+                                        )}
+                                    </span>
+                                </Label>
+                                <CollapsibleTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="group h-8 w-8 shrink-0 text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                                        aria-label={`${profileCopy.permission_details}: ${permissionLabel(definition.code, definition, organizationCopy)}`}
+                                    >
+                                        <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </div>
+                            <CollapsibleContent className="border-t border-[var(--border-soft)] px-3 py-2 pl-12">
+                                <p className="text-xs leading-5 text-[var(--text-muted)]">{permissionGuidance(definition)}</p>
+                                {definition.is_system_only && <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{profileCopy.reserved_description}</p>}
+                            </CollapsibleContent>
+                        </Collapsible>
                     );
                 })}
             </div>
