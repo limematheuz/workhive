@@ -1010,6 +1010,7 @@
     "price_on_request": "Precio a consultar",
     "features_included": "Funciones incluidas",
     "includes_previous": "Todo lo de {plan}, y además",
+    "capacity_only_upgrade": "Todas las funciones de {plan}, con mayor capacidad.",
     "view_all_features": "Ver las {count} funciones incluidas",
     "capacity": "Capacidad",
     "view_all_capacities": "Ver todos los límites",

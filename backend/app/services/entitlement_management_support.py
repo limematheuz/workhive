@@ -14,6 +14,7 @@ from app.services.entitlement_catalog import (
     ALL_ENTITLEMENT_CODES,
     EntitlementValue,
     default_plan_values,
+    entitlement_availability,
     entitlement_presentation,
     legacy_plan_code,
     plan_label,
@@ -35,6 +36,7 @@ def entitlement_response(
         value_type=value_type,
         value=value,
         source=source,
+        availability=entitlement_availability(code),
     )
 
 

@@ -11,6 +11,7 @@ export type Entitlement = {
     value_type: "boolean" | "integer";
     value: EntitlementValue;
     source: "plan" | "exception";
+    availability: "available" | "platform_internal" | "coming_soon";
 };
 
 export type PlanCatalogueItem = {

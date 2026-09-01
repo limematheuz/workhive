@@ -19,7 +19,11 @@ from app.services import (
     organization_bootstrap_service,
     user_service,
 )
-from app.services.entitlement_catalog import default_plan_values, legacy_plan_code
+from app.services.entitlement_catalog import (
+    default_plan_values,
+    is_commercially_available,
+    legacy_plan_code,
+)
 from app.services.subscription_policy import evaluate_company_access
 from app.schemas.user import UserUpdate
 from credentials import TEST_SECRET, login_form
@@ -271,10 +275,28 @@ def test_public_plan_catalog_matches_the_active_purchasable_versions(
             "checkout_available": True,
         },
     ]
-    assert {item["code"] for item in basic["entitlements"]} == set(
-        default_plan_values("basic")
-    )
+    assert {item["code"] for item in basic["entitlements"]} == {
+        code
+        for code in default_plan_values("basic")
+        if not code.startswith("features.") or is_commercially_available(code)
+    }
     assert all("label" not in item for item in basic["entitlements"])
+
+
+def test_public_plan_catalog_does_not_advertise_internal_or_future_features(client):
+    response = client.get("/api/v1/billing/plans")
+
+    assert response.status_code == 200, response.text
+    public_feature_codes = {
+        entitlement["code"]
+        for plan in response.json()
+        for entitlement in plan["entitlements"]
+        if entitlement["code"].startswith("features.")
+    }
+    assert "features.profitability" in public_feature_codes
+    assert "features.accountant_portal" in public_feature_codes
+    assert "features.planning" not in public_feature_codes
+    assert "features.integrations" not in public_feature_codes
 
 
 def test_public_company_checkout_stores_an_intent_without_creating_a_tenant(

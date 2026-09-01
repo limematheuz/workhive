@@ -90,7 +90,10 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     assert.match(entitlementEditor, /from "@\/components\/ui\/checkbox"/);
     assert.match(entitlementEditor, /from "@\/components\/ui\/button"/);
     assert.match(entitlementEditor, /Funciones disponibles/);
-    assert.match(entitlementEditor, /flex min-w-0 cursor-pointer items-center gap-3/);
+    assert.match(entitlementEditor, /Próximamente/);
+    assert.match(entitlementEditor, /Interna de plataforma/);
+    assert.match(entitlementEditor, /disabled=\{!canConfigure\}/);
+    assert.match(entitlementEditor, /flex min-w-0 items-center gap-3/);
     assert.match(entitlementEditor, /Capacidades/);
     assert.match(entitlementEditor, /Reducir \$\{item.label\}/);
     assert.match(entitlementEditor, /Aumentar \$\{item.label\}/);

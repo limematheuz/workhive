@@ -193,12 +193,19 @@ export function PlanCatalog({ plans, dictionary: t, locale }: PlanCatalogProps) 
                                         : t.features_included}
                                 </p>
                                 <ul className="mt-3 space-y-2 text-sm text-[var(--text-main)]">
-                                    {visibleFeatures.map((feature) => (
+                                    {visibleFeatures.length > 0 ? visibleFeatures.map((feature) => (
                                         <li key={feature.code} className="flex min-w-0 items-start gap-2">
                                             <Check className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
                                             <span className="min-w-0">{entitlementLabel(feature, labels)}</span>
                                         </li>
-                                    ))}
+                                    )) : previousPlan && (
+                                        <li className="flex min-w-0 items-start gap-2 text-[var(--text-muted)]">
+                                            <Check className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
+                                            <span className="min-w-0">
+                                                {t.capacity_only_upgrade.replace("{plan}", t.plan_names[previousPlan.code])}
+                                            </span>
+                                        </li>
+                                    )}
                                 </ul>
                                 <Collapsible className="mt-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/45">
                                     <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-xs font-semibold text-accent hover:bg-accent/5">

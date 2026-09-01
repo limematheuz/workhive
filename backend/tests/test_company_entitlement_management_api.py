@@ -124,6 +124,11 @@ def test_platform_superadmin_changes_plan_and_creates_audited_exception(client, 
         "custom",
     }
     assert next(item for item in catalog.json() if item["code"] == "mega")["label"] == "Enterprise"
+    mega = next(item for item in catalog.json() if item["code"] == "mega")
+    availability = {item["code"]: item["availability"] for item in mega["entitlements"]}
+    assert availability["features.profitability"] == "available"
+    assert availability["features.planning"] == "coming_soon"
+    assert availability["features.integrations"] == "platform_internal"
 
     change = client.put(
         f"/api/v1/companies/{company.id}/plan-access",

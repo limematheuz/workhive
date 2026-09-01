@@ -102,11 +102,13 @@ export default function FinanceAnalyticsPage() {
         void CompanyPlanAccessService.getCurrentEntitlements()
             .then((access) => {
                 if (cancelled) return;
-                setEnabledFeatures(new Set(
-                    access.entitlements
-                        .filter((entitlement) => entitlement.value_type === "boolean" && entitlement.value === true)
-                        .map((entitlement) => entitlement.code),
-                ));
+                const nextEnabledFeatures = new Set<string>();
+                access.entitlements.forEach((entitlement) => {
+                    if (entitlement.value_type === "boolean" && entitlement.value === true) {
+                        nextEnabledFeatures.add(entitlement.code);
+                    }
+                });
+                setEnabledFeatures(nextEnabledFeatures);
             })
             .catch(() => {
                 if (!cancelled) setEnabledFeatures(null);
@@ -172,7 +174,7 @@ export default function FinanceAnalyticsPage() {
             void loadProfitability();
         }, 0);
         return () => window.clearTimeout(timer);
-    }, [activeTab, loadProfitability, userLoading]);
+    }, [activeTab, canViewProfitability, loadProfitability, userLoading]);
 
     useEffect(() => {
         if (!canViewProfitability && activeTab === "profitability") {

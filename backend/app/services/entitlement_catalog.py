@@ -1,6 +1,6 @@
 """Stable WorkHive plan definitions used by migrations and isolated tests."""
 
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 from sqlalchemy.orm import Session
 
@@ -57,6 +57,44 @@ QUOTA_CODES = (
     "limits.accountant_portals",
 )
 ALL_ENTITLEMENT_CODES = frozenset((*FEATURE_CODES, *QUOTA_CODES))
+
+# A feature can exist in the entitlement model before it is ready to be sold.
+# Keep this classification separate from a plan's effective values: changing the
+# public catalogue must never revoke access from an existing company.
+FeatureAvailability = Literal["available", "platform_internal", "coming_soon"]
+
+_FEATURE_AVAILABILITY: dict[str, FeatureAvailability] = {
+    # Customer-facing flows with an active service boundary and entitlement guard.
+    "features.organization": "available",
+    "features.teams": "available",
+    "features.clients": "available",
+    "features.locations": "available",
+    "features.work_orders": "available",
+    "features.time_tracking": "available",
+    "features.quotes": "available",
+    "features.invoices": "available",
+    "features.profitability": "available",
+    "features.accountant_portal": "available",
+    # Kept out of the commercial catalogue until the customer module and its
+    # entitlement enforcement are complete.
+    "features.service_catalog": "coming_soon",
+    "features.recurrence": "coming_soon",
+    "features.planning": "coming_soon",
+    "features.basic_exports": "coming_soon",
+    "features.client_portal": "coming_soon",
+    "features.quality": "coming_soon",
+    "features.inventory": "coming_soon",
+    "features.hr": "coming_soon",
+    "features.partner_portal": "coming_soon",
+    "features.approvals": "coming_soon",
+    "features.branches": "coming_soon",
+    "features.corporate_structure": "coming_soon",
+    "features.api": "coming_soon",
+    # These currently configure WorkHive's platform integrations; they are not
+    # a tenant-ready integration product and must not be advertised for sale.
+    "features.integrations": "platform_internal",
+    "features.advanced_integrations": "platform_internal",
+}
 
 _CORE_FEATURES = {
     "features.organization",
@@ -185,6 +223,24 @@ def legacy_plan_code(plan_code: str | None) -> str:
 
 def plan_label(plan_code: str | None) -> str:
     return _PLAN_NAMES[legacy_plan_code(plan_code)]
+
+
+def entitlement_availability(code: str) -> FeatureAvailability:
+    """Return commercial delivery status for an entitlement.
+
+    Capacity limits are always part of an active commercial plan. Every feature
+    is classified explicitly so a newly added feature cannot silently appear in
+    the public purchase catalogue.
+    """
+    if code not in ALL_ENTITLEMENT_CODES:
+        raise ValueError(f"Unknown entitlement code: {code}")
+    if code in QUOTA_CODES:
+        return "available"
+    return _FEATURE_AVAILABILITY[code]
+
+
+def is_commercially_available(code: str) -> bool:
+    return entitlement_availability(code) == "available"
 
 
 def entitlement_presentation(code: str) -> tuple[str, str, str]:

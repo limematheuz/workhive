@@ -454,11 +454,20 @@ suscripción, nunca un plan.
   permita sustituir trabajadores por administradores.
 - Las invitaciones pendientes no consumen plaza. Se bloquea la aceptación si
   al convertirla en persona activa se supera su límite.
-- Básico cubre operación esencial. Mediano añade catálogo, recurrencia,
-  planificación, exportación básica y portal de cliente. Top suma calidad,
-  rentabilidad, inventario, RRHH, portales de partner y gestoría,
-  integraciones y aprobaciones. Enterprise añade estructura corporativa, sucursales,
-  API e integraciones avanzadas. A medida activa únicamente lo contratado.
+- El catálogo público solo promete funciones que tienen módulo de cliente y
+  control de entitlement verificado. En la primera publicación son
+  Organización, Equipos, Clientes, Ubicaciones, Órdenes de trabajo, Control
+  horario, Presupuestos, Facturas, Rentabilidad y Portal de gestoría.
+- Catálogo de servicios, recurrencia, planificación, exportaciones, portales,
+  calidad, inventario, RRHH, aprobaciones, delegaciones, estructura corporativa
+  y API quedan marcados como `coming_soon`: pueden existir en el modelo, pero no
+  se ofrecen ni se activan en nuevas contrataciones hasta completar su módulo y
+  su guardia de servidor.
+- Integraciones e integraciones avanzadas quedan marcadas como
+  `platform_internal` hasta que exista un producto de integración preparado
+  para empresas. Ninguna de estas clasificaciones modifica el acceso efectivo
+  de una empresa ya existente. A medida solo activa funciones disponibles y
+  explícitamente contratadas.
 - Departamentos, perfiles configurables y equipos forman parte de la base de
   organización; la suscripción decide su capacidad y los módulos disponibles.
 - Todo cambio manual de plan, estado de acceso, función o capacidad exige una

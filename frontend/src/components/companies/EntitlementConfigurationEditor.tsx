@@ -25,6 +25,18 @@ function isChanged(code: string, values: EntitlementValues, baseValues?: Entitle
     return baseValues !== undefined && values[code] !== baseValues[code];
 }
 
+const AVAILABILITY_COPY = {
+    available: null,
+    coming_soon: {
+        label: "Próximamente",
+        description: "Aún no se ofrece ni se puede activar para clientes.",
+    },
+    platform_internal: {
+        label: "Interna de plataforma",
+        description: "Uso interno de WorkHive; no forma parte de los planes de cliente.",
+    },
+} as const;
+
 export function EntitlementConfigurationEditor({
     entitlements,
     values,
@@ -35,11 +47,12 @@ export function EntitlementConfigurationEditor({
 }: EntitlementConfigurationEditorProps) {
     const features = entitlements.filter((item) => item.value_type === "boolean");
     const capacities = entitlements.filter((item) => item.value_type === "integer");
-    const enabledFeatures = features.filter((item) => values[item.code] === true).length;
-    const allFeaturesSelected = features.length > 0 && enabledFeatures === features.length;
+    const configurableFeatures = features.filter((item) => item.availability === "available");
+    const enabledFeatures = configurableFeatures.filter((item) => values[item.code] === true).length;
+    const allFeaturesSelected = configurableFeatures.length > 0 && enabledFeatures === configurableFeatures.length;
 
     const setAllFeatures = (selected: boolean) => {
-        features.forEach((item) => onChange(item.code, selected));
+        configurableFeatures.forEach((item) => onChange(item.code, selected));
     };
 
     return (
@@ -57,7 +70,7 @@ export function EntitlementConfigurationEditor({
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                         <Badge variant="outline" className="w-fit border-accent/25 bg-accent/10 text-accent">
-                            {enabledFeatures} de {features.length} activas
+                            {enabledFeatures} de {configurableFeatures.length} activas
                         </Badge>
                         <Button
                             type="button"
@@ -83,22 +96,35 @@ export function EntitlementConfigurationEditor({
                     {features.map((item) => {
                         const changed = isChanged(item.code, values, baseValues);
                         const inputId = `${idPrefix}-${item.code.replaceAll(".", "-")}`;
+                        const availability = AVAILABILITY_COPY[item.availability];
+                        const canConfigure = item.availability === "available";
                         return (
                             <Label
                                 htmlFor={inputId}
                                 key={item.code}
                                 className={cn(
-                                    "flex min-w-0 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-left normal-case tracking-normal transition-colors hover:border-accent/40 hover:bg-accent/5",
+                                    "flex min-w-0 items-center gap-3 rounded-lg border px-3 py-2.5 text-left normal-case tracking-normal transition-colors",
+                                    canConfigure && "cursor-pointer hover:border-accent/40 hover:bg-accent/5",
+                                    !canConfigure && "cursor-not-allowed opacity-70",
                                     values[item.code] === true ? "border-accent/35 bg-accent/5" : "border-[var(--border-soft)]",
                                 )}
                             >
                                 <Checkbox
                                     id={inputId}
                                     checked={values[item.code] === true}
+                                    disabled={!canConfigure}
                                     onCheckedChange={(checked) => onChange(item.code, checked === true)}
                                 />
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-sm font-medium text-[var(--text-main)]">{item.label}</span>
+                                    {availability && (
+                                        <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                                            <Badge variant="outline" className="w-fit border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[10px] text-[var(--text-muted)]">
+                                                {availability.label}
+                                            </Badge>
+                                            <span className="text-[11px] text-[var(--text-muted)]">{availability.description}</span>
+                                        </span>
+                                    )}
                                     {baseValues && (
                                         <span className="mt-0.5 block text-[11px] text-[var(--text-muted)]">
                                             {changed ? "Configuración personalizada" : "Incluida por el plan"}
