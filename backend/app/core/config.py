@@ -247,10 +247,10 @@ class Settings(BaseSettings):
         if self.BILLING_ENABLED and (
             not self.STRIPE_SECRET_KEY
             or not self.STRIPE_WEBHOOK_SECRET
-            or not self.stripe_price_ids_by_interval
+            or self.missing_canonical_stripe_price_ids
         ):
             raise ValueError(
-                "Billing requires Stripe secret, webhook secret, and at least one plan price ID"
+                "Billing requires Stripe secret, webhook secret, and every canonical plan price ID"
             )
 
         if self.VERIFACTU_ENABLED and not all(
@@ -346,6 +346,29 @@ class Settings(BaseSettings):
             for interval in ("monthly", "annual")
         }
         return {key: value for key, value in prices.items() if value}
+
+    @property
+    def missing_canonical_stripe_price_ids(self) -> tuple[str, ...]:
+        required = (
+            ("basic", "monthly"),
+            ("basic", "annual"),
+            ("medium", "monthly"),
+            ("medium", "annual"),
+            ("top", "monthly"),
+            ("top", "annual"),
+            ("mega", "monthly"),
+            ("mega", "annual"),
+        )
+        return tuple(
+            f"{plan_code}:{billing_interval}"
+            for plan_code, billing_interval in required
+            if not self.stripe_price_id_for(plan_code, billing_interval)
+        )
+
+    def stripe_price_id(self, plan_code: str, billing_interval: str) -> str | None:
+        """Return the configured canonical Stripe price for a plan interval."""
+
+        return self.stripe_price_id_for(plan_code, billing_interval)
 
     def stripe_price_id_for(self, plan_code: str, billing_interval: str) -> str | None:
         price_fields = {

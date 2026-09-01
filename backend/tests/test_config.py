@@ -54,6 +54,46 @@ def test_production_rejects_incomplete_billing_configuration():
         production_settings(BILLING_ENABLED=True)
 
 
+def test_commercial_price_configuration_keeps_monthly_and_annual_prices_distinct():
+    configured = production_settings(
+        STRIPE_SECRET_KEY="sk_test_example",
+        STRIPE_WEBHOOK_SECRET="whsec_example",
+        STRIPE_BASIC_MONTHLY_PRICE_ID="price_basic_monthly",
+        STRIPE_BASIC_ANNUAL_PRICE_ID="price_basic_annual",
+    )
+
+    assert configured.stripe_price_id("basic", "monthly") == "price_basic_monthly"
+    assert configured.stripe_price_id("basic", "annual") == "price_basic_annual"
+    assert configured.stripe_price_id("basic", "quarterly") is None
+
+
+def test_billing_requires_every_public_monthly_and_annual_price():
+    with pytest.raises(ValidationError, match="every canonical plan price ID"):
+        production_settings(
+            BILLING_ENABLED=True,
+            STRIPE_SECRET_KEY="sk_test_example",
+            STRIPE_WEBHOOK_SECRET="whsec_example",
+            STRIPE_BASIC_MONTHLY_PRICE_ID="price_basic_monthly",
+            STRIPE_BASIC_ANNUAL_PRICE_ID="price_basic_annual",
+        )
+
+    configured = production_settings(
+        BILLING_ENABLED=True,
+        STRIPE_SECRET_KEY="sk_test_example",
+        STRIPE_WEBHOOK_SECRET="whsec_example",
+        STRIPE_BASIC_MONTHLY_PRICE_ID="price_basic_monthly",
+        STRIPE_BASIC_ANNUAL_PRICE_ID="price_basic_annual",
+        STRIPE_MEDIUM_MONTHLY_PRICE_ID="price_medium_monthly",
+        STRIPE_MEDIUM_ANNUAL_PRICE_ID="price_medium_annual",
+        STRIPE_TOP_MONTHLY_PRICE_ID="price_top_monthly",
+        STRIPE_TOP_ANNUAL_PRICE_ID="price_top_annual",
+        STRIPE_ENTERPRISE_MONTHLY_PRICE_ID="price_enterprise_monthly",
+        STRIPE_ENTERPRISE_ANNUAL_PRICE_ID="price_enterprise_annual",
+    )
+
+    assert configured.missing_canonical_stripe_price_ids == ()
+
+
 def test_production_public_registration_requires_a_workhive_notification_inbox():
     with pytest.raises(ValidationError, match="ACCOUNT_REQUEST_RECIPIENT_EMAIL"):
         production_settings(
