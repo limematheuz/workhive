@@ -74,6 +74,8 @@ export type PermissionDefinition = {
     code: string;
     category: string;
     description: string;
+    is_system_only: boolean;
+    recommended_for: string[];
 };
 
 export type PermissionProfileUsage = {

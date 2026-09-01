@@ -2174,6 +2174,16 @@
       "permission_count_many": "permisos",
       "select_category": "Seleccionar todo",
       "clear_category": "Deseleccionar todo",
+      "reserved_for_administrators": "Solo administradores de empresa",
+      "reserved_description": "Este permiso está protegido y no se puede añadir a perfiles personalizados.",
+      "recommended_for": "Recomendado para",
+      "company_scope_note": "Todos los permisos se aplican solo dentro de esta empresa. Nunca dan acceso a otras empresas ni al panel de WorkHive.",
+      "permission_audiences": {
+        "company_administrators": "Administradores de empresa",
+        "people_managers": "Responsables de personas",
+        "responsibles": "Responsables",
+        "operations": "Operaciones"
+      },
       "and_more": "+{count} más",
       "edit_title": "Editar perfil de permisos",
       "edit_description": "Los cambios se aplicarán a todas las personas que tengan asignado este perfil.",
@@ -2213,6 +2223,18 @@
         "organization.teams.read": "Ver equipos",
         "organization.teams.manage": "Crear y actualizar equipos",
         "unknown": "Permiso adicional de WorkHive"
+      },
+      "permission_guidance": {
+        "access.members.read": "Consulta las personas, su estado y los perfiles asignados dentro de esta empresa.",
+        "access.members.manage": "Invita personas y puede actualizar, suspender, reactivar o retirar su acceso a esta empresa.",
+        "access.profiles.read": "Consulta los perfiles de permisos y las acciones que incluyen.",
+        "access.profiles.manage": "Crea, modifica, activa o desactiva perfiles de permisos de esta empresa.",
+        "access.scopes.manage": "Asigna perfiles y define si se aplican a toda la empresa, a un departamento o a un equipo.",
+        "company.settings.manage": "Modifica los datos y la configuración general de esta empresa.",
+        "organization.departments.read": "Consulta la estructura de departamentos de esta empresa.",
+        "organization.departments.manage": "Crea, modifica, desactiva o elimina departamentos sin datos vinculados.",
+        "organization.teams.read": "Consulta los equipos y su composición dentro de esta empresa.",
+        "organization.teams.manage": "Crea, modifica, desactiva y administra integrantes de equipos dentro de esta empresa."
       }
     },
     "member_dialog": {

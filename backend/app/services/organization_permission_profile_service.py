@@ -18,6 +18,11 @@ from app.services.organization_service_shared import (
     not_found,
     require_capability,
 )
+from app.services.organization_permission_policy import (
+    is_system_only_permission,
+    recommended_audiences,
+    require_custom_profile_permissions_assignable,
+)
 
 
 def profile_response(
@@ -51,7 +56,14 @@ def list_permission_definitions(
 ) -> list[PermissionDefinitionResponse]:
     require_capability(db, current_user, CAPABILITY_PROFILES_READ)
     return [
-        PermissionDefinitionResponse.model_validate(definition)
+        PermissionDefinitionResponse(
+            id=definition.id,
+            code=definition.code,
+            category=definition.category,
+            description=definition.description,
+            is_system_only=is_system_only_permission(definition.code),
+            recommended_for=list(recommended_audiences(definition.code)),
+        )
         for definition in organization_repo.list_permission_definitions(db)
     ]
 
@@ -67,6 +79,7 @@ def list_permission_profiles(
 
 
 def permission_definitions_for_codes(db: Session, codes: list[str]):
+    require_custom_profile_permissions_assignable(codes)
     definitions = organization_repo.get_permission_definitions_by_codes(db, codes)
     if {definition.code for definition in definitions} != set(codes):
         conflict("One or more permission codes are unavailable")

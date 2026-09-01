@@ -2174,6 +2174,16 @@
       "permission_count_many": "permissions",
       "select_category": "Select all",
       "clear_category": "Deselect all",
+      "reserved_for_administrators": "Company administrators only",
+      "reserved_description": "This permission is protected and cannot be added to custom profiles.",
+      "recommended_for": "Recommended for",
+      "company_scope_note": "All permissions apply only within this company. They never grant access to other companies or the WorkHive panel.",
+      "permission_audiences": {
+        "company_administrators": "Company administrators",
+        "people_managers": "People managers",
+        "responsibles": "Responsible users",
+        "operations": "Operations"
+      },
       "and_more": "+{count} more",
       "edit_title": "Edit permission profile",
       "edit_description": "Changes apply to every person assigned this profile.",
@@ -2213,6 +2223,18 @@
         "organization.teams.read": "View teams",
         "organization.teams.manage": "Create and update teams",
         "unknown": "Additional WorkHive permission"
+      },
+      "permission_guidance": {
+        "access.members.read": "View people, their status, and the profiles assigned within this company.",
+        "access.members.manage": "Invite people and update, suspend, reactivate, or remove their access to this company.",
+        "access.profiles.read": "View permission profiles and the actions they include.",
+        "access.profiles.manage": "Create, update, activate, or deactivate this company's permission profiles.",
+        "access.scopes.manage": "Assign profiles and define whether they apply to the whole company, a department, or a team.",
+        "company.settings.manage": "Change this company's details and general settings.",
+        "organization.departments.read": "View this company's department structure.",
+        "organization.departments.manage": "Create, update, deactivate, or delete departments without linked data.",
+        "organization.teams.read": "View teams and their members within this company.",
+        "organization.teams.manage": "Create, update, deactivate, and manage people assigned to teams within this company."
       }
     },
     "member_dialog": {

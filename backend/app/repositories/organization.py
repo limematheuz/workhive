@@ -352,6 +352,7 @@ def has_permission_in_scope(
     permission_code: str,
     scope_type: str,
     scope_id: int,
+    require_system_profile: bool = False,
 ) -> bool:
     scope_matches = [
         (
@@ -363,7 +364,7 @@ def has_permission_in_scope(
             MembershipPermissionProfileScope.scope_id == scope_id,
         ),
     ]
-    return (
+    query = (
         db.query(MembershipPermissionProfileAssignment.id)
         .join(
             PermissionProfile,
@@ -399,9 +400,10 @@ def has_permission_in_scope(
                 ]
             ),
         )
-        .first()
-        is not None
     )
+    if require_system_profile:
+        query = query.filter(PermissionProfile.is_system.is_(True))
+    return query.first() is not None
 
 
 def is_valid_scope_target(

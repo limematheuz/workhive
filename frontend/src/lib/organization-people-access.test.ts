@@ -82,7 +82,11 @@ test("organization teams use the shared table while permission profiles expose r
     assert.match(teamsPanel, /dict\.organization\.access\[member\.access_class\]/);
     assert.match(controlCenter, /<DialogContent className="permission-profile-dialog[^\"]*overflow-hidden p-0">/);
     assert.match(controlCenter, /max-h-\[min\(42dvh,23rem\)\] space-y-2 overflow-y-auto/);
-    assert.match(controlCenter, /<Field orientation="horizontal" className="items-center gap-3">/);
+    assert.match(controlCenter, /flex w-full min-w-0 items-start gap-3/);
+    assert.match(controlCenter, /disabled=\{definition\.is_system_only && !canRemoveLegacySelection\}/);
+    assert.match(controlCenter, /definition\.recommended_for\.map/);
+    assert.match(controlCenter, /profileCopy\.company_scope_note/);
+    assert.match(controlCenter, /profileCopy\.reserved_for_administrators/);
     assert.match(controlCenter, /function ProfilesTable/);
     assert.match(controlCenter, /copy\.profiles\.actions/);
     assert.match(controlCenter, /permissionLabel\(/);

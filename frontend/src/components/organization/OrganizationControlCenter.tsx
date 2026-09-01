@@ -13,7 +13,7 @@ import { OrganizationTeamsPanel } from "@/components/organization/OrganizationTe
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Field, FieldLegend, FieldSet } from "@/components/ui/field";
+import { FieldLegend, FieldSet } from "@/components/ui/field";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import {
     Dialog,
@@ -887,16 +887,25 @@ function CreateOrganizationDialog({
         }
         return [...grouped.entries()];
     }, [definitions]);
+    const categorySelection = (categoryDefinitions: PermissionDefinition[]) => {
+        const codes: string[] = [];
+        let allSelected = true;
+        for (const definition of categoryDefinitions) {
+            if (definition.is_system_only) continue;
+            codes.push(definition.code);
+            if (!selectedPermissionCodeSet.has(definition.code)) allSelected = false;
+        }
+        return { codes, allSelected: codes.length > 0 && allSelected };
+    };
     const toggleCategory = (categoryDefinitions: PermissionDefinition[]) => {
-        const codes = categoryDefinitions.map((definition) => definition.code);
+        const { codes, allSelected } = categorySelection(categoryDefinitions);
+        if (codes.length === 0) return;
         const codeSet = new Set(codes);
-        const allSelected = codes.every((permissionCode) => selectedPermissionCodeSet.has(permissionCode));
         setPermissionCodes((current) => allSelected
             ? current.filter((permissionCode) => !codeSet.has(permissionCode))
             : [...new Set([...current, ...codes])],
         );
     };
-
     const title = profile ? profileCopy.edit_title : kind === "department" ? copy.new_department : kind === "team" ? copy.new_team : copy.new_profile;
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -972,46 +981,22 @@ function CreateOrganizationDialog({
                                 </div>
                                 <FieldSet className="gap-2">
                                     <FieldLegend variant="label" className="mb-0 text-[var(--text-main)]">{copy.permissions}</FieldLegend>
+                                    <p className="rounded-lg border border-[var(--border-soft)] bg-[var(--bg-secondary)]/35 px-3 py-2 text-xs leading-5 text-[var(--text-muted)]">
+                                        {profileCopy.company_scope_note}
+                                    </p>
                                     <div className="max-h-[min(42dvh,23rem)] space-y-2 overflow-y-auto rounded-xl border border-[var(--border-soft)] p-2">
                                         {definitionsByCategory.map(([category, categoryDefinitions]) => (
-                                            <section key={category} className="space-y-1">
-                                                <div className="flex min-h-7 items-center justify-between gap-3 px-0.5">
-                                                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]">
-                                                        {(profileCopy.permission_categories as Record<string, string>)[category] || category}
-                                                    </h3>
-                                                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs text-[var(--btn-secondary-text)] hover:text-[var(--btn-secondary-hover-text)]" onClick={() => toggleCategory(categoryDefinitions)}>
-                                                        {categoryDefinitions.every((definition) => selectedPermissionCodeSet.has(definition.code)) ? profileCopy.clear_category : profileCopy.select_category}
-                                                    </Button>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    {categoryDefinitions.map((definition) => {
-                                                        const isSelected = selectedPermissionCodeSet.has(definition.code);
-                                                        return (
-                                                            <Label
-                                                                key={definition.id}
-                                                                htmlFor={`definition-${definition.id}`}
-                                                                className={cn(
-                                                                    "w-full cursor-pointer rounded-lg border px-2.5 py-2 transition-colors",
-                                                                    isSelected
-                                                                        ? "border-[color:var(--accent-color)]/60 bg-accent/10"
-                                                                        : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
-                                                                )}
-                                                            >
-                                                                <Field orientation="horizontal" className="items-center gap-3">
-                                                                    <Checkbox
-                                                                        id={`definition-${definition.id}`}
-                                                                        checked={isSelected}
-                                                                        onCheckedChange={(checked) => setPermissionCodes((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
-                                                                    />
-                                                                    <span className="min-w-0 flex-1 text-xs leading-4 font-medium text-[var(--text-main)]">
-                                                                        {permissionLabel(definition.code, definition, dict.organization)}
-                                                                    </span>
-                                                                </Field>
-                                                            </Label>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </section>
+                                            <PermissionCategory
+                                                key={category}
+                                                category={category}
+                                                categoryDefinitions={categoryDefinitions}
+                                                selectedPermissionCodeSet={selectedPermissionCodeSet}
+                                                profileCopy={profileCopy}
+                                                organizationCopy={dict.organization}
+                                                categorySelection={categorySelection}
+                                                toggleCategory={toggleCategory}
+                                                onPermissionCodesChange={setPermissionCodes}
+                                            />
                                         ))}
                                     </div>
                                 </FieldSet>
@@ -1028,6 +1013,93 @@ function CreateOrganizationDialog({
                 </form>
             </DialogContent>
         </Dialog>
+    );
+}
+
+function PermissionCategory({
+    category,
+    categoryDefinitions,
+    selectedPermissionCodeSet,
+    profileCopy,
+    organizationCopy,
+    categorySelection,
+    toggleCategory,
+    onPermissionCodesChange,
+}: {
+    category: string;
+    categoryDefinitions: PermissionDefinition[];
+    selectedPermissionCodeSet: Set<string>;
+    profileCopy: ReturnType<typeof useDictionary>["dict"]["organization"]["profiles"];
+    organizationCopy: ReturnType<typeof useDictionary>["dict"]["organization"];
+    categorySelection: (definitions: PermissionDefinition[]) => { codes: string[]; allSelected: boolean };
+    toggleCategory: (definitions: PermissionDefinition[]) => void;
+    onPermissionCodesChange: React.Dispatch<React.SetStateAction<string[]>>;
+}) {
+    const selection = categorySelection(categoryDefinitions);
+    const permissionGuidance = (definition: PermissionDefinition) => (
+        (profileCopy.permission_guidance as Record<string, string>)[definition.code]
+        || definition.description
+    );
+    const audienceLabel = (audience: string) => (
+        (profileCopy.permission_audiences as Record<string, string>)[audience] || audience
+    );
+
+    return (
+        <section className="space-y-1">
+            <div className="flex min-h-7 items-center justify-between gap-3 px-0.5">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]">
+                    {(profileCopy.permission_categories as Record<string, string>)[category] || category}
+                </h3>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-[var(--btn-secondary-text)] hover:text-[var(--btn-secondary-hover-text)]"
+                    disabled={selection.codes.length === 0}
+                    onClick={() => toggleCategory(categoryDefinitions)}
+                >
+                    {selection.allSelected ? profileCopy.clear_category : profileCopy.select_category}
+                </Button>
+            </div>
+            <div className="space-y-1">
+                {categoryDefinitions.map((definition) => {
+                    const isSelected = selectedPermissionCodeSet.has(definition.code);
+                    const canRemoveLegacySelection = definition.is_system_only && isSelected;
+                    return (
+                        <Label
+                            key={definition.id}
+                            htmlFor={`definition-${definition.id}`}
+                            className={cn(
+                                "flex w-full min-w-0 items-start gap-3 rounded-lg border px-2.5 py-2 transition-colors",
+                                isSelected
+                                    ? "border-[color:var(--accent-color)]/60 bg-accent/10"
+                                    : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
+                                definition.is_system_only && !canRemoveLegacySelection
+                                    ? "cursor-not-allowed opacity-75"
+                                    : "cursor-pointer",
+                            )}
+                        >
+                            <Checkbox
+                                id={`definition-${definition.id}`}
+                                className="mt-0.5 shrink-0"
+                                checked={isSelected}
+                                disabled={definition.is_system_only && !canRemoveLegacySelection}
+                                onCheckedChange={(checked) => onPermissionCodesChange((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
+                            />
+                            <span className="min-w-0 flex-1 space-y-1">
+                                <span className="flex flex-wrap items-center gap-1.5 text-xs font-medium leading-4 text-[var(--text-main)]">
+                                    <span>{permissionLabel(definition.code, definition, organizationCopy)}</span>
+                                    {definition.is_system_only && <Badge variant="outline" className="border-amber-500/45 bg-amber-500/10 px-1.5 py-0 text-[10px] font-medium leading-4 text-amber-950 dark:text-amber-100">{profileCopy.reserved_for_administrators}</Badge>}
+                                    {definition.recommended_for.map((audience) => <Badge key={audience} variant="outline" className="border-[color:var(--btn-secondary-text)]/35 px-1.5 py-0 text-[10px] font-medium leading-4 text-[var(--btn-secondary-text)]">{audienceLabel(audience)}</Badge>)}
+                                </span>
+                                <span className="block text-[11px] leading-4 text-[var(--text-muted)]">{permissionGuidance(definition)}</span>
+                                {definition.is_system_only && <span className="block text-[11px] leading-4 text-amber-800 dark:text-amber-200">{profileCopy.reserved_description}</span>}
+                            </span>
+                        </Label>
+                    );
+                })}
+            </div>
+        </section>
     );
 }
 

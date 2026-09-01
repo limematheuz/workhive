@@ -1,6 +1,12 @@
 from app.core.security import create_access_token
 from app.models.company import Company
-from app.models.permission_profile import PermissionDefinition
+from app.models.permission_profile import (
+    MembershipPermissionProfileAssignment,
+    MembershipPermissionProfileScope,
+    PermissionDefinition,
+    PermissionProfile,
+    PermissionProfilePermission,
+)
 from app.models.user import User
 from app.services import organization_bootstrap_service
 
@@ -130,6 +136,129 @@ def test_all_organization_tab_reads_accept_get_requests(client, db):
     ):
         response = client.get(path, headers=headers)
         assert response.status_code == 200, response.text
+
+
+def test_permission_catalog_explains_recommendations_and_reserved_permissions(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "permission-catalog")
+    admin = _bootstrap_admin(db, company, "permission-catalog-admin")
+
+    response = client.get(
+        "/api/v1/organization/permission-definitions", headers=_headers(admin)
+    )
+
+    assert response.status_code == 200, response.text
+    definitions = {definition["code"]: definition for definition in response.json()}
+    assert definitions["access.members.manage"]["is_system_only"] is True
+    assert definitions["access.members.manage"]["recommended_for"] == [
+        "company_administrators"
+    ]
+    assert definitions["organization.teams.manage"]["is_system_only"] is False
+    assert definitions["organization.teams.manage"]["recommended_for"] == [
+        "operations",
+        "responsibles",
+    ]
+
+
+def test_critical_permissions_cannot_be_delegated_through_custom_profiles(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "reserved-permissions")
+    admin = _bootstrap_admin(db, company, "reserved-permissions-admin")
+    headers = _headers(admin)
+
+    for index, permission_code in enumerate(
+        (
+            "access.members.manage",
+            "access.profiles.manage",
+            "company.settings.manage",
+        )
+    ):
+        response = client.post(
+            "/api/v1/organization/permission-profiles",
+            headers=headers,
+            json={
+                "name": f"Reserved {index}",
+                "permission_codes": [permission_code],
+            },
+        )
+        assert response.status_code == 409, response.text
+        assert response.json()["detail"] == (
+            "Selected permissions are reserved for company administrators"
+        )
+
+    custom_profile = client.post(
+        "/api/v1/organization/permission-profiles",
+        headers=headers,
+        json={
+            "name": "Operations viewer",
+            "permission_codes": ["organization.teams.read"],
+        },
+    )
+    assert custom_profile.status_code == 201, custom_profile.text
+    update = client.patch(
+        f"/api/v1/organization/permission-profiles/{custom_profile.json()['id']}",
+        headers=headers,
+        json={"permission_codes": ["access.profiles.manage"]},
+    )
+    assert update.status_code == 409, update.text
+
+
+def test_legacy_custom_profile_cannot_authorize_critical_permissions(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "legacy-critical")
+    admin = _bootstrap_admin(db, company, "legacy-critical-admin")
+    worker = _user(db, company, "legacy-critical-worker", role_id=3)
+    target = _user(db, company, "legacy-critical-target", role_id=3)
+    worker_membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    target_membership = organization_bootstrap_service.ensure_user_membership(db, target)
+    assert worker_membership is not None
+    assert target_membership is not None
+
+    definition = (
+        db.query(PermissionDefinition)
+        .filter(PermissionDefinition.code == "access.members.manage")
+        .one()
+    )
+    legacy_profile = PermissionProfile(
+        company_id=company.id,
+        name="Legacy custom membership manager",
+        is_system=False,
+        is_active=True,
+    )
+    db.add(legacy_profile)
+    db.flush()
+    db.add(
+        PermissionProfilePermission(
+            permission_profile_id=legacy_profile.id,
+            permission_definition_id=definition.id,
+        )
+    )
+    assignment = MembershipPermissionProfileAssignment(
+        company_id=company.id,
+        company_membership_id=worker_membership.id,
+        permission_profile_id=legacy_profile.id,
+        assigned_by_user_id=admin.id,
+        is_active=True,
+    )
+    db.add(assignment)
+    db.flush()
+    db.add(
+        MembershipPermissionProfileScope(
+            company_id=company.id,
+            profile_assignment_id=assignment.id,
+            scope_type="company",
+            scope_id=company.id,
+        )
+    )
+    db.commit()
+
+    response = client.patch(
+        f"/api/v1/organization/members/{target_membership.id}",
+        headers=_headers(worker),
+        json={"status": "suspended"},
+    )
+
+    assert response.status_code == 403, response.text
 
 
 def test_profile_scopes_are_tenant_safe_and_do_not_grant_unrelated_company_access(

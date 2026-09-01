@@ -6,6 +6,7 @@ from app.models.user import User
 from app.repositories import organization as organization_repo
 from app.repositories import company as company_repo
 from app.services.entitlement_service import require_feature
+from app.services.organization_permission_policy import is_system_only_permission
 from app.services.user_scope import is_platform_superadmin, require_company_context
 
 
@@ -58,6 +59,7 @@ def require_capability(
         permission_code=capability,
         scope_type=scope_type,
         scope_id=target_id,
+        require_system_profile=is_system_only_permission(capability),
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

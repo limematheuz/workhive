@@ -226,6 +226,8 @@ class PermissionDefinitionResponse(BaseModel):
     code: str
     category: str
     description: str
+    is_system_only: bool = False
+    recommended_for: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
