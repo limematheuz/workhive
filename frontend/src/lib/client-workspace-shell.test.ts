@@ -14,6 +14,7 @@ const clientContacts = readFileSync(new URL("../components/clients/ClientContact
 const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
 const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
 const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-picker.tsx", import.meta.url), "utf8");
+const spanishDictionary = readFileSync(new URL("../dictionaries/es.json", import.meta.url), "utf8");
 const createClientSheet = readFileSync(new URL("../components/clients/CreateClientSheet.tsx", import.meta.url), "utf8");
 const editClientSheet = readFileSync(new URL("../components/clients/EditClientSheet.tsx", import.meta.url), "utf8");
 const clientLocations = readFileSync(new URL("../components/clients/ClientDetailLocationsTab.tsx", import.meta.url), "utf8");
@@ -119,6 +120,16 @@ test("commercial opportunities remain in the client detail and use shadcn contro
     assert.match(clientOpportunityTimeline, /Textarea/);
     assert.doesNotMatch(clientOpportunities, /fetch\s*\(/);
     assert.doesNotMatch(clientOpportunityTimeline, /fetch\s*\(/);
+});
+
+test("commercial follow-up uses plain language without changing its service contract", () => {
+    assert.match(spanishDictionary, /"title": "Seguimiento comercial"/);
+    assert.match(spanishDictionary, /"new": "Nuevo seguimiento"/);
+    assert.match(spanishDictionary, /"title_label": "Asunto"/);
+    assert.match(spanishDictionary, /"stage_label": "Situación"/);
+    assert.match(clientOpportunities, /ClientService\.getClientOpportunities/);
+    assert.match(clientOpportunities, /ClientService\.createClientOpportunity/);
+    assert.doesNotMatch(clientOpportunities, /Crea una oportunidad/);
 });
 
 test("client dialogs keep their chrome translucent and reuse the shared form surfaces", () => {

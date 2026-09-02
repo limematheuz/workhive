@@ -92,7 +92,6 @@ export function ClientOpportunitiesTab({ client, canManage }: ClientOpportunitie
                 <div>
                     <h3 className="text-base font-semibold text-[var(--text-main)]">{copy.title}</h3>
                     <p className="mt-1 text-sm text-[var(--text-muted)]">{copy.description}</p>
-                    <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">Crea una oportunidad, indica su próxima acción y registra llamadas, correos o decisiones en su historial.</p>
                 </div>
                 {canManage && <Button type="button" onClick={() => setEditorOpportunity(null)}><Plus className="size-4" />{copy.new}</Button>}
             </header>

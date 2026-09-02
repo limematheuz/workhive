@@ -147,7 +147,7 @@ export const ClientService = {
             method: "GET",
             cache: "no-store",
         });
-        await assertApiResponseOk(response, "No se pudieron cargar las oportunidades");
+        await assertApiResponseOk(response, "No se pudieron cargar los seguimientos");
         return await response.json();
     },
 
@@ -165,7 +165,7 @@ export const ClientService = {
             method: "POST",
             body: JSON.stringify(data),
         });
-        await assertApiResponseOk(response, "No se pudo crear la oportunidad");
+        await assertApiResponseOk(response, "No se pudo crear el seguimiento");
         return await response.json();
     },
 
@@ -178,7 +178,7 @@ export const ClientService = {
             method: "PATCH",
             body: JSON.stringify(data),
         });
-        await assertApiResponseOk(response, "No se pudo actualizar la oportunidad");
+        await assertApiResponseOk(response, "No se pudo actualizar el seguimiento");
         return await response.json();
     },
 
