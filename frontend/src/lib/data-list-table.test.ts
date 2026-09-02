@@ -75,3 +75,16 @@ test("invoice and quote lists use the shared shadcn table primitive", () => {
     assert.match(jobs, /grid gap-2\.5 p-3 md:hidden/);
     assert.doesNotMatch(jobs, /CheckSquare/);
 });
+
+test("invoice and quote lists paginate both desktop tables and mobile cards consistently", () => {
+    const invoices = source("../components/invoices/InvoicesListSection.tsx");
+    const quotes = source("../components/quotes/QuotesListSection.tsx");
+
+    for (const [name, file, collection] of [["invoices", invoices, "invoices"], ["quotes", quotes, "quotes"]] as const) {
+        assert.match(file, /DataTablePagination/);
+        assert.match(file, new RegExp(`useDataTablePagination\\(${collection}, 10\\)`));
+        assert.match(file, /pagination\.pageItems\.map/);
+        assert.match(file, /border-b border-\[var\(--border-soft\)\]/, `${name} should keep a visible row separator`);
+        assert.match(file, /text-\[var\(--btn-secondary-text\)\]/, `${name} should use the shared blue table headings`);
+    }
+});
