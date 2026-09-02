@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Building2, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { Building2, Loader2, ShieldAlert } from "lucide-react";
 
 import { ClientDetailDialog } from "@/components/clients/ClientDetailDialog";
 import { ClientTaskDetailDialog } from "@/components/clients/ClientTaskDetailDialog";
@@ -14,6 +14,7 @@ import { EditClientSheet } from "@/components/clients/EditClientSheet";
 import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
 import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { canViewFinance } from "@/domain/access/roles";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
@@ -29,7 +30,7 @@ import {
 import { POLL_INTERVALS } from "@/lib/polling";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
-import { ClientService, type Client } from "@/services/client.service";
+import { ClientService, type Client, type ClientAccess } from "@/services/client.service";
 import { InvoiceService } from "@/services/invoice.service";
 import { LocationService, type Location } from "@/services/location.service";
 import { TaskService, type TaskItem } from "@/services/task.service";
@@ -44,38 +45,134 @@ const EMPTY_FILTERS: ClientWorkspaceFilter = {
     contact: "all",
 };
 
+type ClientsPageState = {
+    clients: Client[];
+    locations: Location[];
+    tasks: TaskItem[];
+    invoices: Invoice[] | undefined;
+    filters: ClientWorkspaceFilter;
+    loading: boolean;
+    access: ClientAccess | null;
+    accessResolved: boolean;
+    editingClient: Client | null;
+    editSheetOpen: boolean;
+    deleteDialogOpen: boolean;
+    isDeleting: boolean;
+    detailsClient: Client | null;
+    detailsDialogOpen: boolean;
+    tasksLocation: Location | null;
+    tasksSheetOpen: boolean;
+    viewingTask: TaskItem | null;
+    backToClient: boolean;
+};
+
+type ClientsPageSetAction = {
+    [Key in keyof ClientsPageState]: {
+        type: "set";
+        key: Key;
+        value: ClientsPageState[Key];
+    };
+}[keyof ClientsPageState];
+
+type ClientsPageAction = ClientsPageSetAction | {
+    type: "toggle-client-active";
+    clientId: number;
+    isActive: boolean;
+};
+
+const CLIENTS_PAGE_INITIAL_STATE: ClientsPageState = {
+    clients: [],
+    locations: [],
+    tasks: [],
+    invoices: undefined,
+    filters: EMPTY_FILTERS,
+    loading: true,
+    access: null,
+    accessResolved: false,
+    editingClient: null,
+    editSheetOpen: false,
+    deleteDialogOpen: false,
+    isDeleting: false,
+    detailsClient: null,
+    detailsDialogOpen: false,
+    tasksLocation: null,
+    tasksSheetOpen: false,
+    viewingTask: null,
+    backToClient: false,
+};
+
+function clientsPageReducer(
+    state: ClientsPageState,
+    action: ClientsPageAction,
+): ClientsPageState {
+    if (action.type === "set") {
+        return { ...state, [action.key]: action.value };
+    }
+
+    return {
+        ...state,
+        clients: state.clients.map((client) => (
+            client.id === action.clientId ? { ...client, is_active: action.isActive } : client
+        )),
+        detailsClient: state.detailsClient?.id === action.clientId
+            ? { ...state.detailsClient, is_active: action.isActive }
+            : state.detailsClient,
+    };
+}
+
 export default function ClientsPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
-    const [clients, setClients] = useState<Client[]>([]);
-    const [locations, setLocations] = useState<Location[]>([]);
-    const [tasks, setTasks] = useState<TaskItem[]>([]);
-    const [invoices, setInvoices] = useState<Invoice[] | undefined>(undefined);
-    const [filters, setFilters] = useState<ClientWorkspaceFilter>(EMPTY_FILTERS);
-    const [loading, setLoading] = useState(true);
-    const [workspaceReferenceDate] = useState(() => new Date());
+    const [pageState, dispatch] = useReducer(clientsPageReducer, CLIENTS_PAGE_INITIAL_STATE);
+    const {
+        clients,
+        locations,
+        tasks,
+        invoices,
+        filters,
+        loading,
+        access,
+        accessResolved,
+        editingClient,
+        editSheetOpen,
+        deleteDialogOpen,
+        isDeleting,
+        detailsClient,
+        detailsDialogOpen,
+        tasksLocation,
+        tasksSheetOpen,
+        viewingTask,
+        backToClient,
+    } = pageState;
+    const workspaceReferenceDate = useMemo(() => new Date(), []);
     const hasLoadedRef = useRef(false);
+    const setPageState = useCallback(<Key extends keyof ClientsPageState>(
+        key: Key,
+        value: ClientsPageState[Key],
+    ) => {
+        dispatch({ type: "set", key, value } as ClientsPageSetAction);
+    }, []);
 
-    const isReadOnly = user?.role?.name === "viewer" || user?.role?.name === "manager";
+    const canReadClients = access?.can_read_clients === true;
+    const canManageClients = access?.can_manage_clients === true;
     const canViewClientFinancials = canViewFinance(user) && Boolean(user?.company_id);
-    const [editingClient, setEditingClient] = useState<Client | null>(null);
-    const [editSheetOpen, setEditSheetOpen] = useState(false);
     const deletingClientRef = useRef<Client | null>(null);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [detailsClient, setDetailsClient] = useState<Client | null>(null);
-    const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-    const [tasksLocation, setTasksLocation] = useState<Location | null>(null);
-    const [tasksSheetOpen, setTasksSheetOpen] = useState(false);
-    const [viewingTask, setViewingTask] = useState<TaskItem | null>(null);
-    const [backToClient, setBackToClient] = useState(false);
 
     const loadClients = useCallback(async () => {
         if (userLoading || !user) return;
         const isInitialLoad = !hasLoadedRef.current;
-        if (isInitialLoad) setLoading(true);
+        if (isInitialLoad) setPageState("loading", true);
 
         try {
+            const clientAccess = await ClientService.getAccess();
+            setPageState("access", clientAccess);
+            if (!clientAccess.can_read_clients) {
+                setPageState("clients", []);
+                setPageState("locations", []);
+                setPageState("tasks", []);
+                setPageState("invoices", undefined);
+                return;
+            }
             const [clientData, locationData, taskData, invoiceData] = await Promise.all([
                 ClientService.getClients(null),
                 LocationService.getLocations().catch(() => [] as Location[]),
@@ -84,17 +181,18 @@ export default function ClientsPage() {
                     ? InvoiceService.getAllInvoices().catch(() => undefined)
                     : Promise.resolve(undefined),
             ]);
-            setClients(clientData);
-            setLocations(locationData);
-            setTasks(taskData);
-            setInvoices(invoiceData);
+            setPageState("clients", clientData);
+            setPageState("locations", locationData);
+            setPageState("tasks", taskData);
+            setPageState("invoices", invoiceData);
         } catch {
             if (isInitialLoad) toast.error(dict.clients.workspace.load_error);
         } finally {
+            setPageState("accessResolved", true);
             hasLoadedRef.current = true;
-            setLoading(false);
+            setPageState("loading", false);
         }
-    }, [canViewClientFinancials, dict.clients.workspace.load_error, user, userLoading]);
+    }, [canViewClientFinancials, dict.clients.workspace.load_error, setPageState, user, userLoading]);
 
     useEffect(() => {
         if (userLoading || !user) return;
@@ -121,20 +219,19 @@ export default function ClientsPage() {
     const detailsRow = workspace.rows.find((row) => row.client.id === detailsClient?.id) ?? null;
 
     const handleEdit = (client: Client) => {
-        setEditingClient(client);
-        setEditSheetOpen(true);
+        setPageState("editingClient", client);
+        setPageState("editSheetOpen", true);
     };
 
     const handleDeleteClick = (client: Client) => {
         deletingClientRef.current = client;
-        setDeleteDialogOpen(true);
+        setPageState("deleteDialogOpen", true);
     };
 
     const handleToggleActive = async (client: Client) => {
         try {
             await ClientService.updateClient(client.id, { is_active: !client.is_active });
-            setClients((current) => current.map((item) => item.id === client.id ? { ...item, is_active: !client.is_active } : item));
-            setDetailsClient((current) => current?.id === client.id ? { ...current, is_active: !client.is_active } : current);
+            dispatch({ type: "toggle-client-active", clientId: client.id, isActive: !client.is_active });
             toast.success(client.is_active ? dict.clients.workspace.deactivated : dict.clients.workspace.activated);
             void loadClients();
         } catch (error) {
@@ -145,17 +242,17 @@ export default function ClientsPage() {
     const handleDeleteConfirm = async () => {
         const deletingClient = deletingClientRef.current;
         if (!deletingClient) return;
-        setIsDeleting(true);
+        setPageState("isDeleting", true);
         try {
             await ClientService.deleteClient(deletingClient.id);
             toast.success(dict.clients.form.delete_success_toast);
-            setDeleteDialogOpen(false);
+            setPageState("deleteDialogOpen", false);
             deletingClientRef.current = null;
             void loadClients();
         } catch {
             toast.error(dict.clients.form.delete_error_toast);
         } finally {
-            setIsDeleting(false);
+            setPageState("isDeleting", false);
         }
     };
 
@@ -168,21 +265,29 @@ export default function ClientsPage() {
                     subtitle={dict.clients.workspace.subtitle}
                     actions={(
                         <>
-                            <ClientWorkspaceExportButton
+                            {canReadClients && <ClientWorkspaceExportButton
                                 rows={visibleRows}
                                 includeFinancialData={workspace.summary.hasFinancialData}
                                 year={workspaceReferenceDate.getFullYear()}
-                            />
-                            {!isReadOnly && <CreateClientSheet onClientCreated={loadClients} />}
+                            />}
+                            {canManageClients && <CreateClientSheet onClientCreated={loadClients} />}
                         </>
                     )}
                 />
 
-                {loading ? (
+                {loading || !accessResolved ? (
                     <section className="billing-surface flex min-h-80 flex-col items-center justify-center gap-3 rounded-[26px]">
                         <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
                         <p className="text-sm text-[var(--text-muted)]">{dict.clients.workspace.loading}</p>
                     </section>
+                ) : !canReadClients ? (
+                    <Card className="mx-auto max-w-xl">
+                        <CardContent className="py-14 text-center">
+                            <ShieldAlert className="mx-auto size-7 text-accent" aria-hidden="true" />
+                            <h2 className="mt-4 text-base font-semibold text-[var(--text-main)]">{dict.clients.workspace.access_denied_title}</h2>
+                            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--text-muted)]">{dict.clients.workspace.access_denied_description}</p>
+                        </CardContent>
+                    </Card>
                 ) : (
                     <>
                         <ClientWorkspaceStats summary={visibleSummary} monthlyRevenue={monthlyRevenue} />
@@ -191,22 +296,23 @@ export default function ClientsPage() {
                                 {dict.clients.workspace.financial_access_hint}
                             </p>
                         )}
-                        <ClientWorkspaceFilters filters={filters} cities={cities} onChange={setFilters} />
+                        <ClientWorkspaceFilters filters={filters} cities={cities} onChange={(nextFilters) => setPageState("filters", nextFilters)} />
                         <ClientsTable
                             rows={visibleRows}
                             onEdit={handleEdit}
                             onDelete={handleDeleteClick}
                             onToggleActive={handleToggleActive}
                             onDetails={(client) => {
-                                setDetailsClient(client);
-                                setDetailsDialogOpen(true);
+                                setPageState("detailsClient", client);
+                                setPageState("detailsDialogOpen", true);
                             }}
+                            canManage={canManageClients}
                         />
                     </>
                 )}
             </div>
 
-            <EditClientSheet client={editingClient} open={editSheetOpen} onOpenChange={setEditSheetOpen} onClientUpdated={loadClients} />
+            <EditClientSheet client={editingClient} open={editSheetOpen} onOpenChange={(open) => setPageState("editSheetOpen", open)} onClientUpdated={loadClients} />
             <ClientDetailDialog
                 client={detailsClient}
                 workspaceRow={detailsRow}
@@ -215,36 +321,38 @@ export default function ClientsPage() {
                 invoices={invoices ?? []}
                 financialDataAvailable={workspace.summary.hasFinancialData}
                 open={detailsDialogOpen}
-                onOpenChange={setDetailsDialogOpen}
+                onOpenChange={(open) => setPageState("detailsDialogOpen", open)}
                 onViewLocationTasks={(location) => {
-                    setTasksLocation(location);
-                    setTasksSheetOpen(true);
+                    setPageState("tasksLocation", location);
+                    setPageState("tasksSheetOpen", true);
                 }}
                 onViewTaskDetails={(task) => {
                     if (user) acknowledgeTaskOpened(user.id, task);
-                    setBackToClient(true);
-                    setViewingTask(task);
+                    setPageState("backToClient", true);
+                    setPageState("viewingTask", task);
                 }}
                 onEditClient={handleEdit}
                 onToggleActiveClient={handleToggleActive}
                 onDeleteClient={handleDeleteClick}
-                canManage={!isReadOnly}
+                canManage={canManageClients}
+                canReadCommercialFollowUps={access?.can_read_commercial_follow_ups === true}
+                canManageCommercialFollowUps={access?.can_manage_commercial_follow_ups === true}
             />
-            <LocationTasksSheet location={tasksLocation} open={tasksSheetOpen} onOpenChange={setTasksSheetOpen} initialCreateForm={false} readOnly />
+            <LocationTasksSheet location={tasksLocation} open={tasksSheetOpen} onOpenChange={(open) => setPageState("tasksSheetOpen", open)} initialCreateForm={false} readOnly />
             <ClientTaskDetailDialog
                 task={viewingTask}
                 showBackToClient={backToClient}
-                onClose={() => setViewingTask(null)}
+                onClose={() => setPageState("viewingTask", null)}
                 onBackToClient={() => {
-                    setViewingTask(null);
-                    setDetailsDialogOpen(true);
-                    setBackToClient(false);
+                    setPageState("viewingTask", null);
+                    setPageState("detailsDialogOpen", true);
+                    setPageState("backToClient", false);
                 }}
             />
             <DeleteConfirmDialog
                 open={deleteDialogOpen}
                 onOpenChange={(open) => {
-                    setDeleteDialogOpen(open);
+                    setPageState("deleteDialogOpen", open);
                     if (!open) deletingClientRef.current = null;
                 }}
                 title={dict.clients.delete_dialog.title}

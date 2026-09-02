@@ -931,6 +931,8 @@
       "overview": "Overview",
       "loading": "Loading clients…",
       "load_error": "Could not load clients.",
+      "access_denied_title": "You do not have access to Clients",
+      "access_denied_description": "Ask an administrator to assign you a profile that can view clients.",
       "activated": "Client activated.",
       "deactivated": "Client deactivated.",
       "export": "Export",

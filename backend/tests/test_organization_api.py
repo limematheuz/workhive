@@ -117,6 +117,8 @@ def test_company_administrator_configures_departments_teams_and_profiles(client,
     assert profiles.status_code == 200, profiles.text
     assert {item["name"] for item in profiles.json()} == {
         "Administrador de empresa",
+        "Comercial",
+        "Consulta de clientes",
         "Supervisor de zona",
     }
 

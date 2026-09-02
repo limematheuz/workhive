@@ -147,7 +147,7 @@ def test_client_contacts_validate_primary_state_and_scope_every_request(client):
     assert duplicate_roles.status_code == 422
 
 
-def test_client_contacts_are_readable_by_viewers_but_writable_only_by_admins(client, db):
+def test_client_contacts_require_an_assigned_client_profile(client, db):
     company = Company(
         name="Contact authorization",
         tax_id="CONTACT-AUTH",
@@ -191,6 +191,5 @@ def test_client_contacts_are_readable_by_viewers_but_writable_only_by_admins(cli
         json={"full_name": "No permitido"},
     )
 
-    assert readable.status_code == 200, readable.text
-    assert readable.json() == []
+    assert readable.status_code == 403, readable.text
     assert blocked.status_code == 403

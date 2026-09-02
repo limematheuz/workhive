@@ -15,6 +15,13 @@ export interface Client {
     company_id: number;
 }
 
+export interface ClientAccess {
+    can_read_clients: boolean;
+    can_manage_clients: boolean;
+    can_read_commercial_follow_ups: boolean;
+    can_manage_commercial_follow_ups: boolean;
+}
+
 export type ClientContactRole =
     | "commercial"
     | "billing"

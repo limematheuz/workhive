@@ -931,6 +931,8 @@
       "overview": "Resumen",
       "loading": "Cargando clientes…",
       "load_error": "No se pudieron cargar los clientes.",
+      "access_denied_title": "No tienes acceso a Clientes",
+      "access_denied_description": "Pide a un administrador que te asigne un perfil con permiso para consultar clientes.",
       "activated": "Cliente activado.",
       "deactivated": "Cliente desactivado.",
       "export": "Exportar",

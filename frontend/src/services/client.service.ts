@@ -1,6 +1,7 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import {
     Client,
+    ClientAccess,
     ClientContact,
     ClientContactPayload,
     ClientContactRole,
@@ -14,6 +15,7 @@ import {
 
 export type {
     Client,
+    ClientAccess,
     ClientContact,
     ClientContactPayload,
     ClientContactRole,
@@ -37,6 +39,15 @@ export type ClientEmailPayload = {
 };
 
 export const ClientService = {
+    getAccess: async (): Promise<ClientAccess> => {
+        const response = await apiFetch("/api/v1/clients/access", {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar los permisos de clientes");
+        return await response.json();
+    },
+
     getClients: async (isActive: boolean | null = true): Promise<Client[]> => {
         const query = isActive === null
             ? "include_inactive=true"
@@ -45,9 +56,13 @@ export const ClientService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching clients")
+        // Several workspaces use this only to populate an optional client
+        // selector. A denied client capability is not an application failure:
+        // the backend remains authoritative and the caller receives no choices.
+        if (response.status === 403) {
+            return []
         }
+        await assertApiResponseOk(response, "No se pudieron cargar los clientes")
         return await response.json()
     },
 

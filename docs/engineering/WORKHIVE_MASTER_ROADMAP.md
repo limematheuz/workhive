@@ -131,6 +131,12 @@ como WorkHive Core solo cuando el caso real las exige.
 - ⬜ Empresa demo Enterprise con departamentos, perfiles y datos anonimizados.
 - ⬜ Inventario definitivo de compatibilidades API y de datos a migrar.
 - ⬜ Catálogo único revisado de módulos, permisos y clases de plaza.
+- ⬜ Endurecer el almacenamiento documental: las imágenes ya admiten objeto S3,
+  pero PDF, Facturae y certificados aún usan rutas de filesystem. Migrarlos a
+  claves opacas de almacenamiento de objetos cifrado, con metadatos y hashes
+  en la base de datos, migración aditiva, retención y copias verificables.
+  `backend/storage` actual es solo dato local ignorado por Git, no una fuente
+  de verdad ni un lugar para secretos.
 
 ### Fase 1 — Fundación Enterprise
 
@@ -143,6 +149,11 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Invitaciones pendientes/recientes, cancelación y validación de enlaces.
 - ✅ Solicitudes de privacidad y supresión existen como dominio y servicio;
   retirar a una persona de la empresa no elimina su identidad global.
+- ✅ Clientes y Seguimiento comercial aplican `clients.read/manage` y
+  `commercial.follow_ups.read/manage` en el backend; los perfiles base
+  **Comercial** y **Consulta de clientes** son seguros, los scopes estrechos
+  fallan cerrados y hay pruebas de acceso, denegación, aislamiento entre
+  empresas y exclusión del panel de plataforma.
 - ⬜ Matriz de autorización positiva, negativa y de aislamiento para **todos**
   los dominios: clientes, ubicaciones, tiempo, trabajos y finanzas.
 - ⬜ Verificación de cuotas concurrentes para altas, activación y promoción.

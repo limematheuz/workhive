@@ -37,6 +37,10 @@ def require_capability(
         "organization.departments.manage": "features.organization",
         "organization.teams.read": "features.teams",
         "organization.teams.manage": "features.teams",
+        "clients.read": "features.clients",
+        "clients.manage": "features.clients",
+        "commercial.follow_ups.read": "features.clients",
+        "commercial.follow_ups.manage": "features.clients",
     }.get(capability)
     if feature_code:
         require_feature(db, company, feature_code)
