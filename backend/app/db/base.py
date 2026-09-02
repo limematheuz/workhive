@@ -3,6 +3,8 @@
 from app.db.session import Base
 from app.models.user import User
 from app.models.client import Client
+from app.models.client_contact import ClientContact, ClientContactRole
+from app.models.client_opportunity import ClientOpportunity, ClientOpportunityActivity
 from app.models.location import Location
 from app.models.location_zone import LocationZone, TaskZone, LocationSpaceTaskTemplate
 from app.models.location_profile import LocationProfile

@@ -39,6 +39,7 @@ const EMPTY_FILTERS: ClientWorkspaceFilter = {
     search: "",
     status: "all",
     clientType: "all",
+    relationship: "all",
     city: "",
     contact: "all",
 };

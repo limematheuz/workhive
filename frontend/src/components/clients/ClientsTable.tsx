@@ -16,7 +16,8 @@ import {
 
 import { ActionPopover } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
-import { DataListTable } from "@/components/ui/data-list-table";
+import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ClientWorkspaceRow } from "@/lib/client-workspace";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
@@ -56,9 +57,7 @@ export function ClientsTable({
     const workspace = dict.clients.workspace;
     const { user } = useUser();
     const isReadOnly = user?.role?.name === "viewer" || user?.role?.name === "manager";
-    const gridClassName = isReadOnly
-        ? "grid-cols-[minmax(15rem,1.45fr)_7rem_minmax(12rem,1fr)_6rem_5.5rem_6rem]"
-        : "grid-cols-[minmax(15rem,1.45fr)_7rem_minmax(12rem,1fr)_6rem_5.5rem_6rem_2.25rem]";
+    const pagination = useDataTablePagination(rows, 10);
 
     const statusBadge = (client: Client) => (
         <Badge
@@ -81,6 +80,10 @@ export function ClientsTable({
         return <Badge className="border border-accent/20 bg-accent/10 text-[10px] font-semibold text-accent">{label}</Badge>;
     };
 
+    const relationshipBadge = (client: Client) => client.relationship_status === "lead"
+        ? <Badge variant="secondary" className="text-[10px] font-semibold">{dict.clients.form.relationship_status_lead}</Badge>
+        : null;
+
     const renderActions = (client: Client) => (
         <ActionPopover
             align="end"
@@ -95,66 +98,19 @@ export function ClientsTable({
         />
     );
 
-    return (
-        <DataListTable
-            items={rows}
-            getRowKey={(row) => row.client.id}
-            gridClassName={gridClassName}
-            desktopFrom="lg"
-            onRowClick={(row) => onDetails(row.client)}
-            rowAriaLabel={(row) => workspace.view_client.replace("{name}", row.client.name)}
-            header={{
-                title: workspace.list_title,
-                subtitle: workspace.list_subtitle,
-                countLabel: `${rows.length} ${rows.length === 1 ? workspace.client_singular : workspace.client_plural}`,
-            }}
-            columns={[
-                { key: "client", label: dict.clients.table.name },
-                { key: "type", label: dict.locations.table.type },
-                { key: "contact", label: workspace.filter_contact },
-                { key: "locations", label: workspace.locations, className: "text-right" },
-                { key: "jobs", label: workspace.jobs, className: "text-right" },
-                { key: "status", label: dict.clients.table.status },
-                ...(!isReadOnly ? [{ key: "actions", label: <span className="sr-only">Acciones</span>, className: "text-right" }] : []),
-            ]}
-            empty={(
-                <>
-                    <Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
-                    <h2 className="mt-3 text-sm font-semibold text-[var(--text-main)]">{workspace.empty_title}</h2>
-                    <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{workspace.empty_description}</p>
-                </>
-            )}
-            renderCompactRow={(row) => (
-                <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                        <div className="min-w-0 flex-1">
-                            <ClientIdentity row={row} noTaxId={workspace.no_tax_id} />
-                            <div className="mt-2 flex flex-wrap items-center gap-2">{typeBadge(row.client)}{statusBadge(row.client)}</div>
-                        </div>
-                        <div onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] pt-3 text-xs">
-                        <span className="flex min-w-0 items-center gap-1.5 text-[var(--text-muted)]"><Mail className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" /><span className="truncate">{row.client.email || workspace.no_email}</span></span>
-                        <span className="flex min-w-0 items-center gap-1.5 text-[var(--text-muted)]"><Phone className="h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" /><span className="truncate">{row.client.phone || workspace.no_phone}</span></span>
-                        <span className="flex items-center gap-1.5 font-semibold text-[var(--text-main)]"><MapPin className="h-3.5 w-3.5 text-accent" aria-hidden="true" />{row.locationCount} {workspace.locations.toLowerCase()}</span>
-                        <span className="flex items-center gap-1.5 font-semibold text-[var(--text-main)]"><ListChecks className="h-3.5 w-3.5 text-accent" aria-hidden="true" />{row.taskCount} ({row.pendingTaskCount} {workspace.pending_short})</span>
-                    </div>
-                </div>
-            )}
-            renderDesktopRow={(row) => (
-                <>
-                    <ClientIdentity row={row} noTaxId={workspace.no_tax_id} />
-                    <div>{typeBadge(row.client)}</div>
-                    <div className="min-w-0 text-xs text-[var(--text-muted)]">
-                        <p className="truncate font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p>
-                        <p className="mt-0.5 truncate">{row.client.address || row.client.city}</p>
-                    </div>
-                    <span className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.locationCount}</span>
-                    <span className="flex items-center justify-end gap-1.5 font-mono text-sm font-semibold text-[var(--text-main)]"><ListChecks className="h-3.5 w-3.5 text-accent" aria-hidden="true" />{row.taskCount}</span>
-                    <div>{statusBadge(row.client)}</div>
-                    {!isReadOnly && <div className="flex justify-end" onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</div>}
-                </>
-            )}
-        />
-    );
+    return <section id="clients-list" className="billing-surface overflow-hidden rounded-[26px]">
+        <header className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div><h2 className="text-sm font-semibold text-[var(--text-main)]">{workspace.list_title}</h2><p className="mt-1 text-xs text-[var(--text-muted)]">{workspace.list_subtitle}</p></div>
+            <p className="text-sm font-medium text-[var(--text-muted)]">{rows.length} {rows.length === 1 ? workspace.client_singular : workspace.client_plural}</p>
+        </header>
+        {rows.length === 0 ? <div className="px-5 py-16 text-center"><Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" /><h2 className="mt-3 text-sm font-semibold text-[var(--text-main)]">{workspace.empty_title}</h2><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{workspace.empty_description}</p></div> : <>
+            <Table className="min-w-[58rem] table-fixed text-left">
+                <TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]">
+                    <TableHead className="w-[29%] text-[var(--btn-secondary-text)]">{dict.clients.table.name}</TableHead><TableHead className="w-[13%] text-[var(--btn-secondary-text)]">{dict.locations.table.type}</TableHead><TableHead className="w-[22%] text-[var(--btn-secondary-text)]">{workspace.filter_contact}</TableHead><TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">{workspace.locations}</TableHead><TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">{workspace.jobs}</TableHead><TableHead className="w-[12%] text-[var(--btn-secondary-text)]">{dict.clients.table.status}</TableHead>{!isReadOnly && <TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">{dict.clients.table.actions}</TableHead>}
+                </TableRow></TableHeader>
+                <TableBody>{pagination.pageItems.map((row) => <TableRow key={row.client.id} onClick={() => onDetails(row.client)} aria-label={workspace.view_client.replace("{name}", row.client.name)} className="bg-[var(--bg-secondary)]/20"><TableCell><ClientIdentity row={row} noTaxId={workspace.no_tax_id} /></TableCell><TableCell><div className="flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}</div></TableCell><TableCell><p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{row.client.address || row.client.city}</p></TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.locationCount}</TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.taskCount}</TableCell><TableCell>{statusBadge(row.client)}</TableCell>{!isReadOnly && <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</TableCell>}</TableRow>)}</TableBody>
+            </Table>
+            <DataTablePagination page={pagination.page} totalItems={rows.length} pageSize={pagination.pageSize} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} summary={`${(pagination.page - 1) * pagination.pageSize + 1}-${Math.min(pagination.page * pagination.pageSize, rows.length)} de ${rows.length} clientes`} rowsPerPageLabel="Filas por página" previousLabel="Página anterior" nextLabel="Página siguiente" />
+        </>}
+    </section>;
 }

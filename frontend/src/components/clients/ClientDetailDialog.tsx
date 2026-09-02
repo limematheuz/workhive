@@ -108,6 +108,7 @@ function ClientDetailDialogBody({
                     filteredTasks={filteredTasks}
                     invoices={clientInvoices}
                     financialDataAvailable={financialDataAvailable}
+                    canManage={canManage}
                     taskSearch={taskSearch}
                     onTaskSearchChange={setTaskSearch}
                     taskStatusFilter={taskStatusFilter}

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 class ClientBase(BaseModel):
     name: str = Field(max_length=100)
     client_type: Literal["individual", "business", "company"] = "individual"
+    relationship_status: Literal["lead", "client"] = "client"
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=20)
     address: str = Field(max_length=255)
@@ -41,6 +42,7 @@ class ClientCreate(ClientBase):
 class ClientUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=100)
     client_type: Literal["individual", "business", "company"] | None = None
+    relationship_status: Literal["lead", "client"] | None = None
     email: EmailStr | None = None
     phone: str | None = Field(default=None, max_length=20)
     address: str | None = Field(default=None, min_length=1, max_length=255)
@@ -82,3 +84,76 @@ class ClientEmailRequest(BaseModel):
 class ClientResponse(ClientBase):
     id: int
     company_id: int
+
+
+ClientContactRoleCode = Literal[
+    "commercial",
+    "billing",
+    "operations",
+    "quality",
+    "emergency",
+    "general",
+]
+
+
+class ClientContactBase(BaseModel):
+    full_name: str = Field(min_length=1, max_length=120)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=30)
+    job_title: str | None = Field(default=None, max_length=120)
+    roles: list[ClientContactRoleCode] = Field(default_factory=list, max_length=6)
+    is_primary: bool = False
+    is_active: bool = True
+
+    @field_validator("full_name", "phone", "job_title")
+    @classmethod
+    def normalize_contact_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("Value cannot be blank")
+        return value
+
+    @field_validator("roles")
+    @classmethod
+    def normalize_roles(cls, values: list[ClientContactRoleCode]) -> list[ClientContactRoleCode]:
+        if len(values) != len(set(values)):
+            raise ValueError("Each contact responsibility can only be selected once")
+        return values
+
+
+class ClientContactCreate(ClientContactBase):
+    pass
+
+
+class ClientContactUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=1, max_length=120)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=30)
+    job_title: str | None = Field(default=None, max_length=120)
+    roles: list[ClientContactRoleCode] | None = Field(default=None, max_length=6)
+    is_primary: bool | None = None
+    is_active: bool | None = None
+
+    @field_validator("full_name", "phone", "job_title")
+    @classmethod
+    def normalize_optional_contact_text(cls, value: str | None) -> str | None:
+        return value.strip() or None if value is not None else None
+
+    @field_validator("roles")
+    @classmethod
+    def normalize_optional_roles(
+        cls, values: list[ClientContactRoleCode] | None
+    ) -> list[ClientContactRoleCode] | None:
+        if values is not None and len(values) != len(set(values)):
+            raise ValueError("Each contact responsibility can only be selected once")
+        return values
+
+
+class ClientContactResponse(ClientContactBase):
+    id: int
+    client_id: int
+    roles: list[ClientContactRoleCode] = Field(validation_alias="role_codes")
+
+    model_config = ConfigDict(from_attributes=True)

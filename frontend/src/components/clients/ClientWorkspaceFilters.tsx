@@ -4,6 +4,7 @@ import { RotateCcw, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { ClientWorkspaceFilter } from "@/lib/client-workspace";
 import { useDictionary } from "@/lib/dictionary-context";
 
@@ -17,6 +18,7 @@ const EMPTY_FILTERS: ClientWorkspaceFilter = {
     search: "",
     status: "all",
     clientType: "all",
+    relationship: "all",
     city: "",
     contact: "all",
 };
@@ -30,7 +32,8 @@ export function ClientWorkspaceFilters({ filters, cities, onChange }: ClientWork
     };
 
     return (
-        <section className="billing-surface rounded-[22px] p-3 sm:p-4">
+        <section className="billing-surface overflow-hidden rounded-[22px]">
+            <div className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/25 px-4 py-3 sm:px-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <label className="relative block min-w-0 flex-1 sm:max-w-[31rem]">
                     <span className="sr-only">{workspace.search_label}</span>
@@ -39,7 +42,7 @@ export function ClientWorkspaceFilters({ filters, cities, onChange }: ClientWork
                         value={filters.search}
                         onChange={(event) => update("search", event.target.value)}
                         placeholder={workspace.search}
-                        className="h-11 border-[var(--border-color)] bg-[var(--bg-card-solid)] pl-10 text-sm font-semibold shadow-none placeholder:text-[var(--text-muted)] focus-visible:border-accent"
+                        className="h-10 bg-[var(--bg-primary)]/65 pl-10 text-sm font-medium shadow-none placeholder:text-[var(--text-muted)]"
                     />
                 </label>
                 <div className="flex flex-wrap items-center gap-2">
@@ -50,7 +53,8 @@ export function ClientWorkspaceFilters({ filters, cities, onChange }: ClientWork
                     )}
                 </div>
             </div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            </div>
+            <div className="grid gap-3 px-4 py-3 sm:grid-cols-2 sm:px-5 xl:grid-cols-5">
                 <FilterSelect
                     label={workspace.filter_status}
                     value={filters.status}
@@ -70,6 +74,16 @@ export function ClientWorkspaceFilters({ filters, cities, onChange }: ClientWork
                         { value: "business", label: dict.clients.table.company },
                         { value: "individual", label: dict.clients.table.individual },
                         { value: "company", label: dict.clients.table.collaborator },
+                    ]}
+                />
+                <FilterSelect
+                    label={workspace.filter_relationship}
+                    value={filters.relationship}
+                    onChange={(value) => update("relationship", value as ClientWorkspaceFilter["relationship"])}
+                    options={[
+                        { value: "all", label: workspace.all },
+                        { value: "lead", label: dict.clients.form.relationship_status_lead },
+                        { value: "client", label: dict.clients.form.relationship_status_client },
                     ]}
                 />
                 <FilterSelect
@@ -107,14 +121,12 @@ function FilterSelect({
     return (
         <label className="grid gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">{label}</span>
-            <select
-                aria-label={label}
-                value={value}
-                onChange={(event) => onChange(event.target.value)}
-                className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
-            >
-                {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
+            <Select value={value} onValueChange={onChange}>
+            <SelectTrigger className="h-10 bg-[var(--bg-primary)]/65"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                    {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                </SelectContent>
+            </Select>
         </label>
     );
 }

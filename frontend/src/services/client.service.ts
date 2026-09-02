@@ -1,7 +1,29 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api"
-import { Client } from "@/types/client"
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
+import {
+    Client,
+    ClientContact,
+    ClientContactPayload,
+    ClientContactRole,
+    ClientOpportunity,
+    ClientOpportunityActivity,
+    ClientOpportunityActivityType,
+    ClientOpportunityOwner,
+    ClientOpportunityPayload,
+    ClientOpportunityStage,
+} from "@/types/client"
 
-export type { Client };
+export type {
+    Client,
+    ClientContact,
+    ClientContactPayload,
+    ClientContactRole,
+    ClientOpportunity,
+    ClientOpportunityActivity,
+    ClientOpportunityActivityType,
+    ClientOpportunityOwner,
+    ClientOpportunityPayload,
+    ClientOpportunityStage,
+};
 
 export type ClientEmailPayload = {
     recipient_emails: string[];
@@ -83,5 +105,105 @@ export const ClientService = {
             throw new Error(await extractErrorMessage(response, "Error sending client email"))
         }
         return await response.json()
-    }
+    },
+
+    getClientContacts: async (clientId: number): Promise<ClientContact[]> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar los contactos");
+        return await response.json();
+    },
+
+    createClientContact: async (clientId: number, data: ClientContactPayload): Promise<ClientContact> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo crear el contacto");
+        return await response.json();
+    },
+
+    updateClientContact: async (clientId: number, contactId: number, data: Partial<ClientContactPayload>): Promise<ClientContact> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts/${contactId}`, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo actualizar el contacto");
+        return await response.json();
+    },
+
+    deactivateClientContact: async (clientId: number, contactId: number): Promise<ClientContact> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts/${contactId}`, {
+            method: "DELETE",
+        });
+        await assertApiResponseOk(response, "No se pudo desactivar el contacto");
+        return await response.json();
+    },
+
+    getClientOpportunities: async (clientId: number): Promise<ClientOpportunity[]> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/opportunities`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar las oportunidades");
+        return await response.json();
+    },
+
+    getClientOpportunityOwners: async (clientId: number): Promise<ClientOpportunityOwner[]> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/opportunity-owners`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar las personas responsables");
+        return await response.json();
+    },
+
+    createClientOpportunity: async (clientId: number, data: ClientOpportunityPayload): Promise<ClientOpportunity> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/opportunities`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo crear la oportunidad");
+        return await response.json();
+    },
+
+    updateClientOpportunity: async (
+        clientId: number,
+        opportunityId: number,
+        data: Partial<ClientOpportunityPayload>,
+    ): Promise<ClientOpportunity> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/opportunities/${opportunityId}`, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo actualizar la oportunidad");
+        return await response.json();
+    },
+
+    getClientOpportunityActivities: async (
+        clientId: number,
+        opportunityId: number,
+    ): Promise<ClientOpportunityActivity[]> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/opportunities/${opportunityId}/activities`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudo cargar el historial comercial");
+        return await response.json();
+    },
+
+    createClientOpportunityActivity: async (
+        clientId: number,
+        opportunityId: number,
+        data: { activity_type: ClientOpportunityActivityType; body: string; happened_at?: string | null },
+    ): Promise<ClientOpportunityActivity> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/opportunities/${opportunityId}/activities`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo guardar la actividad comercial");
+        return await response.json();
+    },
 }

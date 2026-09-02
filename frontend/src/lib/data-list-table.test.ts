@@ -8,7 +8,6 @@ function source(path: string): string {
 
 test("shared DataListTable powers the remaining generic data lists", () => {
     const table = source("../components/ui/data-list-table.tsx");
-    const clients = source("../components/clients/ClientsTable.tsx");
     const expenses = source("../components/expenses/ExpensesListSection.tsx");
     const users = source("../components/users/TeamListSection.tsx");
     const profile = source("../components/profile/ProfileHistories.tsx");
@@ -23,7 +22,6 @@ test("shared DataListTable powers the remaining generic data lists", () => {
     assert.match(table, /variant\?: "surface" \| "plain"/);
 
     for (const [name, file] of [
-        ["clients", clients],
         ["expenses", expenses],
         ["users", users],
         ["templates", templates],
@@ -54,8 +52,9 @@ test("invoice and quote lists use the shared shadcn table primitive", () => {
     const quotes = source("../components/quotes/QuotesListSection.tsx");
     const jobs = source("../components/invoices/InvoiceableJobsSection.tsx");
     const companies = source("../components/companies/CompaniesListSection.tsx");
+    const clients = source("../components/clients/ClientsTable.tsx");
 
-    for (const [name, file] of [["invoices", invoices], ["quotes", quotes], ["invoiceable jobs", jobs], ["companies", companies]] as const) {
+    for (const [name, file] of [["invoices", invoices], ["quotes", quotes], ["invoiceable jobs", jobs], ["companies", companies], ["clients", clients]] as const) {
         assert.match(file, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
         assert.match(file, /<TableHeader>/, `${name} should render a TableHeader`);
         assert.match(file, /<TableBody>/, `${name} should render a TableBody`);

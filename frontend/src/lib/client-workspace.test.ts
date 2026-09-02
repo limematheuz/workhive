@@ -18,6 +18,7 @@ const clients: Client[] = [
         id: 1,
         name: "Empresa Alpha",
         client_type: "business",
+        relationship_status: "lead",
         email: "contacto@alpha.test",
         phone: "600111222",
         address: "Calle Uno 1",
@@ -128,6 +129,15 @@ test("client workspace filters using real client fields only", () => {
         search: "alpha",
         status: "all",
         clientType: "all",
+        relationship: "all",
+        city: "",
+        contact: "all",
+    }).map((row) => row.client.id), [1]);
+    assert.deepEqual(filterClientWorkspaceRows(rows, {
+        search: "",
+        status: "all",
+        clientType: "all",
+        relationship: "lead",
         city: "",
         contact: "all",
     }).map((row) => row.client.id), [1]);
@@ -135,6 +145,7 @@ test("client workspace filters using real client fields only", () => {
         search: "",
         status: "inactive",
         clientType: "individual",
+        relationship: "client",
         city: "Girona",
         contact: "missing",
     }).map((row) => row.client.id), [2]);

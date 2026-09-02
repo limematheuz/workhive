@@ -10,6 +10,18 @@ const tabs = readFileSync(new URL("../components/clients/ClientDetailDialogTabsS
 const clientForm = readFileSync(new URL("../components/clients/ClientFormFields.tsx", import.meta.url), "utf8");
 const clientFilters = readFileSync(new URL("../components/clients/ClientWorkspaceFilters.tsx", import.meta.url), "utf8");
 const clientStats = readFileSync(new URL("../components/clients/ClientWorkspaceStats.tsx", import.meta.url), "utf8");
+const clientContacts = readFileSync(new URL("../components/clients/ClientContactsTab.tsx", import.meta.url), "utf8");
+const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
+const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
+const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-picker.tsx", import.meta.url), "utf8");
+const createClientSheet = readFileSync(new URL("../components/clients/CreateClientSheet.tsx", import.meta.url), "utf8");
+const editClientSheet = readFileSync(new URL("../components/clients/EditClientSheet.tsx", import.meta.url), "utf8");
+const clientLocations = readFileSync(new URL("../components/clients/ClientDetailLocationsTab.tsx", import.meta.url), "utf8");
+const clientTasks = readFileSync(new URL("../components/clients/ClientDetailTasksTab.tsx", import.meta.url), "utf8");
+const clientBilling = readFileSync(new URL("../components/clients/ClientDetailBillingTab.tsx", import.meta.url), "utf8");
+const clientHeader = readFileSync(new URL("../components/clients/ClientDetailDialogHeader.tsx", import.meta.url), "utf8");
+const actionPopover = readFileSync(new URL("../components/ui/action-popover.tsx", import.meta.url), "utf8");
+const dropdownMenu = readFileSync(new URL("../components/ui/dropdown-menu.tsx", import.meta.url), "utf8");
 
 test("client workspace uses shared surfaces and keeps all API reads in services", () => {
     assert.match(page, /ClientWorkspaceStats/);
@@ -19,16 +31,39 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(page, /LocationService\.getLocations\(\)\.catch/);
     assert.match(page, /TaskService\.getAllTaskItems\(\)\.catch/);
     assert.doesNotMatch(page, /fetch\s*\(/);
-    assert.match(table, /DataListTable/);
+    assert.match(table, /from "@\/components\/ui\/table"/);
+    assert.match(table, /<TableHeader>/);
+    assert.match(table, /<TableBody>/);
+    assert.match(table, /DataTablePagination/);
+    assert.doesNotMatch(table, /DataListTable/);
 });
 
 test("client detail keeps a wide summary before edit and uses the shared tab control", () => {
     assert.match(detail, /sm:max-w-\[86rem\]/);
     assert.match(detail, /ClientDetailDialogHeader/);
     assert.match(tabs, /PremiumTabs/);
+    assert.match(tabs, /compactLabel/);
+    assert.doesNotMatch(tabs, /overflow-x-auto|layout="scroll"/);
     assert.match(tabs, /workspace\.overview/);
     assert.match(tabs, /workspace\.locations/);
     assert.match(tabs, /workspace\.jobs/);
+});
+
+test("client detail keeps one close action and its action menu appears over the dialog", () => {
+    assert.doesNotMatch(clientHeader, /ArrowLeft|Detalle del Cliente/);
+    assert.match(clientHeader, /ActionPopover/);
+    assert.match(clientHeader, /relationship_status === "lead"/);
+    assert.match(actionPopover, /DropdownMenuTrigger/);
+    assert.match(dropdownMenu, /z-\[10110\]/);
+});
+
+test("every client data table uses the shared shadcn Table and pagination", () => {
+    for (const [name, source] of [["locations", clientLocations], ["tasks", clientTasks], ["billing", clientBilling], ["overview", overview]] as const) {
+        assert.match(source, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
+        assert.match(source, /<TableHeader>/, `${name} should render a table header`);
+        assert.match(source, /DataTablePagination/, `${name} should use the shared table paginator`);
+        assert.doesNotMatch(source, /DataListTable/, `${name} should not use the generic list table`);
+    }
 });
 
 test("client email opens the in-app composer instead of an external mail client", () => {
@@ -48,6 +83,49 @@ test("client create and edit share every persisted client field", () => {
     assert.match(clientForm, /name="postal_code"/);
     assert.match(clientForm, /name="country"/);
     assert.match(clientForm, /id: "company"/);
+    assert.match(clientForm, /relationshipStatus/);
+    assert.match(clientForm, /SelectTrigger/);
+});
+
+test("client lifecycle and contacts use the shared shadcn controls", () => {
+    assert.match(clientFilters, /filter_relationship/);
+    assert.match(clientFilters, /SelectTrigger/);
+    assert.doesNotMatch(clientFilters, /<select/);
+    assert.match(overview, /ClientContactsTab/);
+    assert.match(clientContacts, /ClientService\.getClientContacts/);
+    assert.match(clientContacts, /ClientService\.createClientContact/);
+    assert.match(clientContacts, /ClientService\.updateClientContact/);
+    assert.match(clientContacts, /ClientService\.deactivateClientContact/);
+    assert.match(clientContacts, /DeleteConfirmDialog/);
+    assert.match(clientContacts, /Checkbox/);
+    assert.doesNotMatch(clientContacts, /fetch\s*\(/);
+});
+
+test("commercial opportunities remain in the client detail and use shadcn controls", () => {
+    assert.match(tabs, /ClientOpportunitiesTab/);
+    assert.match(clientOpportunities, /ClientService\.getClientOpportunities/);
+    assert.match(clientOpportunities, /ClientService\.createClientOpportunity/);
+    assert.match(clientOpportunities, /ClientService\.updateClientOpportunity/);
+    assert.match(clientOpportunities, /SelectTrigger/);
+    assert.match(clientOpportunities, /DateTimePicker/);
+    assert.doesNotMatch(clientOpportunities, /datetime-local/);
+    assert.match(clientDateTimePicker, /Calendar/);
+    assert.match(clientDateTimePicker, /SelectTrigger/);
+    assert.match(clientDateTimePicker, /rounded-xl/);
+    assert.match(clientDateTimePicker, /formControlSurfaceClassName/);
+    assert.match(clientOpportunityTimeline, /ClientService\.getClientOpportunityActivities/);
+    assert.match(clientOpportunityTimeline, /ClientService\.createClientOpportunityActivity/);
+    assert.match(clientOpportunityTimeline, /Textarea/);
+    assert.doesNotMatch(clientOpportunities, /fetch\s*\(/);
+    assert.doesNotMatch(clientOpportunityTimeline, /fetch\s*\(/);
+});
+
+test("client dialogs keep their chrome translucent and reuse the shared form surfaces", () => {
+    assert.match(clientForm, /formControlSurfaceClassName/);
+    assert.doesNotMatch(createClientSheet, /dialog-glass-chrome/);
+    assert.doesNotMatch(editClientSheet, /dialog-glass-chrome/);
+    assert.doesNotMatch(clientOpportunities, /dialog-glass-chrome/);
+    assert.doesNotMatch(clientOpportunityTimeline, /dialog-glass-chrome/);
 });
 
 test("client workspace keeps dark search placeholders and only shows data-backed percent badges", () => {

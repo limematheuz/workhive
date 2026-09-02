@@ -3,15 +3,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
+from app.api.v1 import client_contacts, client_opportunities
 from app.services import client_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
-from app.schemas.client import ClientCreate, ClientEmailRequest, ClientUpdate, ClientResponse
+from app.schemas.client import (
+    ClientCreate,
+    ClientEmailRequest,
+    ClientResponse,
+    ClientUpdate,
+)
 from app.models.user import User
 from app.services import audit_service
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 
 router = APIRouter()
+router.include_router(client_contacts.router, prefix="/{client_id}")
+router.include_router(client_opportunities.router, prefix="/{client_id}")
 
 
 @router.get("/", response_model=list[ClientResponse])
