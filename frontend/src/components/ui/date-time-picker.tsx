@@ -24,6 +24,7 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
     const minutes = index % 2 === 0 ? "00" : "30";
     return `${hours}:${minutes}`;
 });
+const dateFormatter = new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 
 function parseDate(value: string | null) {
     if (!value) return undefined;
@@ -33,7 +34,7 @@ function parseDate(value: string | null) {
 
 function formatDate(value: Date | undefined) {
     if (!value) return "";
-    return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }).format(value);
+    return dateFormatter.format(value);
 }
 
 function toLocalIso(date: Date, time: string) {
@@ -53,8 +54,9 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
         : "09:00";
 
     React.useEffect(() => {
-        setText(formatDate(selectedDate));
-        if (selectedDate) setMonth(selectedDate);
+        const nextSelectedDate = parseDate(value);
+        setText(formatDate(nextSelectedDate));
+        if (nextSelectedDate) setMonth(nextSelectedDate);
     }, [value]); // Keep external saves/reset in sync with the shared calendar field.
 
     const selectDate = (date: Date | undefined) => {
