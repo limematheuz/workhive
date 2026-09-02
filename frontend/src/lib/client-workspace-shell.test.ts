@@ -17,6 +17,9 @@ const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-pi
 const clientLocations = readFileSync(new URL("../components/clients/ClientDetailLocationsTab.tsx", import.meta.url), "utf8");
 const clientTasks = readFileSync(new URL("../components/clients/ClientDetailTasksTab.tsx", import.meta.url), "utf8");
 const clientBilling = readFileSync(new URL("../components/clients/ClientDetailBillingTab.tsx", import.meta.url), "utf8");
+const clientHeader = readFileSync(new URL("../components/clients/ClientDetailDialogHeader.tsx", import.meta.url), "utf8");
+const actionPopover = readFileSync(new URL("../components/ui/action-popover.tsx", import.meta.url), "utf8");
+const dropdownMenu = readFileSync(new URL("../components/ui/dropdown-menu.tsx", import.meta.url), "utf8");
 
 test("client workspace uses shared surfaces and keeps all API reads in services", () => {
     assert.match(page, /ClientWorkspaceStats/);
@@ -42,6 +45,14 @@ test("client detail keeps a wide summary before edit and uses the shared tab con
     assert.match(tabs, /workspace\.overview/);
     assert.match(tabs, /workspace\.locations/);
     assert.match(tabs, /workspace\.jobs/);
+});
+
+test("client detail keeps one close action and its action menu appears over the dialog", () => {
+    assert.doesNotMatch(clientHeader, /ArrowLeft|Detalle del Cliente/);
+    assert.match(clientHeader, /ActionPopover/);
+    assert.match(clientHeader, /relationship_status === "lead"/);
+    assert.match(actionPopover, /DropdownMenuTrigger/);
+    assert.match(dropdownMenu, /z-\[10110\]/);
 });
 
 test("every client data table uses the shared shadcn Table and pagination", () => {

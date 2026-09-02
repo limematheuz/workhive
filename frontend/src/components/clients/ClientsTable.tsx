@@ -80,11 +80,9 @@ export function ClientsTable({
         return <Badge className="border border-accent/20 bg-accent/10 text-[10px] font-semibold text-accent">{label}</Badge>;
     };
 
-    const relationshipBadge = (client: Client) => (
-        <Badge variant="secondary" className="text-[10px] font-semibold">
-            {client.relationship_status === "lead" ? dict.clients.form.relationship_status_lead : dict.clients.form.relationship_status_client}
-        </Badge>
-    );
+    const relationshipBadge = (client: Client) => client.relationship_status === "lead"
+        ? <Badge variant="secondary" className="text-[10px] font-semibold">{dict.clients.form.relationship_status_lead}</Badge>
+        : null;
 
     const renderActions = (client: Client) => (
         <ActionPopover

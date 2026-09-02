@@ -14,7 +14,7 @@ function DropdownMenuTrigger(props: React.ComponentProps<typeof DropdownMenuPrim
 }
 
 function DropdownMenuContent({ className, sideOffset = 6, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
-  return <DropdownMenuPrimitive.Portal><DropdownMenuPrimitive.Content data-slot="dropdown-menu-content" sideOffset={sideOffset} className={cn("z-50 min-w-40 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-1 shadow-xl", className)} {...props} /></DropdownMenuPrimitive.Portal>
+  return <DropdownMenuPrimitive.Portal><DropdownMenuPrimitive.Content data-slot="dropdown-menu-content" sideOffset={sideOffset} className={cn("z-[10110] min-w-40 overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-1 shadow-xl", className)} {...props} /></DropdownMenuPrimitive.Portal>
 }
 
 function DropdownMenuItem({ className, variant = "default", ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & { variant?: "default" | "destructive" }) {
