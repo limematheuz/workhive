@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
+import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import {
     OrganizationService,
@@ -43,19 +44,12 @@ type MemberAccessDialogProps = {
     teams: OrganizationTeam[];
     profiles: PermissionProfile[];
     onSaved: () => Promise<void>;
+    canDelete: boolean;
+    onRequestDelete: () => void;
 };
 
-const ACCESS_CLASSES: Array<{ value: OrganizationAccessClass; label: string }> = [
-    { value: "admin", label: "Administrador" },
-    { value: "responsible", label: "Responsable" },
-    { value: "worker", label: "Trabajador" },
-];
-
-const MEMBERSHIP_STATUSES: Array<{ value: OrganizationMembershipStatus; label: string }> = [
-    { value: "active", label: "Activo" },
-    { value: "suspended", label: "Suspendido" },
-    { value: "archived", label: "Archivado" },
-];
+const ACCESS_CLASSES: OrganizationAccessClass[] = ["admin", "responsible", "worker"];
+const MEMBERSHIP_STATUSES: OrganizationMembershipStatus[] = ["active", "suspended"];
 
 function buildAssignmentDrafts(
     member: OrganizationMember | null,
@@ -94,7 +88,11 @@ export function MemberAccessDialog({
     teams,
     profiles,
     onSaved,
+    canDelete,
+    onRequestDelete,
 }: MemberAccessDialogProps) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.member_dialog;
     const [accessClass, setAccessClass] = useState<OrganizationAccessClass>(member?.access_class ?? "worker");
     const [membershipStatus, setMembershipStatus] = useState<OrganizationMembershipStatus>(member?.status ?? "active");
     const [departmentIds, setDepartmentIds] = useState<number[]>(member?.department_ids ?? []);
@@ -125,7 +123,7 @@ export function MemberAccessDialog({
     };
 
     const scopeOptions = (scopeType: OrganizationScopeType) => {
-        if (scopeType === "company") return [{ id: companyId, name: "Toda la empresa" }];
+        if (scopeType === "company") return [{ id: companyId, name: copy.scope_company }];
         if (scopeType === "department") return departments.map((department) => ({ id: department.id, name: department.name }));
         return teams.map((team) => ({ id: team.id, name: team.name }));
     };
@@ -149,10 +147,10 @@ export function MemberAccessDialog({
                 })),
             );
             await onSaved();
-            toast.success("Accesos actualizados");
+            toast.success(copy.updated);
             onOpenChange(false);
         } catch (error) {
-            toast.error(getErrorMessage(error, "No se pudieron actualizar los accesos"));
+            toast.error(getErrorMessage(error, copy.update_error));
         } finally {
             setSaving(false);
         }
@@ -160,48 +158,46 @@ export function MemberAccessDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-                <form onSubmit={handleSubmit} className="space-y-6">
+            <DialogContent compact className="max-h-[90dvh] max-w-2xl overflow-y-auto">
+                <form onSubmit={handleSubmit} className="min-w-0 space-y-6">
                     <DialogHeader>
-                        <DialogTitle>Acceso de {member?.full_name || member?.email}</DialogTitle>
-                        <DialogDescription>
-                            El tipo indica su nivel dentro de la empresa. Los perfiles concretan qué puede hacer y dónde.
-                        </DialogDescription>
+                        <DialogTitle>{copy.title.replace("{name}", member?.full_name || member?.email || "")}</DialogTitle>
+                        <DialogDescription>{copy.description}</DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
-                            <Label>Tipo de usuario</Label>
+                            <Label>{copy.user_type}</Label>
                             <Select value={accessClass} onValueChange={(value) => setAccessClass(value as OrganizationAccessClass)}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {ACCESS_CLASSES.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                    {ACCESS_CLASSES.map((option) => <SelectItem key={option} value={option}>{dict.organization.access[option]}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label>Estado</Label>
+                            <Label>{copy.status}</Label>
                             <Select value={membershipStatus} onValueChange={(value) => setMembershipStatus(value as OrganizationMembershipStatus)}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    {MEMBERSHIP_STATUSES.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
+                                    {MEMBERSHIP_STATUSES.map((option) => <SelectItem key={option} value={option}>{dict.organization.access[option]}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
                     <div className="grid gap-5 rounded-2xl border border-[var(--border-soft)] p-4 sm:grid-cols-2">
-                        <SelectionList title="Departamentos" items={departments} selectedIds={departmentIds} onToggle={(id) => setDepartmentIds(toggleMembershipId(departmentIds, id))} />
-                        <SelectionList title="Equipos" items={teams} selectedIds={teamIds} onToggle={(id) => setTeamIds(toggleMembershipId(teamIds, id))} />
+                        <SelectionList title={copy.departments} items={departments} selectedIds={departmentIds} onToggle={(id) => setDepartmentIds(toggleMembershipId(departmentIds, id))} />
+                        <SelectionList title={copy.teams} items={teams} selectedIds={teamIds} onToggle={(id) => setTeamIds(toggleMembershipId(teamIds, id))} />
                     </div>
 
                     <section className="space-y-3">
                         <div>
-                            <h3 className="text-sm font-semibold text-[var(--text-main)]">Perfiles y ámbito</h3>
-                            <p className="mt-1 text-xs text-[var(--text-muted)]">Un perfil puede aplicarse a toda la empresa, a un departamento o a un equipo.</p>
+                            <h3 className="text-sm font-semibold text-[var(--text-main)]">{copy.profiles_scope}</h3>
+                            <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.profiles_scope_description}</p>
                         </div>
                         {availableProfiles.length === 0 ? (
-                            <p className="rounded-xl border border-dashed border-[var(--border-soft)] p-4 text-sm text-[var(--text-muted)]">Crea antes un perfil de permisos para asignarlo.</p>
+                            <p className="rounded-xl border border-dashed border-[var(--border-soft)] p-4 text-sm text-[var(--text-muted)]">{copy.profiles_empty}</p>
                         ) : availableProfiles.map((profile) => {
                             const assignment = assignments.find((item) => item.profileId === profile.id);
                             const targets = assignment ? scopeOptions(assignment.scopeType) : [];
@@ -221,15 +217,15 @@ export function MemberAccessDialog({
                                     {assignment && (
                                         <div className="mt-3 grid gap-3 pl-8 sm:grid-cols-2">
                                             <Select value={assignment.scopeType} onValueChange={(value) => updateAssignment(profile.id, { scopeType: value as OrganizationScopeType })}>
-                                                <SelectTrigger aria-label={`Ámbito de ${profile.name}`}><SelectValue /></SelectTrigger>
+                                                <SelectTrigger aria-label={copy.scope_for.replace("{name}", profile.name)}><SelectValue /></SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="company">Toda la empresa</SelectItem>
-                                                    <SelectItem value="department" disabled={!departments.length}>Departamento</SelectItem>
-                                                    <SelectItem value="team" disabled={!teams.length}>Equipo</SelectItem>
+                                                    <SelectItem value="company">{copy.scope_company}</SelectItem>
+                                                    <SelectItem value="department" disabled={!departments.length}>{copy.scope_department}</SelectItem>
+                                                    <SelectItem value="team" disabled={!teams.length}>{copy.scope_team}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                             <Select value={String(assignment.scopeId)} onValueChange={(value) => updateAssignment(profile.id, { scopeId: Number(value) })}>
-                                                <SelectTrigger aria-label={`Destino de ${profile.name}`}><SelectValue /></SelectTrigger>
+                                                <SelectTrigger aria-label={copy.target_for.replace("{name}", profile.name)}><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     {targets.map((target) => <SelectItem key={target.id} value={String(target.id)}>{target.name}</SelectItem>)}
                                                 </SelectContent>
@@ -242,10 +238,11 @@ export function MemberAccessDialog({
                     </section>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                        {canDelete && <Button type="button" variant="dangerSoft" onClick={onRequestDelete}>{dict.organization.actions.permanently_delete}</Button>}
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving}>
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Guardar acceso
+                            {dict.organization.actions.save_access}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -265,12 +262,13 @@ function SelectionList({
     selectedIds: number[];
     onToggle: (id: number) => void;
 }) {
+    const { dict } = useDictionary();
     const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
     return (
         <section>
             <h3 className="mb-2 text-sm font-semibold text-[var(--text-main)]">{title}</h3>
             <div className="max-h-36 space-y-2 overflow-y-auto pr-1">
-                {items.length === 0 ? <p className="text-xs text-[var(--text-muted)]">Todavía no hay elementos.</p> : items.map((item) => (
+                {items.length === 0 ? <p className="text-xs text-[var(--text-muted)]">{dict.organization.member_dialog.selection_empty}</p> : items.map((item) => (
                     <div key={item.id} className="flex items-center gap-2">
                         <Checkbox id={`${title}-${item.id}`} checked={selectedIdSet.has(item.id)} onCheckedChange={() => onToggle(item.id)} />
                         <Label htmlFor={`${title}-${item.id}`} className="cursor-pointer text-sm font-medium">{item.name}</Label>

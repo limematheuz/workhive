@@ -2,6 +2,18 @@ import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { buildWorkerInvitationPayload } from "@/lib/user-invitation";
 import { UserStatsResponse, WorkSession, TaskItem, User } from "@/types/user";
 
+export type UserInvitation = {
+    id: number;
+    email: string;
+    full_name: string | null;
+    role_id: number;
+    role_name: string;
+    status: "pending" | "expired" | "canceled";
+    expires_at: string;
+    created_at: string;
+    rejoin_existing_identity: boolean;
+};
+
 export const UserService = {
     /**
      * Gets the list of company users.
@@ -74,6 +86,22 @@ export const UserService = {
             const errData = await response.json().catch(() => ({}));
             throw new Error(errData.detail || "Error sending invitation");
         }
+    },
+
+    getInvitations: async (): Promise<UserInvitation[]> => {
+        const response = await apiFetch("/api/v1/user-invitations/", {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar las invitaciones");
+        return response.json() as Promise<UserInvitation[]>;
+    },
+
+    cancelInvitation: async (invitationId: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/user-invitations/${invitationId}`, {
+            method: "DELETE",
+        });
+        await assertApiResponseOk(response, "No se pudo cancelar la invitación");
     },
 
     /**

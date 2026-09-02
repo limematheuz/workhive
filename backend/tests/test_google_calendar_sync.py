@@ -25,6 +25,8 @@ def _calendar_entities(db):
         address="Calle Agenda 1",
         phone="600000001",
         email="calendar@test.local",
+        # Google Calendar synchronization is part of Planning.
+        subscription_plan="pro",
     )
     db.add(company)
     db.commit()
@@ -141,6 +143,37 @@ def test_company_background_sync_resolves_primary_connection_owner(
     calendar_background_service.sync_company_calendar(company.id)
 
     assert calls == [(company.id, owner.id)]
+
+
+def test_company_background_sync_skips_basic_plan(db, monkeypatch):
+    company, _, _, _ = _calendar_entities(db)
+    company.subscription_plan = "basic"
+    db.add(company)
+    db.commit()
+    calls = []
+
+    class SessionProxy:
+        def __getattr__(self, name):
+            return getattr(db, name)
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(settings, "GOOGLE_CALENDAR_ENABLED", True)
+    monkeypatch.setattr(
+        calendar_background_service,
+        "SessionLocal",
+        lambda: SessionProxy(),
+    )
+    monkeypatch.setattr(
+        calendar_sync_service,
+        "synchronize",
+        lambda *_args: calls.append("synchronize"),
+    )
+
+    calendar_background_service.sync_company_calendar(company.id)
+
+    assert calls == []
 
 
 def test_oauth_state_and_authorization_url_are_company_scoped(monkeypatch):

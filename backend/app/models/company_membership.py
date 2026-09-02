@@ -37,7 +37,9 @@ class CompanyMembership(Base):
             "ended_at IS NULL OR ended_at >= started_at",
             name="ck_company_membership_dates",
         ),
-        UniqueConstraint("user_id", "company_id", name="uq_company_membership_user_company"),
+        UniqueConstraint(
+            "user_id", "company_id", name="uq_company_membership_user_company"
+        ),
         UniqueConstraint("id", "company_id", name="uq_company_membership_id_company"),
     )
 
@@ -56,11 +58,18 @@ class CompanyMembership(Base):
     )
     access_class = Column(String(20), nullable=False, index=True)
     status = Column(String(20), nullable=False, default="active", index=True)
-    started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    started_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     ended_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     user = relationship("User", back_populates="company_memberships")
@@ -90,6 +99,11 @@ class Department(Base):
             name="ck_department_not_own_parent",
         ),
         UniqueConstraint("id", "company_id", name="uq_department_id_company"),
+        UniqueConstraint(
+            "company_id",
+            "normalized_name",
+            name="uq_department_company_normalized_name",
+        ),
         UniqueConstraint("company_id", "code", name="uq_department_company_code"),
         ForeignKeyConstraint(
             ["parent_department_id", "company_id"],
@@ -107,11 +121,17 @@ class Department(Base):
     )
     parent_department_id = Column(Integer, nullable=True, index=True)
     name = Column(String(120), nullable=False)
+    normalized_name = Column(String(120), nullable=False)
     code = Column(String(50), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True, index=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     company = relationship("Company", back_populates="departments")
@@ -152,9 +172,14 @@ class Team(Base):
     name = Column(String(120), nullable=False)
     code = Column(String(50), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True, index=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     company = relationship("Company", back_populates="teams")
@@ -164,9 +189,7 @@ class Team(Base):
         foreign_keys=[department_id, company_id],
         viewonly=True,
     )
-    memberships = relationship(
-        "TeamMembership", back_populates="team", viewonly=True
-    )
+    memberships = relationship("TeamMembership", back_populates="team", viewonly=True)
 
 
 class DepartmentMembership(Base):
@@ -196,9 +219,14 @@ class DepartmentMembership(Base):
     is_primary = Column(Boolean, nullable=False, default=False)
     is_lead = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True, index=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     department = relationship("Department", back_populates="memberships", viewonly=True)
@@ -231,9 +259,14 @@ class TeamMembership(Base):
     company_membership_id = Column(Integer, nullable=False, index=True)
     is_lead = Column(Boolean, nullable=False, default=False)
     is_active = Column(Boolean, nullable=False, default=True, index=True)
-    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at = Column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
     updated_at = Column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
     )
 
     team = relationship("Team", back_populates="memberships", viewonly=True)

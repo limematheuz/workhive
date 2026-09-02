@@ -2,8 +2,17 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload, with_loader_criteria
 from app.models.calendar_governance import CompanyCalendarSettings
+from app.models.company_membership import (
+    CompanyMembership,
+    DepartmentMembership,
+    TeamMembership,
+)
 from app.models.expense import Expense
 from app.models.google_calendar_connection import GoogleCalendarConnection
+from app.models.permission_profile import (
+    MembershipPermissionProfileAssignment,
+    MembershipPermissionProfileScope,
+)
 from app.models.reservation import Reservation
 from app.models.role import Role
 from app.models.task_item import TaskItem
@@ -72,6 +81,21 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     )
 
 
+def get_latest_company_membership(db: Session, user_id: int) -> CompanyMembership | None:
+    """Return the latest company relationship for an identity without a workspace."""
+
+    return (
+        db.query(CompanyMembership)
+        .filter(CompanyMembership.user_id == user_id)
+        .order_by(
+            CompanyMembership.ended_at.desc(),
+            CompanyMembership.updated_at.desc(),
+            CompanyMembership.id.desc(),
+        )
+        .first()
+    )
+
+
 def create_user(db: Session, user_data: UserCreate) -> User:
     db_user = stage_user(db, user_data)
     db.commit()
@@ -134,6 +158,53 @@ def has_protected_user_data(db: Session, user_id: int) -> bool:
     return any(
         db.query(model).filter(column == user_id).first() is not None
         for model, column in protected_references
+    )
+
+
+def delete_user_access_configuration(db: Session, user_id: int) -> None:
+    """Remove access-only records that cannot outlive a deleted person.
+
+    Memberships, their team/department links, and permission-profile scopes are
+    derived organization configuration. They do not represent business history
+    and must not make a newly invited person impossible to remove.
+    """
+    membership_ids = [
+        membership_id
+        for (membership_id,) in db.query(CompanyMembership.id)
+        .filter(CompanyMembership.user_id == user_id)
+        .all()
+    ]
+    if not membership_ids:
+        return
+
+    profile_assignment_ids = [
+        assignment_id
+        for (assignment_id,) in db.query(MembershipPermissionProfileAssignment.id)
+        .filter(
+            MembershipPermissionProfileAssignment.company_membership_id.in_(
+                membership_ids
+            )
+        )
+        .all()
+    ]
+    if profile_assignment_ids:
+        db.query(MembershipPermissionProfileScope).filter(
+            MembershipPermissionProfileScope.profile_assignment_id.in_(
+                profile_assignment_ids
+            )
+        ).delete(synchronize_session=False)
+        db.query(MembershipPermissionProfileAssignment).filter(
+            MembershipPermissionProfileAssignment.id.in_(profile_assignment_ids)
+        ).delete(synchronize_session=False)
+
+    db.query(DepartmentMembership).filter(
+        DepartmentMembership.company_membership_id.in_(membership_ids)
+    ).delete(synchronize_session=False)
+    db.query(TeamMembership).filter(
+        TeamMembership.company_membership_id.in_(membership_ids)
+    ).delete(synchronize_session=False)
+    db.query(CompanyMembership).filter(CompanyMembership.id.in_(membership_ids)).delete(
+        synchronize_session=False
     )
 
 

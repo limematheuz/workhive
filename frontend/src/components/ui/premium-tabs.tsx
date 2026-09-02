@@ -5,6 +5,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export interface TabOption<T extends string> {
     id: T;
     label: string | React.ReactNode;
+    /** Short label shown on small screens when a full label would crowd the tab bar. */
+    compactLabel?: string;
     icon?: LucideIcon;
     badge?: number;
     badgeTone?: "info" | "danger";
@@ -63,7 +65,10 @@ export function PremiumTabs<T extends string>({
                                 }`}
                             />
                         )}
-                        <span className={fit ? "min-w-0 truncate" : undefined}>{tab.label}</span>
+                        <span className={fit ? "min-w-0 truncate" : undefined}>
+                            {tab.compactLabel ? <span className="sm:hidden">{tab.compactLabel}</span> : null}
+                            <span className={tab.compactLabel ? "hidden sm:inline" : undefined}>{tab.label}</span>
+                        </span>
                         {tab.badge !== undefined && tab.badge > 0 && (
                             <span
                                 className={`relative inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-sm ${

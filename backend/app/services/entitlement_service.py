@@ -107,6 +107,17 @@ def require_company_feature(db: Session, *, company_id: int, code: str) -> None:
     require_feature(db, company, code)
 
 
+def company_feature_enabled(db: Session, *, company_id: int, code: str) -> bool:
+    """Return whether an asynchronous company workflow may use a feature.
+
+    Background work has no requesting user to authorize, but it must honor the
+    same commercial access as an interactive request. Missing companies are
+    treated as disabled so a stale queued job cannot revive access.
+    """
+    company = entitlement_repo.get_company(db, company_id=company_id)
+    return bool(company and entitlement_value(db, company, code) is True)
+
+
 def _require_quota(
     db: Session,
     *,

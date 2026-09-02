@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle2, LogIn, LogOut, ShieldCheck } from "lucide-react";
@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ApiResponseError } from "@/lib/api";
 import { useDictionary } from "@/lib/dictionary-context";
+import { resolveInvitationToken } from "@/lib/invitation-token";
 import { authService } from "@/services/auth.service";
 import { CollaborationService } from "@/services/collaboration.service";
 import { companyInvitationTokenService } from "@/services/company-invitation-token.service";
@@ -38,6 +39,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
     const searchParams = useSearchParams();
     const { locale } = useDictionary();
     const [token, setToken] = useState("");
+    const hasReadInvitationToken = useRef(false);
     const [accessState, setAccessState] = useState<AccessState>("reading");
     const [verificationCode, setVerificationCode] = useState("");
     const [submitting, setSubmitting] = useState<"accept" | "decline" | null>(null);
@@ -56,17 +58,18 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
     }, [text]);
 
     useEffect(() => {
-        const fragmentToken = new URLSearchParams(window.location.hash.slice(1)).get("token");
-        const queryToken = searchParams.get("token");
-        const invitationToken = fragmentToken || queryToken || initialToken;
-        if ((fragmentToken || queryToken) && invitationToken) {
+        if (hasReadInvitationToken.current) return;
+        const invitation = resolveInvitationToken({
+            hash: window.location.hash,
+            queryToken: searchParams.get("token"),
+            fallbackToken: initialToken,
+        });
+        hasReadInvitationToken.current = true;
+        if (invitation.shouldClearUrl) {
             window.history.replaceState(null, "", "/accept-company-invitation");
         }
-        const timeoutId = window.setTimeout(() => {
-            setToken(invitationToken);
-            setAccessState(invitationToken ? "checking" : "error");
-        }, 0);
-        return () => window.clearTimeout(timeoutId);
+        setToken(invitation.token);
+        setAccessState(invitation.token ? "checking" : "error");
     }, [initialToken, searchParams]);
 
     useEffect(() => {

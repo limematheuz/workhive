@@ -316,6 +316,21 @@ def test_client_profitability_year_comparison_is_tenant_scoped_and_admin_only(cl
     assert payload["previous"]["revenue_base_amount"] == "0.00"
 
 
+def test_client_profitability_requires_the_profitability_plan_feature(client, db):
+    company = _company(db, "BASIC-PLAN")
+    company.subscription_plan = "basic"
+    db.add(company)
+    db.commit()
+
+    response = client.get(
+        "/api/v1/client-profitability/?period=month",
+        headers=_headers(db, company, 1, "basic-plan-admin"),
+    )
+
+    assert response.status_code == 403
+    assert response.headers["X-WorkHive-Error-Code"] == "entitlement.feature_not_in_plan"
+
+
 def test_expense_client_assignment_rejects_foreign_clients_and_can_be_removed(client, db):
     company = _company(db, "EXPENSES")
     other_company = _company(db, "EXPENSES-OTHER")

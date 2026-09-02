@@ -9,6 +9,8 @@ from app.models.company import Company
 from app.models.privacy_consent import PrivacyConsent
 from app.models.user import User
 from app.models.user_invitation import UserInvitation
+from app.models.company_membership import CompanyMembership
+from app.models.permission_profile import PermissionDefinition
 from app.services import company_entitlement_service, organization_bootstrap_service
 from credentials import TEST_SECRET, login_form
 
@@ -210,6 +212,75 @@ def test_resending_replaces_the_previous_secret_and_keeps_one_pending_invitation
     assert new_accept.status_code == 200
 
 
+def test_company_can_view_and_cancel_its_pending_invitation(client, db, monkeypatch):
+    headers, _ = _register_company(client, "pending-list")
+    sent = _capture_invitation(monkeypatch)
+    payload = {
+        "email": "pending-list-worker@workhive.com",
+        "full_name": "Pending Worker",
+        "role_id": 3,
+    }
+    invited = client.post("/api/v1/user-invitations/", headers=headers, json=payload)
+    assert invited.status_code == 202, invited.text
+
+    listed = client.get("/api/v1/user-invitations/", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert listed.json() == [
+        {
+            "id": db.query(UserInvitation).one().id,
+            "email": payload["email"],
+            "full_name": payload["full_name"],
+            "role_id": 3,
+            "role_name": "viewer",
+            "status": "pending",
+            "expires_at": listed.json()[0]["expires_at"],
+            "created_at": listed.json()[0]["created_at"],
+            "rejoin_existing_identity": False,
+        }
+    ]
+
+    invitation_id = listed.json()[0]["id"]
+    cancelled = client.delete(
+        f"/api/v1/user-invitations/{invitation_id}", headers=headers
+    )
+    assert cancelled.status_code == 204, cancelled.text
+
+    relisted = client.get("/api/v1/user-invitations/", headers=headers)
+    assert relisted.status_code == 200, relisted.text
+    assert relisted.json()[0]["status"] == "canceled"
+    assert (
+        client.post(
+            "/api/v1/user-invitations/accept",
+            json=_accept_payload(
+                _invitation_token(sent),
+                str(sent["verification_code"]),
+            ),
+        ).status_code
+        == 400
+    )
+
+
+def test_other_company_cannot_view_or_cancel_an_invitation(client, db, monkeypatch):
+    first_headers, _ = _register_company(client, "invitation-tenant-a")
+    second_headers, _ = _register_company(client, "invitation-tenant-b")
+    _capture_invitation(monkeypatch)
+    created = client.post(
+        "/api/v1/user-invitations/",
+        headers=first_headers,
+        json={"email": "tenant-pending@workhive.com", "role_id": 3},
+    )
+    assert created.status_code == 202, created.text
+    invitation_id = db.query(UserInvitation).one().id
+
+    listed = client.get("/api/v1/user-invitations/", headers=second_headers)
+    assert listed.status_code == 200, listed.text
+    assert listed.json() == []
+    cancelled = client.delete(
+        f"/api/v1/user-invitations/{invitation_id}", headers=second_headers
+    )
+    assert cancelled.status_code == 404
+
+
 def test_delivery_failure_does_not_leave_an_usable_invitation(client, db, monkeypatch):
     headers, _ = _register_company(client, "delivery-failure")
     monkeypatch.setattr(
@@ -247,13 +318,14 @@ def test_delivery_exception_logs_no_recipient_or_secret(client, db, monkeypatch,
     assert db.query(UserInvitation).count() == 0
 
 
-def test_invitation_rejects_existing_email_regardless_of_case(client, db, monkeypatch):
-    headers, _ = _register_company(client, "email-case")
+def test_invitation_rejects_an_identity_that_already_has_a_workspace(client, db, monkeypatch):
+    headers, company_id = _register_company(client, "email-case")
     db.add(
         User(
             email="Existing.Worker@WorkHive.com",
             hashed_password=get_password_hash(TEST_SECRET),
             role_id=3,
+            company_id=company_id,
             is_active=True,
         )
     )
@@ -265,6 +337,82 @@ def test_invitation_rejects_existing_email_regardless_of_case(client, db, monkey
         json={"email": "existing.worker@workhive.com", "role_id": 3},
     )
     assert response.status_code == 409
+
+
+def test_former_member_can_join_again_without_creating_a_second_identity(
+    client, db, monkeypatch
+):
+    db.add_all(
+        [
+            PermissionDefinition(
+                code="access.members.read",
+                category="access",
+                description="read members",
+                is_active=True,
+            ),
+            PermissionDefinition(
+                code="access.members.manage",
+                category="access",
+                description="manage members",
+                is_active=True,
+            ),
+        ]
+    )
+    db.commit()
+    headers, company_id = _register_company(client, "rejoin")
+    first_delivery = _capture_invitation(monkeypatch)
+    email = "rejoin-worker@workhive.com"
+    payload = {"email": email, "full_name": "Rejoin Worker", "role_id": 3}
+    assert client.post("/api/v1/user-invitations/", headers=headers, json=payload).status_code == 202
+    accepted = client.post(
+        "/api/v1/user-invitations/accept",
+        json=_accept_payload(
+            _invitation_token(first_delivery),
+            str(first_delivery["verification_code"]),
+        ),
+    )
+    assert accepted.status_code == 200, accepted.text
+    worker = db.query(User).filter(User.email == email).one()
+    original_user_id = worker.id
+    original_consent_count = db.query(PrivacyConsent).filter(
+        PrivacyConsent.user_id == worker.id
+    ).count()
+    membership = db.query(CompanyMembership).filter(
+        CompanyMembership.user_id == worker.id,
+        CompanyMembership.company_id == company_id,
+    ).one()
+
+    removed = client.delete(
+        f"/api/v1/organization/members/{membership.id}", headers=headers
+    )
+    assert removed.status_code == 204, removed.text
+    db.refresh(worker)
+    assert worker.company_id is None
+
+    second_delivery = _capture_invitation(monkeypatch)
+    reinvited = client.post("/api/v1/user-invitations/", headers=headers, json=payload)
+    assert reinvited.status_code == 202, reinvited.text
+    invitation = db.query(UserInvitation).order_by(UserInvitation.id.desc()).first()
+    assert invitation.rejoin_user_id == original_user_id
+
+    rejoined = client.post(
+        "/api/v1/user-invitations/accept",
+        json=_accept_payload(
+            _invitation_token(second_delivery),
+            str(second_delivery["verification_code"]),
+        ),
+    )
+    assert rejoined.status_code == 200, rejoined.text
+    assert db.query(User).filter(User.email == email).count() == 1
+    db.refresh(worker)
+    db.refresh(membership)
+    assert worker.id == original_user_id
+    assert worker.company_id == company_id
+    assert membership.status == "active"
+    assert membership.ended_at is None
+    assert db.query(PrivacyConsent).filter(
+        PrivacyConsent.user_id == worker.id
+    ).count() == original_consent_count
 
 
 def test_acceptance_rechecks_company_capacity(client, db, monkeypatch):

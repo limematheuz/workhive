@@ -6,7 +6,6 @@ import {
     Suspense,
     useCallback,
     useEffect,
-    useEffectEvent,
     useMemo,
     useRef,
     useState,
@@ -17,6 +16,7 @@ import { toast } from "sonner";
 
 import {
     ReservationsAccessDenied,
+    ReservationsPlanRequired,
     ReservationsPageLayout,
 } from "@/features/reservations/ReservationsPageLayout";
 import {
@@ -29,10 +29,6 @@ import {
 } from "@/features/reservations/reservation-helpers";
 import {
     confirmReservationCancellation,
-    getReservationAssigneeName,
-    getReservationLocationName,
-    loadInitialTaskDataForPage,
-    loadRequestedTasksForPage,
     loadReservationsPageData,
 } from "@/features/reservations/reservations-page-utils";
 import type {
@@ -40,19 +36,16 @@ import type {
     ReservationViewMode,
 } from "@/features/reservations/types";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { usePlanningFeatureAccess } from "@/features/reservations/usePlanningFeatureAccess";
+import { useReservationRequests } from "@/features/reservations/useReservationRequests";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { useTaskCrud } from "@/hooks/useTaskCrud";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { LocationService } from "@/services/location.service";
 import { ReservationService } from "@/services/reservation.service";
-import { TaskService, TaskItem } from "@/services/task.service";
-import type { TaskAcceptanceInput } from "@/domain/tasks/task-acceptance";
 import type { Company } from "@/types/company";
 import type { Location } from "@/types/location";
 import type { Reservation } from "@/types/reservation";
-import type { TemplateTask } from "@/types/template";
-import type { User } from "@/types/user";
 
 function createInitialReservationFilters(): ReservationFiltersState {
     return {
@@ -97,10 +90,25 @@ function ReservationsPageContent() {
 
     const canManage = ["admin", "manager", "superadmin"].includes(user?.role?.name || "");
     const [activeTab, setActiveTab] = useState<"reservations" | "requests">(defaultTab);
-    const [requestedTasks, setRequestedTasks] = useState<TaskItem[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
-    const [templates, setTemplates] = useState<TemplateTask[]>([]);
-    const [loadingTasks, setLoadingTasks] = useState(false);
+    const { planningEnabled, hasPlanningAccess } = usePlanningFeatureAccess(user);
+    const {
+        displayRequestedTasks,
+        getAssigneeName,
+        getLocationName,
+        handleAcceptTask,
+        handleRejectTask,
+        loadingTasks,
+        loadRequestedTasks,
+        taskCrud,
+        users,
+    } = useReservationRequests({
+        user,
+        dict,
+        locations,
+        searchParams,
+        canManage,
+        hasPlanningAccess,
+    });
 
     useEffect(() => {
         if (!form.locationId) return;
@@ -122,76 +130,6 @@ function ReservationsPageContent() {
         }
     }, [searchParams]);
 
-    const displayRequestedTasks = useMemo(() => (user ? requestedTasks : []), [requestedTasks, user]);
-
-    const loadRequestedTasks = useCallback(
-        (silent = false) =>
-            loadRequestedTasksForPage(setRequestedTasks, setLoadingTasks, silent),
-        [],
-    );
-
-    const loadInitialTaskData = useCallback(
-        () => loadInitialTaskDataForPage(user, setUsers, setTemplates),
-        [user],
-    );
-
-    useEffect(() => {
-        if (canManage) {
-            loadRequestedTasks();
-            loadInitialTaskData();
-        }
-    }, [user, canManage, loadRequestedTasks, loadInitialTaskData]);
-
-    const taskCrud = useTaskCrud({
-        dict,
-        templates,
-        loadTasks: loadRequestedTasks,
-        setTasks: setRequestedTasks,
-        users,
-        currentUser: user,
-        canManageReservationsForLocation: () => false,
-    });
-
-    const openTaskFromUrl = useEffectEvent((taskId: string | null, tasks: TaskItem[]) => {
-        if (!taskId || tasks.length === 0) return;
-        const task = tasks.find((requestedTask) => requestedTask.id === Number(taskId));
-        if (task && (!taskCrud.selectedTask || taskCrud.selectedTask.id !== task.id)) {
-            taskCrud.handleOpenDetail(task);
-        }
-    });
-
-    useEffect(() => {
-        openTaskFromUrl(searchParams.get("taskId"), requestedTasks);
-    }, [searchParams, requestedTasks]);
-
-    const getAssigneeName = (userId: number | null) =>
-        getReservationAssigneeName(userId, users, user);
-    const getLocationName = (locationId: number) =>
-        getReservationLocationName(locationId, locations);
-
-    const handleRejectTask = async (taskId: number) => {
-        try {
-            await TaskService.rejectTaskItem(taskId);
-            toast.success("Solicitud rechazada");
-            await loadRequestedTasks();
-        } catch (error) {
-            console.error("Error rejecting task:", error);
-            toast.error("No se pudo rechazar la solicitud");
-        }
-    };
-
-    const handleAcceptTask = async (taskId: number, input: TaskAcceptanceInput) => {
-        try {
-            await TaskService.acceptTaskItem(taskId, input);
-            toast.success("Solicitud aceptada con éxito");
-            await loadRequestedTasks();
-        } catch (error) {
-            console.error("Error accepting task:", error);
-            toast.error("No se pudo aceptar la solicitud");
-            throw error;
-        }
-    };
-
     const loadData = useCallback(
         (silent = false) =>
             loadReservationsPageData({
@@ -207,10 +145,14 @@ function ReservationsPageContent() {
     );
 
     useEffect(() => {
+        if (!hasPlanningAccess) return;
         loadData(false);
-    }, [loadData]);
+    }, [hasPlanningAccess, loadData]);
 
-    useBackgroundPolling(() => loadData(true), POLL_INTERVALS.reservations);
+    useBackgroundPolling(
+        () => (hasPlanningAccess ? loadData(true) : undefined),
+        POLL_INTERVALS.reservations,
+    );
 
     const locationMap = useMemo(
         () => new Map(locations.map((location) => [location.id, location])),
@@ -316,6 +258,16 @@ function ReservationsPageContent() {
     };
 
     if (!canManage) return <ReservationsAccessDenied />;
+
+    if (user?.company_id && planningEnabled === null) {
+        return (
+            <div className="flex min-h-[420px] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+            </div>
+        );
+    }
+
+    if (!hasPlanningAccess) return <ReservationsPlanRequired dict={dict} />;
 
     return (
         <ReservationsPageLayout

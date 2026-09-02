@@ -258,25 +258,17 @@ def delete_user_permanently(db: Session, user_id: int, current_user: User) -> No
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot permanently delete your own user",
         )
-    if current_user.role.name not in {"superadmin", "admin"}:
+    if not is_superadmin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to permanently delete users",
-        )
-    if (
-        not is_superadmin(current_user)
-        and db_user.role
-        and db_user.role.name == "admin"
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only superadmins can permanently delete company admins",
+            detail="Only platform administrators can permanently delete users",
         )
 
     if user_repo.has_protected_user_data(db, db_user.id):
         _raise_user_delete_conflict()
 
     try:
+        user_repo.delete_user_access_configuration(db, db_user.id)
         user_repo.delete_user(db, db_user)
     except IntegrityError:
         _raise_user_delete_conflict()

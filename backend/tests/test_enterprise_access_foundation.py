@@ -91,8 +91,16 @@ def test_department_and_team_relationships_reject_another_company(db):
         access_class="worker",
         status="active",
     )
-    first_department = Department(company_id=first.id, name="Operations")
-    second_department = Department(company_id=second.id, name="Operations")
+    first_department = Department(
+        company_id=first.id,
+        name="Operations",
+        normalized_name="operations",
+    )
+    second_department = Department(
+        company_id=second.id,
+        name="Operations",
+        normalized_name="operations",
+    )
     db.add_all(
         [first_membership, second_membership, first_department, second_department]
     )

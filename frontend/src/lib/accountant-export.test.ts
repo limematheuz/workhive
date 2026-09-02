@@ -36,4 +36,25 @@ test("accountant export controls sit below the finance tab with the shared prima
     assert.match(page, /actions=\{\(\s*<PremiumTabs/);
     assert.match(page, /justify-end gap-2/);
     assert.match(page, /className=\{PAGE_ACTION_BUTTON_PRIMARY\}/);
+    assert.match(page, /CompanyPlanAccessService\.getCurrentEntitlements/);
+    assert.match(page, /features\.accountant_portal/);
+    const exportControls = page.slice(
+        page.indexOf('{activeTab === "finance" && canDownloadAccountantPackage'),
+        page.indexOf('{activeTab === "finance" ? ('),
+    );
+    assert.match(exportControls, /<SelectTrigger/);
+    assert.match(exportControls, /<Button/);
+    assert.doesNotMatch(exportControls, /<select/);
+    assert.doesNotMatch(exportControls, /<button/);
+});
+
+test("analytics only exposes profitability when the plan includes it", () => {
+    const page = readFileSync(
+        new URL("../app/dashboard/analytics/page.tsx", import.meta.url),
+        "utf8",
+    );
+
+    assert.match(page, /features\.profitability/);
+    assert.match(page, /canViewProfitability \? \[\{ id: "profitability" as const/);
+    assert.match(page, /if \(!canViewAnalytics \|\| !canViewProfitability\) return;/);
 });

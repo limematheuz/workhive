@@ -16,21 +16,13 @@ from app.models.calendar_sync_job import CalendarSyncJob
 from app.models.notification import Notification
 from app.models.role import Role
 from app.models.user import User
+from app.services.calendar_company_access_service import require_company_calendar_role
 from app.services.user_scope import require_platform_superadmin, role_name
 
 
 COMPANY_CALENDAR_VIEW_ROLES = {"admin", "manager", "viewer"}
 COMPANY_CALENDAR_SYNC_ROLES = {"admin", "manager"}
 COMPANY_CALENDAR_ADMIN_ROLE = "admin"
-
-
-def require_company_calendar_role(user: User, allowed_roles: set[str]) -> int:
-    if user.company_id is None or role_name(user) not in allowed_roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Company calendar access is not permitted",
-        )
-    return user.company_id
 
 
 def _platform_config(db: Session, *, lock: bool = False) -> PlatformCalendarConfig | None:
@@ -155,6 +147,7 @@ def _resolve_company_owner(
 
 def require_company_calendar_owner(db: Session, current_user: User) -> User:
     company_id = require_company_calendar_role(
+        db,
         current_user,
         {COMPANY_CALENDAR_ADMIN_ROLE},
     )
@@ -188,6 +181,7 @@ def _request_summary(request: CalendarOwnershipRequest, requester: User) -> dict
 
 def company_status(db: Session, current_user: User) -> dict:
     company_id = require_company_calendar_role(
+        db,
         current_user,
         COMPANY_CALENDAR_VIEW_ROLES,
     )
@@ -292,6 +286,7 @@ def _add_notification(
 
 def request_ownership(db: Session, current_user: User) -> dict:
     company_id = require_company_calendar_role(
+        db,
         current_user,
         {COMPANY_CALENDAR_ADMIN_ROLE},
     )
@@ -352,6 +347,7 @@ def review_ownership_request(
     approve: bool,
 ) -> dict:
     company_id = require_company_calendar_role(
+        db,
         current_user,
         {COMPANY_CALENDAR_ADMIN_ROLE},
     )

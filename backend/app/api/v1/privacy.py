@@ -67,7 +67,7 @@ def create_privacy_request(
     audit_service.record_event(
         db,
         actor=current_user,
-        company_id=current_user.company_id,
+        company_id=created.company_id,
         action="privacy.request_created",
         entity_type="data_subject_request",
         entity_id=created.id,

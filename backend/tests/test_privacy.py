@@ -4,6 +4,7 @@ import pytest
 
 from app.core.security import get_password_hash
 from app.models.company import Company
+from app.models.company_membership import CompanyMembership
 from app.models.user import User
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
 
@@ -212,6 +213,40 @@ def test_erasure_request_sends_acknowledgement_without_blocking_the_request(
     assert delivered["recipient_email"] == worker.email
     assert delivered["recipient_name"] == worker.full_name
     assert delivered["response_due_at"].date().isoformat() > response.json()["requested_at"][:10]
+
+
+def test_removed_person_keeps_a_privacy_request_linked_to_their_last_company(client, db):
+    admin_headers = _register(client, "removed-person-admin@workhive.com")
+    company_id = _create_company(client, admin_headers, "-removed-person")
+    worker = _add_worker(
+        db,
+        email="removed-person@workhive.com",
+        company_id=company_id,
+    )
+    membership = CompanyMembership(
+        user_id=worker.id,
+        company_id=company_id,
+        access_class="worker",
+        status="archived",
+    )
+    worker.company_id = None
+    db.add(membership)
+    db.commit()
+
+    login = client.post("/api/v1/auth/login", data=login_form(worker.email, TEST_SECRET))
+    assert login.status_code == 200, login.text
+    request_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    created = client.post(
+        "/api/v1/privacy/requests",
+        headers=request_headers,
+        json={"request_type": "erasure"},
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["company_id"] == company_id
+
+    company_requests = client.get("/api/v1/privacy/requests", headers=admin_headers)
+    assert company_requests.status_code == 200, company_requests.text
+    assert created.json()["id"] in {item["id"] for item in company_requests.json()}
 
 
 def test_erasure_resolution_emails_the_admin_message_before_anonymizing_user(

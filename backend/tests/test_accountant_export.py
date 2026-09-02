@@ -209,6 +209,21 @@ def test_accountant_export_requires_company_admin_and_valid_year(client, db):
     )
 
 
+def test_accountant_export_requires_the_accountant_portal_plan_feature(client, db):
+    company = _company(db, "BASIC-PLAN")
+    company.subscription_plan = "basic"
+    db.add(company)
+    db.commit()
+
+    response = client.get(
+        "/api/v1/accounting-exports/accountant?year=2026",
+        headers=_headers(db, company, 1, "basic-plan-admin"),
+    )
+
+    assert response.status_code == 403
+    assert response.headers["X-WorkHive-Error-Code"] == "entitlement.feature_not_in_plan"
+
+
 def test_accountant_export_includes_manual_history_once_and_preserves_real_invoices(
     client, db
 ):
