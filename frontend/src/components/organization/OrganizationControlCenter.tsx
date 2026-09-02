@@ -12,6 +12,7 @@ import { OrganizationTableFilters } from "@/components/organization/Organization
 import { OrganizationTeamsPanel } from "@/components/organization/OrganizationTeamsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FieldLegend, FieldSet } from "@/components/ui/field";
@@ -480,7 +481,7 @@ function CurrentMembersTable({
                 <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{empty}</p>
             ) : (
                 <>
-                <Table className="table-fixed text-left">
+                <div className="hidden lg:block"><Table className="table-fixed text-left">
                     <TableHeader>
                         <TableRow className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                             <TableHead className="w-[58%] text-[var(--btn-secondary-text)] xl:w-[48%] 2xl:w-[34%]">{copy.columns.person}</TableHead>
@@ -501,7 +502,10 @@ function CurrentMembersTable({
                             />
                         ))}
                 </TableBody>
-            </Table>
+            </Table></div>
+            <div className="grid gap-2.5 p-3 lg:hidden">
+                {pagination.pageItems.map((member) => <CurrentMemberCard key={member.id} member={member} onSelect={onSelect} onDelete={onDelete} canDelete={canDelete && member.user_id !== currentUserId} />)}
+            </div>
             <OrganizationTablePagination pagination={pagination} totalItems={members.length} />
                 </>
         )}
@@ -559,6 +563,15 @@ function CurrentMemberRow({
     );
 }
 
+function CurrentMemberCard({ member, onSelect, onDelete, canDelete }: { member: OrganizationMember; onSelect: (member: OrganizationMember) => void; onDelete: (member: OrganizationMember) => void; canDelete: boolean; }) {
+    const { dict } = useDictionary();
+    const copy = dict.organization;
+    const memberName = member.full_name || member.email;
+    const profiles = member.profile_assignments.map((assignment) => assignment.permission_profile_name).join(", ") || copy.people.no_additional_profile;
+    const actionOptions: PopoverOption[] = [{ label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onSelect(member) }, ...(canDelete ? [{ label: copy.people.remove_action, icon: UserMinus, variant: "delete" as const, onClick: () => onDelete(member) }] : [])];
+    return <Card className="min-w-0"><CardContent className="min-w-0 space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{memberName}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{member.email}</p></div><div className="shrink-0" onClick={(event) => event.stopPropagation()}><ActionPopover align="end" triggerLabel={`${copy.actions.edit}: ${memberName}`} options={actionOptions} /></div></div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><StatusBadge status={member.status} /><span className="text-xs font-medium text-[var(--text-muted)]">{copy.access[member.access_class]}</span></div><p className="truncate text-xs text-[var(--text-muted)]">{profiles}</p></CardContent></Card>;
+}
+
 function StatusBadge({ status }: { status: OrganizationMember["status"] | "inactive" }) {
     const { dict } = useDictionary();
     return <Badge variant="outline" className={status === "active" ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{dict.organization.access[status]}</Badge>;
@@ -591,7 +604,7 @@ function MemberHistoryTable({
                 </div>
                 <p className="text-sm font-medium text-[var(--text-muted)]">{members.length} {members.length === 1 ? copy.people.record_count_one : copy.people.record_count_many}</p>
             </header>
-            <Table className="table-fixed text-left">
+            <div className="hidden lg:block"><Table className="table-fixed text-left">
                 <TableHeader>
                     <TableRow className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                         <TableHead className="w-[48%] text-[var(--btn-secondary-text)] sm:w-[34%]">{copy.people.columns.record}</TableHead>
@@ -627,6 +640,7 @@ function MemberHistoryTable({
                     })}
                 </TableBody>
             </Table>
+            </div>
             <OrganizationTablePagination pagination={pagination} totalItems={members.length} />
         </section>
     );
@@ -728,7 +742,7 @@ function ProfilesTable({
                 <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{profiles.length === 0 ? copy.profiles.empty : copy.filters.empty}</p>
             ) : (
                 <>
-            <Table className="table-fixed text-left">
+            <div className="hidden lg:block"><Table className="table-fixed text-left">
                 <TableHeader>
                     <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                         <TableHead className="w-[58%] text-[var(--btn-secondary-text)] sm:w-[32%]">{copy.profiles.profile}</TableHead>
@@ -787,11 +801,79 @@ function ProfilesTable({
                         );
                     })}
                 </TableBody>
-            </Table>
+            </Table></div>
+            <div className="grid gap-2.5 p-3 lg:hidden">
+                {pagination.pageItems.map((profile) => (
+                    <PermissionProfileCard
+                        key={profile.id}
+                        profile={profile}
+                        definitionByCode={definitionByCode}
+                        onEdit={() => onEdit(profile)}
+                        onRequestStatusChange={() => onRequestStatusChange(profile)}
+                        onRequestDelete={() => onRequestDelete(profile)}
+                    />
+                ))}
+            </div>
             <OrganizationTablePagination pagination={pagination} totalItems={filteredProfiles.length} />
                 </>
             )}
         </OrganizationTableShell>
+    );
+}
+
+function PermissionProfileCard({
+    profile,
+    definitionByCode,
+    onEdit,
+    onRequestStatusChange,
+    onRequestDelete,
+}: {
+    profile: PermissionProfile;
+    definitionByCode: Map<string, PermissionDefinition>;
+    onEdit: () => void;
+    onRequestStatusChange: () => void;
+    onRequestDelete: () => void;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization;
+    const canManage = !profile.is_system;
+    const summary = permissionSummary(profile, definitionByCode, copy);
+    const actionOptions: PopoverOption[] = canManage ? [
+        { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit },
+        {
+            label: profile.is_active ? copy.profiles.deactivate : copy.profiles.reactivate,
+            icon: Power,
+            variant: profile.is_active ? "deactivate" : "default",
+            onClick: onRequestStatusChange,
+        },
+        ...((profile.usage?.can_delete ?? false) ? [{ label: copy.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onRequestDelete }] : []),
+    ] : [];
+
+    return (
+        <Card>
+            <CardContent className="space-y-3">
+                <div className="flex items-start gap-3">
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-[var(--text-main)]">{profile.name}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)]">{profile.description || copy.profiles.no_description}</p>
+                    </div>
+                    {canManage ? (
+                        <ActionPopover align="end" triggerLabel={`${copy.profiles.actions}: ${profile.name}`} options={actionOptions} />
+                    ) : (
+                        <span className="inline-flex shrink-0 text-[var(--text-muted)]" title={copy.profiles.system_managed} aria-label={copy.profiles.system_managed}>
+                            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                        </span>
+                    )}
+                </div>
+                <p className="line-clamp-2 border-t border-[var(--border-soft)] pt-3 text-xs text-[var(--text-muted)]">
+                    {profile.permission_codes.length} {profile.permission_codes.length === 1 ? copy.profiles.permission_count_one : copy.profiles.permission_count_many} · {summary}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant="outline" className={profile.is_system ? "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? copy.profiles.system : copy.profiles.custom}</Badge>
+                    <StatusBadge status={profile.is_active ? "active" : "inactive"} />
+                </div>
+            </CardContent>
+        </Card>
     );
 }
 

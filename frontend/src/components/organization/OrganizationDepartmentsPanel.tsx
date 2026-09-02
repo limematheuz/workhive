@@ -6,6 +6,7 @@ import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { ActionPopover } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { OrganizationTableFilters } from "@/components/organization/OrganizationTableFilters";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
@@ -131,7 +132,7 @@ export function OrganizationDepartmentsPanel({ departments, onChanged }: Organiz
                 <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{departments.length === 0 ? copy.empty : dict.organization.filters.empty}</p>
             ) : (
                 <>
-                <Table className="table-fixed text-left">
+                <div className="hidden lg:block"><Table className="table-fixed text-left">
                     <TableHeader>
                         <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                             <TableHead className="w-[52%] text-[var(--btn-secondary-text)] xl:w-[55%] 2xl:w-[38%]">{dict.organization.create_dialog.name}</TableHead>
@@ -152,7 +153,10 @@ export function OrganizationDepartmentsPanel({ departments, onChanged }: Organiz
                             />
                         ))}
                     </TableBody>
-                </Table>
+                </Table></div>
+                <div className="grid gap-2.5 p-3 lg:hidden">
+                    {pagination.pageItems.map((department) => <DepartmentCard key={department.id} department={department} departments={departments} onEdit={() => setEditing(department)} onDelete={() => setDeleteTarget(department)} />)}
+                </div>
                 <DataTablePagination
                     page={pagination.page}
                     totalItems={filteredDepartments.length}
@@ -195,6 +199,15 @@ export function OrganizationDepartmentsPanel({ departments, onChanged }: Organiz
             />
         </section>
     );
+}
+
+function DepartmentCard({ department, departments, onEdit, onDelete }: { department: OrganizationDepartment; departments: OrganizationDepartment[]; onEdit: () => void; onDelete: () => void; }) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.departments;
+    const usage = departmentUsage(department);
+    const parentName = departments.find((item) => item.id === department.parent_department_id)?.name ?? copy.no_parent;
+    const actionOptions = [{ label: dict.organization.actions.edit, icon: Pencil, variant: "edit" as const, onClick: onEdit }, ...(usage.can_delete ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onDelete }] : [])];
+    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{department.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{department.code || copy.no_code}</p></div><ActionPopover align="end" triggerLabel={`${copy.actions}: ${department.name}`} options={actionOptions} /></div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={department.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{department.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{parentName}</span></div></CardContent></Card>;
 }
 
 function DepartmentRow({

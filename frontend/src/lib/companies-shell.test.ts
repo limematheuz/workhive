@@ -72,12 +72,13 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     assert.match(planAccess, /from "@\/components\/ui\/dialog"/);
     assert.match(planAccess, /from "@\/components\/ui\/select"/);
     assert.match(planAccess, /from "@\/components\/ui\/textarea"/);
+    assert.match(planAccess, /from "@\/components\/ui\/premium-tabs"/);
     assert.match(planAccessLogic, /replaceCustomization/);
     assert.match(planAccess, /CommercialChangeConfirmationDialog/);
     assert.match(planAccess, /Confirmar cambio de plan/);
     assert.match(planAccess, /Confirmar configuración personalizada/);
     assert.match(planAccessLogic, /base_entitlements/);
-    assert.match(planAccess, /hover:bg-accent\/10/);
+    assert.match(planAccess, /mobileLabel="Sección de plan y acceso"/);
     assert.match(planAccess, /Personalizar funciones y capacidad/);
     assert.match(planAccess, /max-h-\[calc\(100vh-1rem\)\].*flex-col.*overflow-hidden/);
     assert.match(planAccess, /min-h-0 flex-1 overflow-y-auto/);
@@ -85,15 +86,21 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     assert.doesNotMatch(planAccess, /<textarea/);
 
     assert.match(planCatalogEditor, /updatePlanCatalog/);
+    assert.match(planCatalogEditor, /from "@\/components\/ui\/premium-tabs"/);
+    assert.match(planCatalogEditor, /mobileLabel="Plan que quieres editar"/);
+    assert.doesNotMatch(planCatalogEditor, /grid-cols-2/);
     assert.match(planCatalogEditor, /Publicar nueva versión/);
     assert.match(planCatalogEditor, /CommercialChangeConfirmationDialog/);
     assert.match(entitlementEditor, /from "@\/components\/ui\/checkbox"/);
     assert.match(entitlementEditor, /from "@\/components\/ui\/button"/);
     assert.match(entitlementEditor, /Funciones disponibles/);
-    assert.match(entitlementEditor, /Próximamente/);
-    assert.match(entitlementEditor, /Interna de plataforma/);
+    assert.match(entitlementEditor, /label: "Próx\."/);
+    assert.match(entitlementEditor, /label: "Interna"/);
     assert.match(entitlementEditor, /disabled=\{!canConfigure\}/);
     assert.match(entitlementEditor, /flex min-w-0 items-center gap-3/);
+    assert.match(entitlementEditor, /checked=\{allFeaturesSelected \? true : someFeaturesSelected \? "indeterminate" : false\}/);
+    assert.match(entitlementEditor, /id=\{`\$\{idPrefix\}-all-features`\}/);
+    assert.doesNotMatch(entitlementEditor, /Deseleccionar todas/);
     assert.match(entitlementEditor, /Capacidades/);
     assert.match(entitlementEditor, /Reducir \$\{item.label\}/);
     assert.match(entitlementEditor, /Aumentar \$\{item.label\}/);

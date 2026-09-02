@@ -6,6 +6,7 @@ import { Loader2, Pencil, Power, Trash2, UsersRound } from "lucide-react";
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { OrganizationTableFilters } from "@/components/organization/OrganizationTableFilters";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
@@ -165,7 +166,7 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
                 <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{teams.length === 0 ? copy.empty : dict.organization.filters.empty}</p>
             ) : (
                 <>
-                    <Table className="table-fixed text-left">
+                    <div className="hidden lg:block"><Table className="table-fixed text-left">
                         <TableHeader>
                             <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
                                 <TableHead className="w-[50%] text-[var(--btn-secondary-text)] xl:w-[42%]">{dict.organization.create_dialog.name}</TableHead>
@@ -189,7 +190,10 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
                                 />
                             ))}
                         </TableBody>
-                    </Table>
+                    </Table></div>
+                    <div className="grid gap-2.5 p-3 lg:hidden">
+                        {pagination.pageItems.map((team) => <TeamCard key={team.id} team={team} departments={departments} onEdit={() => setEditing(team)} onManageMembers={() => setMembersTarget(team)} onRequestStatusChange={() => setStatusTarget(team)} onRequestDelete={() => setDeleteTarget(team)} />)}
+                    </div>
                     <DataTablePagination
                         page={pagination.page}
                         totalItems={filteredTeams.length}
@@ -260,6 +264,15 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
             />
         </section>
     );
+}
+
+function TeamCard({ team, departments, onEdit, onManageMembers, onRequestStatusChange, onRequestDelete }: { team: OrganizationTeam; departments: OrganizationDepartment[]; onEdit: () => void; onManageMembers: () => void; onRequestStatusChange: () => void; onRequestDelete: () => void; }) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.teams;
+    const usage = teamUsage(team);
+    const departmentName = departments.find((department) => department.id === team.department_id)?.name || copy.no_department;
+    const actionOptions: PopoverOption[] = [{ label: dict.organization.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit }, { label: copy.members_action, icon: UsersRound, onClick: onManageMembers, disabled: !team.is_active }, { label: team.is_active ? copy.deactivate : copy.reactivate, icon: Power, variant: team.is_active ? "deactivate" : "default", onClick: onRequestStatusChange, disabled: team.is_active && !usage.can_deactivate }, ...(usage.can_delete ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onRequestDelete }] : [])];
+    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{team.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{team.code || dict.organization.departments.no_code}</p></div><ActionPopover align="end" triggerLabel={`${copy.actions}: ${team.name}`} options={actionOptions} /></div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={team.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{team.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{departmentName}</span><span className="text-xs text-[var(--text-muted)]">{usage.active_member_assignments} {copy.members.toLowerCase()}</span></div></CardContent></Card>;
 }
 
 function TeamRow({

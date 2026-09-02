@@ -1,8 +1,10 @@
 "use client";
 
-import { BriefcaseBusiness, CheckSquare, Loader2, Receipt, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
+import { BriefcaseBusiness, Loader2, Receipt, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -75,20 +77,18 @@ type InvoiceableJobsSectionProps = {
     };
 };
 
-function JobRow({
+function JobMobileCard({
     task,
     selected,
     disabled,
     onToggle,
     labels,
-    compact = false,
 }: {
     task: InvoiceableTask;
     selected: boolean;
     disabled: boolean;
     onToggle: () => void;
     labels: InvoiceableJobsSectionProps["labels"];
-    compact?: boolean;
 }) {
     const billing = resolveTaskInvoiceBilling(task);
     const amount = resolveTaskInvoiceAmount(task);
@@ -102,102 +102,51 @@ function JobRow({
         : null;
 
     return (
-        <Button
-            type="button"
-            disabled={disabled}
-            onClick={onToggle}
-            aria-pressed={selected}
-            aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
+        <Card
             className={cn(
-                "h-auto w-full rounded-2xl border-0 bg-transparent text-left shadow-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 hover:translate-y-0 hover:bg-transparent hover:shadow-none",
-                selected && "ring-2 ring-accent/45",
-                disabled ? "cursor-not-allowed opacity-55" : "cursor-pointer hover:brightness-[0.985] active:scale-[0.995]",
-                compact ? "p-4" : "grid grid-cols-[2.25rem_minmax(12rem,1.4fr)_minmax(8rem,1fr)_minmax(9rem,1fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)_minmax(7rem,.7fr)] items-center gap-3 px-3.5 py-3.5",
+                "min-w-0 transition-colors",
+                selected && "border-accent/60 bg-accent/5 ring-1 ring-accent/35",
+                disabled && "opacity-55",
             )}
         >
-            {compact ? (
-                <>
-                    <div className="flex items-start justify-between gap-3">
+            <CardContent className="flex min-w-0 gap-3 p-4">
+                <Checkbox
+                    className="mt-0.5"
+                    checked={selected}
+                    disabled={disabled}
+                    onCheckedChange={() => onToggle()}
+                    aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
+                />
+                <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={onToggle}
+                    aria-pressed={selected}
+                    className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                    aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
+                >
+                    <div className="flex min-w-0 items-start justify-between gap-3">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p>
-                            <p className="mt-1 text-xs font-medium text-[var(--text-muted)]">{task.clientName}</p>
+                            <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{task.clientName}</p>
                         </div>
-                        <span
-                            className={cn(
-                                "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
-                                selected
-                                    ? "border-accent bg-accent text-white"
-                                    : "border-[var(--border-color)] bg-[var(--bg-primary)]",
-                            )}
-                            aria-hidden="true"
-                        >
-                            {selected && <CheckSquare className="h-3.5 w-3.5" />}
-                        </span>
+                        <div className="shrink-0 text-right">
+                            <p className="text-xs text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</p>
+                            <p className="mt-1 font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(amount)}</p>
+                        </div>
                     </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] pt-3 text-xs text-[var(--text-muted)]">
-                        <span className="truncate">{task.locationName}</span>
-                        <span className="text-right">{formatDate(task.date_done || task.created_at)}</span>
-                        <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
-                            task.is_invoiced
-                                ? "bg-accent/10 text-accent"
-                                : "bg-[var(--bg-card-solid)] text-[var(--text-muted)]"
-                        }`}>
+                    <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3">
+                        <Badge variant="outline" className={task.is_invoiced ? "border-accent/30 bg-accent/10 text-accent" : "border-[var(--border-soft)] bg-[var(--bg-primary)]/55 text-[var(--text-muted)]"}>
                             {task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}
-                        </span>
-                        <span className="text-right font-semibold text-[var(--text-main)]">
-                            {formatCurrency(amount)}
-                        </span>
-                        {hoursLabel && (
-                            <span className="col-span-2 font-medium text-[var(--text-main)]">
-                                {hoursLabel}
-                                {workersLine ? ` · ${workersLine}` : ""}
-                            </span>
-                        )}
+                        </Badge>
+                        <span className="min-w-0 flex-1 truncate text-xs text-[var(--text-muted)]">{task.locationName}</span>
                     </div>
-                </>
-            ) : (
-                <>
-                    <span
-                        className={cn(
-                            "flex h-5 w-5 items-center justify-center rounded-md border",
-                            selected
-                                ? "border-accent bg-accent text-white"
-                                : "border-[var(--border-color)] bg-[var(--bg-primary)]",
-                        )}
-                        aria-hidden="true"
-                    >
-                        {selected && <CheckSquare className="h-3 w-3" />}
-                    </span>
-                    <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p>
-                        <p className="mt-0.5 text-[11px] text-[var(--text-muted)]">
-                            {quantityLabel}
-                            {hoursLabel ? ` · ${hoursLabel}` : ""}
-                        </p>
-                        {workersLine && (
-                            <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">
-                                {workersLine}
-                            </p>
-                        )}
-                    </div>
-                    <p className="truncate text-sm text-[var(--text-muted)]">{task.clientName}</p>
-                    <p className="truncate text-sm text-[var(--text-muted)]">{task.locationName}</p>
-                    <p className="text-sm text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</p>
-                    <p className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">
-                        {formatCurrency(amount)}
+                    <p className="mt-2 truncate text-xs text-[var(--text-muted)]">
+                        {quantityLabel}{hoursLabel ? ` · ${hoursLabel}` : ""}{workersLine ? ` · ${workersLine}` : ""}
                     </p>
-                    <div className="text-center">
-                        <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${
-                            task.is_invoiced
-                                ? "bg-accent/10 text-accent"
-                                : "bg-[var(--bg-card-solid)] text-[var(--text-muted)]"
-                        }`}>
-                            {task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}
-                        </span>
-                    </div>
-                </>
-            )}
-        </Button>
+                </button>
+            </CardContent>
+        </Card>
     );
 }
 
@@ -357,11 +306,10 @@ export function InvoiceableJobsSection({
                     </div>
                 ) : (
                     <>
-                        <div className="space-y-2.5 p-3 md:hidden">
+                        <div className="grid gap-2.5 p-3 md:hidden">
                             {tasks.map((task) => (
-                                <JobRow
+                                <JobMobileCard
                                     key={task.id}
-                                    compact
                                     task={task}
                                     selected={selectedJobIdSet.has(task.id)}
                                     disabled={task.is_invoiced}

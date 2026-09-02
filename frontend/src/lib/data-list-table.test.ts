@@ -63,7 +63,15 @@ test("invoice and quote lists use the shared shadcn table primitive", () => {
         assert.doesNotMatch(file, /DataListTable/, `${name} should not use the generic list table`);
     }
 
-    assert.match(clients, /DataListTable/);
-    assert.match(clients, /renderCompactRow/);
-    assert.doesNotMatch(clients, /from "@\/components\/ui\/table"/);
+    assert.match(clients, /from "@\/components\/ui\/table"/);
+    assert.match(clients, /from "@\/components\/ui\/card"/);
+    assert.match(clients, /<TableHeader>/);
+    assert.doesNotMatch(clients, /DataListTable/);
+
+    assert.match(jobs, /from "@\/components\/ui\/card"/);
+    assert.match(jobs, /from "@\/components\/ui\/checkbox"/);
+    assert.match(jobs, /function JobMobileCard/);
+    assert.match(jobs, /<Checkbox/);
+    assert.match(jobs, /grid gap-2\.5 p-3 md:hidden/);
+    assert.doesNotMatch(jobs, /CheckSquare/);
 });
