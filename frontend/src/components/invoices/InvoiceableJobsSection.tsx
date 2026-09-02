@@ -121,6 +121,7 @@ function JobMobileCard({
                     type="button"
                     disabled={disabled}
                     onClick={onToggle}
+                    aria-pressed={selected}
                     className="min-w-0 flex-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
                     aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
                 >
