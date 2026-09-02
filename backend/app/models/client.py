@@ -54,6 +54,11 @@ class Client(Base):
         back_populates="client",
         cascade="all, delete-orphan",
     )
+    opportunities = relationship(
+        "ClientOpportunity",
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )
 
     locations = relationship("Location", back_populates="client")
 

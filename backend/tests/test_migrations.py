@@ -115,6 +115,14 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("client_contact_roles")
         }
+        client_opportunity_columns = {
+            column["name"]
+            for column in inspector.get_columns("client_opportunities")
+        }
+        client_opportunity_activity_columns = {
+            column["name"]
+            for column in inspector.get_columns("client_opportunity_activities")
+        }
         calendar_connection_unique_constraints = {
             tuple(constraint["column_names"])
             for constraint in inspector.get_unique_constraints(
@@ -245,6 +253,25 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "is_active",
     } <= client_contact_columns
     assert {"id", "client_contact_id", "role"} <= client_contact_role_columns
+    assert {
+        "id",
+        "client_id",
+        "contact_id",
+        "owner_membership_id",
+        "title",
+        "stage",
+        "next_follow_up_at",
+        "loss_reason",
+    } <= client_opportunity_columns
+    assert {
+        "id",
+        "opportunity_id",
+        "activity_type",
+        "body",
+        "stage_from",
+        "stage_to",
+        "happened_at",
+    } <= client_opportunity_activity_columns
     assert ("company_id",) in calendar_connection_unique_constraints
 
 

@@ -11,6 +11,8 @@ const clientForm = readFileSync(new URL("../components/clients/ClientFormFields.
 const clientFilters = readFileSync(new URL("../components/clients/ClientWorkspaceFilters.tsx", import.meta.url), "utf8");
 const clientStats = readFileSync(new URL("../components/clients/ClientWorkspaceStats.tsx", import.meta.url), "utf8");
 const clientContacts = readFileSync(new URL("../components/clients/ClientContactsTab.tsx", import.meta.url), "utf8");
+const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
+const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
 
 test("client workspace uses shared surfaces and keeps all API reads in services", () => {
     assert.match(page, /ClientWorkspaceStats/);
@@ -65,6 +67,19 @@ test("client lifecycle and contacts use the shared shadcn controls", () => {
     assert.match(clientContacts, /DeleteConfirmDialog/);
     assert.match(clientContacts, /Checkbox/);
     assert.doesNotMatch(clientContacts, /fetch\s*\(/);
+});
+
+test("commercial opportunities remain in the client detail and use shadcn controls", () => {
+    assert.match(tabs, /ClientOpportunitiesTab/);
+    assert.match(clientOpportunities, /ClientService\.getClientOpportunities/);
+    assert.match(clientOpportunities, /ClientService\.createClientOpportunity/);
+    assert.match(clientOpportunities, /ClientService\.updateClientOpportunity/);
+    assert.match(clientOpportunities, /SelectTrigger/);
+    assert.match(clientOpportunityTimeline, /ClientService\.getClientOpportunityActivities/);
+    assert.match(clientOpportunityTimeline, /ClientService\.createClientOpportunityActivity/);
+    assert.match(clientOpportunityTimeline, /Textarea/);
+    assert.doesNotMatch(clientOpportunities, /fetch\s*\(/);
+    assert.doesNotMatch(clientOpportunityTimeline, /fetch\s*\(/);
 });
 
 test("client workspace keeps dark search placeholders and only shows data-backed percent badges", () => {
