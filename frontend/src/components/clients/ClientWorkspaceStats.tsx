@@ -2,7 +2,7 @@
 
 import { CircleAlert, CircleCheck, Clock3, ReceiptText, UsersRound } from "lucide-react";
 
-import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { formatCurrency } from "@/lib/format";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getPercentageChange } from "@/lib/metric-trend";
@@ -63,12 +63,12 @@ export function ClientWorkspaceStats({ summary, monthlyRevenue }: ClientWorkspac
     ];
 
     return (
-        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5" aria-label={workspace.stats_label}>
+        <SummaryMetricGrid desktopColumns={5} aria-label={workspace.stats_label}>
             {cards.map((card) => {
                 return (
                     <SummaryMetricCard key={card.label} {...card} />
                 );
             })}
-        </section>
+        </SummaryMetricGrid>
     );
 }

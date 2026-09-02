@@ -1,5 +1,6 @@
 import React from "react";
 import { LucideIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export interface TabOption<T extends string> {
@@ -20,6 +21,8 @@ interface PremiumTabsProps<T extends string> {
     className?: string;
     /** `fit` keeps every tab visible without horizontal scroll (mobile-safe). Default for ≤4 tabs. */
     layout?: "scroll" | "fit";
+    /** Accessible label for the mobile section picker. */
+    mobileLabel?: string;
 }
 
 export function PremiumTabs<T extends string>({
@@ -28,13 +31,35 @@ export function PremiumTabs<T extends string>({
     onChange,
     className = "",
     layout = "fit",
+    mobileLabel = "Seleccionar sección",
 }: PremiumTabsProps<T>) {
     const fit = layout === "fit";
 
     return (
         <Tabs value={activeTab} onValueChange={(id) => onChange(id as T)}>
+        <div className="sm:hidden">
+            <Select value={activeTab} onValueChange={(id) => onChange(id as T)}>
+                <SelectTrigger aria-label={mobileLabel} className="h-11 rounded-2xl bg-[var(--bg-primary)]/45 font-semibold text-[var(--text-main)]">
+                    <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                    {tabs.map((tab) => {
+                        const Icon = tab.icon;
+                        return (
+                            <SelectItem key={tab.id} value={tab.id}>
+                                <span className="flex items-center gap-2">
+                                    {Icon && <Icon className="size-4 text-accent" aria-hidden="true" />}
+                                    <span>{tab.label}</span>
+                                    {tab.badge !== undefined && tab.badge > 0 && <span className="text-xs font-semibold text-accent">({tab.badge})</span>}
+                                </span>
+                            </SelectItem>
+                        );
+                    })}
+                </SelectContent>
+            </Select>
+        </div>
         <TabsList
-            className={`flex h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
+            className={`hidden h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 sm:flex ${
                 fit
                     ? "overflow-hidden"
                     : "snap-x overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"

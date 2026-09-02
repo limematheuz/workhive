@@ -2,7 +2,7 @@
 
 import { CircleCheck, Clock3, FileText, OctagonAlert } from "lucide-react";
 
-import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { formatCurrency } from "@/lib/format";
 import { getMetricTrend } from "@/lib/metric-trend";
 
@@ -66,7 +66,7 @@ export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, 
     ];
 
     return (
-        <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label="Resumen de facturas">
+        <SummaryMetricGrid desktopColumns={4} aria-label="Resumen de facturas">
             {cards.map((stat) => (
                 <SummaryMetricCard
                     key={stat.label}
@@ -77,6 +77,6 @@ export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, 
                     trend={stat.trend}
                 />
             ))}
-        </section>
+        </SummaryMetricGrid>
     );
 }

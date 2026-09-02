@@ -8,8 +8,8 @@ const source = readFileSync(
 );
 
 test("invoice stats cards use a 2x2 grid on mobile", () => {
-    assert.match(source, /grid grid-cols-2 gap-3 xl:grid-cols-4/);
-    assert.doesNotMatch(source, /md:grid-cols-2/);
+    assert.match(source, /SummaryMetricGrid desktopColumns=\{4\}/);
+    assert.doesNotMatch(source, /grid-cols-1/);
 });
 
 test("invoice stats cards use compact semantic icon chips instead of colour-only bars", () => {

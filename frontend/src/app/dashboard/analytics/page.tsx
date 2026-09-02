@@ -56,7 +56,7 @@ import {
     type ClientProfitabilityPeriod,
 } from "@/services/client-profitability.service";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
-import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
@@ -419,12 +419,12 @@ function FinanceDashboard({
 
     return (
         <>
-            <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
+            <SummaryMetricGrid desktopColumns={6} className="gap-2.5 sm:grid-cols-3">
                 {metricCards.map(({ label, value, previous, icon, comparisonDirection }) => {
                     const change = getPercentageChange(value, previous);
                     return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
                 })}
-            </section>
+            </SummaryMetricGrid>
 
             <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.62fr)]">
                 <FinanceTrendCard
@@ -709,12 +709,12 @@ function ClientProfitabilityDashboard({
 
             {data ? (
                 <>
-                    <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+                    <SummaryMetricGrid desktopColumns={4} className="gap-2.5">
                         {metrics.map(({ label, value, previous: previousValue, icon, comparisonDirection }) => {
                             const change = getPercentageChange(value, previousValue);
                             return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
                         })}
-                    </section>
+                    </SummaryMetricGrid>
 
                     <DataListTable
                         items={current.clients}
