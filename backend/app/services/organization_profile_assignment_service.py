@@ -13,6 +13,7 @@ from app.schemas.organization import (
     OrganizationMemberResponse,
 )
 from app.services.organization_member_service import member_response
+from app.services.organization_profile_scope_policy import validate_profile_scopes
 from app.services.organization_service_shared import (
     CAPABILITY_MEMBERS_MANAGE,
     CAPABILITY_SCOPES_MANAGE,
@@ -37,7 +38,9 @@ def replace_member_profile_assignments(
     )
     if not membership:
         not_found("Company member")
-    profile_ids = [assignment.permission_profile_id for assignment in payload.assignments]
+    profile_ids = [
+        assignment.permission_profile_id for assignment in payload.assignments
+    ]
     profiles = {
         profile.id: profile
         for profile in organization_repo.list_permission_profiles(db, company_id)
@@ -46,16 +49,26 @@ def replace_member_profile_assignments(
     if len(profiles) != len(profile_ids):
         not_found("Permission profile")
     if any(profile.is_system for profile in profiles.values()):
-        conflict("System permission profiles are assigned only through the administrator class")
+        conflict(
+            "System permission profiles are assigned only through the administrator class"
+        )
     if any(not profile.is_active for profile in profiles.values()):
         conflict("Inactive permission profiles cannot be assigned")
 
-    now = datetime.now(timezone.utc)
-    for assignment in organization_repo.list_profile_assignments(
+    existing_assignments = organization_repo.list_profile_assignments(
         db,
         company_id=company_id,
         membership_id=membership.id,
-    ):
+    )
+    validate_profile_scopes(
+        db,
+        company_id=company_id,
+        assignments=payload.assignments,
+        existing_assignments=existing_assignments,
+    )
+
+    now = datetime.now(timezone.utc)
+    for assignment in existing_assignments:
         if not assignment.permission_profile.is_system:
             assignment.is_active = False
             assignment.revoked_at = now
@@ -91,9 +104,8 @@ def replace_member_profile_assignments(
             assignment.revoked_at = None
             assignment.assigned_by_user_id = current_user.id
             db.add(assignment)
-            db.query(MembershipPermissionProfileScope).filter(
-                MembershipPermissionProfileScope.profile_assignment_id == assignment.id
-            ).delete(synchronize_session=False)
+            for existing_scope in list(assignment.scopes):
+                db.delete(existing_scope)
             db.flush()
         for scope in input_assignment.scopes:
             db.add(

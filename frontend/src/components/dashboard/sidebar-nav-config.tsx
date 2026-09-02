@@ -62,7 +62,6 @@ const NAVIGATION_FEATURES: Record<string, string> = {
     "/dashboard/clients": "features.clients",
     "/dashboard/locations": "features.locations",
     "/dashboard/tasks": "features.work_orders",
-    "/dashboard/calendar": "features.planning",
     "/dashboard/live-work": "features.time_tracking",
     "/dashboard/reservations": "features.planning",
     "/dashboard/organization": "features.organization",

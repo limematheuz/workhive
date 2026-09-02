@@ -24,7 +24,7 @@ def test_alembic_has_exactly_one_head():
 
 
 def test_container_start_applies_migrations_before_serving_requests():
-    start_script = (os.path.dirname(__file__) + "/../start.sh")
+    start_script = os.path.dirname(__file__) + "/../start.sh"
     with open(start_script, encoding="utf-8") as script_file:
         script = script_file.read()
 
@@ -45,15 +45,21 @@ def test_postgresql_schema_matches_invoice_model_contract():
         quote_columns = {
             column["name"]: column for column in inspector.get_columns("quotes")
         }
-        invoice_columns = {column["name"] for column in inspector.get_columns("invoices")}
-        expense_columns = {column["name"] for column in inspector.get_columns("expenses")}
+        invoice_columns = {
+            column["name"] for column in inspector.get_columns("invoices")
+        }
+        expense_columns = {
+            column["name"] for column in inspector.get_columns("expenses")
+        }
         sales_ledger_columns = {
             column["name"] for column in inspector.get_columns("sales_ledger_records")
         }
         invitation_columns = {
             column["name"] for column in inspector.get_columns("user_invitations")
         }
-        task_columns = {column["name"] for column in inspector.get_columns("task_items")}
+        task_columns = {
+            column["name"] for column in inspector.get_columns("task_items")
+        }
         template_task_columns = {
             column["name"] for column in inspector.get_columns("template_tasks")
         }
@@ -108,7 +114,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
         with engine.connect() as connection:
             applied_revisions = {
                 row[0]
-                for row in connection.execute(text("SELECT version_num FROM alembic_version"))
+                for row in connection.execute(
+                    text("SELECT version_num FROM alembic_version")
+                )
             }
     finally:
         engine.dispose()
@@ -133,7 +141,13 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "payment_status",
         "is_active",
     } <= sales_ledger_columns
-    assert {"token_hash", "code_hash", "expires_at", "failed_attempts"} <= invitation_columns
+    assert {
+        "token_hash",
+        "code_hash",
+        "expires_at",
+        "failed_attempts",
+        "rejoin_user_id",
+    } <= invitation_columns
     assert "reported_issues" in task_columns
     # The task read endpoint serializes these fields for every list view. Keep
     # this contract coupled to Alembic so an unapplied pricing migration cannot
@@ -148,7 +162,13 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "billing_unit_snapshot",
     } <= task_columns
     assert "pricing_mode" in template_task_columns
-    assert {"user_id", "company_id", "event_type", "read_at", "href"} <= notification_columns
+    assert {
+        "user_id",
+        "company_id",
+        "event_type",
+        "read_at",
+        "href",
+    } <= notification_columns
     assert {"task_id", "user_id", "status", "source"} <= assignment_columns
     assert {"task_id", "position", "text", "completed"} <= checklist_columns
     assert {"checklist_item_id", "user_id", "status"} <= checklist_assignment_columns
@@ -182,10 +202,27 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "started_at",
         "ended_at",
     } <= company_membership_columns
-    assert {"company_id", "parent_department_id", "name", "code", "is_active"} <= department_columns
+    assert {
+        "company_id",
+        "parent_department_id",
+        "name",
+        "normalized_name",
+        "code",
+        "is_active",
+    } <= department_columns
     assert {"company_id", "department_id", "name", "code", "is_active"} <= team_columns
-    assert {"company_id", "name", "is_system", "is_active"} <= permission_profile_columns
-    assert {"company_id", "profile_assignment_id", "scope_type", "scope_id"} <= permission_scope_columns
+    assert {
+        "company_id",
+        "name",
+        "is_system",
+        "is_active",
+    } <= permission_profile_columns
+    assert {
+        "company_id",
+        "profile_assignment_id",
+        "scope_type",
+        "scope_id",
+    } <= permission_scope_columns
     assert ("company_id",) in calendar_connection_unique_constraints
 
 
@@ -219,7 +256,13 @@ def test_enterprise_access_migration_backfills_legacy_company_users():
                     text("SELECT id FROM roles WHERE name = :role_name"),
                     {"role_name": role_name},
                 ).scalar_one()
-                for role_name in ("admin", "manager", "viewer", "accountant", "superadmin")
+                for role_name in (
+                    "admin",
+                    "manager",
+                    "viewer",
+                    "accountant",
+                    "superadmin",
+                )
             }
             for role_name in ("admin", "manager", "viewer", "accountant"):
                 connection.execute(
@@ -258,24 +301,33 @@ def test_enterprise_access_migration_backfills_legacy_company_users():
 
         command.upgrade(config, "head")
         with engine.connect() as connection:
-            memberships = connection.execute(
-                text(
-                    """
+            memberships = (
+                connection.execute(
+                    text(
+                        """
                     SELECT users.email, memberships.access_class, memberships.status
                     FROM company_memberships AS memberships
                     JOIN users ON users.id = memberships.user_id
                     WHERE users.email LIKE :email_pattern
                     ORDER BY users.email
                     """
-                ),
-                {"email_pattern": f"enterprise-%-{suffix}@example.test"},
-            ).mappings().all()
-            permission_codes = connection.execute(
-                text("SELECT code FROM permission_definitions ORDER BY code")
-            ).scalars().all()
-            administrator_profile = connection.execute(
-                text(
-                    """
+                    ),
+                    {"email_pattern": f"enterprise-%-{suffix}@example.test"},
+                )
+                .mappings()
+                .all()
+            )
+            permission_codes = (
+                connection.execute(
+                    text("SELECT code FROM permission_definitions ORDER BY code")
+                )
+                .scalars()
+                .all()
+            )
+            administrator_profile = (
+                connection.execute(
+                    text(
+                        """
                     SELECT profiles.is_system, count(profile_permissions.permission_definition_id)
                     FROM permission_profiles AS profiles
                     LEFT JOIN permission_profile_permissions AS profile_permissions
@@ -284,12 +336,16 @@ def test_enterprise_access_migration_backfills_legacy_company_users():
                       AND profiles.name = 'Administrador de empresa'
                     GROUP BY profiles.id, profiles.is_system
                     """
-                ),
-                {"company_id": company_id},
-            ).mappings().one()
-            administrator_scope = connection.execute(
-                text(
-                    """
+                    ),
+                    {"company_id": company_id},
+                )
+                .mappings()
+                .one()
+            )
+            administrator_scope = (
+                connection.execute(
+                    text(
+                        """
                     SELECT scopes.scope_type, scopes.scope_id
                     FROM membership_permission_profile_assignments AS assignments
                     JOIN company_memberships AS memberships
@@ -300,9 +356,12 @@ def test_enterprise_access_migration_backfills_legacy_company_users():
                     WHERE users.email = :email
                       AND assignments.is_active = true
                     """
-                ),
-                {"email": f"enterprise-admin-{suffix}@example.test"},
-            ).mappings().all()
+                    ),
+                    {"email": f"enterprise-admin-{suffix}@example.test"},
+                )
+                .mappings()
+                .all()
+            )
 
         assert [dict(membership) for membership in memberships] == [
             {
@@ -493,25 +552,37 @@ def test_task_structure_migration_backfills_valid_assignments_only():
         command.upgrade(config, "head")
         with engine.connect() as connection:
             checklist_count = connection.execute(
-                text("SELECT count(*) FROM task_checklist_items WHERE task_id = :task_id"),
+                text(
+                    "SELECT count(*) FROM task_checklist_items WHERE task_id = :task_id"
+                ),
                 {"task_id": task_id},
             ).scalar_one()
-            task_users = connection.execute(
-                text("SELECT user_id FROM task_assignments WHERE task_id = :task_id"),
-                {"task_id": task_id},
-            ).scalars().all()
-            checklist_users = connection.execute(
-                text(
-                    """
+            task_users = (
+                connection.execute(
+                    text(
+                        "SELECT user_id FROM task_assignments WHERE task_id = :task_id"
+                    ),
+                    {"task_id": task_id},
+                )
+                .scalars()
+                .all()
+            )
+            checklist_users = (
+                connection.execute(
+                    text(
+                        """
                     SELECT assignment.user_id
                     FROM task_checklist_assignments AS assignment
                     JOIN task_checklist_items AS item
                       ON item.id = assignment.checklist_item_id
                     WHERE item.task_id = :task_id
                     """
-                ),
-                {"task_id": task_id},
-            ).scalars().all()
+                    ),
+                    {"task_id": task_id},
+                )
+                .scalars()
+                .all()
+            )
             migrated_evidence = connection.execute(
                 text(
                     """
@@ -548,16 +619,20 @@ def test_task_structure_migration_backfills_valid_assignments_only():
                 text("SELECT status FROM task_items WHERE id = :task_id"),
                 {"task_id": task_id},
             ).scalar_one()
-            migrated_report = connection.execute(
-                text(
-                    """
+            migrated_report = (
+                connection.execute(
+                    text(
+                        """
                     SELECT report_type, description, checklist_item_id
                     FROM task_reports
                     WHERE task_item_id = :task_id
                     """
-                ),
-                {"task_id": task_id},
-            ).mappings().one()
+                    ),
+                    {"task_id": task_id},
+                )
+                .mappings()
+                .one()
+            )
 
         assert checklist_count == 2
         assert task_users == [user_id]
@@ -699,16 +774,20 @@ def test_calendar_governance_migration_keeps_only_active_admin_connection():
 
         command.upgrade(config, "head")
         with engine.connect() as connection:
-            connection_owners = connection.execute(
-                text(
-                    """
+            connection_owners = (
+                connection.execute(
+                    text(
+                        """
                     SELECT owner_user_id
                     FROM google_calendar_connections
                     WHERE company_id = :company_id
                     """
-                ),
-                {"company_id": company_id},
-            ).scalars().all()
+                    ),
+                    {"company_id": company_id},
+                )
+                .scalars()
+                .all()
+            )
             configured_owner = connection.execute(
                 text(
                     """
@@ -719,26 +798,34 @@ def test_calendar_governance_migration_keeps_only_active_admin_connection():
                 ),
                 {"company_id": company_id},
             ).scalar_one()
-            event_owners = connection.execute(
-                text(
-                    """
+            event_owners = (
+                connection.execute(
+                    text(
+                        """
                     SELECT user_id
                     FROM task_calendar_events
                     WHERE company_id = :company_id
                     """
-                ),
-                {"company_id": company_id},
-            ).scalars().all()
-            job_owners = connection.execute(
-                text(
-                    """
+                    ),
+                    {"company_id": company_id},
+                )
+                .scalars()
+                .all()
+            )
+            job_owners = (
+                connection.execute(
+                    text(
+                        """
                     SELECT user_id
                     FROM calendar_sync_jobs
                     WHERE company_id = :company_id
                     """
-                ),
-                {"company_id": company_id},
-            ).scalars().all()
+                    ),
+                    {"company_id": company_id},
+                )
+                .scalars()
+                .all()
+            )
 
         assert connection_owners == [admin_id]
         assert configured_owner == admin_id

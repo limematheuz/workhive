@@ -1,4 +1,4 @@
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.company_membership import (
@@ -96,6 +96,23 @@ def list_team_memberships(
     )
 
 
+def list_team_member_assignments(
+    db: Session,
+    *,
+    company_id: int,
+    team_id: int,
+) -> list[TeamMembership]:
+    return (
+        db.query(TeamMembership)
+        .filter(
+            TeamMembership.company_id == company_id,
+            TeamMembership.team_id == team_id,
+            TeamMembership.is_active.is_(True),
+        )
+        .all()
+    )
+
+
 def list_profile_assignments(
     db: Session,
     *,
@@ -110,7 +127,8 @@ def list_profile_assignments(
         )
         .filter(
             MembershipPermissionProfileAssignment.company_id == company_id,
-            MembershipPermissionProfileAssignment.company_membership_id == membership_id,
+            MembershipPermissionProfileAssignment.company_membership_id
+            == membership_id,
             MembershipPermissionProfileAssignment.is_active.is_(True),
         )
         .order_by(MembershipPermissionProfileAssignment.id.asc())
@@ -122,12 +140,16 @@ def list_departments(db: Session, company_id: int) -> list[Department]:
     return (
         db.query(Department)
         .filter(Department.company_id == company_id)
-        .order_by(Department.is_active.desc(), Department.name.asc(), Department.id.asc())
+        .order_by(
+            Department.is_active.desc(), Department.name.asc(), Department.id.asc()
+        )
         .all()
     )
 
 
-def get_department(db: Session, *, company_id: int, department_id: int) -> Department | None:
+def get_department(
+    db: Session, *, company_id: int, department_id: int
+) -> Department | None:
     return (
         db.query(Department)
         .filter(Department.company_id == company_id, Department.id == department_id)
@@ -146,10 +168,67 @@ def list_teams(db: Session, company_id: int) -> list[Team]:
 
 def get_team(db: Session, *, company_id: int, team_id: int) -> Team | None:
     return (
-        db.query(Team)
-        .filter(Team.company_id == company_id, Team.id == team_id)
-        .first()
+        db.query(Team).filter(Team.company_id == company_id, Team.id == team_id).first()
     )
+
+
+def get_team_usage(
+    db: Session,
+    *,
+    company_id: int,
+    team_id: int,
+) -> dict[str, int]:
+    member_assignments = (
+        db.query(func.count(TeamMembership.id))
+        .filter(
+            TeamMembership.company_id == company_id,
+            TeamMembership.team_id == team_id,
+        )
+        .scalar()
+        or 0
+    )
+    active_member_assignments = (
+        db.query(func.count(TeamMembership.id))
+        .filter(
+            TeamMembership.company_id == company_id,
+            TeamMembership.team_id == team_id,
+            TeamMembership.is_active.is_(True),
+        )
+        .scalar()
+        or 0
+    )
+    profile_scopes = (
+        db.query(func.count(MembershipPermissionProfileScope.id))
+        .filter(
+            MembershipPermissionProfileScope.company_id == company_id,
+            MembershipPermissionProfileScope.scope_type == "team",
+            MembershipPermissionProfileScope.scope_id == team_id,
+        )
+        .scalar()
+        or 0
+    )
+    active_profile_scopes = (
+        db.query(func.count(MembershipPermissionProfileScope.id))
+        .join(
+            MembershipPermissionProfileAssignment,
+            MembershipPermissionProfileAssignment.id
+            == MembershipPermissionProfileScope.profile_assignment_id,
+        )
+        .filter(
+            MembershipPermissionProfileScope.company_id == company_id,
+            MembershipPermissionProfileScope.scope_type == "team",
+            MembershipPermissionProfileScope.scope_id == team_id,
+            MembershipPermissionProfileAssignment.is_active.is_(True),
+        )
+        .scalar()
+        or 0
+    )
+    return {
+        "member_assignments": int(member_assignments),
+        "active_member_assignments": int(active_member_assignments),
+        "profile_scopes": int(profile_scopes),
+        "active_profile_scopes": int(active_profile_scopes),
+    }
 
 
 def list_permission_definitions(db: Session) -> list[PermissionDefinition]:
@@ -204,9 +283,30 @@ def get_permission_profile(
                 PermissionProfilePermission.permission_definition
             )
         )
-        .filter(PermissionProfile.company_id == company_id, PermissionProfile.id == profile_id)
+        .filter(
+            PermissionProfile.company_id == company_id,
+            PermissionProfile.id == profile_id,
+        )
         .first()
     )
+
+
+def get_permission_profile_usage(
+    db: Session,
+    *,
+    company_id: int,
+    profile_id: int,
+) -> dict[str, int]:
+    assignments = (
+        db.query(func.count(MembershipPermissionProfileAssignment.id))
+        .filter(
+            MembershipPermissionProfileAssignment.company_id == company_id,
+            MembershipPermissionProfileAssignment.permission_profile_id == profile_id,
+        )
+        .scalar()
+        or 0
+    )
+    return {"assignments": int(assignments)}
 
 
 def get_system_administrator_profile(
@@ -236,7 +336,8 @@ def get_permission_profile_assignment(
         db.query(MembershipPermissionProfileAssignment)
         .filter(
             MembershipPermissionProfileAssignment.company_id == company_id,
-            MembershipPermissionProfileAssignment.company_membership_id == membership_id,
+            MembershipPermissionProfileAssignment.company_membership_id
+            == membership_id,
             MembershipPermissionProfileAssignment.permission_profile_id == profile_id,
         )
         .first()
@@ -251,6 +352,7 @@ def has_permission_in_scope(
     permission_code: str,
     scope_type: str,
     scope_id: int,
+    require_system_profile: bool = False,
 ) -> bool:
     scope_matches = [
         (
@@ -262,7 +364,7 @@ def has_permission_in_scope(
             MembershipPermissionProfileScope.scope_id == scope_id,
         ),
     ]
-    return (
+    query = (
         db.query(MembershipPermissionProfileAssignment.id)
         .join(
             PermissionProfile,
@@ -285,16 +387,23 @@ def has_permission_in_scope(
         )
         .filter(
             MembershipPermissionProfileAssignment.company_id == company_id,
-            MembershipPermissionProfileAssignment.company_membership_id == membership_id,
+            MembershipPermissionProfileAssignment.company_membership_id
+            == membership_id,
             MembershipPermissionProfileAssignment.is_active.is_(True),
             PermissionProfile.is_active.is_(True),
             PermissionDefinition.is_active.is_(True),
             PermissionDefinition.code == permission_code,
-            or_(*[scope_type_match & scope_id_match for scope_type_match, scope_id_match in scope_matches]),
+            or_(
+                *[
+                    scope_type_match & scope_id_match
+                    for scope_type_match, scope_id_match in scope_matches
+                ]
+            ),
         )
-        .first()
-        is not None
     )
+    if require_system_profile:
+        query = query.filter(PermissionProfile.is_system.is_(True))
+    return query.first() is not None
 
 
 def is_valid_scope_target(
@@ -307,7 +416,10 @@ def is_valid_scope_target(
     if scope_type == "company":
         return scope_id == company_id
     if scope_type == "department":
-        return get_department(db, company_id=company_id, department_id=scope_id) is not None
+        return (
+            get_department(db, company_id=company_id, department_id=scope_id)
+            is not None
+        )
     if scope_type == "team":
         return get_team(db, company_id=company_id, team_id=scope_id) is not None
     if scope_type == "location":

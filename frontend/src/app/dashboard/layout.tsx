@@ -14,6 +14,7 @@ import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
 import { isAccountantRole } from "@/domain/access/roles";
 import { canAccessAccountantDashboardPath } from "@/domain/access/accountant-dashboard";
+import { NoWorkspaceAccount } from "@/components/dashboard/NoWorkspaceAccount";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
     return (
@@ -107,6 +108,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 </div>
             </div>
         );
+    }
+
+    if (user.company_id == null && user.role?.name !== "superadmin") {
+        return <NoWorkspaceAccount onLogout={() => { void handleLogout(); }} />;
     }
 
     if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {

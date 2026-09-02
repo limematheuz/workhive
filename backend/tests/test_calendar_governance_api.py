@@ -197,6 +197,25 @@ def test_platform_superadmin_has_no_company_calendar_access(client, db):
     assert client.delete("/api/v1/calendar/google", headers=headers).status_code == 403
 
 
+def test_basic_plan_cannot_access_advanced_calendar_tools(client, db):
+    company = _company(db, "basic-calendar")
+    company.subscription_plan = "basic"
+    db.add(company)
+    db.commit()
+    admin = _user(
+        db,
+        email="basic-calendar-admin@example.test",
+        role_id=1,
+        company_id=company.id,
+    )
+
+    response = client.get("/api/v1/calendar/status", headers=_headers(admin))
+
+    assert response.status_code == 403
+    assert response.headers["X-WorkHive-Error-Code"] == "entitlement.feature_not_in_plan"
+    assert response.json()["detail"] == "This feature is not included in the current plan"
+
+
 def test_only_primary_admin_can_connect_and_other_admin_requests_control(
     client,
     db,

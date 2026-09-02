@@ -125,6 +125,7 @@ class EntitlementResponse(BaseModel):
     value_type: Literal["boolean", "integer"]
     value: bool | int
     source: Literal["plan", "exception"]
+    availability: Literal["available", "platform_internal", "coming_soon"]
 
 
 class PlanCatalogResponse(BaseModel):

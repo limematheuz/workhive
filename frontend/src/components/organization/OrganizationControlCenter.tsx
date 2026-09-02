@@ -1,13 +1,21 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
-import { Building2, Layers3, Loader2, Plus, ShieldCheck, UsersRound } from "lucide-react";
+import { Building2, ChevronDown, Layers3, Loader2, Pencil, Plus, Power, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 
+import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { MemberAccessDialog } from "@/components/organization/MemberAccessDialog";
+import { PendingInvitationsPanel } from "@/components/organization/PendingInvitationsPanel";
+import { OrganizationDepartmentsPanel } from "@/components/organization/OrganizationDepartmentsPanel";
+import { OrganizationInvitePersonDialog } from "@/components/organization/OrganizationInvitePersonDialog";
+import { OrganizationTableFilters } from "@/components/organization/OrganizationTableFilters";
+import { OrganizationTeamsPanel } from "@/components/organization/OrganizationTeamsPanel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DataListTable } from "@/components/ui/data-list-table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { FieldLegend, FieldSet } from "@/components/ui/field";
+import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import {
     Dialog,
     DialogContent,
@@ -21,8 +29,18 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getErrorMessage } from "@/lib/errors";
+import {
+    filterOrganizationMembers,
+    filterPermissionProfiles,
+    isHistoricalOrganizationMember,
+    type MemberFilters,
+    type PermissionProfileFilters,
+} from "@/lib/organization-filters";
+import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import {
     OrganizationService,
@@ -32,9 +50,13 @@ import {
     type PermissionDefinition,
     type PermissionProfile,
 } from "@/services/organization.service";
+import { RoleService, type Role } from "@/services/role.service";
+import { UserService, type UserInvitation } from "@/services/user.service";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 type OrganizationTab = "people" | "departments" | "teams" | "profiles";
 type CreateKind = "department" | "team" | "profile" | null;
+const ORGANIZATION_PAGE_SIZE = 20;
 
 type OrganizationData = {
     members: OrganizationMember[];
@@ -42,18 +64,15 @@ type OrganizationData = {
     teams: OrganizationTeam[];
     definitions: PermissionDefinition[];
     profiles: PermissionProfile[];
+    invitations: UserInvitation[];
 };
 
 const EMPTY_DATA: OrganizationData = {
-    members: [], departments: [], teams: [], definitions: [], profiles: [],
+    members: [], departments: [], teams: [], definitions: [], profiles: [], invitations: [],
 };
-const MEMBERSHIP_STATUS_LABELS = {
-    active: "Activo",
-    suspended: "Suspendido",
-    archived: "Archivado",
-} as const;
-
 export function OrganizationControlCenter() {
+    const { dict } = useDictionary();
+    const copy = dict.organization;
     const { user, loading: userLoading } = useUser();
     const [data, setData] = useState<OrganizationData>(EMPTY_DATA);
     const [loading, setLoading] = useState(true);
@@ -61,27 +80,41 @@ export function OrganizationControlCenter() {
     const [tab, setTab] = useState<OrganizationTab>("people");
     const [createKind, setCreateKind] = useState<CreateKind>(null);
     const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
+    const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+    const [invitationRoles, setInvitationRoles] = useState<Role[]>([]);
+    const [loadingInvitationRoles, setLoadingInvitationRoles] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<OrganizationMember | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [profileToEdit, setProfileToEdit] = useState<PermissionProfile | null>(null);
+    const [profileToDelete, setProfileToDelete] = useState<PermissionProfile | null>(null);
+    const [profileStatusTarget, setProfileStatusTarget] = useState<PermissionProfile | null>(null);
+    const [updatingProfile, setUpdatingProfile] = useState(false);
 
     const companyId = user?.company_id ?? null;
+    const canInvitePeople = user?.role?.name === "admin" || user?.role?.name === "manager";
+    const canRemovePeople = user?.role?.name === "admin";
     const load = useCallback(async () => {
         if (!companyId) return;
         setLoading(true);
         setLoadError(null);
         try {
-            const [members, departments, teams, definitions, profiles] = await Promise.all([
+            const [members, departments, teams, definitions, profiles, invitations] = await Promise.all([
                 OrganizationService.getMembers(),
                 OrganizationService.getDepartments(),
                 OrganizationService.getTeams(),
                 OrganizationService.getPermissionDefinitions(),
                 OrganizationService.getPermissionProfiles(),
+                canInvitePeople
+                    ? UserService.getInvitations()
+                    : Promise.resolve([] as UserInvitation[]),
             ]);
-            setData({ members, departments, teams, definitions, profiles });
+            setData({ members, departments, teams, definitions, profiles, invitations });
         } catch (error) {
-            setLoadError(getErrorMessage(error, "No se pudo cargar la configuración de la organización"));
+            setLoadError(getErrorMessage(error, copy.load_error));
         } finally {
             setLoading(false);
         }
-    }, [companyId]);
+    }, [canInvitePeople, companyId, copy.load_error]);
     const loadEvent = useEffectEvent(load);
 
     useEffect(() => {
@@ -89,43 +122,118 @@ export function OrganizationControlCenter() {
     }, [userLoading]);
 
     const actionLabel = useMemo(() => ({
-        people: "Gestionar personas",
-        departments: "Añadir departamento",
-        teams: "Añadir equipo",
-        profiles: "Crear perfil",
-    })[tab], [tab]);
+        people: copy.actions.invite_person,
+        departments: copy.actions.add_department,
+        teams: copy.actions.add_team,
+        profiles: copy.actions.create_profile,
+    })[tab], [copy.actions, tab]);
+
+    const openInvitation = async () => {
+        try {
+            setLoadingInvitationRoles(true);
+            const roles = await RoleService.getRoles();
+            const availableRoles = roles.filter((role) => role.is_active && ["admin", "manager", "viewer"].includes(role.name));
+            if (availableRoles.length === 0) {
+                toast.error(copy.people.invite_roles_unavailable);
+                return;
+            }
+            setInvitationRoles(availableRoles);
+            setInviteDialogOpen(true);
+        } catch (error) {
+            toast.error(getErrorMessage(error, copy.people.invite_prepare_error));
+        } finally {
+            setLoadingInvitationRoles(false);
+        }
+    };
+
+    const removeMember = async () => {
+        if (!deleteTarget) return;
+        try {
+            setDeleting(true);
+            await OrganizationService.removeMember(deleteTarget.id);
+            setSelectedMember(null);
+            setDeleteTarget(null);
+            await load();
+            toast.success(copy.people.remove_success);
+        } catch (error) {
+            toast.error(getErrorMessage(error, copy.people.remove_error));
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    const deletePermissionProfile = async () => {
+        if (!profileToDelete) return;
+        try {
+            setUpdatingProfile(true);
+            await OrganizationService.deletePermissionProfile(profileToDelete.id);
+            setProfileToDelete(null);
+            await load();
+            toast.success(copy.profiles.delete_success);
+        } catch (error) {
+            toast.error(getErrorMessage(error, copy.profiles.delete_error));
+        } finally {
+            setUpdatingProfile(false);
+        }
+    };
+
+    const updatePermissionProfileStatus = async () => {
+        if (!profileStatusTarget) return;
+        try {
+            setUpdatingProfile(true);
+            await OrganizationService.updatePermissionProfile(profileStatusTarget.id, {
+                is_active: !profileStatusTarget.is_active,
+            });
+            setProfileStatusTarget(null);
+            await load();
+            toast.success(copy.profiles.status_updated);
+        } catch (error) {
+            toast.error(getErrorMessage(error, copy.profiles.status_update_error));
+        } finally {
+            setUpdatingProfile(false);
+        }
+    };
 
     const openAction = () => {
-        if (tab === "people") return;
+        if (tab === "people") {
+            void openInvitation();
+            return;
+        }
         setCreateKind(tab === "departments" ? "department" : tab === "teams" ? "team" : "profile");
     };
 
     if (!companyId && !userLoading) {
-        return <RestrictedOrganizationState message="La configuración de una organización solo está disponible dentro de una empresa." />;
+        return <RestrictedOrganizationState message={copy.configuration_unavailable} />;
     }
 
     return (
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={Building2}
-                title="Organización y accesos"
-                subtitle="Define la estructura interna y controla qué puede hacer cada persona dentro de su ámbito."
+                title={copy.title}
+                subtitle={copy.subtitle}
                 className="mb-7"
                 actions={(
-                    <Button type="button" onClick={openAction} disabled={tab === "people"}>
-                        <Plus className="mr-2 h-4 w-4" />{actionLabel}
+                    <Button
+                        type="button"
+                        onClick={openAction}
+                        disabled={loadingInvitationRoles || (tab === "people" && !canInvitePeople)}
+                        title={tab === "people" && !canInvitePeople ? copy.people.invite_permission : undefined}
+                    >
+                        {tab === "people" ? <UserPlus className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                        {loadingInvitationRoles && tab === "people" ? copy.actions.preparing : actionLabel}
                     </Button>
                 )}
             />
 
             <PremiumTabs<OrganizationTab>
                 className="mb-6"
-                layout="scroll"
+                layout="fit"
                 tabs={[
-                    { id: "people", label: "Personas", icon: UsersRound },
-                    { id: "departments", label: "Departamentos", icon: Building2 },
-                    { id: "teams", label: "Equipos", icon: Layers3 },
-                    { id: "profiles", label: "Perfiles", icon: ShieldCheck },
+                    { id: "people", label: copy.tabs.people, compactLabel: copy.tabs.people_compact, icon: UsersRound },
+                    { id: "departments", label: copy.tabs.departments, compactLabel: copy.tabs.departments_compact, icon: Building2 },
+                    { id: "teams", label: copy.tabs.teams, compactLabel: copy.tabs.teams_compact, icon: Layers3 },
+                    { id: "profiles", label: copy.tabs.profiles, compactLabel: copy.tabs.profiles_compact, icon: ShieldCheck },
                 ]}
                 activeTab={tab}
                 onChange={setTab}
@@ -133,21 +241,36 @@ export function OrganizationControlCenter() {
 
             {loading ? <LoadingState /> : loadError ? <RestrictedOrganizationState message={loadError} /> : (
                 <>
-                    {tab === "people" && <MembersTable members={data.members} onSelect={setSelectedMember} />}
-                    {tab === "departments" && <DepartmentsTable departments={data.departments} />}
-                    {tab === "teams" && <TeamsTable teams={data.teams} departments={data.departments} />}
-                    {tab === "profiles" && <ProfilesTable profiles={data.profiles} />}
+                    {tab === "people" && <MembersTable members={data.members} departments={data.departments} teams={data.teams} invitations={data.invitations} onInvitationChanged={load} onSelect={setSelectedMember} onDelete={setDeleteTarget} canDelete={canRemovePeople} currentUserId={user?.id} />}
+                    {tab === "departments" && <OrganizationDepartmentsPanel departments={data.departments} onChanged={load} />}
+                    {tab === "teams" && <OrganizationTeamsPanel teams={data.teams} departments={data.departments} members={data.members} onChanged={load} />}
+                    {tab === "profiles" && (
+                        <ProfilesTable
+                            profiles={data.profiles}
+                            definitions={data.definitions}
+                            onEdit={setProfileToEdit}
+                            onRequestStatusChange={setProfileStatusTarget}
+                            onRequestDelete={setProfileToDelete}
+                        />
+                    )}
                 </>
             )}
 
             <CreateOrganizationDialog
-                key={createKind ?? "closed"}
+                key={profileToEdit ? `profile-${profileToEdit.id}` : createKind ?? "closed"}
                 kind={createKind}
+                profile={profileToEdit}
                 departments={data.departments}
                 definitions={data.definitions}
-                onOpenChange={(open) => !open && setCreateKind(null)}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setCreateKind(null);
+                        setProfileToEdit(null);
+                    }
+                }}
                 onCreated={async () => {
                     setCreateKind(null);
+                    setProfileToEdit(null);
                     await load();
                 }}
             />
@@ -162,89 +285,844 @@ export function OrganizationControlCenter() {
                     teams={data.teams}
                     profiles={data.profiles}
                     onSaved={load}
+                    canDelete={canRemovePeople && selectedMember?.user_id !== user?.id}
+                    onRequestDelete={() => selectedMember && setDeleteTarget(selectedMember)}
                 />
+            )}
+            {inviteDialogOpen && (
+                <OrganizationInvitePersonDialog
+                    open
+                    onOpenChange={setInviteDialogOpen}
+                    roles={invitationRoles}
+                    onSent={load}
+                />
+            )}
+            <DeleteConfirmDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title={copy.people.remove_title}
+                description={copy.people.remove_description.replace("{email}", deleteTarget?.email || "")}
+                onConfirm={() => void removeMember()}
+                isDeleting={deleting}
+                confirmText={copy.people.remove_confirm}
+                cancelText={copy.actions.cancel}
+            />
+            <DeleteConfirmDialog
+                open={profileToDelete !== null}
+                onOpenChange={(open) => !open && setProfileToDelete(null)}
+                title={copy.profiles.delete_title}
+                description={copy.profiles.delete_description}
+                onConfirm={() => void deletePermissionProfile()}
+                isDeleting={updatingProfile}
+                confirmText={copy.actions.delete}
+                cancelText={copy.actions.cancel}
+            />
+            <DeleteConfirmDialog
+                open={profileStatusTarget !== null}
+                onOpenChange={(open) => !open && setProfileStatusTarget(null)}
+                title={profileStatusTarget?.is_active ? copy.profiles.deactivate_title : copy.profiles.reactivate_title}
+                description={profileStatusTarget?.is_active ? copy.profiles.deactivate_description : copy.profiles.reactivate_description}
+                onConfirm={() => void updatePermissionProfileStatus()}
+                isDeleting={updatingProfile}
+                confirmText={profileStatusTarget?.is_active ? copy.profiles.deactivate_confirm : copy.profiles.reactivate_confirm}
+                cancelText={copy.actions.cancel}
+                confirmIcon={Power}
+                confirmVariant={profileStatusTarget?.is_active ? "soft-danger" : "primary"}
+            />
+        </div>
+    );
+}
+
+function MembersTable({
+    members,
+    departments,
+    teams,
+    invitations,
+    onInvitationChanged,
+    onSelect,
+    onDelete,
+    canDelete,
+    currentUserId,
+}: {
+    members: OrganizationMember[];
+    departments: OrganizationDepartment[];
+    teams: OrganizationTeam[];
+    invitations: UserInvitation[];
+    onInvitationChanged: () => Promise<void>;
+    onSelect: (member: OrganizationMember) => void;
+    onDelete: (member: OrganizationMember) => void;
+    canDelete: boolean;
+    currentUserId?: number;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.people;
+    const [filters, setFilters] = useState<MemberFilters>({
+        search: "",
+        accessClass: "all",
+        status: "all",
+    });
+    const filteredMembers = useMemo(
+        () => filterOrganizationMembers(members, filters),
+        [members, filters],
+    );
+    const activeMembers = filteredMembers.filter((member) => !isHistoricalOrganizationMember(member) && member.status === "active");
+    const suspendedMembers = filteredMembers.filter((member) => !isHistoricalOrganizationMember(member) && member.status === "suspended");
+    const historicalMembers = filteredMembers.filter(isHistoricalOrganizationMember);
+    const hasActiveFilters = filters.search.trim() !== "" || filters.accessClass !== "all" || filters.status !== "all";
+    const updateFilters = (update: Partial<MemberFilters>) => {
+        setFilters((current) => ({ ...current, ...update }));
+    };
+    const clearFilters = () => {
+        setFilters({ search: "", accessClass: "all", status: "all" });
+    };
+    return (
+        <div className="space-y-6">
+            <PendingInvitationsPanel invitations={invitations} onChanged={onInvitationChanged} />
+            <section className="billing-surface overflow-hidden rounded-[26px]">
+                <OrganizationTableFilters
+                    search={filters.search}
+                    onSearchChange={(search) => updateFilters({ search })}
+                    searchPlaceholder={dict.organization.filters.search_people}
+                    shownCount={filteredMembers.length}
+                    totalCount={members.length}
+                    summary={dict.organization.filters.summary}
+                    clearLabel={dict.organization.filters.clear}
+                    onClear={clearFilters}
+                    hasActiveFilters={hasActiveFilters}
+                >
+                    <Select value={filters.accessClass} onValueChange={(accessClass) => updateFilters({ accessClass: accessClass as MemberFilters["accessClass"] })}>
+                        <SelectTrigger className="h-10 w-full sm:w-44" aria-label={copy.columns.type}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{dict.organization.filters.all_access_classes}</SelectItem>
+                            <SelectItem value="admin">{dict.organization.access.admin}</SelectItem>
+                            <SelectItem value="responsible">{dict.organization.access.responsible}</SelectItem>
+                            <SelectItem value="worker">{dict.organization.access.worker}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    <Select value={filters.status} onValueChange={(status) => updateFilters({ status: status as MemberFilters["status"] })}>
+                        <SelectTrigger className="h-10 w-full sm:w-44" aria-label={copy.columns.status}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">{dict.organization.filters.all_statuses}</SelectItem>
+                            <SelectItem value="active">{dict.organization.access.active}</SelectItem>
+                            <SelectItem value="suspended">{dict.organization.access.suspended}</SelectItem>
+                            <SelectItem value="archived">{dict.organization.access.archived}</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </OrganizationTableFilters>
+            </section>
+            {filteredMembers.length === 0 && members.length > 0 ? (
+                <OrganizationFilterEmptyState message={dict.organization.filters.empty} />
+            ) : (
+                <>
+                    {(activeMembers.length > 0 || members.length === 0) && (
+                        <CurrentMembersTable
+                            members={activeMembers}
+                            title={copy.active_title}
+                            subtitle={copy.active_description}
+                            empty={copy.active_empty}
+                            onSelect={onSelect}
+                            onDelete={onDelete}
+                            canDelete={canDelete}
+                            currentUserId={currentUserId}
+                        />
+                    )}
+                    {suspendedMembers.length > 0 && (
+                <CurrentMembersTable
+                    members={suspendedMembers}
+                    title={copy.suspended_title}
+                    subtitle={copy.suspended_description}
+                    empty=""
+                    onSelect={onSelect}
+                    onDelete={onDelete}
+                    canDelete={canDelete}
+                    currentUserId={currentUserId}
+                />
+            )}
+                    {historicalMembers.length > 0 && <MemberHistoryTable members={historicalMembers} departments={departments} teams={teams} />}
+                </>
             )}
         </div>
     );
 }
 
-function MembersTable({ members, onSelect }: { members: OrganizationMember[]; onSelect: (member: OrganizationMember) => void }) {
+function CurrentMembersTable({
+    members,
+    title,
+    subtitle,
+    empty,
+    onSelect,
+    onDelete,
+    canDelete,
+    currentUserId,
+}: {
+    members: OrganizationMember[];
+    title: string;
+    subtitle: string;
+    empty: string;
+    onSelect: (member: OrganizationMember) => void;
+    onDelete: (member: OrganizationMember) => void;
+    canDelete: boolean;
+    currentUserId?: number;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.people;
+    const pagination = useDataTablePagination(members, ORGANIZATION_PAGE_SIZE);
     return (
-        <DataListTable
-            items={members}
-            getRowKey={(member) => member.id}
-            gridClassName="grid-cols-[minmax(12rem,1.4fr)_9rem_8rem_minmax(12rem,1fr)]"
-            onRowClick={onSelect}
-            rowAriaLabel={(member) => `Configurar accesos de ${member.full_name || member.email}`}
-            header={{ title: "Personas internas", subtitle: "Pulsa una persona para definir su tipo, equipos, departamentos y perfiles.", countLabel: `${members.length} personas` }}
-            columns={[
-                { key: "person", label: "Persona" },
-                { key: "class", label: "Tipo" },
-                { key: "status", label: "Estado" },
-                { key: "profiles", label: "Perfiles" },
-            ]}
-            empty={<p className="text-sm text-[var(--text-muted)]">Aún no hay personas internas.</p>}
-            renderCompactRow={(member) => <MemberRow member={member} compact />}
-            renderDesktopRow={(member) => <MemberRow member={member} />}
-        />
+        <section className="billing-surface overflow-hidden rounded-[26px]">
+            <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-main)]">{title}</h2>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">{subtitle}</p>
+                </div>
+                <p className="text-sm font-medium text-[var(--text-muted)]">{members.length} {members.length === 1 ? copy.person_count_one : copy.person_count_many}</p>
+            </header>
+            {members.length === 0 ? (
+                <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{empty}</p>
+            ) : (
+                <>
+                <Table className="table-fixed text-left">
+                    <TableHeader>
+                        <TableRow className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                            <TableHead className="w-[58%] text-[var(--btn-secondary-text)] xl:w-[48%] 2xl:w-[34%]">{copy.columns.person}</TableHead>
+                            <TableHead className="hidden text-[var(--btn-secondary-text)] xl:table-cell xl:w-[23%] 2xl:w-[17%]">{copy.columns.type}</TableHead>
+                            <TableHead className="w-[26%] text-[var(--btn-secondary-text)] xl:w-[18%] 2xl:w-[15%]">{copy.columns.status}</TableHead>
+                            <TableHead className="hidden text-[var(--btn-secondary-text)] 2xl:table-cell 2xl:w-[24%]">{copy.columns.profiles}</TableHead>
+                            <TableHead className="w-[16%] text-right text-[var(--btn-secondary-text)] xl:w-[11%] 2xl:w-[10%]">{copy.columns.actions}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {pagination.pageItems.map((member) => (
+                            <CurrentMemberRow
+                                key={member.id}
+                                member={member}
+                                onSelect={onSelect}
+                                onDelete={onDelete}
+                                canDelete={canDelete && member.user_id !== currentUserId}
+                            />
+                        ))}
+                </TableBody>
+            </Table>
+            <OrganizationTablePagination pagination={pagination} totalItems={members.length} />
+                </>
+        )}
+        </section>
     );
 }
 
-function MemberRow({ member, compact = false }: { member: OrganizationMember; compact?: boolean }) {
-    const accessLabel = { admin: "Administrador", responsible: "Responsable", worker: "Trabajador" }[member.access_class];
-    const profileText = member.profile_assignments.map((assignment) => assignment.permission_profile_name).join(", ") || "Sin perfil adicional";
-    if (compact) {
-        return <><p className="font-semibold text-[var(--text-main)]">{member.full_name || member.email}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{member.email}</p><div className="mt-3 flex flex-wrap gap-2"><StatusBadge status={member.status} /><Badge variant="outline">{accessLabel}</Badge></div><p className="mt-3 text-xs text-[var(--text-muted)]">{profileText}</p></>;
-    }
-    return <><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{member.full_name || member.email}</p><p className="truncate text-xs text-[var(--text-muted)]">{member.email}</p></div><Badge variant="outline" className="w-fit">{accessLabel}</Badge><StatusBadge status={member.status} /><p className="truncate text-sm text-[var(--text-muted)]">{profileText}</p></>;
+function CurrentMemberRow({
+    member,
+    onSelect,
+    onDelete,
+    canDelete,
+}: {
+    member: OrganizationMember;
+    onSelect: (member: OrganizationMember) => void;
+    onDelete: (member: OrganizationMember) => void;
+    canDelete: boolean;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization;
+    const accessLabel = copy.access[member.access_class];
+    const profileText = member.profile_assignments.map((assignment) => assignment.permission_profile_name).join(", ") || copy.people.no_additional_profile;
+    const memberName = member.full_name || member.email;
+    const actionOptions: PopoverOption[] = [
+        { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onSelect(member) },
+        ...(canDelete
+            ? [{ label: copy.people.remove_action, icon: UserMinus, variant: "delete" as const, onClick: () => onDelete(member) }]
+            : []),
+    ];
+    return (
+        <TableRow
+            className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/20 last:border-b-0"
+            onClick={() => onSelect(member)}
+            onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelect(member);
+                }
+            }}
+            tabIndex={0}
+            aria-label={copy.people.configure_access.replace("{name}", memberName)}
+        >
+            <TableCell>
+                <p className="truncate font-semibold text-[var(--text-main)]">{member.full_name || member.email}</p>
+                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{member.email}</p>
+                <p className="mt-0.5 text-xs font-medium text-[var(--text-muted)] xl:hidden">{accessLabel}</p>
+            </TableCell>
+            <TableCell className="hidden xl:table-cell"><p className="text-sm font-medium text-[var(--text-main)]">{accessLabel}</p></TableCell>
+            <TableCell><StatusBadge status={member.status} /></TableCell>
+            <TableCell className="hidden 2xl:table-cell"><p className="truncate text-sm text-[var(--text-muted)]">{profileText}</p></TableCell>
+            <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
+                <ActionPopover align="end" triggerLabel={`${copy.actions.edit}: ${memberName}`} options={actionOptions} />
+            </TableCell>
+        </TableRow>
+    );
 }
 
-function StatusBadge({ status }: { status: OrganizationMember["status"] }) {
-    return <Badge variant="outline" className={status === "active" ? "border-accent/25 bg-accent/10 text-accent" : "text-[var(--text-muted)]"}>{MEMBERSHIP_STATUS_LABELS[status]}</Badge>;
+function StatusBadge({ status }: { status: OrganizationMember["status"] | "inactive" }) {
+    const { dict } = useDictionary();
+    return <Badge variant="outline" className={status === "active" ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{dict.organization.access[status]}</Badge>;
 }
 
-function DepartmentsTable({ departments }: { departments: OrganizationDepartment[] }) {
-    const parentName = (department: OrganizationDepartment) => departments.find((item) => item.id === department.parent_department_id)?.name || "—";
-    return <DataListTable items={departments} getRowKey={(department) => department.id} gridClassName="grid-cols-[minmax(12rem,1.5fr)_9rem_10rem_7rem]" header={{ title: "Departamentos", subtitle: "Agrupan responsabilidades como Comercial, RRHH, Operaciones, Finanzas o Calidad.", countLabel: `${departments.length} departamentos` }} columns={[{ key: "name", label: "Nombre" }, { key: "code", label: "Código" }, { key: "parent", label: "Depende de" }, { key: "state", label: "Estado" }]} empty={<p className="text-sm text-[var(--text-muted)]">Crea el primer departamento de la empresa.</p>} renderCompactRow={(department) => <><p className="font-semibold">{department.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{department.code || "Sin código"} · {parentName(department)}</p></>} renderDesktopRow={(department) => <><p className="font-semibold">{department.name}</p><p className="text-sm text-[var(--text-muted)]">{department.code || "—"}</p><p className="text-sm text-[var(--text-muted)]">{parentName(department)}</p><Badge variant="outline">{department.is_active ? "Activo" : "Inactivo"}</Badge></>} />;
+function MemberHistoryTable({
+    members,
+    departments,
+    teams,
+}: {
+    members: OrganizationMember[];
+    departments: OrganizationDepartment[];
+    teams: OrganizationTeam[];
+}) {
+    const { dict, locale } = useDictionary();
+    const copy = dict.organization;
+    const dateFormatter = useMemo(
+        () => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short", year: "numeric" }),
+        [locale],
+    );
+    const departmentNames = new Map(departments.map((department) => [department.id, department.name]));
+    const teamNames = new Map(teams.map((team) => [team.id, team.name]));
+    const pagination = useDataTablePagination(members, ORGANIZATION_PAGE_SIZE);
+    return (
+        <section className="overflow-hidden rounded-[26px] border border-[var(--border-soft)] bg-[var(--bg-card)]/50">
+            <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-main)]">{copy.people.history_title}</h2>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.people.history_description}</p>
+                </div>
+                <p className="text-sm font-medium text-[var(--text-muted)]">{members.length} {members.length === 1 ? copy.people.record_count_one : copy.people.record_count_many}</p>
+            </header>
+            <Table className="table-fixed text-left">
+                <TableHeader>
+                    <TableRow className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                        <TableHead className="w-[48%] text-[var(--btn-secondary-text)] sm:w-[34%]">{copy.people.columns.record}</TableHead>
+                        <TableHead className="w-[27%] text-[var(--btn-secondary-text)] sm:w-[20%]">{copy.people.columns.departure_date}</TableHead>
+                        <TableHead className="w-[25%] text-[var(--btn-secondary-text)] sm:w-[18%]">{copy.people.columns.previous_type}</TableHead>
+                        <TableHead className="hidden text-[var(--btn-secondary-text)] sm:table-cell sm:w-[28%]">{copy.people.columns.retention}</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {pagination.pageItems.map((member) => {
+                        const erased = member.is_anonymized || (member.email.startsWith("deleted+") && member.email.endsWith("@invalid.workhive.local"));
+                        const structure = [
+                            ...member.department_ids.flatMap((id) => {
+                                const name = departmentNames.get(id);
+                                return name ? [name] : [];
+                            }),
+                            ...member.team_ids.flatMap((id) => {
+                                const name = teamNames.get(id);
+                                return name ? [name] : [];
+                            }),
+                        ].join(", ") || copy.people.no_structure;
+                        return (
+                            <TableRow key={member.id} className="bg-[var(--bg-secondary)]/10 last:border-b-0">
+                                <TableCell>
+                                    <p className="truncate font-semibold text-[var(--text-main)]">{erased ? copy.people.erased_person : member.full_name || member.email}</p>
+                                    <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{erased ? copy.people.erased_email : member.email}</p>
+                                </TableCell>
+                                <TableCell><p className="text-sm text-[var(--text-muted)]">{member.ended_at ? dateFormatter.format(new Date(member.ended_at)) : copy.people.history_date_unknown}</p></TableCell>
+                                <TableCell><p className="text-sm font-medium text-[var(--text-main)]">{copy.access[member.access_class]}</p></TableCell>
+                                <TableCell className="hidden sm:table-cell"><p className="truncate text-sm text-[var(--text-muted)]">{structure}</p></TableCell>
+                            </TableRow>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+            <OrganizationTablePagination pagination={pagination} totalItems={members.length} />
+        </section>
+    );
 }
 
-function TeamsTable({ teams, departments }: { teams: OrganizationTeam[]; departments: OrganizationDepartment[] }) {
-    const departmentName = (team: OrganizationTeam) => departments.find((department) => department.id === team.department_id)?.name || "Sin departamento";
-    return <DataListTable items={teams} getRowKey={(team) => team.id} gridClassName="grid-cols-[minmax(12rem,1.5fr)_9rem_10rem_7rem]" header={{ title: "Equipos", subtitle: "Agrupan personas operativas y permiten limitar el ámbito de responsables.", countLabel: `${teams.length} equipos` }} columns={[{ key: "name", label: "Nombre" }, { key: "code", label: "Código" }, { key: "department", label: "Departamento" }, { key: "state", label: "Estado" }]} empty={<p className="text-sm text-[var(--text-muted)]">Crea el primer equipo de trabajo.</p>} renderCompactRow={(team) => <><p className="font-semibold">{team.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{team.code || "Sin código"} · {departmentName(team)}</p></>} renderDesktopRow={(team) => <><p className="font-semibold">{team.name}</p><p className="text-sm text-[var(--text-muted)]">{team.code || "—"}</p><p className="text-sm text-[var(--text-muted)]">{departmentName(team)}</p><Badge variant="outline">{team.is_active ? "Activo" : "Inactivo"}</Badge></>} />;
+function permissionLabel(
+    code: string,
+    definition: PermissionDefinition | undefined,
+    copy: ReturnType<typeof useDictionary>["dict"]["organization"],
+) {
+    const labels = copy.profiles.permission_catalog as Record<string, string>;
+    return labels[code] || (definition?.description !== code ? definition?.description : undefined) || labels.unknown;
 }
 
-function ProfilesTable({ profiles }: { profiles: PermissionProfile[] }) {
-    return <DataListTable items={profiles} getRowKey={(profile) => profile.id} gridClassName="grid-cols-[minmax(12rem,1.2fr)_minmax(14rem,1.8fr)_8rem_7rem]" header={{ title: "Perfiles de permisos", subtitle: "Un perfil reúne acciones permitidas; luego se asigna a cada persona con el ámbito necesario.", countLabel: `${profiles.length} perfiles` }} columns={[{ key: "name", label: "Perfil" }, { key: "permissions", label: "Permisos" }, { key: "type", label: "Tipo" }, { key: "state", label: "Estado" }]} empty={<p className="text-sm text-[var(--text-muted)]">Crea perfiles para Comercial, RRHH, Calidad u Operaciones.</p>} renderCompactRow={(profile) => <><p className="font-semibold">{profile.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{profile.permission_codes.length} permisos</p><p className="mt-2 text-xs text-[var(--text-muted)]">{profile.description || "Sin descripción"}</p></>} renderDesktopRow={(profile) => <><div><p className="font-semibold">{profile.name}</p><p className="text-xs text-[var(--text-muted)]">{profile.description || "Sin descripción"}</p></div><p className="truncate text-sm text-[var(--text-muted)]">{profile.permission_codes.join(", ")}</p><Badge variant="outline">{profile.is_system ? "Sistema" : "Personalizado"}</Badge><Badge variant="outline">{profile.is_active ? "Activo" : "Inactivo"}</Badge></>} />;
+function permissionSummary(
+    profile: PermissionProfile,
+    definitionByCode: Map<string, PermissionDefinition>,
+    copy: ReturnType<typeof useDictionary>["dict"]["organization"],
+) {
+    const labels = profile.permission_codes.map((code) => permissionLabel(code, definitionByCode.get(code), copy));
+    const visible = labels.slice(0, 2).join(", ");
+    const remaining = labels.length - 2;
+    return remaining > 0 ? `${visible} ${copy.profiles.and_more.replace("{count}", String(remaining))}` : visible;
 }
 
-function CreateOrganizationDialog({ kind, departments, definitions, onOpenChange, onCreated }: { kind: CreateKind; departments: OrganizationDepartment[]; definitions: PermissionDefinition[]; onOpenChange: (open: boolean) => void; onCreated: () => Promise<void> }) {
-    const [name, setName] = useState("");
+function ProfilesTable({
+    profiles,
+    definitions,
+    onEdit,
+    onRequestStatusChange,
+    onRequestDelete,
+}: {
+    profiles: PermissionProfile[];
+    definitions: PermissionDefinition[];
+    onEdit: (profile: PermissionProfile) => void;
+    onRequestStatusChange: (profile: PermissionProfile) => void;
+    onRequestDelete: (profile: PermissionProfile) => void;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization;
+    const definitionByCode = useMemo(
+        () => new Map(definitions.map((definition) => [definition.code, definition])),
+        [definitions],
+    );
+    const [filters, setFilters] = useState<PermissionProfileFilters>({
+        search: "",
+        type: "all",
+        status: "all",
+    });
+    const filteredProfiles = useMemo(
+        () => filterPermissionProfiles(profiles, filters),
+        [profiles, filters],
+    );
+    const pagination = useDataTablePagination(filteredProfiles, ORGANIZATION_PAGE_SIZE);
+    const hasActiveFilters = filters.search.trim() !== "" || filters.type !== "all" || filters.status !== "all";
+    const updateFilters = (update: Partial<PermissionProfileFilters>) => {
+        setFilters((current) => ({ ...current, ...update }));
+        pagination.setPage(1);
+    };
+    const clearFilters = () => {
+        setFilters({ search: "", type: "all", status: "all" });
+        pagination.setPage(1);
+    };
+    return (
+        <OrganizationTableShell
+            title={copy.profiles.title}
+            description={copy.profiles.description}
+            countLabel={`${filteredProfiles.length} ${filteredProfiles.length === 1 ? copy.profiles.count_one : copy.profiles.count_many}`}
+        >
+            <OrganizationTableFilters
+                search={filters.search}
+                onSearchChange={(search) => updateFilters({ search })}
+                searchPlaceholder={copy.filters.search_profiles}
+                shownCount={filteredProfiles.length}
+                totalCount={profiles.length}
+                summary={copy.filters.summary}
+                clearLabel={copy.filters.clear}
+                onClear={clearFilters}
+                hasActiveFilters={hasActiveFilters}
+            >
+                <Select value={filters.type} onValueChange={(type) => updateFilters({ type: type as PermissionProfileFilters["type"] })}>
+                    <SelectTrigger className="h-10 w-full sm:w-52" aria-label={copy.people.columns.type}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{copy.filters.all_profile_types}</SelectItem>
+                        <SelectItem value="system">{copy.filters.system_profiles}</SelectItem>
+                        <SelectItem value="custom">{copy.filters.custom_profiles}</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Select value={filters.status} onValueChange={(status) => updateFilters({ status: status as PermissionProfileFilters["status"] })}>
+                    <SelectTrigger className="h-10 w-full sm:w-44" aria-label={copy.people.columns.status}><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">{copy.filters.all_statuses}</SelectItem>
+                        <SelectItem value="active">{copy.access.active}</SelectItem>
+                        <SelectItem value="inactive">{copy.access.inactive}</SelectItem>
+                    </SelectContent>
+                </Select>
+            </OrganizationTableFilters>
+            {filteredProfiles.length === 0 ? (
+                <p className="px-5 py-16 text-center text-sm text-[var(--text-muted)]">{profiles.length === 0 ? copy.profiles.empty : copy.filters.empty}</p>
+            ) : (
+                <>
+            <Table className="table-fixed text-left">
+                <TableHeader>
+                    <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                        <TableHead className="w-[58%] text-[var(--btn-secondary-text)] sm:w-[32%]">{copy.profiles.profile}</TableHead>
+                        <TableHead className="hidden text-[var(--btn-secondary-text)] lg:table-cell lg:w-[28%]">{copy.profiles.permissions}</TableHead>
+                        <TableHead className="w-[22%] text-[var(--btn-secondary-text)] sm:w-[15%]">{copy.people.columns.type}</TableHead>
+                        <TableHead className="hidden text-[var(--btn-secondary-text)] sm:table-cell sm:w-[15%]">{copy.people.columns.status}</TableHead>
+                        <TableHead className="w-[20%] text-right text-[var(--btn-secondary-text)] sm:w-[10%]">{copy.profiles.actions}</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {pagination.pageItems.map((profile) => {
+                        const canManage = !profile.is_system;
+                        const summary = permissionSummary(profile, definitionByCode, copy);
+                        const actionOptions: PopoverOption[] = canManage ? [
+                            { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onEdit(profile) },
+                            {
+                                label: profile.is_active ? copy.profiles.deactivate : copy.profiles.reactivate,
+                                icon: Power,
+                                variant: profile.is_active ? "deactivate" : "default",
+                                onClick: () => onRequestStatusChange(profile),
+                            },
+                            ...((profile.usage?.can_delete ?? false) ? [{ label: copy.actions.delete, icon: Trash2, variant: "delete" as const, onClick: () => onRequestDelete(profile) }] : []),
+                        ] : [];
+                        return (
+                        <TableRow
+                            key={profile.id}
+                            className="bg-[var(--bg-secondary)]/20 last:border-b-0"
+                            onClick={canManage ? () => onEdit(profile) : undefined}
+                            onKeyDown={(event) => {
+                                if (canManage && (event.key === "Enter" || event.key === " ")) {
+                                    event.preventDefault();
+                                    onEdit(profile);
+                                }
+                            }}
+                            tabIndex={canManage ? 0 : undefined}
+                            aria-label={canManage ? `${copy.actions.edit} ${profile.name}` : undefined}
+                        >
+                            <TableCell>
+                                <p className="truncate font-semibold text-[var(--text-main)]">{profile.name}</p>
+                                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{profile.description || copy.profiles.no_description}</p>
+                                <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)] lg:hidden">{profile.permission_codes.length} {profile.permission_codes.length === 1 ? copy.profiles.permission_count_one : copy.profiles.permission_count_many} · {summary}</p>
+                            </TableCell>
+                            <TableCell className="hidden text-sm text-[var(--text-muted)] lg:table-cell"><p className="line-clamp-2">{summary}</p></TableCell>
+                            <TableCell><Badge variant="outline" className={profile.is_system ? "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? copy.profiles.system : copy.profiles.custom}</Badge></TableCell>
+                            <TableCell className="hidden sm:table-cell"><StatusBadge status={profile.is_active ? "active" : "inactive"} /></TableCell>
+                            <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
+                                {canManage ? (
+                                    <ActionPopover align="end" triggerLabel={`${copy.profiles.actions}: ${profile.name}`} options={actionOptions} />
+                                ) : (
+                                    <span className="inline-flex text-[var(--text-muted)]" title={copy.profiles.system_managed} aria-label={copy.profiles.system_managed}>
+                                        <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                                    </span>
+                                )}
+                            </TableCell>
+                        </TableRow>
+                        );
+                    })}
+                </TableBody>
+            </Table>
+            <OrganizationTablePagination pagination={pagination} totalItems={filteredProfiles.length} />
+                </>
+            )}
+        </OrganizationTableShell>
+    );
+}
+
+function OrganizationTablePagination({
+    pagination,
+    totalItems,
+}: {
+    pagination: ReturnType<typeof useDataTablePagination>;
+    totalItems: number;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.pagination;
+    const from = (pagination.page - 1) * pagination.pageSize + 1;
+    const to = Math.min(pagination.page * pagination.pageSize, totalItems);
+    return <DataTablePagination
+        page={pagination.page}
+        totalItems={totalItems}
+        pageSize={pagination.pageSize}
+        onPageChange={pagination.setPage}
+        onPageSizeChange={pagination.setPageSize}
+        summary={copy.summary.replace("{from}", String(from)).replace("{to}", String(to)).replace("{total}", String(totalItems))}
+        rowsPerPageLabel={copy.rows_per_page}
+        previousLabel={copy.previous}
+        nextLabel={copy.next}
+    />;
+}
+
+function OrganizationTableShell({
+    title,
+    description,
+    countLabel,
+    children,
+}: {
+    title: string;
+    description: string;
+    countLabel: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <section className="billing-surface overflow-hidden rounded-[26px]">
+            <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-main)]">{title}</h2>
+                    <p className="mt-1 text-xs text-[var(--text-muted)]">{description}</p>
+                </div>
+                <p className="text-sm font-medium text-[var(--text-muted)]">{countLabel}</p>
+            </header>
+            {children}
+        </section>
+    );
+}
+
+function OrganizationFilterEmptyState({ message }: { message: string }) {
+    return <section className="billing-surface rounded-[26px] px-5 py-16 text-center text-sm text-[var(--text-muted)]">{message}</section>;
+}
+
+function CreateOrganizationDialog({
+    kind,
+    profile,
+    departments,
+    definitions,
+    onOpenChange,
+    onCreated,
+}: {
+    kind: CreateKind;
+    profile: PermissionProfile | null;
+    departments: OrganizationDepartment[];
+    definitions: PermissionDefinition[];
+    onOpenChange: (open: boolean) => void;
+    onCreated: () => Promise<void>;
+}) {
+    const { dict } = useDictionary();
+    const copy = dict.organization.create_dialog;
+    const profileCopy = dict.organization.profiles;
+    const isProfile = kind === "profile" || profile !== null;
+    const [name, setName] = useState(profile?.name ?? "");
     const [code, setCode] = useState("");
     const [departmentId, setDepartmentId] = useState<string>("");
-    const [description, setDescription] = useState("");
-    const [permissionCodes, setPermissionCodes] = useState<string[]>([]);
+    const [description, setDescription] = useState(profile?.description ?? "");
+    const [permissionCodes, setPermissionCodes] = useState<string[]>(profile?.permission_codes ?? []);
     const [saving, setSaving] = useState(false);
     const selectedPermissionCodeSet = useMemo(
         () => new Set(permissionCodes),
         [permissionCodes],
     );
-
-    const title = kind === "department" ? "Nuevo departamento" : kind === "team" ? "Nuevo equipo" : "Nuevo perfil de permisos";
+    const activeDepartments = useMemo(
+        () => departments.filter((department) => department.is_active),
+        [departments],
+    );
+    const definitionsByCategory = useMemo(() => {
+        const grouped = new Map<string, PermissionDefinition[]>();
+        for (const definition of definitions) {
+            grouped.set(definition.category, [...(grouped.get(definition.category) ?? []), definition]);
+        }
+        return [...grouped.entries()];
+    }, [definitions]);
+    const categorySelection = (categoryDefinitions: PermissionDefinition[]) => {
+        const codes: string[] = [];
+        let allSelected = true;
+        for (const definition of categoryDefinitions) {
+            if (definition.is_system_only) continue;
+            codes.push(definition.code);
+            if (!selectedPermissionCodeSet.has(definition.code)) allSelected = false;
+        }
+        return { codes, allSelected: codes.length > 0 && allSelected };
+    };
+    const toggleCategory = (categoryDefinitions: PermissionDefinition[]) => {
+        const { codes, allSelected } = categorySelection(categoryDefinitions);
+        if (codes.length === 0) return;
+        const codeSet = new Set(codes);
+        setPermissionCodes((current) => allSelected
+            ? current.filter((permissionCode) => !codeSet.has(permissionCode))
+            : [...new Set([...current, ...codes])],
+        );
+    };
+    const title = profile ? profileCopy.edit_title : kind === "department" ? copy.new_department : kind === "team" ? copy.new_team : copy.new_profile;
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         try {
             setSaving(true);
-            if (kind === "department") await OrganizationService.createDepartment({ name, code: code || undefined });
+            if (kind === "department") await OrganizationService.createDepartment({
+                name,
+                code: code || undefined,
+                parent_department_id: departmentId && departmentId !== "none" ? Number(departmentId) : undefined,
+            });
             if (kind === "team") await OrganizationService.createTeam({ name, code: code || undefined, department_id: departmentId ? Number(departmentId) : undefined });
-            if (kind === "profile") await OrganizationService.createPermissionProfile({ name, description: description || undefined, permission_codes: permissionCodes });
+            if (profile) await OrganizationService.updatePermissionProfile(profile.id, {
+                name,
+                description: description || null,
+                permission_codes: permissionCodes,
+            });
+            if (kind === "profile" && !profile) await OrganizationService.createPermissionProfile({ name, description: description || undefined, permission_codes: permissionCodes });
             await onCreated();
-            toast.success("Configuración guardada");
+            toast.success(profile ? profileCopy.updated : copy.saved);
         } catch (error) {
-            toast.error(getErrorMessage(error, "No se pudo guardar la configuración"));
-        } finally { setSaving(false); }
+            toast.error(getErrorMessage(error, profile ? profileCopy.update_error : copy.save_error));
+        } finally {
+            setSaving(false);
+        }
     };
-    return <Dialog open={kind !== null} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto"><form onSubmit={handleSubmit} className="space-y-5"><DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>{kind === "profile" ? "Elige exactamente las acciones que este perfil podrá realizar." : "Podrás completar y reorganizar esta estructura más adelante."}</DialogDescription></DialogHeader><div className="space-y-2"><Label htmlFor="organization-name">Nombre</Label><Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required /></div>{kind !== "profile" && <div className="space-y-2"><Label htmlFor="organization-code">Código (opcional)</Label><Input id="organization-code" value={code} onChange={(event) => setCode(event.target.value)} /></div>}{kind === "team" && <div className="space-y-2"><Label>Departamento (opcional)</Label><Select value={departmentId} onValueChange={setDepartmentId}><SelectTrigger><SelectValue placeholder="Sin departamento" /></SelectTrigger><SelectContent>{departments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}</SelectContent></Select></div>}{kind === "profile" && <><div className="space-y-2"><Label htmlFor="organization-description">Descripción (opcional)</Label><Input id="organization-description" value={description} onChange={(event) => setDescription(event.target.value)} /></div><fieldset className="space-y-2"><legend className="text-sm font-medium text-[var(--text-main)]">Permisos</legend><div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-[var(--border-soft)] p-3">{definitions.map((definition) => <div key={definition.id} className="flex items-start gap-2"><Checkbox id={`definition-${definition.id}`} checked={selectedPermissionCodeSet.has(definition.code)} onCheckedChange={(checked) => setPermissionCodes((current) => checked === true ? [...current, definition.code] : current.filter((code) => code !== definition.code))} /><Label htmlFor={`definition-${definition.id}`} className="cursor-pointer text-sm"><span className="block font-medium">{definition.description}</span><span className="block text-xs text-[var(--text-muted)]">{definition.code}</span></Label></div>)}</div></fieldset></>}<DialogFooter><Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="submit" disabled={saving || (kind === "profile" && permissionCodes.length === 0)}>{saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Guardar</Button></DialogFooter></form></DialogContent></Dialog>;
+    return (
+        <Dialog open={kind !== null || profile !== null} onOpenChange={onOpenChange}>
+            <DialogContent className="permission-profile-dialog max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-2xl overflow-hidden p-0">
+                <form onSubmit={handleSubmit} className="min-w-0">
+                    <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-4 pr-14 sm:px-6">
+                        <DialogTitle>{title}</DialogTitle>
+                        <DialogDescription>{profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 px-5 py-4 sm:px-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="organization-name">{copy.name}</Label>
+                            <Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required />
+                        </div>
+                        {!isProfile && (
+                            <div className="space-y-2">
+                                <Label htmlFor="organization-code">{copy.code_optional}</Label>
+                                <Input id="organization-code" value={code} onChange={(event) => setCode(event.target.value)} />
+                            </div>
+                        )}
+                        {kind === "department" && (
+                            <div className="space-y-2">
+                                <Label>{copy.parent_department_optional}</Label>
+                                <Select value={departmentId || "none"} onValueChange={setDepartmentId}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="none">{copy.no_parent_department}</SelectItem>
+                                        {activeDepartments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        {kind === "team" && (
+                            <div className="space-y-2">
+                                <Label>{copy.department_optional}</Label>
+                                <Select value={departmentId} onValueChange={setDepartmentId}>
+                                    <SelectTrigger><SelectValue placeholder={copy.no_department} /></SelectTrigger>
+                                    <SelectContent>
+                                        {activeDepartments.map((department) => <SelectItem key={department.id} value={String(department.id)}>{department.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                        {isProfile && (
+                            <>
+                                <div className="space-y-2">
+                                    <Label htmlFor="organization-description">{copy.description_optional}</Label>
+                                    <Input id="organization-description" value={description} onChange={(event) => setDescription(event.target.value)} />
+                                </div>
+                                <FieldSet className="gap-2">
+                                    <FieldLegend variant="label" className="mb-0 text-[var(--text-main)]">{copy.permissions}</FieldLegend>
+                                    <div className="max-h-[min(42dvh,23rem)] space-y-2 overflow-y-auto rounded-xl border border-[var(--border-soft)] p-2">
+                                        {definitionsByCategory.map(([category, categoryDefinitions]) => (
+                                            <PermissionCategory
+                                                key={category}
+                                                category={category}
+                                                categoryDefinitions={categoryDefinitions}
+                                                selectedPermissionCodeSet={selectedPermissionCodeSet}
+                                                profileCopy={profileCopy}
+                                                organizationCopy={dict.organization}
+                                                categorySelection={categorySelection}
+                                                toggleCategory={toggleCategory}
+                                                onPermissionCodesChange={setPermissionCodes}
+                                            />
+                                        ))}
+                                    </div>
+                                </FieldSet>
+                            </>
+                        )}
+                    </div>
+                    <DialogFooter className="dialog-glass-chrome border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
+                        <Button type="submit" disabled={saving || (isProfile && permissionCodes.length === 0)}>
+                            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {dict.organization.actions.save}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
-function LoadingState() { return <div className="flex min-h-64 flex-col items-center justify-center gap-3"><Loader2 className="h-8 w-8 animate-spin text-accent" /><p className="text-sm text-[var(--text-muted)]">Cargando la organización…</p></div>; }
+function PermissionCategory({
+    category,
+    categoryDefinitions,
+    selectedPermissionCodeSet,
+    profileCopy,
+    organizationCopy,
+    categorySelection,
+    toggleCategory,
+    onPermissionCodesChange,
+}: {
+    category: string;
+    categoryDefinitions: PermissionDefinition[];
+    selectedPermissionCodeSet: Set<string>;
+    profileCopy: ReturnType<typeof useDictionary>["dict"]["organization"]["profiles"];
+    organizationCopy: ReturnType<typeof useDictionary>["dict"]["organization"];
+    categorySelection: (definitions: PermissionDefinition[]) => { codes: string[]; allSelected: boolean };
+    toggleCategory: (definitions: PermissionDefinition[]) => void;
+    onPermissionCodesChange: React.Dispatch<React.SetStateAction<string[]>>;
+}) {
+    const selection = categorySelection(categoryDefinitions);
+    const permissionGuidance = (definition: PermissionDefinition) => (
+        (profileCopy.permission_guidance as Record<string, string>)[definition.code]
+        || definition.description
+    );
+
+    return (
+        <section className="space-y-1">
+            <div className="flex min-h-7 items-center justify-between gap-3 px-0.5">
+                <h3 className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]">
+                    {(profileCopy.permission_categories as Record<string, string>)[category] || category}
+                </h3>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-[var(--btn-secondary-text)] hover:text-[var(--btn-secondary-hover-text)]"
+                    disabled={selection.codes.length === 0}
+                    onClick={() => toggleCategory(categoryDefinitions)}
+                >
+                    {selection.allSelected ? profileCopy.clear_category : profileCopy.select_category}
+                </Button>
+            </div>
+            <div className="space-y-1">
+                {categoryDefinitions.map((definition) => {
+                    const isSelected = selectedPermissionCodeSet.has(definition.code);
+                    const canRemoveLegacySelection = definition.is_system_only && isSelected;
+                    return (
+                        <Collapsible
+                            key={definition.id}
+                            className={cn(
+                                "w-full min-w-0 rounded-lg border transition-colors",
+                                isSelected
+                                    ? "border-[color:var(--accent-color)]/60 bg-accent/10"
+                                    : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
+                                definition.is_system_only && !canRemoveLegacySelection
+                                    ? "opacity-75"
+                                    : "",
+                            )}
+                        >
+                            <div className="flex min-w-0 items-center gap-3 px-3 py-2">
+                                <Checkbox
+                                    id={`definition-${definition.id}`}
+                                    className="shrink-0"
+                                    checked={isSelected}
+                                    disabled={definition.is_system_only && !canRemoveLegacySelection}
+                                    onCheckedChange={(checked) => onPermissionCodesChange((current) => checked === true ? [...current, definition.code] : current.filter((item) => item !== definition.code))}
+                                />
+                                <Label
+                                    htmlFor={`definition-${definition.id}`}
+                                    className={cn(
+                                        "min-w-0 flex-1 cursor-pointer text-sm font-medium leading-5 text-[var(--text-main)]",
+                                        definition.is_system_only && !canRemoveLegacySelection && "cursor-not-allowed",
+                                    )}
+                                >
+                                    <span className="flex flex-wrap items-center gap-2">
+                                        <span>{permissionLabel(definition.code, definition, organizationCopy)}</span>
+                                        {definition.is_system_only && (
+                                            <Badge variant="outline" className="border-[var(--border-soft)] bg-[var(--bg-secondary)]/60 px-1.5 py-0 text-[10px] font-medium leading-4 text-[var(--text-muted)]">
+                                                {profileCopy.reserved_for_administrators}
+                                            </Badge>
+                                        )}
+                                    </span>
+                                </Label>
+                                <CollapsibleTrigger asChild>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="group h-8 w-8 shrink-0 text-[var(--text-muted)] hover:text-[var(--text-main)]"
+                                        aria-label={`${profileCopy.permission_details}: ${permissionLabel(definition.code, definition, organizationCopy)}`}
+                                    >
+                                        <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </div>
+                            <CollapsibleContent className="border-t border-[var(--border-soft)] px-3 py-2 pl-12">
+                                <p className="text-xs leading-5 text-[var(--text-muted)]">{permissionGuidance(definition)}</p>
+                                {definition.is_system_only && <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{profileCopy.reserved_description}</p>}
+                            </CollapsibleContent>
+                        </Collapsible>
+                    );
+                })}
+            </div>
+        </section>
+    );
+}
+
+function LoadingState() {
+    const { dict } = useDictionary();
+    return <div className="flex min-h-64 flex-col items-center justify-center gap-3"><Loader2 className="h-8 w-8 animate-spin text-accent" /><p className="text-sm text-[var(--text-muted)]">{dict.organization.loading}</p></div>;
+}
 function RestrictedOrganizationState({ message }: { message: string }) { return <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center"><ShieldCheck className="mx-auto h-8 w-8 text-[var(--text-muted)]" /><p className="mt-3 text-sm text-[var(--text-muted)]">{message}</p></div>; }

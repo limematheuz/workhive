@@ -92,6 +92,8 @@ test("subscription uses the versioned public catalog and guided Stripe purchase 
     const catalog = read("../components/subscription/PlanCatalog.tsx");
     const activation = read("../app/activate-purchase/page.tsx");
     const billing = read("../services/billing.service.ts");
+    const es = JSON.parse(read("../dictionaries/es.json"));
+    const en = JSON.parse(read("../dictionaries/en.json"));
     assert.match(subscription, /billingService\.listPublicPlans/);
     assert.match(subscription, /PlanCatalog/);
     assert.match(catalog, /checkout_available/);
@@ -102,6 +104,9 @@ test("subscription uses the versioned public catalog and guided Stripe purchase 
     assert.match(catalog, /prices/);
     assert.match(catalog, /plan-custom/);
     assert.match(catalog, /entitlements/);
+    assert.match(catalog, /capacity_only_upgrade/);
+    assert.match(es.subscription.capacity_only_upgrade, /capacidad/);
+    assert.match(en.subscription.capacity_only_upgrade, /capacity/);
     assert.match(checkout, /createCompanyPurchaseCheckout/);
     assert.match(checkout, /billingService\.createCheckout/);
     assert.match(checkout, /billing_interval/);

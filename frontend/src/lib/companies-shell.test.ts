@@ -18,6 +18,7 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     const entitlementEditor = source("../components/companies/EntitlementConfigurationEditor.tsx");
     const commercialConfirmation = source("../components/companies/CommercialChangeConfirmationDialog.tsx");
     const alertDialog = source("../components/ui/alert-dialog.tsx");
+    const globalStyles = source("../app/globals.css");
     const utils = source("../components/companies/company-utils.ts");
 
     assert.match(page, /isPlatformSuperadmin\(user\)/);
@@ -89,11 +90,16 @@ test("companies admin uses shadcn Table, responsive cards, and pagination", () =
     assert.match(entitlementEditor, /from "@\/components\/ui\/checkbox"/);
     assert.match(entitlementEditor, /from "@\/components\/ui\/button"/);
     assert.match(entitlementEditor, /Funciones disponibles/);
+    assert.match(entitlementEditor, /Próximamente/);
+    assert.match(entitlementEditor, /Interna de plataforma/);
+    assert.match(entitlementEditor, /disabled=\{!canConfigure\}/);
+    assert.match(entitlementEditor, /flex min-w-0 items-center gap-3/);
     assert.match(entitlementEditor, /Capacidades/);
     assert.match(entitlementEditor, /Reducir \$\{item.label\}/);
     assert.match(entitlementEditor, /Aumentar \$\{item.label\}/);
     assert.match(commercialConfirmation, /AlertDialog/);
     assert.match(commercialConfirmation, /He revisado el impacto y autorizo este cambio/);
+    assert.match(globalStyles, /label:not\(:has\(\[data-slot="checkbox"\], input\[type="checkbox"\]\)\)/);
     assert.match(source("../components/companies/commercial-change-utils.ts"), /entitlementChanges/);
     assert.match(alertDialog, /AlertDialogPrimitive/);
 });

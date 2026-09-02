@@ -10,6 +10,7 @@ from app.schemas.billing import (
     PublicPlanPrice,
 )
 from app.services.entitlement_management_support import entitlement_value_from_row
+from app.services.entitlement_catalog import is_commercially_available
 from app.services.plan_pricing_service import BILLING_INTERVALS, price_for_interval
 
 
@@ -35,6 +36,8 @@ def list_purchasable_plans(db: Session) -> list[PublicPlanCatalogResponse]:
                     value=entitlement_value_from_row(item),
                 )
                 for item in sorted(plan.entitlements, key=lambda item: item.code)
+                if not item.code.startswith("features.")
+                or is_commercially_available(item.code)
             ],
             prices=[
                 PublicPlanPrice(

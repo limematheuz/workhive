@@ -120,7 +120,11 @@ def test_department_and_team_quotas_are_independent(db):
     db.add_all(
         [
             Department(
-                company_id=company.id, name="Operations", code="OPS", is_active=True
+                company_id=company.id,
+                name="Operations",
+                normalized_name="operations",
+                code="OPS",
+                is_active=True,
             ),
             Team(company_id=company.id, name="Team one", code="TEAM-1", is_active=True),
             Team(company_id=company.id, name="Team two", code="TEAM-2", is_active=True),

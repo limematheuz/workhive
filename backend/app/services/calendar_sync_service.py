@@ -26,6 +26,7 @@ from app.services.calendar_sync_payload import (
 from app.services import calendar_sync_repository as sync_repo
 from app.services import security_token_service
 from app.services import calendar_governance_service
+from app.services.planning_access_service import require_company_planning
 
 
 logger = logging.getLogger("workhive.calendar")
@@ -667,11 +668,8 @@ def pull_google_changes(
     return imported
 
 
-def synchronize(
-    db: Session,
-    company_id: int,
-    user_id: int | None = None,
-) -> dict:
+def synchronize(db: Session, company_id: int, user_id: int | None = None) -> dict:
+    require_company_planning(db, company_id)
     connections = sync_repo.connections(db, company_id, user_id)
     if not connections:
         raise HTTPException(status_code=409, detail="Google Calendar is not connected")

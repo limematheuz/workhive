@@ -56,16 +56,15 @@ export function ActionPopover({
                         const isDeactivate = opt.variant === "deactivate";
                         const optionKey = opt.href ?? `${opt.label}-${opt.variant ?? "default"}-${opt.disabled ? "disabled" : "enabled"}`;
 
-                        const isDestructive = isDelete || isDeactivate;
+                        const actionClass = isDelete || isDeactivate
+                            ? "text-[var(--btn-cancel-text)] data-[highlighted]:!bg-[var(--btn-cancel-bg)] data-[highlighted]:!text-[var(--btn-cancel-text)]"
+                            : "text-[var(--btn-secondary-text)] data-[highlighted]:!bg-[var(--btn-secondary-bg)] data-[highlighted]:!text-[var(--btn-secondary-text)]";
                         const iconClass = cn(
-                            "h-3.5 w-3.5 shrink-0",
-                            isDestructive
-                                ? "text-[var(--btn-cancel-text)]"
-                                : "text-accent"
+                            "h-3.5 w-3.5 shrink-0 transition-colors",
+                            isDelete || isDeactivate
+                                ? "text-[var(--btn-cancel-text)] group-data-[highlighted]/action:!text-[var(--btn-cancel-text)]"
+                                : "text-[var(--btn-secondary-text)] group-data-[highlighted]/action:!text-[var(--btn-secondary-text)]",
                         );
-                        const itemClass = isDestructive
-                            ? undefined
-                            : "text-accent data-[highlighted]:bg-accent/10 data-[highlighted]:text-accent";
 
                         const content = (
                             <>
@@ -76,7 +75,7 @@ export function ActionPopover({
 
                         if (opt.href && !opt.disabled) {
                             return (
-                                <DropdownMenuItem key={optionKey} asChild className={itemClass}>
+                                <DropdownMenuItem key={optionKey} className={cn("group/action", actionClass)} asChild>
                                     <Link href={opt.href}>{content}</Link>
                                 </DropdownMenuItem>
                             );
@@ -88,8 +87,7 @@ export function ActionPopover({
                             <DropdownMenuItem
                                 disabled={opt.disabled}
                                 onClick={opt.onClick}
-                                variant={isDestructive ? "destructive" : "default"}
-                                className={itemClass}
+                                className={cn("group/action", actionClass)}
                             >
                                 {content}
                             </DropdownMenuItem>

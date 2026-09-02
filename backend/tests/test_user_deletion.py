@@ -5,9 +5,16 @@ from sqlalchemy.exc import IntegrityError
 from app.core.security import create_access_token
 from app.models.calendar_governance import CompanyCalendarSettings
 from app.models.company import Company
+from app.models.company_membership import CompanyMembership
 from app.models.expense import Expense
+from app.models.permission_profile import (
+    MembershipPermissionProfileAssignment,
+    MembershipPermissionProfileScope,
+    PermissionDefinition,
+)
 from app.models.user import User
 from app.repositories import user as user_repo
+from app.services import organization_bootstrap_service
 
 
 def _company(db, suffix: str) -> Company:
@@ -46,7 +53,7 @@ def _headers(user: User) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-def test_admin_can_delete_unreferenced_company_user(client, db):
+def test_company_admin_cannot_permanently_delete_a_personal_identity(client, db):
     company = _company(db, "empty")
     admin = _user(db, "admin-delete@example.test", 1, company.id)
     worker = _user(db, "worker-delete@example.test", 3, company.id)
@@ -56,11 +63,82 @@ def test_admin_can_delete_unreferenced_company_user(client, db):
         headers=_headers(admin),
     )
 
+    assert response.status_code == 403
+    assert db.get(User, worker.id) is not None
+
+
+def test_company_admin_retires_a_member_without_deleting_the_identity(client, db):
+    company = _company(db, "member-configuration")
+    db.add_all(
+        [
+            PermissionDefinition(
+                code="access.members.read",
+                category="access",
+                description="read members",
+                is_active=True,
+            ),
+            PermissionDefinition(
+                code="access.members.manage",
+                category="access",
+                description="manage members",
+                is_active=True,
+            ),
+        ]
+    )
+    db.commit()
+    admin = _user(db, "admin-member-configuration@example.test", 1, company.id)
+    organization_bootstrap_service.ensure_user_membership(db, admin)
+    worker = _user(db, "worker-member-configuration@example.test", 3, company.id)
+    membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    membership_id = membership.id
+    db.commit()
+
+    response = client.delete(
+        f"/api/v1/organization/members/{membership_id}",
+        headers=_headers(admin),
+    )
+
     assert response.status_code == 204
-    assert db.get(User, worker.id) is None
+    refreshed_user = db.get(User, worker.id)
+    refreshed_membership = db.get(CompanyMembership, membership_id)
+    assert refreshed_user is not None
+    assert refreshed_user.is_active is True
+    assert refreshed_user.company_id is None
+    assert refreshed_user.role.name == "viewer"
+    assert refreshed_user.session_version == 1
+    assert refreshed_membership is not None
+    assert refreshed_membership.status == "archived"
+    assert refreshed_membership.ended_at is not None
 
 
-def test_user_with_operational_history_returns_actionable_conflict(client, db):
+def test_superadmin_can_delete_new_admin_with_derived_profile_scope(client, db):
+    company = _company(db, "admin-configuration")
+    superadmin = _user(db, "superadmin-configuration@example.test", 4, None)
+    admin = _user(db, "company-admin-configuration@example.test", 1, company.id)
+    membership = organization_bootstrap_service.ensure_user_membership(db, admin)
+    assignment = db.query(MembershipPermissionProfileAssignment).filter(
+        MembershipPermissionProfileAssignment.company_membership_id == membership.id
+    ).one()
+    assignment_id = assignment.id
+    scope_ids = [scope.id for scope in assignment.scopes]
+    db.commit()
+
+    response = client.delete(
+        f"/api/v1/users/{admin.id}",
+        headers=_headers(superadmin),
+    )
+
+    assert response.status_code == 204
+    assert db.get(User, admin.id) is None
+    assert db.query(MembershipPermissionProfileAssignment).filter(
+        MembershipPermissionProfileAssignment.id == assignment_id
+    ).count() == 0
+    assert db.query(MembershipPermissionProfileScope).filter(
+        MembershipPermissionProfileScope.id.in_(scope_ids)
+    ).count() == 0
+
+
+def test_only_platform_admins_may_attempt_permanent_deletion(client, db):
     company = _company(db, "history")
     admin = _user(db, "admin-history@example.test", 1, company.id)
     worker = _user(db, "worker-history@example.test", 3, company.id)
@@ -81,9 +159,7 @@ def test_user_with_operational_history_returns_actionable_conflict(client, db):
         headers=_headers(admin),
     )
 
-    assert response.status_code == 409
-    assert response.json()["detail"]["code"] == "USER_HAS_RELATED_DATA"
-    assert "Deactivate" in response.json()["detail"]["message"]
+    assert response.status_code == 403
     assert db.get(User, worker.id) is not None
 
 
@@ -131,7 +207,7 @@ def test_integrity_details_never_leak_when_a_new_reference_blocks_deletion(
     monkeypatch,
 ):
     company = _company(db, "race")
-    admin = _user(db, "admin-race@example.test", 1, company.id)
+    superadmin = _user(db, "superadmin-race@example.test", 4, None)
     worker = _user(db, "worker-race@example.test", 3, company.id)
 
     def fail_delete(*_args, **_kwargs):
@@ -145,7 +221,7 @@ def test_integrity_details_never_leak_when_a_new_reference_blocks_deletion(
 
     response = client.delete(
         f"/api/v1/users/{worker.id}",
-        headers=_headers(admin),
+        headers=_headers(superadmin),
     )
 
     assert response.status_code == 409

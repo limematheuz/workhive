@@ -36,6 +36,10 @@ from app.api.v1.accounting_exports import router as accounting_exports_router
 from app.api.v1.fiscal_summary import router as fiscal_summary_router
 from app.api.v1.client_profitability import router as client_profitability_router
 from app.api.v1.organization import router as organization_router
+from app.api.v1.organization_departments import (
+    router as organization_departments_router,
+)
+from app.api.v1.organization_teams import router as organization_teams_router
 
 api_router = APIRouter()
 
@@ -54,7 +58,9 @@ api_router.include_router(
 )
 api_router.include_router(locations_router, prefix="/locations", tags=["locations"])
 api_router.include_router(
-    location_company_access_router, prefix="/locations", tags=["location-company-access"]
+    location_company_access_router,
+    prefix="/locations",
+    tags=["location-company-access"],
 )
 api_router.include_router(
     reservations_router, prefix="/reservations", tags=["reservations"]
@@ -77,11 +83,19 @@ api_router.include_router(
     work_sessions_router, prefix="/work-sessions", tags=["work-session"]
 )
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])
-api_router.include_router(task_reports_router, prefix="/task-reports", tags=["task-reports"])
-api_router.include_router(notifications_router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(
+    task_reports_router, prefix="/task-reports", tags=["task-reports"]
+)
+api_router.include_router(
+    notifications_router, prefix="/notifications", tags=["notifications"]
+)
 api_router.include_router(invoices_router, prefix="/invoices", tags=["invoices"])
-api_router.include_router(sales_ledger_router, prefix="/sales-ledger", tags=["sales-ledger"])
-api_router.include_router(fiscal_summary_router, prefix="/fiscal-summary", tags=["fiscal-summary"])
+api_router.include_router(
+    sales_ledger_router, prefix="/sales-ledger", tags=["sales-ledger"]
+)
+api_router.include_router(
+    fiscal_summary_router, prefix="/fiscal-summary", tags=["fiscal-summary"]
+)
 api_router.include_router(
     client_profitability_router,
     prefix="/client-profitability",
@@ -105,7 +119,9 @@ api_router.include_router(
 api_router.include_router(quotes_router, prefix="/quotes", tags=["quotes"])
 api_router.include_router(expenses_router, prefix="/expenses", tags=["expenses"])
 api_router.include_router(uploads_router, prefix="/uploads", tags=["uploads"])
-api_router.include_router(collaborations_router, prefix="/collaborations", tags=["collaborations"])
+api_router.include_router(
+    collaborations_router, prefix="/collaborations", tags=["collaborations"]
+)
 api_router.include_router(billing_router, prefix="/billing", tags=["billing"])
 api_router.include_router(contact_router, prefix="/contact", tags=["contact"])
 api_router.include_router(
@@ -121,4 +137,16 @@ api_router.include_router(
 api_router.include_router(calendar_router, prefix="/calendar", tags=["calendar"])
 api_router.include_router(privacy_router, prefix="/privacy", tags=["privacy"])
 api_router.include_router(traffic_router, prefix="/traffic", tags=["traffic"])
-api_router.include_router(organization_router, prefix="/organization", tags=["organization"])
+api_router.include_router(
+    organization_router, prefix="/organization", tags=["organization"]
+)
+api_router.include_router(
+    organization_departments_router,
+    prefix="/organization",
+    tags=["organization"],
+)
+api_router.include_router(
+    organization_teams_router,
+    prefix="/organization",
+    tags=["organization"],
+)

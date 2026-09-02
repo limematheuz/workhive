@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { AlertTriangle, Trash2, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -50,24 +51,20 @@ export function DeleteConfirmDialog({
                     </div>
                 </div>
                 <div className="flex flex-col-reverse gap-3 mt-6 pt-4 border-t border-[var(--border-soft)] sm:flex-row sm:justify-end">
-                    <button
+                    <Button
                         type="button"
                         onClick={() => onOpenChange(false)}
-                        className="w-full bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] border border-[var(--btn-neutral-border)] hover:bg-[var(--btn-neutral-hover-bg)] text-sm font-semibold rounded-xl px-5 py-2.5 cursor-pointer ui-motion sm:w-auto"
+                        variant="outline"
+                        className="w-full sm:w-auto"
                     >
                         {cancelText}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                         type="button"
                         onClick={onConfirm}
                         disabled={isDeleting}
-                        className={`w-full text-sm font-semibold rounded-xl px-5 py-2.5 border-none flex items-center justify-center gap-2 cursor-pointer ui-motion active:scale-[0.98] disabled:opacity-60 sm:w-auto ${
-                            confirmVariant === "primary"
-                                ? "bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]"
-                                : confirmVariant === "soft-danger"
-                                  ? "border border-red-500/30 bg-red-500/10 text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white focus-visible:ring-2 focus-visible:ring-red-500/40"
-                                  : "border border-red-600 bg-red-600 text-white hover:border-red-700 hover:bg-red-700 hover:text-white focus-visible:ring-2 focus-visible:ring-red-500/40"
-                        }`}
+                        variant={confirmVariant === "primary" ? "default" : confirmVariant === "soft-danger" ? "dangerSoft" : "destructive"}
+                        className="w-full sm:w-auto"
                     >
                         {isDeleting ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -75,7 +72,7 @@ export function DeleteConfirmDialog({
                             <ConfirmIcon className="w-3.5 h-3.5" />
                         )}
                         {confirmText}
-                    </button>
+                    </Button>
                 </div>
             </DialogContent>
         </Dialog>

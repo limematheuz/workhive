@@ -17,7 +17,7 @@ from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.schemas.privacy import PrivacyRequestCreate, PrivacyRequestResolve
-from app.services import email_service
+from app.services import email_service, privacy_request_context
 from app.services.user_scope import is_company_admin, is_superadmin
 
 
@@ -92,7 +92,7 @@ def create_request(
             detail="An open request of this type already exists",
         )
     privacy_request = DataSubjectRequest(
-        company_id=user.company_id,
+        company_id=privacy_request_context.request_company_id(db, user),
         requested_by_user_id=user.id,
         request_type=data.request_type,
         status="pending",

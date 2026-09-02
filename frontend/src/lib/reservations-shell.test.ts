@@ -70,3 +70,21 @@ test("reservation cleaning completed status uses accent, not green", () => {
     assert.match(list, /status === "completed"\) return "text-accent"/);
     assert.doesNotMatch(list, /text-emerald/);
 });
+
+test("reservations require the planning entitlement before loading data", () => {
+    const page = source("../app/dashboard/reservations/page.tsx");
+    const layout = source("../features/reservations/ReservationsPageLayout.tsx");
+    const access = source("../features/reservations/usePlanningFeatureAccess.ts");
+    const requests = source("../features/reservations/useReservationRequests.ts");
+    const sidebar = source("../components/dashboard/sidebar-nav-config.tsx");
+
+    assert.match(page, /usePlanningFeatureAccess\(user\)/);
+    assert.match(access, /CompanyPlanAccessService\.getCurrentEntitlements\(\)/);
+    assert.match(access, /entitlement\.code === "features\.planning"/);
+    assert.match(page, /if \(!hasPlanningAccess\) return;/);
+    assert.match(page, /ReservationsPlanRequired/);
+    assert.match(layout, /Planificación no incluida/);
+    assert.match(requests, /if \(!hasPlanningAccess \|\| !canManage\) return;/);
+    assert.doesNotMatch(sidebar, /"\/dashboard\/calendar": "features\.planning"/);
+    assert.match(sidebar, /"\/dashboard\/reservations": "features\.planning"/);
+});

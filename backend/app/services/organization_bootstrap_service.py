@@ -82,6 +82,8 @@ def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
     else:
         membership.access_class = access_class
         membership.status = "active" if user.is_active else "suspended"
+        if membership.status == "active":
+            membership.ended_at = None
         db.add(membership)
         db.flush()
 

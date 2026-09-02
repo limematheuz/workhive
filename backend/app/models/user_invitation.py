@@ -20,6 +20,12 @@ class UserInvitation(Base):
         nullable=True,
         index=True,
     )
+    rejoin_user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
     email = Column(String(255), nullable=False, index=True)
     full_name = Column(String(100), nullable=True)
@@ -38,3 +44,4 @@ class UserInvitation(Base):
     )
 
     company = relationship("Company")
+    role = relationship("Role")

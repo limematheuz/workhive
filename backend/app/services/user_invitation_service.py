@@ -14,14 +14,19 @@ from app.models.user_invitation import UserInvitation
 from app.repositories import role as role_repo
 from app.repositories import user as user_repo
 from app.schemas.user_invitation import UserInvitationAccept, UserInvitationCreate
-from app.services import email_service, organization_bootstrap_service, privacy_service
+from app.services import (
+    email_service,
+    organization_bootstrap_service,
+    privacy_service,
+    user_invitation_management_service,
+)
 from app.services.entitlement_service import require_internal_member_capacity
 from app.services.subscription_policy import require_company_access
 from app.services.user_scope import is_superadmin
 
 
-PENDING_STATUS = "pending"
-EXPIRED_STATUS = "expired"
+PENDING_STATUS = user_invitation_management_service.PENDING_STATUS
+EXPIRED_STATUS = user_invitation_management_service.EXPIRED_STATUS
 ACCEPTED_STATUS = "accepted"
 logger = logging.getLogger(__name__)
 
@@ -61,16 +66,33 @@ def _validate_invited_role(db: Session, role_id: int, inviter: User):
     return role
 
 
+def _eligible_existing_identity(
+    db: Session,
+    *,
+    email: str,
+) -> User | None:
+    """Return an unattached identity that may verify a new company invitation."""
+
+    existing_user = user_repo.get_user_by_email(db, email)
+    if not existing_user:
+        return None
+    if (
+        existing_user.company_id is None
+        and existing_user.is_active
+        and not is_superadmin(existing_user)
+    ):
+        return existing_user
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail="This email already has an active WorkHive workspace",
+    )
+
+
 def create_invitation(
     db: Session,
     payload: UserInvitationCreate,
     inviter: User,
 ) -> UserInvitation:
-    if not settings.smtp_is_configured:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Invitation email delivery is not configured",
-        )
     if inviter.company_id is None or inviter.company is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -79,12 +101,11 @@ def create_invitation(
     require_company_access(inviter.company)
 
     email = _normalize_email(str(payload.email))
-    if user_repo.get_user_by_email(db, email):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This email already has a WorkHive account",
-        )
     invited_role = _validate_invited_role(db, payload.role_id, inviter)
+    rejoin_user = _eligible_existing_identity(
+        db,
+        email=email,
+    )
 
     existing = (
         db.query(UserInvitation)
@@ -113,6 +134,7 @@ def create_invitation(
         invitation.code_hash = _hash(code)
         invitation.failed_attempts = 0
         invitation.expires_at = expires_at
+        invitation.rejoin_user_id = rejoin_user.id if rejoin_user else None
     else:
         invitation = UserInvitation(
             company_id=inviter.company_id,
@@ -120,12 +142,20 @@ def create_invitation(
             role_id=payload.role_id,
             email=email,
             full_name=payload.full_name,
+            rejoin_user_id=rejoin_user.id if rejoin_user else None,
             token_hash=_hash(token),
             code_hash=_hash(code),
             status=PENDING_STATUS,
             expires_at=expires_at,
         )
         db.add(invitation)
+
+    if not settings.smtp_is_configured:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Invitation email delivery is not configured",
+        )
 
     invitation_url = (
         f"{settings.FRONTEND_URL.rstrip('/')}/accept-invitation#token={token}"
@@ -195,14 +225,6 @@ def accept_invitation(
             detail="The verification code is invalid",
         )
 
-    if user_repo.get_user_by_email(db, invitation.email):
-        invitation.status = EXPIRED_STATUS
-        db.commit()
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="This email already has a WorkHive account",
-        )
-
     company = invitation.company
     if company is None:
         raise HTTPException(
@@ -225,27 +247,58 @@ def accept_invitation(
         access_class=access_class,
     )
 
-    user = User(
-        email=invitation.email,
-        hashed_password=get_password_hash(payload.password),
-        full_name=invitation.full_name,
-        is_active=True,
-        email_verified_at=_utcnow(),
-        role_id=invitation.role_id,
-        company_id=invitation.company_id,
-    )
+    user: User
+    if invitation.rejoin_user_id is not None:
+        user = user_repo.get_user_by_id(db, invitation.rejoin_user_id)
+        if (
+            not user
+            or user.email.casefold() != invitation.email.casefold()
+            or user.company_id is not None
+            or not user.is_active
+            or is_superadmin(user)
+        ):
+            invitation.status = EXPIRED_STATUS
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This WorkHive account can no longer join the invited company",
+            )
+        user.company_id = invitation.company_id
+        user.role_id = invitation.role_id
+        user.session_version += 1
+        # The account already has a verified email and password. An invitation
+        # authorizes membership only; it is not a password-reset mechanism.
+        db.add(user)
+    else:
+        if user_repo.get_user_by_email(db, invitation.email):
+            invitation.status = EXPIRED_STATUS
+            db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="This email already has a WorkHive account",
+            )
+        user = User(
+            email=invitation.email,
+            hashed_password=get_password_hash(payload.password),
+            full_name=invitation.full_name,
+            is_active=True,
+            email_verified_at=_utcnow(),
+            role_id=invitation.role_id,
+            company_id=invitation.company_id,
+        )
+        db.add(user)
     invitation.status = ACCEPTED_STATUS
     invitation.accepted_at = _utcnow()
-    db.add(user)
     db.flush()
     organization_bootstrap_service.ensure_user_membership(db, user)
     db.commit()
     db.refresh(user)
-    privacy_service.record_registration_acknowledgements(
-        db,
-        user=user,
-        request=request,
-        policy_version=settings.PRIVACY_POLICY_VERSION,
-        marketing_consent=payload.marketing_consent,
-    )
+    if invitation.rejoin_user_id is None:
+        privacy_service.record_registration_acknowledgements(
+            db,
+            user=user,
+            request=request,
+            policy_version=settings.PRIVACY_POLICY_VERSION,
+            marketing_consent=payload.marketing_consent,
+        )
     return user

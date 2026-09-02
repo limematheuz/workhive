@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
@@ -40,3 +41,15 @@ class UserInvitationAccept(BaseModel):
 
 class UserInvitationAccepted(BaseModel):
     status: str = "accepted"
+
+
+class UserInvitationResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str | None
+    role_id: int
+    role_name: str
+    status: str
+    expires_at: datetime
+    created_at: datetime
+    rejoin_existing_identity: bool

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -6,6 +8,7 @@ from app.models.company_membership import (
     DepartmentMembership,
     TeamMembership,
 )
+from app.models.permission_profile import MembershipPermissionProfileAssignment
 from app.models.user import User
 from app.repositories import organization as organization_repo
 from app.repositories import role as role_repo
@@ -17,6 +20,12 @@ from app.schemas.organization import (
 )
 from app.services import organization_bootstrap_service
 from app.services.entitlement_service import require_internal_member_capacity
+from app.services.organization_department_membership_service import (
+    replace_department_memberships as replace_department_memberships_for_member,
+)
+from app.services.organization_team_membership_service import (
+    replace_team_memberships as replace_team_memberships_for_member,
+)
 from app.services.organization_service_shared import (
     CAPABILITY_MEMBERS_MANAGE,
     CAPABILITY_MEMBERS_READ,
@@ -24,6 +33,16 @@ from app.services.organization_service_shared import (
     not_found,
     require_capability,
 )
+
+
+def is_anonymized_member(user: User | None) -> bool:
+    if not user:
+        return True
+    return (
+        not user.is_active
+        and user.email.startswith("deleted+")
+        and user.email.endswith("@invalid.workhive.local")
+    )
 
 
 def member_response(
@@ -45,6 +64,8 @@ def member_response(
         email=user.email if user else "",
         access_class=membership.access_class,
         status=membership.status,
+        ended_at=membership.ended_at,
+        is_anonymized=is_anonymized_member(user),
         legacy_role_name=user.role.name if user and user.role else None,
         department_ids=sorted(
             assignment.department_id
@@ -104,93 +125,6 @@ def active_admin_count(db: Session, company_id: int) -> int:
     )
 
 
-def replace_department_memberships(
-    db: Session,
-    *,
-    company_id: int,
-    membership_id: int,
-    department_ids: list[int],
-) -> None:
-    departments = {
-        department.id: department
-        for department in organization_repo.list_departments(db, company_id)
-        if department.id in department_ids
-    }
-    if len(departments) != len(department_ids):
-        not_found("Department")
-    existing = {
-        assignment.department_id: assignment
-        for assignment in organization_repo.list_department_memberships(
-            db,
-            company_id=company_id,
-            membership_id=membership_id,
-        )
-    }
-    for department_id, assignment in existing.items():
-        if department_id not in department_ids:
-            assignment.is_active = False
-            assignment.is_primary = False
-            db.add(assignment)
-    for position, department_id in enumerate(department_ids):
-        assignment = existing.get(department_id)
-        if assignment:
-            assignment.is_active = True
-            assignment.is_primary = position == 0
-            db.add(assignment)
-        else:
-            db.add(
-                DepartmentMembership(
-                    company_id=company_id,
-                    department_id=department_id,
-                    company_membership_id=membership_id,
-                    is_primary=position == 0,
-                    is_active=True,
-                )
-            )
-
-
-def replace_team_memberships(
-    db: Session,
-    *,
-    company_id: int,
-    membership_id: int,
-    team_ids: list[int],
-) -> None:
-    teams = {
-        team.id: team
-        for team in organization_repo.list_teams(db, company_id)
-        if team.id in team_ids
-    }
-    if len(teams) != len(team_ids):
-        not_found("Team")
-    existing = {
-        assignment.team_id: assignment
-        for assignment in organization_repo.list_team_memberships(
-            db,
-            company_id=company_id,
-            membership_id=membership_id,
-        )
-    }
-    for team_id, assignment in existing.items():
-        if team_id not in team_ids:
-            assignment.is_active = False
-            db.add(assignment)
-    for team_id in team_ids:
-        assignment = existing.get(team_id)
-        if assignment:
-            assignment.is_active = True
-            db.add(assignment)
-        else:
-            db.add(
-                TeamMembership(
-                    company_id=company_id,
-                    team_id=team_id,
-                    company_membership_id=membership_id,
-                    is_active=True,
-                )
-            )
-
-
 def update_member(
     db: Session,
     membership_id: int,
@@ -207,6 +141,8 @@ def update_member(
         not_found("Company member")
     next_access_class = payload.access_class or membership.access_class
     next_status = payload.status or membership.status
+    if next_status == "archived":
+        conflict("Use the company removal action to retire a person from this company")
     if membership.user_id == current_user.id and (
         next_access_class != "admin" or next_status != "active"
     ):
@@ -236,8 +172,13 @@ def update_member(
             exclude_membership_id=membership.id,
         )
 
+    previous_status = membership.status
     membership.access_class = next_access_class
     membership.status = next_status
+    if next_status == "archived" and previous_status != "archived":
+        membership.ended_at = datetime.now(timezone.utc)
+    elif next_status == "active":
+        membership.ended_at = None
     membership.user.is_active = next_status == "active"
     db.add_all([membership, membership.user])
     if (
@@ -258,14 +199,14 @@ def update_member(
         membership.user.role = legacy_role
         db.add(membership.user)
     if payload.department_ids is not None:
-        replace_department_memberships(
+        replace_department_memberships_for_member(
             db,
             company_id=company_id,
             membership_id=membership.id,
             department_ids=payload.department_ids,
         )
     if payload.team_ids is not None:
-        replace_team_memberships(
+        replace_team_memberships_for_member(
             db,
             company_id=company_id,
             membership_id=membership.id,
@@ -275,3 +216,98 @@ def update_member(
     db.commit()
     db.refresh(membership)
     return member_response(db, company_id=company_id, membership=membership)
+
+
+def remove_member(
+    db: Session,
+    membership_id: int,
+    current_user: User,
+) -> None:
+    """Retire a person from one company without deleting their WorkHive identity.
+
+    A company administrator manages a membership, never another person's global
+    account.  The historical membership remains as evidence of the prior
+    relationship, while all active company-scoped access is revoked.
+    """
+
+    company_id = require_capability(db, current_user, CAPABILITY_MEMBERS_MANAGE)
+    membership = organization_repo.get_company_membership(
+        db,
+        company_id=company_id,
+        membership_id=membership_id,
+    )
+    if not membership or not membership.user:
+        not_found("Company member")
+    if membership.user_id == current_user.id:
+        conflict("You cannot remove yourself from the company")
+    if membership.status == "archived":
+        conflict("This person has already been removed from the company")
+    if (
+        membership.access_class == "admin"
+        and membership.status == "active"
+        and active_admin_count(db, company_id) == 1
+    ):
+        conflict("A company must keep at least one active administrator")
+
+    now = datetime.now(timezone.utc)
+    (
+        db.query(DepartmentMembership)
+        .filter(
+            DepartmentMembership.company_id == company_id,
+            DepartmentMembership.company_membership_id == membership.id,
+            DepartmentMembership.is_active.is_(True),
+        )
+        .update(
+            {
+                DepartmentMembership.is_active: False,
+                DepartmentMembership.is_primary: False,
+                DepartmentMembership.is_lead: False,
+            },
+            synchronize_session=False,
+        )
+    )
+    (
+        db.query(TeamMembership)
+        .filter(
+            TeamMembership.company_id == company_id,
+            TeamMembership.company_membership_id == membership.id,
+            TeamMembership.is_active.is_(True),
+        )
+        .update({TeamMembership.is_active: False}, synchronize_session=False)
+    )
+    (
+        db.query(MembershipPermissionProfileAssignment)
+        .filter(
+            MembershipPermissionProfileAssignment.company_id == company_id,
+            MembershipPermissionProfileAssignment.company_membership_id
+            == membership.id,
+            MembershipPermissionProfileAssignment.is_active.is_(True),
+        )
+        .update(
+            {
+                MembershipPermissionProfileAssignment.is_active: False,
+                MembershipPermissionProfileAssignment.revoked_at: now,
+            },
+            synchronize_session=False,
+        )
+    )
+
+    viewer_role = role_repo.get_role_by_name(db, "viewer")
+    if not viewer_role:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Legacy role 'viewer' not configured",
+        )
+
+    membership.status = "archived"
+    membership.ended_at = now
+    membership.user.company_id = None
+    membership.user.role_id = viewer_role.id
+    membership.user.role = viewer_role
+    # The person still owns a WorkHive identity and can sign in to manage their
+    # privacy requests or accept a new invitation.  Existing sessions are
+    # invalidated so the revoked company access cannot remain in a browser.
+    membership.user.is_active = True
+    membership.user.session_version += 1
+    db.add_all([membership, membership.user])
+    db.commit()
