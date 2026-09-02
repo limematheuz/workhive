@@ -14,6 +14,8 @@ const clientContacts = readFileSync(new URL("../components/clients/ClientContact
 const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
 const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
 const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-picker.tsx", import.meta.url), "utf8");
+const createClientSheet = readFileSync(new URL("../components/clients/CreateClientSheet.tsx", import.meta.url), "utf8");
+const editClientSheet = readFileSync(new URL("../components/clients/EditClientSheet.tsx", import.meta.url), "utf8");
 const clientLocations = readFileSync(new URL("../components/clients/ClientDetailLocationsTab.tsx", import.meta.url), "utf8");
 const clientTasks = readFileSync(new URL("../components/clients/ClientDetailTasksTab.tsx", import.meta.url), "utf8");
 const clientBilling = readFileSync(new URL("../components/clients/ClientDetailBillingTab.tsx", import.meta.url), "utf8");
@@ -39,8 +41,8 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
 test("client detail keeps a wide summary before edit and uses the shared tab control", () => {
     assert.match(detail, /sm:max-w-\[86rem\]/);
     assert.match(detail, /ClientDetailDialogHeader/);
-    assert.match(tabs, /TabsList/);
-    assert.match(tabs, /grid-cols-2 sm:grid-cols-5/);
+    assert.match(tabs, /PremiumTabs/);
+    assert.match(tabs, /compactLabel/);
     assert.doesNotMatch(tabs, /overflow-x-auto|layout="scroll"/);
     assert.match(tabs, /workspace\.overview/);
     assert.match(tabs, /workspace\.locations/);
@@ -109,11 +111,21 @@ test("commercial opportunities remain in the client detail and use shadcn contro
     assert.doesNotMatch(clientOpportunities, /datetime-local/);
     assert.match(clientDateTimePicker, /Calendar/);
     assert.match(clientDateTimePicker, /SelectTrigger/);
+    assert.match(clientDateTimePicker, /rounded-xl/);
+    assert.match(clientDateTimePicker, /formControlSurfaceClassName/);
     assert.match(clientOpportunityTimeline, /ClientService\.getClientOpportunityActivities/);
     assert.match(clientOpportunityTimeline, /ClientService\.createClientOpportunityActivity/);
     assert.match(clientOpportunityTimeline, /Textarea/);
     assert.doesNotMatch(clientOpportunities, /fetch\s*\(/);
     assert.doesNotMatch(clientOpportunityTimeline, /fetch\s*\(/);
+});
+
+test("client dialogs keep their chrome translucent and reuse the shared form surfaces", () => {
+    assert.match(clientForm, /formControlSurfaceClassName/);
+    assert.doesNotMatch(createClientSheet, /dialog-glass-chrome/);
+    assert.doesNotMatch(editClientSheet, /dialog-glass-chrome/);
+    assert.doesNotMatch(clientOpportunities, /dialog-glass-chrome/);
+    assert.doesNotMatch(clientOpportunityTimeline, /dialog-glass-chrome/);
 });
 
 test("client workspace keeps dark search placeholders and only shows data-backed percent badges", () => {

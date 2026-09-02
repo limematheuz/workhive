@@ -8,6 +8,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formControlSurfaceClassName } from "@/components/ui/control-styles";
 import { cn } from "@/lib/utils";
 
 type DateTimePickerProps = {
@@ -66,7 +67,7 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
 
     return (
         <div className={cn("grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]", className)}>
-            <InputGroup className="h-10 border-[var(--border-color)] bg-[var(--bg-primary)] shadow-none">
+            <InputGroup className={cn("h-10 overflow-hidden rounded-xl shadow-none", formControlSurfaceClassName)}>
                 <InputGroupInput
                     id={id}
                     value={text}

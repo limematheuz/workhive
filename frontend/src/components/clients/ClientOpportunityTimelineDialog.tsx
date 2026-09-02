@@ -111,7 +111,7 @@ export function ClientOpportunityTimelineDialog({ clientId, opportunity, canMana
                         </ol>
                     )}
                 </div>
-                <DialogFooter className="dialog-glass-chrome shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
+                <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
                     <Button type="button" variant="outline" className="btn-cancel-muted" onClick={() => onOpenChange(false)}>{copy.close}</Button>
                 </DialogFooter>
             </DialogContent>

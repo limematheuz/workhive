@@ -2,7 +2,7 @@
 
 import { BriefcaseBusiness, FileText, ListChecks, MapPin, PanelTop } from "lucide-react";
 
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { useDictionary } from "@/lib/dictionary-context";
 import type { ClientWorkspaceRow } from "@/lib/client-workspace";
 import type { Client } from "@/services/client.service";
@@ -60,20 +60,16 @@ export function ClientDetailDialogTabsSection({
     const { dict } = useDictionary();
     const workspace = dict.clients.workspace;
     const tabs = [
-        { id: "overview" as const, label: workspace.overview, icon: PanelTop },
-        { id: "commercial" as const, label: dict.clients.opportunities.tab, icon: BriefcaseBusiness },
-        { id: "locations" as const, label: `${workspace.locations} (${locations.length})`, icon: MapPin },
-        { id: "tasks" as const, label: `${workspace.jobs} (${tasks.length})`, icon: ListChecks },
-        ...(financialDataAvailable ? [{ id: "billing" as const, label: `${dict.invoices.title} (${invoices.length})`, icon: FileText }] : []),
+        { id: "overview" as const, label: workspace.overview, compactLabel: "Res.", icon: PanelTop },
+        { id: "commercial" as const, label: dict.clients.opportunities.tab, compactLabel: "Com.", icon: BriefcaseBusiness },
+        { id: "locations" as const, label: `${workspace.locations} (${locations.length})`, compactLabel: "Ubi.", icon: MapPin },
+        { id: "tasks" as const, label: `${workspace.jobs} (${tasks.length})`, compactLabel: "Trab.", icon: ListChecks },
+        ...(financialDataAvailable ? [{ id: "billing" as const, label: `${dict.invoices.title} (${invoices.length})`, compactLabel: "Fact.", icon: FileText }] : []),
     ];
 
     return (
         <>
-            <Tabs value={activeTab} onValueChange={(value) => onActiveTabChange(value as ClientDetailTab)}>
-                <TabsList className={`grid h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${tabs.length === 5 ? "grid-cols-2 sm:grid-cols-5" : "grid-cols-2 sm:grid-cols-4"}`}>
-                    {tabs.map(({ id, label, icon: Icon }) => <TabsTrigger key={id} value={id} className="min-w-0 gap-1.5 rounded-xl px-2 py-2.5 text-[11px] font-bold uppercase tracking-[0.09em] text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)] data-[state=active]:bg-accent data-[state=active]:text-white sm:text-xs"><Icon className="size-3.5 shrink-0" aria-hidden="true" /><span className="truncate">{label}</span></TabsTrigger>)}
-                </TabsList>
-            </Tabs>
+            <PremiumTabs tabs={tabs} activeTab={activeTab} onChange={onActiveTabChange} />
             <div className="mt-5">
                 {activeTab === "overview" && <ClientDetailOverview client={client} row={row} locations={locations} tasks={tasks} financialDataAvailable={financialDataAvailable} canManage={canManage} onViewLocationTasks={onViewLocationTasks} onOpenLocations={() => onActiveTabChange("locations")} />}
                 {activeTab === "commercial" && <ClientOpportunitiesTab client={client} canManage={canManage} />}
