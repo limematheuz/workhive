@@ -3,6 +3,7 @@
 import { ArrowLeft, ListTodo } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     Dialog,
     DialogContent,
@@ -82,12 +83,10 @@ export function ClientTaskDetailDialog({
                                                 return (
                                                     <div key={`${item.text}-${item.checked}-${item.assignedUserId || "all"}`} className="flex items-center justify-between gap-3 p-2 bg-[var(--bg-card)] rounded-xl border border-[var(--border-soft)]/60">
                                                         <div className="flex items-center gap-2.5 min-w-0">
-                                                            <input
-                                                                type="checkbox"
+                                                            <Checkbox
                                                                 checked={item.checked}
-                                                                readOnly
+                                                                disabled
                                                                 aria-label={`Checklist: ${item.text}`}
-                                                                className="w-4 h-4 rounded border-[var(--border-color)] bg-[var(--bg-card)] text-accent focus:ring-accent accent-accent cursor-not-allowed"
                                                             />
                                                             <div className="flex flex-col min-w-0">
                                                                 <span className={`text-xs font-semibold text-[var(--text-main)] truncate ${item.checked ? "line-through text-[var(--text-muted)] font-normal" : ""}`}>

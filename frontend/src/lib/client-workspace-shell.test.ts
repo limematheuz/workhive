@@ -13,6 +13,10 @@ const clientStats = readFileSync(new URL("../components/clients/ClientWorkspaceS
 const clientContacts = readFileSync(new URL("../components/clients/ClientContactsTab.tsx", import.meta.url), "utf8");
 const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
 const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
+const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-picker.tsx", import.meta.url), "utf8");
+const clientLocations = readFileSync(new URL("../components/clients/ClientDetailLocationsTab.tsx", import.meta.url), "utf8");
+const clientTasks = readFileSync(new URL("../components/clients/ClientDetailTasksTab.tsx", import.meta.url), "utf8");
+const clientBilling = readFileSync(new URL("../components/clients/ClientDetailBillingTab.tsx", import.meta.url), "utf8");
 
 test("client workspace uses shared surfaces and keeps all API reads in services", () => {
     assert.match(page, /ClientWorkspaceStats/);
@@ -22,16 +26,31 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(page, /LocationService\.getLocations\(\)\.catch/);
     assert.match(page, /TaskService\.getAllTaskItems\(\)\.catch/);
     assert.doesNotMatch(page, /fetch\s*\(/);
-    assert.match(table, /DataListTable/);
+    assert.match(table, /from "@\/components\/ui\/table"/);
+    assert.match(table, /<TableHeader>/);
+    assert.match(table, /<TableBody>/);
+    assert.match(table, /DataTablePagination/);
+    assert.doesNotMatch(table, /DataListTable/);
 });
 
 test("client detail keeps a wide summary before edit and uses the shared tab control", () => {
     assert.match(detail, /sm:max-w-\[86rem\]/);
     assert.match(detail, /ClientDetailDialogHeader/);
-    assert.match(tabs, /PremiumTabs/);
+    assert.match(tabs, /TabsList/);
+    assert.match(tabs, /grid-cols-2 sm:grid-cols-5/);
+    assert.doesNotMatch(tabs, /overflow-x-auto|layout="scroll"/);
     assert.match(tabs, /workspace\.overview/);
     assert.match(tabs, /workspace\.locations/);
     assert.match(tabs, /workspace\.jobs/);
+});
+
+test("every client data table uses the shared shadcn Table and pagination", () => {
+    for (const [name, source] of [["locations", clientLocations], ["tasks", clientTasks], ["billing", clientBilling], ["overview", overview]] as const) {
+        assert.match(source, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
+        assert.match(source, /<TableHeader>/, `${name} should render a table header`);
+        assert.match(source, /DataTablePagination/, `${name} should use the shared table paginator`);
+        assert.doesNotMatch(source, /DataListTable/, `${name} should not use the generic list table`);
+    }
 });
 
 test("client email opens the in-app composer instead of an external mail client", () => {
@@ -59,7 +78,7 @@ test("client lifecycle and contacts use the shared shadcn controls", () => {
     assert.match(clientFilters, /filter_relationship/);
     assert.match(clientFilters, /SelectTrigger/);
     assert.doesNotMatch(clientFilters, /<select/);
-    assert.match(tabs, /ClientContactsTab/);
+    assert.match(overview, /ClientContactsTab/);
     assert.match(clientContacts, /ClientService\.getClientContacts/);
     assert.match(clientContacts, /ClientService\.createClientContact/);
     assert.match(clientContacts, /ClientService\.updateClientContact/);
@@ -75,6 +94,10 @@ test("commercial opportunities remain in the client detail and use shadcn contro
     assert.match(clientOpportunities, /ClientService\.createClientOpportunity/);
     assert.match(clientOpportunities, /ClientService\.updateClientOpportunity/);
     assert.match(clientOpportunities, /SelectTrigger/);
+    assert.match(clientOpportunities, /DateTimePicker/);
+    assert.doesNotMatch(clientOpportunities, /datetime-local/);
+    assert.match(clientDateTimePicker, /Calendar/);
+    assert.match(clientDateTimePicker, /SelectTrigger/);
     assert.match(clientOpportunityTimeline, /ClientService\.getClientOpportunityActivities/);
     assert.match(clientOpportunityTimeline, /ClientService\.createClientOpportunityActivity/);
     assert.match(clientOpportunityTimeline, /Textarea/);

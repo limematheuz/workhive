@@ -4,6 +4,7 @@ import { Building2, Handshake, MapPin, UserRound } from "lucide-react";
 
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { formControlSurfaceClassName } from "@/components/ui/control-styles";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +22,7 @@ type ClientFormFieldsProps = {
     idPrefix: string;
 };
 
-const inputClassName = "bg-[var(--bg-card-solid)] border-[var(--border-color)] text-[var(--text-main)] placeholder-[var(--text-muted)]";
+const inputClassName = `${formControlSurfaceClassName} bg-[var(--bg-primary)]/55 placeholder:text-[var(--text-muted)]`;
 
 export function ClientFormFields({ client, clientType, onClientTypeChange, relationshipStatus, onRelationshipStatusChange, isActive, onActiveChange, idPrefix }: ClientFormFieldsProps) {
     const { dict } = useDictionary();
@@ -45,7 +46,7 @@ export function ClientFormFields({ client, clientType, onClientTypeChange, relat
             <div className="mt-4 max-w-sm space-y-1.5">
                 <Label htmlFor={`${idPrefix}-relationship-status`}>{form.relationship_status_label}</Label>
                 <Select value={relationshipStatus} onValueChange={(value) => onRelationshipStatusChange(value as NonNullable<Client["relationship_status"]>)}>
-                    <SelectTrigger id={`${idPrefix}-relationship-status`}><SelectValue /></SelectTrigger>
+                    <SelectTrigger id={`${idPrefix}-relationship-status`} className="bg-[var(--bg-primary)]/55"><SelectValue /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="lead">{form.relationship_status_lead}</SelectItem>
                         <SelectItem value="client">{form.relationship_status_client}</SelectItem>

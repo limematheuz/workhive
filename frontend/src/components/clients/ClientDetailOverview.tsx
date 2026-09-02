@@ -6,8 +6,9 @@ import { Building2, CalendarDays, CircleDollarSign, ListChecks, Mail, MapPin, Ph
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DataListTable } from "@/components/ui/data-list-table";
+import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DocumentEmailDialog } from "@/components/billing/DocumentEmailDialog";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -18,12 +19,15 @@ import type { InvoiceEmailPayload } from "@/services/invoice.service";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
 
+import { ClientContactsTab } from "./ClientContactsTab";
+
 type ClientDetailOverviewProps = {
     client: Client;
     row: ClientWorkspaceRow;
     locations: Location[];
     tasks: TaskItem[];
     financialDataAvailable: boolean;
+    canManage: boolean;
     onViewLocationTasks: (location: Location) => void;
     onOpenLocations: () => void;
 };
@@ -44,6 +48,7 @@ export function ClientDetailOverview({
     locations,
     tasks,
     financialDataAvailable,
+    canManage,
     onViewLocationTasks,
     onOpenLocations,
 }: ClientDetailOverviewProps) {
@@ -51,6 +56,7 @@ export function ClientDetailOverview({
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [sendingEmail, setSendingEmail] = useState(false);
     const completedTasks = tasks.filter((task) => task.status === "completed").length;
+    const locationPagination = useDataTablePagination(locations, 10);
     const stats = [
         { label: "Trabajos realizados", value: String(completedTasks), detail: "Este año", icon: ListChecks },
         { label: "Próximo trabajo", value: row.nextScheduledAt ? formatDate(row.nextScheduledAt) : "Sin programar", detail: row.nextScheduledAt ? "Planificado" : "Añádelo desde Trabajos", icon: CalendarDays },
@@ -120,28 +126,14 @@ export function ClientDetailOverview({
                 </section>
             </div>
 
-            <section className="billing-surface overflow-hidden rounded-[22px] p-3 sm:p-4">
-                <DataListTable
-                    variant="plain"
-                    items={locations.slice(0, 4)}
-                    getRowKey={(location) => location.id}
-                    gridClassName="grid-cols-[minmax(12rem,1.2fr)_minmax(13rem,1fr)_6rem_7rem]"
-                    header={{
-                        title: "Ubicaciones",
-                        subtitle: locations.length > 0 ? "Acceso rápido a los locales de este cliente." : "Este cliente aún no tiene ubicaciones.",
-                        countLabel: `${locations.length}`,
-                    }}
-                    toolbar={locations.length > 4 ? <Button type="button" variant="ghost" size="xs" onClick={onOpenLocations}>Ver todas las ubicaciones</Button> : undefined}
-                    columns={[
-                        { key: "name", label: "Nombre" },
-                        { key: "address", label: "Dirección" },
-                        { key: "type", label: "Tipo" },
-                        { key: "actions", label: "", className: "text-right" },
-                    ]}
-                    empty={<p className="py-6 text-center text-sm text-[var(--text-muted)]">Aún no hay ubicaciones asignadas.</p>}
-                    renderCompactRow={(location) => <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</p></div><Button type="button" variant="outline" size="xs" onClick={() => onViewLocationTasks(location)}>Ver tareas</Button></div>}
-                    renderDesktopRow={(location) => <><span className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</span><span className="truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</span><span className="text-xs text-[var(--text-muted)]">{location.location_type || "—"}</span><div className="flex justify-end"><Button type="button" variant="outline" size="xs" onClick={() => onViewLocationTasks(location)}>Ver tareas</Button></div></>}
-                />
+            <ClientContactsTab client={client} canManage={canManage} />
+
+            <section className="billing-surface overflow-hidden rounded-[22px]">
+                <header className="flex items-center justify-between gap-3 px-5 py-4"><div><h3 className="text-sm font-semibold text-[var(--text-main)]">Ubicaciones</h3><p className="mt-1 text-xs text-[var(--text-muted)]">Acceso rápido a los locales de este cliente.</p></div><Button type="button" variant="ghost" size="xs" onClick={onOpenLocations}>Ver todas</Button></header>
+                {locations.length === 0 ? <p className="px-5 py-10 text-center text-sm text-[var(--text-muted)]">Aún no hay ubicaciones asignadas.</p> : <>
+                    <Table className="min-w-[42rem] table-fixed"><TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--btn-secondary-text)]"><TableHead className="w-[30%] text-[var(--btn-secondary-text)]">Nombre</TableHead><TableHead className="w-[40%] text-[var(--btn-secondary-text)]">Dirección</TableHead><TableHead className="w-[16%] text-[var(--btn-secondary-text)]">Tipo</TableHead><TableHead className="w-[14%] text-right text-[var(--btn-secondary-text)]">Acciones</TableHead></TableRow></TableHeader><TableBody>{locationPagination.pageItems.map((location) => <TableRow key={location.id} className="bg-[var(--bg-secondary)]/20"><TableCell className="truncate font-semibold text-[var(--text-main)]">{location.name}</TableCell><TableCell className="truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</TableCell><TableCell className="text-xs text-[var(--text-muted)]">{location.location_type || "—"}</TableCell><TableCell className="text-right"><Button type="button" variant="outline" size="xs" onClick={() => onViewLocationTasks(location)}>Ver tareas</Button></TableCell></TableRow>)}</TableBody></Table>
+                    <DataTablePagination page={locationPagination.page} totalItems={locations.length} pageSize={locationPagination.pageSize} onPageChange={locationPagination.setPage} onPageSizeChange={locationPagination.setPageSize} summary={`${(locationPagination.page - 1) * locationPagination.pageSize + 1}-${Math.min(locationPagination.page * locationPagination.pageSize, locations.length)} de ${locations.length} ubicaciones`} rowsPerPageLabel="Filas por página" previousLabel="Página anterior" nextLabel="Página siguiente" />
+                </>}
             </section>
             <DocumentEmailDialog
                 open={emailDialogOpen}

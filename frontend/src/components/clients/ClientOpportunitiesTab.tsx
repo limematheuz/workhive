@@ -6,6 +6,7 @@ import { CalendarClock, ClipboardList, Loader2, Pencil, Plus, UserRound } from "
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,14 +58,6 @@ function formatDate(value: string | null, locale: string): string | null {
     return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(date);
 }
 
-function toDateTimeLocal(value: string | null): string {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    const pad = (part: number) => String(part).padStart(2, "0");
-    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 export function ClientOpportunitiesTab({ client, canManage }: ClientOpportunitiesTabProps) {
     const { dict, locale } = useDictionary();
     const copy = dict.clients.opportunities;
@@ -99,6 +92,7 @@ export function ClientOpportunitiesTab({ client, canManage }: ClientOpportunitie
                 <div>
                     <h3 className="text-base font-semibold text-[var(--text-main)]">{copy.title}</h3>
                     <p className="mt-1 text-sm text-[var(--text-muted)]">{copy.description}</p>
+                    <p className="mt-2 text-xs leading-5 text-[var(--text-muted)]">Crea una oportunidad, indica su próxima acción y registra llamadas, correos o decisiones en su historial.</p>
                 </div>
                 {canManage && <Button type="button" onClick={() => setEditorOpportunity(null)}><Plus className="size-4" />{copy.new}</Button>}
             </header>
@@ -281,7 +275,7 @@ function OpportunityEditorDialog({
                                     </SelectField>
                                     <Field>
                                         <FieldLabel htmlFor="opportunity-follow-up">{copy.next_follow_up_label}</FieldLabel>
-                                        <FieldContent><Input id="opportunity-follow-up" type="datetime-local" value={toDateTimeLocal(draft.next_follow_up_at)} onChange={(event) => setDraft((current) => ({ ...current, next_follow_up_at: event.target.value ? new Date(event.target.value).toISOString() : null }))} /></FieldContent>
+                                        <FieldContent><DateTimePicker id="opportunity-follow-up" value={draft.next_follow_up_at} onValueChange={(next_follow_up_at) => setDraft((current) => ({ ...current, next_follow_up_at }))} /></FieldContent>
                                     </Field>
                                 </div>
                                 {draft.stage === "lost" && <Field>
