@@ -28,6 +28,7 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(page, /ClientWorkspaceStats/);
     assert.match(page, /ClientWorkspaceFilters/);
     assert.match(page, /ClientWorkspaceExportButton/);
+    assert.match(page, /ClientService\.getAccess/);
     assert.match(page, /ClientService\.getClients/);
     assert.match(page, /LocationService\.getLocations\(\)\.catch/);
     assert.match(page, /TaskService\.getAllTaskItems\(\)\.catch/);
@@ -37,6 +38,8 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(table, /from "@\/components\/ui\/card"/);
     assert.doesNotMatch(table, /DataListTable/);
     assert.match(table, /DataTablePagination/);
+    assert.match(table, /canManage: boolean/);
+    assert.doesNotMatch(table, /user\?\.role/);
 });
 
 test("client detail keeps a wide summary before edit and uses the shared tab control", () => {
@@ -48,6 +51,8 @@ test("client detail keeps a wide summary before edit and uses the shared tab con
     assert.match(tabs, /workspace\.overview/);
     assert.match(tabs, /workspace\.locations/);
     assert.match(tabs, /workspace\.jobs/);
+    assert.match(tabs, /canReadCommercialFollowUps/);
+    assert.match(tabs, /canManageCommercialFollowUps/);
 });
 
 test("client detail keeps one close action and its action menu appears over the dialog", () => {

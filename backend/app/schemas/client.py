@@ -86,6 +86,13 @@ class ClientResponse(ClientBase):
     company_id: int
 
 
+class ClientAccessResponse(BaseModel):
+    can_read_clients: bool
+    can_manage_clients: bool
+    can_read_commercial_follow_ups: bool
+    can_manage_commercial_follow_ups: bool
+
+
 ClientContactRoleCode = Literal[
     "commercial",
     "billing",

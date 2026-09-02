@@ -27,6 +27,8 @@ type ClientDetailDialogProps = {
     onToggleActiveClient?: (client: Client) => void;
     onDeleteClient?: (client: Client) => void;
     canManage?: boolean;
+    canReadCommercialFollowUps?: boolean;
+    canManageCommercialFollowUps?: boolean;
 };
 
 export function ClientDetailDialog(props: ClientDetailDialogProps) {
@@ -56,6 +58,8 @@ function ClientDetailDialogBody({
     onToggleActiveClient,
     onDeleteClient,
     canManage = false,
+    canReadCommercialFollowUps = false,
+    canManageCommercialFollowUps = false,
 }: Omit<ClientDetailDialogProps, "client" | "workspaceRow" | "open"> & { client: Client; workspaceRow: ClientWorkspaceRow }) {
     const [activeTab, setActiveTab] = useState<ClientDetailTab>("overview");
     const [taskSearch, setTaskSearch] = useState("");
@@ -109,6 +113,8 @@ function ClientDetailDialogBody({
                     invoices={clientInvoices}
                     financialDataAvailable={financialDataAvailable}
                     canManage={canManage}
+                    canReadCommercialFollowUps={canReadCommercialFollowUps}
+                    canManageCommercialFollowUps={canManageCommercialFollowUps}
                     taskSearch={taskSearch}
                     onTaskSearchChange={setTaskSearch}
                     taskStatusFilter={taskStatusFilter}

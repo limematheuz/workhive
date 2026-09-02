@@ -21,3 +21,9 @@ test("client contact requests keep API errors actionable", () => {
     assert.match(source, /assertApiResponseOk\(response, "No se pudo actualizar el contacto"\)/);
     assert.match(source, /assertApiResponseOk\(response, "No se pudo desactivar el contacto"\)/);
 });
+
+test("optional client selectors stay empty when the user cannot read clients", () => {
+    assert.match(source, /getClients: async/);
+    assert.match(source, /if \(response\.status === 403\) \{\s*return \[\]/);
+    assert.match(source, /assertApiResponseOk\(response, "No se pudieron cargar los clientes"\)/);
+});

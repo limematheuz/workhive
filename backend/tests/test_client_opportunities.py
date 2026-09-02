@@ -225,7 +225,6 @@ def test_client_opportunities_enforce_tenant_owner_and_write_boundaries(client, 
         headers=viewer_headers,
         json={"title": "No permitido"},
     )
-    assert readable.status_code == 200, readable.text
-    assert readable.json() == []
+    assert readable.status_code == 403, readable.text
     assert owners_for_viewer.status_code == 403
     assert blocked.status_code == 403
