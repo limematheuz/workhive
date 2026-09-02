@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Textarea } from "@/components/ui/textarea";
 import type { CompanyPlanAccess, Entitlement, PlanCode } from "@/services/company-plan-access.service";
 import type { Company } from "@/services/company.service";
@@ -77,19 +77,26 @@ function DialogBody({ controller }: { controller: Controller }) {
     const { access, activeTab, setActiveTab } = controller;
     if (!access) return null;
     return (
-        <Tabs className="flex min-h-0 flex-1 flex-col" value={activeTab} onValueChange={(value) => setActiveTab(value as "plan" | "custom" | "history")}>
-            <div className="shrink-0 px-5 pt-3 sm:px-6"><TabsList className="grid w-full grid-cols-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-1"><Tab value="plan">Plan</Tab><Tab value="custom">Personalizado</Tab><Tab value="history">Historial</Tab></TabsList></div>
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="shrink-0 px-5 pt-3 sm:px-6">
+                <PremiumTabs
+                    tabs={[
+                        { id: "plan", label: "Plan" },
+                        { id: "custom", label: "Personalizado" },
+                        { id: "history", label: "Historial" },
+                    ]}
+                    activeTab={activeTab}
+                    onChange={setActiveTab}
+                    mobileLabel="Sección de plan y acceso"
+                />
+            </div>
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
                 {activeTab === "plan" && <PlanTab controller={controller} />}
                 {activeTab === "custom" && <CustomTab controller={controller} />}
                 {activeTab === "history" && <AuditList audit={access.audit} subscription={access.subscription} />}
             </div>
-        </Tabs>
+        </div>
     );
-}
-
-function Tab({ value, children }: { value: "plan" | "custom" | "history"; children: string }) {
-    return <TabsTrigger value={value} className="rounded-lg px-2 py-2 text-xs font-semibold text-[var(--text-main)] transition-colors hover:bg-accent/10 hover:text-accent data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:hover:bg-accent data-[state=active]:hover:text-white">{children}</TabsTrigger>;
 }
 
 function PlanTab({ controller }: { controller: Controller }) {

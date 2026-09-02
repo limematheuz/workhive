@@ -31,9 +31,10 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(page, /LocationService\.getLocations\(\)\.catch/);
     assert.match(page, /TaskService\.getAllTaskItems\(\)\.catch/);
     assert.doesNotMatch(page, /fetch\s*\(/);
-    assert.match(table, /DataListTable/);
-    assert.match(table, /renderCompactRow/);
-    assert.match(table, /desktopFrom="lg"/);
+    assert.match(table, /from "@\/components\/ui\/table"/);
+    assert.match(table, /<TableHeader>/);
+    assert.match(table, /from "@\/components\/ui\/card"/);
+    assert.doesNotMatch(table, /DataListTable/);
     assert.match(table, /DataTablePagination/);
 });
 
@@ -56,10 +57,12 @@ test("client detail keeps one close action and its action menu appears over the 
     assert.match(dropdownMenu, /z-\[10110\]/);
 });
 
-test("every client data table uses the shared responsive list and pagination", () => {
+test("every client data table uses shadcn Table on desktop and Card on mobile", () => {
     for (const [name, source] of [["locations", clientLocations], ["tasks", clientTasks], ["billing", clientBilling], ["overview", overview]] as const) {
-        assert.match(source, /DataListTable/, `${name} should use the shared responsive table`);
-        assert.match(source, /renderCompactRow/, `${name} should render a compact mobile row`);
+        assert.match(source, /from "@\/components\/ui\/table"/, `${name} should use shadcn Table`);
+        assert.match(source, /from "@\/components\/ui\/card"/, `${name} should use shadcn Card`);
+        assert.match(source, /<TableHeader>/, `${name} should render a TableHeader`);
+        assert.doesNotMatch(source, /DataListTable/, `${name} should not use the custom list table`);
         assert.match(source, /DataTablePagination/, `${name} should use the shared table paginator`);
     }
 });

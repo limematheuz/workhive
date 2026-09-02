@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { toast } from "@/lib/toast";
 import {
     CompanyPlanAccessService,
@@ -187,14 +187,15 @@ export function PlanCatalogEditorDialog({ open, onOpenChange }: PlanCatalogEdito
                 ) : (
                     <form className="flex min-h-0 flex-1 flex-col" onSubmit={requestSave}>
                         <div className="shrink-0 px-5 pt-3 sm:px-6">
-                            <Tabs value={selectedCode} onValueChange={selectPlan}>
-                                <TabsList className="grid w-full grid-cols-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-1 sm:grid-cols-4">
-                                    {STANDARD_PLAN_ORDER.map((code) => {
-                                        const plan = catalogue.find((item) => item.code === code);
-                                        return <TabsTrigger key={code} value={code} className="rounded-lg px-2 py-2 text-xs font-semibold text-[var(--text-main)] transition-colors hover:bg-accent/10 hover:text-accent data-[state=active]:bg-accent data-[state=active]:text-white data-[state=active]:hover:bg-accent data-[state=active]:hover:text-white">{plan?.label || code}</TabsTrigger>;
-                                    })}
-                                </TabsList>
-                            </Tabs>
+                            <PremiumTabs
+                                tabs={STANDARD_PLAN_ORDER.map((code) => ({
+                                    id: code,
+                                    label: catalogue.find((item) => item.code === code)?.label || code,
+                                }))}
+                                activeTab={selectedCode}
+                                onChange={selectPlan}
+                                mobileLabel="Plan que quieres editar"
+                            />
                         </div>
                         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
                             <div className="mb-4 rounded-xl border border-accent/20 bg-accent/5 p-3 text-sm text-[var(--text-muted)]">

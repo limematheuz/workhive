@@ -28,11 +28,11 @@ function isChanged(code: string, values: EntitlementValues, baseValues?: Entitle
 const AVAILABILITY_COPY = {
     available: null,
     coming_soon: {
-        label: "Próximamente",
+        label: "Próx.",
         description: "Aún no se ofrece ni se puede activar para clientes.",
     },
     platform_internal: {
-        label: "Interna de plataforma",
+        label: "Interna",
         description: "Uso interno de WorkHive; no forma parte de los planes de cliente.",
     },
 } as const;
@@ -50,6 +50,7 @@ export function EntitlementConfigurationEditor({
     const configurableFeatures = features.filter((item) => item.availability === "available");
     const enabledFeatures = configurableFeatures.filter((item) => values[item.code] === true).length;
     const allFeaturesSelected = configurableFeatures.length > 0 && enabledFeatures === configurableFeatures.length;
+    const someFeaturesSelected = enabledFeatures > 0 && !allFeaturesSelected;
 
     const setAllFeatures = (selected: boolean) => {
         configurableFeatures.forEach((item) => onChange(item.code, selected));
@@ -68,28 +69,19 @@ export function EntitlementConfigurationEditor({
                         </h3>
                         <p className="mt-1 text-xs text-[var(--text-muted)]">Marca exactamente lo que podrá usar esta empresa.</p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                         <Badge variant="outline" className="w-fit border-accent/25 bg-accent/10 text-accent">
                             {enabledFeatures} de {configurableFeatures.length} activas
                         </Badge>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={allFeaturesSelected}
-                            onClick={() => setAllFeatures(true)}
-                        >
+                        <Label htmlFor={`${idPrefix}-all-features`} className="flex cursor-pointer items-center gap-2 text-xs font-semibold normal-case tracking-normal text-[var(--text-main)]">
+                            <Checkbox
+                                id={`${idPrefix}-all-features`}
+                                checked={allFeaturesSelected ? true : someFeaturesSelected ? "indeterminate" : false}
+                                disabled={configurableFeatures.length === 0}
+                                onCheckedChange={(checked) => setAllFeatures(checked === true)}
+                            />
                             Seleccionar todas
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            disabled={enabledFeatures === 0}
-                            onClick={() => setAllFeatures(false)}
-                        >
-                            Deseleccionar todas
-                        </Button>
+                        </Label>
                     </div>
                 </div>
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -116,14 +108,16 @@ export function EntitlementConfigurationEditor({
                                     onCheckedChange={(checked) => onChange(item.code, checked === true)}
                                 />
                                 <span className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm font-medium text-[var(--text-main)]">{item.label}</span>
-                                    {availability && (
-                                        <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                                            <Badge variant="outline" className="w-fit border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[10px] text-[var(--text-muted)]">
+                                    <span className="flex min-w-0 items-center gap-2">
+                                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-[var(--text-main)]">{item.label}</span>
+                                        {availability && (
+                                            <Badge variant="outline" className="shrink-0 border-[var(--border-soft)] bg-[var(--bg-secondary)] px-1.5 py-0 text-[10px] text-[var(--text-muted)]">
                                                 {availability.label}
                                             </Badge>
-                                            <span className="text-[11px] text-[var(--text-muted)]">{availability.description}</span>
-                                        </span>
+                                        )}
+                                    </span>
+                                    {availability && (
+                                        <span className="mt-0.5 block truncate text-[11px] text-[var(--text-muted)]">{availability.description}</span>
                                     )}
                                     {baseValues && (
                                         <span className="mt-0.5 block text-[11px] text-[var(--text-muted)]">

@@ -107,6 +107,9 @@ test("organization tables keep the mobile layout to the essential columns", () =
 
     assert.match(peopleSection, /hidden text-\[var\(--btn-secondary-text\)\] xl:table-cell xl:w-\[23%\]/);
     assert.match(peopleSection, /xl:hidden/);
+    assert.match(peopleSection, /CurrentMemberCard/);
+    assert.match(peopleSection, /hidden lg:block/);
+    assert.match(peopleSection, /grid gap-2\.5 p-3 lg:hidden/);
 });
 
 test("organization tables paginate with the shared shadcn controls and keep permission selection easy to scan", () => {
@@ -140,4 +143,9 @@ test("organization tabs use shared shadcn text and select filters instead of cus
     assert.match(controlCenter, /@\/components\/ui\/select/);
     assert.match(teamsPanel, /@\/components\/ui\/select/);
     assert.match(departmentsPanel, /@\/components\/ui\/select/);
+    assert.match(controlCenter, /PermissionProfileCard/);
+    assert.match(controlCenter, /from "@\/components\/ui\/card"/);
+    assert.match(controlCenter, /function PermissionProfileCard/);
+    assert.match(teamsPanel, /function TeamCard/);
+    assert.match(departmentsPanel, /function DepartmentCard/);
 });

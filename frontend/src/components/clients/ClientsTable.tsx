@@ -3,11 +3,7 @@
 import {
     Building2,
     CircleCheck,
-    ListChecks,
-    Mail,
-    MapPin,
     Pencil,
-    Phone,
     Power,
     Trash2,
     UserRound,
@@ -16,8 +12,9 @@ import {
 
 import { ActionPopover } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
-import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
+import { Card, CardContent } from "@/components/ui/card";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { ClientWorkspaceRow } from "@/lib/client-workspace";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
@@ -98,50 +95,14 @@ export function ClientsTable({
         />
     );
 
-    const columns: DataListColumn[] = [
-        { key: "name", label: dict.clients.table.name },
-        { key: "type", label: dict.locations.table.type },
-        { key: "contact", label: workspace.filter_contact },
-        { key: "locations", label: workspace.locations, className: "text-right" },
-        { key: "jobs", label: workspace.jobs, className: "text-right" },
-        { key: "status", label: dict.clients.table.status },
-        ...(!isReadOnly ? [{ key: "actions", label: dict.clients.table.actions, className: "text-right" }] : []),
-    ];
-    const gridClassName = isReadOnly
-        ? "grid-cols-[minmax(11rem,1.8fr)_minmax(7rem,.85fr)_minmax(10rem,1.35fr)_4rem_4rem_7rem]"
-        : "grid-cols-[minmax(11rem,1.8fr)_minmax(7rem,.85fr)_minmax(10rem,1.35fr)_4rem_4rem_7rem_3rem]";
-
     return (
-        <DataListTable
-            items={pagination.pageItems}
-            getRowKey={(row) => row.client.id}
-            columns={columns}
-            gridClassName={gridClassName}
-            desktopFrom="lg"
-            header={{
-                title: workspace.list_title,
-                subtitle: workspace.list_subtitle,
-                countLabel: `${rows.length} ${rows.length === 1 ? workspace.client_singular : workspace.client_plural}`,
-            }}
-            onRowClick={(row) => onDetails(row.client)}
-            rowAriaLabel={(row) => workspace.view_client.replace("{name}", row.client.name)}
-            empty={<div><Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" /><h2 className="mt-3 text-sm font-semibold text-[var(--text-main)]">{workspace.empty_title}</h2><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{workspace.empty_description}</p></div>}
-            renderDesktopRow={(row) => <>
-                <ClientIdentity row={row} noTaxId={workspace.no_tax_id} />
-                <div className="flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}</div>
-                <div className="min-w-0"><p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{row.client.address || row.client.city}</p></div>
-                <span className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.locationCount}</span>
-                <span className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.taskCount}</span>
-                {statusBadge(row.client)}
-                {!isReadOnly && <div className="text-right" onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</div>}
+        <section className="billing-surface overflow-hidden rounded-[26px]">
+            <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-semibold text-[var(--text-main)]">{workspace.list_title}</h2><p className="mt-1 text-xs text-[var(--text-muted)]">{workspace.list_subtitle}</p></div><span className="w-fit rounded-full bg-[var(--bg-tertiary)] px-3 py-1 text-xs font-semibold text-[var(--text-main)]">{rows.length} {rows.length === 1 ? workspace.client_singular : workspace.client_plural}</span></header>
+            {rows.length === 0 ? <div className="px-5 py-16 text-center"><Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" /><h2 className="mt-3 text-sm font-semibold text-[var(--text-main)]">{workspace.empty_title}</h2><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{workspace.empty_description}</p></div> : <>
+                <div className="hidden lg:block"><Table className="table-fixed text-left"><TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"><TableHead className="w-[27%] text-[var(--btn-secondary-text)]">{dict.clients.table.name}</TableHead><TableHead className="w-[14%] text-[var(--btn-secondary-text)]">{dict.locations.table.type}</TableHead><TableHead className="w-[23%] text-[var(--btn-secondary-text)]">{workspace.filter_contact}</TableHead><TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">{workspace.locations}</TableHead><TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">{workspace.jobs}</TableHead><TableHead className="w-[12%] text-[var(--btn-secondary-text)]">{dict.clients.table.status}</TableHead>{!isReadOnly && <TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">{dict.clients.table.actions}</TableHead>}</TableRow></TableHeader><TableBody>{pagination.pageItems.map((row) => <TableRow key={row.client.id} onClick={() => onDetails(row.client)} className="cursor-pointer bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55"><TableCell><ClientIdentity row={row} noTaxId={workspace.no_tax_id} /></TableCell><TableCell><div className="flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}</div></TableCell><TableCell><p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{row.client.address || row.client.city}</p></TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.locationCount}</TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.taskCount}</TableCell><TableCell>{statusBadge(row.client)}</TableCell>{!isReadOnly && <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</TableCell>}</TableRow>)}</TableBody></Table></div>
+                <div className="grid gap-2.5 p-3 lg:hidden">{pagination.pageItems.map((row) => <Card key={row.client.id}><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><ClientIdentity row={row} noTaxId={workspace.no_tax_id} /></div>{!isReadOnly && <div onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</div>}</div><div className="flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}{statusBadge(row.client)}</div><div className="border-t border-[var(--border-soft)] pt-2 text-xs text-[var(--text-muted)]"><p className="truncate font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p><p className="mt-1 truncate">{row.client.address || row.client.city || "—"}</p></div><div className="grid grid-cols-2 gap-2 text-xs"><span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.locationCount}</b> {workspace.locations.toLowerCase()}</span><span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.taskCount}</b> {workspace.jobs.toLowerCase()}</span></div></CardContent></Card>)}</div>
+                <DataTablePagination page={pagination.page} totalItems={rows.length} pageSize={pagination.pageSize} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} summary={`${(pagination.page - 1) * pagination.pageSize + 1}-${Math.min(pagination.page * pagination.pageSize, rows.length)} de ${rows.length} clientes`} rowsPerPageLabel="Filas por página" previousLabel="Página anterior" nextLabel="Página siguiente" />
             </>}
-            renderCompactRow={(row) => <div className="space-y-3">
-                <div className="flex items-start gap-3"><div className="min-w-0 flex-1"><ClientIdentity row={row} noTaxId={workspace.no_tax_id} /></div>{!isReadOnly && <div onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</div>}</div>
-                <div className="flex flex-wrap items-center gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}{statusBadge(row.client)}</div>
-                <div className="border-t border-[var(--border-soft)] pt-2 text-xs text-[var(--text-muted)]"><p className="truncate font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p><p className="mt-1 truncate">{row.client.address || row.client.city || "—"}</p></div>
-                <div className="grid grid-cols-2 gap-2 text-xs"><span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.locationCount}</b> {workspace.locations.toLowerCase()}</span><span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.taskCount}</b> {workspace.jobs.toLowerCase()}</span></div>
-            </div>}
-            footer={rows.length > 0 ? <DataTablePagination page={pagination.page} totalItems={rows.length} pageSize={pagination.pageSize} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} summary={`${(pagination.page - 1) * pagination.pageSize + 1}-${Math.min(pagination.page * pagination.pageSize, rows.length)} de ${rows.length} clientes`} rowsPerPageLabel="Filas por página" previousLabel="Página anterior" nextLabel="Página siguiente" /> : undefined}
-        />
+        </section>
     );
 }

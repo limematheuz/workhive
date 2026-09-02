@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { CalendarIcon, Clock3 } from "lucide-react";
+import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 import { Calendar } from "@/components/ui/calendar";
@@ -24,8 +25,6 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
     const minutes = index % 2 === 0 ? "00" : "30";
     return `${hours}:${minutes}`;
 });
-const dateFormatter = new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
-
 function parseDate(value: string | null) {
     if (!value) return undefined;
     const date = new Date(value);
@@ -34,7 +33,7 @@ function parseDate(value: string | null) {
 
 function formatDate(value: Date | undefined) {
     if (!value) return "";
-    return dateFormatter.format(value);
+    return format(value, "dd/MM/yyyy");
 }
 
 function toLocalIso(date: Date, time: string) {
@@ -48,21 +47,13 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
     const selectedDate = parseDate(value);
     const [open, setOpen] = React.useState(false);
     const [month, setMonth] = React.useState<Date | undefined>(selectedDate);
-    const [text, setText] = React.useState(() => formatDate(selectedDate));
     const time = selectedDate
         ? `${String(selectedDate.getHours()).padStart(2, "0")}:${String(selectedDate.getMinutes()).padStart(2, "0")}`
         : "09:00";
 
-    React.useEffect(() => {
-        const nextSelectedDate = parseDate(value);
-        setText(formatDate(nextSelectedDate));
-        if (nextSelectedDate) setMonth(nextSelectedDate);
-    }, [value]); // Keep external saves/reset in sync with the shared calendar field.
-
     const selectDate = (date: Date | undefined) => {
         if (!date) return;
         onValueChange(toLocalIso(date, time));
-        setText(formatDate(date));
         setMonth(date);
         setOpen(false);
     };
@@ -72,7 +63,7 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
             <InputGroup className={cn("h-10 overflow-hidden rounded-xl shadow-none", formControlSurfaceClassName)}>
                 <InputGroupInput
                     id={id}
-                    value={text}
+                    value={formatDate(selectedDate)}
                     placeholder={placeholder}
                     readOnly
                     className="dialog-compact-control !border-0 !bg-transparent !shadow-none"

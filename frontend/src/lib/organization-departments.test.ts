@@ -19,6 +19,10 @@ test("organization departments use the shared shadcn table and safe management s
     assert.match(panel, /wouldCreateDepartmentCycle/);
     assert.match(panel, /UNKNOWN_USAGE/);
     assert.match(panel, /department\.usage \?\? UNKNOWN_USAGE/);
+    assert.match(panel, /from "@\/components\/ui\/card"/);
+    assert.match(panel, /hidden lg:block/);
+    assert.match(panel, /grid gap-2\.5 p-3 lg:hidden/);
+    assert.match(panel, /function DepartmentCard/);
     assert.match(service, /updateDepartment/);
     assert.match(service, /deleteDepartment/);
     assert.match(service, /response\.status === 204/);
