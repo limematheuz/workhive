@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    CheckConstraint,
     UniqueConstraint,
     func,
 )
@@ -15,6 +16,10 @@ from sqlalchemy import (
 class Client(Base):
     __tablename__ = "clients"
     __table_args__ = (
+        CheckConstraint(
+            "relationship_status IN ('lead', 'client')",
+            name="ck_client_relationship_status",
+        ),
         UniqueConstraint(
             "company_id",
             "legal_number",
@@ -24,6 +29,9 @@ class Client(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, index=True)
     client_type = Column(String(20), nullable=False, default="individual", index=True)
+    relationship_status = Column(
+        String(20), nullable=False, default="client", index=True
+    )
     legal_number = Column(String(20), nullable=True, index=True)
     address = Column(String(255), nullable=False)
     city = Column(String(100), nullable=False)
@@ -40,6 +48,12 @@ class Client(Base):
 
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     company = relationship("Company", back_populates="clients")
+
+    contacts = relationship(
+        "ClientContact",
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )
 
     locations = relationship("Location", back_populates="client")
 

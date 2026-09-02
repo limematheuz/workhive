@@ -81,6 +81,12 @@ export function ClientsTable({
         return <Badge className="border border-accent/20 bg-accent/10 text-[10px] font-semibold text-accent">{label}</Badge>;
     };
 
+    const relationshipBadge = (client: Client) => (
+        <Badge variant="secondary" className="text-[10px] font-semibold">
+            {client.relationship_status === "lead" ? dict.clients.form.relationship_status_lead : dict.clients.form.relationship_status_client}
+        </Badge>
+    );
+
     const renderActions = (client: Client) => (
         <ActionPopover
             align="end"
@@ -129,7 +135,7 @@ export function ClientsTable({
                     <div className="flex items-start gap-3">
                         <div className="min-w-0 flex-1">
                             <ClientIdentity row={row} noTaxId={workspace.no_tax_id} />
-                            <div className="mt-2 flex flex-wrap items-center gap-2">{typeBadge(row.client)}{statusBadge(row.client)}</div>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">{typeBadge(row.client)}{relationshipBadge(row.client)}{statusBadge(row.client)}</div>
                         </div>
                         <div onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</div>
                     </div>
@@ -144,7 +150,7 @@ export function ClientsTable({
             renderDesktopRow={(row) => (
                 <>
                     <ClientIdentity row={row} noTaxId={workspace.no_tax_id} />
-                    <div>{typeBadge(row.client)}</div>
+                    <div className="flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}</div>
                     <div className="min-w-0 text-xs text-[var(--text-muted)]">
                         <p className="truncate font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p>
                         <p className="mt-0.5 truncate">{row.client.address || row.client.city}</p>

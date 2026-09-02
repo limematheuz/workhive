@@ -10,6 +10,7 @@ const tabs = readFileSync(new URL("../components/clients/ClientDetailDialogTabsS
 const clientForm = readFileSync(new URL("../components/clients/ClientFormFields.tsx", import.meta.url), "utf8");
 const clientFilters = readFileSync(new URL("../components/clients/ClientWorkspaceFilters.tsx", import.meta.url), "utf8");
 const clientStats = readFileSync(new URL("../components/clients/ClientWorkspaceStats.tsx", import.meta.url), "utf8");
+const clientContacts = readFileSync(new URL("../components/clients/ClientContactsTab.tsx", import.meta.url), "utf8");
 
 test("client workspace uses shared surfaces and keeps all API reads in services", () => {
     assert.match(page, /ClientWorkspaceStats/);
@@ -48,6 +49,22 @@ test("client create and edit share every persisted client field", () => {
     assert.match(clientForm, /name="postal_code"/);
     assert.match(clientForm, /name="country"/);
     assert.match(clientForm, /id: "company"/);
+    assert.match(clientForm, /relationshipStatus/);
+    assert.match(clientForm, /SelectTrigger/);
+});
+
+test("client lifecycle and contacts use the shared shadcn controls", () => {
+    assert.match(clientFilters, /filter_relationship/);
+    assert.match(clientFilters, /SelectTrigger/);
+    assert.doesNotMatch(clientFilters, /<select/);
+    assert.match(tabs, /ClientContactsTab/);
+    assert.match(clientContacts, /ClientService\.getClientContacts/);
+    assert.match(clientContacts, /ClientService\.createClientContact/);
+    assert.match(clientContacts, /ClientService\.updateClientContact/);
+    assert.match(clientContacts, /ClientService\.deactivateClientContact/);
+    assert.match(clientContacts, /DeleteConfirmDialog/);
+    assert.match(clientContacts, /Checkbox/);
+    assert.doesNotMatch(clientContacts, /fetch\s*\(/);
 });
 
 test("client workspace keeps dark search placeholders and only shows data-backed percent badges", () => {

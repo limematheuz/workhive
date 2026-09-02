@@ -105,6 +105,16 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("membership_permission_profile_scopes")
         }
+        client_columns = {
+            column["name"] for column in inspector.get_columns("clients")
+        }
+        client_contact_columns = {
+            column["name"] for column in inspector.get_columns("client_contacts")
+        }
+        client_contact_role_columns = {
+            column["name"]
+            for column in inspector.get_columns("client_contact_roles")
+        }
         calendar_connection_unique_constraints = {
             tuple(constraint["column_names"])
             for constraint in inspector.get_unique_constraints(
@@ -223,7 +233,93 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "scope_type",
         "scope_id",
     } <= permission_scope_columns
+    assert "relationship_status" in client_columns
+    assert {
+        "id",
+        "client_id",
+        "full_name",
+        "email",
+        "phone",
+        "job_title",
+        "is_primary",
+        "is_active",
+    } <= client_contact_columns
+    assert {"id", "client_contact_id", "role"} <= client_contact_role_columns
     assert ("company_id",) in calendar_connection_unique_constraints
+
+
+@pytest.mark.skipif(
+    not os.getenv("MIGRATION_TEST_DATABASE_URL"),
+    reason="PostgreSQL migration contract runs in CI",
+)
+def test_client_contact_migration_preserves_legacy_contact_details():
+    config = Config("alembic.ini")
+    engine = _migration_engine()
+    suffix = uuid4().hex[:10]
+    try:
+        command.downgrade(config, "q6r7s8t9u0v1")
+        with engine.begin() as connection:
+            company_id = connection.execute(
+                text(
+                    """
+                    INSERT INTO companies (name, tax_id, address, phone, email)
+                    VALUES (:name, :tax_id, 'Migration address', '600000022', :email)
+                    RETURNING id
+                    """
+                ),
+                {
+                    "name": f"Client contact migration {suffix}",
+                    "tax_id": f"CONTACT-{suffix}",
+                    "email": f"contact-{suffix}@example.test",
+                },
+            ).scalar_one()
+            client_id = connection.execute(
+                text(
+                    """
+                    INSERT INTO clients (
+                        name, client_type, address, city, postal_code, country,
+                        email, phone, is_active, company_id
+                    ) VALUES (
+                        :name, 'company', 'Migration street 1', 'Madrid', '28001',
+                        'España', :email, :phone, true, :company_id
+                    ) RETURNING id
+                    """
+                ),
+                {
+                    "name": f"Legacy contact {suffix}",
+                    "email": f"legacy-{suffix}@example.test",
+                    "phone": "600000023",
+                    "company_id": company_id,
+                },
+            ).scalar_one()
+
+        command.upgrade(config, "head")
+        with engine.connect() as connection:
+            contact = connection.execute(
+                text(
+                    """
+                    SELECT full_name, email, phone, is_primary, is_active
+                    FROM client_contacts
+                    WHERE client_id = :client_id
+                    """
+                ),
+                {"client_id": client_id},
+            ).mappings().one()
+            relationship_status = connection.execute(
+                text("SELECT relationship_status FROM clients WHERE id = :client_id"),
+                {"client_id": client_id},
+            ).scalar_one()
+    finally:
+        engine.dispose()
+
+    assert contact == {
+        "full_name": f"Legacy contact {suffix}",
+        "email": f"legacy-{suffix}@example.test",
+        "phone": "600000023",
+        "is_primary": True,
+        "is_active": True,
+    }
+    assert relationship_status == "client"
 
 
 @pytest.mark.skipif(

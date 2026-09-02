@@ -57,6 +57,7 @@ export function ClientDetailDialogHeader({
                 <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                         <DialogTitle className="truncate text-2xl font-bold text-[var(--text-main)]">{client.name}</DialogTitle>
+                        <Badge variant="secondary">{client.relationship_status === "lead" ? dict.clients.form.relationship_status_lead : dict.clients.form.relationship_status_client}</Badge>
                         <Badge className={client.is_active ? "border border-emerald-500/20 bg-emerald-500/10 text-emerald-700" : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}>{client.is_active ? dict.clients.table.active : dict.clients.table.inactive}</Badge>
                     </div>
                     <DialogDescription className="mt-1 font-mono text-xs">{dict.clients.title} · {client.legal_number || workspace.no_tax_id}</DialogDescription>

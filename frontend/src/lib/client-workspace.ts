@@ -40,6 +40,7 @@ export type ClientWorkspaceFilter = {
     search: string;
     status: "all" | "active" | "inactive";
     clientType: "all" | Client["client_type"];
+    relationship: "all" | "lead" | "client";
     city: string;
     contact: "all" | "complete" | "missing";
 };
@@ -216,6 +217,8 @@ export function filterClientWorkspaceRows(
             || (filters.status === "active" && client.is_active)
             || (filters.status === "inactive" && !client.is_active);
         const matchesType = filters.clientType === "all" || client.client_type === filters.clientType;
+        const matchesRelationship = filters.relationship === "all"
+            || (client.relationship_status ?? "client") === filters.relationship;
         const matchesCity = !filters.city || client.city === filters.city;
         const matchesContact = filters.contact === "all"
             || (filters.contact === "complete" && row.hasContact)
@@ -229,7 +232,7 @@ export function filterClientWorkspaceRows(
             client.city,
         ].some((value) => value?.toLocaleLowerCase().includes(search));
 
-        return matchesStatus && matchesType && matchesCity && matchesContact && matchesSearch;
+        return matchesStatus && matchesType && matchesRelationship && matchesCity && matchesContact && matchesSearch;
     });
 }
 

@@ -1,7 +1,12 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api"
-import { Client } from "@/types/client"
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
+import {
+    Client,
+    ClientContact,
+    ClientContactPayload,
+    ClientContactRole,
+} from "@/types/client"
 
-export type { Client };
+export type { Client, ClientContact, ClientContactPayload, ClientContactRole };
 
 export type ClientEmailPayload = {
     recipient_emails: string[];
@@ -83,5 +88,40 @@ export const ClientService = {
             throw new Error(await extractErrorMessage(response, "Error sending client email"))
         }
         return await response.json()
-    }
+    },
+
+    getClientContacts: async (clientId: number): Promise<ClientContact[]> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "No se pudieron cargar los contactos");
+        return await response.json();
+    },
+
+    createClientContact: async (clientId: number, data: ClientContactPayload): Promise<ClientContact> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo crear el contacto");
+        return await response.json();
+    },
+
+    updateClientContact: async (clientId: number, contactId: number, data: Partial<ClientContactPayload>): Promise<ClientContact> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts/${contactId}`, {
+            method: "PATCH",
+            body: JSON.stringify(data),
+        });
+        await assertApiResponseOk(response, "No se pudo actualizar el contacto");
+        return await response.json();
+    },
+
+    deactivateClientContact: async (clientId: number, contactId: number): Promise<ClientContact> => {
+        const response = await apiFetch(`/api/v1/clients/${clientId}/contacts/${contactId}`, {
+            method: "DELETE",
+        });
+        await assertApiResponseOk(response, "No se pudo desactivar el contacto");
+        return await response.json();
+    },
 }

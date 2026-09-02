@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, ListChecks, MapPin, PanelTop } from "lucide-react";
+import { FileText, ListChecks, MapPin, PanelTop, UsersRound } from "lucide-react";
 
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -11,11 +11,12 @@ import type { TaskItem } from "@/services/task.service";
 import type { Invoice } from "@/types/invoice";
 
 import { ClientDetailBillingTab } from "./ClientDetailBillingTab";
+import { ClientContactsTab } from "./ClientContactsTab";
 import { ClientDetailLocationsTab } from "./ClientDetailLocationsTab";
 import { ClientDetailOverview } from "./ClientDetailOverview";
 import { ClientDetailTasksTab } from "./ClientDetailTasksTab";
 
-export type ClientDetailTab = "overview" | "locations" | "tasks" | "billing";
+export type ClientDetailTab = "overview" | "contacts" | "locations" | "tasks" | "billing";
 
 type ClientDetailDialogTabsSectionProps = {
     activeTab: ClientDetailTab;
@@ -27,6 +28,7 @@ type ClientDetailDialogTabsSectionProps = {
     filteredTasks: TaskItem[];
     invoices: Invoice[];
     financialDataAvailable: boolean;
+    canManage: boolean;
     taskSearch: string;
     onTaskSearchChange: (value: string) => void;
     taskStatusFilter: string;
@@ -46,6 +48,7 @@ export function ClientDetailDialogTabsSection({
     filteredTasks,
     invoices,
     financialDataAvailable,
+    canManage,
     taskSearch,
     onTaskSearchChange,
     taskStatusFilter,
@@ -58,6 +61,7 @@ export function ClientDetailDialogTabsSection({
     const workspace = dict.clients.workspace;
     const tabs = [
         { id: "overview" as const, label: workspace.overview, icon: PanelTop },
+        { id: "contacts" as const, label: dict.clients.contacts.tab, icon: UsersRound },
         { id: "locations" as const, label: `${workspace.locations} (${locations.length})`, icon: MapPin },
         { id: "tasks" as const, label: `${workspace.jobs} (${tasks.length})`, icon: ListChecks },
         ...(financialDataAvailable ? [{ id: "billing" as const, label: `${dict.invoices.title} (${invoices.length})`, icon: FileText }] : []),
@@ -67,6 +71,7 @@ export function ClientDetailDialogTabsSection({
         <>
             <PremiumTabs tabs={tabs} activeTab={activeTab} onChange={onActiveTabChange} className="mb-5" layout="scroll" />
             {activeTab === "overview" && <ClientDetailOverview client={client} row={row} locations={locations} tasks={tasks} financialDataAvailable={financialDataAvailable} onViewLocationTasks={onViewLocationTasks} onOpenLocations={() => onActiveTabChange("locations")} />}
+            {activeTab === "contacts" && <ClientContactsTab client={client} canManage={canManage} />}
             {activeTab === "locations" && <ClientDetailLocationsTab locations={locations} onViewLocationTasks={onViewLocationTasks} onClose={onClose} />}
             {activeTab === "tasks" && <ClientDetailTasksTab filteredTasks={filteredTasks} locations={locations} taskSearch={taskSearch} onTaskSearchChange={onTaskSearchChange} taskStatusFilter={taskStatusFilter} onTaskStatusFilterChange={onTaskStatusFilterChange} getAssigneeName={(userId) => userId == null ? workspace.unassigned : workspace.assigned} onViewTaskDetails={onViewTaskDetails} onClose={onClose} labels={{ search_task: dict.clients.details.search_task, all_statuses: dict.clients.details.all_statuses, status_pending: dict.clients.details.status_pending, status_in_progress: dict.clients.details.status_in_progress, status_completed: dict.clients.details.status_completed, no_tasks: dict.clients.details.no_tasks, task: workspace.task, assignment: workspace.assignment, open_task: workspace.open_task }} />}
             {activeTab === "billing" && financialDataAvailable && <ClientDetailBillingTab invoices={invoices} />}
