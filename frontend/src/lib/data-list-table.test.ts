@@ -20,6 +20,8 @@ test("shared DataListTable powers the remaining generic data lists", () => {
     assert.match(table, /export function DataListRow/);
     assert.match(table, /billing-block/);
     assert.match(table, /variant\?: "surface" \| "plain"/);
+    assert.match(table, /renderCompactRow/);
+    assert.match(table, /footer\?: ReactNode/);
 
     for (const [name, file] of [
         ["expenses", expenses],
@@ -54,10 +56,14 @@ test("invoice and quote lists use the shared shadcn table primitive", () => {
     const companies = source("../components/companies/CompaniesListSection.tsx");
     const clients = source("../components/clients/ClientsTable.tsx");
 
-    for (const [name, file] of [["invoices", invoices], ["quotes", quotes], ["invoiceable jobs", jobs], ["companies", companies], ["clients", clients]] as const) {
+    for (const [name, file] of [["invoices", invoices], ["quotes", quotes], ["invoiceable jobs", jobs], ["companies", companies]] as const) {
         assert.match(file, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
         assert.match(file, /<TableHeader>/, `${name} should render a TableHeader`);
         assert.match(file, /<TableBody>/, `${name} should render a TableBody`);
         assert.doesNotMatch(file, /DataListTable/, `${name} should not use the generic list table`);
     }
+
+    assert.match(clients, /DataListTable/);
+    assert.match(clients, /renderCompactRow/);
+    assert.doesNotMatch(clients, /from "@\/components\/ui\/table"/);
 });

@@ -5,7 +5,7 @@ import { Calculator, FileText, Landmark, Loader2, ReceiptText } from "lucide-rea
 
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { PageHeader } from "@/components/ui/page-header";
-import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
@@ -119,12 +119,12 @@ export default function FiscalSummaryPage() {
                     )}
                 />
 
-                <section className="grid grid-cols-2 gap-3 xl:grid-cols-4" aria-label={text.annual_totals}>
+                <SummaryMetricGrid desktopColumns={4} aria-label={text.annual_totals}>
                     <SummaryMetricCard label={text.output_vat} value={formatCurrency(summary.annual.output_vat_amount)} description={text.output_vat_desc} icon={ReceiptText} trend={previousSummary ? getMetricTrend(summary.annual.output_vat_amount, previousSummary.annual.output_vat_amount) : undefined} />
                     <SummaryMetricCard label={text.input_vat} value={formatCurrency(summary.annual.registered_input_vat_amount)} description={text.input_vat_desc} icon={FileText} trend={previousSummary ? getMetricTrend(summary.annual.registered_input_vat_amount, previousSummary.annual.registered_input_vat_amount) : undefined} />
                     <SummaryMetricCard label={vatBalanceLabel} value={formatCurrency(Math.abs(summary.annual.estimated_vat_balance))} description={text.vat_balance_desc} icon={Landmark} trend={previousSummary ? getMetricTrend(Math.abs(summary.annual.estimated_vat_balance), Math.abs(previousSummary.annual.estimated_vat_balance)) : undefined} />
                     <SummaryMetricCard label={text.irpf_withheld} value={formatCurrency(summary.annual.withheld_irpf_amount)} description={text.irpf_withheld_desc} icon={Calculator} trend={previousSummary ? getMetricTrend(summary.annual.withheld_irpf_amount, previousSummary.annual.withheld_irpf_amount) : undefined} />
-                </section>
+                </SummaryMetricGrid>
 
                 <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-muted)]">
                     {text.disclaimer}

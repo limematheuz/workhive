@@ -2,7 +2,7 @@
 
 import { Hash, ReceiptText, WalletCards } from "lucide-react";
 
-import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
 import { getPercentageChange } from "@/lib/metric-trend";
@@ -45,10 +45,10 @@ export function ExpenseSummaryCards({ total, tax, records, previous = null }: Ex
     ];
 
     return (
-        <section className="mt-5 grid grid-cols-2 gap-2.5 lg:grid-cols-3">
+        <SummaryMetricGrid desktopColumns={3} className="mt-5 gap-2.5">
             {cards.map((card) => (
                 <SummaryMetricCard key={card.label} {...card} />
             ))}
-        </section>
+        </SummaryMetricGrid>
     );
 }

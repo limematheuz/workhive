@@ -31,11 +31,10 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(page, /LocationService\.getLocations\(\)\.catch/);
     assert.match(page, /TaskService\.getAllTaskItems\(\)\.catch/);
     assert.doesNotMatch(page, /fetch\s*\(/);
-    assert.match(table, /from "@\/components\/ui\/table"/);
-    assert.match(table, /<TableHeader>/);
-    assert.match(table, /<TableBody>/);
+    assert.match(table, /DataListTable/);
+    assert.match(table, /renderCompactRow/);
+    assert.match(table, /desktopFrom="lg"/);
     assert.match(table, /DataTablePagination/);
-    assert.doesNotMatch(table, /DataListTable/);
 });
 
 test("client detail keeps a wide summary before edit and uses the shared tab control", () => {
@@ -57,12 +56,11 @@ test("client detail keeps one close action and its action menu appears over the 
     assert.match(dropdownMenu, /z-\[10110\]/);
 });
 
-test("every client data table uses the shared shadcn Table and pagination", () => {
+test("every client data table uses the shared responsive list and pagination", () => {
     for (const [name, source] of [["locations", clientLocations], ["tasks", clientTasks], ["billing", clientBilling], ["overview", overview]] as const) {
-        assert.match(source, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
-        assert.match(source, /<TableHeader>/, `${name} should render a table header`);
+        assert.match(source, /DataListTable/, `${name} should use the shared responsive table`);
+        assert.match(source, /renderCompactRow/, `${name} should render a compact mobile row`);
         assert.match(source, /DataTablePagination/, `${name} should use the shared table paginator`);
-        assert.doesNotMatch(source, /DataListTable/, `${name} should not use the generic list table`);
     }
 });
 
@@ -131,5 +129,7 @@ test("client dialogs keep their chrome translucent and reuse the shared form sur
 test("client workspace keeps dark search placeholders and only shows data-backed percent badges", () => {
     assert.match(clientFilters, /placeholder:text-\[var\(--text-muted\)\]/);
     assert.match(clientStats, /SummaryMetricCard/);
+    assert.match(clientStats, /SummaryMetricGrid/);
+    assert.match(overview, /SummaryMetricGrid/);
     assert.doesNotMatch(clientStats, /percentageOf|PercentageBadge/);
 });

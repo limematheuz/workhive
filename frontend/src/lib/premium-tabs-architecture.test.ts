@@ -15,6 +15,9 @@ test("PremiumTabs shell matches Vigentes bar metrics", () => {
     assert.match(source, /h-3\.5 w-3\.5/);
     assert.doesNotMatch(source, /md:h-4 md:w-4/);
     assert.match(source, /gap-1\.5 px-2 sm:gap-2 sm:px-3/);
+    assert.match(source, /<Select/);
+    assert.match(source, /sm:hidden/);
+    assert.match(source, /hidden h-auto.*sm:flex/);
 });
 
 test("ReservationsFilters reuses PremiumTabs for Vigentes/Historial", () => {

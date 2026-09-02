@@ -1,9 +1,39 @@
 import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-react";
+import type { ReactNode } from "react";
+
+import { cn } from "@/lib/utils";
 
 export type SummaryMetricTrend = {
     value: number;
     comparisonDirection?: "higher" | "lower";
 };
+
+type SummaryMetricGridProps = {
+    children: ReactNode;
+    /** Number of summary cards per row on wide screens. Mobile always uses two columns. */
+    desktopColumns?: 3 | 4 | 5 | 6;
+    className?: string;
+    "aria-label"?: string;
+};
+
+const desktopGridClassName = {
+    3: "lg:grid-cols-3",
+    4: "lg:grid-cols-4",
+    5: "xl:grid-cols-5",
+    6: "xl:grid-cols-6",
+} as const;
+
+/**
+ * Shared KPI layout: phone screens always keep two readable cards per row.
+ * An odd final card deliberately stays one cell wide instead of stretching.
+ */
+export function SummaryMetricGrid({ children, desktopColumns = 4, className, "aria-label": ariaLabel }: SummaryMetricGridProps) {
+    return (
+        <section aria-label={ariaLabel} className={cn("grid grid-cols-2 gap-3", desktopGridClassName[desktopColumns], className)}>
+            {children}
+        </section>
+    );
+}
 
 type SummaryMetricCardProps = {
     icon: LucideIcon;

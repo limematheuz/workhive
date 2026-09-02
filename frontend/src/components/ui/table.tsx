@@ -4,8 +4,18 @@ import { cn } from "@/lib/utils"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
-      <table data-slot="table" className={cn("w-full caption-bottom text-sm", className)} {...props} />
+    <div data-slot="table-container" className="relative w-full overflow-x-auto max-md:overflow-visible">
+      <table
+        data-slot="table"
+        className={cn(
+          "w-full caption-bottom text-sm",
+          "max-md:!min-w-0 max-md:block max-md:[&_thead]:sr-only max-md:[&_tbody]:block",
+          "max-md:[&_tr]:mb-2 max-md:[&_tr]:block max-md:[&_tr]:rounded-2xl max-md:[&_tr]:border max-md:[&_tr]:border-[var(--border-soft)] max-md:[&_tr]:bg-[var(--bg-secondary)]/20",
+          "max-md:[&_td]:flex max-md:[&_td]:w-full max-md:[&_td]:items-center max-md:[&_td]:justify-between max-md:[&_td]:gap-3 max-md:[&_td]:px-3 max-md:[&_td]:py-2.5",
+          className,
+        )}
+        {...props}
+      />
     </div>
   )
 }

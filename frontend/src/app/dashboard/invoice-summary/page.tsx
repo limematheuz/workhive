@@ -6,7 +6,7 @@ import { CheckCircle2, Clock3, Download, FileSpreadsheet, FileText, Loader2, Pen
 import { SalesLedgerImportDialog } from "@/components/invoices/SalesLedgerImportDialog";
 import { SalesLedgerRecordDialog } from "@/components/invoices/SalesLedgerRecordDialog";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
-import { SummaryMetricCard } from "@/components/ui/summary-metric-card";
+import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
@@ -179,13 +179,13 @@ export default function InvoiceSummaryPage() {
             <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-4">
                 <PageHeader icon={ReceiptText} title={copy.ledger_title} subtitle={copy.ledger_subtitle} />
 
-                <section className="grid grid-cols-2 gap-3 xl:grid-cols-5" aria-label={copy.ledger_totals}>
+                <SummaryMetricGrid desktopColumns={5} aria-label={copy.ledger_totals}>
                     <SummaryMetricCard label={copy.ledger_base} value={formatCurrency(totals.base)} icon={FileText} trend={previousTotals ? toTrend(totals.base, previousTotals.base) : undefined} />
                     <SummaryMetricCard label={copy.ledger_vat} value={formatCurrency(totals.tax)} icon={ReceiptText} trend={previousTotals ? toTrend(totals.tax, previousTotals.tax) : undefined} />
                     <SummaryMetricCard label={copy.ledger_total} value={formatCurrency(totals.total)} icon={FileText} trend={previousTotals ? toTrend(totals.total, previousTotals.total) : undefined} />
                     <SummaryMetricCard label={copy.ledger_paid} value={formatCurrency(totals.paid)} icon={CheckCircle2} trend={previousTotals ? toTrend(totals.paid, previousTotals.paid) : undefined} />
                     <SummaryMetricCard label={copy.ledger_pending} value={formatCurrency(totals.pending)} icon={Clock3} trend={previousTotals ? toTrend(totals.pending, previousTotals.pending, "lower") : undefined} />
-                </section>
+                </SummaryMetricGrid>
 
                 <DataListTable
                     items={rows}

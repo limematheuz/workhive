@@ -38,6 +38,8 @@ type DataListTableProps<T> = {
     className?: string;
     /** Extra content rendered above the rows (filters, etc.). */
     toolbar?: ReactNode;
+    /** Pagination or other controls rendered below both desktop and compact rows. */
+    footer?: ReactNode;
 };
 
 export function DataListRow({
@@ -106,6 +108,7 @@ export function DataListTable<T>({
     variant = "surface",
     className,
     toolbar,
+    footer,
 }: DataListTableProps<T>) {
     const compactHidden = desktopFrom === "lg" ? "lg:hidden" : "md:hidden";
     const desktopHidden = desktopFrom === "lg" ? "hidden lg:block" : "hidden md:block";
@@ -187,6 +190,7 @@ export function DataListTable<T>({
             </div>
             </>
             )}
+            {footer}
         </section>
     );
 }
