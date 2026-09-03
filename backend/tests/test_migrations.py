@@ -106,6 +106,10 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("membership_permission_profile_scopes")
         }
+        external_access_grant_columns = {
+            column["name"]
+            for column in inspector.get_columns("external_access_grants")
+        }
         client_columns = {
             column["name"] for column in inspector.get_columns("clients")
         }
@@ -242,6 +246,16 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "scope_type",
         "scope_id",
     } <= permission_scope_columns
+    assert {
+        "company_id",
+        "user_id",
+        "access_type",
+        "status",
+        "expires_at",
+        "granted_by_user_id",
+        "revoked_by_user_id",
+        "revoked_at",
+    } <= external_access_grant_columns
     assert "relationship_status" in client_columns
     assert {
         "id",
@@ -486,12 +500,31 @@ def test_enterprise_access_migration_backfills_legacy_company_users():
                 .mappings()
                 .all()
             )
+            external_grants = (
+                connection.execute(
+                    text(
+                        """
+                        SELECT users.email, grants.access_type, grants.status
+                        FROM external_access_grants AS grants
+                        JOIN users ON users.id = grants.user_id
+                        WHERE users.email LIKE :email_pattern
+                        ORDER BY users.email
+                        """
+                    ),
+                    {"email_pattern": f"enterprise-%-{suffix}@example.test"},
+                )
+                .mappings()
+                .all()
+            )
+            accountant_role_count = connection.execute(
+                text("SELECT count(*) FROM roles WHERE name = 'accountant'")
+            ).scalar_one()
 
         assert [dict(membership) for membership in memberships] == [
             {
                 "email": f"enterprise-accountant-{suffix}@example.test",
                 "access_class": "responsible",
-                "status": "active",
+                "status": "archived",
             },
             {
                 "email": f"enterprise-admin-{suffix}@example.test",
@@ -522,6 +555,14 @@ def test_enterprise_access_migration_backfills_legacy_company_users():
         assert [dict(scope) for scope in administrator_scope] == [
             {"scope_type": "company", "scope_id": company_id}
         ]
+        assert [dict(grant) for grant in external_grants] == [
+            {
+                "email": f"enterprise-accountant-{suffix}@example.test",
+                "access_type": "accountant",
+                "status": "active",
+            }
+        ]
+        assert accountant_role_count == 0
     finally:
         command.upgrade(config, "head")
         engine.dispose()

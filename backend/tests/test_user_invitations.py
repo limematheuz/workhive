@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 from app.core.security import get_password_hash
 from app.models.company import Company
+from app.models.external_access_grant import ExternalAccessGrant
 from app.models.privacy_consent import PrivacyConsent
 from app.models.user import User
 from app.models.user_invitation import UserInvitation
@@ -124,6 +125,54 @@ def test_worker_is_created_only_after_email_code_verification(client, db, monkey
         json=_accept_payload(token, str(sent["verification_code"])),
     )
     assert replay.status_code == 400
+
+
+def test_external_accountant_invitation_creates_a_grant_not_an_internal_membership(
+    client, db, monkeypatch
+):
+    headers, company_id = _register_company(client, "external-accountant")
+    sent = _capture_invitation(monkeypatch)
+
+    invitation_response = client.post(
+        "/api/v1/user-invitations/",
+        headers=headers,
+        json={
+            "email": "gestoria@external.example.com",
+            "full_name": "Gestoría externa",
+            "role_id": 5,
+        },
+    )
+    assert invitation_response.status_code == 202, invitation_response.text
+
+    accepted = client.post(
+        "/api/v1/user-invitations/accept",
+        json=_accept_payload(_invitation_token(sent), str(sent["verification_code"])),
+    )
+    assert accepted.status_code == 200, accepted.text
+
+    accountant = (
+        db.query(User).filter(User.email == "gestoria@external.example.com").one()
+    )
+    assert accountant.role.name == "external_portal"
+    assert (
+        db.query(CompanyMembership)
+        .filter(
+            CompanyMembership.company_id == company_id,
+            CompanyMembership.user_id == accountant.id,
+        )
+        .count()
+        == 0
+    )
+    grant = (
+        db.query(ExternalAccessGrant)
+        .filter(
+            ExternalAccessGrant.company_id == company_id,
+            ExternalAccessGrant.user_id == accountant.id,
+        )
+        .one()
+    )
+    assert grant.access_type == "accountant"
+    assert grant.status == "active"
 
 
 def test_worker_invitation_requires_manager_or_admin(client):

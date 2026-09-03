@@ -58,6 +58,7 @@ from app.models.company_membership import (
     Team,
     TeamMembership,
 )
+from app.models.external_access_grant import ExternalAccessGrant
 from app.models.permission_profile import (
     MembershipPermissionProfileAssignment,
     MembershipPermissionProfileScope,

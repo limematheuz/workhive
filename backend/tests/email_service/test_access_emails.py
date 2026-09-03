@@ -133,12 +133,31 @@ def test_worker_invitation_email_without_name(monkeypatch):
         invitation_url="https://example.com/invite",
         verification_code="ZZ99",
         expires_at=datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc),
-        role_name="accountant",
+        role_name="external_portal",
     )
 
     plain = plain_body(delivered["message"])
     assert plain.startswith("Hola,")
     assert "área financiera" in plain
+
+
+def test_external_accountant_invitation_describes_limited_finance_access(monkeypatch):
+    delivered = capture_send(monkeypatch)
+    expires_at = datetime(2026, 8, 15, 12, 0, tzinfo=timezone.utc)
+
+    assert worker_invitation_emails.send_worker_invitation_email(
+        recipient_email="gestoria@example.com",
+        recipient_name="Gestoría",
+        company_name="Acme",
+        invitation_url="https://example.com/invite",
+        verification_code="AB12CD",
+        expires_at=expires_at,
+        role_name="external_portal",
+    )
+
+    message = delivered["message"]
+    assert message["Subject"] == "Te han invitado como gestoría externa: Acme"
+    assert "solo lectura al área financiera" in plain_body(message)
 
 
 def test_company_invitation_describes_the_selected_relationship(monkeypatch):

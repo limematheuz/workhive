@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership, Department, Team
+from app.models.external_access_grant import ExternalAccessGrant
 from app.models.subscription_entitlement import (
     CompanyEntitlementOverride,
     CompanySubscription,
@@ -200,6 +201,29 @@ def count_active_teams(db: Session, *, company_id: int) -> int:
     return int(
         db.query(func.count(Team.id))
         .filter(Team.company_id == company_id, Team.is_active.is_(True))
+        .scalar()
+        or 0
+    )
+
+
+def count_active_external_access_grants(
+    db: Session,
+    *,
+    company_id: int,
+    access_type: str,
+    now: datetime,
+) -> int:
+    return int(
+        db.query(func.count(ExternalAccessGrant.id))
+        .filter(
+            ExternalAccessGrant.company_id == company_id,
+            ExternalAccessGrant.access_type == access_type,
+            ExternalAccessGrant.status == "active",
+            or_(
+                ExternalAccessGrant.expires_at.is_(None),
+                ExternalAccessGrant.expires_at > now,
+            ),
+        )
         .scalar()
         or 0
     )

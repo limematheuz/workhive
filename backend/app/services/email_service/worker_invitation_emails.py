@@ -16,9 +16,9 @@ from app.services.email_service.layout import (
 
 
 def _invitation_copy(role_name: str) -> tuple[str, str, str]:
-    if role_name == "accountant":
+    if role_name == "external_portal":
         return (
-            "Te han invitado como gestor financiero",
+            "Te han invitado como gestoría externa",
             "Tendrás acceso limitado y de solo lectura al área financiera de la empresa.",
             "Crear mi acceso de gestor",
         )

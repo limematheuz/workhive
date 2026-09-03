@@ -172,6 +172,28 @@ def require_internal_member_capacity(
     )
 
 
+def require_accountant_portal_capacity(
+    db: Session,
+    *,
+    company_id: int,
+) -> None:
+    """Reserve a portal entitlement without consuming an internal seat."""
+
+    now = _utcnow()
+    _require_quota(
+        db,
+        company_id=company_id,
+        code="limits.accountant_portals",
+        count_current=lambda: entitlement_repo.count_active_external_access_grants(
+            db,
+            company_id=company_id,
+            access_type="accountant",
+            now=now,
+        ),
+        resource_label="accountant portal users",
+    )
+
+
 def require_department_capacity(db: Session, *, company_id: int) -> None:
     _require_quota(
         db,

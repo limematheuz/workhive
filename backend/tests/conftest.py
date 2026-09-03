@@ -102,7 +102,11 @@ def db():
         Role(id=2, name="manager", description="Manager"),
         Role(id=3, name="viewer", description="Viewer"),
         Role(id=4, name="superadmin", description="Superadmin"),
-        Role(id=5, name="accountant", description="External accountant"),
+        Role(
+            id=5,
+            name="external_portal",
+            description="External portal user; access comes from company grants",
+        ),
     ]
     session.add_all(roles)
     seed_default_plan_catalog(session)

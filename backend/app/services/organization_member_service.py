@@ -148,14 +148,6 @@ def update_member(
     ):
         conflict("You cannot remove or suspend your own company administration access")
     if (
-        membership.user.role
-        and membership.user.role.name == "accountant"
-        and payload.access_class
-    ):
-        conflict(
-            "The accountant role will move through the dedicated external portal migration"
-        )
-    if (
         membership.access_class == "admin"
         and membership.status == "active"
         and (next_access_class != "admin" or next_status != "active")
@@ -184,7 +176,7 @@ def update_member(
     if (
         payload.access_class
         and membership.user.role
-        and membership.user.role.name != "accountant"
+        and membership.user.role.name != "external_portal"
     ):
         role_name = {"admin": "admin", "responsible": "manager", "worker": "viewer"}[
             payload.access_class

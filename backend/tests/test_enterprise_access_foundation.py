@@ -64,7 +64,7 @@ def test_company_membership_accepts_only_the_internal_access_classes(db):
     invalid_membership = CompanyMembership(
         user_id=user.id,
         company_id=company.id,
-        access_class="accountant",
+        access_class="external_portal",
         status="active",
     )
     db.add(invalid_membership)

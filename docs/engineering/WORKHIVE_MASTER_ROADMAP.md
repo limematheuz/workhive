@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 2 de septiembre de 2026.
+Actualizado: 3 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -69,6 +69,9 @@ como WorkHive Core solo cuando el caso real las exige.
   confirmación explícita en el panel de plataforma.
 - ✅ La prueba usa las capacidades de Top; una invitación pendiente no consume
   plaza hasta convertirse en miembro activo.
+- ✅ Las plazas internas y los accesos externos se cuentan por límites
+  distintos. Una gestoría aceptada consume `limits.accountant_portals`, nunca
+  una plaza interna; una invitación pendiente no reserva ninguno de los dos.
 - ⬜ Definir la política comercial de ampliaciones y funcionalidades Custom.
 - ⬜ Construir el panel comercial de superadmin: MRR, activas, impagos,
   upgrades, churn e ingresos por plan.
@@ -80,6 +83,24 @@ como WorkHive Core solo cuando el caso real las exige.
   **Responsable**, **Persona de contacto** y **Próximo paso**.
 - ✅ Un seguimiento registra conversación, visita, propuesta y actividad; no
   mezcla presupuestos, facturas ni cobros.
+
+### Equipo interno y accesos externos
+
+- ✅ Administración, Operaciones, Comercial, Finanzas y Consulta son perfiles
+  internos asignados a `CompanyMembership`; no representan a una gestoría ni a
+  un cliente.
+- ✅ **Gestoría externa** usa `ExternalAccessGrant` por empresa y el rol
+  técnico `external_portal`: no recibe membresía, departamento, equipo,
+  perfil interno ni plaza interna.
+- ✅ El acceso de gestoría actual es revocable y de solo lectura a Finanzas
+  (`finance.read`), exige la funcionalidad `features.accountant_portal` y se
+  limita a la empresa que emitió el grant.
+- ✅ Los antiguos usuarios con rol `accountant` se convierten de forma
+  conciliable: grant activo, membresía archivada, invitaciones convertidas y
+  rol retirado. El recorrido se validó en PostgreSQL sobre una base efímera.
+- ⬜ Los portales de cliente y partner, el selector de varias empresas para una
+  persona externa y sus políticas propias se diseñarán como entregas separadas;
+  nunca heredarán perfiles internos por defecto.
 
 ### Stripe
 
@@ -103,6 +124,7 @@ como WorkHive Core solo cuando el caso real las exige.
 | --- | --- |
 | Organización | `CompanyMembership`, departamentos, equipos y sus pertenencias. |
 | Autorización | Catálogo de permisos, perfiles, asignaciones y scopes por empresa, departamento, equipo o ubicación. |
+| Acceso externo | `ExternalAccessGrant` revocable por empresa. La gestoría actual solo recibe `finance.read`; cliente y partner requieren políticas distintas. |
 | Suscripción | Planes, entitlements, precios, suscripciones, overrides y auditoría. |
 | Privacidad | Solicitud de supresión separada de suspender o retirar a una persona de una empresa. |
 
@@ -177,9 +199,15 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ La decisión de cuota para invitación, activación y promoción se serializa
   con bloqueo de empresa; hay regresiones para aceptación de invitación,
   reactivación y promoción sin mutación al alcanzar el límite.
+- ✅ Gestoría externa ya está separada de las plazas y perfiles internos:
+  `ExternalAccessGrant`, invitación, límite propio, revocación y acceso
+  financiero de solo lectura están cubiertos con regresiones permitidas,
+  denegadas y de aislamiento. La migración heredada se comprobó en PostgreSQL
+  aislado antes de marcar este punto.
 - ⬜ Prueba de carga concurrente sobre PostgreSQL para confirmar la semántica
   de bloqueo de la base de datos de producción.
-- ⬜ Migración completa de roles heredados a plazas y perfiles base.
+- ✅ Migración completa del rol heredado `accountant` a acceso externo; las
+  plazas y perfiles base permanecen exclusivamente internos.
 - ⬜ Verificación end-to-end del ciclo completo de supresión, incluida la
   revisión por empresa, escalado de plataforma y retención legal disociada.
 
@@ -249,7 +277,10 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 9 — Portales e integraciones
 
 - ✅ Colaboración externa y Google Calendar existen de forma parcial.
-- ⬜ Portal de cliente, partner/inmobiliaria y gestoría.
+- ✅ Base de portal de gestoría: acceso externo por empresa, revocable y de
+  solo lectura financiera, sin plaza ni membresía interna.
+- ⬜ Portal de cliente y partner/inmobiliaria, y selector de varias empresas
+  para gestores externos.
 - ⬜ Aplicación ampliada de trabajador, API pública e integraciones auditables.
 - ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
 
@@ -270,7 +301,8 @@ cualquier punto como ✅.
 
 ## 7. Orden de trabajo vigente
 
-1. Completar Fase 1: matriz de autorización y cuotas transaccionales.
+1. Cerrar los dos puntos restantes de Fase 1: prueba de carga concurrente en
+   PostgreSQL y ciclo completo de supresión/retención.
 2. Completar Fase 2: prospectos, cartera comercial y perfil Comercial seguro.
 3. Construir Fase 3: catálogo, revisiones y contratos.
 4. Completar Ubicaciones Enterprise y evolucionar trabajos a órdenes.
