@@ -74,9 +74,12 @@ def team_response(db: Session, team: Team) -> TeamResponse:
             can_deactivate=(
                 usage["active_member_assignments"] == 0
                 and usage["active_profile_scopes"] == 0
+                and usage["locations"] == 0
             ),
             can_delete=(
-                usage["member_assignments"] == 0 and usage["profile_scopes"] == 0
+                usage["member_assignments"] == 0
+                and usage["profile_scopes"] == 0
+                and usage["locations"] == 0
             ),
         ),
     )
@@ -87,14 +90,19 @@ def team_in_use(usage: dict[str, int], *, action: str) -> None:
         dependencies = {
             "member_assignments": usage["active_member_assignments"],
             "profile_scopes": usage["active_profile_scopes"],
+            "locations": usage["locations"],
         }
         message = (
-            "Remove the active members and permission scopes before deactivating it"
+            "Remove the active members, permission scopes, and linked locations before deactivating it"
         )
+    elif action == "reassign":
+        dependencies = {"locations": usage["locations"]}
+        message = "Move the linked locations before changing the team's department"
     else:
         dependencies = {
             "member_assignments": usage["member_assignments"],
             "profile_scopes": usage["profile_scopes"],
+            "locations": usage["locations"],
         }
         message = "Resolve the team's linked records before deleting it"
     raise HTTPException(
@@ -153,6 +161,14 @@ def update_department(
     if not department:
         not_found("Department")
     updates = payload.model_dump(exclude_unset=True)
+    if updates.get("is_active") is False and department.is_active:
+        usage = department_repo.get_department_usage(
+            db,
+            company_id=company_id,
+            department_id=department.id,
+        )
+        if usage["locations"]:
+            department_in_use(usage)
     if "parent_department_id" in updates:
         department_policy.validate_department_parent(
             db,
@@ -243,8 +259,21 @@ def update_team(
         usage = organization_repo.get_team_usage(
             db, company_id=company_id, team_id=team.id
         )
-        if usage["active_member_assignments"] or usage["active_profile_scopes"]:
+        if (
+            usage["active_member_assignments"]
+            or usage["active_profile_scopes"]
+            or usage["locations"]
+        ):
             team_in_use(usage, action="deactivate")
+    if (
+        "department_id" in updates
+        and updates["department_id"] != team.department_id
+    ):
+        usage = organization_repo.get_team_usage(
+            db, company_id=company_id, team_id=team.id
+        )
+        if usage["locations"]:
+            team_in_use(usage, action="reassign")
     if "department_id" in updates and updates["department_id"] is not None:
         department_policy.require_department_relationship_allowed(
             db,
@@ -290,7 +319,7 @@ def delete_team(db: Session, team_id: int, current_user: User) -> None:
     if not team:
         not_found("Team")
     usage = organization_repo.get_team_usage(db, company_id=company_id, team_id=team.id)
-    if usage["member_assignments"] or usage["profile_scopes"]:
+    if usage["member_assignments"] or usage["profile_scopes"] or usage["locations"]:
         team_in_use(usage, action="delete")
     db.delete(team)
     try:

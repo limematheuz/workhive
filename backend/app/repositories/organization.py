@@ -223,11 +223,21 @@ def get_team_usage(
         .scalar()
         or 0
     )
+    locations = (
+        db.query(func.count(Location.id))
+        .filter(
+            Location.owner_company_id == company_id,
+            Location.team_id == team_id,
+        )
+        .scalar()
+        or 0
+    )
     return {
         "member_assignments": int(member_assignments),
         "active_member_assignments": int(active_member_assignments),
         "profile_scopes": int(profile_scopes),
         "active_profile_scopes": int(active_profile_scopes),
+        "locations": int(locations),
     }
 
 
@@ -404,6 +414,90 @@ def has_permission_in_scope(
     if require_system_profile:
         query = query.filter(PermissionProfile.is_system.is_(True))
     return query.first() is not None
+
+
+def list_permission_scope_ids(
+    db: Session,
+    *,
+    company_id: int,
+    membership_id: int,
+    permission_code: str,
+    scope_type: str,
+    require_system_profile: bool = False,
+) -> list[int]:
+    """Return explicit targets for an active permission assignment.
+
+    Callers must check a company-wide scope first. This helper intentionally
+    returns only exact targets, so a department or team assignment cannot be
+    mistaken for access to an unrelated record.
+    """
+
+    query = (
+        db.query(MembershipPermissionProfileScope.scope_id)
+        .join(
+            MembershipPermissionProfileAssignment,
+            MembershipPermissionProfileAssignment.id
+            == MembershipPermissionProfileScope.profile_assignment_id,
+        )
+        .join(
+            PermissionProfile,
+            PermissionProfile.id
+            == MembershipPermissionProfileAssignment.permission_profile_id,
+        )
+        .join(
+            PermissionProfilePermission,
+            PermissionProfilePermission.permission_profile_id == PermissionProfile.id,
+        )
+        .join(
+            PermissionDefinition,
+            PermissionDefinition.id
+            == PermissionProfilePermission.permission_definition_id,
+        )
+        .filter(
+            MembershipPermissionProfileScope.company_id == company_id,
+            MembershipPermissionProfileScope.scope_type == scope_type,
+            MembershipPermissionProfileAssignment.company_id == company_id,
+            MembershipPermissionProfileAssignment.company_membership_id
+            == membership_id,
+            MembershipPermissionProfileAssignment.is_active.is_(True),
+            PermissionProfile.is_active.is_(True),
+            PermissionDefinition.is_active.is_(True),
+            PermissionDefinition.code == permission_code,
+        )
+    )
+    if require_system_profile:
+        query = query.filter(PermissionProfile.is_system.is_(True))
+    return sorted({scope_id for (scope_id,) in query.all()})
+
+
+def list_location_ids_for_organization_scopes(
+    db: Session,
+    *,
+    company_id: int,
+    department_ids: set[int],
+    team_ids: set[int],
+) -> list[int]:
+    """Resolve organizational scopes only against locations owned by the company."""
+
+    filters = []
+    if department_ids:
+        filters.append(Location.department_id.in_(department_ids))
+    if team_ids:
+        filters.append(Location.team_id.in_(team_ids))
+    if not filters:
+        return []
+    return [
+        location_id
+        for (location_id,) in (
+            db.query(Location.id)
+            .filter(
+                Location.owner_company_id == company_id,
+                Location.is_active.is_(True),
+                or_(*filters),
+            )
+            .all()
+        )
+    ]
 
 
 def is_valid_scope_target(

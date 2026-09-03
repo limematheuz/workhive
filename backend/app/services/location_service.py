@@ -11,6 +11,12 @@ from app.repositories import company as company_repo
 from fastapi import HTTPException, status
 from app.services import location_access_service
 from app.services import location_workspace_service
+from app.services.location_organization_assignment_service import (
+    resolve_organization_assignment,
+)
+from app.services.location_service_provider_access_service import (
+    sync_default_service_provider_access,
+)
 from app.services.entitlement_service import require_company_feature
 
 
@@ -56,59 +62,23 @@ def _validate_default_service_provider(
         )
 
 
-def _sync_default_service_provider_access(
-    db: Session,
-    location: Location,
-    previous_provider_id: int | None,
-) -> None:
-    provider_id = location.default_service_provider_id
-    if previous_provider_id and previous_provider_id != provider_id:
-        previous_access = (
-            db.query(LocationCompanyAccess)
-            .filter(
-                LocationCompanyAccess.location_id == location.id,
-                LocationCompanyAccess.company_id == previous_provider_id,
-                LocationCompanyAccess.relationship_type == "default_service_provider",
-            )
-            .first()
-        )
-        if previous_access:
-            previous_access.relationship_type = "service_provider"
-
-    if provider_id is not None:
-        access = (
-            db.query(LocationCompanyAccess)
-            .filter(
-                LocationCompanyAccess.location_id == location.id,
-                LocationCompanyAccess.company_id == provider_id,
-            )
-            .first()
-        )
-        if access:
-            access.relationship_type = "default_service_provider"
-            access.can_manage_tasks = True
-        else:
-            db.add(
-                LocationCompanyAccess(
-                    location_id=location.id,
-                    company_id=provider_id,
-                    relationship_type="default_service_provider",
-                    can_manage_reservations=False,
-                    can_manage_tasks=True,
-                    can_view_sensitive=False,
-                )
-            )
-
-
 def get_locations(
     db: Session,
     company_id: int | None,
     client_id: int | None = None,
     skip: int = 0,
     limit: int = 100,
+    location_ids: set[int] | None = None,
 ) -> list[Location]:
     _require_locations_feature(db, company_id)
-    return location_repo.get_locations_by_client(db, company_id, client_id, skip, limit)
+    return location_repo.get_locations_by_client(
+        db,
+        company_id,
+        client_id,
+        skip,
+        limit,
+        location_ids,
+    )
 
 
 def get_location(db: Session, location_id: int, company_id: int | None) -> Location:
@@ -199,6 +169,15 @@ def create_location_in_transaction(
             )
     location_data.owner_company_id = company_id
     location_data.managing_company_id = company_id
+    (
+        location_data.department_id,
+        location_data.team_id,
+    ) = resolve_organization_assignment(
+        db,
+        company_id=company_id,
+        department_id=location_data.department_id,
+        team_id=location_data.team_id,
+    )
 
     if location_data.rooms is not None:
         location_data.max_capacity = sum(
@@ -278,6 +257,41 @@ def update_location(
     if db_location.managing_company_id is None and company_id is not None:
         db_location.managing_company_id = company_id
 
+    organization_fields = {"department_id", "team_id"}.intersection(
+        location_update.model_fields_set
+    )
+    organization_assignment: tuple[int | None, int | None] | None = None
+    if organization_fields:
+        if db_location.owner_company_id != company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the owning company can assign a location to an organization unit",
+            )
+        if (
+            "department_id" in organization_fields
+            and location_update.department_id is None
+            and "team_id" not in organization_fields
+            and db_location.team_id is not None
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Clear the team before removing the location department",
+            )
+        organization_assignment = resolve_organization_assignment(
+            db,
+            company_id=company_id,
+            department_id=(
+                location_update.department_id
+                if "department_id" in organization_fields
+                else db_location.department_id
+            ),
+            team_id=(
+                location_update.team_id
+                if "team_id" in organization_fields
+                else db_location.team_id
+            ),
+        )
+
     previous_provider_id = db_location.default_service_provider_id
     if (
         "default_service_provider_id" in location_update.model_fields_set
@@ -297,6 +311,9 @@ def update_location(
         
     try:
         location = location_repo.update_location(db, db_location, location_update)
+        if organization_assignment is not None:
+            location.department_id, location.team_id = organization_assignment
+            db.add(location)
         if company_id is not None:
             location_workspace_service.sync_profile(
                 db,
@@ -310,7 +327,7 @@ def update_location(
             location_update.access,
         )
         if "default_service_provider_id" in location_update.model_fields_set:
-            _sync_default_service_provider_access(db, location, previous_provider_id)
+            sync_default_service_provider_access(db, location, previous_provider_id)
         db.commit()
         db.refresh(location)
         return location

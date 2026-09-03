@@ -1,197 +1,97 @@
 "use client";
 
+import { startTransition, useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { ChevronUp, LogOut, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { startTransition, useCallback, useState, useEffect } from "react";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { TaskService } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
-import {
-    canAdministerCompany,
-    canViewFinance,
-    canManageCompanyTasks,
-    isAccountantRole,
-    isPlatformSuperadmin,
-} from "@/domain/access/roles";
+import { canAdministerCompany, canManageCompanyTasks, canViewFinance, isAccountantRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
+import { NotificationService } from "@/services/notification.service";
+import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
+import { countOperationalPendingTasks } from "@/lib/operational-task-count";
+import { countUnreadTaskReportNotifications } from "@/lib/task-reporting";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sidebar as ShadcnSidebar, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { buildSidebarNavLinks } from "./sidebar-nav-config";
 import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
-import { NotificationService } from "@/services/notification.service";
-import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
-import {
-    countUnreadTaskReportNotifications,
-} from "@/lib/task-reporting";
-import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
-import { countOperationalPendingTasks } from "@/lib/operational-task-count";
 
-interface SidebarProps {
-    isOpen: boolean;
-    theme: "dark" | "light";
-    onThemeChange: (theme: "dark" | "light") => void;
-}
+type SidebarProps = { theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => void };
 
-export function Sidebar({ isOpen, theme, onThemeChange }: SidebarProps) {
+export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const { dict, locale, setLocale } = useDictionary();
-    const pathname = usePathname();
     const { user } = useUser();
-
+    const pathname = usePathname();
+    const { isMobile, state } = useSidebar();
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
     const [taskPendingCount, setTaskPendingCount] = useState(0);
     const [reportAlertsCount, setReportAlertsCount] = useState(0);
     const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
-    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
-        sales: true,
-        finance: true,
-    });
-
+    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
-    const userCanViewFinance = canViewFinance(user);
     const isAccountant = isAccountantRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
 
     useEffect(() => {
-        if (!user || userIsPlatformSuperadmin || isAccountant) {
-            startTransition(() => setEnabledFeatures(null));
-            return;
-        }
+        if (!user || userIsPlatformSuperadmin || isAccountant) { setEnabledFeatures(null); return; }
         let cancelled = false;
-        void CompanyPlanAccessService.getCurrentEntitlements()
-            .then((access) => {
-                if (!cancelled) {
-                    const enabled = new Set<string>();
-                    for (const entitlement of access.entitlements) {
-                        if (entitlement.value_type === "boolean" && entitlement.value === true) {
-                            enabled.add(entitlement.code);
-                        }
-                    }
-                    setEnabledFeatures(enabled);
-                }
-            })
-            .catch(() => {
-                // Keep navigation visible if a transient read fails; backend remains authoritative.
-                if (!cancelled) setEnabledFeatures(null);
-            });
-        return () => {
-            cancelled = true;
-        };
+        void CompanyPlanAccessService.getCurrentEntitlements().then(access => {
+            if (cancelled) return;
+            setEnabledFeatures(new Set(access.entitlements.filter(item => item.value_type === "boolean" && item.value === true).map(item => item.code)));
+        }).catch(() => { if (!cancelled) setEnabledFeatures(null); });
+        return () => { cancelled = true; };
     }, [isAccountant, user, userIsPlatformSuperadmin]);
 
-    const fetchPendingRequests = useCallback(async () => {
-        try {
-            const tasks = await TaskService.getTaskItems({ status: "requested" });
-            setPendingRequestsCount(tasks.filter(t => t.status === "requested").length);
-        } catch {
-            // silently fail
-        }
-    }, []);
-
-    const fetchTaskPendingCount = useCallback(async () => {
-        if (!user || userIsPlatformSuperadmin || isAccountant) {
-            setTaskPendingCount(0);
-            return;
-        }
-        try {
-            const tasks = await TaskService.getAllTaskItems();
-            setTaskPendingCount(
-                countOperationalPendingTasks(tasks, user.id, isAdminOrManager),
-            );
-        } catch {
-            // Keep the last known workload during a transient API failure.
-        }
+    const refreshPending = useCallback(async () => {
+        if (!isAdminOrManager || userIsPlatformSuperadmin) return setPendingRequestsCount(0);
+        try { setPendingRequestsCount((await TaskService.getTaskItems({ status: "requested" })).filter(task => task.status === "requested").length); } catch { /* navigation stays available */ }
+    }, [isAdminOrManager, userIsPlatformSuperadmin]);
+    const refreshTasks = useCallback(async () => {
+        if (!user || userIsPlatformSuperadmin || isAccountant) return setTaskPendingCount(0);
+        try { setTaskPendingCount(countOperationalPendingTasks(await TaskService.getAllTaskItems(), user.id, isAdminOrManager)); } catch { /* keep last count */ }
     }, [isAccountant, isAdminOrManager, user, userIsPlatformSuperadmin]);
-
-    const fetchReportAlerts = useCallback(async () => {
-        if (!user || isAccountant) return;
-        try {
-            const notifications = await NotificationService.listUnread();
-            setReportAlertsCount(countUnreadTaskReportNotifications(notifications));
-        } catch {
-            // Keep navigation available during transient API failures.
-        }
+    const refreshReports = useCallback(async () => {
+        if (!user || isAccountant) return setReportAlertsCount(0);
+        try { setReportAlertsCount(countUnreadTaskReportNotifications(await NotificationService.listUnread())); } catch { /* keep last count */ }
     }, [isAccountant, user]);
+    useEffect(() => { startTransition(() => { void refreshPending(); void refreshTasks(); void refreshReports(); }); }, [refreshPending, refreshReports, refreshTasks]);
+    useEffect(() => { const refresh = () => void refreshReports(); window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); }, [refreshReports]);
+    useEffect(() => { const refresh = () => void refreshTasks(); window.addEventListener("workhive:tasks-changed", refresh); window.addEventListener("workhive:session-changed", refresh); return () => { window.removeEventListener("workhive:tasks-changed", refresh); window.removeEventListener("workhive:session-changed", refresh); }; }, [refreshTasks]);
+    useBackgroundPolling(refreshPending, POLL_INTERVALS.sidebar);
+    useBackgroundPolling(refreshTasks, POLL_INTERVALS.sidebarTaskCount);
+    useBackgroundPolling(refreshReports, POLL_INTERVALS.sidebar);
 
-    useEffect(() => {
-        if (!isAdminOrManager || userIsPlatformSuperadmin) return;
-        startTransition(() => {
-            void fetchPendingRequests();
-        });
-    }, [fetchPendingRequests, isAdminOrManager, userIsPlatformSuperadmin]);
-
-    useEffect(() => {
-        startTransition(() => { void fetchTaskPendingCount(); });
-    }, [fetchTaskPendingCount]);
-
-    useEffect(() => {
-        startTransition(() => { void fetchReportAlerts(); });
-    }, [fetchReportAlerts]);
-
-    useEffect(() => {
-        const refresh = () => { void fetchReportAlerts(); };
-        window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh);
-        return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh);
-    }, [fetchReportAlerts]);
-
-    useEffect(() => {
-        const refresh = () => { void fetchTaskPendingCount(); };
-        window.addEventListener("workhive:tasks-changed", refresh);
-        window.addEventListener("workhive:session-changed", refresh);
-        return () => {
-            window.removeEventListener("workhive:tasks-changed", refresh);
-            window.removeEventListener("workhive:session-changed", refresh);
-        };
-    }, [fetchTaskPendingCount]);
-
-    useBackgroundPolling(async () => {
-        if (!isAdminOrManager || userIsPlatformSuperadmin) return;
-        await fetchPendingRequests();
-    }, POLL_INTERVALS.sidebar);
-
-    useBackgroundPolling(fetchTaskPendingCount, POLL_INTERVALS.sidebarTaskCount);
-    useBackgroundPolling(fetchReportAlerts, POLL_INTERVALS.sidebar);
-
-    const { visibleNavLinks, navGroups, plainLinks } = buildSidebarNavLinks(dict, {
-        isAdminOrManager,
-        isCompanyAdmin,
-        canViewFinance: userCanViewFinance,
-        isAccountant,
-        userIsPlatformSuperadmin,
-        enabledFeatures,
-    });
-
-    return (
-        <aside
-            id="tour-sidebar"
-            className={`fixed lg:relative z-[var(--z-sidebar)] h-full flex flex-col ui-motion duration-300 ease-in-out ${
-                isOpen ? "translate-x-0 w-60 max-lg:z-[var(--z-sidebar-mobile-open)]" : "-translate-x-full w-60 lg:translate-x-0 lg:w-20"
-            } sidebar-mobile-bg`}
-        >
-            <SidebarLogo isOpen={isOpen} />
-
-            <SidebarNavigation
-                isOpen={isOpen}
-                pathname={pathname}
-                plainLinks={plainLinks}
-                navGroups={navGroups}
-                visibleNavLinks={visibleNavLinks}
-                pendingRequestsCount={pendingRequestsCount}
-                taskPendingCount={taskPendingCount}
-                reportAlertsCount={reportAlertsCount}
-                openGroups={openGroups}
-                onOpenGroupChange={(groupId, open) =>
-                    setOpenGroups(current => ({ ...current, [groupId]: open }))
-                }
-            />
-
-            <SidebarFooterControls
-                isOpen={isOpen}
-                theme={theme}
-                locale={locale}
-                onThemeChange={onThemeChange}
-                onLocaleChange={setLocale}
-            />
-        </aside>
-    );
+    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canViewFinance: canViewFinance(user), isAccountant, userIsPlatformSuperadmin, enabledFeatures });
+    const expanded = state === "expanded";
+    return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
+        <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>
+        <SidebarNavigation pathname={pathname} {...navigation} pendingRequestsCount={pendingRequestsCount} taskPendingCount={taskPendingCount} reportAlertsCount={reportAlertsCount} openGroups={openGroups} onOpenGroupChange={(id, open) => setOpenGroups(current => ({ ...current, [id]: open }))} />
+        <SidebarFooter>
+            <SidebarFooterControls isOpen={expanded} theme={theme} locale={locale} onThemeChange={onThemeChange} onLocaleChange={setLocale} />
+            {user && <SidebarMenu>
+                <SidebarMenuItem>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <SidebarMenuButton tooltip="Perfil y preferencias" className="h-11"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-7 shrink-0" />{expanded && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{user.full_name || "Usuario"}</span><span className="block truncate text-xs text-[var(--text-muted)]">{user.role?.name || "Sin rol"}</span></span><ChevronUp className="size-4" /></>}</SidebarMenuButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent side={isMobile ? "top" : "right"} align={isMobile ? "start" : "end"} sideOffset={10} className="sidebar-account-menu w-60 rounded-2xl p-0">
+                            <div className="flex min-w-0 items-center gap-2.5 px-3 py-3"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-9 shrink-0" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{user.full_name || "Usuario"}</p><p className="truncate text-xs text-[var(--text-muted)]">{user.email}</p></div></div>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem asChild className="h-10 rounded-none px-3 text-sm"><Link href="/dashboard/profile"><UserRound className="size-4" />{dict.dashboard.view_profile}</Link></DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem variant="destructive" onSelect={onLogout} className="h-10 rounded-none px-3 text-sm"><LogOut className="size-4" />{dict.dashboard.logout}</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </SidebarMenuItem>
+            </SidebarMenu>}
+        </SidebarFooter>
+    </ShadcnSidebar>;
 }

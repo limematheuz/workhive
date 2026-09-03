@@ -18,7 +18,7 @@ export function SidebarFooterControls({
     onLocaleChange,
 }: SidebarFooterControlsProps) {
     return (
-        <div className="p-2 flex flex-col gap-2 mb-1 flex-shrink-0 border-t border-[var(--border-soft)] bg-transparent text-[13px]">
+        <div className="p-2 flex flex-col gap-2 mb-1 flex-shrink-0 bg-transparent text-[13px]">
             {isOpen && (
                 <div className="flex flex-row flex-wrap gap-2 items-center pl-1">
                     <div

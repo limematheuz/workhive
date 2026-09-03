@@ -50,6 +50,7 @@ const UNKNOWN_USAGE: OrganizationTeamUsage = {
     active_member_assignments: 0,
     profile_scopes: 0,
     active_profile_scopes: 0,
+    locations: 0,
     can_deactivate: false,
     can_delete: false,
 };

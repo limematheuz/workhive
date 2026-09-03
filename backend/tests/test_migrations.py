@@ -23,9 +23,10 @@ def test_alembic_has_exactly_one_head():
     assert len(script.get_heads()) == 1
 
 
-def test_container_start_applies_migrations_before_serving_requests():
-    start_script = os.path.dirname(__file__) + "/../start.sh"
-    with open(start_script, encoding="utf-8") as script_file:
+@pytest.mark.parametrize("entrypoint", ("start.sh", "dev.sh"))
+def test_backend_entrypoints_apply_migrations_before_serving_requests(entrypoint):
+    script_path = os.path.dirname(__file__) + f"/../{entrypoint}"
+    with open(script_path, encoding="utf-8") as script_file:
         script = script_file.read()
 
     assert script.index("alembic upgrade head") < script.index("exec uvicorn")

@@ -57,6 +57,8 @@ class LocationBase(BaseModel):
     managing_company_id: int | None = None
     owner_company_id: int | None = None
     default_service_provider_id: int | None = None
+    department_id: int | None = Field(default=None, gt=0)
+    team_id: int | None = Field(default=None, gt=0)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,6 +93,8 @@ class LocationUpdate(BaseModel):
     is_active: bool | None = None
     client_id: int | None = None
     default_service_provider_id: int | None = None
+    department_id: int | None = Field(default=None, gt=0)
+    team_id: int | None = Field(default=None, gt=0)
     profile: LocationProfileInput | None = None
     access: LocationAccessInput | None = None
 

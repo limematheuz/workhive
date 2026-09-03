@@ -11,6 +11,7 @@ from app.schemas.task_item import (
 from app.repositories import task_item as task_item_repo
 from app.repositories import user as user_repo
 from app.services import location_access_service
+from app.services.organization_authorization_service import require_capability
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.repositories import work_session as work_session_repo
@@ -100,7 +101,11 @@ def create_task_item(
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     location_access_service.require_location_capability(
-        db, current_user, task_item_data.location_id, "can_manage_tasks"
+        db,
+        current_user,
+        task_item_data.location_id,
+        "can_manage_tasks",
+        permission_code="work.manage",
     )
     if task_item_data.user_id is not None:
         assigned_user = user_repo.get_user_by_id(db, task_item_data.user_id)
@@ -310,6 +315,13 @@ def start_task_work(
             detail="A precise start location is required to begin work",
         )
     task = get_task_item(db, current_user, task_item_id)
+    require_capability(
+        db,
+        current_user,
+        "time.manage",
+        scope_type="location",
+        scope_id=task.location_id,
+    )
     if not task_assignment_service.can_viewer_access_task(task, current_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -412,11 +424,11 @@ def accept_task_item(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task Item not found",
         )
-    if current_user.role.name not in {"admin", "manager"}:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only company administrators or managers can accept requests",
-        )
+    require_capability(
+        db,
+        current_user,
+        "work.manage",
+    )
     if task.status != "requested":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -534,11 +546,11 @@ def reject_task_item(
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
-    if current_user.role.name not in {"admin", "manager"}:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only company administrators or managers can reject requests",
-        )
+    require_capability(
+        db,
+        current_user,
+        "work.manage",
+    )
     if task.status != "requested":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -652,6 +664,13 @@ def finish_task_work(
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
+    require_capability(
+        db,
+        current_user,
+        "time.manage",
+        scope_type="location",
+        scope_id=task.location_id,
+    )
     was_completed = task.status == "completed"
     _require_finishable_user_assignment(task, current_user.id)
     active_sessions = _active_sessions_for_task(
@@ -695,9 +714,25 @@ def update_task_checklist_item(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Checklist item not found",
         )
-    if current_user.role.name != "viewer":
+    if not task_update_policy_service.can_manage_task_at_location(
+        db,
+        current_user,
+        task.location_id,
+    ):
+        require_capability(
+            db,
+            current_user,
+            "time.manage",
+            scope_type="location",
+            scope_id=task.location_id,
+        )
+    else:
         location_access_service.require_location_capability(
-            db, current_user, task.location_id, "can_manage_tasks"
+            db,
+            current_user,
+            task.location_id,
+            "can_manage_tasks",
+            permission_code="work.manage",
         )
     updated = task_structure_service.update_checklist_item(
         db,
@@ -730,7 +765,11 @@ def delete_task_item(db: Session, current_user: User, task_item_id: int) -> None
             status_code=status.HTTP_404_NOT_FOUND, detail="Task Item not found"
         )
     location_access_service.require_location_capability(
-        db, current_user, db_task_item.location_id, "can_manage_tasks"
+        db,
+        current_user,
+        db_task_item.location_id,
+        "can_manage_tasks",
+        permission_code="work.manage",
     )
     if db_task_item.is_invoiced:
         raise HTTPException(

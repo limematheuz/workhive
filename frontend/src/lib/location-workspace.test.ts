@@ -24,6 +24,7 @@ test("location workspace has optional profiles, spaces, and a catalog in one API
 test("the new location wizard follows the four-step workflow and keeps suggestions optional", () => {
     const form = read("../components/locations/LocationWorkspaceForm.tsx");
     const infoStep = read("../components/locations/LocationInfoAccessStep.tsx");
+    const types = read("../types/location.ts");
     const typeStep = read("../components/locations/LocationTypeStep.tsx");
     const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
     const spacesStep = read("../components/locations/LocationSpacesStep.tsx");
@@ -41,6 +42,16 @@ test("the new location wizard follows the four-step workflow and keeps suggestio
     assert.doesNotMatch(infoStep, /MapPin/);
     assert.match(infoStep, /items-center gap-3/);
     assert.match(infoStep, /outside-hours-authorization/);
+    assert.match(types, /department_id\?: number \| null/);
+    assert.match(types, /team_id\?: number \| null/);
+    assert.match(form, /OrganizationService\.getDepartments/);
+    assert.match(form, /OrganizationService\.getTeams/);
+    assert.match(form, /department_id: departmentId/);
+    assert.match(form, /team_id: teamId/);
+    assert.match(infoStep, /Organización operativa/);
+    assert.match(infoStep, /Un equipo asignado determina su departamento/);
+    assert.match(infoStep, /<SelectTrigger id="location-workspace-department">/);
+    assert.match(infoStep, /<SelectTrigger id="location-workspace-team">/);
     assert.doesNotMatch(featuresStep, /Phone/);
     assert.doesNotMatch(featuresStep, /className="pl-9"/);
 });

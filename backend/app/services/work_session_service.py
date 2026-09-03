@@ -11,6 +11,7 @@ from app.services import task_assignment_service
 from app.services import task_structure_service
 from app.services import task_item_service
 from app.services.entitlement_service import require_company_feature
+from app.services.organization_authorization_service import require_capability
 
 
 def _require_time_tracking_feature(
@@ -37,15 +38,35 @@ def _user_with_time_tracking(db: Session, user_id: int) -> User:
 
 
 def get_work_sessions(
-    db: Session, user_id: int, skip: int = 0, limit: int = 100
+    db: Session,
+    user_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    location_ids: set[int] | None = None,
 ) -> list[WorkSession]:
     _user_with_time_tracking(db, user_id)
-    return work_session_repo.get_work_session_by_user(db, user_id, skip, limit)
+    return work_session_repo.get_work_session_by_user(
+        db,
+        user_id,
+        skip,
+        limit,
+        location_ids,
+    )
 
 
-def get_work_session(db: Session, session_id: int, user_id: int) -> WorkSession:
+def get_work_session(
+    db: Session,
+    session_id: int,
+    user_id: int,
+    location_ids: set[int] | None = None,
+) -> WorkSession:
     _user_with_time_tracking(db, user_id)
-    work_session = work_session_repo.get_work_session_by_id(db, session_id, user_id)
+    work_session = work_session_repo.get_work_session_by_id(
+        db,
+        session_id,
+        user_id,
+        location_ids,
+    )
     if work_session is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Work Session not found"
@@ -88,12 +109,27 @@ def start_work_session(
     return active_session
 
 
-def end_work_session(db: Session, user_id: int) -> WorkSession:
+def end_work_session(
+    db: Session,
+    user_id: int,
+    *,
+    current_user: User | None = None,
+) -> WorkSession:
     active_session = work_session_repo.get_active_session_by_user(db, user_id)
     if not active_session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No active session found",
+        )
+    if current_user:
+        require_capability(
+            db,
+            current_user,
+            "time.manage",
+            scope_type=(
+                "location" if active_session.location_id is not None else "company"
+            ),
+            scope_id=active_session.location_id,
         )
 
     end_time = datetime.now(timezone.utc)

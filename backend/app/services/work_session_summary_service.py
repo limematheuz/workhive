@@ -17,6 +17,10 @@ from app.schemas.work_session import (
 )
 from app.services import task_assignment_service
 from app.services.entitlement_service import require_company_feature
+from app.services.organization_authorization_service import (
+    require_capability,
+    uses_legacy_role_authorization,
+)
 
 
 def _require_time_tracking_feature(
@@ -35,8 +39,16 @@ def _get_visible_task_or_404(db: Session, current_user: User, task_item_id: int)
     task = task_item_repo.get_task_item(db, current_user.company_id, task_item_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task Item not found")
+    require_capability(
+        db,
+        current_user,
+        "time.read",
+        scope_type="location",
+        scope_id=task.location_id,
+    )
     if (
         current_user.role.name == "viewer"
+        and uses_legacy_role_authorization(db, current_user, "time.read")
         and not task_assignment_service.is_user_assigned(task, current_user.id)
     ):
         raise HTTPException(status_code=404, detail="Task Item not found")
@@ -73,7 +85,9 @@ def get_task_work_summary(
 
 
 def get_active_company_sessions(
-    db: Session, current_user: User
+    db: Session,
+    current_user: User,
+    location_ids: set[int] | None = None,
 ) -> list[ActiveCompanySessionResponse]:
     if current_user.company_id is None:
         return []
@@ -82,7 +96,9 @@ def get_active_company_sessions(
     now = datetime.now(timezone.utc)
     responses: list[ActiveCompanySessionResponse] = []
     for work_session in work_session_repo.get_visible_active_sessions(
-        db, current_user.company_id
+        db,
+        current_user.company_id,
+        location_ids,
     ):
         start_time = work_session.start_time
         if start_time.tzinfo is None:
@@ -154,8 +170,21 @@ def get_task_work_detailed_summaries(
         db,
         current_user.company_id,
         requested_ids,
-        user_id=current_user.id if current_user.role.name == "viewer" else None,
+        user_id=(
+            current_user.id
+            if current_user.role.name == "viewer"
+            and uses_legacy_role_authorization(db, current_user, "time.read")
+            else None
+        ),
     )
+    for task in visible_tasks:
+        require_capability(
+            db,
+            current_user,
+            "time.read",
+            scope_type="location",
+            scope_id=task.location_id,
+        )
     visible_ids = [task.id for task in visible_tasks]
     if not visible_ids:
         return []

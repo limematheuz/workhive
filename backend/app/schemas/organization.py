@@ -145,6 +145,7 @@ class DepartmentUsage(BaseModel):
     teams: int
     member_assignments: int
     profile_scopes: int
+    locations: int
     can_delete: bool
 
 
@@ -206,6 +207,7 @@ class TeamUsage(BaseModel):
     active_member_assignments: int
     profile_scopes: int
     active_profile_scopes: int
+    locations: int
     can_deactivate: bool
     can_delete: bool
 

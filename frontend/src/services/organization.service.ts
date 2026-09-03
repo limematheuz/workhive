@@ -37,6 +37,7 @@ export type OrganizationDepartmentUsage = {
     teams: number;
     member_assignments: number;
     profile_scopes: number;
+    locations: number;
     can_delete: boolean;
 };
 
@@ -65,6 +66,7 @@ export type OrganizationTeamUsage = {
     active_member_assignments: number;
     profile_scopes: number;
     active_profile_scopes: number;
+    locations: number;
     can_deactivate: boolean;
     can_delete: boolean;
 };

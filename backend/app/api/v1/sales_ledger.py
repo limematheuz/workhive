@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, AsyncActiveFinancialReader, get_async_db, get_db
+from app.api.deps import (
+    ActiveFinanceManager,
+    AsyncActiveFinanceManager,
+    AsyncActiveFinancialReader,
+    get_async_db,
+    get_db,
+)
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.sales_ledger import (
@@ -61,7 +67,7 @@ def create_manual_record(
     payload: SalesLedgerManualRecordCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     _require_company_admin(current_user)
     entry = sales_ledger_service.create_manual_record(
@@ -88,7 +94,7 @@ def update_manual_record(
     payload: SalesLedgerManualRecordUpdate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     _require_company_admin(current_user)
     entry = sales_ledger_service.update_manual_record(
@@ -115,7 +121,7 @@ def delete_manual_record(
     record_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     _require_company_admin(current_user)
     sales_ledger_service.delete_manual_record(db, current_user.company_id, record_id)
@@ -134,7 +140,7 @@ def delete_manual_record(
 @router.post("/manual-records/import/preview", response_model=SalesLedgerCsvPreview)
 async def preview_manual_records_import(
     file: UploadFile = File(...),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinanceManager,
 ):
     _require_company_admin(current_user)
     return sales_ledger_service.preview_csv(await _read_csv_file(file))
@@ -149,7 +155,7 @@ async def import_manual_records(
     request: Request,
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinanceManager,
 ):
     _require_company_admin(current_user)
     csv_content = await _read_csv_file(file)

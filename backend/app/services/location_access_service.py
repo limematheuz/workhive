@@ -16,6 +16,7 @@ from app.services.user_scope import (
     is_platform_superadmin,
     scoped_company_id,
 )
+from app.services.organization_authorization_service import require_capability
 
 
 def _is_direct_company_location(location: Location, company_id: int | None) -> bool:
@@ -45,12 +46,25 @@ def require_accessible_location(db: Session, current_user: User, location_id: in
 
 
 def require_location_capability(
-    db: Session, current_user: User, location_id: int, capability: str
+    db: Session,
+    current_user: User,
+    location_id: int,
+    capability: str,
+    *,
+    permission_code: str | None = None,
 ) -> Location:
     location = require_accessible_location(db, current_user, location_id)
     if is_platform_superadmin(current_user):
         return location
-    if not can_manage_company(current_user):
+    if permission_code:
+        require_capability(
+            db,
+            current_user,
+            permission_code,
+            scope_type="location",
+            scope_id=location_id,
+        )
+    elif not can_manage_company(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only company administrators or managers can perform this action",

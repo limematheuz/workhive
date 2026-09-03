@@ -7,10 +7,11 @@ import type {
     LocationSpace,
 } from "@/types/location";
 import type { Client } from "@/services/client.service";
+import type { OrganizationDepartment, OrganizationTeam } from "@/services/organization.service";
 
 export type LocationWorkspacePayload = Pick<
     Location,
-    "name" | "address" | "city" | "postal_code" | "client_id" | "location_type"
+    "name" | "address" | "city" | "postal_code" | "client_id" | "location_type" | "department_id" | "team_id"
 > & {
     profile?: Omit<LocationProfile, "location_id">;
     access?: Omit<LocationAccessProfile, "location_id" | "has_access_code"> & {
@@ -37,6 +38,11 @@ export interface LocationInfoAccessStepProps {
     city: string;
     postalCode: string;
     clientId: string;
+    departments: OrganizationDepartment[];
+    teams: OrganizationTeam[];
+    organizationAssignmentAvailable: boolean;
+    departmentId: string;
+    teamId: string;
     access: LocationAccessDraft;
     hasStoredAccessCode: boolean;
     setName: (value: string) => void;
@@ -44,6 +50,8 @@ export interface LocationInfoAccessStepProps {
     setCity: (value: string) => void;
     setPostalCode: (value: string) => void;
     setClientId: (value: string) => void;
+    setDepartmentId: (value: string) => void;
+    setTeamId: (value: string) => void;
     setAccess: (value: LocationAccessDraft) => void;
 }
 

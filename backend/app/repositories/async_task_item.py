@@ -71,6 +71,8 @@ async def get_task_items(
     skip: int = 0,
     limit: int = 100,
     include_requested: bool = False,
+    location_ids: set[int] | None = None,
+    requested_location_ids: set[int] | None = None,
 ) -> list[TaskItem]:
     statement = (
         select(TaskItem)
@@ -83,11 +85,20 @@ async def get_task_items(
         statement = statement.where(or_(*_user_assignment_conditions(user_id)))
     if location_id:
         statement = statement.where(TaskItem.location_id == location_id)
+    if location_ids is not None:
+        statement = statement.where(TaskItem.location_id.in_(location_ids))
     if not include_requested:
         statement = statement.where(TaskItem.status != "requested")
-    else:
+    elif requested_location_ids is None:
         statement = statement.where(
             or_(TaskItem.status != "requested", TaskItem.company_id == company_id)
+        )
+    else:
+        statement = statement.where(
+            or_(
+                TaskItem.status != "requested",
+                TaskItem.location_id.in_(requested_location_ids),
+            )
         )
     if status:
         statement = statement.where(TaskItem.status == status)

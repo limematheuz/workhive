@@ -737,6 +737,16 @@
   -webkit-backdrop-filter: blur(var(--popover-surface-blur)) saturate(var(--glass-saturate));
 }
 
+/* Sidebar account menu: compact dropdown, not a modal card. */
+.sidebar-account-menu {
+  background-color: color-mix(in srgb, var(--popover-surface-bg) 74%, transparent) !important;
+}
+
+.sidebar-account-menu [data-slot="dropdown-menu-item"]:hover,
+.sidebar-account-menu [data-slot="dropdown-menu-item"][data-highlighted] {
+  background-color: color-mix(in srgb, var(--bg-tertiary) 84%, transparent);
+}
+
 /* Default modal panels inherit sheet frost tokens above */
 
 /* Profile + notifications: above main panel, below mobile sidebar overlay */
