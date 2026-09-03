@@ -3,11 +3,20 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.api.deps import ActiveUser, AsyncActiveUser, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
-from app.api.v1 import client_contacts, client_opportunities
-from app.services import client_authorization_service, client_service
+from app.api.v1 import (
+    client_account_assignments,
+    client_contacts,
+    client_opportunities,
+)
+from app.services import (
+    client_account_assignment_service,
+    client_authorization_service,
+    client_service,
+)
 from app.schemas.client import (
     ClientCreate,
     ClientAccessResponse,
+    ClientPortfolioItemResponse,
     ClientEmailRequest,
     ClientResponse,
     ClientUpdate,
@@ -18,6 +27,7 @@ from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 
 router = APIRouter()
+router.include_router(client_account_assignments.router, prefix="/{client_id}")
 router.include_router(client_contacts.router, prefix="/{client_id}")
 router.include_router(client_opportunities.router, prefix="/{client_id}")
 
@@ -74,6 +84,29 @@ async def read_client_access(
                 client_authorization_service.CAPABILITY_COMMERCIAL_FOLLOW_UPS_MANAGE,
             ),
         )
+    )
+
+
+@router.get("/portfolio", response_model=list[ClientPortfolioItemResponse])
+async def read_current_user_portfolio(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    return await db.run_sync(
+        lambda sync_db: _read_current_user_portfolio(sync_db, current_user)
+    )
+
+
+def _read_current_user_portfolio(db: Session, current_user: User):
+    membership = client_authorization_service.require_client_membership(
+        db,
+        current_user,
+        client_authorization_service.CAPABILITY_CLIENTS_READ,
+    )
+    return client_account_assignment_service.list_current_user_portfolio(
+        db,
+        company_id=membership.company_id,
+        membership_id=membership.id,
     )
 
 

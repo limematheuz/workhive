@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
@@ -84,6 +85,29 @@ class ClientEmailRequest(BaseModel):
 class ClientResponse(ClientBase):
     id: int
     company_id: int
+
+
+class ClientAccountAssignmentUpdate(BaseModel):
+    membership_id: int | None = Field(default=None, gt=0)
+
+
+class ClientAccountAssignmentResponse(BaseModel):
+    id: int
+    client_id: int
+    company_id: int
+    membership_id: int = Field(validation_alias="company_membership_id")
+    owner_name: str | None
+    owner_email: EmailStr | None
+    assigned_by_user_id: int | None
+    started_at: datetime
+    ended_at: datetime | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ClientPortfolioItemResponse(BaseModel):
+    client: ClientResponse
+    assignment: ClientAccountAssignmentResponse
 
 
 class ClientAccessResponse(BaseModel):
