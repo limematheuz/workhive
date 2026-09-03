@@ -209,8 +209,10 @@ como WorkHive Core solo cuando el caso real las exige.
   plaza, promoción y portal de gestoría dejan exactamente una concesión válida.
 - ✅ Migración completa del rol heredado `accountant` a acceso externo; las
   plazas y perfiles base permanecen exclusivamente internos.
-- ⬜ Verificación end-to-end del ciclo completo de supresión, incluida la
-  revisión por empresa, escalado de plataforma y retención legal disociada.
+- ✅ Verificación end-to-end del ciclo completo de supresión: solicitud,
+  revisión por empresa, resolución por plataforma, anonimización y revocación
+  de sesión; el expediente se conserva hasta su plazo legal mientras que las
+  IP de auditoría se anonimizan de forma independiente.
 
 ### Fase 2 — Clientes y comercial
 
