@@ -1,7 +1,10 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.user import User
+from app.models.external_access_grant import ExternalAccessGrant
 from app.schemas.user import UserUpdate, UserStatsResponse
 from app.repositories import user as user_repo
 from app.repositories import work_session as work_session_repo
@@ -9,10 +12,14 @@ from app.repositories import task_item as task_item_repo
 from app.repositories import role as role_repo
 from app.core.security import get_password_hash, verify_password
 from app.services import task_assignment_service
-from app.services.entitlement_service import require_internal_member_capacity
+from app.services.entitlement_service import (
+    require_accountant_portal_capacity,
+    require_company_feature,
+    require_internal_member_capacity,
+)
 from app.services import organization_bootstrap_service
+from app.services.external_access_policy import EXTERNAL_PORTAL_ROLE_NAME
 from app.services.user_scope import is_superadmin
-from datetime import datetime, timedelta, timezone
 import calendar
 
 
@@ -63,12 +70,21 @@ def update_user(
 
     if (
         not is_own_profile
-        and db_user.role.name == "accountant"
+        and current_user.role.name not in {"superadmin", "admin", "manager"}
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions to manage another user",
+        )
+
+    if (
+        not is_own_profile
+        and db_user.role.name == EXTERNAL_PORTAL_ROLE_NAME
         and current_user.role.name not in {"superadmin", "admin"}
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to manage an accountant user",
+            detail="Not enough permissions to manage an external portal user",
         )
 
     if (
@@ -86,8 +102,56 @@ def update_user(
         and not db_user.is_active
         and db_user.company is not None
     )
+    is_external_portal_user = bool(
+        db_user.role and db_user.role.name == EXTERNAL_PORTAL_ROLE_NAME
+    )
+    if is_external_portal_user and user_data.is_active is not None:
+        portal_grant = (
+            db.query(ExternalAccessGrant)
+            .filter(
+                ExternalAccessGrant.company_id == db_user.company_id,
+                ExternalAccessGrant.user_id == db_user.id,
+                ExternalAccessGrant.access_type == "accountant",
+            )
+            .first()
+        )
+        if portal_grant is None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="The external portal grant is missing",
+            )
+        if user_data.is_active is False and db_user.is_active:
+            portal_grant.status = "revoked"
+            portal_grant.revoked_at = datetime.now(timezone.utc)
+            portal_grant.revoked_by_user_id = current_user.id
+            db.add(portal_grant)
+        elif user_data.is_active is True and not db_user.is_active:
+            expires_at = portal_grant.expires_at
+            if expires_at is not None and expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if (
+                expires_at is not None
+                and expires_at <= datetime.now(timezone.utc)
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="The external portal grant has expired and must be issued again",
+                )
+            require_company_feature(
+                db,
+                company_id=db_user.company_id,
+                code="features.accountant_portal",
+            )
+            require_accountant_portal_capacity(
+                db,
+                company_id=db_user.company_id,
+            )
+            portal_grant.status = "active"
+            portal_grant.revoked_at = None
+            portal_grant.revoked_by_user_id = None
+            db.add(portal_grant)
     membership = None
-    if activating_user:
+    if activating_user and not is_external_portal_user:
         membership = organization_bootstrap_service.ensure_user_membership(db, db_user)
         if membership:
             require_internal_member_capacity(
@@ -132,13 +196,24 @@ def update_user(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Not enough permissions to change user roles",
             )
+        target_role = role_repo.get_role(db, user_data.role_id)
+        if not target_role:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Target role not found",
+            )
+        if (
+            (db_user.role and db_user.role.name == EXTERNAL_PORTAL_ROLE_NAME)
+            != (target_role.name == EXTERNAL_PORTAL_ROLE_NAME)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "External portal access cannot be converted into an internal "
+                    "membership. Revoke it and issue the appropriate invitation."
+                ),
+            )
         if not is_superadmin(current_user):
-            target_role = role_repo.get_role(db, user_data.role_id)
-            if not target_role:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Target role not found",
-                )
             if target_role.name == "superadmin":
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,

@@ -216,16 +216,18 @@ def require_company_capability_async(permission_code: str):
     return capability_checker
 
 
-# External roles must opt into their permitted boundaries explicitly. Finance
-# access is profile-backed rather than inferred from the legacy role.
+# External portal users must opt into a tenant-bound grant. Finance access is
+# resolved from that grant; internal finance access remains profile-backed.
 ActiveAdmin = Depends(require_role("admin"))
 ActiveManagerOrAdmin = Depends(require_role("admin", "manager"))
 ActiveViewer = Depends(require_role("admin", "manager", "viewer"))
 ActiveUser = ActiveViewer
 AsyncActiveUser = Depends(require_role_async("admin", "manager", "viewer"))
-ActiveApplicationUser = Depends(require_role("admin", "manager", "viewer", "accountant"))
+ActiveApplicationUser = Depends(
+    require_role("admin", "manager", "viewer", "external_portal")
+)
 AsyncActiveApplicationUser = Depends(
-    require_role_async("admin", "manager", "viewer", "accountant")
+    require_role_async("admin", "manager", "viewer", "external_portal")
 )
 AsyncActiveAdmin = Depends(require_role_async("admin"))
 ActiveFinanceReader = Depends(require_company_capability("finance.read"))

@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.user_invitation import UserInvitation
+from app.models.external_access_grant import ExternalAccessGrant
 from app.repositories import role as role_repo
 from app.repositories import user as user_repo
 from app.schemas.user_invitation import UserInvitationAccept, UserInvitationCreate
@@ -20,7 +21,12 @@ from app.services import (
     privacy_service,
     user_invitation_management_service,
 )
-from app.services.entitlement_service import require_internal_member_capacity
+from app.services.entitlement_service import (
+    require_accountant_portal_capacity,
+    require_company_feature,
+    require_internal_member_capacity,
+)
+from app.services.external_access_policy import EXTERNAL_PORTAL_ROLE_NAME
 from app.services.subscription_policy import require_company_access
 from app.services.user_scope import is_superadmin
 
@@ -62,6 +68,11 @@ def _validate_invited_role(db: Session, role_id: int, inviter: User):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only superadmins can assign the superadmin role",
+        )
+    if role.name == EXTERNAL_PORTAL_ROLE_NAME and inviter.role.name != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only company administrators can invite external portal users",
         )
     return role
 
@@ -233,19 +244,30 @@ def accept_invitation(
         )
     require_company_access(company)
     invited_role = role_repo.get_role(db, invitation.role_id)
+    is_external_accountant = bool(
+        invited_role and invited_role.name == EXTERNAL_PORTAL_ROLE_NAME
+    )
     access_class = organization_bootstrap_service.legacy_role_name_access_class(
         invited_role.name if invited_role else None
     )
-    if access_class is None:
+    if access_class is None and not is_external_accountant:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="The invitation role cannot be assigned to an internal seat",
         )
-    require_internal_member_capacity(
-        db,
-        company_id=company.id,
-        access_class=access_class,
-    )
+    if is_external_accountant:
+        require_company_feature(
+            db,
+            company_id=company.id,
+            code="features.accountant_portal",
+        )
+        require_accountant_portal_capacity(db, company_id=company.id)
+    else:
+        require_internal_member_capacity(
+            db,
+            company_id=company.id,
+            access_class=access_class,
+        )
 
     user: User
     if invitation.rejoin_user_id is not None:
@@ -290,7 +312,18 @@ def accept_invitation(
     invitation.status = ACCEPTED_STATUS
     invitation.accepted_at = _utcnow()
     db.flush()
-    organization_bootstrap_service.ensure_user_membership(db, user)
+    if is_external_accountant:
+        db.add(
+            ExternalAccessGrant(
+                company_id=company.id,
+                user_id=user.id,
+                access_type="accountant",
+                status="active",
+                granted_by_user_id=invitation.invited_by_user_id,
+            )
+        )
+    else:
+        organization_bootstrap_service.ensure_user_membership(db, user)
     db.commit()
     db.refresh(user)
     if invitation.rejoin_user_id is None:

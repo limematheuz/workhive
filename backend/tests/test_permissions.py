@@ -88,36 +88,36 @@ def test_manager_cannot_invite_privileged_users(client, db, monkeypatch):
     assert worker.status_code == 202, worker.text
 
 
-def test_manager_cannot_manage_accountant_users(client, db):
-    _, company_id = _register_company(client, "accountant-management")
+def test_manager_cannot_manage_external_portal_users(client, db):
+    _, company_id = _register_company(client, "external-portal-management")
     manager = User(
-        email="manager-accountant@workhive.com",
+        email="manager-external-portal@workhive.com",
         hashed_password=get_password_hash(TEST_SECRET),
         full_name="Manager",
         role_id=2,
         company_id=company_id,
         is_active=True,
     )
-    accountant = User(
-        email="accountant@workhive.com",
+    external_portal = User(
+        email="external-portal@workhive.com",
         hashed_password=get_password_hash(TEST_SECRET),
-        full_name="Accountant",
+        full_name="External portal",
         role_id=5,
         company_id=company_id,
         is_active=True,
     )
-    db.add_all([manager, accountant])
+    db.add_all([manager, external_portal])
     db.commit()
-    db.refresh(accountant)
+    db.refresh(external_portal)
 
     login = client.post(
         "/api/v1/auth/login",
-        data=login_form("manager-accountant@workhive.com", TEST_SECRET),
+        data=login_form("manager-external-portal@workhive.com", TEST_SECRET),
     )
     manager_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
 
     response = client.patch(
-        f"/api/v1/users/{accountant.id}",
+        f"/api/v1/users/{external_portal.id}",
         headers=manager_headers,
         json={"is_active": False},
     )

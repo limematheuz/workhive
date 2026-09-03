@@ -7,7 +7,9 @@ from decimal import Decimal
 from app.core.security import create_access_token
 from app.models.client import Client
 from app.models.company import Company
+from app.models.company_membership import CompanyMembership
 from app.models.expense import Expense
+from app.models.external_access_grant import ExternalAccessGrant
 from app.models.invoice import Invoice
 from app.models.role import Role
 from app.models.user import User
@@ -29,9 +31,9 @@ def _company(db, suffix: str) -> Company:
     return company
 
 
-def _headers(db, company: Company, role_id: int, suffix: str) -> dict[str, str]:
+def _headers(db, company: Company, role_id: int, suffix: str) -> tuple[User, dict[str, str]]:
     user = User(
-        email=f"{suffix}@gestoria.test",
+        email=f"{suffix}@gestoria.example.com",
         hashed_password="unused",
         full_name=suffix,
         role_id=role_id,
@@ -41,7 +43,7 @@ def _headers(db, company: Company, role_id: int, suffix: str) -> dict[str, str]:
     db.commit()
     db.refresh(user)
     token = create_access_token({"sub": user.email, "ver": user.session_version})
-    return {"Authorization": f"Bearer {token}"}
+    return user, {"Authorization": f"Bearer {token}"}
 
 
 def _client(db, company: Company, suffix: str) -> Client:
@@ -67,12 +69,35 @@ def _csv_rows(archive: zipfile.ZipFile, name: str) -> list[dict[str, str]]:
     )
 
 
-def test_accountant_has_read_only_finance_access_and_monthly_exports(client, db):
-    accountant_role = db.query(Role).filter(Role.name == "accountant").one()
+def test_external_accountant_has_read_only_finance_access_and_monthly_exports(client, db):
+    external_portal_role = db.query(Role).filter(Role.name == "external_portal").one()
 
     company = _company(db, "PRIMARY")
     other_company = _company(db, "OTHER")
-    headers = _headers(db, company, accountant_role.id, "accountant")
+    accountant, headers = _headers(
+        db,
+        company,
+        external_portal_role.id,
+        "external-accountant",
+    )
+    db.add(
+        ExternalAccessGrant(
+            company_id=company.id,
+            user_id=accountant.id,
+            access_type="accountant",
+            status="active",
+        )
+    )
+    db.commit()
+    assert (
+        db.query(CompanyMembership)
+        .filter(
+            CompanyMembership.company_id == company.id,
+            CompanyMembership.user_id == accountant.id,
+        )
+        .count()
+        == 0
+    )
     own_client = _client(db, company, "principal")
     other_client = _client(db, other_company, "otra")
     db.add_all(
@@ -163,3 +188,68 @@ def test_accountant_has_read_only_finance_access_and_monthly_exports(client, db)
         },
     ).status_code == 403
     assert client.get("/api/v1/task-items/", headers=headers).status_code == 403
+
+    internal_user = User(
+        email="internal-user@gestoria.test",
+        hashed_password="unused",
+        full_name="Internal user",
+        role_id=3,
+        company_id=company.id,
+    )
+    db.add(internal_user)
+    db.commit()
+    assert client.patch(
+        f"/api/v1/users/{internal_user.id}",
+        headers=headers,
+        json={"full_name": "Attempted edit"},
+    ).status_code == 403
+
+    grant = db.query(ExternalAccessGrant).filter_by(user_id=accountant.id).one()
+    grant.status = "revoked"
+    db.commit()
+    assert client.get("/api/v1/invoices/", headers=headers).status_code == 403
+
+
+def test_company_admin_can_suspend_and_restore_an_external_accountant(client, db):
+    external_portal_role = db.query(Role).filter(Role.name == "external_portal").one()
+    company = _company(db, "SUSPEND")
+    admin, admin_headers = _headers(db, company, 1, "external-access-admin")
+    accountant, accountant_headers = _headers(
+        db,
+        company,
+        external_portal_role.id,
+        "suspendable-accountant",
+    )
+    grant = ExternalAccessGrant(
+        company_id=company.id,
+        user_id=accountant.id,
+        access_type="accountant",
+        status="active",
+    )
+    db.add(grant)
+    db.commit()
+
+    suspended = client.patch(
+        f"/api/v1/users/{accountant.id}",
+        headers=admin_headers,
+        json={"is_active": False},
+    )
+
+    assert suspended.status_code == 200, suspended.text
+    db.refresh(grant)
+    assert grant.status == "revoked"
+    assert grant.revoked_by_user_id == admin.id
+    assert grant.revoked_at is not None
+
+    restored = client.patch(
+        f"/api/v1/users/{accountant.id}",
+        headers=admin_headers,
+        json={"is_active": True},
+    )
+
+    assert restored.status_code == 200, restored.text
+    db.refresh(grant)
+    assert grant.status == "active"
+    assert grant.revoked_at is None
+    assert grant.revoked_by_user_id is None
+    assert client.get("/api/v1/invoices/", headers=accountant_headers).status_code == 200

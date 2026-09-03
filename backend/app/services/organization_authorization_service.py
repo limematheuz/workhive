@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 
 from app.models.company_membership import CompanyMembership
 from app.models.company import Company
+from app.models.external_access_grant import ExternalAccessGrant
 from app.models.user import User
 from app.repositories import organization as organization_repo
 from app.services.entitlement_service import require_feature
+from app.services.external_access_policy import require_external_company_capability
 from app.services.organization_location_scope_service import (
     resolve_permitted_location_ids,
 )
@@ -43,9 +45,7 @@ _LEGACY_ROLE_CAPABILITIES = {
     "viewer": frozenset(
         {"locations.read", "work.read", "time.read", "time.manage"}
     ),
-    "accountant": frozenset({"finance.read"}),
 }
-
 
 def _has_explicit_profile_assignments(
     db: Session,
@@ -84,11 +84,11 @@ def _legacy_role_allows(
     return capability in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ())
 
 
-def _require_active_company_membership(
+def _require_active_company_principal(
     db: Session,
     current_user: User,
     capability: str,
-) -> tuple[int, CompanyMembership]:
+) -> tuple[int, CompanyMembership | ExternalAccessGrant]:
     if is_platform_superadmin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -119,6 +119,14 @@ def _require_active_company_membership(
     }.get(capability)
     if feature_code:
         require_feature(db, company, feature_code)
+    grant = require_external_company_capability(
+        db,
+        current_user=current_user,
+        company_id=company_id,
+        capability=capability,
+    )
+    if grant is not None:
+        return company_id, grant
     membership = organization_repo.get_user_membership(
         db,
         company_id=company_id,
@@ -147,12 +155,22 @@ def require_capability(
     *,
     scope_type: str = "company",
     scope_id: int | None = None,
-) -> CompanyMembership:
+) -> CompanyMembership | ExternalAccessGrant:
     """Enforce a company-scoped capability at the backend service boundary."""
 
-    company_id, membership = _require_active_company_membership(
+    company_id, principal = _require_active_company_principal(
         db, current_user, capability
     )
+    if isinstance(principal, ExternalAccessGrant):
+        if scope_type != "company" or (
+            scope_id is not None and scope_id != company_id
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions",
+            )
+        return principal
+    membership = principal
 
     target_id = scope_id if scope_id is not None else company_id
     if _legacy_role_allows(
@@ -224,9 +242,12 @@ def uses_legacy_role_authorization(
 ) -> bool:
     """Whether this user still relies on the temporary role compatibility path."""
 
-    company_id, membership = _require_active_company_membership(
+    company_id, principal = _require_active_company_principal(
         db, current_user, capability
     )
+    if isinstance(principal, ExternalAccessGrant):
+        return False
+    membership = principal
     return not _has_explicit_profile_assignments(
         db,
         company_id=company_id,
@@ -246,9 +267,15 @@ def permitted_location_ids(
     organizational unit; work orders inherit through ``location_id``.
     """
 
-    company_id, membership = _require_active_company_membership(
+    company_id, principal = _require_active_company_principal(
         db, current_user, capability
     )
+    if isinstance(principal, ExternalAccessGrant):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+    membership = principal
     if _legacy_role_allows(
         db,
         current_user,
@@ -280,11 +307,17 @@ def resolve_location_capabilities(
     to locations where the user can actually manage work.
     """
 
-    company_id, membership = _require_active_company_membership(
+    company_id, principal = _require_active_company_principal(
         db,
         current_user,
         read_capability,
     )
+    if isinstance(principal, ExternalAccessGrant):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+    membership = principal
     if _legacy_role_allows(
         db,
         current_user,

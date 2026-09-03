@@ -24,6 +24,11 @@ class User(Base):
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
     company = relationship("Company", back_populates="users")
     company_memberships = relationship("CompanyMembership", back_populates="user")
+    external_access_grants = relationship(
+        "ExternalAccessGrant",
+        back_populates="user",
+        foreign_keys="ExternalAccessGrant.user_id",
+    )
 
     work_sessions = relationship("WorkSession", back_populates="user")
 

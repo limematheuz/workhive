@@ -21,7 +21,6 @@ def legacy_role_name_access_class(role_name: str | None) -> str | None:
         "admin": "admin",
         "manager": "responsible",
         "viewer": "worker",
-        "accountant": "responsible",
     }.get(role_name)
 
 

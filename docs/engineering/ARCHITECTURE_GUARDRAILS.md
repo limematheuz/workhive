@@ -28,6 +28,21 @@ pnpm test:architecture
 
 También forma parte obligatoria de CI en cada PR.
 
+## Audiencias internas y accesos externos
+
+- `CompanyMembership` representa exclusivamente a una persona del equipo
+  interno. Sus perfiles, departamentos, equipos y scopes no se pueden asignar
+  a una gestoría, cliente o partner.
+- Un acceso externo se expresa con `ExternalAccessGrant`, siempre ligado a una
+  empresa, revocable y verificado en el servicio de autorización. El rol
+  técnico `external_portal` por sí solo no concede ninguna capacidad.
+- La política actual de gestoría permite únicamente `finance.read`, exige
+  `features.accountant_portal` y usa `limits.accountant_portals`; nunca
+  consume una cuota `limits.internal_*`.
+- Cliente y partner deben llegar con su propio tipo de grant, política,
+  serializador y pruebas de aislamiento. No se reutilizan perfiles internos ni
+  se amplía la política de gestoría por similitud.
+
 ## Cómo trabajar cuando una pieza empieza a crecer
 
 1. Mantén la ruta como transporte: validación HTTP, dependencia de usuario y
