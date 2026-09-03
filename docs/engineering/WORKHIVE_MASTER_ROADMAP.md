@@ -36,7 +36,7 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ## 2. Estado de publicación
 
-- ✅ Producción: `v1.5.3` (`9c76b6d`).
+- ✅ Producción: `v1.5.4` (`fa8be24`).
 - ✅ Validado en `main` local: `07e0e83` aclara Seguimiento comercial y añade
   paginación a Facturas y Presupuestos.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
