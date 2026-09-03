@@ -4,7 +4,7 @@ import test from "node:test";
 import {
     canViewFinanceRole,
     isCompanyAdminRole,
-    isAccountantRole,
+    isExternalPortalRole,
 } from "../domain/access/roles.ts";
 
 test("company privacy administration excludes managers and viewers", () => {
@@ -14,9 +14,9 @@ test("company privacy administration excludes managers and viewers", () => {
     assert.equal(isCompanyAdminRole("viewer"), false);
 });
 
-test("accountants can read finance without becoming company administrators", () => {
-    assert.equal(isAccountantRole("accountant"), true);
-    assert.equal(isCompanyAdminRole("accountant"), false);
-    assert.equal(canViewFinanceRole("accountant"), true);
+test("external accountants can read finance without becoming company administrators", () => {
+    assert.equal(isExternalPortalRole("external_portal"), true);
+    assert.equal(isCompanyAdminRole("external_portal"), false);
+    assert.equal(canViewFinanceRole("external_portal"), true);
     assert.equal(canViewFinanceRole("viewer"), false);
 });

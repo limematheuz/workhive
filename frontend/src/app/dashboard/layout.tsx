@@ -13,8 +13,8 @@ import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
-import { isAccountantRole } from "@/domain/access/roles";
-import { canAccessAccountantDashboardPath } from "@/domain/access/accountant-dashboard";
+import { isExternalPortalRole } from "@/domain/access/roles";
+import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant-dashboard";
 import { NoWorkspaceAccount } from "@/components/dashboard/NoWorkspaceAccount";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -32,7 +32,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { user, loading } = useUser();
     const { dict } = useDictionary();
     const [showOnboarding, setShowOnboarding] = useState(false);
-    const isAccountant = isAccountantRole(user?.role?.name);
+    const isExternalPortal = isExternalPortalRole(user?.role?.name);
 
     // Check if onboarding should be shown
     useEffect(() => {
@@ -94,7 +94,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         return <NoWorkspaceAccount onLogout={() => { void handleLogout(); }} />;
     }
 
-    if (isAccountant && !canAccessAccountantDashboardPath(pathname)) {
+    if (isExternalPortal && !canAccessExternalPortalDashboardPath(pathname)) {
         redirect("/dashboard/analytics");
     }
 

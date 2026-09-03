@@ -21,8 +21,8 @@ test("Team keeps people and partner companies separate", () => {
     assert.match(page, /CollaborationManagementPanel/);
     assert.match(page, /TeamInvitationChooserDialog/);
     assert.match(page, /dict\.users\.partner_companies/);
-    assert.match(page, /dict\.users\.accountants_info/);
-    assert.match(page, /member\.role\?\.name === "accountant"/);
+    assert.match(page, /dict\.users\.external_accesses_info/);
+    assert.match(page, /member\.role\?\.name === "external_portal"/);
     assert.match(page, /get\("tab"\) === "companies"/);
     assert.doesNotMatch(page, /badge: companyTeam\.length/);
     assert.match(chooser, /onInvitePerson/);

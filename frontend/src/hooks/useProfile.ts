@@ -12,7 +12,7 @@ import { ActiveCompanySession, UserStatsResponse, WorkSession, TaskItem } from "
 import { WorkSessionService } from "@/services/work-session.service";
 import { Invoice } from "@/types/invoice";
 import { getErrorMessage } from "@/lib/errors";
-import { isAccountantRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import type { CompanyExpense } from "@/types/company";
 import { buildCompanyTaskStats } from "@/lib/operations-analytics";
 
@@ -252,7 +252,7 @@ export function useProfile() {
     const isAdminOrSuperadmin = user?.role?.name === "admin" || user?.role?.name === "superadmin";
     const isManager = user?.role?.name === "manager";
     const isViewer = user?.role?.name === "viewer";
-    const isAccountant = isAccountantRole(user?.role?.name);
+    const isAccountant = isExternalPortalRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
     const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin;
     const canViewActiveTeam = (isAdminOrSuperadmin || isManager) && !userIsPlatformSuperadmin;

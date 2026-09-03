@@ -59,22 +59,22 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     assert.doesNotMatch(histories, /<table className="w-full text-left border-collapse">/);
 });
 
-test("accountant profiles skip operational data and notification polling", () => {
+test("external portal profiles skip operational data and notification polling", () => {
     const page = source("../app/dashboard/profile/page.tsx");
     const hook = source("../hooks/useProfile.ts");
     const notifications = source("../components/dashboard/notifications/NotificationPanel.tsx");
 
-    assert.match(hook, /const isAccountant = isAccountantRole\(user\?\.role\?\.name\)/);
+    assert.match(hook, /const isAccountant = isExternalPortalRole\(user\?\.role\?\.name\)/);
     assert.match(hook, /const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin/);
     assert.match(page, /!state\.isAccountant && \(/);
-    assert.match(notifications, /Boolean\(user\) && !isAccountantRole\(user\?\.role\?\.name\)/);
+    assert.match(notifications, /Boolean\(user\) && !isExternalPortalRole\(user\?\.role\?\.name\)/);
 });
 
-test("accountant routes redirect before protected dashboard pages mount", () => {
+test("external portal routes redirect before protected dashboard pages mount", () => {
     const layout = source("../app/dashboard/layout.tsx");
 
-    assert.match(layout, /canAccessAccountantDashboardPath/);
-    assert.match(layout, /isAccountantRole\(user\?\.role\?\.name\)/);
+    assert.match(layout, /canAccessExternalPortalDashboardPath/);
+    assert.match(layout, /isExternalPortalRole\(user\?\.role\?\.name\)/);
     assert.match(layout, /redirect\("\/dashboard\/analytics"\)/);
-    assert.match(layout, /if \(isAccountant && !canAccessAccountantDashboardPath\(pathname\)\)/);
+    assert.match(layout, /if \(isExternalPortal && !canAccessExternalPortalDashboardPath\(pathname\)\)/);
 });
