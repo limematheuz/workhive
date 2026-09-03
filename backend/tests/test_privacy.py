@@ -1,11 +1,16 @@
 import smtplib
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from app.core.config import settings
 from app.core.security import get_password_hash
+from app.models.audit_log import AuditLog
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership
+from app.models.data_subject_request import DataSubjectRequest
 from app.models.user import User
+from app.services import privacy_service
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
 
 
@@ -431,3 +436,136 @@ def test_other_company_admin_cannot_resolve_an_erasure_request(client, db, monke
     assert response.status_code == 404
     assert db.get(User, worker.id).is_active is True
     assert resolution_email_calls == []
+
+
+def test_erasure_lifecycle_supports_company_review_platform_escalation_and_retention(
+    client, db
+):
+    company_admin_headers = _register(client, "lifecycle-admin@workhive.com")
+    company_id = _create_company(client, company_admin_headers, "-lifecycle")
+    worker = _add_worker(
+        db,
+        email="lifecycle-worker@workhive.com",
+        company_id=company_id,
+    )
+    worker_login = client.post(
+        "/api/v1/auth/login",
+        data=login_form(worker.email, TEST_SECRET),
+    )
+    assert worker_login.status_code == 200, worker_login.text
+    worker_headers = {"Authorization": f"Bearer {worker_login.json()['access_token']}"}
+
+    created = client.post(
+        "/api/v1/privacy/requests",
+        headers=worker_headers,
+        json={
+            "request_type": "erasure",
+            "reason": "Please erase my account after the company review.",
+        },
+    )
+    assert created.status_code == 201, created.text
+    request_id = created.json()["id"]
+
+    company_queue = client.get(
+        "/api/v1/privacy/requests",
+        headers=company_admin_headers,
+    )
+    assert company_queue.status_code == 200, company_queue.text
+    assert {
+        (item["id"], item["company_id"], item["requested_by_user_id"])
+        for item in company_queue.json()
+    } >= {(request_id, company_id, worker.id)}
+
+    platform_admin = User(
+        email="privacy-platform-admin@workhive.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Privacy Platform Admin",
+        role_id=4,
+        company_id=None,
+        is_active=True,
+    )
+    db.add(platform_admin)
+    db.commit()
+    db.refresh(platform_admin)
+    platform_login = client.post(
+        "/api/v1/auth/login",
+        data=login_form(platform_admin.email, TEST_SECRET),
+    )
+    assert platform_login.status_code == 200, platform_login.text
+    platform_headers = {
+        "Authorization": f"Bearer {platform_login.json()['access_token']}"
+    }
+
+    platform_queue = client.get(
+        "/api/v1/privacy/requests",
+        headers=platform_headers,
+    )
+    assert platform_queue.status_code == 200, platform_queue.text
+    assert {
+        (item["id"], item["company_id"], item["requested_by_user_id"])
+        for item in platform_queue.json()
+    } >= {(request_id, company_id, worker.id)}
+
+    resolved = client.post(
+        f"/api/v1/privacy/requests/{request_id}/resolve",
+        headers=platform_headers,
+        json={
+            "decision": "complete",
+            "resolution_notes": "Platform verified the company review and approved erasure.",
+        },
+    )
+    assert resolved.status_code == 200, resolved.text
+    assert resolved.json()["status"] == "completed"
+    assert resolved.json()["resolved_by_user_id"] == platform_admin.id
+    assert client.get("/api/v1/users/me", headers=worker_headers).status_code == 401
+
+    db.expire_all()
+    anonymized_worker = db.get(User, worker.id)
+    assert anonymized_worker is not None
+    assert anonymized_worker.email == f"deleted+{worker.id}@invalid.workhive.local"
+    assert anonymized_worker.full_name == "Deleted user"
+    assert anonymized_worker.is_active is False
+    retained_request = db.get(DataSubjectRequest, request_id)
+    assert retained_request is not None
+    assert retained_request.company_id == company_id
+    assert retained_request.requested_by_user_id == worker.id
+    assert retained_request.resolved_by_user_id == platform_admin.id
+
+    audit_record = (
+        db.query(AuditLog)
+        .filter(
+            AuditLog.action == "privacy.request_resolved",
+            AuditLog.entity_type == "data_subject_request",
+            AuditLog.entity_id == str(request_id),
+        )
+        .one()
+    )
+    audit_record.ip_address = "203.0.113.8"
+    audit_record.created_at = datetime.now(timezone.utc) - timedelta(
+        days=settings.AUDIT_IP_RETENTION_DAYS + 1
+    )
+    db.add(audit_record)
+    db.commit()
+
+    first_retention_run = privacy_service.apply_retention_policy(db)
+    assert first_retention_run["redacted_audit_ip_addresses"] >= 1
+    assert first_retention_run["deleted_resolved_requests"] == 0
+    db.expire_all()
+    assert db.get(DataSubjectRequest, request_id) is not None
+    retained_audit_record = db.get(AuditLog, audit_record.id)
+    assert retained_audit_record is not None
+    assert retained_audit_record.ip_address is None
+
+    retained_request = db.get(DataSubjectRequest, request_id)
+    assert retained_request is not None
+    retained_request.resolved_at = datetime.now(timezone.utc) - timedelta(
+        days=settings.DATA_SUBJECT_REQUEST_RETENTION_DAYS + 1
+    )
+    db.add(retained_request)
+    db.commit()
+
+    second_retention_run = privacy_service.apply_retention_policy(db)
+    assert second_retention_run["deleted_resolved_requests"] == 1
+    db.expire_all()
+    assert db.get(DataSubjectRequest, request_id) is None
+    assert db.get(AuditLog, audit_record.id) is not None
