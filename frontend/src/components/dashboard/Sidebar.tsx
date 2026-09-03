@@ -9,7 +9,7 @@ import { useUser } from "@/lib/user-context";
 import { TaskService } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { canAdministerCompany, canManageCompanyTasks, canViewFinance, isAccountantRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canAdministerCompany, canManageCompanyTasks, canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { NotificationService } from "@/services/notification.service";
 import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
@@ -40,7 +40,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
-    const isAccountant = isAccountantRole(user?.role?.name);
+    const isAccountant = isExternalPortalRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
     const featureContext = user && !userIsPlatformSuperadmin && !isAccountant
         ? `${user.id}:${user.company_id ?? "none"}`

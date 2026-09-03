@@ -4,6 +4,6 @@ const ACCOUNTANT_ALLOWED_DASHBOARD_PATHS = new Set([
     "/dashboard/profile",
 ]);
 
-export function canAccessAccountantDashboardPath(pathname: string): boolean {
+export function canAccessExternalPortalDashboardPath(pathname: string): boolean {
     return ACCOUNTANT_ALLOWED_DASHBOARD_PATHS.has(pathname);
 }

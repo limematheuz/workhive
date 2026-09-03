@@ -3,7 +3,7 @@ export const COMPANY_ASSIGNABLE_ROLE_NAMES = [
     "admin",
     "manager",
     "viewer",
-    "accountant",
+    "external_portal",
 ] as const;
 
 export const getRoleRank = (roleName?: string) => {
@@ -20,7 +20,7 @@ export const getRoleRank = (roleName?: string) => {
 export const getRoleText = (roleName: string, labels: {
     role_superadmin?: string;
     role_admin?: string;
-    role_accountant?: string;
+    role_external_portal?: string;
     role_manager?: string;
     role_installer?: string;
     role_viewer?: string;
@@ -30,8 +30,8 @@ export const getRoleText = (roleName: string, labels: {
             return labels.role_superadmin || "superadmin";
         case "admin":
             return labels.role_admin || "administrador";
-        case "accountant":
-            return labels.role_accountant || "gestor";
+        case "external_portal":
+            return labels.role_external_portal || "gestoría externa";
         case "manager":
             return labels.role_manager || "gerente";
         case "installer":

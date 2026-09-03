@@ -7,7 +7,7 @@ const COMPANY_TASK_MANAGERS = new Set<RoleName>([
     "manager",
 ]);
 const COMPANY_ADMINS = new Set<RoleName>(["superadmin", "admin"]);
-const FINANCIAL_READERS = new Set<RoleName>(["superadmin", "admin", "accountant"]);
+const FINANCIAL_READERS = new Set<RoleName>(["superadmin", "admin", "external_portal"]);
 const CALENDAR_MANAGERS = new Set<RoleName>(["admin", "manager"]);
 const CALENDAR_VIEWERS = new Set<RoleName>(["admin", "manager", "viewer"]);
 
@@ -28,10 +28,10 @@ export function isCompanyAdminRole(
     return Boolean(role && COMPANY_ADMINS.has(role as RoleName));
 }
 
-export function isAccountantRole(
+export function isExternalPortalRole(
     role: RoleName | string | null | undefined,
 ): boolean {
-    return role === "accountant";
+    return role === "external_portal";
 }
 
 export function canViewFinanceRole(

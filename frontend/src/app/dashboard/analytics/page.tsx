@@ -21,7 +21,7 @@ import {
     UsersRound,
 } from "lucide-react";
 
-import { canViewFinance, isAccountantRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
@@ -75,7 +75,7 @@ export default function FinanceAnalyticsPage() {
     const { dict, locale } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const canViewAnalytics = canViewFinance(user) && !isPlatformSuperadmin(user);
-    const isAccountant = isAccountantRole(user?.role?.name);
+    const isAccountant = isExternalPortalRole(user?.role?.name);
     const text = dict.finance_analytics;
     const profileCharts = useProfile();
 

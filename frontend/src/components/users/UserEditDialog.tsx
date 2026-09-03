@@ -5,6 +5,10 @@ import { Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+    DocumentFormSelect,
+    documentControlClassName,
+} from "@/components/billing/DocumentFormControls";
+import {
     Dialog,
     DialogContent,
     DialogDescription,
@@ -12,6 +16,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type { Role } from "@/services/role.service";
@@ -41,7 +46,7 @@ type UserEditDialogProps = {
         inactive_access_desc?: string;
         role_superadmin?: string;
         role_admin?: string;
-        role_accountant?: string;
+        role_external_portal?: string;
         role_manager?: string;
         role_installer?: string;
         role_viewer?: string;
@@ -85,7 +90,7 @@ export function UserEditDialog({
     const roleLabels = {
         role_superadmin: labels.role_superadmin,
         role_admin: labels.role_admin,
-        role_accountant: labels.role_accountant,
+        role_external_portal: labels.role_external_portal,
         role_manager: labels.role_manager,
         role_installer: labels.role_installer,
         role_viewer: labels.role_viewer,
@@ -127,29 +132,28 @@ export function UserEditDialog({
                     <div className="p-6 overflow-y-auto flex-1 space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="eFullName" className="text-[var(--text-main)]">{labels.full_name}</Label>
-                            <input
+                            <Input
                                 id="eFullName"
                                 type="text"
                                 value={form.fullName}
                                 onChange={(e) => setForm((current) => ({ ...current, fullName: e.target.value }))}
                                 placeholder={labels.full_name_placeholder}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] placeholder-[var(--text-muted)] rounded-md px-3 py-2 text-sm outline-none focus-visible:ring-1 focus-visible:ring-[var(--border-color)] transition-colors"
                             />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="eRoleId" className="text-[var(--text-main)]">{labels.role}</Label>
-                            <select
+                            <DocumentFormSelect
                                 id="eRoleId"
                                 aria-label={labels.role}
                                 value={form.roleId}
                                 required
                                 onChange={(e) => setForm((current) => ({ ...current, roleId: e.target.value }))}
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-md px-3 py-2 text-sm outline-none"
+                                className={documentControlClassName}
                             >
                                 {roles.map((r) => (
                                     <option key={r.id} value={r.id}>{getRoleText(r.name, roleLabels)}</option>
                                 ))}
-                            </select>
+                            </DocumentFormSelect>
                         </div>
                         <div className="flex items-center justify-between bg-[var(--bg-primary)]/40 p-4 rounded-xl border border-[var(--border-soft)]">
                             <div className="flex flex-col gap-0.5">
@@ -158,18 +162,20 @@ export function UserEditDialog({
                                     {form.isActive ? (labels.active_access_desc || "The user can log in") : (labels.inactive_access_desc || "The user's access is suspended")}
                                 </span>
                             </div>
-                            <button
+                            <Button
                                 type="button"
                                 onClick={() => setForm((current) => ({ ...current, isActive: !current.isActive }))}
                                 aria-label={labels.system_access || "System access"}
-                                className="text-accent hover:opacity-85 border-none bg-transparent cursor-pointer"
+                                variant="ghost"
+                                size="icon"
+                                className="text-accent hover:bg-accent/10 hover:text-accent"
                             >
                                 {form.isActive ? (
                                     <ToggleRight className="w-10 h-10 stroke-[1.5px]" />
                                 ) : (
                                     <ToggleLeft className="w-10 h-10 text-[var(--text-muted)] stroke-[1.5px]" />
                                 )}
-                            </button>
+                            </Button>
                         </div>
                     </div>
 

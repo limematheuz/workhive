@@ -34,7 +34,7 @@ type DeleteDialogState = {
 };
 
 type TeamView = "people" | "companies";
-type PeopleScope = "all" | "internal" | "accountants";
+type PeopleScope = "all" | "internal" | "external";
 
 export default function TeamPage() {
     const { dict } = useDictionary();
@@ -144,14 +144,14 @@ export default function TeamPage() {
     });
     const filteredTeam = companyTeam.filter((member) => {
         if (peopleScope === "all") return true;
-        if (peopleScope === "accountants") return member.role?.name === "accountant";
-        return member.role?.name !== "accountant";
+        if (peopleScope === "external") return member.role?.name === "external_portal";
+        return member.role?.name !== "external_portal";
     });
 
     const roleLabels = {
         role_superadmin: dict.users.role_superadmin,
         role_admin: dict.users.role_admin,
-        role_accountant: dict.users.role_accountant,
+        role_external_portal: dict.users.role_external_portal,
         role_manager: dict.users.role_manager,
         role_installer: dict.users.role_installer,
         role_viewer: dict.users.role_viewer,
@@ -205,13 +205,13 @@ export default function TeamPage() {
                             >
                                 <option value="all">{dict.users.all_people}</option>
                                 <option value="internal">{dict.users.internal_team}</option>
-                                <option value="accountants">{dict.users.accountants}</option>
+                                <option value="external">{dict.users.external_accesses}</option>
                             </DocumentFormSelect>
                         </label>
                     </div>
-                    {peopleScope === "accountants" && (
+                    {peopleScope === "external" && (
                         <p className="mb-4 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-[var(--text-muted)]">
-                            {dict.users.accountants_info}
+                            {dict.users.external_accesses_info}
                         </p>
                     )}
                 <TeamListSection
