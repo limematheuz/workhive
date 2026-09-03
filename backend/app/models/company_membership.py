@@ -89,6 +89,11 @@ class CompanyMembership(Base):
         back_populates="company_membership",
         viewonly=True,
     )
+    client_account_assignments = relationship(
+        "ClientAccountAssignment",
+        back_populates="company_membership",
+        viewonly=True,
+    )
 
 
 class Department(Base):

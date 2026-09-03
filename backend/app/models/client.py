@@ -25,6 +25,7 @@ class Client(Base):
             "legal_number",
             name="uq_client_company_legal_number",
         ),
+        UniqueConstraint("id", "company_id", name="uq_client_id_company"),
     )
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, index=True)
@@ -56,6 +57,11 @@ class Client(Base):
     )
     opportunities = relationship(
         "ClientOpportunity",
+        back_populates="client",
+        cascade="all, delete-orphan",
+    )
+    account_assignments = relationship(
+        "ClientAccountAssignment",
         back_populates="client",
         cascade="all, delete-orphan",
     )
