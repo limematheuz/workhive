@@ -119,7 +119,7 @@ function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOn
         <>
             <Sidebar theme={theme} onThemeChange={onThemeChange} onLogout={onLogout} />
 
-            <main className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:py-4 lg:pl-0 lg:pr-4">
+            <div className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:py-4 lg:pl-0 lg:pr-4">
                 <div className="relative flex min-h-dvh min-w-0 flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:rounded-3xl lg:border lg:border-[var(--border-soft)]">
                     {/* Clip backlight bleed without making this shell a touch scrollport (AuthShell pattern). */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -132,7 +132,7 @@ function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOn
                         {children}
                     </main>
                 </div>
-            </main>
+            </div>
 
 
             {showOnboarding && (

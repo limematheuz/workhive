@@ -33,22 +33,40 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
     const [taskPendingCount, setTaskPendingCount] = useState(0);
     const [reportAlertsCount, setReportAlertsCount] = useState(0);
-    const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
+    const [loadedFeatures, setLoadedFeatures] = useState<{
+        context: string;
+        values: Set<string> | null;
+    } | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
     const isAccountant = isAccountantRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
+    const featureContext = user && !userIsPlatformSuperadmin && !isAccountant
+        ? `${user.id}:${user.company_id ?? "none"}`
+        : null;
 
     useEffect(() => {
-        if (!user || userIsPlatformSuperadmin || isAccountant) { setEnabledFeatures(null); return; }
+        if (!featureContext) return;
         let cancelled = false;
         void CompanyPlanAccessService.getCurrentEntitlements().then(access => {
             if (cancelled) return;
-            setEnabledFeatures(new Set(access.entitlements.filter(item => item.value_type === "boolean" && item.value === true).map(item => item.code)));
-        }).catch(() => { if (!cancelled) setEnabledFeatures(null); });
+            const grantedFeatures = new Set<string>();
+            for (const entitlement of access.entitlements) {
+                if (entitlement.value_type === "boolean" && entitlement.value === true) {
+                    grantedFeatures.add(entitlement.code);
+                }
+            }
+            setLoadedFeatures({ context: featureContext, values: grantedFeatures });
+        }).catch(() => {
+            if (!cancelled) setLoadedFeatures({ context: featureContext, values: null });
+        });
         return () => { cancelled = true; };
-    }, [isAccountant, user, userIsPlatformSuperadmin]);
+    }, [featureContext]);
+
+    const enabledFeatures = loadedFeatures?.context === featureContext
+        ? loadedFeatures.values
+        : null;
 
     const refreshPending = useCallback(async () => {
         if (!isAdminOrManager || userIsPlatformSuperadmin) return setPendingRequestsCount(0);
