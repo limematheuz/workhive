@@ -204,8 +204,9 @@ como WorkHive Core solo cuando el caso real las exige.
   financiero de solo lectura están cubiertos con regresiones permitidas,
   denegadas y de aislamiento. La migración heredada se comprobó en PostgreSQL
   aislado antes de marcar este punto.
-- ⬜ Prueba de carga concurrente sobre PostgreSQL para confirmar la semántica
-  de bloqueo de la base de datos de producción.
+- ✅ Prueba de carga concurrente sobre PostgreSQL confirma el bloqueo de la
+  base de datos de producción: cinco transacciones simultáneas para alta de
+  plaza, promoción y portal de gestoría dejan exactamente una concesión válida.
 - ✅ Migración completa del rol heredado `accountant` a acceso externo; las
   plazas y perfiles base permanecen exclusivamente internos.
 - ⬜ Verificación end-to-end del ciclo completo de supresión, incluida la
