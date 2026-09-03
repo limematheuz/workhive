@@ -26,26 +26,35 @@ def get_active_sessions_by_user(
 
 
 def get_work_session_by_id(
-    db: Session, session_id: int, user_id: int
+    db: Session,
+    session_id: int,
+    user_id: int,
+    location_ids: set[int] | None = None,
 ) -> WorkSession | None:
-    return (
+    query = (
         db.query(WorkSession)
         .filter(WorkSession.id == session_id)
         .filter(WorkSession.user_id == user_id)
-        .first()
     )
+    if location_ids is not None:
+        query = query.filter(WorkSession.location_id.in_(location_ids))
+    return query.first()
 
 
 def get_work_session_by_user(
-    db: Session, user_id: int, skip: int = 0, limit: int = 100
+    db: Session,
+    user_id: int,
+    skip: int = 0,
+    limit: int = 100,
+    location_ids: set[int] | None = None,
 ) -> list[WorkSession]:
-    return (
+    query = (
         db.query(WorkSession)
         .filter(WorkSession.user_id == user_id)
-        .offset(skip)
-        .limit(limit)
-        .all()
     )
+    if location_ids is not None:
+        query = query.filter(WorkSession.location_id.in_(location_ids))
+    return query.offset(skip).limit(limit).all()
 
 
 def create_work_session(
@@ -178,9 +187,11 @@ def get_visible_sessions_by_tasks(
 
 
 def get_visible_active_sessions(
-    db: Session, company_id: int
+    db: Session,
+    company_id: int,
+    location_ids: set[int] | None = None,
 ) -> list[WorkSession]:
-    return (
+    query = (
         db.query(WorkSession)
         .join(User, WorkSession.user_id == User.id)
         .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
@@ -200,6 +211,7 @@ def get_visible_active_sessions(
                 ),
             ),
         )
-        .order_by(User.company_id.asc(), WorkSession.start_time.asc())
-        .all()
     )
+    if location_ids is not None:
+        query = query.filter(WorkSession.location_id.in_(location_ids))
+    return query.order_by(User.company_id.asc(), WorkSession.start_time.asc()).all()

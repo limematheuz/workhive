@@ -1,5 +1,7 @@
 from app.core.security import create_access_token
 from app.models.company import Company
+from app.models.company_membership import Department, Team
+from app.models.location import Location
 from app.models.permission_profile import (
     MembershipPermissionProfileAssignment,
     MembershipPermissionProfileScope,
@@ -8,7 +10,7 @@ from app.models.permission_profile import (
     PermissionProfilePermission,
 )
 from app.models.user import User
-from app.services import organization_bootstrap_service
+from app.services import company_entitlement_service, organization_bootstrap_service
 
 
 PERMISSIONS = (
@@ -118,7 +120,9 @@ def test_company_administrator_configures_departments_teams_and_profiles(client,
     assert {item["name"] for item in profiles.json()} == {
         "Administrador de empresa",
         "Comercial",
-        "Consulta de clientes",
+        "Consulta",
+        "Operaciones",
+        "Finanzas",
         "Supervisor de zona",
     }
 
@@ -391,6 +395,139 @@ def test_demoting_an_administrator_revokes_the_global_administrator_profile(clie
     assert response.json()["access_class"] == "responsible"
     assert response.json()["legacy_role_name"] == "manager"
     assert response.json()["profile_assignments"] == []
+
+
+def test_promoting_member_rechecks_administrator_capacity(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "promotion-capacity")
+    company.subscription_plan = "free"
+    company_entitlement_service.synchronize_company_subscription(
+        db,
+        company,
+        reason="test.plan_changed",
+    )
+    admin = _bootstrap_admin(db, company, "promotion-capacity-admin")
+    worker = _user(db, company, "promotion-capacity-worker", role_id=3)
+    worker_membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    assert worker_membership is not None
+    db.commit()
+
+    response = client.patch(
+        f"/api/v1/organization/members/{worker_membership.id}",
+        headers=_headers(admin),
+        json={"access_class": "admin"},
+    )
+
+    assert response.status_code == 409, response.text
+    assert response.headers["X-WorkHive-Error-Code"] == "entitlement.quota_reached"
+    db.refresh(worker_membership)
+    db.refresh(worker)
+    assert worker_membership.access_class == "worker"
+    assert worker.role.name == "viewer"
+
+
+def test_locations_are_kept_consistent_with_their_department_and_team(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "location-organization")
+    admin = _bootstrap_admin(db, company, "location-organization-admin")
+    department = Department(
+        company_id=company.id,
+        name="Operaciones",
+        normalized_name="operaciones",
+        code="OPS",
+        is_active=True,
+    )
+    other_department = Department(
+        company_id=company.id,
+        name="Comercial",
+        normalized_name="comercial",
+        code="COM",
+        is_active=True,
+    )
+    db.add_all([department, other_department])
+    db.flush()
+    team = Team(
+        company_id=company.id,
+        department_id=department.id,
+        name="Equipo Norte",
+        code="NORTE",
+        is_active=True,
+    )
+    location = Location(
+        name="Local Norte",
+        address="Calle Diez 10",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    db.add_all([team, location])
+    db.commit()
+    headers = _headers(admin)
+
+    external_company = _company(db, "external-location-organization")
+    external_department = Department(
+        company_id=external_company.id,
+        name="Operaciones externas",
+        normalized_name="operaciones externas",
+        code="OPS-EXT",
+        is_active=True,
+    )
+    db.add(external_department)
+    db.flush()
+    external_team = Team(
+        company_id=external_company.id,
+        department_id=external_department.id,
+        name="Equipo externo",
+        code="EXT",
+        is_active=True,
+    )
+    db.add(external_team)
+    db.commit()
+
+    assigned = client.patch(
+        f"/api/v1/locations/{location.id}",
+        headers=headers,
+        json={"team_id": team.id},
+    )
+    assert assigned.status_code == 200, assigned.text
+    assert assigned.json()["department_id"] == department.id
+    assert assigned.json()["team_id"] == team.id
+
+    mismatch = client.patch(
+        f"/api/v1/locations/{location.id}",
+        headers=headers,
+        json={"department_id": other_department.id, "team_id": team.id},
+    )
+    assert mismatch.status_code == 409, mismatch.text
+
+    foreign_team = client.patch(
+        f"/api/v1/locations/{location.id}",
+        headers=headers,
+        json={"team_id": external_team.id},
+    )
+    assert foreign_team.status_code == 404, foreign_team.text
+
+    assert client.patch(
+        f"/api/v1/organization/teams/{team.id}",
+        headers=headers,
+        json={"is_active": False},
+    ).status_code == 409
+    assert client.patch(
+        f"/api/v1/organization/teams/{team.id}",
+        headers=headers,
+        json={"department_id": other_department.id},
+    ).status_code == 409
+    assert client.delete(
+        f"/api/v1/organization/teams/{team.id}", headers=headers
+    ).status_code == 409
+    assert client.patch(
+        f"/api/v1/organization/departments/{department.id}",
+        headers=headers,
+        json={"is_active": False},
+    ).status_code == 409
+    assert client.delete(
+        f"/api/v1/organization/departments/{department.id}", headers=headers
+    ).status_code == 409
 
 
 def test_department_names_are_unique_after_normalization(client, db):

@@ -4,7 +4,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import AsyncActiveAdmin, get_async_db
+from app.api.deps import AsyncActiveFinancialReader, get_async_db
 from app.models.user import User
 from app.schemas.client_profitability import ClientProfitabilityResponse
 from app.services import client_profitability_service
@@ -21,7 +21,7 @@ async def read_client_profitability(
     period: ProfitabilityPeriod = "month",
     reference_date: ReferenceDate = None,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     if is_platform_superadmin(current_user) or current_user.company_id is None:
         raise HTTPException(

@@ -48,8 +48,12 @@ def get_task_items(
     skip: int = 0,
     limit: int = 100,
     include_requested: bool = False,
+    location_ids: set[int] | None = None,
+    requested_location_ids: set[int] | None = None,
+    feature_checked: bool = False,
 ) -> list[TaskItem]:
-    _require_work_orders_feature(db, company_id)
+    if not feature_checked:
+        _require_work_orders_feature(db, company_id)
     return task_item_repo.get_task_items(
         db,
         company_id,
@@ -59,6 +63,8 @@ def get_task_items(
         skip,
         limit,
         include_requested,
+        location_ids,
+        requested_location_ids,
     )
 
 
@@ -71,8 +77,12 @@ async def get_task_items_async(
     skip: int = 0,
     limit: int = 100,
     include_requested: bool = False,
+    location_ids: set[int] | None = None,
+    requested_location_ids: set[int] | None = None,
+    feature_checked: bool = False,
 ) -> list[TaskItem]:
-    await _require_work_orders_feature_async(db, company_id)
+    if not feature_checked:
+        await _require_work_orders_feature_async(db, company_id)
     return await async_task_item_repo.get_task_items(
         db,
         company_id,
@@ -82,6 +92,8 @@ async def get_task_items_async(
         skip,
         limit,
         include_requested,
+        location_ids,
+        requested_location_ids,
     )
 
 

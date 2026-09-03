@@ -2,6 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.company_membership import Department, DepartmentMembership, Team
+from app.models.location import Location
 from app.models.permission_profile import MembershipPermissionProfileScope
 
 
@@ -78,9 +79,19 @@ def get_department_usage(
         .scalar()
         or 0
     )
+    locations = (
+        db.query(func.count(Location.id))
+        .filter(
+            Location.owner_company_id == company_id,
+            Location.department_id == department_id,
+        )
+        .scalar()
+        or 0
+    )
     return {
         "child_departments": int(child_departments),
         "teams": int(teams),
         "member_assignments": int(member_assignments),
         "profile_scopes": int(profile_scopes),
+        "locations": int(locations),
     }

@@ -54,6 +54,10 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Métricas: dos columnas en móvil; una tarjeta impar no se estira.
 - ✅ Tabs: hasta cuatro opciones se muestran en fila; más de cuatro usan
   selector móvil con separación respecto del contenido.
+- ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
+  Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
+  rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
+  validación visual final.
 
 ### Planes, límites y seguridad comercial
 
@@ -154,9 +158,27 @@ como WorkHive Core solo cuando el caso real las exige.
   **Comercial** y **Consulta de clientes** son seguros, los scopes estrechos
   fallan cerrados y hay pruebas de acceso, denegación, aislamiento entre
   empresas y exclusión del panel de plataforma.
-- ⬜ Matriz de autorización positiva, negativa y de aislamiento para **todos**
+- ✅ Matriz de autorización positiva, negativa y de aislamiento para **todos**
   los dominios: clientes, ubicaciones, tiempo, trabajos y finanzas.
-- ⬜ Verificación de cuotas concurrentes para altas, activación y promoción.
+  - ✅ Clientes y seguimiento comercial se validan por perfil, empresa y scope;
+    la denegación y el aislamiento entre empresas están cubiertos.
+  - ✅ Ubicaciones, trabajos y tiempo usan `locations.*`, `work.*` y `time.*`
+    en backend. Los perfiles estrechos se resuelven por ubicación y las rutas
+    de lectura, escritura y tiempo quedan cubiertas con pruebas permitidas y
+    denegadas.
+  - ✅ Finanzas usa `finance.read/manage`: el perfil Finanzas solo consulta y
+    el perfil Comercial no puede consultar ni modificar presupuestos,
+    facturas, gastos o fiscalidad.
+  - ✅ Una ubicación puede pertenecer opcionalmente a un departamento y a un
+    equipo de ese departamento; los trabajos y el tiempo heredan ese ámbito
+    desde la ubicación. Solo se resuelven ubicaciones activas y propias de la
+    empresa, se bloquean relaciones cruzadas o inconsistentes y hay
+    regresiones permitidas, denegadas y entre empresas.
+- ✅ La decisión de cuota para invitación, activación y promoción se serializa
+  con bloqueo de empresa; hay regresiones para aceptación de invitación,
+  reactivación y promoción sin mutación al alcanzar el límite.
+- ⬜ Prueba de carga concurrente sobre PostgreSQL para confirmar la semántica
+  de bloqueo de la base de datos de producción.
 - ⬜ Migración completa de roles heredados a plazas y perfiles base.
 - ⬜ Verificación end-to-end del ciclo completo de supresión, incluida la
   revisión por empresa, escalado de plataforma y retención legal disociada.

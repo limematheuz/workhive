@@ -134,8 +134,7 @@ cd backend
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
-alembic upgrade head
-uvicorn app.main:app --reload
+./dev.sh
 ```
 
 En otra terminal:
@@ -291,8 +290,7 @@ cd backend
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements-dev.txt
-alembic upgrade head
-uvicorn app.main:app --reload
+./dev.sh
 ```
 
 In another terminal:

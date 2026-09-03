@@ -1,10 +1,5 @@
-from app.api.deps import (
-    AsyncActiveManagerOrAdmin,
-    AsyncActiveUser,
-    get_async_db,
-)
-from fastapi import Depends, status, APIRouter, HTTPException, BackgroundTasks
-from app.api.pagination import PaginationLimit, PaginationOffset
+from app.api.deps import AsyncActiveUser, get_async_db
+from fastapi import Depends, status, APIRouter, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.models.user import User
@@ -17,76 +12,21 @@ from app.schemas.task_item import (
     TaskChecklistItemUpdate,
 )
 from app.services import task_item_service
-from app.services import task_assignment_service
 from app.services.calendar_background_service import sync_company_calendar
-from app.services.user_scope import can_manage_company, is_platform_superadmin
+from app.api.v1.task_item_read import (  # noqa: F401
+    read_task_item as read_task_item,
+    read_task_items as read_task_items,
+)
 
 
 router = APIRouter()
-
-
-@router.get("/", response_model=list[TaskItemResponse])
-async def read_task_items(
-    location_id: int | None = None,
-    user_id: int | None = None,
-    skip: PaginationOffset = 0,
-    limit: PaginationLimit = 100,
-    db: AsyncSession = Depends(get_async_db),
-    task_status: str | None = None,
-    current_user: User = AsyncActiveUser,
-):
-    if is_platform_superadmin(current_user):
-        return []
-    effective_user_id = (
-        current_user.id if current_user.role.name == "viewer" else user_id
-    )
-    include_requested = can_manage_company(current_user)
-    tasks = await task_item_service.get_task_items_async(
-        db,
-        current_user.company_id,
-        effective_user_id,
-        location_id,
-        task_status,
-        skip,
-        limit,
-        include_requested=include_requested,
-    )
-    if current_user.role.name == "viewer":
-        tasks = [
-            task
-            for task in tasks
-            if task.status in task_assignment_service.OPERATIONAL_VIEWER_STATUSES
-            and task_assignment_service.can_viewer_access_task(task, current_user.id)
-        ]
-    return [
-        task_item_service.build_loaded_task_response(task, current_user)
-        for task in tasks
-    ]
-
-
-@router.get("/{task_item_id}", response_model=TaskItemResponse)
-async def read_task_item(
-    task_item_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveUser,
-):
-    task = await task_item_service.get_task_item_async(db, current_user, task_item_id)
-    if (
-        current_user.role.name == "viewer"
-        and (
-            not task_assignment_service.can_viewer_access_task(task, current_user.id)
-            or task.status not in task_assignment_service.OPERATIONAL_VIEWER_STATUSES
-        )
-    ):
-        raise HTTPException(status_code=404, detail="Task Item not found")
-    return task_item_service.build_loaded_task_response(task, current_user)
 
 
 @router.post("/", response_model=TaskItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_task_item(
     task_item_data: TaskItemCreate,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
     def operation(sync_db: Session):
@@ -208,7 +148,7 @@ async def finish_task_work(
 async def delete_task_item(
     task_item_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
 ):
     await db.run_sync(

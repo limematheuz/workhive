@@ -1,10 +1,33 @@
 from sqlalchemy.orm import relationship
 from app.db.session import Base
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float, ForeignKey, func, JSON
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Integer,
+    JSON,
+    String,
+    func,
+)
 
 
 class Location(Base):
     __tablename__ = "locations"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["department_id", "owner_company_id"],
+            ["departments.id", "departments.company_id"],
+            name="fk_location_department_owner_company",
+        ),
+        ForeignKeyConstraint(
+            ["team_id", "owner_company_id"],
+            ["teams.id", "teams.company_id"],
+            name="fk_location_team_owner_company",
+        ),
+    )
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
     address = Column(String(255), nullable=False)
@@ -43,6 +66,11 @@ class Location(Base):
         back_populates="owned_locations",
         foreign_keys=[owner_company_id],
     )
+
+    # A location is the authoritative operational boundary. Work orders and
+    # time entries inherit this organization assignment through location_id.
+    department_id = Column(Integer, nullable=True, index=True)
+    team_id = Column(Integer, nullable=True, index=True)
 
     default_service_provider_id = Column(
         Integer,

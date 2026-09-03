@@ -14,6 +14,7 @@ from app.schemas.organization import (
 )
 from app.services.organization_member_service import member_response
 from app.services.organization_profile_scope_policy import validate_profile_scopes
+from app.services.organization_bootstrap_service import ADMIN_PROFILE_NAME
 from app.services.organization_service_shared import (
     CAPABILITY_MEMBERS_MANAGE,
     CAPABILITY_SCOPES_MANAGE,
@@ -48,9 +49,12 @@ def replace_member_profile_assignments(
     }
     if len(profiles) != len(profile_ids):
         not_found("Permission profile")
-    if any(profile.is_system for profile in profiles.values()):
+    if any(
+        profile.is_system and profile.name == ADMIN_PROFILE_NAME
+        for profile in profiles.values()
+    ):
         conflict(
-            "System permission profiles are assigned only through the administrator class"
+            "The administrator profile is assigned only through the administrator class"
         )
     if any(not profile.is_active for profile in profiles.values()):
         conflict("Inactive permission profiles cannot be assigned")

@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.deps import (
+    ActiveFinanceManager,
+    AsyncActiveFinancialReader,
+    get_async_db,
+    get_db,
+)
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
@@ -19,7 +24,7 @@ router = APIRouter()
 @router.get("/", response_model=CompanyFiscalSettingsResponse)
 async def read_company_fiscal_settings(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: _read_company_fiscal_settings(
@@ -43,7 +48,7 @@ def _read_company_fiscal_settings(db: Session, company_id: int):
 def update_company_fiscal_settings(
     data: CompanyFiscalSettingsUpdate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     company_fiscal_settings_service.update_settings(
         db,
@@ -66,7 +71,7 @@ def upload_company_fiscal_certificate(
     file: UploadFile = File(...),
     password: str = Form(...),
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     enforce_rate_limit(
         request,
@@ -93,7 +98,7 @@ def upload_company_fiscal_certificate(
 @router.post("/validate", response_model=CompanyFiscalSettingsResponse)
 def validate_company_fiscal_settings(
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return company_fiscal_settings_service.get_readiness(
         db,

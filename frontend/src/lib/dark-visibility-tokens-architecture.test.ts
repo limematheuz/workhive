@@ -8,7 +8,7 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     const globals = read("../app/globals.css");
     const taskCard = read("../components/tasks/TaskListCard.tsx");
     const companies = read("../components/companies/CompaniesListSection.tsx");
-    const header = read("../components/dashboard/DashboardHeader.tsx");
+    const sidebar = read("../components/dashboard/Sidebar.tsx");
     const notifications = read("../components/dashboard/notifications/NotificationPanel.tsx");
     const notificationPopover = read("../components/dashboard/notifications/NotificationPopoverContent.tsx");
     const dialog = read("../components/ui/dialog.tsx");
@@ -57,8 +57,8 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.match(companies, /billing-surface/);
     assert.match(companies, /from "@\/components\/ui\/table"/);
     assert.doesNotMatch(companies, /surface-glass-card/);
-    assert.match(header, /billing-surface/);
-    assert.match(header, /header-popover-layer/);
+    assert.match(sidebar, /DropdownMenuContent/);
+    assert.match(sidebar, /components\/ui\/dropdown-menu/);
     const notificationUi = `${notifications}\n${notificationPopover}`;
     assert.match(notificationUi, /billing-surface/);
     assert.match(notificationUi, /header-popover-layer/);

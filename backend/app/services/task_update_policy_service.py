@@ -21,6 +21,10 @@ from app.services import (
     task_assignment_service,
     task_structure_service,
 )
+from app.services.organization_authorization_service import (
+    has_capability,
+    require_capability,
+)
 
 
 def validate_reservation_links(
@@ -96,8 +100,9 @@ def _validate_external_task_update(
     current_user: User,
     task_data: TaskItemUpdate,
     is_external: bool,
+    can_manage_work: bool,
 ) -> None:
-    if is_external and current_user.role.name != "viewer":
+    if is_external and can_manage_work:
         allowed_external_fields = {
             "description",
             "checklist_evidence",
@@ -160,17 +165,62 @@ def validate_task_update_scope(
 ) -> bool:
     _validate_task_report_fields(task_data)
     is_external = is_external_reservation_task(task, current_user)
-    _validate_external_task_update(current_user, task_data, is_external)
-    if current_user.role.name == "viewer":
-        _validate_worker_task_update(task, current_user, task_data)
-    else:
+    if is_external:
+        # A receiving company can manage an accepted shared work order without
+        # owning the property. Location-scoped grants intentionally do not
+        # match shared properties, so only a company-wide work manager can
+        # make this transition.
+        require_capability(db, current_user, "work.manage")
+        _validate_external_task_update(
+            current_user,
+            task_data,
+            is_external,
+            can_manage_work=True,
+        )
+        return True
+    can_manage_work = can_manage_task_at_location(
+        db,
+        current_user,
+        task.location_id,
+    )
+    _validate_external_task_update(
+        current_user,
+        task_data,
+        is_external,
+        can_manage_work,
+    )
+    if can_manage_work:
         location_access_service.require_location_capability(
             db,
             current_user,
             task.location_id,
             "can_manage_tasks",
+            permission_code="work.manage",
         )
+    else:
+        require_capability(
+            db,
+            current_user,
+            "time.manage",
+            scope_type="location",
+            scope_id=task.location_id,
+        )
+        _validate_worker_task_update(task, current_user, task_data)
     return is_external
+
+
+def can_manage_task_at_location(
+    db: Session,
+    current_user: User,
+    location_id: int,
+) -> bool:
+    return has_capability(
+        db,
+        current_user,
+        "work.manage",
+        scope_type="location",
+        scope_id=location_id,
+    )
 
 
 def validate_task_update_relations(
@@ -186,6 +236,7 @@ def validate_task_update_relations(
             current_user,
             task_data.location_id,
             "can_manage_tasks",
+            permission_code="work.manage",
         )
     if {"checkout_reservation_id", "next_reservation_id"} & task_data.model_fields_set:
         location_access_service.require_location_capability(

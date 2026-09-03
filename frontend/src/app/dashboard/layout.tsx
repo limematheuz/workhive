@@ -5,6 +5,7 @@ import { redirect, usePathname, useRouter } from "next/navigation";
 import { useDictionary } from "@/lib/dictionary-context";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
+import { SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { clearSessionCache } from "@/lib/auth";
 import { authService } from "@/services/auth.service";
 import { UserProvider, useUser } from "@/lib/user-context";
@@ -25,7 +26,6 @@ export default function DashboardLayoutWrapper({ children }: { children: React.R
 }
 
 function DashboardLayout({ children }: { children: React.ReactNode }) {
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [theme, setTheme] = useThemeMode();
     const router = useRouter();
     const pathname = usePathname();
@@ -33,26 +33,6 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { dict } = useDictionary();
     const [showOnboarding, setShowOnboarding] = useState(false);
     const isAccountant = isAccountantRole(user?.role?.name);
-
-    useEffect(() => {
-        const mediaQuery = window.matchMedia("(min-width: 1024px)");
-        const syncSidebar = () => setIsSidebarOpen(mediaQuery.matches);
-
-        syncSidebar();
-        mediaQuery.addEventListener("change", syncSidebar);
-
-        return () => mediaQuery.removeEventListener("change", syncSidebar);
-    }, []);
-
-    // Listen to custom event to open/close sidebar programmatically
-    useEffect(() => {
-        const handleOpenSidebar = (e: Event) => {
-            const customEvent = e as CustomEvent;
-            setIsSidebarOpen(customEvent.detail ?? true);
-        };
-        window.addEventListener("workhive_set_sidebar_open", handleOpenSidebar);
-        return () => window.removeEventListener("workhive_set_sidebar_open", handleOpenSidebar);
-    }, []);
 
     // Check if onboarding should be shown
     useEffect(() => {
@@ -118,50 +98,49 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         redirect("/dashboard/analytics");
     }
 
+    return <SidebarProvider defaultOpen>
+        <DashboardLayoutShell theme={theme} onThemeChange={setTheme} onLogout={handleLogout} showOnboarding={showOnboarding} onOnboardingComplete={() => setShowOnboarding(false)} user={user}>{children}</DashboardLayoutShell>
+    </SidebarProvider>;
+}
+
+function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOnboarding, onOnboardingComplete, user }: { children: React.ReactNode; theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => void; showOnboarding: boolean; onOnboardingComplete: () => void; user: NonNullable<ReturnType<typeof useUser>["user"]> }) {
+    const { isMobile, setOpen, setOpenMobile } = useSidebar();
+    useEffect(() => {
+        const handleOpenSidebar = (event: Event) => {
+            const requested = (event as CustomEvent<boolean | undefined>).detail ?? true;
+            if (isMobile) setOpenMobile(requested);
+            else setOpen(requested);
+        };
+        window.addEventListener("workhive_set_sidebar_open", handleOpenSidebar);
+        return () => window.removeEventListener("workhive_set_sidebar_open", handleOpenSidebar);
+    }, [isMobile, setOpen, setOpenMobile]);
+
     return (
-        <div className="flex min-h-dvh bg-[var(--bg-primary)] font-sans text-[var(--text-main)] transition-colors duration-300 lg:h-dvh lg:overflow-hidden">
+        <>
+            <Sidebar theme={theme} onThemeChange={onThemeChange} onLogout={onLogout} />
 
-            {/* Mobile overlay */}
-            {isSidebarOpen && (
-                <button
-                    type="button"
-                    aria-label="Close sidebar"
-                    className="fixed inset-0 z-[var(--z-sidebar-overlay)] bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"
-                    onClick={() => setIsSidebarOpen(false)}
-                />
-            )}
-
-            <Sidebar
-                isOpen={isSidebarOpen}
-                theme={theme}
-                onThemeChange={setTheme}
-            />
-
-            <div className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:py-4 lg:pl-0 lg:pr-4">
+            <main className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:py-4 lg:pl-0 lg:pr-4">
                 <div className="relative flex min-h-dvh min-w-0 flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:rounded-3xl lg:border lg:border-[var(--border-soft)]">
                     {/* Clip backlight bleed without making this shell a touch scrollport (AuthShell pattern). */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
                         <div className="dashboard-shell-backlight" />
                     </div>
                     <DashboardHeader
-                        isSidebarOpen={isSidebarOpen}
-                        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-                        onLogout={handleLogout}
                     />
 
                     <main className="dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 min-w-0 flex-1 overflow-x-hidden p-0 lg:overflow-y-auto">
                         {children}
                     </main>
                 </div>
-            </div>
+            </main>
 
 
-            {showOnboarding && user && (
+            {showOnboarding && (
                 <OnboardingModal
                     user={user}
-                    onComplete={() => setShowOnboarding(false)}
+                    onComplete={onOnboardingComplete}
                 />
             )}
-        </div>
+        </>
     );
 }

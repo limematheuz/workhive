@@ -4,12 +4,12 @@ from fastapi import Depends, status, APIRouter, Query
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.api.deps import (
     ActiveUser,
-    AsyncActiveManagerOrAdmin,
     AsyncActiveUser,
     get_async_db,
     get_db,
 )
 from app.services import work_session_service
+from app.services import organization_authorization_service
 from app.models.user import User
 from app.schemas.work_session import (
     WorkSessionCreate,
@@ -36,6 +36,11 @@ async def read_work_sessions(
             current_user.id,
             skip,
             limit,
+            organization_authorization_service.permitted_location_ids(
+                sync_db,
+                current_user,
+                "time.manage",
+            ),
         )
     )
 
@@ -45,23 +50,40 @@ async def active_work_session(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
-    return await db.run_sync(
-        lambda sync_db: work_session_service.get_active_session(
+    def operation(sync_db: Session):
+        active_session = work_session_service.get_active_session(
             sync_db,
             current_user.id,
         )
-    )
+        if active_session:
+            organization_authorization_service.require_capability(
+                sync_db,
+                current_user,
+                "time.manage",
+                scope_type=(
+                    "location" if active_session.location_id is not None else "company"
+                ),
+                scope_id=active_session.location_id,
+            )
+        return active_session
+
+    return await db.run_sync(operation)
 
 
 @router.get("/company/active", response_model=list[ActiveCompanySessionResponse])
 async def active_company_sessions(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
         lambda sync_db: work_session_service.get_active_company_sessions(
             sync_db,
             current_user,
+            organization_authorization_service.permitted_location_ids(
+                sync_db,
+                current_user,
+                "time.read",
+            ),
         )
     )
 
@@ -129,6 +151,11 @@ async def read_work_session(
             sync_db,
             session_id,
             current_user.id,
+            organization_authorization_service.permitted_location_ids(
+                sync_db,
+                current_user,
+                "time.manage",
+            ),
         )
     )
 
@@ -150,4 +177,8 @@ def start_work_session(
 def stop_work_session(
     db: Session = Depends(get_db), current_user: User = ActiveUser
 ):
-    return work_session_service.end_work_session(db, current_user.id)
+    return work_session_service.end_work_session(
+        db,
+        current_user.id,
+        current_user=current_user,
+    )

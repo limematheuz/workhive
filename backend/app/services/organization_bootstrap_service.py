@@ -7,63 +7,12 @@ from app.models.company_membership import CompanyMembership
 from app.models.permission_profile import (
     MembershipPermissionProfileAssignment,
     MembershipPermissionProfileScope,
-    PermissionDefinition,
-    PermissionProfile,
-    PermissionProfilePermission,
 )
 from app.models.user import User
 from app.repositories import organization as organization_repo
-
-
-ADMIN_PROFILE_NAME = "Administrador de empresa"
-COMMERCIAL_PROFILE_NAME = "Comercial"
-CLIENT_READER_PROFILE_NAME = "Consulta de clientes"
-
-
-DEFAULT_PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
-    ("access.members.read", "access", "View company members"),
-    (
-        "access.members.manage",
-        "access",
-        "Invite, update, suspend, and reactivate company members",
-    ),
-    ("access.profiles.read", "access", "View permission profiles"),
-    ("access.profiles.manage", "access", "Create and update permission profiles"),
-    ("access.scopes.manage", "access", "Assign the scope of a permission profile"),
-    ("company.settings.manage", "company", "Manage company settings"),
-    ("organization.departments.read", "organization", "View departments"),
-    (
-        "organization.departments.manage",
-        "organization",
-        "Create and update departments",
-    ),
-    ("organization.teams.read", "organization", "View teams"),
-    ("organization.teams.manage", "organization", "Create and update teams"),
-    ("clients.read", "clients", "View company clients and contacts"),
-    ("clients.manage", "clients", "Create, update, and email company clients"),
-    (
-        "commercial.follow_ups.read",
-        "commercial",
-        "View commercial follow-ups and their activity",
-    ),
-    (
-        "commercial.follow_ups.manage",
-        "commercial",
-        "Create and update commercial follow-ups and their activity",
-    ),
-)
-
-COMMERCIAL_PERMISSION_CODES = frozenset(
-    {
-        "clients.read",
-        "clients.manage",
-        "commercial.follow_ups.read",
-        "commercial.follow_ups.manage",
-    }
-)
-
-CLIENT_READER_PERMISSION_CODES = frozenset(
-    {"clients.read", "commercial.follow_ups.read"}
+from app.services.organization_base_profile_service import (
+    ADMIN_PROFILE_NAME,
+    ensure_company_permission_profiles,
 )
 
 
@@ -80,141 +29,27 @@ def legacy_role_access_class(user: User) -> str | None:
     return legacy_role_name_access_class(user.role.name if user.role else None)
 
 
-def ensure_permission_definitions(db: Session) -> None:
-    existing_codes = {
-        code for (code,) in db.query(PermissionDefinition.code).all()
-    }
-    for code, category, description in DEFAULT_PERMISSION_DEFINITIONS:
-        if code not in existing_codes:
-            db.add(
-                PermissionDefinition(
-                    code=code,
-                    category=category,
-                    description=description,
-                    is_active=True,
-                )
-            )
-    db.flush()
-
-
-def _ensure_system_profile(
+def ensure_legacy_membership(
     db: Session,
+    user: User,
     *,
-    company_id: int,
-    name: str,
-    description: str,
-    permission_codes: set[str] | frozenset[str] | None,
-) -> PermissionProfile:
-    profile = (
-        db.query(PermissionProfile)
-        .filter(
-            PermissionProfile.company_id == company_id,
-            PermissionProfile.name == name,
-        )
-        .first()
-    )
-    if not profile:
-        profile = PermissionProfile(
-            company_id=company_id,
-            name=name,
-            description=description,
-            is_system=True,
-            is_active=True,
-        )
-        db.add(profile)
-        db.flush()
-    elif not profile.is_system:
-        # A company may already own a custom profile with this display name.
-        # Never convert or modify customer-managed access during bootstrap.
-        return profile
-    else:
-        profile.description = description
-        profile.is_system = True
-        profile.is_active = True
-        db.add(profile)
+    existing_membership: CompanyMembership | None = None,
+) -> CompanyMembership | None:
+    """Create the minimal membership record needed by the legacy transition.
 
-    definitions = organization_repo.list_permission_definitions(db)
-    allowed_codes = (
-        {definition.code for definition in definitions}
-        if permission_codes is None
-        else set(permission_codes)
-    )
-    existing_codes = {
-        code
-        for (code,) in (
-            db.query(PermissionDefinition.code)
-            .join(
-                PermissionProfilePermission,
-                PermissionProfilePermission.permission_definition_id
-                == PermissionDefinition.id,
-            )
-            .filter(
-                PermissionProfilePermission.permission_profile_id == profile.id,
-            )
-            .all()
-        )
-    }
-    for definition in definitions:
-        if definition.code in allowed_codes and definition.code not in existing_codes:
-            db.add(
-                PermissionProfilePermission(
-                    permission_profile_id=profile.id,
-                    permission_definition_id=definition.id,
-                )
-            )
-    db.flush()
-    return profile
+    Authorization reads must not bootstrap profiles or rewrite profile grants.
+    Full profile setup remains an explicit company/member lifecycle operation in
+    :func:`ensure_user_membership` and the database migration backfills
+    existing companies.
+    """
 
-
-def ensure_company_permission_profiles(db: Session, company_id: int) -> PermissionProfile:
-    ensure_permission_definitions(db)
-    administrator_profile = _ensure_system_profile(
-        db,
-        company_id=company_id,
-        name=ADMIN_PROFILE_NAME,
-        description="Configuración completa de la empresa",
-        permission_codes=None,
-    )
-    if not administrator_profile.is_system:
-        # A customer-managed profile must never become the implicit profile
-        # assigned to company administrators just because it shares the
-        # reserved display name. Stop the bootstrap rather than escalating it.
-        raise RuntimeError(
-            "A custom permission profile conflicts with the reserved administrator profile name"
-        )
-    _ensure_system_profile(
-        db,
-        company_id=company_id,
-        name=COMMERCIAL_PROFILE_NAME,
-        description="Gestiona clientes y seguimiento comercial sin acceso financiero",
-        permission_codes=COMMERCIAL_PERMISSION_CODES,
-    )
-    _ensure_system_profile(
-        db,
-        company_id=company_id,
-        name=CLIENT_READER_PROFILE_NAME,
-        description="Consulta clientes y seguimiento comercial sin modificarlos",
-        permission_codes=CLIENT_READER_PERMISSION_CODES,
-    )
-    return administrator_profile
-
-
-def ensure_company_administrator_profile(
-    db: Session, company_id: int
-) -> PermissionProfile:
-    return ensure_company_permission_profiles(db, company_id)
-
-
-def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
     if user.company_id is None:
         return None
     access_class = legacy_role_access_class(user)
     if access_class is None:
         return None
 
-    administrator_profile = ensure_company_permission_profiles(db, user.company_id)
-
-    membership = organization_repo.get_user_membership(
+    membership = existing_membership or organization_repo.get_user_membership(
         db,
         company_id=user.company_id,
         user_id=user.id,
@@ -235,9 +70,26 @@ def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
             membership.ended_at = None
         db.add(membership)
         db.flush()
+    return membership
 
-    if access_class == "admin":
-        profile = administrator_profile
+
+def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
+    membership = ensure_legacy_membership(db, user)
+    if membership is None or user.company_id is None:
+        return membership
+
+    ensure_company_permission_profiles(db, user.company_id)
+
+    system_profile_name = (
+        ADMIN_PROFILE_NAME if user.role and user.role.name == "admin" else None
+    )
+    system_profiles = {
+        profile.name: profile
+        for profile in organization_repo.list_permission_profiles(db, user.company_id)
+        if profile.is_system
+    }
+    if system_profile_name:
+        profile = system_profiles[system_profile_name]
         assignment = organization_repo.get_permission_profile_assignment(
             db,
             company_id=user.company_id,
@@ -280,20 +132,20 @@ def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
                 )
             )
             db.flush()
-    else:
+    # The administrator profile mirrors the legacy ``admin`` role. The other
+    # base profiles are deliberately assignable through the profile workflow,
+    # so syncing a membership must never silently revoke them.
+    administrator_profile = system_profiles.get(ADMIN_PROFILE_NAME)
+    if not system_profile_name and administrator_profile:
         db.execute(
             update(MembershipPermissionProfileAssignment)
             .where(
                 MembershipPermissionProfileAssignment.company_id == user.company_id,
-                MembershipPermissionProfileAssignment.company_membership_id
-                == membership.id,
+                MembershipPermissionProfileAssignment.company_membership_id == membership.id,
                 MembershipPermissionProfileAssignment.permission_profile_id
                 == administrator_profile.id,
             )
-            .values(
-                is_active=False,
-                revoked_at=datetime.now(timezone.utc),
-            )
+            .values(is_active=False, revoked_at=datetime.now(timezone.utc))
         )
-        db.flush()
+    db.flush()
     return membership

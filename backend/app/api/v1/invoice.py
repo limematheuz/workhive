@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import FileResponse
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, AsyncActiveFinancialReader, get_async_db, get_db
+from app.api.deps import ActiveFinanceManager, ActiveFinanceReader
+from app.api.deps import AsyncActiveFinancialReader, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.invoice import (
@@ -58,7 +59,7 @@ async def read_invoices(
 @router.get("/completed-jobs", response_model=list[InvoiceableTaskResponse])
 async def read_completed_jobs_for_invoicing(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: invoice_service.get_invoiceable_completed_tasks(
@@ -70,7 +71,7 @@ async def read_completed_jobs_for_invoicing(
 @router.get("/fiscal/readiness")
 async def read_fiscal_readiness(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: company_fiscal_settings_service.get_readiness(
@@ -84,7 +85,7 @@ async def read_fiscal_readiness(
 async def read_invoice(
     invoice_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: invoice_service.get_invoice(
@@ -97,11 +98,9 @@ async def read_invoice(
 def create_invoice(
     invoice_data: InvoiceCreate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return invoice_service.create_invoice(db, current_user.company_id, invoice_data)
-
-
 @router.post(
     "/drafts",
     response_model=InvoiceResponse,
@@ -110,7 +109,7 @@ def create_invoice(
 def create_invoice_draft(
     invoice_data: InvoiceDraftCreate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return invoice_service.create_invoice_draft(
         db, current_user.company_id, invoice_data
@@ -123,7 +122,7 @@ def update_invoice(
     invoice_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     invoice = invoice_service.update_invoice(
         db, current_user.company_id, invoice_id, invoice_data
@@ -149,7 +148,7 @@ def issue_invoice(
     invoice_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     invoice = invoice_service.issue_invoice(
         db, current_user.company_id, invoice_id
@@ -176,7 +175,7 @@ def issue_invoice(
 def download_invoice_pdf(
     invoice_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceReader,
 ):
     invoice, path = invoice_service.get_invoice_pdf(
         db, current_user.company_id, invoice_id
@@ -194,7 +193,7 @@ def send_invoice_email(
     data: InvoiceEmailRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     enforce_rate_limit(
         request,
@@ -235,7 +234,7 @@ def send_invoice_email(
 async def read_invoice_fiscal_record(
     invoice_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: invoice_fiscal_record_service.get_fiscal_record(
@@ -248,7 +247,7 @@ async def read_invoice_fiscal_record(
 def download_invoice_fiscal_xml(
     invoice_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceReader,
 ):
     record = invoice_fiscal_record_service.get_fiscal_record(
         db,
@@ -281,7 +280,7 @@ def submit_invoice_fiscal_record(
     invoice_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     record = invoice_fiscal_record_service.submit_fiscal_record(
         db,
@@ -316,7 +315,7 @@ def cancel_invoice_fiscal_record(
     data: FiscalCancellationRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     record = invoice_fiscal_record_service.cancel_fiscal_invoice(
         db,
@@ -345,7 +344,7 @@ def cancel_invoice_fiscal_record(
 async def read_facturae_readiness(
     invoice_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: facturae_service.facturae_readiness(
@@ -364,7 +363,7 @@ def generate_invoice_facturae(
     data: FacturaeGenerateRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     invoice, path = facturae_service.generate_facturae(
         db,
@@ -396,7 +395,7 @@ def generate_invoice_facturae(
 def download_invoice_facturae(
     invoice_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceReader,
 ):
     invoice, path = facturae_service.resolve_facturae(
         db,
@@ -419,7 +418,7 @@ def download_invoice_facturae(
 async def read_invoice_items(
     invoice_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: invoice_item_service.get_invoice_items(
@@ -438,7 +437,7 @@ def rectify_invoice(
     data: RectificationCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     rectification = invoice_service.create_rectification_invoice(
         db, current_user.company_id, invoice_id, data
@@ -470,7 +469,7 @@ def create_invoice_item(
     invoice_item_data: InvoiceItemCreate,
     invoice_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return invoice_item_service.create_invoice_item(
         db, current_user.company_id, invoice_id, invoice_item_data
@@ -486,7 +485,7 @@ def update_invoice_item(
     item_id: int,
     item_data: InvoiceItemUpdate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return invoice_item_service.update_invoice_item(
         db, current_user.company_id, invoice_id, item_id, item_data
@@ -498,7 +497,7 @@ def delete_invoice_item(
     invoice_id: int,
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin
+    current_user: User = ActiveFinanceManager
 ):
     invoice_item_service.delete_invoice_item(
         db, current_user.company_id, invoice_id, item_id

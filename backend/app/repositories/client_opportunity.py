@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.company_membership import CompanyMembership
 from app.models.client_opportunity import ClientOpportunity, ClientOpportunityActivity

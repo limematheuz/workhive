@@ -1,12 +1,8 @@
-from datetime import date
-
-from fastapi import Depends, APIRouter, status, HTTPException, Query
+from fastapi import Depends, APIRouter, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from app.api.deps import (
-    ActiveAdmin,
-    ActiveManagerOrAdmin,
-    AsyncActiveManagerOrAdmin,
+    ActiveUser,
     AsyncActiveUser,
     get_async_db,
     get_db,
@@ -15,41 +11,15 @@ from app.api.pagination import PaginationLimit, PaginationOffset
 from app.schemas.location import LocationCreate, LocationUpdate, LocationResponse
 from app.schemas.company import CompanyPartnerResponse
 from app.schemas.user import UserResponse
-from app.schemas.location_history import LocationHistoryPeriod, LocationOperationalHistoryResponse
-from app.services import location_service, location_history_service
+from app.services import (
+    location_service,
+    organization_authorization_service,
+)
 from app.models.user import User
 from app.services import location_access_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
 
 router = APIRouter()
-
-
-@router.get(
-    "/{location_id}/operational-history",
-    response_model=LocationOperationalHistoryResponse,
-)
-async def read_location_operational_history(
-    location_id: int,
-    period: LocationHistoryPeriod = "week",
-    anchor_date: date | None = Query(default=None),
-    completed_offset: int = Query(default=0, ge=0),
-    sessions_offset: int = Query(default=0, ge=0),
-    limit: int = Query(default=20, ge=1, le=100),
-    db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveUser,
-):
-    return await db.run_sync(
-        lambda sync_db: location_history_service.get_operational_history(
-            sync_db,
-            current_user,
-            location_id=location_id,
-            period=period,
-            anchor_date=anchor_date,
-            completed_offset=completed_offset,
-            sessions_offset=sessions_offset,
-            limit=limit,
-        )
-    )
 
 
 @router.get("/", response_model=list[LocationResponse])
@@ -64,12 +34,18 @@ async def read_locations(
         return []
 
     def operation(sync_db: Session):
+        permitted_location_ids = organization_authorization_service.permitted_location_ids(
+            sync_db,
+            current_user,
+            "locations.read",
+        )
         locations = location_service.get_locations(
             sync_db,
             scoped_company_id(current_user),
             client_id,
             skip,
             limit,
+            permitted_location_ids,
         )
         responses = []
         for location in locations:
@@ -106,6 +82,16 @@ async def read_location(
     current_user: User = AsyncActiveUser,
 ):
     def operation(sync_db: Session):
+        location_access_service.require_accessible_location(
+            sync_db, current_user, location_id
+        )
+        organization_authorization_service.require_capability(
+            sync_db,
+            current_user,
+            "locations.read",
+            scope_type="location",
+            scope_id=location_id,
+        )
         location = location_service.get_location(
             sync_db,
             location_id,
@@ -140,8 +126,11 @@ async def read_location(
 def create_location(
     location_data: LocationCreate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    current_user: User = ActiveUser,
 ):
+    organization_authorization_service.require_capability(
+        db, current_user, "locations.manage"
+    )
     company_id = scoped_company_id(current_user)
     return location_service.create_location(db, company_id, location_data)
 
@@ -151,8 +140,15 @@ def update_location(
     location_id: int,
     location_update: LocationUpdate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    current_user: User = ActiveUser,
 ):
+    organization_authorization_service.require_capability(
+        db,
+        current_user,
+        "locations.manage",
+        scope_type="location",
+        scope_id=location_id,
+    )
     location_access_service.require_location_owner(db, current_user, location_id)
     company_id = scoped_company_id(current_user)
     return location_service.update_location(
@@ -164,8 +160,15 @@ def update_location(
 def delete_location(
     location_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin
+    current_user: User = ActiveUser
 ):
+    organization_authorization_service.require_capability(
+        db,
+        current_user,
+        "locations.manage",
+        scope_type="location",
+        scope_id=location_id,
+    )
     location_access_service.require_location_owner(db, current_user, location_id)
     company_id = scoped_company_id(current_user)
     return location_service.delete_location(db, location_id, company_id)
@@ -182,6 +185,13 @@ async def read_location_users(
             sync_db,
             current_user,
             location_id,
+        )
+        organization_authorization_service.require_capability(
+            sync_db,
+            current_user,
+            "locations.read",
+            scope_type="location",
+            scope_id=location_id,
         )
 
         from app.models.location import Location
@@ -213,9 +223,19 @@ async def read_location_users(
 async def read_location_service_providers(
     location_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
 ):
     def operation(sync_db: Session):
+        location_access_service.require_accessible_location(
+            sync_db, current_user, location_id
+        )
+        organization_authorization_service.require_capability(
+            sync_db,
+            current_user,
+            "locations.read",
+            scope_type="location",
+            scope_id=location_id,
+        )
         return location_service.get_location_service_providers(
             sync_db,
             current_user,

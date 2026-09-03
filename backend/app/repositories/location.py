@@ -35,6 +35,7 @@ def get_locations_by_client(
     client_id: int | None = None,
     skip: int = 0,
     limit: int = 100,
+    location_ids: set[int] | None = None,
 ) -> list[Location]:
     query = db.query(Location).options(
         selectinload(Location.client),
@@ -57,6 +58,8 @@ def get_locations_by_client(
 
     if client_id is not None:
         query = query.filter(Location.client_id == client_id)
+    if location_ids is not None:
+        query = query.filter(Location.id.in_(location_ids))
 
     return query.offset(skip).limit(limit).all()
 

@@ -3,6 +3,9 @@ from app.api.v1.auth import router as auth_router
 from app.api.v1.users import router as users_router
 from app.api.v1.clients import router as clients_router
 from app.api.v1.locations import router as locations_router
+from app.api.v1.location_operational_history import (
+    router as location_operational_history_router,
+)
 from app.api.v1.roles import router as roles_router
 from app.api.v1.companies import router as companies_router
 from app.api.v1.company_plan_access import router as company_plan_access_router
@@ -12,6 +15,7 @@ from app.api.v1.location_zones import router as location_zones_router
 from app.api.v1.location_workspace import router as location_workspace_router
 from app.api.v1.work_sessions import router as work_sessions_router
 from app.api.v1.task_items import router as task_items_router
+from app.api.v1.task_item_read import router as task_item_read_router
 from app.api.v1.invoice import router as invoices_router
 from app.api.v1.fiscal_settings import router as fiscal_settings_router
 from app.api.v1.invoice_email_contacts import router as invoice_email_contacts_router
@@ -58,6 +62,11 @@ api_router.include_router(
 )
 api_router.include_router(locations_router, prefix="/locations", tags=["locations"])
 api_router.include_router(
+    location_operational_history_router,
+    prefix="/locations",
+    tags=["location-operational-history"],
+)
+api_router.include_router(
     location_company_access_router,
     prefix="/locations",
     tags=["location-company-access"],
@@ -82,6 +91,7 @@ api_router.include_router(
 api_router.include_router(
     work_sessions_router, prefix="/work-sessions", tags=["work-session"]
 )
+api_router.include_router(task_item_read_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(
     task_reports_router, prefix="/task-reports", tags=["task-reports"]

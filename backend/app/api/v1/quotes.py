@@ -3,7 +3,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, Request, status
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
-from app.api.deps import ActiveAdmin, AsyncActiveAdmin, get_async_db, get_db
+from app.api.deps import (
+    ActiveFinanceManager,
+    ActiveFinanceReader,
+    AsyncActiveFinancialReader,
+    get_async_db,
+    get_db,
+)
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
 from app.schemas.quote import (
@@ -30,7 +36,7 @@ async def read_quotes(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     if is_platform_superadmin(current_user):
         return []
@@ -50,7 +56,7 @@ async def read_quotes(
 async def read_quote(
     quote_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: quote_service.get_quote(
@@ -65,7 +71,7 @@ async def read_quote(
 def download_quote_pdf(
     quote_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceReader,
 ):
     quote, path = quote_service.get_quote_pdf(
         db,
@@ -84,7 +90,7 @@ def download_quote_pdf(
 def create_quote(
     quote_data: QuoteCreate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return quote_service.create_quote(db, current_user.company_id, quote_data)
 
@@ -95,7 +101,7 @@ def send_quote_email(
     data: QuoteEmailRequest,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     enforce_rate_limit(
         request,
@@ -136,7 +142,7 @@ def update_quote(
     quote_id: int,
     quote_data: QuoteUpdate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return quote_service.update_quote(
         db, current_user.company_id, quote_id, quote_data
@@ -148,7 +154,7 @@ def accept_quote(
     quote_id: int,
     accept_data: QuoteAcceptRequest,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return quote_service.accept_quote(
         db,
@@ -162,7 +168,7 @@ def accept_quote(
 def delete_quote(
     quote_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     quote_service.delete_quote(db, current_user.company_id, quote_id)
 
@@ -173,7 +179,7 @@ def delete_quote(
 async def read_quote_items(
     quote_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: quote_item_service.get_quote_items(
@@ -193,7 +199,7 @@ def create_quote_item(
     quote_id: int,
     item_data: QuoteItemCreate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return quote_item_service.create_quote_item(
         db, current_user.company_id, quote_id, item_data
@@ -206,7 +212,7 @@ def update_quote_item(
     item_id: int,
     item_data: QuoteItemUpdate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     return quote_item_service.update_quote_item(
         db, current_user.company_id, quote_id, item_id, item_data
@@ -218,7 +224,7 @@ def delete_quote_item(
     quote_id: int,
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = ActiveFinanceManager,
 ):
     quote_item_service.delete_quote_item(
         db, current_user.company_id, quote_id, item_id

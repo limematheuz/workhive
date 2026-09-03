@@ -42,6 +42,7 @@ const UNKNOWN_USAGE: OrganizationDepartmentUsage = {
     teams: 0,
     member_assignments: 0,
     profile_scopes: 0,
+    locations: 0,
     can_delete: false,
 };
 const DEPARTMENTS_PAGE_SIZE = 20;

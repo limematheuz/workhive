@@ -12,6 +12,7 @@ from app.models.user import User
 from app.repositories import async_user as async_user_repo
 from app.repositories import user as user_repo
 from app.services.subscription_policy import require_company_access
+from app.services.organization_authorization_service import require_capability
 from app.services.user_scope import is_superadmin
 
 
@@ -187,9 +188,36 @@ def require_authenticated_role_async(*allowed_roles: str):
     return role_checker
 
 
-# External roles must opt into their permitted boundaries explicitly.  The
-# operational application remains limited to company staff; accountant access
-# is granted only through AsyncActiveFinancialReader on finance endpoints.
+def require_company_capability(permission_code: str):
+    def capability_checker(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+    ) -> User:
+        require_capability(db, current_user, permission_code)
+        return current_user
+
+    return capability_checker
+
+
+def require_company_capability_async(permission_code: str):
+    async def capability_checker(
+        db: AsyncSession = Depends(get_async_db),
+        current_user: User = Depends(get_current_user_async),
+    ) -> User:
+        await db.run_sync(
+            lambda sync_db: require_capability(
+                sync_db,
+                current_user,
+                permission_code,
+            )
+        )
+        return current_user
+
+    return capability_checker
+
+
+# External roles must opt into their permitted boundaries explicitly. Finance
+# access is profile-backed rather than inferred from the legacy role.
 ActiveAdmin = Depends(require_role("admin"))
 ActiveManagerOrAdmin = Depends(require_role("admin", "manager"))
 ActiveViewer = Depends(require_role("admin", "manager", "viewer"))
@@ -200,7 +228,14 @@ AsyncActiveApplicationUser = Depends(
     require_role_async("admin", "manager", "viewer", "accountant")
 )
 AsyncActiveAdmin = Depends(require_role_async("admin"))
-AsyncActiveFinancialReader = Depends(require_role_async("admin", "accountant"))
+ActiveFinanceReader = Depends(require_company_capability("finance.read"))
+ActiveFinanceManager = Depends(require_company_capability("finance.manage"))
+AsyncActiveFinancialReader = Depends(
+    require_company_capability_async("finance.read")
+)
+AsyncActiveFinanceManager = Depends(
+    require_company_capability_async("finance.manage")
+)
 AsyncActiveManagerOrAdmin = Depends(require_role_async("admin", "manager"))
 AsyncAuthenticatedUser = Depends(get_authenticated_user_async)
 AsyncAuthenticatedAdmin = Depends(require_authenticated_role_async("admin"))

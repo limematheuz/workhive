@@ -1,6 +1,12 @@
+from datetime import datetime, timezone
+
 from app.core.security import create_access_token
 from app.models.client import Client
 from app.models.company import Company
+from app.models.company_membership import Department, Team
+from app.models.location import Location
+from app.models.task_item import TaskItem
+from app.models.work_session import WorkSession
 from app.models.permission_profile import (
     MembershipPermissionProfileAssignment,
     MembershipPermissionProfileScope,
@@ -330,7 +336,7 @@ def test_client_and_commercial_permissions_are_separate_and_fail_closed(client, 
 def test_client_permissions_do_not_cross_company_or_grant_platform_access(client, db):
     owner_company = _company(db, "owner")
     outsider_company = _company(db, "outsider")
-    owner = _bootstrap_admin(db, owner_company, "owner-admin")
+    _bootstrap_admin(db, owner_company, "owner-admin")
     outsider_admin = _bootstrap_admin(db, outsider_company, "outsider-admin")
     account = _client(db, owner_company, "Cuenta de otra empresa")
     outsider = _user(db, outsider_company, "outsider-reader", role_id=3)
@@ -354,6 +360,382 @@ def test_client_permissions_do_not_cross_company_or_grant_platform_access(client
     assert platform_response.status_code == 403, platform_response.text
 
 
+def test_location_permission_scope_filters_reads_and_fails_closed_for_writes(client, db):
+    company = _company(db, "location-scope")
+    admin = _bootstrap_admin(db, company, "location-scope-admin")
+    allowed_location = Location(
+        name="Centro autorizado",
+        address="Calle Uno 1",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    blocked_location = Location(
+        name="Centro bloqueado",
+        address="Calle Dos 2",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    db.add_all([allowed_location, blocked_location])
+    db.commit()
+
+    operator = _user(db, company, "location-scoped", role_id=3)
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=operator,
+        name="Solo una ubicación",
+        permission_codes={"locations.read"},
+        scope_type="location",
+        scope_id=allowed_location.id,
+    )
+    headers = _headers(operator)
+
+    listed = client.get("/api/v1/locations/", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert [location["id"] for location in listed.json()] == [allowed_location.id]
+    assert client.get(
+        f"/api/v1/locations/{allowed_location.id}", headers=headers
+    ).status_code == 200
+    assert client.get(
+        f"/api/v1/locations/{blocked_location.id}", headers=headers
+    ).status_code == 403
+    assert client.patch(
+        f"/api/v1/locations/{allowed_location.id}",
+        headers=headers,
+        json={"name": "No permitido"},
+    ).status_code == 403
+
+
+def test_department_and_team_scopes_resolve_location_work_and_time(client, db):
+    company = _company(db, "organization-scopes")
+    admin = _bootstrap_admin(db, company, "organization-scopes-admin")
+    department = Department(
+        company_id=company.id,
+        name="Operaciones",
+        normalized_name="operaciones",
+        code="OPS",
+        is_active=True,
+    )
+    other_department = Department(
+        company_id=company.id,
+        name="Comercial",
+        normalized_name="comercial",
+        code="COM",
+        is_active=True,
+    )
+    db.add_all([department, other_department])
+    db.flush()
+    team = Team(
+        company_id=company.id,
+        department_id=department.id,
+        name="Equipo Norte",
+        code="NORTE",
+        is_active=True,
+    )
+    db.add(team)
+    db.flush()
+    department_location = Location(
+        name="Base de operaciones",
+        address="Calle Siete 7",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+        department_id=department.id,
+    )
+    team_location = Location(
+        name="Zona Norte",
+        address="Calle Ocho 8",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+        department_id=department.id,
+        team_id=team.id,
+    )
+    blocked_location = Location(
+        name="Zona comercial",
+        address="Calle Nueve 9",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+        department_id=other_department.id,
+    )
+    db.add_all([department_location, team_location, blocked_location])
+    db.flush()
+    department_task = TaskItem(
+        title="Trabajo de operaciones",
+        unit="servicio",
+        company_id=company.id,
+        location_id=department_location.id,
+        status="pending",
+    )
+    team_task = TaskItem(
+        title="Trabajo de zona norte",
+        unit="servicio",
+        company_id=company.id,
+        location_id=team_location.id,
+        status="pending",
+    )
+    blocked_task = TaskItem(
+        title="Trabajo comercial",
+        unit="servicio",
+        company_id=company.id,
+        location_id=blocked_location.id,
+        status="pending",
+    )
+    department_operator = _user(db, company, "department-operator", role_id=3)
+    team_operator = _user(db, company, "team-operator", role_id=3)
+    db.add_all([department_task, team_task, blocked_task])
+    db.flush()
+    department_session = WorkSession(
+        user_id=department_operator.id,
+        location_id=department_location.id,
+        start_time=datetime.now(timezone.utc),
+    )
+    blocked_session = WorkSession(
+        user_id=department_operator.id,
+        location_id=blocked_location.id,
+        start_time=datetime.now(timezone.utc),
+    )
+    team_session = WorkSession(
+        user_id=team_operator.id,
+        location_id=team_location.id,
+        start_time=datetime.now(timezone.utc),
+    )
+    db.add_all([department_session, blocked_session, team_session])
+    db.commit()
+
+    permission_codes = {"locations.read", "work.read", "time.manage"}
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=department_operator,
+        name="Operaciones por departamento",
+        permission_codes=permission_codes,
+        scope_type="department",
+        scope_id=department.id,
+    )
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=team_operator,
+        name="Operaciones por equipo",
+        permission_codes=permission_codes,
+        scope_type="team",
+        scope_id=team.id,
+    )
+
+    department_headers = _headers(department_operator)
+    team_headers = _headers(team_operator)
+
+    department_locations = client.get("/api/v1/locations/", headers=department_headers)
+    assert department_locations.status_code == 200, department_locations.text
+    assert {item["id"] for item in department_locations.json()} == {
+        department_location.id,
+        team_location.id,
+    }
+    assert client.get(
+        f"/api/v1/locations/{department_location.id}", headers=department_headers
+    ).status_code == 200
+    assert client.get(
+        f"/api/v1/locations/{blocked_location.id}", headers=department_headers
+    ).status_code == 403
+
+    team_locations = client.get("/api/v1/locations/", headers=team_headers)
+    assert team_locations.status_code == 200, team_locations.text
+    assert [item["id"] for item in team_locations.json()] == [team_location.id]
+
+    department_tasks = client.get("/api/v1/task-items/", headers=department_headers)
+    assert department_tasks.status_code == 200, department_tasks.text
+    assert {item["id"] for item in department_tasks.json()} == {
+        department_task.id,
+        team_task.id,
+    }
+    team_tasks = client.get("/api/v1/task-items/", headers=team_headers)
+    assert team_tasks.status_code == 200, team_tasks.text
+    assert [item["id"] for item in team_tasks.json()] == [team_task.id]
+    assert client.get(
+        f"/api/v1/task-items/{blocked_task.id}", headers=department_headers
+    ).status_code == 403
+
+    department_sessions = client.get(
+        "/api/v1/work-sessions/", headers=department_headers
+    )
+    assert department_sessions.status_code == 200, department_sessions.text
+    assert [item["id"] for item in department_sessions.json()] == [department_session.id]
+    team_sessions = client.get("/api/v1/work-sessions/", headers=team_headers)
+    assert team_sessions.status_code == 200, team_sessions.text
+    assert [item["id"] for item in team_sessions.json()] == [team_session.id]
+
+
+def test_work_permissions_are_limited_to_the_assigned_location_scope(client, db):
+    company = _company(db, "work-scope")
+    admin = _bootstrap_admin(db, company, "work-scope-admin")
+    allowed_location = Location(
+        name="Trabajo autorizado",
+        address="Calle Tres 3",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    blocked_location = Location(
+        name="Trabajo bloqueado",
+        address="Calle Cuatro 4",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    db.add_all([allowed_location, blocked_location])
+    db.flush()
+    allowed_task = TaskItem(
+        title="Trabajo visible",
+        unit="servicio",
+        company_id=company.id,
+        location_id=allowed_location.id,
+        status="pending",
+    )
+    blocked_task = TaskItem(
+        title="Trabajo oculto",
+        unit="servicio",
+        company_id=company.id,
+        location_id=blocked_location.id,
+        status="pending",
+    )
+    db.add_all([allowed_task, blocked_task])
+    db.commit()
+
+    operator = _user(db, company, "work-scoped", role_id=3)
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=operator,
+        name="Operaciones de una ubicación",
+        permission_codes={"work.read", "work.manage"},
+        scope_type="location",
+        scope_id=allowed_location.id,
+    )
+    headers = _headers(operator)
+
+    listed = client.get("/api/v1/task-items/", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert [task["id"] for task in listed.json()] == [allowed_task.id]
+    assert client.get(
+        f"/api/v1/task-items/{allowed_task.id}", headers=headers
+    ).status_code == 200
+    assert client.get(
+        f"/api/v1/task-items/{blocked_task.id}", headers=headers
+    ).status_code == 403
+    assert client.patch(
+        f"/api/v1/task-items/{allowed_task.id}",
+        headers=headers,
+        json={"title": "Trabajo actualizado"},
+    ).status_code == 200
+    assert client.patch(
+        f"/api/v1/task-items/{blocked_task.id}",
+        headers=headers,
+        json={"title": "No autorizado"},
+    ).status_code == 403
+
+
+def test_time_management_only_lists_sessions_at_the_assigned_locations(client, db):
+    company = _company(db, "time-scope")
+    admin = _bootstrap_admin(db, company, "time-scope-admin")
+    allowed_location = Location(
+        name="Fichaje autorizado",
+        address="Calle Cinco 5",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    blocked_location = Location(
+        name="Fichaje bloqueado",
+        address="Calle Seis 6",
+        city="Madrid",
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    db.add_all([allowed_location, blocked_location])
+    db.flush()
+
+    operator = _user(db, company, "time-scoped", role_id=3)
+    allowed_session = WorkSession(
+        user_id=operator.id,
+        location_id=allowed_location.id,
+        start_time=datetime.now(timezone.utc),
+        notes="Visible",
+    )
+    blocked_session = WorkSession(
+        user_id=operator.id,
+        location_id=blocked_location.id,
+        start_time=datetime.now(timezone.utc),
+        notes="Oculto",
+    )
+    db.add_all([allowed_session, blocked_session])
+    db.commit()
+
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=operator,
+        name="Fichaje de una ubicación",
+        permission_codes={"time.manage"},
+        scope_type="location",
+        scope_id=allowed_location.id,
+    )
+    headers = _headers(operator)
+
+    listed = client.get("/api/v1/work-sessions/", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert [session["id"] for session in listed.json()] == [allowed_session.id]
+    assert client.get(
+        f"/api/v1/work-sessions/{allowed_session.id}", headers=headers
+    ).status_code == 200
+    assert client.get(
+        f"/api/v1/work-sessions/{blocked_session.id}", headers=headers
+    ).status_code == 404
+
+
+def test_finance_reader_can_view_but_not_change_financial_records(client, db):
+    company = _company(db, "finance-reader")
+    admin = _bootstrap_admin(db, company, "finance-reader-admin")
+    finance_reader = _user(db, company, "finance-reader", role_id=3)
+    commercial_user = _user(db, company, "commercial-without-finance", role_id=2)
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=finance_reader,
+        name="Lector financiero",
+        permission_codes={"finance.read"},
+    )
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=commercial_user,
+        name="Solo comercial",
+        permission_codes={CLIENT_READ, CLIENT_MANAGE, FOLLOW_UP_READ, FOLLOW_UP_MANAGE},
+    )
+
+    finance_headers = _headers(finance_reader)
+    commercial_headers = _headers(commercial_user)
+    assert client.get("/api/v1/quotes/", headers=finance_headers).status_code == 200
+    assert client.get("/api/v1/expenses/", headers=finance_headers).status_code == 200
+    assert client.post(
+        "/api/v1/quotes/",
+        headers=finance_headers,
+        json={"title": "No puede crear"},
+    ).status_code == 403
+    assert client.get("/api/v1/quotes/", headers=commercial_headers).status_code == 403
+    assert client.get("/api/v1/invoices/", headers=commercial_headers).status_code == 403
+
+
 def test_new_company_has_safe_commercial_profile_templates(client, db):
     company = _company(db, "templates")
     admin = _bootstrap_admin(db, company, "templates-admin")
@@ -366,7 +748,9 @@ def test_new_company_has_safe_commercial_profile_templates(client, db):
     assert set(profiles) == {
         "Administrador de empresa",
         "Comercial",
-        "Consulta de clientes",
+        "Consulta",
+        "Operaciones",
+        "Finanzas",
     }
     assert set(profiles["Comercial"]["permission_codes"]) == {
         CLIENT_READ,
@@ -374,9 +758,10 @@ def test_new_company_has_safe_commercial_profile_templates(client, db):
         FOLLOW_UP_READ,
         FOLLOW_UP_MANAGE,
     }
-    assert set(profiles["Consulta de clientes"]["permission_codes"]) == {
-        CLIENT_READ,
-        FOLLOW_UP_READ,
+    assert set(profiles["Consulta"]["permission_codes"]) == {
+        "locations.read",
+        "work.read",
+        "time.manage",
     }
 
     definitions = client.get(

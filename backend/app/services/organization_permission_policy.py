@@ -11,6 +11,7 @@ SYSTEM_ONLY_PERMISSION_CODES = frozenset(
         "access.members.manage",
         "access.profiles.manage",
         "company.settings.manage",
+        "finance.manage",
     }
 )
 
@@ -30,6 +31,14 @@ PERMISSION_RECOMMENDED_AUDIENCES: dict[str, tuple[str, ...]] = {
     "clients.manage": ("commercial", "responsibles"),
     "commercial.follow_ups.read": ("commercial", "responsibles"),
     "commercial.follow_ups.manage": ("commercial", "responsibles"),
+    "locations.read": ("operations", "responsibles"),
+    "locations.manage": ("operations", "responsibles"),
+    "work.read": ("operations", "responsibles"),
+    "work.manage": ("operations", "responsibles"),
+    "time.read": ("operations", "responsibles"),
+    "time.manage": ("operations", "workers"),
+    "finance.read": ("finance", "company_administrators"),
+    "finance.manage": ("company_administrators",),
 }
 
 

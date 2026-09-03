@@ -7,6 +7,8 @@ export interface Location {
     client_id?: number | null;
     managing_company_id?: number | null;
     owner_company_id?: number | null;
+    department_id?: number | null;
+    team_id?: number | null;
     is_active: boolean;
     latitude?: number;
     longitude?: number;

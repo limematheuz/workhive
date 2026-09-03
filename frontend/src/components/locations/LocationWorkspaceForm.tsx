@@ -14,6 +14,12 @@ import type {
 } from "@/types/location";
 import type { Client } from "@/services/client.service";
 import { LocationService } from "@/services/location.service";
+import {
+    OrganizationService,
+    type OrganizationDepartment,
+    type OrganizationTeam,
+} from "@/services/organization.service";
+import { useUser } from "@/lib/user-context";
 import { LocationFeaturesStep } from "./LocationFeaturesStep";
 import { LocationInfoAccessStep } from "./LocationInfoAccessStep";
 import { LocationSpacesStep } from "./LocationSpacesStep";
@@ -155,6 +161,7 @@ export function LocationWorkspaceForm({
     onCancel,
     onSubmit,
 }: LocationWorkspaceFormProps) {
+    const { user } = useUser();
     const [catalog, setCatalog] = useState<LocationCatalog | null>(null);
     const [catalogLoading, setCatalogLoading] = useState(true);
     const [step, setStep] = useState(1);
@@ -163,6 +170,11 @@ export function LocationWorkspaceForm({
     const [city, setCity] = useState(location?.city || "");
     const [postalCode, setPostalCode] = useState(location?.postal_code || "");
     const [clientId, setClientId] = useState(() => location?.client_id?.toString() || (defaultClientId === "ALL" ? "" : String(defaultClientId)));
+    const [departments, setDepartments] = useState<OrganizationDepartment[]>([]);
+    const [teams, setTeams] = useState<OrganizationTeam[]>([]);
+    const [organizationAssignmentAvailable, setOrganizationAssignmentAvailable] = useState(false);
+    const [departmentId, setDepartmentId] = useState(() => location?.department_id?.toString() || "");
+    const [teamId, setTeamId] = useState(() => location?.team_id?.toString() || "");
     const [profile, setProfile] = useState(() => initialProfile(location));
     const [access, setAccess] = useState(() => initialAccess(location));
     const [spaces, setSpaces] = useState<LocationSpace[]>([]);
@@ -178,6 +190,27 @@ export function LocationWorkspaceForm({
             .finally(() => { if (!cancelled) setCatalogLoading(false); });
         return () => { cancelled = true; };
     }, []);
+
+    const canConfigureOrganizationAssignment = !location || location.owner_company_id == null || location.owner_company_id === user?.company_id;
+
+    useEffect(() => {
+        if (!canConfigureOrganizationAssignment) return;
+        let cancelled = false;
+        void Promise.all([
+            OrganizationService.getDepartments(),
+            OrganizationService.getTeams(),
+        ])
+            .then(([departmentData, teamData]) => {
+                if (cancelled) return;
+                setDepartments(departmentData);
+                setTeams(teamData);
+                setOrganizationAssignmentAvailable(true);
+            })
+            .catch(() => {
+                if (!cancelled) setOrganizationAssignmentAvailable(false);
+            });
+        return () => { cancelled = true; };
+    }, [canConfigureOrganizationAssignment]);
 
     const selectedSiteType = useMemo(
         () => catalog?.site_types.find((siteType) => siteType.id === profile.site_type),
@@ -228,6 +261,10 @@ export function LocationWorkspaceForm({
             city: city.trim(),
             postal_code: postalCode.trim() || undefined,
             client_id: clientId ? Number(clientId) : null,
+            ...(canConfigureOrganizationAssignment ? {
+                department_id: departmentId ? Number(departmentId) : null,
+                team_id: teamId ? Number(teamId) : null,
+            } : {}),
             profile: cleanProfile(profile),
             access: cleanAccess(access),
             ...(location ? {} : {
@@ -259,7 +296,7 @@ export function LocationWorkspaceForm({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-7">
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
                     <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
-                    {step === 1 && <LocationInfoAccessStep clients={clients} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setAccess={setAccess} />}
+                    {step === 1 && <LocationInfoAccessStep clients={clients} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} />}
                     {step === 2 && <LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} />}
                     {step === 3 && <LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} />}
                     {step === 4 && <LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} />}
