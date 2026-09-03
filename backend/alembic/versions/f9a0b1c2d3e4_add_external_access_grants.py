@@ -215,6 +215,30 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # The external access model intentionally preserves grants. Reverting code
-    # must not turn external people back into internal seats or rewrite history.
-    pass
+    # Downgrades are exercised against PostgreSQL in CI. Restore the legacy
+    # technical role so an older application revision can still resolve those
+    # users, but do not recreate internal memberships, teams or profiles.
+    op.execute(
+        """
+        INSERT INTO roles (name, description, is_active)
+        VALUES ('accountant', 'Legacy accountant role', TRUE)
+        ON CONFLICT (name) DO UPDATE
+        SET is_active = TRUE
+        """
+    )
+    op.execute(
+        """
+        UPDATE user_invitations
+        SET role_id = (SELECT id FROM roles WHERE name = 'accountant')
+        WHERE role_id = (SELECT id FROM roles WHERE name = 'external_portal')
+        """
+    )
+    op.execute(
+        """
+        UPDATE users
+        SET role_id = (SELECT id FROM roles WHERE name = 'accountant')
+        WHERE role_id = (SELECT id FROM roles WHERE name = 'external_portal')
+        """
+    )
+    op.execute("DELETE FROM roles WHERE name = 'external_portal'")
+    op.drop_table("external_access_grants")
