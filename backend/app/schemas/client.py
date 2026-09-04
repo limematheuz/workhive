@@ -104,6 +104,7 @@ class ClientAccountAssignmentCandidateResponse(BaseModel):
     membership_id: int
     full_name: str
     email: EmailStr
+    profile_names: list[str]
 
 
 class ClientResponse(ClientBase):

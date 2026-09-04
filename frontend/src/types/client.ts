@@ -32,6 +32,7 @@ export interface ClientAccountAssignmentCandidate {
     membership_id: number;
     full_name: string;
     email: string;
+    profile_names: string[];
 }
 
 export interface ClientPortfolioItem {
