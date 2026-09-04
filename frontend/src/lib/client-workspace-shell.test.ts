@@ -146,8 +146,12 @@ test("client portfolio assigns commercial ownership through shared shadcn contro
     assert.match(page, /ClientAccountAssignmentDialog/);
     assert.match(table, /onAssignAccount/);
     assert.match(table, /account_assignment\.table_label/);
+    assert.match(table, /hidden xl:block/);
+    assert.match(table, /xl:hidden/);
     assert.match(clientAccountAssignment, /DialogContent/);
     assert.match(clientAccountAssignment, /SelectTrigger/);
+    assert.match(clientAccountAssignment, /Input/);
+    assert.match(clientAccountAssignment, /profile_names/);
     assert.match(clientAccountAssignment, /ClientAccountAssignmentService\.getCandidates/);
     assert.match(clientAccountAssignment, /ClientAccountAssignmentService\.replace/);
     assert.doesNotMatch(clientAccountAssignment, /fetch\s*\(/);

@@ -8,7 +8,6 @@ from sqlalchemy.orm import Session
 from app.models.client_account_assignment import ClientAccountAssignment
 from app.models.user import User
 from app.repositories import client_account_assignment as assignment_repo
-from app.repositories import organization as organization_repo
 from app.schemas.client import (
     ClientAccountAssignmentResponse,
     ClientAccountAssignmentCandidateResponse,
@@ -16,7 +15,7 @@ from app.schemas.client import (
     ClientPortfolioItemResponse,
     ClientResponse,
 )
-from app.services import client_service
+from app.services import client_authorization_service, client_service
 
 
 def get_current_assignment(
@@ -47,15 +46,27 @@ def list_assignment_candidates(
 ) -> list[ClientAccountAssignmentCandidateResponse]:
     """Return active internal members eligible to own a client account."""
     client_service.get_client(db, company_id, client_id)
-    memberships = organization_repo.list_company_memberships(db, company_id)
+    memberships = assignment_repo.list_commercial_owner_candidates(
+        db,
+        company_id=company_id,
+        permission_code=client_authorization_service.CAPABILITY_COMMERCIAL_FOLLOW_UPS_MANAGE,
+    )
     return [
         ClientAccountAssignmentCandidateResponse(
             membership_id=membership.id,
             full_name=membership.user.full_name or membership.user.email,
             email=membership.user.email,
+            profile_names=sorted(
+                {
+                    assignment.permission_profile.name
+                    for assignment in membership.profile_assignments
+                    if assignment.is_active
+                    and assignment.permission_profile is not None
+                    and assignment.permission_profile.is_active
+                }
+            ),
         )
         for membership in memberships
-        if membership.status == "active" and membership.user and membership.user.is_active
     ]
 
 
@@ -91,20 +102,16 @@ def replace_assignment(
             db.commit()
         return None
 
-    membership = organization_repo.get_company_membership(
+    membership = assignment_repo.get_commercial_owner_candidate(
         db,
         company_id=company_id,
         membership_id=payload.membership_id,
+        permission_code=client_authorization_service.CAPABILITY_COMMERCIAL_FOLLOW_UPS_MANAGE,
     )
-    if (
-        not membership
-        or membership.status != "active"
-        or not membership.user
-        or not membership.user.is_active
-    ):
+    if not membership:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Select an active person from this company",
+            detail="Select a commercial owner from this company",
         )
 
     if current_assignment and current_assignment.company_membership_id == membership.id:

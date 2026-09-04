@@ -2,8 +2,14 @@ from app.core.security import create_access_token, get_password_hash
 from app.models.client_account_assignment import ClientAccountAssignment
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership
+from app.models.permission_profile import (
+    MembershipPermissionProfileAssignment,
+    MembershipPermissionProfileScope,
+    PermissionProfile,
+)
 from app.models.user import User
 from app.services import organization_bootstrap_service
+from app.services.organization_base_profile_service import COMMERCIAL_PROFILE_NAME
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
 
 
@@ -68,6 +74,44 @@ def _add_member(db, *, company_id: int, email: str, role_id: int = 3) -> User:
     return user
 
 
+def _grant_commercial_owner(db, *, company_id: int, user: User, assigned_by: User) -> None:
+    membership = (
+        db.query(CompanyMembership)
+        .filter(
+            CompanyMembership.company_id == company_id,
+            CompanyMembership.user_id == user.id,
+        )
+        .one()
+    )
+    profile = (
+        db.query(PermissionProfile)
+        .filter(
+            PermissionProfile.company_id == company_id,
+            PermissionProfile.name == COMMERCIAL_PROFILE_NAME,
+            PermissionProfile.is_active.is_(True),
+        )
+        .one()
+    )
+    assignment = MembershipPermissionProfileAssignment(
+        company_id=company_id,
+        company_membership_id=membership.id,
+        permission_profile_id=profile.id,
+        assigned_by_user_id=assigned_by.id,
+        is_active=True,
+    )
+    db.add(assignment)
+    db.flush()
+    db.add(
+        MembershipPermissionProfileScope(
+            company_id=company_id,
+            profile_assignment_id=assignment.id,
+            scope_type="company",
+            scope_id=company_id,
+        )
+    )
+    db.commit()
+
+
 def test_client_account_assignment_keeps_history_and_exposes_current_portfolio(client, db):
     headers, company_id = _admin_headers(client, "history")
     created_client = client.post(
@@ -95,6 +139,12 @@ def test_client_account_assignment_keeps_history_and_exposes_current_portfolio(c
         company_id=company_id,
         email="portfolio-owner-history@workhive.com",
     )
+    _grant_commercial_owner(
+        db,
+        company_id=company_id,
+        user=second_owner,
+        assigned_by=admin,
+    )
     second_membership = (
         db.query(CompanyMembership)
         .filter(
@@ -117,18 +167,25 @@ def test_client_account_assignment_keeps_history_and_exposes_current_portfolio(c
         headers=headers,
     )
     assert candidates.status_code == 200, candidates.text
-    assert candidates.json() == [
-        {
-            "membership_id": admin_membership.id,
-            "full_name": admin.full_name,
-            "email": admin.email,
-        },
-        {
-            "membership_id": second_membership.id,
-            "full_name": second_owner.full_name,
-            "email": second_owner.email,
-        },
-    ]
+    candidate_by_membership = {
+        item["membership_id"]: item for item in candidates.json()
+    }
+    assert set(candidate_by_membership) == {
+        admin_membership.id,
+        second_membership.id,
+    }
+    assert candidate_by_membership[admin_membership.id] == {
+        "membership_id": admin_membership.id,
+        "full_name": admin.full_name,
+        "email": admin.email,
+        "profile_names": ["Administrador de empresa"],
+    }
+    assert candidate_by_membership[second_membership.id] == {
+        "membership_id": second_membership.id,
+        "full_name": second_owner.full_name,
+        "email": second_owner.email,
+        "profile_names": [COMMERCIAL_PROFILE_NAME],
+    }
 
     assigned_to_admin = client.put(
         f"/api/v1/clients/{client_id}/account-assignment",
@@ -201,6 +258,14 @@ def test_client_account_assignment_rejects_untrusted_members_and_read_only_users
         company_id=company_id,
         email="portfolio-viewer-boundaries@workhive.com",
     )
+    viewer_membership = (
+        db.query(CompanyMembership)
+        .filter(
+            CompanyMembership.company_id == company_id,
+            CompanyMembership.user_id == viewer.id,
+        )
+        .one()
+    )
     viewer_headers = {
         "Authorization": f"Bearer {create_access_token({'sub': viewer.email, 'ver': viewer.session_version})}"
     }
@@ -226,6 +291,13 @@ def test_client_account_assignment_rejects_untrusted_members_and_read_only_users
         ).status_code
         == 403
     )
+    ineligible_assignment = client.put(
+        f"/api/v1/clients/{client_id}/account-assignment",
+        headers=headers,
+        json={"membership_id": viewer_membership.id},
+    )
+    assert ineligible_assignment.status_code == 422
+    assert "commercial owner" in ineligible_assignment.json()["detail"]
 
     foreign_company = Company(
         name="Foreign portfolio company",
@@ -258,4 +330,4 @@ def test_client_account_assignment_rejects_untrusted_members_and_read_only_users
         json={"membership_id": foreign_membership.id},
     )
     assert foreign_assignment.status_code == 422
-    assert "active person from this company" in foreign_assignment.json()["detail"]
+    assert "commercial owner" in foreign_assignment.json()["detail"]
