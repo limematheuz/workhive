@@ -29,6 +29,7 @@ type UserCreateDialogProps = {
     onOpenChange: (open: boolean) => void;
     roles: Role[];
     defaultRoleId: string;
+    showRoleSelector?: boolean;
     onCreated: () => void;
     labels: {
         new_worker: string;
@@ -72,6 +73,7 @@ export function UserCreateDialog({
     onOpenChange,
     roles,
     defaultRoleId,
+    showRoleSelector = true,
     onCreated,
     labels,
 }: UserCreateDialogProps) {
@@ -168,7 +170,7 @@ export function UserCreateDialog({
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
+                        {showRoleSelector && <div className="space-y-2">
                             <Label htmlFor="cRoleId" className="text-[var(--text-main)]">{labels.role}</Label>
                             <DocumentFormSelect
                                 id="cRoleId"
@@ -182,7 +184,7 @@ export function UserCreateDialog({
                                     <option key={r.id} value={r.id}>{getRoleText(r.name, roleLabels)}</option>
                                 ))}
                             </DocumentFormSelect>
-                        </div>
+                        </div>}
                     </div>
 
                     <div className="dialog-glass-chrome flex shrink-0 gap-3 border-t border-[var(--border-soft)] px-6 py-4">

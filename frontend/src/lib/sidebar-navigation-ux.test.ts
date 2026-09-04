@@ -21,7 +21,7 @@ test("sidebar groups navigation by domain while preserving role and feature filt
     const config = read("../components/dashboard/sidebar-nav-config.tsx");
     const navigation = read("../components/dashboard/SidebarNavigation.tsx");
 
-    for (const group of ["operations", "clients", "billing", "company", "platform"]) {
+    for (const group of ["operations", "clients", "billing", "organization", "platform"]) {
         assert.match(config, new RegExp(`group\\(\\"${group}\\"`));
     }
     assert.match(config, /NAVIGATION_FEATURES/);

@@ -18,7 +18,9 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/live-work") ? (dict.dashboard.live_work || "Fichajes en vivo")
         : pathname.includes("/dashboard/calendar") ? dict.dashboard.calendar
         : pathname.includes("/dashboard/integrations") ? dict.dashboard.integrations
-        : pathname.includes("/dashboard/organization") ? "Organización y accesos"
+        : pathname.includes("/dashboard/external-access") ? dict.organization.external_access.title
+        : pathname.includes("/dashboard/organization") ? dict.organization.title
+        : pathname.includes("/dashboard/collaborations") ? dict.collaborations.title
         : pathname.includes("/dashboard/clients") ? dict.dashboard.clients
         : pathname.includes("/dashboard/locations") ? dict.dashboard.locations
         : pathname.includes("/dashboard/tasks") ? dict.dashboard.tasks

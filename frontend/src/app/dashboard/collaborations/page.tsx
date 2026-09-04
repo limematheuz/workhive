@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { CollaborationControlCenter } from "@/components/collaborations/CollaborationControlCenter";
 
-export default function LegacyCollaborationsPage() {
-    redirect("/dashboard/users?tab=companies");
+export default function CollaborationsPage() {
+    return <CollaborationControlCenter />;
 }

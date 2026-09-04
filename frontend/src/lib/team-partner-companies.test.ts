@@ -4,8 +4,11 @@ import test from "node:test";
 
 const source = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("Team keeps people and partner companies separate", () => {
-    const page = source("../app/dashboard/users/page.tsx");
+test("organization separates internal people, external access, and partner companies", () => {
+    const legacyUsersPage = source("../app/dashboard/users/page.tsx");
+    const externalAccess = source("../components/organization/ExternalAccessControlCenter.tsx");
+    const collaborations = source("../components/collaborations/CollaborationControlCenter.tsx");
+    const sidebar = source("../components/dashboard/sidebar-nav-config.tsx");
     const service = source("../services/collaboration.service.ts");
     const acceptance = source("../app/(auth)/accept-company-invitation/AcceptCompanyInvitationClient.tsx");
     const invitationTokenService = source("../services/company-invitation-token.service.ts");
@@ -13,22 +16,25 @@ test("Team keeps people and partner companies separate", () => {
     const workerAcceptance = source("../app/(auth)/accept-invitation/page.tsx");
     const invitationToken = source("./invitation-token.ts");
     const passwordCreation = source("../components/auth/PasswordCreationFields.tsx");
-    const chooser = source("../components/users/TeamInvitationChooserDialog.tsx");
     const workerDialog = source("../components/users/UserCreateDialog.tsx");
     const en = source("../dictionaries/en.json");
     const es = source("../dictionaries/es.json");
 
-    assert.match(page, /CollaborationManagementPanel/);
-    assert.match(page, /TeamInvitationChooserDialog/);
-    assert.match(page, /dict\.users\.partner_companies/);
-    assert.match(page, /dict\.users\.external_accesses_info/);
-    assert.match(page, /member\.role\?\.name === "external_portal"/);
-    assert.match(page, /get\("tab"\) === "companies"/);
-    assert.doesNotMatch(page, /badge: companyTeam\.length/);
-    assert.match(chooser, /onInvitePerson/);
-    assert.match(chooser, /onInviteCompany/);
-    assert.match(chooser, /CheckCircle2/);
-    assert.match(chooser, /invite_person_bullets/);
+    assert.match(legacyUsersPage, /redirect\(tab === "companies" \? "\/dashboard\/collaborations" : "\/dashboard\/organization"\)/);
+    assert.match(externalAccess, /EXTERNAL_PORTAL_ROLE/);
+    assert.match(externalAccess, /UserService\.getUsers/);
+    assert.match(externalAccess, /UserCreateDialog/);
+    assert.match(externalAccess, /UserEditDialog/);
+    assert.match(externalAccess, /showRoleSelector=\{false\}/);
+    assert.match(externalAccess, /from "@\/components\/ui\/table"/);
+    assert.match(externalAccess, /from "@\/components\/ui\/card"/);
+    assert.doesNotMatch(externalAccess, /TeamListSection|DataListTable/);
+    assert.match(collaborations, /CollaborationManagementPanel/);
+    assert.match(collaborations, /CompanyInvitationDialog/);
+    assert.match(sidebar, /\/dashboard\/collaborations/);
+    assert.match(sidebar, /\/dashboard\/external-access/);
+    assert.doesNotMatch(sidebar, /\/dashboard\/users/);
+    assert.doesNotMatch(sidebar, /Equipo y empresa/);
     assert.match(workerDialog, /Input/);
     assert.match(workerDialog, /DocumentFormSelect/);
     assert.match(en, /"collaborations"/);
@@ -62,7 +68,7 @@ test("Team keeps people and partner companies separate", () => {
     assert.doesNotMatch(acceptance, /login\?next=.*token/);
     assert.match(acceptance, /Código del correo/);
     assert.match(acceptance, /Email code/);
-    assert.match(acceptance, /\/dashboard\/users\?tab=companies/);
+    assert.match(acceptance, /\/dashboard\/collaborations/);
     assert.match(workerAcceptance, /PasswordCreationFields/);
     assert.match(passwordCreation, /PasswordStrengthChecklist/);
     assert.match(passwordCreation, /Checkbox/);

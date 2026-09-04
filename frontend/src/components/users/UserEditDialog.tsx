@@ -30,6 +30,7 @@ type UserEditDialogProps = {
     onOpenChange: (open: boolean) => void;
     user: User | null;
     roles: Role[];
+    showRoleSelector?: boolean;
     onUpdated: () => void;
     labels: {
         edit_worker: string;
@@ -65,6 +66,7 @@ export function UserEditDialog({
     onOpenChange,
     user,
     roles,
+    showRoleSelector = true,
     onUpdated,
     labels,
 }: UserEditDialogProps) {
@@ -130,7 +132,7 @@ export function UserEditDialog({
                     </DialogHeader>
 
                     <div className="p-6 overflow-y-auto flex-1 space-y-4">
-                        <div className="space-y-2">
+                        {showRoleSelector && <div className="space-y-2">
                             <Label htmlFor="eFullName" className="text-[var(--text-main)]">{labels.full_name}</Label>
                             <Input
                                 id="eFullName"
@@ -139,7 +141,7 @@ export function UserEditDialog({
                                 onChange={(e) => setForm((current) => ({ ...current, fullName: e.target.value }))}
                                 placeholder={labels.full_name_placeholder}
                             />
-                        </div>
+                        </div>}
                         <div className="space-y-2">
                             <Label htmlFor="eRoleId" className="text-[var(--text-main)]">{labels.role}</Label>
                             <DocumentFormSelect

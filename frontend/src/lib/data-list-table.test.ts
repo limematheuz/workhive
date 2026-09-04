@@ -9,7 +9,6 @@ function source(path: string): string {
 test("shared DataListTable powers the remaining generic data lists", () => {
     const table = source("../components/ui/data-list-table.tsx");
     const expenses = source("../components/expenses/ExpensesListSection.tsx");
-    const users = source("../components/users/TeamListSection.tsx");
     const profile = source("../components/profile/ProfileHistories.tsx");
     const templates = source("../components/tasks/TasksTemplates.tsx");
     const roles = source("../components/roles/RolesListSection.tsx");
@@ -25,7 +24,6 @@ test("shared DataListTable powers the remaining generic data lists", () => {
 
     for (const [name, file] of [
         ["expenses", expenses],
-        ["users", users],
         ["templates", templates],
         ["roles", roles],
         ["traffic", traffic],

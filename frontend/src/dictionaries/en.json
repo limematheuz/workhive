@@ -2427,6 +2427,33 @@
       "rows_per_page": "Rows per page",
       "previous": "Previous page",
       "next": "Next page"
+    },
+    "external_access": {
+      "nav_label": "External access",
+      "title": "External access",
+      "subtitle": "Manage external accountants with limited financial access to this company.",
+      "info": "External accountants are not internal team members, have no departments or internal profiles, and do not consume an internal seat.",
+      "invite": "Invite accountant",
+      "invite_description": "They will receive a secure link to access only this company's finances.",
+      "invite_steps": [
+        "They are not added to the internal team or assigned internal profiles.",
+        "They can only read authorized financial information.",
+        "You can revoke or reactivate access later."
+      ],
+      "list_title": "Accountants with access",
+      "list_subtitle": "Revocable access limited to this company.",
+      "person": "Person",
+      "access": "Access",
+      "access_value": "External accountant",
+      "scope": "Read only · Finance",
+      "active": "Active",
+      "revoked": "Revoked",
+      "empty": "There are no external accountants with access yet.",
+      "edit_title": "Manage external access",
+      "active_description": "The accountant can read authorized financial information.",
+      "revoked_description": "The accountant's access is revoked.",
+      "load_error": "Could not load external access.",
+      "no_permission": "Only company administrators can manage external access."
     }
   },
   "collaborations": {

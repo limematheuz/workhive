@@ -18,7 +18,6 @@ test("dashboard page headers use shared PageHeader", () => {
         "../app/dashboard/tasks/page.tsx",
         "../app/dashboard/clients/page.tsx",
         "../app/dashboard/locations/page.tsx",
-        "../app/dashboard/users/page.tsx",
         "../app/dashboard/roles/page.tsx",
         "../app/dashboard/companies/page.tsx",
         "../app/dashboard/quotes/page.tsx",
