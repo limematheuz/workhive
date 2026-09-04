@@ -29,6 +29,11 @@ class User(Base):
         back_populates="user",
         foreign_keys="ExternalAccessGrant.user_id",
     )
+    partner_portal_grants = relationship(
+        "PartnerPortalGrant",
+        back_populates="user",
+        foreign_keys="PartnerPortalGrant.user_id",
+    )
 
     work_sessions = relationship("WorkSession", back_populates="user")
 

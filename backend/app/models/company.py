@@ -41,6 +41,18 @@ class Company(Base):
     external_access_grants = relationship(
         "ExternalAccessGrant", back_populates="company", cascade="all, delete-orphan"
     )
+    sponsored_partner_portal_grants = relationship(
+        "PartnerPortalGrant",
+        back_populates="host_company",
+        foreign_keys="PartnerPortalGrant.host_company_id",
+        cascade="all, delete-orphan",
+    )
+    partner_portal_grants = relationship(
+        "PartnerPortalGrant",
+        back_populates="partner_company",
+        foreign_keys="PartnerPortalGrant.partner_company_id",
+        cascade="all, delete-orphan",
+    )
     departments = relationship("Department", back_populates="company")
     teams = relationship("Team", back_populates="company")
     permission_profiles = relationship("PermissionProfile", back_populates="company")

@@ -194,6 +194,27 @@ def require_accountant_portal_capacity(
     )
 
 
+def require_partner_portal_capacity(
+    db: Session,
+    *,
+    company_id: int,
+) -> None:
+    """Reserve sponsored partner capacity without consuming an internal seat."""
+
+    now = _utcnow()
+    _require_quota(
+        db,
+        company_id=company_id,
+        code="limits.partner_portals",
+        count_current=lambda: entitlement_repo.count_active_partner_portal_grants(
+            db,
+            host_company_id=company_id,
+            now=now,
+        ),
+        resource_label="partner portal users",
+    )
+
+
 def require_department_capacity(db: Session, *, company_id: int) -> None:
     _require_quota(
         db,

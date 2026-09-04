@@ -117,6 +117,11 @@ def db():
             name="external_portal",
             description="External portal user; access comes from company grants",
         ),
+        Role(
+            id=6,
+            name="partner_portal",
+            description="Sponsored property-manager portal user",
+        ),
     ]
     session.add_all(roles)
     seed_default_plan_catalog(session)

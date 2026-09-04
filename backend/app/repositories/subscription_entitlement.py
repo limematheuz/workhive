@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership, Department, Team
 from app.models.external_access_grant import ExternalAccessGrant
+from app.models.partner_portal_grant import PartnerPortalGrant
 from app.models.subscription_entitlement import (
     CompanyEntitlementOverride,
     CompanySubscription,
@@ -222,6 +223,27 @@ def count_active_external_access_grants(
             or_(
                 ExternalAccessGrant.expires_at.is_(None),
                 ExternalAccessGrant.expires_at > now,
+            ),
+        )
+        .scalar()
+        or 0
+    )
+
+
+def count_active_partner_portal_grants(
+    db: Session,
+    *,
+    host_company_id: int,
+    now: datetime,
+) -> int:
+    return int(
+        db.query(func.count(PartnerPortalGrant.id))
+        .filter(
+            PartnerPortalGrant.host_company_id == host_company_id,
+            PartnerPortalGrant.status == "active",
+            or_(
+                PartnerPortalGrant.expires_at.is_(None),
+                PartnerPortalGrant.expires_at > now,
             ),
         )
         .scalar()
