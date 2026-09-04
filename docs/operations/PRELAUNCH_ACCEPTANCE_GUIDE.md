@@ -38,9 +38,9 @@ inmobiliarias y sus colaboradores:
 5. El responsable supervisa y completa el servicio.
 6. La empresa emite presupuesto o factura, los envía por email y analiza
    ingresos, gastos y beneficio.
-7. Dos empresas colaboradoras pueden separar responsabilidades: la inmobiliaria
-   conserva la reserva; la prestadora decide si acepta y cómo ejecuta el
-   servicio.
+7. Una inmobiliaria patrocinada conserva sus propiedades y reservas; la
+   prestadora decide cómo ejecutar el servicio. La inmobiliaria usa un portal
+   limitado, no el dashboard completo de una empresa que paga WorkHive.
 
 El límite principal es el tenant: cada empresa es un espacio aislado. Ver algo
 en pantalla nunca sustituye la comprobación de permisos del servidor.
@@ -50,7 +50,7 @@ en pantalla nunca sustituye la comprobación de permisos del servidor.
 | Papel | Empresa de prueba | Responsabilidad |
 | --- | --- | --- |
 | Receptora / prestadora | Ownet | Recibe solicitudes, asigna trabajadores, ejecuta y factura sus servicios. |
-| Emisora / inmobiliaria | Port Blanc Costa Brava | Crea ubicaciones y reservas, solicita limpieza y sigue estado del servicio. |
+| Emisora / inmobiliaria | Port Blanc Costa Brava | Con portal patrocinado, gestiona sus propiedades y reservas y solicita limpieza; no usa Finanzas, Equipo ni el dashboard interno. |
 | Plataforma | WorkHive | Supervisa empresas, pruebas, acceso global y alertas de caducidad. |
 
 Las fichas fiscales y de contacto de ambas empresas se registran manualmente
@@ -94,7 +94,7 @@ cookies, claves, correo completo de huéspedes ni números de tarjeta.
 | Rol | Puede | No puede |
 | --- | --- | --- |
 | Superadmin WorkHive | Gestionar empresas, aprobar/rechazar solicitudes de prueba, ver administración global. | Ejecutar trabajo de una empresa sin pertenecer a ella. |
-| Admin emisora | Gestionar reservas, ubicaciones propias, colaboraciones y seguimiento. | Editar operación interna, costes o equipo de la receptora. |
+| Usuario de portal inmobiliaria | Consultar propiedades propias, crear reservas y seguir solicitudes enviadas a la prestadora anfitriona. | Acceder al dashboard completo, Finanzas, Equipo, precios, trabajadores o datos de otra colaboración. |
 | Admin receptora | Aceptar/rechazar solicitudes, planificar, asignar, editar y facturar trabajo propio. | Cambiar la reserva original de la emisora. |
 | Manager receptora | Aceptar solicitudes y coordinar tarea/equipo dentro de Ownet. | Administración global o fiscal de otra empresa. |
 | Trabajador receptor | Ver tareas/requisitos asignados, iniciar trabajo, registrar tiempo y evidencias. | Aceptar una solicitud entre empresas, cambiar precio, facturar o ver datos privados de otra empresa. |
@@ -114,9 +114,7 @@ Crear e invitar, con emails distintos y controlados por socios:
 2. Admin de Ownet.
 3. Manager de Ownet.
 4. Dos trabajadores de Ownet: trabajador A y trabajador B.
-5. Admin de Port Blanc Costa Brava.
-6. Un usuario viewer de Port Blanc Costa Brava, opcional pero recomendado para
-   pruebas de acceso.
+5. Una persona de Port Blanc Costa Brava que reciba el portal patrocinado.
 
 No reutilizar la cuenta admin como trabajador. No compartir contraseñas.
 
@@ -390,22 +388,24 @@ reserva de los necesarios.
 
 ### A. Crear colaboración
 
-1. Como admin de Ownet, abrir **Colaboraciones** y obtener código de empresa.
-2. Como admin de Port Blanc, enviar solicitud usando ese código y rol de
-   prestadora de servicios.
-3. Como admin de Ownet, aceptar solicitud.
-4. Desde ubicación de Port Blanc, definir Ownet como prestadora predeterminada
-   solo para esa ubicación de prueba.
+1. Usar una colaboración inmobiliaria → Ownet ya aceptada. La alta de una
+   inmobiliaria patrocinada nueva todavía es un proceso controlado por
+   WorkHive; no usar la invitación B2B histórica, porque exige tenant de pago.
+2. Como admin de Ownet, abrir **Colaboraciones**, localizar la inmobiliaria y
+   pulsar **Gestionar portal**.
+3. Elegir explícitamente la persona de Port Blanc y activar el portal.
+4. Cerrar su sesión e iniciar sesión de nuevo. Debe llegar a
+   **Portal de colaboradores**, no al dashboard completo.
 
-**Esperado:** colaboración queda aceptada; Port Blanc puede elegir Ownet;
-Ownet obtiene acceso operativo, no propiedad ni gestión de reservas.
+**Esperado:** el grant queda ligado a esa colaboración y a Ownet; Port Blanc
+no puede elegir otro proveedor ni acceder a Finanzas, Equipo o datos internos.
 
 ### B. Crear reserva y solicitud
 
-1. Como admin de Port Blanc, abrir **Reservas** y crear una reserva de prueba
-   futura para su ubicación.
+1. Como usuario de portal de Port Blanc, abrir **Solicitudes** y crear una
+   reserva de prueba futura para una propiedad propia existente.
 2. Indicar salida, entrada posterior, número de huéspedes mínimo ficticio y
-   seleccionar Ownet como prestadora.
+   guardar. Ownet es la prestadora fija: el portal no permite seleccionar otra.
 3. Guardar. Si hay segunda reserva consecutiva, crearla para probar límite de
    entrada.
 4. Iniciar sesión como admin/manager de Ownet y abrir **Reservas → Solicitudes**.
@@ -416,7 +416,8 @@ Ownet obtiene acceso operativo, no propiedad ni gestión de reservas.
 - se muestra fecha de salida, ventana hasta próxima entrada y contexto
   operativo autorizado;
 - no se revela contacto de huésped, datos de pago ni información ajena;
-- Port Blanc recibe notificación interna de que la solicitud fue creada.
+- Port Blanc solo ve el estado autorizado de su solicitud, no la operación
+  interna de Ownet.
 
 ### C. Aceptar y ejecutar
 
