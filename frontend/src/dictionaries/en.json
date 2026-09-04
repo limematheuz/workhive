@@ -926,6 +926,24 @@
         "stage_change": "Stage change"
       }
     },
+    "account_assignment": {
+      "portfolio_all": "All clients",
+      "portfolio_mine": "My portfolio",
+      "table_label": "Commercial owner",
+      "assign": "Assign owner",
+      "change": "Change owner",
+      "dialog_title": "Commercial owner",
+      "dialog_description": "Choose who owns the relationship with this client. You can change or unassign them later.",
+      "select_label": "Responsible person",
+      "unassigned": "Unassigned",
+      "cancel": "Cancel",
+      "save": "Save owner",
+      "loading": "Loading responsible people…",
+      "saving": "Saving…",
+      "load_error": "Could not load the responsible people.",
+      "save_error": "Could not update the commercial portfolio.",
+      "save_success": "Commercial owner updated."
+    },
     "workspace": {
       "subtitle": "Manage all of your clients, their locations, and activity from here.",
       "overview": "Overview",

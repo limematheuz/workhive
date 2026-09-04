@@ -82,11 +82,6 @@ class ClientEmailRequest(BaseModel):
     locale: Literal["es", "en"] = "es"
 
 
-class ClientResponse(ClientBase):
-    id: int
-    company_id: int
-
-
 class ClientAccountAssignmentUpdate(BaseModel):
     membership_id: int | None = Field(default=None, gt=0)
 
@@ -103,6 +98,21 @@ class ClientAccountAssignmentResponse(BaseModel):
     ended_at: datetime | None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ClientAccountAssignmentCandidateResponse(BaseModel):
+    membership_id: int
+    full_name: str
+    email: EmailStr
+
+
+class ClientResponse(ClientBase):
+    id: int
+    company_id: int
+    account_assignment: ClientAccountAssignmentResponse | None = Field(
+        default=None,
+        validation_alias="current_account_assignment",
+    )
 
 
 class ClientPortfolioItemResponse(BaseModel):
