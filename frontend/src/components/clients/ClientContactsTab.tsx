@@ -10,6 +10,7 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { isAccountHolderMirror } from "@/lib/client-contact-display";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
@@ -80,6 +81,8 @@ export function ClientContactsTab({ client, canManage }: ClientContactsTabProps)
         return <div className="flex min-h-48 items-center justify-center text-sm text-[var(--text-muted)]"><Loader2 className="mr-2 size-4 animate-spin" />{dict.clients.details.loading}</div>;
     }
 
+    const additionalContacts = contacts.filter((contact) => !isAccountHolderMirror(client, contact));
+
     return (
         <section className="space-y-4">
             <header className="flex flex-col gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/45 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -90,7 +93,7 @@ export function ClientContactsTab({ client, canManage }: ClientContactsTabProps)
                 {canManage && <Button type="button" onClick={() => setEditorContact(null)}><Plus className="size-4" />{copy.new}</Button>}
             </header>
 
-            {contacts.length === 0 ? (
+            {additionalContacts.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/30 px-5 py-12 text-center">
                     <UserRound className="mx-auto size-5 text-accent" />
                     <h4 className="mt-3 text-sm font-semibold text-[var(--text-main)]">{copy.empty_title}</h4>
@@ -98,7 +101,7 @@ export function ClientContactsTab({ client, canManage }: ClientContactsTabProps)
                 </div>
             ) : (
                 <div className="grid gap-3 lg:grid-cols-2">
-                    {contacts.map((contact) => <ContactCard key={contact.id} contact={contact} canManage={canManage} onEdit={() => setEditorContact(contact)} onDeactivate={() => setDeactivateTarget(contact)} />)}
+                    {additionalContacts.map((contact) => <ContactCard key={contact.id} contact={contact} canManage={canManage} onEdit={() => setEditorContact(contact)} onDeactivate={() => setDeactivateTarget(contact)} />)}
                 </div>
             )}
 

@@ -105,6 +105,9 @@ test("client lifecycle and contacts use the shared shadcn controls", () => {
     assert.match(clientContacts, /ClientService\.createClientContact/);
     assert.match(clientContacts, /ClientService\.updateClientContact/);
     assert.match(clientContacts, /ClientService\.deactivateClientContact/);
+    assert.match(clientContacts, /isAccountHolderMirror/);
+    assert.match(overview, /account_holder_details/);
+    assert.match(spanishDictionary, /"title": "Personas adicionales"/);
     assert.match(clientContacts, /DeleteConfirmDialog/);
     assert.match(clientContacts, /Checkbox/);
     assert.doesNotMatch(clientContacts, /fetch\s*\(/);

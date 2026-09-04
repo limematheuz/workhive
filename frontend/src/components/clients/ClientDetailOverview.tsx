@@ -53,7 +53,7 @@ export function ClientDetailOverview({
     onViewLocationTasks,
     onOpenLocations,
 }: ClientDetailOverviewProps) {
-    const { locale } = useDictionary();
+    const { dict, locale } = useDictionary();
     const [emailDialogOpen, setEmailDialogOpen] = useState(false);
     const [sendingEmail, setSendingEmail] = useState(false);
     const completedTasks = tasks.filter((task) => task.status === "completed").length;
@@ -115,7 +115,7 @@ export function ClientDetailOverview({
                 </section>
 
                 <section className="billing-surface rounded-[22px] p-5">
-                    <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-semibold text-[var(--text-main)]">Contacto principal</h3><span className="flex size-8 items-center justify-center rounded-lg bg-[var(--brand-blue-soft)] text-accent"><Phone className="h-4 w-4" /></span></div>
+                    <div className="flex items-center justify-between gap-3"><h3 className="text-sm font-semibold text-[var(--text-main)]">{client.client_type === "individual" ? dict.clients.contacts.account_holder_details : dict.clients.contacts.account_details}</h3><span className="flex size-8 items-center justify-center rounded-lg bg-[var(--brand-blue-soft)] text-accent"><Phone className="h-4 w-4" /></span></div>
                     <div className="mt-5 space-y-4">
                         <InfoItem icon={Mail} label="Email" value={client.email || "No informado"} />
                         <InfoItem icon={Phone} label="Teléfono" value={client.phone || "No informado"} />
