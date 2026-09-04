@@ -6,17 +6,6 @@ export const COMPANY_ASSIGNABLE_ROLE_NAMES = [
     "external_portal",
 ] as const;
 
-export const getRoleRank = (roleName?: string) => {
-    switch (roleName) {
-        case "superadmin": return 4;
-        case "admin": return 3;
-        case "manager": return 2;
-        case "installer": return 1;
-        case "viewer": return 0;
-        default: return -1;
-    }
-};
-
 export const getRoleText = (roleName: string, labels: {
     role_superadmin?: string;
     role_admin?: string;

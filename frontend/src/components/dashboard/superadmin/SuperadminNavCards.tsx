@@ -7,7 +7,6 @@ import {
     CloudCog,
     KeyRound,
     Radio,
-    Users,
 } from "lucide-react";
 
 import { useDictionary } from "@/lib/dictionary-context";
@@ -29,12 +28,6 @@ export function SuperadminNavCards() {
             title: dict.dashboard.companies,
             description: text.nav_companies_desc,
             icon: Building2,
-        },
-        {
-            href: "/dashboard/users",
-            title: dict.users.title,
-            description: text.nav_team_desc,
-            icon: Users,
         },
         {
             href: "/dashboard/roles",

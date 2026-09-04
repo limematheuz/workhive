@@ -2427,6 +2427,33 @@
       "rows_per_page": "Filas por página",
       "previous": "Página anterior",
       "next": "Página siguiente"
+    },
+    "external_access": {
+      "nav_label": "Accesos externos",
+      "title": "Accesos externos",
+      "subtitle": "Gestiona las gestorías con acceso financiero limitado a esta empresa.",
+      "info": "Las gestorías no forman parte del equipo interno, no tienen departamentos ni perfiles internos y no consumen una plaza interna.",
+      "invite": "Invitar gestoría",
+      "invite_description": "La gestoría recibirá un enlace seguro para acceder solo a las finanzas de esta empresa.",
+      "invite_steps": [
+        "No se añade al equipo interno ni recibe perfiles internos.",
+        "Solo podrá consultar la información financiera autorizada.",
+        "Podrás revocar o reactivar el acceso posteriormente."
+      ],
+      "list_title": "Gestorías con acceso",
+      "list_subtitle": "Accesos revocables y limitados a esta empresa.",
+      "person": "Persona",
+      "access": "Acceso",
+      "access_value": "Gestoría externa",
+      "scope": "Solo lectura · Finanzas",
+      "active": "Activo",
+      "revoked": "Revocado",
+      "empty": "Todavía no hay gestorías externas con acceso.",
+      "edit_title": "Gestionar acceso externo",
+      "active_description": "La gestoría puede consultar las finanzas autorizadas.",
+      "revoked_description": "El acceso de la gestoría está revocado.",
+      "load_error": "No se pudieron cargar los accesos externos.",
+      "no_permission": "Solo la administración de la empresa puede gestionar accesos externos."
     }
   },
   "collaborations": {

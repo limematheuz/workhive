@@ -38,7 +38,7 @@ test("superadmin hub uses billing surfaces without accent pad or green chrome", 
     assert.doesNotMatch(stats, /emerald|color-green|text-green-|bg-green-/);
 
     assert.match(nav, /\/dashboard\/companies/);
-    assert.match(nav, /\/dashboard\/users/);
+    assert.doesNotMatch(nav, /\/dashboard\/users/);
     assert.match(nav, /\/dashboard\/roles/);
     assert.match(nav, /\/dashboard\/traffic/);
     assert.match(nav, /\/dashboard\/integrations/);

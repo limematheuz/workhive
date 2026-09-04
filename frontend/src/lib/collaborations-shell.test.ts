@@ -6,14 +6,19 @@ function source(path: string): string {
     return readFileSync(new URL(path, import.meta.url), "utf8");
 }
 
-test("partner companies are managed inside Team and preserve the legacy route", () => {
+test("partner companies have their own operational workspace", () => {
     const page = source("../app/dashboard/collaborations/page.tsx");
+    const controlCenter = source("../components/collaborations/CollaborationControlCenter.tsx");
     const management = source("../components/collaborations/CollaborationManagementPanel.tsx");
     const emailInvitation = source("../components/collaborations/CompanyEmailInvitationForm.tsx");
     const invitationDialog = source("../components/collaborations/CompanyInvitationDialog.tsx");
     const active = source("../components/collaborations/ActiveCollaboratorsPanel.tsx");
 
-    assert.match(page, /redirect\("\/dashboard\/users\?tab=companies"\)/);
+    assert.match(page, /CollaborationControlCenter/);
+    assert.match(controlCenter, /PageHeader/);
+    assert.match(controlCenter, /CollaborationManagementPanel/);
+    assert.match(controlCenter, /CompanyInvitationDialog/);
+    assert.match(controlCenter, /dict\.collaborations\.invite_company_action/);
     assert.match(management, /SentCompanyInvitationsPanel/);
     assert.doesNotMatch(management, /PremiumTabs/);
     assert.doesNotMatch(management, /PartnerCode|CollaborationConnectForm|CollaborationRequestsPanel/);

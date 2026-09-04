@@ -47,7 +47,6 @@ test("dashboard pages do not create competing vertical scroll containers", () =>
         "../app/dashboard/task-reports/page.tsx",
         "../app/dashboard/tasks/page.tsx",
         "../app/dashboard/traffic/page.tsx",
-        "../app/dashboard/users/page.tsx",
     ];
 
     for (const path of pagePaths) {
