@@ -102,9 +102,19 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Los antiguos usuarios con rol `accountant` se convierten de forma
   conciliable: grant activo, membresía archivada, invitaciones convertidas y
   rol retirado. El recorrido se validó en PostgreSQL sobre una base efímera.
-- ⬜ Los portales de cliente y partner, el selector de varias empresas para una
-  persona externa y sus políticas propias se diseñarán como entregas separadas;
-  nunca heredarán perfiles internos por defecto.
+- ✅ El portal patrocinado de una **inmobiliaria ya colaboradora** usa
+  `PartnerPortalGrant`, el rol técnico `partner_portal`, cuota
+  `limits.partner_portals` de la empresa anfitriona y rutas propias. Solo
+  muestra propiedades propias y solicitudes de limpieza hacia la anfitriona;
+  no recibe dashboard, plazas ni perfiles internos.
+- 🟡 Falta validación visual y de producción del portal patrocinado antes de
+  declararlo publicado. No se ha convertido ningún dato existente de forma
+  automática.
+- ⬜ Diseñar el alta autoservicio/invitación de una inmobiliaria patrocinada
+  nueva. La invitación B2B histórica exige un tenant de pago y no puede
+  reutilizarse para este caso.
+- ⬜ Diseñar el portal de cliente y el selector de varias empresas para una
+  persona externa; cada uno con política propia y sin heredar perfiles internos.
 
 ### Stripe
 
@@ -128,7 +138,7 @@ como WorkHive Core solo cuando el caso real las exige.
 | --- | --- |
 | Organización | `CompanyMembership`, departamentos, equipos y sus pertenencias. |
 | Autorización | Catálogo de permisos, perfiles, asignaciones y scopes por empresa, departamento, equipo o ubicación. |
-| Acceso externo | `ExternalAccessGrant` revocable por empresa. La gestoría actual solo recibe `finance.read`; cliente y partner requieren políticas distintas. |
+| Acceso externo | `ExternalAccessGrant` para gestoría financiera; `PartnerPortalGrant` para inmobiliaria patrocinada ligada a una colaboración. Cliente requiere política propia. |
 | Suscripción | Planes, entitlements, precios, suscripciones, overrides y auditoría. |
 | Privacidad | Solicitud de supresión separada de suspender o retirar a una persona de una empresa. |
 
@@ -286,8 +296,12 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Colaboración externa y Google Calendar existen de forma parcial.
 - ✅ Base de portal de gestoría: acceso externo por empresa, revocable y de
   solo lectura financiera, sin plaza ni membresía interna.
-- ⬜ Portal de cliente y partner/inmobiliaria, y selector de varias empresas
-  para gestores externos.
+- ✅ Portal de inmobiliaria existente: acceso patrocinado revocable, sin plaza
+  interna ni dashboard completo; propiedades propias y solicitudes al
+  proveedor anfitrión están aisladas por backend.
+- 🟡 Validación visual y despliegue del portal de inmobiliaria pendientes.
+- ⬜ Alta patrocinada de inmobiliaria nueva, portal de cliente y selector de
+  varias empresas para personas externas.
 - ⬜ Aplicación ampliada de trabajador, API pública e integraciones auditables.
 - ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
 
@@ -308,13 +322,16 @@ cualquier punto como ✅.
 
 ## 7. Orden de trabajo vigente
 
-1. Cerrar los dos puntos restantes de Fase 1: prueba de carga concurrente en
+1. Validar visualmente y en producción el portal patrocinado antes de marcarlo
+   como publicado; después diseñar su alta de inmobiliaria nueva sin tenant de
+   pago.
+2. Cerrar los dos puntos restantes de Fase 1: prueba de carga concurrente en
    PostgreSQL y ciclo completo de supresión/retención.
-2. Completar Fase 2: prospectos, cartera comercial y perfil Comercial seguro.
-3. Construir Fase 3: catálogo, revisiones y contratos.
-4. Completar Ubicaciones Enterprise y evolucionar trabajos a órdenes.
-5. Calidad, material, cobros/margen y portales, en ese orden.
-6. Retomar Stripe solo cuando los contratos, el responsable legal y los precios
+3. Completar Fase 2: prospectos, cartera comercial y perfil Comercial seguro.
+4. Construir Fase 3: catálogo, revisiones y contratos.
+5. Completar Ubicaciones Enterprise y evolucionar trabajos a órdenes.
+6. Calidad, material, cobros/margen y portales, en ese orden.
+7. Retomar Stripe solo cuando los contratos, el responsable legal y los precios
    definitivos estén cerrados.
 
 ## 8. Riesgos que controlamos

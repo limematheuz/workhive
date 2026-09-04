@@ -39,9 +39,18 @@ También forma parte obligatoria de CI en cada PR.
 - La política actual de gestoría permite únicamente `finance.read`, exige
   `features.accountant_portal` y usa `limits.accountant_portals`; nunca
   consume una cuota `limits.internal_*`.
-- Cliente y partner deben llegar con su propio tipo de grant, política,
-  serializador y pruebas de aislamiento. No se reutilizan perfiles internos ni
-  se amplía la política de gestoría por similitud.
+- Un partner inmobiliario patrocinado usa `PartnerPortalGrant`, ligado a una
+  colaboración B2B concreta, a la empresa anfitriona que paga el acceso y a
+  una persona. El rol técnico `partner_portal` no recibe membresía, perfil,
+  departamento, equipo ni plaza interna.
+- La política de partner valida grant activo, colaboración aceptada, empresa
+  anfitriona activa y `features.partner_portal`; solo expone propiedades de la
+  inmobiliaria y reservas asignadas a esa anfitriona. La inmobiliaria no elige
+  otro proveedor ni accede a trabajadores, costes, facturas o dashboard del
+  anfitrión.
+- Cliente y cualquier futuro portal externo deben llegar con su propio grant,
+  política, serializador y pruebas de aislamiento. No se reutilizan perfiles
+  internos ni se amplía la política de gestoría por similitud.
 
 ## Cómo trabajar cuando una pieza empieza a crecer
 
