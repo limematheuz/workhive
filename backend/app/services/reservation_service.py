@@ -9,12 +9,8 @@ from app.models.user import User
 from app.repositories import reservation as reservation_repo
 from app.repositories import task_item as task_item_repo
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
-from app.services import location_access_service
 from app.services import task_lifecycle_notification_service  # noqa: F401 - compatibility re-export
-from app.services.planning_access_service import (
-    require_company_planning,
-    require_user_planning,
-)
+from app.services.reservation_mutation_access import ReservationMutationAccess, require_reservation_mutation_access
 from app.services.reservation_collaboration_service import record_external_service_request
 from app.services.reservation_tasks import (
     ensure_location_access,
@@ -44,25 +40,8 @@ from app.services.reservation_validation import (
 )
 
 
-def create_reservation(
-    db: Session,
-    current_user: User,
-    data: ReservationCreate,
-    *,
-    planning_company_id: int | None = None,
-    allow_partner_portal_owner: bool = False,
-) -> Reservation:
-    if planning_company_id is None:
-        require_user_planning(db, current_user)
-    else:
-        require_company_planning(db, planning_company_id)
-    location_access_service.require_location_capability(
-        db,
-        current_user,
-        data.location_id,
-        "can_manage_reservations",
-        allow_partner_portal_owner=allow_partner_portal_owner,
-    )
+def create_reservation(db: Session, current_user: User, data: ReservationCreate, *, access: ReservationMutationAccess | None = None) -> Reservation:
+    require_reservation_mutation_access(db, current_user, data.location_id, access=access)
     location = get_location(db, data.location_id)
     validate_guest_capacity(location, data.guest_count)
     validate_no_overlap(db, data.location_id, data.check_in_at, data.check_out_at)
@@ -113,29 +92,12 @@ def create_reservation(
         raise
 
 
-def dispatch_cleaning_request(
-    db: Session,
-    current_user: User,
-    reservation_id: int,
-    *,
-    planning_company_id: int | None = None,
-    allow_partner_portal_owner: bool = False,
-) -> Reservation:
-    if planning_company_id is None:
-        require_user_planning(db, current_user)
-    else:
-        require_company_planning(db, planning_company_id)
+def dispatch_cleaning_request(db: Session, current_user: User, reservation_id: int, *, access: ReservationMutationAccess | None = None) -> Reservation:
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     require_reservation_owner(current_user, reservation.owner_company_id)
-    location_access_service.require_location_capability(
-        db,
-        current_user,
-        reservation.location_id,
-        "can_manage_reservations",
-        allow_partner_portal_owner=allow_partner_portal_owner,
-    )
+    require_reservation_mutation_access(db, current_user, reservation.location_id, access=access)
     if reservation.status == "cancelled":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -355,30 +317,12 @@ def _remove_updated_reservation_cleaning(
     db.add(reservation)
 
 
-def update_reservation(
-    db: Session,
-    current_user: User,
-    reservation_id: int,
-    data: ReservationUpdate,
-    *,
-    planning_company_id: int | None = None,
-    allow_partner_portal_owner: bool = False,
-) -> Reservation:
-    if planning_company_id is None:
-        require_user_planning(db, current_user)
-    else:
-        require_company_planning(db, planning_company_id)
+def update_reservation(db: Session, current_user: User, reservation_id: int, data: ReservationUpdate, *, access: ReservationMutationAccess | None = None) -> Reservation:
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     require_reservation_owner(current_user, reservation.owner_company_id)
-    location_access_service.require_location_capability(
-        db,
-        current_user,
-        reservation.location_id,
-        "can_manage_reservations",
-        allow_partner_portal_owner=allow_partner_portal_owner,
-    )
+    require_reservation_mutation_access(db, current_user, reservation.location_id, access=access)
     _, check_out_at, guest_count, location = _validate_reservation_update_schedule(
         db,
         reservation,
@@ -444,29 +388,12 @@ def update_reservation(
         raise
 
 
-def delete_reservation(
-    db: Session,
-    current_user: User,
-    reservation_id: int,
-    *,
-    planning_company_id: int | None = None,
-    allow_partner_portal_owner: bool = False,
-) -> None:
-    if planning_company_id is None:
-        require_user_planning(db, current_user)
-    else:
-        require_company_planning(db, planning_company_id)
+def delete_reservation(db: Session, current_user: User, reservation_id: int, *, access: ReservationMutationAccess | None = None) -> None:
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
     require_reservation_owner(current_user, reservation.owner_company_id)
-    location_access_service.require_location_capability(
-        db,
-        current_user,
-        reservation.location_id,
-        "can_manage_reservations",
-        allow_partner_portal_owner=allow_partner_portal_owner,
-    )
+    require_reservation_mutation_access(db, current_user, reservation.location_id, access=access)
     location_id = reservation.location_id
 
     try:

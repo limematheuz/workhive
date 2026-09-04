@@ -16,6 +16,7 @@ from app.schemas.reservation import ReservationCreate, ReservationResponse, Rese
 from app.services import reservation_query_service, reservation_service
 from app.services.entitlement_service import require_company_feature
 from app.services.planning_access_service import require_company_planning
+from app.services.reservation_mutation_access import ReservationMutationAccess
 
 
 def _require_locations_access(db: Session, grant: PartnerPortalGrant) -> None:
@@ -150,8 +151,10 @@ def create_reservation(
         db,
         current_user,
         data.model_copy(update={"assigned_company_id": grant.host_company_id}),
-        planning_company_id=grant.host_company_id,
-        allow_partner_portal_owner=True,
+        access=ReservationMutationAccess(
+            planning_company_id=grant.host_company_id,
+            allow_partner_portal_owner=True,
+        ),
     )
     return _reservation_response(db, reservation=reservation, current_user=current_user)
 
@@ -189,8 +192,10 @@ def update_reservation(
                 "cleaning_required": True,
             }
         ),
-        planning_company_id=grant.host_company_id,
-        allow_partner_portal_owner=True,
+        access=ReservationMutationAccess(
+            planning_company_id=grant.host_company_id,
+            allow_partner_portal_owner=True,
+        ),
     )
     return _reservation_response(db, reservation=reservation, current_user=current_user)
 
@@ -208,8 +213,10 @@ def delete_reservation(
         db,
         current_user,
         reservation_id,
-        planning_company_id=grant.host_company_id,
-        allow_partner_portal_owner=True,
+        access=ReservationMutationAccess(
+            planning_company_id=grant.host_company_id,
+            allow_partner_portal_owner=True,
+        ),
     )
 
 
