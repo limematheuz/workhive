@@ -13,6 +13,8 @@ const clientStats = readFileSync(new URL("../components/clients/ClientWorkspaceS
 const clientContacts = readFileSync(new URL("../components/clients/ClientContactsTab.tsx", import.meta.url), "utf8");
 const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
 const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
+const clientAccountAssignment = readFileSync(new URL("../components/clients/ClientAccountAssignmentDialog.tsx", import.meta.url), "utf8");
+const clientAccountAssignmentService = readFileSync(new URL("../services/client-account-assignment.service.ts", import.meta.url), "utf8");
 const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-picker.tsx", import.meta.url), "utf8");
 const spanishDictionary = readFileSync(new URL("../dictionaries/es.json", import.meta.url), "utf8");
 const createClientSheet = readFileSync(new URL("../components/clients/CreateClientSheet.tsx", import.meta.url), "utf8");
@@ -135,6 +137,22 @@ test("commercial follow-up uses plain language without changing its service cont
     assert.match(clientOpportunities, /ClientService\.getClientOpportunities/);
     assert.match(clientOpportunities, /ClientService\.createClientOpportunity/);
     assert.doesNotMatch(clientOpportunities, /Crea una oportunidad/);
+});
+
+test("client portfolio assigns commercial ownership through shared shadcn controls", () => {
+    assert.match(page, /PremiumTabs/);
+    assert.match(page, /ClientAccountAssignmentService\.getMyPortfolio/);
+    assert.match(page, /portfolioView === "mine"/);
+    assert.match(page, /ClientAccountAssignmentDialog/);
+    assert.match(table, /onAssignAccount/);
+    assert.match(table, /account_assignment\.table_label/);
+    assert.match(clientAccountAssignment, /DialogContent/);
+    assert.match(clientAccountAssignment, /SelectTrigger/);
+    assert.match(clientAccountAssignment, /ClientAccountAssignmentService\.getCandidates/);
+    assert.match(clientAccountAssignment, /ClientAccountAssignmentService\.replace/);
+    assert.doesNotMatch(clientAccountAssignment, /fetch\s*\(/);
+    assert.match(clientAccountAssignmentService, /getMyPortfolio/);
+    assert.match(clientAccountAssignmentService, /replace/);
 });
 
 test("client dialogs keep their chrome translucent and reuse the shared form surfaces", () => {

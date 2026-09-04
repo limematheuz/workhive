@@ -1,6 +1,16 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from app.models.client import Client
+from app.models.client_account_assignment import ClientAccountAssignment
+from app.models.company_membership import CompanyMembership
 from app.schemas.client import ClientCreate, ClientUpdate
+
+
+def _client_load_options():
+    return (
+        selectinload(Client.account_assignments)
+        .joinedload(ClientAccountAssignment.company_membership)
+        .joinedload(CompanyMembership.user),
+    )
 
 
 def get_client_by_legal_number(
@@ -8,14 +18,14 @@ def get_client_by_legal_number(
 ) -> Client | None:
     if not legal_number:
         return None
-    query = db.query(Client)
+    query = db.query(Client).options(*_client_load_options())
     if company_id is not None:
         query = query.filter(Client.company_id == company_id)
     return query.filter(Client.legal_number == legal_number).first()
 
 
 def get_client_by_id(db: Session, client_id: int, company_id: int | None) -> Client | None:
-    query = db.query(Client)
+    query = db.query(Client).options(*_client_load_options())
     if company_id is not None:
         query = query.filter(Client.company_id == company_id)
     return query.filter(Client.id == client_id).first()
@@ -29,7 +39,7 @@ def get_all_clients(
     is_active: bool | None = True,
 ) -> list[Client]:
 
-    query = db.query(Client)
+    query = db.query(Client).options(*_client_load_options())
     if company_id is not None:
         query = query.filter(Client.company_id == company_id)
     

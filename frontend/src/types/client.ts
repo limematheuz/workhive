@@ -13,6 +13,30 @@ export interface Client {
     legal_number?: string | null;
     is_active: boolean;
     company_id: number;
+    account_assignment?: ClientAccountAssignment | null;
+}
+
+export interface ClientAccountAssignment {
+    id: number;
+    client_id: number;
+    company_id: number;
+    membership_id: number;
+    owner_name: string | null;
+    owner_email: string | null;
+    assigned_by_user_id: number | null;
+    started_at: string;
+    ended_at: string | null;
+}
+
+export interface ClientAccountAssignmentCandidate {
+    membership_id: number;
+    full_name: string;
+    email: string;
+}
+
+export interface ClientPortfolioItem {
+    client: Client;
+    assignment: ClientAccountAssignment;
 }
 
 export interface ClientAccess {

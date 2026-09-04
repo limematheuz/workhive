@@ -11,6 +11,7 @@ from app.repositories import client_account_assignment as assignment_repo
 from app.repositories import organization as organization_repo
 from app.schemas.client import (
     ClientAccountAssignmentResponse,
+    ClientAccountAssignmentCandidateResponse,
     ClientAccountAssignmentUpdate,
     ClientPortfolioItemResponse,
     ClientResponse,
@@ -36,6 +37,26 @@ def get_current_assignment(
             detail="Commercial owner is not assigned",
         )
     return ClientAccountAssignmentResponse.model_validate(assignment)
+
+
+def list_assignment_candidates(
+    db: Session,
+    *,
+    company_id: int,
+    client_id: int,
+) -> list[ClientAccountAssignmentCandidateResponse]:
+    """Return active internal members eligible to own a client account."""
+    client_service.get_client(db, company_id, client_id)
+    memberships = organization_repo.list_company_memberships(db, company_id)
+    return [
+        ClientAccountAssignmentCandidateResponse(
+            membership_id=membership.id,
+            full_name=membership.user.full_name or membership.user.email,
+            email=membership.user.email,
+        )
+        for membership in memberships
+        if membership.status == "active" and membership.user and membership.user.is_active
+    ]
 
 
 def replace_assignment(

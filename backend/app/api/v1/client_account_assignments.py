@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import ActiveUser, get_db
 from app.models.user import User
 from app.schemas.client import (
+    ClientAccountAssignmentCandidateResponse,
     ClientAccountAssignmentResponse,
     ClientAccountAssignmentUpdate,
 )
@@ -15,6 +16,26 @@ from app.services import (
 
 
 router = APIRouter()
+
+
+@router.get(
+    "/account-assignment/candidates",
+    response_model=list[ClientAccountAssignmentCandidateResponse],
+)
+def list_client_account_assignment_candidates(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    return client_account_assignment_service.list_assignment_candidates(
+        db,
+        company_id=client_authorization_service.require_client_capability(
+            db,
+            current_user,
+            client_authorization_service.CAPABILITY_CLIENTS_MANAGE,
+        ),
+        client_id=client_id,
+    )
 
 
 @router.get(

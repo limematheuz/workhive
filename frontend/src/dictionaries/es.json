@@ -926,6 +926,24 @@
         "stage_change": "Cambio de etapa"
       }
     },
+    "account_assignment": {
+      "portfolio_all": "Todos los clientes",
+      "portfolio_mine": "Mi cartera",
+      "table_label": "Responsable comercial",
+      "assign": "Asignar responsable",
+      "change": "Cambiar responsable",
+      "dialog_title": "Responsable comercial",
+      "dialog_description": "Elige quién lleva la relación con este cliente. Podrás cambiarlo o dejarlo sin asignar más adelante.",
+      "select_label": "Persona responsable",
+      "unassigned": "Sin asignar",
+      "cancel": "Cancelar",
+      "save": "Guardar responsable",
+      "loading": "Cargando responsables…",
+      "saving": "Guardando…",
+      "load_error": "No se pudieron cargar las personas responsables.",
+      "save_error": "No se pudo actualizar la cartera comercial.",
+      "save_success": "Responsable comercial actualizado."
+    },
     "workspace": {
       "subtitle": "Gestiona todos tus clientes, sus ubicaciones y su actividad desde aquí.",
       "overview": "Resumen",

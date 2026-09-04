@@ -64,6 +64,7 @@ class Client(Base):
         "ClientAccountAssignment",
         back_populates="client",
         cascade="all, delete-orphan",
+        order_by="ClientAccountAssignment.id.desc()",
     )
 
     locations = relationship("Location", back_populates="client")
@@ -71,3 +72,14 @@ class Client(Base):
     invoices = relationship("Invoice", back_populates="client")
     quotes = relationship("Quote", back_populates="client")
     expenses = relationship("Expense", back_populates="client")
+
+    @property
+    def current_account_assignment(self):
+        return next(
+            (
+                assignment
+                for assignment in self.account_assignments
+                if assignment.ended_at is None
+            ),
+            None,
+        )

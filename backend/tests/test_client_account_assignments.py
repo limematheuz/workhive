@@ -112,6 +112,24 @@ def test_client_account_assignment_keeps_history_and_exposes_current_portfolio(c
         == 404
     )
 
+    candidates = client.get(
+        f"/api/v1/clients/{client_id}/account-assignment/candidates",
+        headers=headers,
+    )
+    assert candidates.status_code == 200, candidates.text
+    assert candidates.json() == [
+        {
+            "membership_id": admin_membership.id,
+            "full_name": admin.full_name,
+            "email": admin.email,
+        },
+        {
+            "membership_id": second_membership.id,
+            "full_name": second_owner.full_name,
+            "email": second_owner.email,
+        },
+    ]
+
     assigned_to_admin = client.put(
         f"/api/v1/clients/{client_id}/account-assignment",
         headers=headers,
@@ -120,6 +138,10 @@ def test_client_account_assignment_keeps_history_and_exposes_current_portfolio(c
     assert assigned_to_admin.status_code == 200, assigned_to_admin.text
     assert assigned_to_admin.json()["membership_id"] == admin_membership.id
     assert assigned_to_admin.json()["assigned_by_user_id"] == admin.id
+
+    listed_clients = client.get("/api/v1/clients/", headers=headers)
+    assert listed_clients.status_code == 200, listed_clients.text
+    assert listed_clients.json()[0]["account_assignment"]["membership_id"] == admin_membership.id
 
     portfolio = client.get("/api/v1/clients/portfolio", headers=headers)
     assert portfolio.status_code == 200, portfolio.text
@@ -194,6 +216,13 @@ def test_client_account_assignment_rejects_untrusted_members_and_read_only_users
             f"/api/v1/clients/{client_id}/account-assignment",
             headers=viewer_headers,
             json={"membership_id": None},
+        ).status_code
+        == 403
+    )
+    assert (
+        client.get(
+            f"/api/v1/clients/{client_id}/account-assignment/candidates",
+            headers=viewer_headers,
         ).status_code
         == 403
     )

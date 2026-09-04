@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { Building2, Loader2, ShieldAlert } from "lucide-react";
 
 import { ClientDetailDialog } from "@/components/clients/ClientDetailDialog";
+import { ClientAccountAssignmentDialog } from "@/components/clients/ClientAccountAssignmentDialog";
 import { ClientTaskDetailDialog } from "@/components/clients/ClientTaskDetailDialog";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { ClientWorkspaceExportButton } from "@/components/clients/ClientWorkspaceExportButton";
@@ -16,6 +17,7 @@ import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { canViewFinance } from "@/domain/access/roles";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -31,6 +33,7 @@ import { POLL_INTERVALS } from "@/lib/polling";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import { ClientService, type Client, type ClientAccess } from "@/services/client.service";
+import { ClientAccountAssignmentService } from "@/services/client-account-assignment.service";
 import { InvoiceService } from "@/services/invoice.service";
 import { LocationService, type Location } from "@/services/location.service";
 import { TaskService, type TaskItem } from "@/services/task.service";
@@ -50,6 +53,8 @@ type ClientsPageState = {
     locations: Location[];
     tasks: TaskItem[];
     invoices: Invoice[] | undefined;
+    portfolioClientIds: number[];
+    portfolioView: "all" | "mine";
     filters: ClientWorkspaceFilter;
     loading: boolean;
     access: ClientAccess | null;
@@ -64,6 +69,8 @@ type ClientsPageState = {
     tasksSheetOpen: boolean;
     viewingTask: TaskItem | null;
     backToClient: boolean;
+    assigningAccountClient: Client | null;
+    accountAssignmentDialogOpen: boolean;
 };
 
 type ClientsPageSetAction = {
@@ -85,6 +92,8 @@ const CLIENTS_PAGE_INITIAL_STATE: ClientsPageState = {
     locations: [],
     tasks: [],
     invoices: undefined,
+    portfolioClientIds: [],
+    portfolioView: "all",
     filters: EMPTY_FILTERS,
     loading: true,
     access: null,
@@ -99,6 +108,8 @@ const CLIENTS_PAGE_INITIAL_STATE: ClientsPageState = {
     tasksSheetOpen: false,
     viewingTask: null,
     backToClient: false,
+    assigningAccountClient: null,
+    accountAssignmentDialogOpen: false,
 };
 
 function clientsPageReducer(
@@ -129,6 +140,8 @@ export default function ClientsPage() {
         locations,
         tasks,
         invoices,
+        portfolioClientIds,
+        portfolioView,
         filters,
         loading,
         access,
@@ -143,6 +156,8 @@ export default function ClientsPage() {
         tasksSheetOpen,
         viewingTask,
         backToClient,
+        assigningAccountClient,
+        accountAssignmentDialogOpen,
     } = pageState;
     const workspaceReferenceDate = useMemo(() => new Date(), []);
     const hasLoadedRef = useRef(false);
@@ -171,10 +186,12 @@ export default function ClientsPage() {
                 setPageState("locations", []);
                 setPageState("tasks", []);
                 setPageState("invoices", undefined);
+                setPageState("portfolioClientIds", []);
                 return;
             }
-            const [clientData, locationData, taskData, invoiceData] = await Promise.all([
+            const [clientData, portfolioData, locationData, taskData, invoiceData] = await Promise.all([
                 ClientService.getClients(null),
+                ClientAccountAssignmentService.getMyPortfolio().catch(() => []),
                 LocationService.getLocations().catch(() => [] as Location[]),
                 TaskService.getAllTaskItems().catch(() => [] as TaskItem[]),
                 canViewClientFinancials
@@ -182,6 +199,7 @@ export default function ClientsPage() {
                     : Promise.resolve(undefined),
             ]);
             setPageState("clients", clientData);
+            setPageState("portfolioClientIds", portfolioData.map((item) => item.client.id));
             setPageState("locations", locationData);
             setPageState("tasks", taskData);
             setPageState("invoices", invoiceData);
@@ -206,7 +224,14 @@ export default function ClientsPage() {
         () => buildClientWorkspace({ clients, locations, tasks, invoices, referenceDate: workspaceReferenceDate }),
         [clients, invoices, locations, tasks, workspaceReferenceDate],
     );
-    const visibleRows = useMemo(() => filterClientWorkspaceRows(workspace.rows, filters), [filters, workspace.rows]);
+    const filteredRows = useMemo(() => filterClientWorkspaceRows(workspace.rows, filters), [filters, workspace.rows]);
+    const portfolioClientIdSet = useMemo(() => new Set(portfolioClientIds), [portfolioClientIds]);
+    const visibleRows = useMemo(
+        () => portfolioView === "mine"
+            ? filteredRows.filter((row) => portfolioClientIdSet.has(row.client.id))
+            : filteredRows,
+        [filteredRows, portfolioClientIdSet, portfolioView],
+    );
     const visibleSummary = useMemo(
         () => summarizeClientWorkspaceRows(visibleRows, workspace.summary.hasFinancialData),
         [visibleRows, workspace.summary.hasFinancialData],
@@ -296,12 +321,26 @@ export default function ClientsPage() {
                                 {dict.clients.workspace.financial_access_hint}
                             </p>
                         )}
+                        <PremiumTabs
+                            tabs={[
+                                { id: "all", label: dict.clients.account_assignment.portfolio_all },
+                                { id: "mine", label: dict.clients.account_assignment.portfolio_mine },
+                            ]}
+                            activeTab={portfolioView}
+                            onChange={(nextView) => setPageState("portfolioView", nextView)}
+                            className="max-w-md"
+                            mobileLabel={dict.clients.account_assignment.portfolio_mine}
+                        />
                         <ClientWorkspaceFilters filters={filters} cities={cities} onChange={(nextFilters) => setPageState("filters", nextFilters)} />
                         <ClientsTable
                             rows={visibleRows}
                             onEdit={handleEdit}
                             onDelete={handleDeleteClick}
                             onToggleActive={handleToggleActive}
+                            onAssignAccount={(client) => {
+                                setPageState("assigningAccountClient", client);
+                                setPageState("accountAssignmentDialogOpen", true);
+                            }}
                             onDetails={(client) => {
                                 setPageState("detailsClient", client);
                                 setPageState("detailsDialogOpen", true);
@@ -313,6 +352,15 @@ export default function ClientsPage() {
             </div>
 
             <EditClientSheet client={editingClient} open={editSheetOpen} onOpenChange={(open) => setPageState("editSheetOpen", open)} onClientUpdated={loadClients} />
+            <ClientAccountAssignmentDialog
+                client={assigningAccountClient}
+                open={accountAssignmentDialogOpen}
+                onOpenChange={(open) => {
+                    setPageState("accountAssignmentDialogOpen", open);
+                    if (!open) setPageState("assigningAccountClient", null);
+                }}
+                onSaved={loadClients}
+            />
             <ClientDetailDialog
                 client={detailsClient}
                 workspaceRow={detailsRow}
