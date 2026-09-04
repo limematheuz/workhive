@@ -1,4 +1,14 @@
+import os
+
 import pytest
+
+# The application settings are instantiated while importing ``app.main`` below.
+# Keep the unit-test harness independent from a developer's local ``.env`` and
+# from the directory from which pytest is invoked.
+os.environ.setdefault("DATABASE_URL", "sqlite://")
+os.environ.setdefault("SECRET_KEY", "workhive-test-secret-not-for-production")
+os.environ.setdefault("DATABASE_USE_NULL_POOL", "true")
+
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
