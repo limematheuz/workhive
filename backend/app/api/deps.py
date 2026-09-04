@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from fastapi import Cookie, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -14,6 +16,8 @@ from app.repositories import user as user_repo
 from app.services.subscription_policy import require_company_access
 from app.services.organization_authorization_service import require_capability
 from app.services.user_scope import is_superadmin
+from app.models.partner_portal_grant import PartnerPortalGrant
+from app.services import partner_portal_policy
 
 
 def get_db():
@@ -216,6 +220,27 @@ def require_company_capability_async(permission_code: str):
     return capability_checker
 
 
+@dataclass(frozen=True)
+class PartnerPortalPrincipal:
+    user: User
+    grant: PartnerPortalGrant
+
+
+def require_partner_portal_principal(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+) -> PartnerPortalPrincipal:
+    """Authenticate a sponsored portal without granting tenant access."""
+
+    return PartnerPortalPrincipal(
+        user=current_user,
+        grant=partner_portal_policy.require_active_partner_portal(
+            db,
+            current_user=current_user,
+        ),
+    )
+
+
 # External portal users must opt into a tenant-bound grant. Finance access is
 # resolved from that grant; internal finance access remains profile-backed.
 ActiveAdmin = Depends(require_role("admin"))
@@ -243,3 +268,4 @@ AsyncAuthenticatedUser = Depends(get_authenticated_user_async)
 AsyncAuthenticatedAdmin = Depends(require_authenticated_role_async("admin"))
 AuthenticatedUser = Depends(get_authenticated_user)
 AuthenticatedAdmin = Depends(require_authenticated_role("admin"))
+ActivePartnerPortal = Depends(require_partner_portal_principal)

@@ -52,9 +52,17 @@ def require_location_capability(
     capability: str,
     *,
     permission_code: str | None = None,
+    allow_partner_portal_owner: bool = False,
 ) -> Location:
     location = require_accessible_location(db, current_user, location_id)
     if is_platform_superadmin(current_user):
+        return location
+    if (
+        allow_partner_portal_owner
+        and current_user.role
+        and current_user.role.name == "partner_portal"
+        and _is_direct_company_location(location, current_user.company_id)
+    ):
         return location
     if permission_code:
         require_capability(
