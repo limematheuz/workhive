@@ -95,6 +95,10 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ El acceso de gestoría actual es revocable y de solo lectura a Finanzas
   (`finance.read`), exige la funcionalidad `features.accountant_portal` y se
   limita a la empresa que emitió el grant.
+- ✅ Navegación unificada: las Personas internas se administran solo en
+  Organización; las empresas colaboradoras B2B se gestionan en Operación; y
+  las gestorías se administran en Organización > Accesos externos. La ruta
+  histórica de Equipo conserva redirecciones compatibles sin duplicar datos.
 - ✅ Los antiguos usuarios con rol `accountant` se convierten de forma
   conciliable: grant activo, membresía archivada, invitaciones convertidas y
   rol retirado. El recorrido se validó en PostgreSQL sobre una base efímera.
