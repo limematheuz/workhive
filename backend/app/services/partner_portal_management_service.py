@@ -55,10 +55,26 @@ def list_portal_candidates(
         collaboration_id=collaboration_id,
     )
     candidates = user_repo.get_company_members(db, partner_company_id)
+    active_user_ids = {
+        user_id
+        for (user_id,) in db.query(PartnerPortalGrant.user_id)
+        .filter(
+            PartnerPortalGrant.collaboration_id == collaboration_id,
+            PartnerPortalGrant.status == "active",
+        )
+        .all()
+    }
     response: list[dict] = []
     for candidate in candidates:
         role_name = candidate.role.name if candidate.role else ""
-        eligible = candidate.is_active and role_name in {"admin", "manager", "viewer"}
+        is_supported_role = role_name in {
+            "admin",
+            "manager",
+            "viewer",
+            PARTNER_PORTAL_ROLE_NAME,
+        }
+        already_active = candidate.id in active_user_ids
+        eligible = candidate.is_active and is_supported_role and not already_active
         response.append(
             {
                 "id": candidate.id,
@@ -69,11 +85,54 @@ def list_portal_candidates(
                 "ineligible_reason": (
                     None
                     if eligible
+                else (
+                    "This person already has an active portal access."
+                    if already_active
                     else "Only active internal partner users can be converted to the portal."
+                )
                 ),
             }
         )
     return response
+
+
+def serialize_portal_grant(grant: PartnerPortalGrant) -> dict:
+    return {
+        "id": grant.id,
+        "host_company_id": grant.host_company_id,
+        "partner_company_id": grant.partner_company_id,
+        "collaboration_id": grant.collaboration_id,
+        "user_id": grant.user_id,
+        "status": grant.status,
+        "expires_at": grant.expires_at,
+        "created_at": grant.created_at,
+        "revoked_at": grant.revoked_at,
+        "user_full_name": grant.user.full_name if grant.user else None,
+        "user_email": grant.user.email if grant.user else None,
+    }
+
+
+def list_portal_grants(
+    db: Session,
+    *,
+    host_user: User,
+    collaboration_id: int,
+) -> list[dict]:
+    _require_host_collaboration(
+        db,
+        host_user=host_user,
+        collaboration_id=collaboration_id,
+    )
+    grants = (
+        db.query(PartnerPortalGrant)
+        .filter(
+            PartnerPortalGrant.collaboration_id == collaboration_id,
+            PartnerPortalGrant.status == "active",
+        )
+        .order_by(PartnerPortalGrant.created_at.asc(), PartnerPortalGrant.id.asc())
+        .all()
+    )
+    return [serialize_portal_grant(grant) for grant in grants]
 
 
 def grant_portal_access(

@@ -15,7 +15,7 @@ from app.api.deps import (
     ActiveApplicationUser,
     AsyncActiveManagerOrAdmin,
     AsyncActiveUser,
-    AsyncActiveApplicationUser,
+    AsyncAuthenticatedUser,
     get_async_db,
     get_db,
 )
@@ -27,12 +27,21 @@ from app.schemas.user import UserResponse, UserStatsResponse, UserUpdate
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
 from app.services import user_service
 from app.services import audit_service
+from app.services.subscription_policy import require_company_access
 
 router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_current_user(current_user: User = AsyncActiveApplicationUser):
+async def read_current_user(current_user: User = AsyncAuthenticatedUser):
+    """Return the signed-in identity without opening a tenant workspace.
+
+    A sponsored partner portal has a valid session but deliberately does not
+    have access to its own company's paid workspace.  The client needs this
+    minimal identity to route the user into that separate portal.
+    """
+    if current_user.role.name != "partner_portal" and current_user.company:
+        require_company_access(current_user.company)
     return current_user
 
 

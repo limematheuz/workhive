@@ -10,8 +10,8 @@ from app.models.user import User
 from app.schemas.location import LocationResponse
 from app.schemas.partner_portal import (
     PartnerPortalCandidateResponse,
+    PartnerPortalGrantAccessResponse,
     PartnerPortalGrantCreate,
-    PartnerPortalGrantResponse,
     PartnerPortalOverviewResponse,
 )
 from app.schemas.reservation import ReservationCreate, ReservationResponse, ReservationUpdate
@@ -124,7 +124,7 @@ def read_portal_candidates(
 
 @router.post(
     "/collaborations/{collaboration_id}/grants",
-    response_model=PartnerPortalGrantResponse,
+    response_model=PartnerPortalGrantAccessResponse,
     status_code=status.HTTP_201_CREATED,
 )
 def create_portal_grant(
@@ -150,12 +150,28 @@ def create_portal_grant(
         request=request,
         details={"collaboration_id": collaboration_id, "partner_user_id": grant.user_id},
     )
-    return grant
+    return partner_portal_management_service.serialize_portal_grant(grant)
+
+
+@router.get(
+    "/collaborations/{collaboration_id}/grants",
+    response_model=list[PartnerPortalGrantAccessResponse],
+)
+def read_portal_grants(
+    collaboration_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    return partner_portal_management_service.list_portal_grants(
+        db,
+        host_user=current_user,
+        collaboration_id=collaboration_id,
+    )
 
 
 @router.delete(
     "/collaborations/{collaboration_id}/grants/{grant_id}",
-    response_model=PartnerPortalGrantResponse,
+    response_model=PartnerPortalGrantAccessResponse,
 )
 def revoke_portal_grant(
     collaboration_id: int,
@@ -180,4 +196,4 @@ def revoke_portal_grant(
         request=request,
         details={"collaboration_id": collaboration_id, "partner_user_id": grant.user_id},
     )
-    return grant
+    return partner_portal_management_service.serialize_portal_grant(grant)

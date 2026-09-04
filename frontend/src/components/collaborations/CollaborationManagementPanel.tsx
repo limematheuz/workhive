@@ -89,7 +89,7 @@ export function CollaborationManagementPanel({
         <div className="space-y-5">
             <SentCompanyInvitationsPanel invitations={sentInvitations} onRevoke={handleRevokeInvitation} />
             {!canInviteByEmail && <p className="text-sm text-[var(--text-muted)]">{dict.collaborations.invite_admin_only}</p>}
-            <ActiveCollaboratorsPanel collaborations={collaborations} loading={loading} companyId={user?.company_id} onUnlink={setUnlinkTarget} />
+            <ActiveCollaboratorsPanel collaborations={collaborations} loading={loading} companyId={user?.company_id} canManagePartnerPortal={canInviteByEmail} onUnlink={setUnlinkTarget} />
             <DeleteConfirmDialog
                 open={unlinkTarget !== null}
                 onOpenChange={(open) => !open && setUnlinkTarget(null)}

@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { BarChart3, Building2, CalendarDays, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, ReceiptText, ShieldAlert, ShieldCheck, WalletCards, Workflow } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, ReceiptText, ShieldAlert, ShieldCheck, UserRound, WalletCards, Workflow } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = { href: string; label: string; exact: boolean; icon: ReactNode };
@@ -11,6 +11,7 @@ export type SidebarNavUserFlags = {
     isCompanyAdmin: boolean;
     canViewFinance: boolean;
     isAccountant: boolean;
+    isPartnerPortal: boolean;
     userIsPlatformSuperadmin: boolean;
     enabledFeatures?: ReadonlySet<string> | null;
 };
@@ -57,6 +58,20 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
 }
 
 export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlags) {
+    if (flags.isPartnerPortal) {
+        const partnerLinks: NavLink[] = [
+            { href: "/dashboard/partner", label: "Resumen", exact: true, icon: <Gauge /> },
+            { href: "/dashboard/partner/properties", label: "Propiedades", exact: false, icon: <MapPin /> },
+            { href: "/dashboard/partner/requests", label: "Solicitudes", exact: false, icon: <ClipboardList /> },
+            { href: "/dashboard/partner/profile", label: "Perfil", exact: false, icon: <UserRound /> },
+        ];
+        return {
+            navLinks: partnerLinks,
+            visibleNavLinks: partnerLinks,
+            navGroups: [],
+            plainLinks: partnerLinks,
+        };
+    }
     const all = allLinks(dict, flags);
     const linksForRole = flags.userIsPlatformSuperadmin ? all.filter(link => PLATFORM_SUPERADMIN_HREFS.has(link.href)) : flags.isAccountant ? all.filter(link => ACCOUNTANT_HREFS.has(link.href)) : all;
     const visibleNavLinks = flags.enabledFeatures == null || flags.userIsPlatformSuperadmin || flags.isAccountant ? linksForRole : linksForRole.filter(link => !NAVIGATION_FEATURES[link.href] || flags.enabledFeatures?.has(NAVIGATION_FEATURES[link.href]));

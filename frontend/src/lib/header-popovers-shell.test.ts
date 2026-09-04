@@ -12,7 +12,7 @@ test("header notifications and sidebar account menu use tinted surfaces (no pure
     const globals = source("../app/globals.css");
 
     assert.match(sidebar, /DropdownMenuContent/);
-    assert.match(sidebar, /href="\/dashboard\/profile"/);
+    assert.match(sidebar, /isPartnerPortal \? "\/dashboard\/partner\/profile" : "\/dashboard\/profile"/);
     assert.match(sidebar, /onSelect=\{onLogout\}/);
     assert.doesNotMatch(sidebar, /\bbg-white\b/);
     assert.doesNotMatch(sidebar, /#fff(?:fff)?\b/i);

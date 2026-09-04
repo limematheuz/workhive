@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowRightLeft, Loader2, Users, XCircle } from "lucide-react";
+import { ArrowRightLeft, Loader2, ShieldCheck, Users, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
 import { useDictionary } from "@/lib/dictionary-context";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { useState } from "react";
+import { PartnerPortalAccessDialog } from "@/components/collaborations/PartnerPortalAccessDialog";
 
 type PartnerTypeFilter = "all" | "service_provider" | "property_manager";
 
@@ -14,6 +15,7 @@ type ActiveCollaboratorsPanelProps = {
     collaborations: CompanyCollaboration[];
     loading: boolean;
     companyId: number | null | undefined;
+    canManagePartnerPortal: boolean;
     onUnlink: (collab: CompanyCollaboration) => void;
 };
 
@@ -21,10 +23,12 @@ export function ActiveCollaboratorsPanel({
     collaborations,
     loading,
     companyId,
+    canManagePartnerPortal,
     onUnlink,
 }: ActiveCollaboratorsPanelProps) {
     const { dict } = useDictionary();
     const [partnerTypeFilter, setPartnerTypeFilter] = useState<PartnerTypeFilter>("all");
+    const [portalCollaboration, setPortalCollaboration] = useState<CompanyCollaboration | null>(null);
     const collaborationWithPartnerType = collaborations.map((collab) => {
         const isInitiator = collab.initiator_company_id === companyId;
         const partnerType = isInitiator
@@ -147,7 +151,18 @@ export function ActiveCollaboratorsPanel({
                                         )}
                                     </dl>
 
-                                    <div className="flex justify-end border-t border-[var(--border-soft)] pt-2.5">
+                                    <div className="flex flex-wrap justify-end gap-2 border-t border-[var(--border-soft)] pt-2.5">
+                                        {canManagePartnerPortal && partnerType === "property_manager" && (
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="xs"
+                                                onClick={() => setPortalCollaboration(collab)}
+                                            >
+                                                <ShieldCheck className="h-3.5 w-3.5" />
+                                                Gestionar portal
+                                            </Button>
+                                        )}
                                         <Button
                                             type="button"
                                             variant="dangerSoft"
@@ -166,6 +181,14 @@ export function ActiveCollaboratorsPanel({
                     </>
                 )}
             </div>
+            {portalCollaboration && (
+                <PartnerPortalAccessDialog
+                    collaborationId={portalCollaboration.id}
+                    partnerName={(portalCollaboration.initiator_company_id === companyId ? portalCollaboration.partner : portalCollaboration.initiator).name}
+                    open={portalCollaboration !== null}
+                    onOpenChange={(open) => !open && setPortalCollaboration(null)}
+                />
+            )}
         </section>
     );
 }

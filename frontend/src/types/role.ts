@@ -2,6 +2,7 @@ export const ROLE_NAMES = [
     "superadmin",
     "admin",
     "external_portal",
+    "partner_portal",
     "manager",
     "viewer",
 ] as const;

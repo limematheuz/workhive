@@ -22,6 +22,7 @@ export interface Reservation {
     assigned_company_name?: string | null;
     cleaning_status?: string | null;
     cleaning_scheduled_at?: string | null;
+    service_request_sent_at?: string | null;
     cleaning_start_locations?: WorkSessionStartLocation[];
 }
 

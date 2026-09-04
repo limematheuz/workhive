@@ -34,6 +34,13 @@ export function isExternalPortalRole(
     return role === "external_portal";
 }
 
+/** A sponsored property-manager portal, never an internal workspace role. */
+export function isPartnerPortalRole(
+    role: RoleName | string | null | undefined,
+): boolean {
+    return role === "partner_portal";
+}
+
 export function canViewFinanceRole(
     role: RoleName | string | null | undefined,
 ): boolean {

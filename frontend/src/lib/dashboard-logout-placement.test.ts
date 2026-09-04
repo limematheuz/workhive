@@ -22,7 +22,7 @@ test("profile menu lives in the sidebar and uses the shared menu primitive", () 
 
     assert.match(sidebar, /DropdownMenuContent/);
     assert.match(sidebar, /SidebarFooter/);
-    assert.match(sidebar, /href="\/dashboard\/profile"/);
+    assert.match(sidebar, /isPartnerPortal \? "\/dashboard\/partner\/profile" : "\/dashboard\/profile"/);
     assert.match(sidebar, /<LogOut/);
     assert.match(sidebar, /<UserAvatar/);
     assert.match(`${notifications}\n${notificationPopover}`, /header-popover-layer/);
