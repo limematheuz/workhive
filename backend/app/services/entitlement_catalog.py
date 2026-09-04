@@ -55,6 +55,7 @@ QUOTA_CODES = (
     "limits.teams",
     "limits.external_portals",
     "limits.accountant_portals",
+    "limits.partner_portals",
 )
 ALL_ENTITLEMENT_CODES = frozenset((*FEATURE_CODES, *QUOTA_CODES))
 
@@ -88,7 +89,7 @@ _FEATURE_AVAILABILITY: dict[str, FeatureAvailability] = {
     "features.quality": "coming_soon",
     "features.inventory": "coming_soon",
     "features.hr": "coming_soon",
-    "features.partner_portal": "coming_soon",
+    "features.partner_portal": "available",
     "features.approvals": "coming_soon",
     "features.branches": "coming_soon",
     "features.corporate_structure": "coming_soon",
@@ -142,6 +143,7 @@ _PLAN_LIMITS = {
         "limits.teams": 2,
         "limits.external_portals": 5,
         "limits.accountant_portals": 1,
+        "limits.partner_portals": 0,
     },
     "medium": {
         "limits.internal_admins": 3,
@@ -151,6 +153,7 @@ _PLAN_LIMITS = {
         "limits.teams": 10,
         "limits.external_portals": 25,
         "limits.accountant_portals": 2,
+        "limits.partner_portals": 0,
     },
     "top": {
         "limits.internal_admins": 10,
@@ -160,6 +163,7 @@ _PLAN_LIMITS = {
         "limits.teams": 50,
         "limits.external_portals": 100,
         "limits.accountant_portals": 5,
+        "limits.partner_portals": 2,
     },
     "mega": {
         "limits.internal_admins": 25,
@@ -169,6 +173,7 @@ _PLAN_LIMITS = {
         "limits.teams": 250,
         "limits.external_portals": 500,
         "limits.accountant_portals": 20,
+        "limits.partner_portals": 10,
     },
 }
 _PLAN_NAMES = {
@@ -212,6 +217,7 @@ _ENTITLEMENT_LABELS = {
     "limits.teams": "Equipos",
     "limits.external_portals": "Usuarios de portal externo",
     "limits.accountant_portals": "Usuarios de portal de gestoría",
+    "limits.partner_portals": "Usuarios de portal de colaboradores",
 }
 
 

@@ -60,6 +60,7 @@ from app.models.company_membership import (
     TeamMembership,
 )
 from app.models.external_access_grant import ExternalAccessGrant
+from app.models.partner_portal_grant import PartnerPortalGrant
 from app.models.permission_profile import (
     MembershipPermissionProfileAssignment,
     MembershipPermissionProfileScope,
