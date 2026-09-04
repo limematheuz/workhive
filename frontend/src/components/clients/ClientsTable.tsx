@@ -1,5 +1,7 @@
 "use client";
 
+import { type ReactNode } from "react";
+
 import {
     Building2,
     CircleCheck,
@@ -29,7 +31,7 @@ type ClientsTableProps = {
     canManage: boolean;
 };
 
-function ClientIdentity({ row, noTaxId }: { row: ClientWorkspaceRow; noTaxId: string }) {
+function ClientIdentity({ row, noTaxId, children }: { row: ClientWorkspaceRow; noTaxId: string; children?: ReactNode }) {
     const Icon = row.client.client_type === "individual" ? UserRound : Building2;
     return (
         <div className="flex min-w-0 items-center gap-3">
@@ -37,7 +39,10 @@ function ClientIdentity({ row, noTaxId }: { row: ClientWorkspaceRow; noTaxId: st
                 <Icon className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[var(--text-main)]">{row.client.name}</p>
+                <div className="flex min-w-0 items-center gap-1.5">
+                    <p className="min-w-0 truncate text-sm font-semibold text-[var(--text-main)]">{row.client.name}</p>
+                    {children}
+                </div>
                 <p className="mt-0.5 truncate font-mono text-[11px] text-[var(--text-muted)]">{row.client.legal_number || noTaxId}</p>
             </div>
         </div>
@@ -110,13 +115,13 @@ export function ClientsTable({
                     <Table className="table-fixed text-left">
                         <TableHeader>
                             <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                <TableHead className="w-[25%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{dict.clients.table.name}</TableHead>
-                                <TableHead className="w-[22%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{workspace.filter_contact}</TableHead>
-                                <TableHead className="w-[19%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{dict.clients.account_assignment.table_label}</TableHead>
-                                <TableHead className="w-[8%] whitespace-normal py-3 text-right leading-4 text-[var(--btn-secondary-text)]">{workspace.locations}</TableHead>
-                                <TableHead className="w-[8%] whitespace-normal py-3 text-right leading-4 text-[var(--btn-secondary-text)]">{workspace.jobs}</TableHead>
-                                <TableHead className="w-[11%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{dict.clients.table.status}</TableHead>
-                                {canManage && <TableHead className="w-[7%] whitespace-normal py-3 text-right leading-4 text-[var(--btn-secondary-text)]">{dict.clients.table.actions}</TableHead>}
+                                <TableHead className="w-[28%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{dict.clients.table.name}</TableHead>
+                                <TableHead className="w-[25%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{workspace.filter_contact}</TableHead>
+                                <TableHead className="w-[20%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{dict.clients.account_assignment.table_label}</TableHead>
+                                <TableHead className="w-[7%] whitespace-normal py-3 text-right leading-4 text-[var(--btn-secondary-text)]">{workspace.locations}</TableHead>
+                                <TableHead className="w-[7%] whitespace-normal py-3 text-right leading-4 text-[var(--btn-secondary-text)]">{workspace.jobs}</TableHead>
+                                <TableHead className="w-[9%] whitespace-normal py-3 leading-4 text-[var(--btn-secondary-text)]">{dict.clients.table.status}</TableHead>
+                                {canManage && <TableHead className="w-[4%] whitespace-normal py-3 text-right leading-4 text-[var(--btn-secondary-text)]">{dict.clients.table.actions}</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -127,8 +132,9 @@ export function ClientsTable({
                                     className="cursor-pointer bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55"
                                 >
                                     <TableCell className="align-top">
-                                        <ClientIdentity row={row} noTaxId={workspace.no_tax_id} />
-                                        <div className="mt-2 flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}</div>
+                                        <ClientIdentity row={row} noTaxId={workspace.no_tax_id}>
+                                            <span className="flex shrink-0 items-center gap-1">{typeBadge(row.client)}{relationshipBadge(row.client)}</span>
+                                        </ClientIdentity>
                                     </TableCell>
                                     <TableCell className="align-top">
                                         <p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p>
