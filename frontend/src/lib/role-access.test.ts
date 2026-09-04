@@ -5,6 +5,7 @@ import {
     canViewFinanceRole,
     isCompanyAdminRole,
     isExternalPortalRole,
+    isPartnerPortalRole,
 } from "../domain/access/roles.ts";
 
 test("company privacy administration excludes managers and viewers", () => {
@@ -12,6 +13,12 @@ test("company privacy administration excludes managers and viewers", () => {
     assert.equal(isCompanyAdminRole("superadmin"), true);
     assert.equal(isCompanyAdminRole("manager"), false);
     assert.equal(isCompanyAdminRole("viewer"), false);
+});
+
+test("sponsored partner portals are neither finance nor company roles", () => {
+    assert.equal(isPartnerPortalRole("partner_portal"), true);
+    assert.equal(isCompanyAdminRole("partner_portal"), false);
+    assert.equal(canViewFinanceRole("partner_portal"), false);
 });
 
 test("external accountants can read finance without becoming company administrators", () => {

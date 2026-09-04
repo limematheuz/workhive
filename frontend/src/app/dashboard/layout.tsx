@@ -15,6 +15,8 @@ import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
 import { isExternalPortalRole } from "@/domain/access/roles";
 import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant-dashboard";
+import { isPartnerPortalRole } from "@/domain/access/roles";
+import { canAccessPartnerPortalDashboardPath } from "@/domain/access/partner-portal-dashboard";
 import { NoWorkspaceAccount } from "@/components/dashboard/NoWorkspaceAccount";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -33,10 +35,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const { dict } = useDictionary();
     const [showOnboarding, setShowOnboarding] = useState(false);
     const isExternalPortal = isExternalPortalRole(user?.role?.name);
+    const isPartnerPortal = isPartnerPortalRole(user?.role?.name);
 
     // Check if onboarding should be shown
     useEffect(() => {
-        if (!user || loading) return;
+        if (!user || loading || isPartnerPortal) return;
 
         // Accounts and admin permissions are provisioned by WorkHive.
         if (!shouldShowCompanyOnboarding(user)) {
@@ -62,7 +65,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 setShowOnboarding(true);
             })
             .catch(() => {});
-    }, [user, loading]);
+    }, [user, loading, isPartnerPortal]);
 
     const handleLogout = async () => {
         try {
@@ -96,6 +99,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     if (isExternalPortal && !canAccessExternalPortalDashboardPath(pathname)) {
         redirect("/dashboard/analytics");
+    }
+
+    if (isPartnerPortal && !canAccessPartnerPortalDashboardPath(pathname)) {
+        redirect("/dashboard/partner");
     }
 
     return <SidebarProvider defaultOpen>

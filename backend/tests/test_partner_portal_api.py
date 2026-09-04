@@ -124,6 +124,12 @@ def test_partner_portal_only_exposes_owned_properties_and_sponsored_reservations
     db.add(other_location)
     db.commit()
 
+    # The identity endpoint remains available so the frontend can route this
+    # session to the dedicated portal. It does not grant tenant access.
+    me = client.get("/api/v1/users/me", headers=context["partner_headers"])
+    assert me.status_code == 200, me.text
+    assert me.json()["role"]["name"] == "partner_portal"
+
     overview = client.get("/api/v1/partner-portal/overview", headers=context["partner_headers"])
     assert overview.status_code == 200, overview.text
     assert overview.json()["host_company_id"] == context["host"].id
@@ -222,6 +228,16 @@ def test_host_admin_can_convert_a_nonpaying_partner_user_to_the_portal(client, d
         json={"user_id": internal_user.id},
     )
     assert granted.status_code == 201, granted.text
+    assert granted.json()["user_email"] == internal_user.email
+    refreshed_candidates = client.get(
+        f"/api/v1/partner-portal/collaborations/{context['collaboration'].id}/candidates",
+        headers=context["host_headers"],
+    )
+    assert refreshed_candidates.status_code == 200, refreshed_candidates.text
+    assert not any(
+        candidate["id"] == internal_user.id and candidate["eligible"]
+        for candidate in refreshed_candidates.json()
+    )
     db.refresh(internal_user)
     db.refresh(membership)
     assert internal_user.role_id == portal_role.id
@@ -235,6 +251,20 @@ def test_host_admin_can_convert_a_nonpaying_partner_user_to_the_portal(client, d
         .count()
         == 1
     )
+
+    listed = client.get(
+        f"/api/v1/partner-portal/collaborations/{context['collaboration'].id}/grants",
+        headers=context["host_headers"],
+    )
+    assert listed.status_code == 200, listed.text
+    assert internal_user.id in {grant["user_id"] for grant in listed.json()}
+
+    revoked = client.delete(
+        f"/api/v1/partner-portal/collaborations/{context['collaboration'].id}/grants/{granted.json()['id']}",
+        headers=context["host_headers"],
+    )
+    assert revoked.status_code == 200, revoked.text
+    assert revoked.json()["status"] == "revoked"
 
 
 def test_portal_is_bound_to_its_specific_collaboration(client, db):

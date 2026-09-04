@@ -21,6 +21,13 @@ class PartnerPortalGrantResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PartnerPortalGrantAccessResponse(PartnerPortalGrantResponse):
+    """A host-facing grant plus the identity it was granted to."""
+
+    user_full_name: str | None
+    user_email: EmailStr
+
+
 class PartnerPortalCandidateResponse(BaseModel):
     id: int
     full_name: str | None
