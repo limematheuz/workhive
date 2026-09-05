@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { BarChart3, Building2, CalendarDays, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, ReceiptText, ShieldAlert, ShieldCheck, UserRound, WalletCards, Workflow } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, ReceiptText, ShieldAlert, UserRound, WalletCards, Workflow } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = { href: string; label: string; exact: boolean; icon: ReactNode };
@@ -32,13 +32,12 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
             { href: "/dashboard/reservations", label: dict.dashboard.reservations || "Planificación", exact: false, icon: <Workflow /> },
             { href: "/dashboard/live-work", label: dict.dashboard.live_work || "Fichajes en vivo", exact: false, icon: <Workflow /> },
             { href: "/dashboard/task-reports", label: dict.task_reports.nav_label, exact: false, icon: <ShieldAlert /> },
-            { href: "/dashboard/collaborations", label: dict.collaborations.title, exact: false, icon: <Network /> },
+            { href: "/dashboard/external-network", label: dict.external_network.title, exact: false, icon: <Network /> },
         ] : []),
         { href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> },
         ...(flags.isCompanyAdmin ? [
             { href: "/dashboard/quotes", label: dict.quotes?.nav_label ?? "Presupuestos", exact: false, icon: <FileText /> },
             { href: "/dashboard/organization", label: dict.organization.nav_label, exact: false, icon: <Network /> },
-            { href: "/dashboard/external-access", label: dict.organization.external_access.nav_label, exact: false, icon: <ShieldCheck /> },
         ] : []),
         ...(flags.canViewFinance ? [
             { href: "/dashboard/invoices", label: dict.dashboard.invoices, exact: false, icon: <ReceiptText /> },
@@ -81,10 +80,10 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         return children.length ? { id, label, icon, children } : null;
     };
     const navGroups = [
-        group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/locations", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/collaborations"]),
+        group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/locations", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/external-network"]),
         group("clients", "Clientes", <Building2 />, ["/dashboard/clients", "/dashboard/quotes"]),
         group("billing", "Facturación", <ReceiptText />, ["/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar"]),
-        group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization", "/dashboard/external-access"]),
+        group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization"]),
         group("platform", "Plataforma WorkHive", <CloudCog />, ["/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"]),
     ].filter(Boolean) as NavGroup[];
     const grouped = new Set(navGroups.flatMap(item => item.children.map(link => link.href)));

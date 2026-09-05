@@ -7,7 +7,6 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveAdmin, ActivePartnerPortal, PartnerPortalPrincipal, get_db
 from app.models.user import User
-from app.schemas.location import LocationResponse
 from app.schemas.partner_portal import (
     PartnerPortalCandidateResponse,
     PartnerPortalGrantAccessResponse,
@@ -16,9 +15,11 @@ from app.schemas.partner_portal import (
 )
 from app.schemas.reservation import ReservationCreate, ReservationResponse, ReservationUpdate
 from app.services import audit_service, partner_portal_management_service, partner_portal_service
+from app.api.v1.partner_portal_locations import router as partner_portal_locations_router
 
 
 router = APIRouter()
+router.include_router(partner_portal_locations_router)
 
 
 @router.get("/overview", response_model=PartnerPortalOverviewResponse)
@@ -27,14 +28,6 @@ def read_portal_overview(
     principal: PartnerPortalPrincipal = ActivePartnerPortal,
 ):
     return partner_portal_service.overview(db, grant=principal.grant)
-
-
-@router.get("/locations", response_model=list[LocationResponse])
-def read_portal_locations(
-    db: Session = Depends(get_db),
-    principal: PartnerPortalPrincipal = ActivePartnerPortal,
-):
-    return partner_portal_service.list_locations(db, grant=principal.grant)
 
 
 @router.get("/reservations", response_model=list[ReservationResponse])

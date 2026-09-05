@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useDialogDismiss } from "@/components/ui/dialog-form-guard";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type {
@@ -42,6 +43,11 @@ interface LocationWorkspaceFormProps {
     submitLabel: string;
     onCancel: () => void;
     onSubmit: (payload: LocationWorkspacePayload) => Promise<void>;
+    /** Portal callers use the same complete wizard without tenant-only assignments. */
+    portalMode?: boolean;
+    loadCatalog?: () => Promise<LocationCatalog>;
+    loadSpaceSuggestions?: (siteType: string, attributes: Record<string, LocationProfileAttributeValue>) => Promise<LocationSpace[]>;
+    requirePostalCode?: boolean;
 }
 
 const EMPTY_PROFILE: LocationProfileDraft = {
@@ -121,7 +127,7 @@ function initialAccess(location?: Location | null): LocationAccessDraft {
     };
 }
 
-function cleanProfile(profile: LocationProfileDraft) {
+function cleanProfile(profile: LocationProfileDraft, existing = false) {
     const attributes = Object.fromEntries(Object.entries(profile.attributes).filter(([, value]) => value !== ""));
     const values = {
         ...profile,
@@ -134,22 +140,22 @@ function cleanProfile(profile: LocationProfileDraft) {
         service_notes: profile.service_notes?.trim() || undefined,
     };
     const hasOptionalValues = Object.entries(values).some(([key, value]) => key !== "site_type" && key !== "attributes" && Boolean(value));
-    return profile.site_type !== "other" || Object.keys(attributes).length > 0 || hasOptionalValues ? values : undefined;
+    return existing || profile.site_type !== "other" || Object.keys(attributes).length > 0 || hasOptionalValues ? values : undefined;
 }
 
-function cleanAccess(access: LocationAccessDraft) {
+function cleanAccess(access: LocationAccessDraft, existing = false) {
     const values = {
         ...access,
-        permitted_from: access.permitted_from?.trim() || undefined,
-        permitted_until: access.permitted_until?.trim() || undefined,
-        access_method: access.access_method?.trim() || undefined,
-        keys_location: access.keys_location?.trim() || undefined,
-        key_custodian: access.key_custodian?.trim() || undefined,
-        instructions: access.instructions?.trim() || undefined,
+        permitted_from: access.permitted_from?.trim() || null,
+        permitted_until: access.permitted_until?.trim() || null,
+        access_method: access.access_method?.trim() || null,
+        keys_location: access.keys_location?.trim() || null,
+        key_custodian: access.key_custodian?.trim() || null,
+        instructions: access.instructions?.trim() || null,
         access_code: access.access_code.trim() || undefined,
     };
     const hasDetails = values.permitted_days.length > 0 || Object.entries(values).some(([key, value]) => !["permitted_days", "clear_access_code"].includes(key) && Boolean(value));
-    return hasDetails || access.clear_access_code ? values : undefined;
+    return existing || hasDetails || access.keys_available === false || access.clear_access_code ? values : undefined;
 }
 
 export function LocationWorkspaceForm({
@@ -160,7 +166,12 @@ export function LocationWorkspaceForm({
     submitLabel,
     onCancel,
     onSubmit,
+    requirePostalCode = false,
+    portalMode = false,
+    loadCatalog = LocationService.getLocationCatalog,
+    loadSpaceSuggestions = LocationService.getSpaceSuggestions,
 }: LocationWorkspaceFormProps) {
+    const dismiss = useDialogDismiss(onCancel);
     const { user } = useUser();
     const [catalog, setCatalog] = useState<LocationCatalog | null>(null);
     const [catalogLoading, setCatalogLoading] = useState(true);
@@ -184,14 +195,14 @@ export function LocationWorkspaceForm({
 
     useEffect(() => {
         let cancelled = false;
-        void LocationService.getLocationCatalog()
+        void loadCatalog()
             .then((data) => { if (!cancelled) setCatalog(data); })
             .catch((error) => { if (!cancelled) toast.error(getErrorMessage(error, "No se pudieron cargar los tipos de ubicación.")); })
             .finally(() => { if (!cancelled) setCatalogLoading(false); });
         return () => { cancelled = true; };
-    }, []);
+    }, [loadCatalog]);
 
-    const canConfigureOrganizationAssignment = !location || location.owner_company_id == null || location.owner_company_id === user?.company_id;
+    const canConfigureOrganizationAssignment = !portalMode && (!location || location.owner_company_id == null || location.owner_company_id === user?.company_id);
 
     useEffect(() => {
         if (!canConfigureOrganizationAssignment) return;
@@ -224,7 +235,7 @@ export function LocationWorkspaceForm({
     const suggestSpaces = async () => {
         try {
             setSuggesting(true);
-            const suggestions = await LocationService.getSpaceSuggestions(profile.site_type, profile.attributes);
+            const suggestions = await loadSpaceSuggestions(profile.site_type, profile.attributes);
             setSpaces((current) => {
                 const names = new Set(current.map((space) => space.name.trim().toLocaleLowerCase()));
                 return [...current, ...suggestions.filter((space) => !names.has(space.name.trim().toLocaleLowerCase()))];
@@ -250,9 +261,11 @@ export function LocationWorkspaceForm({
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (!name.trim() || !address.trim() || !city.trim()) {
+        if (submitting) return;
+        if (step < 4) { goNext(); return; }
+        if (!name.trim() || !address.trim() || !city.trim() || (requirePostalCode && !postalCode.trim())) {
             setStep(1);
-            toast.error("Completa nombre, dirección y ciudad para continuar.");
+            toast.error(requirePostalCode ? "Completa nombre, dirección, ciudad y código postal." : "Completa nombre, dirección y ciudad para continuar.");
             return;
         }
         await onSubmit({
@@ -260,13 +273,13 @@ export function LocationWorkspaceForm({
             address: address.trim(),
             city: city.trim(),
             postal_code: postalCode.trim() || undefined,
-            client_id: clientId ? Number(clientId) : null,
+            ...(portalMode ? {} : { client_id: clientId ? Number(clientId) : null }),
             ...(canConfigureOrganizationAssignment ? {
                 department_id: departmentId ? Number(departmentId) : null,
                 team_id: teamId ? Number(teamId) : null,
             } : {}),
-            profile: cleanProfile(profile),
-            access: cleanAccess(access),
+            profile: cleanProfile(profile, Boolean(location?.profile)),
+            access: cleanAccess(access, Boolean(location?.access)),
             ...(location ? {} : {
                 location_type: LEGACY_LOCATION_TYPE_BY_SITE_TYPE[profile.site_type] || "other",
                 spaces: spaces.map(({ name, space_type, parent_id, attributes, tasks }) => ({
@@ -281,7 +294,7 @@ export function LocationWorkspaceForm({
     };
 
     const goNext = () => {
-        if (step === 1 && (!name.trim() || !address.trim() || !city.trim())) {
+        if (step === 1 && (!name.trim() || !address.trim() || !city.trim() || (requirePostalCode && !postalCode.trim()))) {
             toast.error("Completa nombre, dirección y ciudad para continuar.");
             return;
         }
@@ -296,7 +309,7 @@ export function LocationWorkspaceForm({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-7">
                 <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
                     <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
-                    {step === 1 && <LocationInfoAccessStep clients={clients} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} />}
+                    {step === 1 && <LocationInfoAccessStep clients={clients} showClientAssignment={!portalMode} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} />}
                     {step === 2 && <LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} />}
                     {step === 3 && <LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} />}
                     {step === 4 && <LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} />}
@@ -306,7 +319,7 @@ export function LocationWorkspaceForm({
             </div>
             <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 py-4 sm:px-6 lg:px-7">
                 <div>{step > 1 && <Button type="button" variant="secondary" onClick={() => setStep((current) => current - 1)}>Anterior</Button>}</div>
-                <div className="flex gap-2"><Button type="button" variant="dangerSoft" onClick={onCancel}>Cancelar</Button>{step < 4 ? <Button type="button" onClick={goNext}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
+                <div className="flex gap-2"><Button type="button" variant="dangerSoft" onClick={dismiss}>Cancelar</Button>{step < 4 ? <Button key="next" type="button" onClick={(event) => { event.preventDefault(); goNext(); }}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button key="save" type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
             </div>
         </form>
     );

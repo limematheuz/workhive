@@ -8,6 +8,7 @@ test("organization separates internal people, external access, and partner compa
     const legacyUsersPage = source("../app/dashboard/users/page.tsx");
     const externalAccess = source("../components/organization/ExternalAccessControlCenter.tsx");
     const collaborations = source("../components/collaborations/CollaborationControlCenter.tsx");
+    const externalNetwork = source("../components/external-network/ExternalNetworkControlCenter.tsx");
     const sidebar = source("../components/dashboard/sidebar-nav-config.tsx");
     const service = source("../services/collaboration.service.ts");
     const acceptance = source("../app/(auth)/accept-company-invitation/AcceptCompanyInvitationClient.tsx");
@@ -20,7 +21,7 @@ test("organization separates internal people, external access, and partner compa
     const en = source("../dictionaries/en.json");
     const es = source("../dictionaries/es.json");
 
-    assert.match(legacyUsersPage, /redirect\(tab === "companies" \? "\/dashboard\/collaborations" : "\/dashboard\/organization"\)/);
+    assert.match(legacyUsersPage, /redirect\(tab === "companies" \? "\/dashboard\/external-network" : "\/dashboard\/organization"\)/);
     assert.match(externalAccess, /EXTERNAL_PORTAL_ROLE/);
     assert.match(externalAccess, /UserService\.getUsers/);
     assert.match(externalAccess, /UserCreateDialog/);
@@ -31,8 +32,12 @@ test("organization separates internal people, external access, and partner compa
     assert.doesNotMatch(externalAccess, /TeamListSection|DataListTable/);
     assert.match(collaborations, /CollaborationManagementPanel/);
     assert.match(collaborations, /CompanyInvitationDialog/);
-    assert.match(sidebar, /\/dashboard\/collaborations/);
-    assert.match(sidebar, /\/dashboard\/external-access/);
+    assert.match(externalNetwork, /PremiumTabs/);
+    assert.match(externalNetwork, /CollaborationControlCenter embedded/);
+    assert.match(externalNetwork, /ExternalAccessControlCenter embedded/);
+    assert.match(sidebar, /\/dashboard\/external-network/);
+    assert.doesNotMatch(sidebar, /\/dashboard\/collaborations/);
+    assert.doesNotMatch(sidebar, /\/dashboard\/external-access/);
     assert.doesNotMatch(sidebar, /\/dashboard\/users/);
     assert.doesNotMatch(sidebar, /Equipo y empresa/);
     assert.match(workerDialog, /Input/);
@@ -68,7 +73,7 @@ test("organization separates internal people, external access, and partner compa
     assert.doesNotMatch(acceptance, /login\?next=.*token/);
     assert.match(acceptance, /Código del correo/);
     assert.match(acceptance, /Email code/);
-    assert.match(acceptance, /\/dashboard\/collaborations/);
+    assert.match(acceptance, /\/dashboard\/external-network/);
     assert.match(workerAcceptance, /PasswordCreationFields/);
     assert.match(passwordCreation, /PasswordStrengthChecklist/);
     assert.match(passwordCreation, /Checkbox/);

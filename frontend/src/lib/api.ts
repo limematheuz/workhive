@@ -20,6 +20,7 @@ const CSRF_EXEMPT_PATHS = new Set([
     "/api/v1/collaborations/invitations/activation-status",
     "/api/v1/collaborations/invitations/verify-code",
     "/api/v1/collaborations/invitations/decline-external",
+    "/api/v1/collaborations/sponsored-invitations/accept",
     "/api/v1/contact/",
     "/api/v1/traffic/page-view",
 ]);
@@ -103,28 +104,6 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
             clearSessionCache();
             if (typeof window !== "undefined" && window.location.pathname.startsWith("/dashboard")) {
                 window.location.replace("/login");
-            }
-        }
-
-        if (response.status === 402 && typeof window !== "undefined") {
-            const clonedResponse = response.clone();
-            const errorData = await clonedResponse.json().catch(() => ({})) as { detail?: string };
-            const accessDeniedMessages = new Set([
-                "The company trial has expired",
-                "The company subscription payment is past due",
-                "The company subscription has an unpaid invoice",
-                "The company subscription has been canceled",
-                "The company subscription is paused",
-                "The company does not have an active subscription",
-                "The company subscription setup is incomplete",
-                "The incomplete company subscription has expired",
-                "The company subscription does not allow access",
-            ]);
-            if (accessDeniedMessages.has(errorData.detail || "")) {
-                clearSessionCache();
-                if (window.location.pathname.startsWith("/dashboard")) {
-                    window.location.replace("/login");
-                }
             }
         }
 

@@ -7,9 +7,25 @@ import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
 import { useDictionary } from "@/lib/dictionary-context";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { useState } from "react";
+import { toast } from "sonner";
 import { PartnerPortalAccessDialog } from "@/components/collaborations/PartnerPortalAccessDialog";
+import { PartnerPortalService } from "@/services/partner-portal.service";
+import type { PartnerPortalCandidate, PartnerPortalGrant } from "@/types/partner-portal";
 
 type PartnerTypeFilter = "all" | "service_provider" | "property_manager";
+type PortalAccessDialogState = {
+    collaboration: CompanyCollaboration;
+    candidates: PartnerPortalCandidate[];
+    grants: PartnerPortalGrant[];
+};
+
+async function loadPortalAccess(collaboration: CompanyCollaboration) {
+    const [candidates, grants] = await Promise.all([
+        PartnerPortalService.getCandidates(collaboration.id),
+        PartnerPortalService.getGrants(collaboration.id),
+    ]);
+    return { candidates, grants };
+}
 
 type ActiveCollaboratorsPanelProps = {
     collaborations: CompanyCollaboration[];
@@ -28,7 +44,19 @@ export function ActiveCollaboratorsPanel({
 }: ActiveCollaboratorsPanelProps) {
     const { dict } = useDictionary();
     const [partnerTypeFilter, setPartnerTypeFilter] = useState<PartnerTypeFilter>("all");
-    const [portalCollaboration, setPortalCollaboration] = useState<CompanyCollaboration | null>(null);
+    const [portalDialog, setPortalDialog] = useState<PortalAccessDialogState | null>(null);
+    const [openingPortalId, setOpeningPortalId] = useState<number | null>(null);
+    const openPortalAccess = async (collaboration: CompanyCollaboration) => {
+        setOpeningPortalId(collaboration.id);
+        try {
+            const access = await loadPortalAccess(collaboration);
+            setPortalDialog({ collaboration, ...access });
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : "No se pudo cargar el acceso al portal.");
+        } finally {
+            setOpeningPortalId(null);
+        }
+    };
     const collaborationWithPartnerType = collaborations.map((collab) => {
         const isInitiator = collab.initiator_company_id === companyId;
         const partnerType = isInitiator
@@ -157,9 +185,10 @@ export function ActiveCollaboratorsPanel({
                                                 type="button"
                                                 variant="outline"
                                                 size="xs"
-                                                onClick={() => setPortalCollaboration(collab)}
+                                                disabled={openingPortalId === collab.id}
+                                                onClick={() => void openPortalAccess(collab)}
                                             >
-                                                <ShieldCheck className="h-3.5 w-3.5" />
+                                                {openingPortalId === collab.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                                                 Gestionar portal
                                             </Button>
                                         )}
@@ -181,12 +210,19 @@ export function ActiveCollaboratorsPanel({
                     </>
                 )}
             </div>
-            {portalCollaboration && (
+            {portalDialog && (
                 <PartnerPortalAccessDialog
-                    collaborationId={portalCollaboration.id}
-                    partnerName={(portalCollaboration.initiator_company_id === companyId ? portalCollaboration.partner : portalCollaboration.initiator).name}
-                    open={portalCollaboration !== null}
-                    onOpenChange={(open) => !open && setPortalCollaboration(null)}
+                    collaborationId={portalDialog.collaboration.id}
+                    partnerName={(portalDialog.collaboration.initiator_company_id === companyId ? portalDialog.collaboration.partner : portalDialog.collaboration.initiator).name}
+                    open
+                    initialCandidates={portalDialog.candidates}
+                    initialGrants={portalDialog.grants}
+                    onOpenChange={(open) => !open && setPortalDialog(null)}
+                    onReload={async () => {
+                        const access = await loadPortalAccess(portalDialog.collaboration);
+                        setPortalDialog(current => current ? { ...current, ...access } : current);
+                        return access;
+                    }}
                 />
             )}
         </section>

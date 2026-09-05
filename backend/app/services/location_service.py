@@ -1,4 +1,3 @@
-from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 from app.models.location import Location
 from app.models.company_collaboration import CompanyCollaboration
@@ -7,7 +6,6 @@ from app.models.user import User
 from app.schemas.location import LocationCreate, LocationUpdate
 from app.repositories import location as location_repo
 from app.repositories import client as client_repo
-from app.repositories import company as company_repo
 from fastapi import HTTPException, status
 from app.services import location_access_service
 from app.services import location_workspace_service
@@ -16,6 +14,7 @@ from app.services.location_organization_assignment_service import (
 )
 from app.services.location_service_provider_access_service import (
     sync_default_service_provider_access,
+    validate_default_service_provider,
 )
 from app.services.entitlement_service import require_company_feature
 
@@ -23,43 +22,6 @@ from app.services.entitlement_service import require_company_feature
 def _require_locations_feature(db: Session, company_id: int | None) -> None:
     if company_id is not None:
         require_company_feature(db, company_id=company_id, code="features.locations")
-
-
-def _validate_default_service_provider(
-    db: Session,
-    owner_company_id: int | None,
-    provider_company_id: int,
-) -> None:
-    if owner_company_id is None or provider_company_id == owner_company_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Select a different company as the service provider",
-        )
-    if not company_repo.get_company_by_id(db, provider_company_id):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-
-    collaboration = (
-        db.query(CompanyCollaboration)
-        .filter(
-            CompanyCollaboration.status == "accepted",
-            or_(
-                and_(
-                    CompanyCollaboration.initiator_company_id == owner_company_id,
-                    CompanyCollaboration.partner_company_id == provider_company_id,
-                ),
-                and_(
-                    CompanyCollaboration.initiator_company_id == provider_company_id,
-                    CompanyCollaboration.partner_company_id == owner_company_id,
-                ),
-            ),
-        )
-        .first()
-    )
-    if not collaboration:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The selected company is not an active collaborator",
-        )
 
 
 def get_locations(
@@ -155,9 +117,13 @@ def get_location_service_providers(
 
 
 def create_location_in_transaction(
-    db: Session, company_id: int | None, location_data: LocationCreate
+    db: Session,
+    company_id: int | None,
+    location_data: LocationCreate,
+    *,
+    entitlement_company_id: int | None = None,
 ) -> Location:
-    _require_locations_feature(db, company_id)
+    _require_locations_feature(db, entitlement_company_id if entitlement_company_id is not None else company_id)
     if location_data.client_id is not None:
         client = client_repo.get_client_by_id(
             db, location_data.client_id, company_id
@@ -189,7 +155,7 @@ def create_location_in_transaction(
 
     provider_id = location_data.default_service_provider_id
     if provider_id is not None:
-        _validate_default_service_provider(db, company_id, provider_id)
+        validate_default_service_provider(db, company_id, provider_id)
 
     location = location_repo.create_location(db, location_data)
     if provider_id is not None:
@@ -234,9 +200,10 @@ def create_location(
 
 
 def update_location(
-    db: Session, location_id: int, location_update: LocationUpdate, company_id: int | None
+    db: Session, location_id: int, location_update: LocationUpdate, company_id: int | None,
+    *, entitlement_company_id: int | None = None,
 ) -> Location:
-    _require_locations_feature(db, company_id)
+    _require_locations_feature(db, entitlement_company_id if entitlement_company_id is not None else company_id)
     db_location = location_repo.get_location_by_id(db, location_id, company_id)
     if not db_location:
         raise HTTPException(
@@ -297,7 +264,7 @@ def update_location(
         "default_service_provider_id" in location_update.model_fields_set
         and location_update.default_service_provider_id is not None
     ):
-        _validate_default_service_provider(
+        validate_default_service_provider(
             db,
             db_location.owner_company_id or company_id,
             location_update.default_service_provider_id,
@@ -336,8 +303,8 @@ def update_location(
         raise
 
 
-def delete_location(db: Session, location_id: int, company_id: int | None) -> Location:
-    _require_locations_feature(db, company_id)
+def delete_location(db: Session, location_id: int, company_id: int | None, *, entitlement_company_id: int | None = None) -> Location:
+    _require_locations_feature(db, entitlement_company_id if entitlement_company_id is not None else company_id)
     db_location = location_repo.get_location_by_id(db, location_id, company_id)
     if not db_location:
         raise HTTPException(

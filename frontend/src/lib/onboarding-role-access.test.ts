@@ -39,7 +39,7 @@ test("onboarding uses the shared WorkHive dialog glass system", () => {
         "utf8",
     );
 
-    assert.match(modal, /<Dialog open>/);
+    assert.match(modal, /<Dialog open onOpenChange=/);
     assert.match(modal, /<DialogContent/);
     assert.match(modal, /dialog-glass-chrome/);
     assert.match(modal, /glass-panel/);

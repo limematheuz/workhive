@@ -131,6 +131,9 @@ async def enforce_csrf_for_cookie_sessions(request, call_next):
         f"{settings.API_V1_STR}/collaborations/invitations/activation-status",
         f"{settings.API_V1_STR}/collaborations/invitations/verify-code",
         f"{settings.API_V1_STR}/collaborations/invitations/decline-external",
+        # The secret invitation token and separately delivered verification
+        # code authenticate this unauthenticated one-time acceptance flow.
+        f"{settings.API_V1_STR}/collaborations/sponsored-invitations/accept",
         f"{settings.API_V1_STR}/contact/",
         f"{settings.API_V1_STR}/trial-requests/",
         f"{settings.API_V1_STR}/trial-requests/verify",

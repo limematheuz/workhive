@@ -43,14 +43,27 @@ También forma parte obligatoria de CI en cada PR.
   colaboración B2B concreta, a la empresa anfitriona que paga el acceso y a
   una persona. El rol técnico `partner_portal` no recibe membresía, perfil,
   departamento, equipo ni plaza interna.
+- El alta de una inmobiliaria nueva usa `SponsoredPartnerInvitation`, no la
+  invitación B2B de empresas ya activas. Al aceptar el token y código de un
+  solo uso, una transacción crea la empresa `property_manager` sin plan, su
+  usuario `partner_portal`, colaboración aceptada y grant inicial. La cuota
+  `limits.partner_portals` se comprueba bajo el bloqueo de la empresa
+  anfitriona; una invitación pendiente nunca reserva una plaza.
 - La política de partner valida grant activo, colaboración aceptada, empresa
   anfitriona activa y `features.partner_portal`; solo expone propiedades de la
   inmobiliaria y reservas asignadas a esa anfitriona. La inmobiliaria no elige
   otro proveedor ni accede a trabajadores, costes, facturas o dashboard del
   anfitrión.
+- La creación de una propiedad desde el portal conserva como propietario y
+  gestor a la inmobiliaria. La anfitriona se añade automáticamente como
+  `default_service_provider`, con tareas permitidas y reservas/datos sensibles
+  denegados; esa ruta no reutiliza la API interna de ubicaciones.
 - Cliente y cualquier futuro portal externo deben llegar con su propio grant,
   política, serializador y pruebas de aislamiento. No se reutilizan perfiles
   internos ni se amplía la política de gestoría por similitud.
+- La interfaz puede agrupar estos recorridos bajo **Red externa**, pero esa
+  navegación no fusiona `CompanyCollaboration`, `PartnerPortalGrant` y
+  `ExternalAccessGrant`, ni permite que una tab amplíe los permisos de otra.
 
 ## Cómo trabajar cuando una pieza empieza a crecer
 

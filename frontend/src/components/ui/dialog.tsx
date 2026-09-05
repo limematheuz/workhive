@@ -6,11 +6,12 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { GuardedDialogRoot, useDialogFormGuard } from "./dialog-form-guard"
 
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+  return <GuardedDialogRoot data-slot="dialog" {...props} />
 }
 
 function DialogTrigger({
@@ -48,22 +49,38 @@ function DialogOverlay({
   )
 }
 
-function DialogContent({
+type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
+  showCloseButton?: boolean
+  overlayClassName?: string
+  compact?: boolean
+  confirmDiscard?: boolean
+}
+
+function DialogContent({ overlayClassName, ...props }: DialogContentProps) {
+  return <DialogPortal>
+    <DialogOverlay className={overlayClassName} />
+    <DialogContentSession {...props} />
+  </DialogPortal>
+}
+
+// The portal mounts a fresh guard for each opening, including after saving.
+function DialogContentSession({
   className,
   children,
   showCloseButton = true,
-  overlayClassName,
   compact = false,
+  confirmDiscard = true,
+  onInputCapture,
+  onChangeCapture,
+  onClickCapture,
+  onKeyDownCapture,
+  onPointerUpCapture,
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean
-  overlayClassName?: string
-  /** Content-height dialog used for compact forms with an internal scroll area. */
-  compact?: boolean
-}) {
+}: DialogContentProps) {
+  const { markFieldChange, markControlChange, confirmation } = useDialogFormGuard(confirmDiscard)
+
   return (
-    <DialogPortal data-slot="dialog-portal">
-      <DialogOverlay className={overlayClassName} />
+    <>
       <DialogPrimitive.Content
         data-slot="dialog-content"
         aria-describedby={undefined}
@@ -73,6 +90,20 @@ function DialogContent({
             : "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-[28px] border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none sm:max-w-lg",
           className
         )}
+        onInputCapture={(event) => {
+          markFieldChange(event)
+          onInputCapture?.(event)
+        }}
+        onChangeCapture={(event) => {
+          markFieldChange(event)
+          onChangeCapture?.(event)
+        }}
+        onClickCapture={(event) => { markControlChange(event); onClickCapture?.(event) }}
+        onPointerUpCapture={(event) => { markControlChange(event); onPointerUpCapture?.(event) }}
+        onKeyDownCapture={(event) => {
+          if (event.key === " " || event.key === "Enter") markControlChange(event)
+          onKeyDownCapture?.(event)
+        }}
         {...props}
       >
         {children}
@@ -86,7 +117,8 @@ function DialogContent({
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
-    </DialogPortal>
+      {confirmation}
+    </>
   )
 }
 

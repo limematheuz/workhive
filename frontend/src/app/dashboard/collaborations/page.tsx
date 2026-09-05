@@ -1,5 +1,5 @@
-import { CollaborationControlCenter } from "@/components/collaborations/CollaborationControlCenter";
+import { redirect } from "next/navigation";
 
 export default function CollaborationsPage() {
-    return <CollaborationControlCenter />;
+    redirect("/dashboard/external-network");
 }

@@ -1,3 +1,5 @@
+import type { LocationProfile, LocationAccessProfile, LocationSpace } from "@/types/location";
+
 export type OperatingModel = "service_provider" | "property_manager" | "hybrid";
 
 export type OnboardingLocationType =
@@ -23,9 +25,9 @@ export interface CompanyOnboardingInput {
         city: string;
         postal_code: string;
         location_type: OnboardingLocationType;
-        profile: {
-            site_type: string;
-        };
+        profile?: Omit<LocationProfile, "location_id" | "attributes"> & { attributes?: LocationProfile["attributes"] };
+        access?: Omit<LocationAccessProfile, "location_id" | "has_access_code"> & { access_code?: string; clear_access_code?: boolean };
+        spaces?: Omit<LocationSpace, "id" | "location_id" | "sort_order" | "is_active">[];
     };
 }
 

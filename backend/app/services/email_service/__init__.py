@@ -15,6 +15,7 @@ from app.services.email_service.access_emails import (
 from app.services.email_service.company_collaboration_emails import (
     send_company_collaboration_decision_email,
     send_company_collaboration_invitation_email,
+    send_sponsored_partner_invitation_email,
 )
 from app.services.email_service.auth_emails import (
     send_email_change_verification_email,
@@ -60,6 +61,7 @@ __all__ = [
     "send_trial_expiring_email",
     "send_trial_expiring_superadmin_email",
     "send_company_collaboration_invitation_email",
+    "send_sponsored_partner_invitation_email",
     "send_company_collaboration_decision_email",
     "send_worker_invitation_email",
     "send_erasure_request_received_email",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 import { CompanyEmailInvitationForm } from "@/components/collaborations/CompanyEmailInvitationForm";
@@ -14,17 +15,20 @@ import {
 import { useDictionary } from "@/lib/dictionary-context";
 import { ApiResponseError } from "@/lib/api";
 import { CollaborationService } from "@/services/collaboration.service";
+import { Button } from "@/components/ui/button";
 
 type CompanyInvitationDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSent: () => void;
+    onBack?: () => void;
 };
 
 export function CompanyInvitationDialog({
     open,
     onOpenChange,
     onSent,
+    onBack,
 }: CompanyInvitationDialogProps) {
     const { dict } = useDictionary();
     const [email, setEmail] = useState("");
@@ -70,6 +74,7 @@ export function CompanyInvitationDialog({
                     onSubmit={(event) => void handleSubmit(event)}
                     showHeader={false}
                 />
+                {onBack && <div className="flex justify-start"><Button type="button" variant="ghost" onClick={onBack}><ArrowLeft className="size-4" />Volver</Button></div>}
             </DialogContent>
         </Dialog>
     );

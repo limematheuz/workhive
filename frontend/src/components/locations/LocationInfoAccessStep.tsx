@@ -12,6 +12,7 @@ const WEEKDAYS = [
 
 export function LocationInfoAccessStep({
     clients,
+    showClientAssignment = true,
     name,
     address,
     city,
@@ -77,7 +78,7 @@ export function LocationInfoAccessStep({
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]"><Building2 className="h-4 w-4 text-accent" /> Información de la ubicación</div>
                 <div className="grid gap-4 lg:grid-cols-2">
                     <div className="space-y-1.5"><Label htmlFor="location-workspace-name">Nombre *</Label><Input id="location-workspace-name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Ej.: Oficina Barcelona" /></div>
-                    <div className="space-y-1.5"><Label htmlFor="location-workspace-client">Cliente</Label><Select value={clientId || "none"} onValueChange={(value) => setClientId(value === "none" ? "" : value)}><SelectTrigger id="location-workspace-client"><SelectValue placeholder="Sin cliente vinculado" /></SelectTrigger><SelectContent><SelectItem value="none">Sin cliente vinculado</SelectItem>{clients.map((client) => <SelectItem key={client.id} value={String(client.id)}>{client.name}</SelectItem>)}</SelectContent></Select></div>
+                    {showClientAssignment && <div className="space-y-1.5"><Label htmlFor="location-workspace-client">Cliente</Label><Select value={clientId || "none"} onValueChange={(value) => setClientId(value === "none" ? "" : value)}><SelectTrigger id="location-workspace-client"><SelectValue placeholder="Sin cliente vinculado" /></SelectTrigger><SelectContent><SelectItem value="none">Sin cliente vinculado</SelectItem>{clients.map((client) => <SelectItem key={client.id} value={String(client.id)}>{client.name}</SelectItem>)}</SelectContent></Select></div>}
                     <div className="space-y-1.5 lg:col-span-2"><Label htmlFor="location-workspace-address">Dirección *</Label><Input id="location-workspace-address" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Calle, número, código postal, ciudad" /></div>
                     <div className="space-y-1.5"><Label htmlFor="location-workspace-city">Ciudad *</Label><Input id="location-workspace-city" value={city} onChange={(event) => setCity(event.target.value)} placeholder="Ej.: Barcelona" /></div>
                     <div className="space-y-1.5"><Label htmlFor="location-workspace-postal-code">Código postal</Label><Input id="location-workspace-postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} placeholder="Ej.: 08018" /></div>

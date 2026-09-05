@@ -1,5 +1,5 @@
-import { ExternalAccessControlCenter } from "@/components/organization/ExternalAccessControlCenter";
+import { redirect } from "next/navigation";
 
 export default function ExternalAccessPage() {
-    return <ExternalAccessControlCenter />;
+    redirect("/dashboard/external-network?tab=professionals");
 }

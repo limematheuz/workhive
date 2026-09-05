@@ -391,8 +391,8 @@ reserva de los necesarios.
 1. Usar una colaboración inmobiliaria → Ownet ya aceptada. La alta de una
    inmobiliaria patrocinada nueva todavía es un proceso controlado por
    WorkHive; no usar la invitación B2B histórica, porque exige tenant de pago.
-2. Como admin de Ownet, abrir **Colaboraciones**, localizar la inmobiliaria y
-   pulsar **Gestionar portal**.
+2. Como admin de Ownet, abrir **Red externa → Colaboradores operativos**,
+   localizar la inmobiliaria y pulsar **Gestionar portal**.
 3. Elegir explícitamente la persona de Port Blanc y activar el portal.
 4. Cerrar su sesión e iniciar sesión de nuevo. Debe llegar a
    **Portal de colaboradores**, no al dashboard completo.

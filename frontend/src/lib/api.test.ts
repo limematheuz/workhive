@@ -274,7 +274,7 @@ test("invitation acceptance is CSRF-exempt before a session exists", async () =>
     restoreBrowser();
 });
 
-test("apiFetch redirects dashboard users on auth and subscription denial", async () => {
+test("apiFetch redirects dashboard users on authentication denial but keeps valid sessions on subscription denial", async () => {
     const first = installBrowser("/dashboard/tasks");
     first.localStorage.setItem("token", "legacy-token");
     first.sessionStorage.setItem("workhive_user_cache", "{}");
@@ -287,12 +287,16 @@ test("apiFetch redirects dashboard users on auth and subscription denial", async
     assert.equal(first.sessionStorage.getItem("workhive_user_cache"), null);
 
     const second = installBrowser("/dashboard/invoices");
+    second.localStorage.setItem("token", "active-session-token");
+    second.sessionStorage.setItem("workhive_user_cache", "{}");
     globalThis.fetch = async () => jsonResponse({
         detail: "The company subscription payment is past due",
     }, { status: 402 });
 
     await apiFetch("/api/v1/invoices", { method: "GET" });
 
-    assert.deepEqual(second.replaceCalls, ["/login"]);
+    assert.deepEqual(second.replaceCalls, []);
+    assert.equal(second.localStorage.getItem("token"), "active-session-token");
+    assert.equal(second.sessionStorage.getItem("workhive_user_cache"), "{}");
     restoreBrowser();
 });
