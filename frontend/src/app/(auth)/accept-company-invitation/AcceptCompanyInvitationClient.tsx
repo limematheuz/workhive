@@ -157,7 +157,7 @@ function AcceptCompanyInvitationContent({ initialToken }: { initialToken: string
             await CollaborationService.acceptCompanyInvitation(token, normalizedCode);
             void companyInvitationTokenService.clear();
             setDecision("accepted");
-            window.setTimeout(() => router.replace("/dashboard/collaborations"), 1600);
+            window.setTimeout(() => router.replace("/dashboard/external-network"), 1600);
         } catch (error) {
             toast.error(errorMessage(error, true));
         } finally {

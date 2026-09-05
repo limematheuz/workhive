@@ -80,6 +80,57 @@ def send_company_collaboration_invitation_email(
     return transport.send_email(message)
 
 
+def send_sponsored_partner_invitation_email(
+    *,
+    recipient_email: str,
+    inviter_company_name: str,
+    company_name: str,
+    invitation_url: str,
+    verification_code: str,
+    expires_at: datetime,
+) -> bool:
+    """Invite a new property manager to a host-paid, limited portal."""
+
+    b = _BRAND
+    safe_host = escape(inviter_company_name)
+    safe_partner = escape(company_name)
+    safe_code = escape(verification_code)
+    expires_text = expires_at.astimezone().strftime("%d/%m/%Y %H:%M")
+    html_body = base_layout(
+        f"""
+{heading("Invitación al portal de inmobiliaria")}
+{lead(f'<strong style="color:{b["text"]};">{safe_host}</strong> te invita a crear el portal de <strong style="color:{b["text"]};">{safe_partner}</strong> en WorkHive.')}
+{muted_note("Este acceso sirve para crear propiedades y solicitar limpiezas a la empresa anfitriona. No requiere plan, no da acceso a su dashboard y puede revocarse en cualquier momento.")}
+{muted_note("Abre el enlace y usa este código de verificación para completar los datos de la inmobiliaria y crear tu acceso.")}
+<p style="margin:12px 0 8px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b["text"]};text-align:center;">{safe_code}</p>
+{button(invitation_url, "Crear portal")}
+{muted_note(f"La invitación caduca el {escape(expires_text)}.")}
+{fallback_link(invitation_url)}
+""",
+        preview_text=f"{inviter_company_name} te invita a su portal de inmobiliaria",
+    )
+    message = EmailMessage()
+    message["Subject"] = f"Invitación al portal de inmobiliaria: {inviter_company_name}"
+    message["From"] = transport.from_address("Colaboraciones")
+    message["To"] = recipient_email
+    message.set_content(
+        plain_body(
+            [
+                "Invitación al portal de inmobiliaria en WorkHive.",
+                "",
+                f"{inviter_company_name} te invita a crear el portal de {company_name}.",
+                "Podrás crear propiedades y solicitar limpiezas solo a la empresa anfitriona.",
+                "No requiere plan y no da acceso al dashboard de la empresa anfitriona.",
+                f"Código de verificación: {verification_code}",
+                f"Crear portal: {invitation_url}",
+                f"La invitación caduca el {expires_text}.",
+            ]
+        )
+    )
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)
+
+
 def send_company_collaboration_decision_email(
     *,
     recipient_email: str,

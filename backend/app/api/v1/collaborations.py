@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveManagerOrAdmin, AsyncActiveUser, get_async_db, get_db
 from app.api.v1.company_collaboration_invitations import router as invitations_router
+from app.api.v1.sponsored_partner_invitations import router as sponsored_invitations_router
 from app.models.user import User
 from app.repositories import company_collaboration as collab_repo
 from app.schemas.collaboration import CollaborationResponse
@@ -13,6 +14,7 @@ from app.services import collaboration_service
 
 router = APIRouter()
 router.include_router(invitations_router, prefix="/invitations")
+router.include_router(sponsored_invitations_router, prefix="/sponsored-invitations")
 
 
 @router.get("/", response_model=list[CollaborationResponse])

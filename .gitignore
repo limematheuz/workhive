@@ -24,6 +24,7 @@ htmlcov/
 node_modules/
 .next/
 .next-e2e/
+.next-portal-e2e/
 out/
 *.tsbuildinfo
 .pnpm-store/

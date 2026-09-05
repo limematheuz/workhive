@@ -9,19 +9,17 @@ import {
     Building2,
     Check,
     ClipboardCheck,
-    Home,
     Hotel,
     MapPin,
     Sparkles,
-    Trees,
     Users,
     X,
 } from "lucide-react"
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { LocationWorkspaceForm, type LocationWorkspacePayload } from "@/components/locations/LocationWorkspaceForm"
 import {
     Dialog,
+    DialogClose,
     DialogContent,
     DialogDescription,
     DialogTitle,
@@ -30,8 +28,6 @@ import {
     OperatingModel,
     OnboardingLocationType,
     buildCompanyOnboardingInput,
-    defaultLocationTypeForModel,
-    isOnboardingLocationComplete,
 } from "@/domain/onboarding/cleaning-onboarding"
 import { useDictionary } from "@/lib/dictionary-context"
 import { toast } from "@/lib/toast"
@@ -48,20 +44,12 @@ interface OnboardingModalProps {
 
 type Step = "model" | "location" | "ready"
 
-const fieldClass =
-    "h-11 rounded-lg border-[var(--border-color)] bg-[var(--bg-tertiary)] text-sm text-[var(--text-main)] placeholder:text-[var(--text-muted)]"
-
 function useOnboardingModalController({ user, onComplete }: OnboardingModalProps) {
     const { dict } = useDictionary()
     const router = useRouter()
     const [step, setStep] = React.useState<Step>("model")
     const [loading, setLoading] = React.useState(false)
     const [operatingModel, setOperatingModel] = React.useState<OperatingModel>("service_provider")
-    const [locationType, setLocationType] = React.useState<OnboardingLocationType>("private")
-    const [locationName, setLocationName] = React.useState("")
-    const [locationAddress, setLocationAddress] = React.useState("")
-    const [locationCity, setLocationCity] = React.useState("")
-    const [locationPostalCode, setLocationPostalCode] = React.useState("")
     const [result, setResult] = React.useState<CompanyOnboardingResult | null>(null)
     const [modelLoading, setModelLoading] = React.useState(Boolean(user.company_id))
     const selectedModelManually = React.useRef(false)
@@ -81,7 +69,6 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
                         || company.operating_model === "hybrid")
                 ) {
                     setOperatingModel(company.operating_model)
-                    setLocationType(defaultLocationTypeForModel(company.operating_model))
                 }
             })
             .catch(() => {})
@@ -100,7 +87,6 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
     const selectOperatingModel = (model: OperatingModel) => {
         selectedModelManually.current = true
         setOperatingModel(model)
-        setLocationType(defaultLocationTypeForModel(model))
     }
 
     const completeWithoutLocation = async () => {
@@ -119,26 +105,19 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
         }
     }
 
-    const createStarterSetup = async () => {
+    const createStarterSetup = async (payload: LocationWorkspacePayload) => {
         if (!user.company_id) return
-
-        const fields = {
-            name: locationName,
-            address: locationAddress,
-            city: locationCity,
-            postalCode: locationPostalCode,
-            locationType,
-        }
-        if (!isOnboardingLocationComplete(fields)) {
-            toast.error(dict.onboarding.location_required)
-            return
-        }
+        const { name, address, city, postal_code, location_type, profile, access, spaces } = payload
 
         setLoading(true)
         try {
             const onboardingResult = await CompanyService.completeOnboarding(
                 user.company_id,
-                buildCompanyOnboardingInput(operatingModel, fields),
+                { operating_model: operatingModel, location: {
+                    name, address, city, postal_code: postal_code || "",
+                    location_type: (location_type || "other") as OnboardingLocationType,
+                    profile, access, spaces,
+                } },
             )
             setResult(onboardingResult)
             toast.success(onboardingResult.created ? dict.onboarding.starter_created : dict.onboarding.setup_already_ready)
@@ -171,26 +150,6 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
         },
     ]
 
-    const locationOptions = [
-        { id: "private" as const, label: dict.onboarding.space_home, icon: Home },
-        { id: "real_estate" as const, label: dict.onboarding.space_lodging, icon: Hotel },
-        { id: "business" as const, label: dict.onboarding.space_business, icon: Building2 },
-        { id: "exterior" as const, label: dict.onboarding.space_outdoor, icon: Trees },
-        { id: "other" as const, label: dict.onboarding.space_other, icon: MapPin },
-    ]
-
-    const starterItems = operatingModel === "property_manager"
-        ? dict.onboarding.checklist_manager
-        : operatingModel === "hybrid"
-            ? dict.onboarding.checklist_hybrid
-            : dict.onboarding.checklist_provider
-
-    const locationIntro = operatingModel === "property_manager"
-        ? dict.onboarding.location_intro_manager
-        : operatingModel === "hybrid"
-            ? dict.onboarding.location_intro_hybrid
-            : dict.onboarding.location_intro_provider
-
     const stepIndex = step === "model" ? 0 : step === "location" ? 1 : 2
     const steps = [
         { label: dict.onboarding.modal_step_model, icon: BriefcaseBusiness },
@@ -205,24 +164,11 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
         dict,
         loading,
         modelLoading,
-        locationAddress,
-        locationCity,
-        locationName,
-        locationOptions,
-        locationPostalCode,
-        locationType,
-        locationIntro,
         modelOptions,
         operatingModel,
         result,
         selectOperatingModel,
-        setLocationAddress,
-        setLocationCity,
-        setLocationName,
-        setLocationPostalCode,
-        setLocationType,
         setStep,
-        starterItems,
         step,
         stepIndex,
         steps,
@@ -246,48 +192,33 @@ function OnboardingModalContent({
         dict,
         loading,
         modelLoading,
-        locationAddress,
-        locationCity,
-        locationName,
-        locationOptions,
-        locationPostalCode,
-        locationType,
-        locationIntro,
         modelOptions,
         operatingModel,
         result,
         selectOperatingModel,
-        setLocationAddress,
-        setLocationCity,
-        setLocationName,
-        setLocationPostalCode,
-        setLocationType,
         setStep,
-        starterItems,
         step,
         stepIndex,
         steps,
     } = controller
 
     return (
-        <Dialog open>
+        <Dialog open onOpenChange={(open) => { if (!open) { if (step === "ready") closeOnboarding(); else void completeWithoutLocation(); } }}>
             <DialogContent
                 showCloseButton={false}
+                confirmDiscard={step !== "ready"}
                 overlayClassName="dialog-glass-overlay"
-                onPointerDownOutside={(event) => event.preventDefault()}
-                onEscapeKeyDown={(event) => event.preventDefault()}
                 className="dialog-glass flex max-h-[calc(100vh-1.5rem)] w-full max-w-[calc(100%-1.5rem)] gap-0 overflow-hidden rounded-[28px] p-0 sm:max-h-[calc(100vh-3rem)] sm:max-w-5xl"
             >
-                <button
+                <DialogClose asChild><button
                     type="button"
-                    onClick={() => step === "ready" ? closeOnboarding() : void completeWithoutLocation()}
                     disabled={loading || modelLoading}
                     aria-label={dict.onboarding.modal_btn_later}
                     data-slot="dialog-close"
                     className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full text-[var(--text-main)] transition-colors disabled:opacity-50"
                 >
                     <X className="h-5 w-5" />
-                </button>
+                </button></DialogClose>
 
                 <aside className="dialog-glass-chrome hidden w-64 shrink-0 rounded-l-[28px] border-r border-[var(--border-soft)] p-7 md:block">
                     <p className="text-xs font-black uppercase text-accent">{dict.onboarding.step_of}</p>
@@ -360,58 +291,11 @@ function OnboardingModalContent({
                             </div>
                         )}
 
-                        {step === "location" && (
-                            <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_280px]">
-                                <div className="space-y-5">
-                                    <div className="rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm leading-relaxed text-[var(--text-muted)]">
-                                        {locationIntro}
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.onboarding.space_type}</Label>
-                                        <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-5">
-                                            {locationOptions.map((option) => {
-                                                const Icon = option.icon
-                                                const active = locationType === option.id
-                                                return (
-                                                    <button
-                                                        key={option.id}
-                                                        type="button"
-                                                        onClick={() => setLocationType(option.id)}
-                                                        aria-pressed={active}
-                                                        className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-2 text-center text-xs font-semibold transition-colors ${active ? "border border-accent bg-accent text-white" : "surface-control-btn hover:!border-accent/50"}`}
-                                                    >
-                                                        <Icon className="h-4 w-4" />
-                                                        <span>{option.label}</span>
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                        <Field label={dict.onboarding.modal_data_name} value={locationName} onChange={setLocationName} placeholder={dict.onboarding.location_name_placeholder} wide />
-                                        <Field label={dict.onboarding.modal_data_address} value={locationAddress} onChange={setLocationAddress} placeholder={dict.onboarding.location_address_placeholder} wide />
-                                        <Field label={dict.onboarding.modal_data_city} value={locationCity} onChange={setLocationCity} placeholder={dict.onboarding.location_city_placeholder} />
-                                        <Field label={dict.onboarding.modal_data_postal} value={locationPostalCode} onChange={setLocationPostalCode} placeholder="17130" />
-                                    </div>
-                                </div>
-
-                                <aside className="border-l-0 border-[var(--border-soft)] lg:border-l lg:pl-6">
-                                    <div className="flex items-center gap-2 text-accent">
-                                        <ClipboardCheck className="h-5 w-5" />
-                                        <h3 className="text-sm font-black">{dict.onboarding.starter_service_title}</h3>
-                                    </div>
-                                    <p className="mt-2 text-xs leading-relaxed text-[var(--text-muted)]">{dict.onboarding.starter_service_desc}</p>
-                                    <ul className="mt-4 space-y-2">
-                                        {starterItems.map((item) => (
-                                            <li key={item} className="flex gap-2 text-xs text-[var(--text-main)]">
-                                                <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                                                <span>{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </aside>
-                            </div>
-                        )}
+                        <div hidden={step !== "location"} className="h-[min(68vh,760px)] min-h-0">
+                            <LocationWorkspaceForm clients={[]} portalMode requirePostalCode submitting={loading}
+                                submitLabel={dict.onboarding.activate_setup} onSubmit={createStarterSetup}
+                                onCancel={() => void completeWithoutLocation()} />
+                        </div>
 
                         {step === "ready" && (
                             <div className="flex min-h-[320px] flex-col justify-center">
@@ -422,7 +306,7 @@ function OnboardingModalContent({
                                 <p className="mt-2 max-w-xl text-sm leading-relaxed text-[var(--text-muted)]">{dict.onboarding.ready_detail}</p>
                                 <div className="mt-7 grid gap-3 sm:grid-cols-3">
                                     {[
-                                        { icon: MapPin, label: result?.location_name || locationName },
+                                        { icon: MapPin, label: result?.location_name || dict.onboarding.location_title },
                                         { icon: ClipboardCheck, label: result?.template_name || dict.onboarding.starter_service_fallback },
                                         { icon: Users, label: dict.onboarding.ready_team },
                                     ].map((item) => (
@@ -451,7 +335,7 @@ function OnboardingModalContent({
                                     <ArrowLeft className="h-4 w-4" />
                                     {dict.onboarding.back}
                                 </button>
-                                <PrimaryButton onClick={() => void createStarterSetup()} label={loading ? dict.locations.form.saving : dict.onboarding.activate_setup} icon={ArrowRight} disabled={loading} />
+                                <span className="text-xs text-[var(--text-muted)]">{dict.onboarding.location_subtitle}</span>
                             </>
                         )}
                         {step === "ready" && (
@@ -466,27 +350,6 @@ function OnboardingModalContent({
                 </div>
             </DialogContent>
         </Dialog>
-    )
-}
-
-function Field({
-    label,
-    value,
-    onChange,
-    placeholder,
-    wide = false,
-}: {
-    label: string
-    value: string
-    onChange: (value: string) => void
-    placeholder: string
-    wide?: boolean
-}) {
-    return (
-        <div className={`space-y-1.5 ${wide ? "sm:col-span-2" : ""}`}>
-            <Label className="text-xs font-bold uppercase text-[var(--text-muted)]">{label}</Label>
-            <Input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className={fieldClass} />
-        </div>
     )
 }
 

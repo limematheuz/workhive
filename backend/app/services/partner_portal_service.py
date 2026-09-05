@@ -5,37 +5,14 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.location import Location
 from app.models.partner_portal_grant import PartnerPortalGrant
 from app.models.reservation import Reservation
 from app.models.user import User
-from app.repositories import location as location_repo
 from app.repositories import reservation as reservation_repo
-from app.schemas.location import LocationResponse
 from app.schemas.reservation import ReservationCreate, ReservationResponse, ReservationUpdate
-from app.services import reservation_query_service, reservation_service
-from app.services.entitlement_service import require_company_feature
+from app.services import partner_portal_location_service, reservation_query_service, reservation_service
 from app.services.planning_access_service import require_company_planning
 from app.services.reservation_mutation_access import ReservationMutationAccess
-
-
-def _require_locations_access(db: Session, grant: PartnerPortalGrant) -> None:
-    require_company_feature(
-        db,
-        company_id=grant.host_company_id,
-        code="features.locations",
-    )
-
-
-def _owned_location(db: Session, grant: PartnerPortalGrant, location_id: int) -> Location:
-    location = location_repo.get_location_by_id(db, location_id, grant.partner_company_id)
-    if (
-        location is None
-        or location.owner_company_id != grant.partner_company_id
-        or not location.is_active
-    ):
-        raise HTTPException(status_code=404, detail="Property not found")
-    return location
 
 
 def _owned_reservation(
@@ -76,25 +53,12 @@ def _reservation_response(
     )
 
 
-def list_locations(db: Session, *, grant: PartnerPortalGrant) -> list[LocationResponse]:
-    _require_locations_access(db, grant)
-    locations = location_repo.get_locations_by_client(
-        db,
-        grant.partner_company_id,
-        skip=0,
-        limit=10_000,
-    )
-    return [
-        LocationResponse.model_validate(location).model_copy(
-            update={
-                "can_manage_reservations": True,
-                "can_manage_tasks": False,
-                "shared_companies": [access.company_id for access in location.company_access],
-            }
+def _require_request_mutable(reservation: Reservation) -> None:
+    if any(task.is_invoiced or task.status in {"in_progress", "completed"} or task.work_sessions for task in reservation.checkout_tasks):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This request is linked to started or invoiced work. Contact your service provider.",
         )
-        for location in locations
-        if location.owner_company_id == grant.partner_company_id
-    ]
 
 
 def list_reservations(
@@ -108,8 +72,8 @@ def list_reservations(
 ) -> list[ReservationResponse]:
     require_company_planning(db, grant.host_company_id)
     if location_id is not None:
-        _owned_location(db, grant, location_id)
-    location_ids = [location.id for location in list_locations(db, grant=grant)]
+        partner_portal_location_service.require_owned_location(db, grant, location_id)
+    location_ids = [location.id for location in partner_portal_location_service.list_locations(db, grant=grant)]
     reservations = reservation_repo.list_reservations(
         db,
         location_ids,
@@ -136,7 +100,7 @@ def create_reservation(
     data: ReservationCreate,
 ) -> ReservationResponse:
     require_company_planning(db, grant.host_company_id)
-    _owned_location(db, grant, data.location_id)
+    partner_portal_location_service.require_owned_location(db, grant, data.location_id)
     if not data.cleaning_required:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -168,7 +132,7 @@ def update_reservation(
     data: ReservationUpdate,
 ) -> ReservationResponse:
     require_company_planning(db, grant.host_company_id)
-    _owned_reservation(db, grant, reservation_id)
+    _require_request_mutable(_owned_reservation(db, grant, reservation_id))
     if data.cleaning_required is False:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -208,7 +172,7 @@ def delete_reservation(
     reservation_id: int,
 ) -> None:
     require_company_planning(db, grant.host_company_id)
-    _owned_reservation(db, grant, reservation_id)
+    _require_request_mutable(_owned_reservation(db, grant, reservation_id))
     reservation_service.delete_reservation(
         db,
         current_user,
@@ -221,7 +185,7 @@ def delete_reservation(
 
 
 def overview(db: Session, *, grant: PartnerPortalGrant) -> dict:
-    locations = list_locations(db, grant=grant)
+    locations = partner_portal_location_service.list_locations(db, grant=grant)
     reservation_rows = reservation_repo.list_reservations(
         db,
         [location.id for location in locations],

@@ -1,32 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { Building2, CalendarClock, ClipboardList, Loader2, MapPin, Plus, Send, UserRound } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Building2, CalendarClock, ClipboardList, Loader2, MapPin, Pencil, Plus, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { ActionPopover } from "@/components/ui/action-popover";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useUser } from "@/lib/user-context";
 import { PartnerPortalService } from "@/services/partner-portal.service";
 import type { Location } from "@/types/location";
 import type { Reservation } from "@/types/reservation";
-import type { PartnerPortalOverview, PartnerPortalReservationInput } from "@/types/partner-portal";
+import type { PartnerPortalOverview } from "@/types/partner-portal";
+import { RequestDialog } from "./PartnerPortalRequestDialog";
+import { PropertyDialog } from "./PartnerPortalPropertyDialog";
 
 export type PartnerPortalTab = "overview" | "properties" | "requests" | "profile";
 type PortalReservation = Reservation & { portalDisplayCheckOut: string };
-
-const TAB_PATHS: Record<PartnerPortalTab, string> = {
-    overview: "/dashboard/partner",
-    properties: "/dashboard/partner/properties",
-    requests: "/dashboard/partner/requests",
-    profile: "/dashboard/partner/profile",
-};
 
 const CLEANING_STATUS: Record<string, string> = {
     requested: "Pendiente de confirmar",
@@ -59,69 +52,33 @@ function toPortalReservation(reservation: Reservation): PortalReservation {
 function RequestStatus({ status }: { status?: string | null }) {
     const completed = status === "completed";
     const cancelled = status === "cancelled";
-    return <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${completed ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : cancelled ? "border-red-500/30 bg-red-500/10 text-red-600" : "border-accent/25 bg-accent/10 text-accent"}`}>{CLEANING_STATUS[status ?? ""] ?? "Enviada"}</span>;
+    const className = completed
+        ? "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]"
+        : cancelled
+            ? "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)]"
+            : "border-accent/25 bg-accent/10 text-accent";
+
+    return <Badge className={`text-[10px] font-semibold uppercase tracking-wide ${className}`}>{CLEANING_STATUS[status ?? ""] ?? "Enviada"}</Badge>;
 }
 
 function EmptyState({ title, description }: { title: string; description: string }) {
     return <Card><CardContent className="py-10 text-center"><p className="font-semibold">{title}</p><p className="mt-1 text-sm text-[var(--text-muted)]">{description}</p></CardContent></Card>;
 }
 
-function NewRequestDialog({ locations, onCreated }: { locations: Location[]; onCreated: (reservation: Reservation) => void }) {
-    const [open, setOpen] = useState(false);
-    const [submitting, setSubmitting] = useState(false);
-    const [form, setForm] = useState({ locationId: "", checkIn: "", checkOut: "", guests: "1", reference: "", notes: "" });
-
-    const submit = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        if (!form.locationId || !form.checkIn || !form.checkOut) {
-            toast.error("Indica la propiedad y las fechas de la estancia.");
-            return;
-        }
-        setSubmitting(true);
-        try {
-            const data: PartnerPortalReservationInput = {
-                location_id: Number(form.locationId),
-                check_in_at: new Date(form.checkIn).toISOString(),
-                check_out_at: new Date(form.checkOut).toISOString(),
-                guest_count: Number(form.guests) || 1,
-                stay_type: "guest",
-                status: "confirmed",
-                source: "partner_portal",
-                external_reference: form.reference.trim() || null,
-                notes: form.notes.trim() || null,
-            };
-            const reservation = await PartnerPortalService.createReservation(data);
-            onCreated(reservation);
-            setOpen(false);
-            setForm({ locationId: "", checkIn: "", checkOut: "", guests: "1", reference: "", notes: "" });
-            toast.success("Solicitud enviada a la empresa de limpieza.");
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se pudo enviar la solicitud.");
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
-    return <Dialog open={open} onOpenChange={setOpen}>
-        <Button type="button" onClick={() => setOpen(true)} disabled={locations.length === 0}><Plus className="size-4" />Nueva solicitud</Button>
-        <DialogContent compact className="max-w-xl">
-            <DialogHeader><DialogTitle>Nueva solicitud de limpieza</DialogTitle><DialogDescription>Al guardar, se enviará una solicitud a tu empresa de limpieza asignada.</DialogDescription></DialogHeader>
-            <form className="grid gap-4" onSubmit={submit}>
-                <div className="grid gap-2"><Label htmlFor="partner-location">Propiedad</Label><Select value={form.locationId} onValueChange={(locationId) => setForm(current => ({ ...current, locationId }))}><SelectTrigger id="partner-location"><SelectValue placeholder="Selecciona una propiedad" /></SelectTrigger><SelectContent>{locations.map(location => <SelectItem key={location.id} value={String(location.id)}>{location.name}</SelectItem>)}</SelectContent></Select></div>
-                <div className="grid gap-4 sm:grid-cols-2"><div className="grid gap-2"><Label htmlFor="partner-check-in">Entrada</Label><Input id="partner-check-in" type="datetime-local" value={form.checkIn} onChange={event => setForm(current => ({ ...current, checkIn: event.target.value }))} /></div><div className="grid gap-2"><Label htmlFor="partner-check-out">Salida</Label><Input id="partner-check-out" type="datetime-local" value={form.checkOut} onChange={event => setForm(current => ({ ...current, checkOut: event.target.value }))} /></div></div>
-                <div className="grid gap-4 sm:grid-cols-2"><div className="grid gap-2"><Label htmlFor="partner-guests">Huéspedes</Label><Input id="partner-guests" type="number" min="1" value={form.guests} onChange={event => setForm(current => ({ ...current, guests: event.target.value }))} /></div><div className="grid gap-2"><Label htmlFor="partner-reference">Referencia</Label><Input id="partner-reference" value={form.reference} onChange={event => setForm(current => ({ ...current, reference: event.target.value }))} placeholder="Opcional" /></div></div>
-                <div className="grid gap-2"><Label htmlFor="partner-notes">Notas para la limpieza</Label><Textarea id="partner-notes" value={form.notes} onChange={event => setForm(current => ({ ...current, notes: event.target.value }))} placeholder="Opcional" /></div>
-                <DialogFooter className="mt-2"><Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancelar</Button><Button type="submit" disabled={submitting}>{submitting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}Enviar solicitud</Button></DialogFooter>
-            </form>
-        </DialogContent>
-    </Dialog>;
-}
-
-function RequestsTable({ reservations }: { reservations: PortalReservation[] }) {
+function RequestsTable({ reservations, locations, onEdit, onDelete }: { reservations: PortalReservation[]; locations: Location[]; onEdit?: (reservation: PortalReservation) => void; onDelete?: (reservation: PortalReservation) => void }) {
     if (reservations.length === 0) return <EmptyState title="Aún no hay solicitudes" description="Crea la primera estancia para solicitar su limpieza." />;
+
+    const locationNames = new Map(locations.map((location) => [location.id, location.name]));
+    const locationName = (reservation: PortalReservation) => locationNames.get(reservation.location_id) ?? `Propiedad #${reservation.location_id}`;
+
     return <>
-        <div className="hidden md:block"><Table><TableHeader><TableRow><TableHead className="text-accent">Propiedad</TableHead><TableHead className="text-accent">Salida</TableHead><TableHead className="text-accent">Estado</TableHead><TableHead className="text-right text-accent">Huéspedes</TableHead></TableRow></TableHeader><TableBody>{reservations.map(reservation => <TableRow key={reservation.id}><TableCell className="font-semibold">{reservation.location_id}</TableCell><TableCell>{reservation.portalDisplayCheckOut}</TableCell><TableCell><RequestStatus status={reservation.cleaning_status} /></TableCell><TableCell className="text-right">{reservation.guest_count}</TableCell></TableRow>)}</TableBody></Table></div>
-        <div className="grid gap-3 md:hidden">{reservations.map(reservation => <Card key={reservation.id}><CardContent className="space-y-3"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">Propiedad #{reservation.location_id}</p><p className="mt-0.5 text-sm text-[var(--text-muted)]">Salida: {reservation.portalDisplayCheckOut}</p></div><RequestStatus status={reservation.cleaning_status} /></div><div className="flex items-center justify-between border-t border-[var(--border-soft)] pt-3 text-sm"><span className="text-[var(--text-muted)]">Huéspedes</span><span className="font-semibold">{reservation.guest_count}</span></div></CardContent></Card>)}</div>
+        <div className="hidden md:block [&_[data-slot=table-container]]:overflow-x-hidden">
+            <Table className="table-fixed text-left">
+                <TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"><TableHead className="w-[34%] text-[var(--btn-secondary-text)]">Propiedad</TableHead><TableHead className="w-[28%] text-[var(--btn-secondary-text)]">Salida</TableHead><TableHead className="w-[20%] text-[var(--btn-secondary-text)]">Estado</TableHead><TableHead className="w-[10%] text-right text-[var(--btn-secondary-text)]">Huéspedes</TableHead>{onEdit && <TableHead className="w-[8%] text-right text-[var(--btn-secondary-text)]">Acciones</TableHead>}</TableRow></TableHeader>
+                <TableBody>{reservations.map(reservation => <TableRow key={reservation.id} className="bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55"><TableCell className="truncate font-semibold text-[var(--text-main)]">{locationName(reservation)}</TableCell><TableCell className="text-xs text-[var(--text-muted)]">{reservation.portalDisplayCheckOut}</TableCell><TableCell><RequestStatus status={reservation.cleaning_status} /></TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{reservation.guest_count}</TableCell>{onEdit && <TableCell className="text-right"><ActionPopover triggerLabel={`Acciones para ${locationName(reservation)}`} options={[{ label: "Editar", icon: Pencil, variant: "edit", onClick: () => onEdit(reservation) }, { label: "Eliminar", icon: Trash2, variant: "delete", onClick: () => onDelete?.(reservation) }]} /></TableCell>}</TableRow>)}</TableBody>
+            </Table>
+        </div>
+        <div className="grid gap-2.5 md:hidden">{reservations.map(reservation => <Card key={reservation.id}><CardContent className="space-y-3"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{locationName(reservation)}</p><p className="mt-1 text-xs text-[var(--text-muted)]">Salida: {reservation.portalDisplayCheckOut}</p></div><div className="flex shrink-0 items-center gap-1"><RequestStatus status={reservation.cleaning_status} />{onEdit && <ActionPopover triggerLabel={`Acciones para ${locationName(reservation)}`} options={[{ label: "Editar", icon: Pencil, variant: "edit", onClick: () => onEdit(reservation) }, { label: "Eliminar", icon: Trash2, variant: "delete", onClick: () => onDelete?.(reservation) }]} />}</div></div><div className="flex items-center justify-between border-t border-[var(--border-soft)] pt-3 text-sm"><span className="text-[var(--text-muted)]">Huéspedes</span><span className="font-mono font-semibold text-[var(--text-main)]">{reservation.guest_count}</span></div></CardContent></Card>)}</div>
     </>;
 }
 
@@ -133,38 +90,104 @@ export function PartnerPortalWorkspace({ initialTab }: { initialTab: PartnerPort
     const [reservations, setReservations] = useState<PortalReservation[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [propertyDialogOpen, setPropertyDialogOpen] = useState(false);
+    const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+    const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+    const [editingReservation, setEditingReservation] = useState<PortalReservation | null>(null);
+    const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
+    const [deletingReservation, setDeletingReservation] = useState<PortalReservation | null>(null);
+    const [deleting, setDeleting] = useState(false);
+    const [portalOpenedAt] = useState(() => Date.now());
+    const initialLoadStartedRef = useRef(false);
+    const loadPromiseRef = useRef<Promise<void> | null>(null);
 
     const load = useCallback(async () => {
+        if (loadPromiseRef.current) return loadPromiseRef.current;
+
         setLoading(true);
         setError(null);
-        try {
-            const [nextOverview, nextLocations, nextReservations] = await Promise.all([PartnerPortalService.getOverview(), PartnerPortalService.getLocations(), PartnerPortalService.getReservations()]);
+        const request = Promise.all([PartnerPortalService.getOverview(), PartnerPortalService.getLocations(), PartnerPortalService.getReservations()]).then(([nextOverview, nextLocations, nextReservations]) => {
             setOverview(nextOverview);
             setLocations(nextLocations);
             setReservations(nextReservations.map(toPortalReservation));
+        });
+        loadPromiseRef.current = request;
+        try {
+            await request;
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : "No se pudo cargar el portal.");
         } finally {
+            if (loadPromiseRef.current === request) loadPromiseRef.current = null;
             setLoading(false);
         }
     }, []);
 
-    useEffect(() => { setActiveTab(initialTab); }, [initialTab]);
-    useEffect(() => { void load(); }, [load]);
+    useEffect(() => {
+        if (initialLoadStartedRef.current) return;
+        initialLoadStartedRef.current = true;
+        void load();
+    }, [load]);
 
-    const upcomingReservations = useMemo(() => reservations.filter(reservation => new Date(reservation.check_out_at).getTime() >= Date.now()), [reservations]);
-    const changeTab = (tab: PartnerPortalTab) => { setActiveTab(tab); window.location.assign(TAB_PATHS[tab]); };
-    const handleCreated = (reservation: Reservation) => { setReservations(current => [toPortalReservation(reservation), ...current]); void load(); };
+    const upcomingReservations = useMemo(() => reservations.filter(reservation => new Date(reservation.check_out_at).getTime() >= portalOpenedAt), [portalOpenedAt, reservations]);
+    const pendingCleaningCount = useMemo(() => reservations.filter(reservation => !["completed", "cancelled"].includes(reservation.cleaning_status ?? "")).length, [reservations]);
+    const changeTab = (tab: PartnerPortalTab) => setActiveTab(tab);
+    const handleLocationCreated = (location: Location) => {
+        setLocations(current => [location, ...current]);
+        setOverview(current => current ? { ...current, location_count: current.location_count + 1 } : current);
+    };
+    const handleLocationSaved = (location: Location, isNew: boolean) => {
+        if (isNew) handleLocationCreated(location);
+        else setLocations((current) => current.map((item) => item.id === location.id ? location : item));
+        setEditingLocation(null);
+    };
+    const handleReservationSaved = (reservation: Reservation, isNew: boolean) => {
+        const next = toPortalReservation(reservation);
+        setReservations((current) => isNew ? [next, ...current] : current.map((item) => item.id === next.id ? next : item));
+        setEditingReservation(null);
+    };
+    const deleteLocation = async () => {
+        if (!deletingLocation) return;
+        try {
+            setDeleting(true);
+            await PartnerPortalService.deleteLocation(deletingLocation.id);
+            setLocations((current) => current.filter((location) => location.id !== deletingLocation.id));
+            setOverview((current) => current ? { ...current, location_count: Math.max(0, current.location_count - 1) } : current);
+            setDeletingLocation(null);
+            toast.success("Propiedad eliminada.");
+        } catch (cause) {
+            toast.error(cause instanceof Error ? cause.message : "No se pudo eliminar la propiedad.");
+        } finally {
+            setDeleting(false);
+        }
+    };
+    const deleteReservation = async () => {
+        if (!deletingReservation) return;
+        try {
+            setDeleting(true);
+            await PartnerPortalService.deleteReservation(deletingReservation.id);
+            setReservations((current) => current.filter((reservation) => reservation.id !== deletingReservation.id));
+            setDeletingReservation(null);
+            toast.success("Solicitud eliminada.");
+        } catch (cause) {
+            toast.error(cause instanceof Error ? cause.message : "No se pudo eliminar la solicitud.");
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     if (loading) return <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="size-7 animate-spin text-accent" /><span className="sr-only">Cargando portal</span></div>;
     if (error) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No se pudo abrir el portal" description={error} /><div className="mt-4 text-center"><Button type="button" variant="outline" onClick={() => void load()}>Reintentar</Button></div></div>;
 
     return <div className="mx-auto max-w-6xl space-y-5 px-[3%] py-6 pb-12 md:p-8">
-        <header className="billing-surface billing-surface-accent-pad rounded-[24px]"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Portal de colaboradores</p><h1 className="mt-1 text-2xl font-bold tracking-tight">{overview?.partner_company_name ?? "Tus propiedades"}</h1><p className="mt-2 text-sm text-[var(--text-muted)]">Solicita limpiezas a {overview?.host_company_name ?? "tu proveedor"} sin acceder a su espacio de trabajo.</p></div>{activeTab !== "profile" && <NewRequestDialog locations={locations} onCreated={handleCreated} />}</div></header>
+        <header className="billing-surface billing-surface-accent-pad rounded-[24px]"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Portal de colaboradores</p><h1 className="mt-1 text-2xl font-bold tracking-tight">{overview?.partner_company_name ?? "Tus propiedades"}</h1><p className="mt-2 text-sm text-[var(--text-muted)]">Solicita limpiezas a {overview?.host_company_name ?? "tu proveedor"} sin acceder a su espacio de trabajo.</p></div></header>
         <PremiumTabs tabs={PARTNER_PORTAL_TABS} activeTab={activeTab} onChange={changeTab} mobileLabel="Sección del portal" />
-        {activeTab === "overview" && <section className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Card><CardContent><MapPin className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Propiedades activas</p><p className="mt-1 text-3xl font-bold">{overview?.location_count ?? 0}</p></CardContent></Card><Card><CardContent><CalendarClock className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Próximas estancias</p><p className="mt-1 text-3xl font-bold">{overview?.upcoming_reservation_count ?? 0}</p></CardContent></Card><Card><CardContent><ClipboardList className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Limpiezas pendientes</p><p className="mt-1 text-3xl font-bold">{overview?.pending_cleaning_count ?? 0}</p></CardContent></Card></div><Card><CardContent><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-semibold">Próximas solicitudes</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Solo ves las limpiezas solicitadas desde tus propiedades.</p></div><Button type="button" variant="outline" onClick={() => changeTab("requests")}>Ver todas</Button></div><RequestsTable reservations={upcomingReservations.slice(0, 5)} /></CardContent></Card></section>}
-        {activeTab === "properties" && <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{locations.length === 0 ? <div className="sm:col-span-2 lg:col-span-3"><EmptyState title="Aún no tienes propiedades" description="Tu empresa anfitriona puede ayudarte a configurarlas." /></div> : locations.map(location => <Card key={location.id}><CardContent><MapPin className="mb-4 size-5 text-accent" /><h2 className="font-semibold">{location.name}</h2><p className="mt-1 text-sm text-[var(--text-muted)]">{[location.address, location.postal_code, location.city].filter(Boolean).join(", ") || "Dirección no informada"}</p><p className="mt-4 text-xs font-medium text-[var(--text-muted)]">{location.is_active ? "Activa" : "Inactiva"}</p></CardContent></Card>)}</section>}
-        {activeTab === "requests" && <Card><CardContent><div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">Solicitudes de limpieza</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Cada salida genera una petición para tu proveedor asignado.</p></div><NewRequestDialog locations={locations} onCreated={handleCreated} /></div><RequestsTable reservations={reservations} /></CardContent></Card>}
+        {activeTab === "overview" && <section className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Card><CardContent><MapPin className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Propiedades activas</p><p className="mt-1 text-3xl font-bold">{overview?.location_count ?? 0}</p></CardContent></Card><Card><CardContent><CalendarClock className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Próximas estancias</p><p className="mt-1 text-3xl font-bold">{upcomingReservations.length}</p></CardContent></Card><Card><CardContent><ClipboardList className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Limpiezas pendientes</p><p className="mt-1 text-3xl font-bold">{pendingCleaningCount}</p></CardContent></Card></div><Card><CardContent><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-semibold">Próximas solicitudes</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Solo ves las limpiezas solicitadas desde tus propiedades.</p></div><Button type="button" variant="outline" onClick={() => changeTab("requests")}>Ver todas</Button></div><RequestsTable reservations={upcomingReservations.slice(0, 5)} locations={locations} /></CardContent></Card></section>}
+        {activeTab === "properties" && <section className="space-y-4"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">Tus propiedades</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Solo tú gestionas estas propiedades. Tu proveedor asignado recibe el trabajo de limpieza.</p></div><Button type="button" onClick={() => { setEditingLocation(null); setPropertyDialogOpen(true); }}><Plus className="size-4" />Nueva propiedad</Button></div><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{locations.length === 0 ? <div className="sm:col-span-2 lg:col-span-3"><EmptyState title="Aún no tienes propiedades" description="Crea una propiedad para empezar a solicitar limpiezas." /></div> : locations.map(location => <Card key={location.id}><CardContent><div className="flex items-start justify-between gap-3"><MapPin className="size-5 shrink-0 text-accent" /><ActionPopover triggerLabel={`Acciones para ${location.name}`} options={[{ label: "Editar", icon: Pencil, variant: "edit", onClick: () => { setEditingLocation(location); setPropertyDialogOpen(true); } }, { label: "Eliminar", icon: Trash2, variant: "delete", onClick: () => setDeletingLocation(location) }]} /></div><h2 className="mt-4 font-semibold">{location.name}</h2><p className="mt-1 text-sm text-[var(--text-muted)]">{[location.address, location.postal_code, location.city].filter(Boolean).join(", ") || "Dirección no informada"}</p><p className="mt-4 text-xs font-medium text-[var(--text-muted)]">{location.is_active ? "Activa" : "Inactiva"}</p></CardContent></Card>)}</div></section>}
+        {activeTab === "requests" && <Card><CardContent><div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><h2 className="font-semibold">Solicitudes de limpieza</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Cada salida genera una petición para tu proveedor asignado.</p></div><Button type="button" onClick={() => { setEditingReservation(null); setRequestDialogOpen(true); }} disabled={locations.length === 0}><Plus className="size-4" />Nueva solicitud</Button></div><RequestsTable reservations={reservations} locations={locations} onEdit={(reservation) => { setEditingReservation(reservation); setRequestDialogOpen(true); }} onDelete={setDeletingReservation} /></CardContent></Card>}
         {activeTab === "profile" && <Card><CardContent className="space-y-5"><div className="flex items-center gap-3"><UserRound className="size-8 text-accent" /><div><h2 className="font-semibold">{user?.full_name || "Usuario"}</h2><p className="text-sm text-[var(--text-muted)]">{user?.email}</p></div></div><div className="border-t border-[var(--border-soft)] pt-4 text-sm text-[var(--text-muted)]"><p>Este acceso está patrocinado por {overview?.host_company_name ?? "tu empresa anfitriona"}. Solo incluye tus propiedades y solicitudes de limpieza.</p></div></CardContent></Card>}
+        <PropertyDialog location={editingLocation} open={propertyDialogOpen} onOpenChange={(open) => { setPropertyDialogOpen(open); if (!open) setEditingLocation(null); }} onSaved={handleLocationSaved} />
+        {requestDialogOpen && <RequestDialog reservation={editingReservation} locations={locations} open={requestDialogOpen} onOpenChange={(open) => { setRequestDialogOpen(open); if (!open) setEditingReservation(null); }} onSaved={handleReservationSaved} />}
+        <DeleteConfirmDialog open={Boolean(deletingLocation)} onOpenChange={(open) => { if (!open) setDeletingLocation(null); }} title="¿Eliminar propiedad?" description="La propiedad se archivará y no admitirá nuevas solicitudes. Se conservarán los registros existentes." onConfirm={() => void deleteLocation()} isDeleting={deleting} confirmText="Eliminar propiedad" cancelText="Cancelar" />
+        <DeleteConfirmDialog open={Boolean(deletingReservation)} onOpenChange={(open) => { if (!open) setDeletingReservation(null); }} title="¿Eliminar solicitud?" description="La solicitud de limpieza y su trabajo asociado se eliminarán si aún no se han iniciado." onConfirm={() => void deleteReservation()} isDeleting={deleting} confirmText="Eliminar solicitud" cancelText="Cancelar" />
     </div>;
 }

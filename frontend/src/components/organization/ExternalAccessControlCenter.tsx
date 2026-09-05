@@ -27,6 +27,10 @@ type EditState = {
     user: User | null;
 };
 
+type ExternalAccessControlCenterProps = {
+    embedded?: boolean;
+};
+
 function statusBadge(active: boolean, copy: { active: string; revoked: string }) {
     return active ? (
         <Badge className="border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-semibold text-emerald-700">
@@ -36,7 +40,7 @@ function statusBadge(active: boolean, copy: { active: string; revoked: string })
     ) : <Badge variant="secondary" className="text-[10px] font-semibold">{copy.revoked}</Badge>;
 }
 
-export function ExternalAccessControlCenter() {
+export function ExternalAccessControlCenter({ embedded = false }: ExternalAccessControlCenterProps) {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const copy = dict.organization.external_access;
@@ -73,19 +77,25 @@ export function ExternalAccessControlCenter() {
     const summary = copyPagination(dict.organization.pagination.summary, pagination.page, pagination.pageSize, accesses.length);
     const externalRoles = useMemo(() => externalRole ? [externalRole] : [], [externalRole]);
 
+    const pageClassName = embedded ? "space-y-5" : "dashboard-page-content px-[3%] py-6 md:p-8";
+    const header = (
+        <PageHeader
+            icon={UserRound}
+            title={copy.title}
+            subtitle={copy.subtitle}
+            titleAs={embedded ? "h2" : "h1"}
+            className={embedded ? "mb-6" : "mb-7"}
+            actions={<Button type="button" onClick={() => setInviteOpen(true)} disabled={!externalRole}><UserPlus className="mr-2 size-4" />{copy.invite}</Button>}
+        />
+    );
+
     if (!userLoading && !isCompanyAdmin) {
-        return <div className="dashboard-page-content px-[3%] py-6 md:p-8"><PageHeader icon={UserRound} title={copy.title} subtitle={copy.subtitle} /><p className="mt-8 text-sm text-[var(--text-muted)]">{copy.no_permission}</p></div>;
+        return <div className={pageClassName}>{header}<p className="text-sm text-[var(--text-muted)]">{copy.no_permission}</p></div>;
     }
 
     return (
-        <div className="dashboard-page-content px-[3%] py-6 md:p-8">
-            <PageHeader
-                icon={UserRound}
-                title={copy.title}
-                subtitle={copy.subtitle}
-                className="mb-7"
-                actions={<Button type="button" onClick={() => setInviteOpen(true)} disabled={!externalRole}><UserPlus className="mr-2 size-4" />{copy.invite}</Button>}
-            />
+        <div className={pageClassName}>
+            {header}
 
             <p className="mb-5 rounded-2xl border border-accent/15 bg-accent/5 px-4 py-3 text-sm leading-6 text-[var(--text-muted)]">{copy.info}</p>
 

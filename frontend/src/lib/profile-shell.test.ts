@@ -67,7 +67,7 @@ test("external portal profiles skip operational data and notification polling", 
     assert.match(hook, /const isAccountant = isExternalPortalRole\(user\?\.role\?\.name\)/);
     assert.match(hook, /const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin/);
     assert.match(page, /!state\.isAccountant && \(/);
-    assert.match(notifications, /Boolean\(user\) && !isExternalPortalRole\(user\?\.role\?\.name\)/);
+    assert.match(notifications, /Boolean\(user\)[\s\S]*!isExternalPortalRole\(user\?\.role\?\.name\)[\s\S]*!isPartnerPortalRole\(user\?\.role\?\.name\)/);
 });
 
 test("external portal routes redirect before protected dashboard pages mount", () => {

@@ -95,10 +95,12 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ El acceso de gestoría actual es revocable y de solo lectura a Finanzas
   (`finance.read`), exige la funcionalidad `features.accountant_portal` y se
   limita a la empresa que emitió el grant.
-- ✅ Navegación unificada: las Personas internas se administran solo en
-  Organización; las empresas colaboradoras B2B se gestionan en Operación; y
-  las gestorías se administran en Organización > Accesos externos. La ruta
-  histórica de Equipo conserva redirecciones compatibles sin duplicar datos.
+- 🟡 **Red externa** unifica la navegación de empresas colaboradoras y accesos
+  profesionales en dos tabs, sin fusionar sus modelos ni permisos: la
+  colaboración B2B y el portal inmobiliario siguen en Operación; la gestoría
+  financiera sigue siendo un `ExternalAccessGrant` de solo lectura. Las rutas
+  históricas redirigen de forma compatible. Falta validación visual y de
+  producción antes de declararla publicada.
 - ✅ Los antiguos usuarios con rol `accountant` se convierten de forma
   conciliable: grant activo, membresía archivada, invitaciones convertidas y
   rol retirado. El recorrido se validó en PostgreSQL sobre una base efímera.
@@ -107,12 +109,29 @@ como WorkHive Core solo cuando el caso real las exige.
   `limits.partner_portals` de la empresa anfitriona y rutas propias. Solo
   muestra propiedades propias y solicitudes de limpieza hacia la anfitriona;
   no recibe dashboard, plazas ni perfiles internos.
-- 🟡 Falta validación visual y de producción del portal patrocinado antes de
-  declararlo publicado. No se ha convertido ningún dato existente de forma
-  automática.
-- ⬜ Diseñar el alta autoservicio/invitación de una inmobiliaria patrocinada
-  nueva. La invitación B2B histórica exige un tenant de pago y no puede
-  reutilizarse para este caso.
+- ✅ La inmobiliaria crea sus propias propiedades desde su portal. La propiedad
+  queda bajo su propiedad y gestión; se comparte automáticamente y solo con la
+  empresa anfitriona como proveedor predeterminado, que puede gestionar tareas
+  pero no reservas ni datos sensibles.
+- ✅ El portal usa el formulario canónico completo de ubicaciones también al
+  crear la primera propiedad. La inmobiliaria puede editar o archivar solo sus
+  propiedades y editar o cancelar una solicitud solo antes de que exista
+  trabajo iniciado, sesiones o factura; el backend conserva el aislamiento y
+  rechaza cambios de proveedor, colaboración o empresa anfitriona.
+- ✅ Los formularios modales compartidos avisan antes de descartar cambios por
+  cierre, fondo o Escape. Los flujos encadenados de la Red externa permiten
+  volver al paso anterior sin perder el borrador.
+- ✅ El alta de una **inmobiliaria patrocinada nueva** tiene una invitación
+  propia, distinta de la B2B histórica: email y código de un solo uso, datos
+  legales y contraseña en el enlace seguro, alta atómica de empresa sin plan,
+  colaboración aceptada y `PartnerPortalGrant` inicial. No crea membresía,
+  perfil, departamento, equipo ni plaza interna; la cuota se bloquea en la
+  empresa anfitriona al aceptar. Está cubierta por pruebas de aceptación,
+  denegación de dashboard genérico, revocación y no sobrescritura de cuentas,
+  además de validar la migración desde su revisión anterior.
+- 🟡 Falta validación visual y de producción del portal patrocinado y su alta
+  nueva antes de declararlos publicados. No se ha convertido ningún dato
+  existente de forma automática.
 - ⬜ Diseñar el portal de cliente y el selector de varias empresas para una
   persona externa; cada uno con política propia y sin heredar perfiles internos.
 
@@ -138,7 +157,7 @@ como WorkHive Core solo cuando el caso real las exige.
 | --- | --- |
 | Organización | `CompanyMembership`, departamentos, equipos y sus pertenencias. |
 | Autorización | Catálogo de permisos, perfiles, asignaciones y scopes por empresa, departamento, equipo o ubicación. |
-| Acceso externo | `ExternalAccessGrant` para gestoría financiera; `PartnerPortalGrant` para inmobiliaria patrocinada ligada a una colaboración. Cliente requiere política propia. |
+| Acceso externo | `ExternalAccessGrant` para gestoría financiera; `PartnerPortalGrant` para inmobiliaria patrocinada ligada a una colaboración. El alta patrocinada se inicia con `SponsoredPartnerInvitation`, no con una invitación B2B de pago. Cliente requiere política propia. |
 | Suscripción | Planes, entitlements, precios, suscripciones, overrides y auditoría. |
 | Privacidad | Solicitud de supresión separada de suspender o retirar a una persona de una empresa. |
 
@@ -298,10 +317,18 @@ como WorkHive Core solo cuando el caso real las exige.
   solo lectura financiera, sin plaza ni membresía interna.
 - ✅ Portal de inmobiliaria existente: acceso patrocinado revocable, sin plaza
   interna ni dashboard completo; propiedades propias y solicitudes al
-  proveedor anfitrión están aisladas por backend.
-- 🟡 Validación visual y despliegue del portal de inmobiliaria pendientes.
-- ⬜ Alta patrocinada de inmobiliaria nueva, portal de cliente y selector de
-  varias empresas para personas externas.
+  proveedor anfitrión están aisladas por backend. La inmobiliaria puede crear
+  propiedades propias, compartidas automáticamente solo con su anfitriona,
+  editarlas o archivarlas; las solicitudes solo se modifican antes de iniciar
+  el trabajo o facturarlo.
+- 🟡 Validación visual y despliegue del portal de inmobiliaria y su alta
+  patrocinada nueva pendientes.
+- ✅ Alta patrocinada de inmobiliaria nueva: invitación de un solo uso,
+  empresa sin plan, colaboración aceptada y grant inicial sin plaza interna.
+- 🟡 Red externa: navegación común con tabs de colaboradores operativos y
+  accesos profesionales; conserva modelos y autorización separados. Pendiente
+  de validación visual y despliegue junto al portal patrocinado.
+- ⬜ Portal de cliente y selector de varias empresas para personas externas.
 - ⬜ Aplicación ampliada de trabajador, API pública e integraciones auditables.
 - ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
 
@@ -322,9 +349,8 @@ cualquier punto como ✅.
 
 ## 7. Orden de trabajo vigente
 
-1. Validar visualmente y en producción el portal patrocinado antes de marcarlo
-   como publicado; después diseñar su alta de inmobiliaria nueva sin tenant de
-   pago.
+1. Validar visualmente y en producción el portal patrocinado y el alta nueva
+   antes de marcarlos como publicados.
 2. Cerrar los dos puntos restantes de Fase 1: prueba de carga concurrente en
    PostgreSQL y ciclo completo de supresión/retención.
 3. Completar Fase 2: prospectos, cartera comercial y perfil Comercial seguro.

@@ -1,10 +1,52 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+
+from app.schemas.location_access import LocationAccessInput
+from app.schemas.location_workspace import (
+    LocationProfileInput,
+    LocationSpaceInput,
+)
 
 
 class PartnerPortalGrantCreate(BaseModel):
     user_id: int
+
+
+class PartnerPortalLocationCreate(BaseModel):
+    """Property data a sponsored manager may own without changing its provider."""
+
+    name: str = Field(min_length=1, max_length=100)
+    address: str = Field(min_length=1, max_length=255)
+    city: str = Field(min_length=1, max_length=100)
+    postal_code: str | None = Field(default=None, max_length=20)
+    location_type: str | None = Field(default="private", max_length=50)
+    profile: LocationProfileInput | None = None
+    access: LocationAccessInput | None = None
+    spaces: list[LocationSpaceInput] = Field(default_factory=list, max_length=500)
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class PartnerPortalLocationUpdate(BaseModel):
+    """Whitelisted mutable property fields for a sponsored manager."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    address: str | None = Field(default=None, min_length=1, max_length=255)
+    city: str | None = Field(default=None, min_length=1, max_length=100)
+    postal_code: str | None = Field(default=None, max_length=20)
+    location_type: str | None = Field(default=None, max_length=50)
+    profile: LocationProfileInput | None = None
+    access: LocationAccessInput | None = None
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    @field_validator("name", "address", "city")
+    @classmethod
+    def required_when_provided(cls, value: str | None) -> str:
+        if value is None:
+            raise ValueError("This field cannot be null")
+        return value
 
 
 class PartnerPortalGrantResponse(BaseModel):

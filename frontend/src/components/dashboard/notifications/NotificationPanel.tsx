@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
-import { isExternalPortalRole } from "@/domain/access/roles";
+import { isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
 import {
     HEADER_ALERT_BADGE_CLASS,
     HEADER_UPDATE_BADGE_CLASS,
@@ -23,7 +23,12 @@ export function NotificationPanel() {
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const [activeNotificationTab, setActiveNotificationTab] = useState<NotificationTab>("primary");
     const notificationsRef = useRef<HTMLDivElement>(null);
-    const enabled = Boolean(user) && !isExternalPortalRole(user?.role?.name);
+    // Sponsored property managers deliberately have no access to the internal
+    // notification feeds. Loading those feeds would return the expected 402
+    // for their non-paying tenant and must never bounce them out of the portal.
+    const enabled = Boolean(user)
+        && !isExternalPortalRole(user?.role?.name)
+        && !isPartnerPortalRole(user?.role?.name);
     const notifications = useNotifications({
         enabled,
         userId: user?.id,

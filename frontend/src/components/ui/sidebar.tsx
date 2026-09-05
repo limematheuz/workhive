@@ -55,7 +55,9 @@ function SidebarProvider({ defaultOpen = true, open: controlledOpen, onOpenChang
 
     React.useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key.toLowerCase() === "b" && (event.metaKey || event.ctrlKey)) {
+            // Synthetic and browser-extension keyboard events are not required
+            // to include a key. Do not let a malformed event break navigation.
+            if (typeof event.key === "string" && event.key.toLowerCase() === "b" && (event.metaKey || event.ctrlKey)) {
                 event.preventDefault();
                 toggleSidebar();
             }
