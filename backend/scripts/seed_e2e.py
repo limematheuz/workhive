@@ -20,6 +20,11 @@ from app.models.company import Company
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.location import Location
+from app.models.permission_profile import (
+    MembershipPermissionProfileAssignment,
+    MembershipPermissionProfileScope,
+    PermissionProfile,
+)
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
 from app.models.reservation import Reservation
@@ -27,6 +32,8 @@ from app.models.role import Role
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.services.invoice_fiscal import party_snapshots
+from app.services import organization_bootstrap_service
+from app.services.organization_base_profile_service import COMMERCIAL_PROFILE_NAME
 
 E2E_PASSWORD = "e2e-password"
 
@@ -48,7 +55,8 @@ def seed() -> None:
     with SessionLocal() as db:
         superadmin_role = Role(name="superadmin", description="E2E platform administrator")
         admin_role = Role(name="admin", description="E2E company administrator")
-        db.add_all([superadmin_role, admin_role])
+        viewer_role = Role(name="viewer", description="E2E company worker")
+        db.add_all([superadmin_role, admin_role, viewer_role])
         db.flush()
 
         company = Company(
@@ -84,6 +92,15 @@ def seed() -> None:
             is_active=True,
             email_verified_at=now,
         )
+        commercial = User(
+            email="commercial@e2e.example",
+            hashed_password=get_password_hash(E2E_PASSWORD),
+            full_name="E2E Comercial",
+            role_id=viewer_role.id,
+            company_id=company.id,
+            is_active=True,
+            email_verified_at=now,
+        )
         client = Client(
             name="E2E Client",
             client_type="company",
@@ -94,8 +111,38 @@ def seed() -> None:
             country="España",
             company_id=company.id,
         )
-        db.add_all([superadmin, admin, client])
+        db.add_all([superadmin, admin, commercial, client])
         db.flush()
+
+        organization_bootstrap_service.ensure_user_membership(db, admin)
+        commercial_membership = organization_bootstrap_service.ensure_user_membership(
+            db, commercial
+        )
+        commercial_profile = (
+            db.query(PermissionProfile)
+            .filter(
+                PermissionProfile.company_id == company.id,
+                PermissionProfile.name == COMMERCIAL_PROFILE_NAME,
+            )
+            .one()
+        )
+        commercial_assignment = MembershipPermissionProfileAssignment(
+            company_id=company.id,
+            company_membership_id=commercial_membership.id,
+            permission_profile_id=commercial_profile.id,
+            assigned_by_user_id=admin.id,
+            is_active=True,
+        )
+        db.add(commercial_assignment)
+        db.flush()
+        db.add(
+            MembershipPermissionProfileScope(
+                company_id=company.id,
+                profile_assignment_id=commercial_assignment.id,
+                scope_type="company",
+                scope_id=company.id,
+            )
+        )
 
         location = Location(
             name="E2E Apartment",

@@ -24,6 +24,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { formatDateLong } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
+import { canManageFinance, canViewFinance } from "@/domain/access/roles";
 import { Client, ClientService } from "@/services/client.service";
 import { Company, CompanyService } from "@/services/company.service";
 import {
@@ -191,6 +192,8 @@ function translateIssueError(message: string): string {
 export function useInvoiceDetail(invoiceId: number) {
     const { dict, locale } = useDictionary();
     const { user, loading: userLoading } = useUser();
+    const canViewInvoice = canViewFinance(user);
+    const canManageInvoice = canManageFinance(user);
     const [invoice, setInvoice] = useState<Invoice | null>(null);
     const [client, setClient] = useState<Client | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
@@ -221,7 +224,7 @@ export function useInvoiceDetail(invoiceId: number) {
 
     if (
         !userLoading
-        && (!user || !["admin", "superadmin"].includes(user.role?.name || ""))
+        && (!user || !canViewInvoice)
     ) {
         redirect("/dashboard");
     }
@@ -230,7 +233,7 @@ export function useInvoiceDetail(invoiceId: number) {
         if (
             userLoading
             || !user
-            || !["admin", "superadmin"].includes(user.role?.name || "")
+            || !canViewInvoice
         ) {
             return;
         }
@@ -271,7 +274,7 @@ export function useInvoiceDetail(invoiceId: number) {
         } finally {
             setLoading(false);
         }
-    }, [dict.invoices.error_load, invoiceId, user, userLoading]);
+    }, [canViewInvoice, dict.invoices.error_load, invoiceId, user, userLoading]);
 
     const loadAllDataEvent = useEffectEvent(() => {
         void loadAllData();
@@ -454,7 +457,7 @@ export function useInvoiceDetail(invoiceId: number) {
     };
 
     const openEditFromQueryEvent = useEffectEvent(() => {
-        if (!invoice || invoice.status !== "draft" || isEditMode) return;
+        if (!canManageInvoice || !invoice || invoice.status !== "draft" || isEditMode) return;
         const queryParams = new URLSearchParams(window.location.search);
         if (queryParams.get("edit") !== "true") return;
         handleEnterEditMode();
@@ -470,7 +473,7 @@ export function useInvoiceDetail(invoiceId: number) {
         return () => {
             active = false;
         };
-    }, [invoice, loading]);
+    }, [canManageInvoice, invoice, loading]);
 
     const handleDiscardEdit = () => {
         setIsEditMode(false);
@@ -694,6 +697,8 @@ export function useInvoiceDetail(invoiceId: number) {
         dict,
         user,
         userLoading,
+        canManageInvoice,
+        canViewInvoice,
         invoice,
         client,
         company,

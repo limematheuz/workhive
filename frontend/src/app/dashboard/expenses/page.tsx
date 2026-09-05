@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useEffectEvent, useMemo, useState, type FormEvent } from "react";
 import { Loader2, Plus, Wallet } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { ExpenseFormDialog } from "@/components/expenses/ExpenseFormDialog";
 import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
-import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     buildExpensePayload,
@@ -38,7 +39,8 @@ function summarizeExpenses(expenses: Expense[]) {
 export default function ExpensesPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
-    const canViewExpenses = canAdministerCompany(user) && !isPlatformSuperadmin(user);
+    const canViewExpenses = canViewFinance(user) && !isPlatformSuperadmin(user);
+    const canManageExpenses = canManageFinance(user) && !isPlatformSuperadmin(user);
     const text = dict.expenses;
 
     const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -162,6 +164,8 @@ export default function ExpensesPage() {
         }
     };
 
+    if (!userLoading && !canViewExpenses) redirect("/dashboard");
+
     if (userLoading || loading) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
@@ -171,14 +175,7 @@ export default function ExpensesPage() {
         );
     }
 
-    if (!canViewExpenses) {
-        return (
-            <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-6">
-                <p className="text-lg font-black text-[var(--text-main)]">{text.restricted_title}</p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">{text.restricted_desc}</p>
-            </div>
-        );
-    }
+    if (!canViewExpenses) return null;
 
     return (
         <div className="min-h-full px-3 py-4 sm:px-5 lg:px-7">
@@ -187,7 +184,7 @@ export default function ExpensesPage() {
                     icon={Wallet}
                     title={text.title}
                     subtitle={text.subtitle}
-                    actions={(
+                    actions={canManageExpenses ? (
                         <button
                             type="button"
                             onClick={openCreateForm}
@@ -196,7 +193,7 @@ export default function ExpensesPage() {
                             <Plus className="h-4 w-4" />
                             {text.add_expense}
                         </button>
-                    )}
+                    ) : undefined}
                 />
                 <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} />
 
@@ -210,9 +207,10 @@ export default function ExpensesPage() {
                     onMonthChange={setMonth}
                     onEdit={startEdit}
                     onDelete={(expense) => void handleDelete(expense)}
+                    canManage={canManageExpenses}
                 />
 
-                <ExpenseFormDialog
+                {canManageExpenses && <ExpenseFormDialog
                     open={isFormOpen}
                     onOpenChange={(open) => {
                         setIsFormOpen(open);
@@ -226,7 +224,7 @@ export default function ExpensesPage() {
                     saving={saving}
                     clients={clients}
                     onSubmit={(event) => void handleSubmit(event)}
-                />
+                />}
             </div>
         </div>
     );

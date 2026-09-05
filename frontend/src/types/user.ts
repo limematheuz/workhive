@@ -13,6 +13,8 @@ export interface User {
     photo_url?: string | null;
     active_location_id?: number | null;
     active_location_name?: string | null;
+    can_view_finance?: boolean;
+    can_manage_finance?: boolean;
 }
 
 export interface UserStatsResponse {

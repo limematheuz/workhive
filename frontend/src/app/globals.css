@@ -478,7 +478,8 @@
 
 /* Frosted sheet — translucent fill + blur (no transform) */
 [data-slot="dialog-content"],
-[data-slot="dialog-content"].dialog-glass {
+[data-slot="dialog-content"].dialog-glass,
+[data-slot="alert-dialog-content"].dialog-glass {
   background-color: var(--glass-sheet-bg) !important;
   -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
   backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
@@ -1189,6 +1190,7 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 
 .light-mode [data-slot="dialog-content"],
 .light-mode [data-slot="dialog-content"].dialog-glass,
+.light-mode [data-slot="alert-dialog-content"].dialog-glass,
 .light-mode [data-slot="sheet-content"] {
   background-color: var(--glass-sheet-bg) !important;
   border-color: var(--glass-sheet-border) !important;

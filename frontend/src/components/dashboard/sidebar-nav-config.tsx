@@ -36,10 +36,10 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         ] : []),
         { href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> },
         ...(flags.isCompanyAdmin ? [
-            { href: "/dashboard/quotes", label: dict.quotes?.nav_label ?? "Presupuestos", exact: false, icon: <FileText /> },
             { href: "/dashboard/organization", label: dict.organization.nav_label, exact: false, icon: <Network /> },
         ] : []),
         ...(flags.canViewFinance ? [
+            { href: "/dashboard/quotes", label: dict.quotes?.nav_label ?? "Presupuestos", exact: false, icon: <FileText /> },
             { href: "/dashboard/invoices", label: dict.dashboard.invoices, exact: false, icon: <ReceiptText /> },
             { href: "/dashboard/invoice-summary", label: dict.invoices.summary_nav, exact: false, icon: <FileChartColumn /> },
             { href: "/dashboard/expenses", label: dict.expenses.title, exact: false, icon: <WalletCards /> },

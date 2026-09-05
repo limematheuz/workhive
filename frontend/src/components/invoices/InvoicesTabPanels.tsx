@@ -18,6 +18,7 @@ type InvoicesTabPanelsProps = {
     filtersProps: ComponentProps<typeof InvoicesFiltersBar>;
     jobsProps: ComponentProps<typeof InvoiceableJobsSection>;
     listProps: ComponentProps<typeof InvoicesListSection>;
+    canManage: boolean;
 };
 
 export function InvoicesTabPanels({
@@ -27,6 +28,7 @@ export function InvoicesTabPanels({
     filtersProps,
     jobsProps,
     listProps,
+    canManage,
 }: InvoicesTabPanelsProps) {
     return (
         <>
@@ -34,7 +36,7 @@ export function InvoicesTabPanels({
                 layout="fit"
                 tabs={[
                     { id: "invoices" as const, label: tabLabels.tab_invoices || "Facturas", icon: Receipt },
-                    { id: "jobs" as const, label: tabLabels.tab_jobs || "Trabajos hechos", icon: BriefcaseBusiness },
+                    ...(canManage ? [{ id: "jobs" as const, label: tabLabels.tab_jobs || "Trabajos hechos", icon: BriefcaseBusiness }] : []),
                 ]}
                 activeTab={activeView}
                 onChange={onActiveViewChange}

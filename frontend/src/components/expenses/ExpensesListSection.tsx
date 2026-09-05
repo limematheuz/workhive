@@ -20,6 +20,7 @@ type ExpensesListSectionProps = {
     onMonthChange: (value: string) => void;
     onEdit: (expense: Expense) => void;
     onDelete: (expense: Expense) => void;
+    canManage: boolean;
 };
 
 const GRID =
@@ -35,11 +36,12 @@ export function ExpensesListSection({
     onMonthChange,
     onEdit,
     onDelete,
+    canManage,
 }: ExpensesListSectionProps) {
     const { dict } = useDictionary();
     const text = dict.expenses;
 
-    const getExpenseActions = (expense: Expense): PopoverOption[] => [
+    const getExpenseActions = (expense: Expense): PopoverOption[] => !canManage ? [] : [
         {
             label: text.edit,
             icon: Pencil,

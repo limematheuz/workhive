@@ -11,6 +11,7 @@ type InvoicesPageHeaderProps = {
     subtitle: string;
     newInvoiceLabel: string;
     onCreateInvoice: () => void;
+    canManage: boolean;
 };
 
 export function InvoicesPageHeader({
@@ -18,6 +19,7 @@ export function InvoicesPageHeader({
     subtitle,
     newInvoiceLabel,
     onCreateInvoice,
+    canManage,
 }: InvoicesPageHeaderProps) {
     return (
         <PageHeader
@@ -25,7 +27,7 @@ export function InvoicesPageHeader({
             title={title}
             subtitle={subtitle}
             className="mb-6"
-            actions={(
+            actions={canManage ? (
                 <Button
                     type="button"
                     onClick={onCreateInvoice}
@@ -34,7 +36,7 @@ export function InvoicesPageHeader({
                     <Plus className="h-4 w-4" />
                     {newInvoiceLabel}
                 </Button>
-            )}
+            ) : undefined}
         />
     );
 }

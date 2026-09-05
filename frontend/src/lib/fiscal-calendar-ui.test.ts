@@ -7,8 +7,8 @@ const root = resolve(import.meta.dirname, "..");
 const page = readFileSync(resolve(root, "app/dashboard/fiscal-calendar/page.tsx"), "utf8");
 const sidebar = readFileSync(resolve(root, "components/dashboard/sidebar-nav-config.tsx"), "utf8");
 
-test("fiscal calendar is company-admin scoped and saves explicit obligations", () => {
-    assert.match(page, /canAdministerCompany\(user\) && !isPlatformSuperadmin\(user\)/);
+test("fiscal calendar is finance-manager scoped and saves explicit obligations", () => {
+    assert.match(page, /canManageFinance\(user\) && !isPlatformSuperadmin\(user\)/);
     assert.match(page, /quarterly_vat_enabled/);
     assert.match(page, /quarterly_withholding_enabled/);
     assert.match(page, /fiscal_reminder_days/);

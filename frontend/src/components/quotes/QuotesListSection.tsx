@@ -15,11 +15,16 @@ type QuotesListSectionProps = {
     quotes: Quote[]; statusLabels: Record<string, string>; emptyLabel: string;
     columnLabels: { title: string; client: string; date: string; total: string; status: string; actions: string };
     getClientName: (quote: Quote) => string; onViewQuote: (quote: Quote) => void; onEditQuote: (quote: Quote) => void; onDeleteQuote: (quoteId: number) => void;
+    canManage: boolean;
 };
 
-export function QuotesListSection({ quotes, statusLabels, emptyLabel, columnLabels, getClientName, onViewQuote, onEditQuote, onDeleteQuote }: QuotesListSectionProps) {
+export function QuotesListSection({ quotes, statusLabels, emptyLabel, columnLabels, getClientName, onViewQuote, onEditQuote, onDeleteQuote, canManage }: QuotesListSectionProps) {
     const pagination = useDataTablePagination(quotes, 10);
-    const actions = (quote: Quote) => [{ label: "Ver", icon: Eye, onClick: () => onViewQuote(quote) }, ...(isQuoteContentEditable(quote.status) ? [{ label: "Editar", icon: Edit3, onClick: () => onEditQuote(quote), variant: "edit" as const }] : []), { label: "Eliminar", icon: Trash2, onClick: () => onDeleteQuote(quote.id), variant: "delete" as const }];
+    const actions = (quote: Quote) => [
+        { label: "Ver", icon: Eye, onClick: () => onViewQuote(quote) },
+        ...(canManage && isQuoteContentEditable(quote.status) ? [{ label: "Editar", icon: Edit3, onClick: () => onEditQuote(quote), variant: "edit" as const }] : []),
+        ...(canManage ? [{ label: "Eliminar", icon: Trash2, onClick: () => onDeleteQuote(quote.id), variant: "delete" as const }] : []),
+    ];
     return <section className="billing-surface overflow-hidden rounded-[26px]">
         <header className="px-5 py-4"><h2 className="text-sm font-semibold text-[var(--text-main)]">Presupuestos registrados</h2><p className="mt-1 text-xs text-[var(--text-muted)]">Pulsa una fila para abrir el detalle sin pasos extra.</p></header>
         {quotes.length === 0 ? <div className="px-5 py-16 text-center"><FileText className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" /><p className="text-sm font-medium text-[var(--text-muted)]">{emptyLabel}</p></div> : <>

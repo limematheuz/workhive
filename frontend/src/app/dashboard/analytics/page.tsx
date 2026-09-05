@@ -6,6 +6,7 @@ import {
     useMemo,
     useState,
 } from "react";
+import { redirect } from "next/navigation";
 import {
     Activity,
     ArrowDownRight,
@@ -225,6 +226,8 @@ export default function FinanceAnalyticsPage() {
         [expenses, period],
     );
 
+    if (!userLoading && !canViewAnalytics) redirect("/dashboard");
+
     if (userLoading || loading) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
@@ -234,14 +237,7 @@ export default function FinanceAnalyticsPage() {
         );
     }
 
-    if (!canViewAnalytics) {
-        return (
-            <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-6">
-                <p className="text-lg font-black text-[var(--text-main)]">{text.restricted_title}</p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">{text.restricted_desc}</p>
-            </div>
-        );
-    }
+    if (!canViewAnalytics) return null;
 
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">

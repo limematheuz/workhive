@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock3, Download, FileSpreadsheet, FileText, Loader2, Pencil, Plus, ReceiptText, Search, Upload } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { SalesLedgerImportDialog } from "@/components/invoices/SalesLedgerImportDialog";
 import { SalesLedgerRecordDialog } from "@/components/invoices/SalesLedgerRecordDialog";
@@ -9,7 +10,7 @@ import { DataListTable, type DataListColumn } from "@/components/ui/data-list-ta
 import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary, type Dictionary } from "@/lib/dictionary-context";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { getPercentageChange } from "@/lib/metric-trend";
@@ -60,7 +61,8 @@ export default function InvoiceSummaryPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const copy = dict.invoices;
-    const canViewSummary = canAdministerCompany(user) && !isPlatformSuperadmin(user);
+    const canViewSummary = canViewFinance(user) && !isPlatformSuperadmin(user);
+    const canManageSummary = canManageFinance(user) && !isPlatformSuperadmin(user);
     const [entries, setEntries] = useState<SalesLedgerEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -163,16 +165,11 @@ export default function InvoiceSummaryPage() {
         }
     };
 
+    if (!userLoading && !canViewSummary) redirect("/dashboard");
+
     if (userLoading) return <SummaryLoading label={dict.dashboard.loading} />;
 
-    if (!canViewSummary) {
-        return (
-            <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-6">
-                <p className="text-lg font-black text-[var(--text-main)]">{dict.finance_analytics.restricted_title}</p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">{dict.finance_analytics.restricted_desc}</p>
-            </div>
-        );
-    }
+    if (!canViewSummary) return null;
 
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
@@ -218,21 +215,21 @@ export default function InvoiceSummaryPage() {
                             </select>
                             <div className="flex flex-wrap gap-2">
                                 <Button type="button" variant="outline" size="sm" onClick={() => downloadCsv(SALES_LEDGER_CSV_TEMPLATE, "plantilla-libro-ventas.csv")}><FileSpreadsheet />{copy.ledger_csv_template}</Button>
-                                <Button type="button" variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}><Upload />{copy.ledger_import_csv}</Button>
+                                {canManageSummary && <Button type="button" variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}><Upload />{copy.ledger_import_csv}</Button>}
                                 <Button type="button" variant="outline" size="sm" onClick={() => downloadCsv(buildSalesLedgerCsv(rows), `libro-ventas${year ? `-${year}` : ""}.csv`)} disabled={rows.length === 0}><Download />{copy.ledger_export_csv}</Button>
-                                <Button type="button" size="sm" onClick={openNewRecord}><Plus />{copy.ledger_add_record}</Button>
+                                {canManageSummary && <Button type="button" size="sm" onClick={openNewRecord}><Plus />{copy.ledger_add_record}</Button>}
                             </div>
                         </div>
                     )}
                     empty={<p className="text-sm text-[var(--text-muted)]">{copy.ledger_empty}</p>}
                     rowAriaLabel={(entry) => `${entry.document_number}: ${entry.client_name}`}
-                    renderDesktopRow={(entry) => <LedgerDesktopRow entry={entry} copy={copy} onEdit={openEditRecord} />}
-                    renderCompactRow={(entry) => <LedgerCompactRow entry={entry} copy={copy} onEdit={openEditRecord} />}
+                    renderDesktopRow={(entry) => <LedgerDesktopRow entry={entry} copy={copy} onEdit={openEditRecord} canManage={canManageSummary} />}
+                    renderCompactRow={(entry) => <LedgerCompactRow entry={entry} copy={copy} onEdit={openEditRecord} canManage={canManageSummary} />}
                 />
             </div>
 
-            <SalesLedgerRecordDialog key={`${recordDialogOpen}-${selectedEntry?.source_id ?? "new"}`} entry={selectedEntry} open={recordDialogOpen} busy={saving} onOpenChange={setRecordDialogOpen} onSave={saveRecord} onDelete={deleteRecord} />
-            <SalesLedgerImportDialog open={importDialogOpen} busy={saving} onOpenChange={setImportDialogOpen} onPreview={previewImport} onImport={importCsv} />
+            {canManageSummary && <SalesLedgerRecordDialog key={`${recordDialogOpen}-${selectedEntry?.source_id ?? "new"}`} entry={selectedEntry} open={recordDialogOpen} busy={saving} onOpenChange={setRecordDialogOpen} onSave={saveRecord} onDelete={deleteRecord} />}
+            {canManageSummary && <SalesLedgerImportDialog open={importDialogOpen} busy={saving} onOpenChange={setImportDialogOpen} onPreview={previewImport} onImport={importCsv} />}
         </div>
     );
 }
@@ -242,7 +239,7 @@ function toTrend(current: number, previous: number, comparisonDirection?: "highe
     return value === null ? undefined : { value, comparisonDirection };
 }
 
-function LedgerDesktopRow({ entry, copy, onEdit }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void }) {
+function LedgerDesktopRow({ entry, copy, onEdit, canManage }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void; canManage: boolean }) {
     return (
         <>
             <span className="truncate font-mono text-xs font-semibold text-[var(--text-main)]">{entry.document_number}</span>
@@ -252,12 +249,12 @@ function LedgerDesktopRow({ entry, copy, onEdit }: { entry: SalesLedgerEntry; co
             <span className="text-right font-mono text-xs text-[var(--text-main)]">{formatCurrency(entry.base_amount)}</span>
             <span className="text-right font-mono text-xs text-[var(--text-main)]">{formatCurrency(entry.tax_amount)}</span>
             <PaymentBadge entry={entry} copy={copy} />
-            <span className="flex justify-end">{entry.is_editable && <Button type="button" size="icon-xs" variant="outline" onClick={() => onEdit(entry)} aria-label={copy.ledger_action_edit}><Pencil /></Button>}</span>
+            <span className="flex justify-end">{canManage && entry.is_editable && <Button type="button" size="icon-xs" variant="outline" onClick={() => onEdit(entry)} aria-label={copy.ledger_action_edit}><Pencil /></Button>}</span>
         </>
     );
 }
 
-function LedgerCompactRow({ entry, copy, onEdit }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void }) {
+function LedgerCompactRow({ entry, copy, onEdit, canManage }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void; canManage: boolean }) {
     return (
         <div className="space-y-3">
             <div className="flex items-start justify-between gap-3">
@@ -269,7 +266,7 @@ function LedgerCompactRow({ entry, copy, onEdit }: { entry: SalesLedgerEntry; co
                 <span><span className="block text-[10px] text-[var(--text-muted)]">{copy.ledger_vat}</span><strong className="font-mono text-[var(--text-main)]">{formatCurrency(entry.tax_amount)}</strong></span>
                 <span><span className="block text-[10px] text-[var(--text-muted)]">{copy.ledger_total}</span><strong className="font-mono text-[var(--text-main)]">{formatCurrency(entry.total_amount)}</strong></span>
             </div>
-            <div className="flex items-center justify-between gap-3 text-[11px] text-[var(--text-muted)]"><span>{formatDate(entry.entry_date)}</span>{entry.is_editable ? <Button type="button" size="xs" variant="outline" onClick={() => onEdit(entry)}><Pencil />{copy.ledger_action_edit}</Button> : <span>{copy.ledger_invoice_read_only}</span>}</div>
+            <div className="flex items-center justify-between gap-3 text-[11px] text-[var(--text-muted)]"><span>{formatDate(entry.entry_date)}</span>{canManage && entry.is_editable ? <Button type="button" size="xs" variant="outline" onClick={() => onEdit(entry)}><Pencil />{copy.ledger_action_edit}</Button> : <span>{copy.ledger_invoice_read_only}</span>}</div>
         </div>
     );
 }

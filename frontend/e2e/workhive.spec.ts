@@ -57,3 +57,24 @@ test("company workflow exposes locations, reservations, tasks, quotes, and invoi
     expect(download.suggestedFilename()).toMatch(/^INV-\d{4}-0001\.pdf$/);
     expect(await download.failure()).toBeNull();
 });
+
+test("commercial profile can work with clients without seeing financial routes", async ({ page }) => {
+    test.setTimeout(120_000);
+    await login(page, "commercial@e2e.example");
+
+    await page.goto("/dashboard/clients");
+    await expect(page.getByRole("heading", { name: /clientes/i }).first()).toBeVisible();
+
+    for (const route of [
+        "/dashboard/quotes",
+        "/dashboard/invoices",
+        "/dashboard/expenses",
+        "/dashboard/invoice-summary",
+        "/dashboard/fiscal-calendar",
+        "/dashboard/analytics",
+        "/dashboard/fiscal-summary",
+    ]) {
+        await page.goto(route);
+        await expect(page).toHaveURL(/\/dashboard\/?$/, { timeout: 15_000 });
+    }
+});

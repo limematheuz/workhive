@@ -68,7 +68,13 @@ export function canAdministerCompany(user?: User | null): boolean {
 }
 
 export function canViewFinance(user?: User | null): boolean {
+    if (typeof user?.can_view_finance === "boolean") return user.can_view_finance;
     return canViewFinanceRole(getRoleName(user));
+}
+
+export function canManageFinance(user?: User | null): boolean {
+    if (typeof user?.can_manage_finance === "boolean") return user.can_manage_finance;
+    return isCompanyAdminRole(getRoleName(user));
 }
 
 export function canManageCompanyCalendar(user?: User | null): boolean {

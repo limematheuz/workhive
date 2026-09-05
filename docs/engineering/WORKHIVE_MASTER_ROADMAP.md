@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 3 de septiembre de 2026.
+Actualizado: 6 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -10,6 +10,8 @@ documentos separados de blueprint, roadmap y control de entregas.
 
 - ✅ Entregado y validado mediante pruebas y revisión de producto. Se indica si
   aún está solamente en `main` local.
+- 🟡 Implementado y cubierto por pruebas, pendiente de revisión visual o de
+  producción; no se considera publicado.
 - ⬜ Pendiente. No se debe asumir que existe ni usarlo como dependencia.
 - Un encabezado de fase sin check significa que contiene trabajo hecho y
   trabajo pendiente; los checks son siempre de puntos concretos.
@@ -36,12 +38,15 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ## 2. Estado de publicación
 
-- ✅ Producción: `v1.5.4` (`fa8be24`).
-- ✅ Validado en `main` local: `07e0e83` aclara Seguimiento comercial y añade
-  paginación a Facturas y Presupuestos.
+- ✅ Producción: `v1.6.0` (`ec0a755`), publicada desde `main`.
+- ✅ `main` local y `origin/main` están alineadas en `3a0c034`; incluye la
+  preparación versionada de mantenimiento seguro del host, observabilidad y
+  migración de cuenta AWS. La asociación semanal, agente CloudWatch y alarma
+  se aplican en AWS como paso operativo separado.
+- ✅ Seguimiento comercial y la paginación de Facturas y Presupuestos están
+  publicados; el cambio inicial fue `07e0e83`.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
   control de entregas duplicados; los runbooks operativos se conservan.
-- ⬜ Publicar los commits locales posteriores a `v1.5.3` cuando se autorice.
 
 ## 3. Decisiones cerradas
 
@@ -257,12 +262,17 @@ como WorkHive Core solo cuando el caso real las exige.
   shadcn en escritorio y tarjetas en móvil cuando corresponde.
 - ✅ Facturas y Presupuestos usan paginación, encabezados azules y separadores
   de filas (`07e0e83`, validado localmente).
-- ⬜ `client_account_assignments`: cartera visible y responsable comercial por
-  cliente.
-- ⬜ Prospecto como estado de la misma ficha y conversión a cliente sin copiar
-  contactos, actividad ni ubicaciones.
-- ⬜ Perfil Comercial sin acceso a precios, facturas, costes ni margen, probado
-  de extremo a extremo en backend y frontend.
+- ✅ `client_account_assignments`: cartera visible y responsable comercial por
+  cliente, con selección de responsables elegibles, filtros y regresiones de
+  aislamiento (`1c0c64f`, `fda26b0`, `f756555`).
+- ✅ Prospecto como estado de la misma ficha y conversión a cliente sin copiar
+  contactos, actividad ni ubicaciones. La regresión cubre la conservación de
+  las tres relaciones al pasar de `lead` a `client`.
+- ✅ Perfil Comercial sin acceso a precios, facturas, costes ni margen: el
+  backend resuelve `finance.read/manage` y el frontend consume esas señales
+  canónicas para navegación y rutas financieras. La prueba E2E autenticada
+  confirma acceso a Clientes y redirección desde Presupuestos, Facturas,
+  Gastos, registros y resúmenes fiscales, Analítica y Calendario fiscal.
 
 ### Fase 3 — Catálogo, presupuestos y contratos
 
@@ -349,15 +359,12 @@ cualquier punto como ✅.
 
 ## 7. Orden de trabajo vigente
 
-1. Validar visualmente y en producción el portal patrocinado y el alta nueva
-   antes de marcarlos como publicados.
-2. Cerrar los dos puntos restantes de Fase 1: prueba de carga concurrente en
-   PostgreSQL y ciclo completo de supresión/retención.
-3. Completar Fase 2: prospectos, cartera comercial y perfil Comercial seguro.
-4. Construir Fase 3: catálogo, revisiones y contratos.
-5. Completar Ubicaciones Enterprise y evolucionar trabajos a órdenes.
-6. Calidad, material, cobros/margen y portales, en ese orden.
-7. Retomar Stripe solo cuando los contratos, el responsable legal y los precios
+1. Validar visualmente en producción el portal patrocinado, su alta nueva y
+   Red externa antes de declararlos publicados.
+2. Construir Fase 3: catálogo, revisiones y contratos.
+3. Completar Ubicaciones Enterprise y evolucionar trabajos a órdenes.
+4. Calidad, material, cobros/margen y portales, en ese orden.
+5. Retomar Stripe solo cuando los contratos, el responsable legal y los precios
    definitivos estén cerrados.
 
 ## 8. Riesgos que controlamos

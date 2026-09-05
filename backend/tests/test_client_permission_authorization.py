@@ -333,6 +333,27 @@ def test_client_and_commercial_permissions_are_separate_and_fail_closed(client, 
         assert response.status_code == 403, response.text
 
 
+def test_me_exposes_finance_hints_from_the_explicit_profile(client, db):
+    company = _company(db, "commercial-finance-hints")
+    admin = _bootstrap_admin(db, company, "commercial-finance-admin")
+    commercial = _user(db, company, "commercial-finance", role_id=3)
+    commercial.email = "commercial-finance@permissions.example.com"
+    db.commit()
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=commercial,
+        name="Comercial sin finanzas",
+        permission_codes={CLIENT_READ, CLIENT_MANAGE, FOLLOW_UP_READ, FOLLOW_UP_MANAGE},
+    )
+
+    response = client.get("/api/v1/users/me", headers=_headers(commercial))
+    assert response.status_code == 200, response.text
+    assert response.json()["can_view_finance"] is False
+    assert response.json()["can_manage_finance"] is False
+
+
 def test_client_permissions_do_not_cross_company_or_grant_platform_access(client, db):
     owner_company = _company(db, "owner")
     outsider_company = _company(db, "outsider")
