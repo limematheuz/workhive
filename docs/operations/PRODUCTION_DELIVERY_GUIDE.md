@@ -333,7 +333,7 @@ compatibilidad y una restauración validada.
 | Acción de deploy falla pero SSM tiene éxito | Revisar `ssm:GetCommandInvocation` en el rol OIDC de GitHub. | Añadir permisos amplios o repetir publicación. |
 | SSM falla antes de ejecutar | Revisar versión predeterminada del documento y su validación de tag. | Crear documentos alternativos sin revisar permisos. |
 | Contenedor no está saludable | Revisar logs de ese servicio y el estado de migraciones. | Borrar volúmenes de Docker. |
-| Falta de espacio en EC2 | Revisar `docker system df`, backups locales y ciclo de vida. | Ejecutar `docker system prune --volumes` en producción. |
+| Falta de espacio en EC2 | Revisar `docker system df`, backups locales y ciclo de vida; ejecutar el mantenimiento seguro versionado. | Ejecutar `docker system prune --volumes` en producción. |
 | Backup falla | Revisar el servicio/timer y los logs; comprobar S3 con el rol de instancia. | Añadir claves AWS estáticas al host. |
 
 ## Reglas para operadores y otros agentes

@@ -1,0 +1,17 @@
+[Unit]
+Description=WorkHive safe Docker maintenance
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/ubuntu/workhive
+ExecStart=/home/ubuntu/workhive/ops/maintenance/docker_maintenance.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=20min
+StandardOutput=journal
+StandardError=journal

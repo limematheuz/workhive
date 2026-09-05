@@ -1,0 +1,15 @@
+schemaVersion: '2.2'
+description: Run safe scheduled Docker maintenance for one WorkHive host.
+mainSteps:
+  - action: aws:runShellScript
+    name: runSafeDockerMaintenance
+    precondition:
+      StringEquals:
+        - platformType
+        - Linux
+    inputs:
+      timeoutSeconds: '1200'
+      runCommand:
+        - |
+          set -eu
+          exec /bin/bash /home/ubuntu/workhive/ops/maintenance/docker_maintenance.sh

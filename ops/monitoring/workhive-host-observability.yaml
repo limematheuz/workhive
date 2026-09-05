@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Portable WorkHive host maintenance and disk-capacity alarm.
+
+Parameters:
+  ProductionInstanceId:
+    Type: AWS::EC2::Instance::Id
+    Description: The single EC2 instance that runs WorkHive production.
+  ProductionInstanceRoleName:
+    Type: String
+    MinLength: 1
+    Description: Existing EC2 instance-role name; receives only metric publishing permission.
+  NotificationEmail:
+    Type: String
+    AllowedPattern: '^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$'
+    Description: Recipient that must confirm the SNS subscription email.
+  DiskThresholdPercent:
+    Type: Number
+    Default: 80
+    MinValue: 1
+    MaxValue: 99
+    Description: Alarm when root filesystem usage reaches this percentage.
+
+Resources:
+  WorkHiveDockerMaintenanceDocument:
+    Type: AWS::SSM::Document
+    Properties:
+      DocumentType: Command
+      DocumentFormat: YAML
+      Name: WorkHiveDockerMaintenance
+      Content:
+        schemaVersion: '2.2'
+        description: Run safe scheduled Docker maintenance for one WorkHive host.
+        mainSteps:
+          - action: aws:runShellScript
+            name: runSafeDockerMaintenance
+            precondition:
+              StringEquals:
+                - platformType
+                - Linux
+            inputs:
+              timeoutSeconds: '1200'
+              runCommand:
+                - |
+                  set -eu
+                  exec /bin/bash /home/ubuntu/workhive/ops/maintenance/docker_maintenance.sh
+
+  WorkHiveDockerMaintenanceAssociation:
+    Type: AWS::SSM::Association
+    DependsOn: WorkHiveDockerMaintenanceDocument
+    Properties:
+      AssociationName: workhive-weekly-docker-maintenance
+      Name: !Ref WorkHiveDockerMaintenanceDocument
+      DocumentVersion: '$DEFAULT'
+      Targets:
+        - Key: InstanceIds
+          Values:
+            - !Ref ProductionInstanceId
+      ScheduleExpression: 'cron(0 5 ? * SUN *)'
+      ApplyOnlyAtCronInterval: true
+      MaxConcurrency: '1'
+      MaxErrors: '0'
+      ComplianceSeverity: HIGH
+
+  WorkHiveHostMetricsPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: WorkHivePublishHostMetrics
+      Roles:
+        - !Ref ProductionInstanceRoleName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublishOnlyWorkHiveHostMetrics
+            Effect: Allow
+            Action: cloudwatch:PutMetricData
+            Resource: '*'
+            Condition:
+              StringEquals:
+                cloudwatch:namespace: WorkHive/Host
+
+  WorkHiveDiskAlertsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: Encrypts WorkHive production disk-alert notifications.
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowAccountAdministration
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+          - Sid: AllowOnlySnsForThisTopic
+            Effect: Allow
+            Principal:
+              Service: sns.amazonaws.com
+            Action:
+              - kms:Decrypt
+              - kms:GenerateDataKey*
+            Resource: '*'
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnLike:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:workhive-production-disk-alerts'
+
+  WorkHiveDiskAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: workhive-production-disk-alerts
+      KmsMasterKeyId: !Ref WorkHiveDiskAlertsKey
+      Subscription:
+        - Endpoint: !Ref NotificationEmail
+          Protocol: email
+
+  WorkHiveDiskUsageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: workhive-production-root-disk-high
+      AlarmDescription: Root filesystem is nearing capacity; investigate before the next release pull.
+      Namespace: WorkHive/Host
+      MetricName: disk_used_percent
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref ProductionInstanceId
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 3
+      DatapointsToAlarm: 3
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Threshold: !Ref DiskThresholdPercent
+      TreatMissingData: breaching
+      AlarmActions:
+        - !Ref WorkHiveDiskAlarmTopic
+
+Outputs:
+  DockerMaintenanceDocumentName:
+    Value: !Ref WorkHiveDockerMaintenanceDocument
+  DockerMaintenanceAssociationId:
+    Value: !Ref WorkHiveDockerMaintenanceAssociation
+  DiskAlarmName:
+    Value: !Ref WorkHiveDiskUsageAlarm
+  DiskAlertsTopicArn:
+    Value: !Ref WorkHiveDiskAlarmTopic
