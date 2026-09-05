@@ -1,17 +1,15 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.user import User
 from app.models.external_access_grant import ExternalAccessGrant
-from app.schemas.user import UserUpdate, UserStatsResponse
+from app.schemas.user import UserStatsResponse, UserUpdate
 from app.repositories import user as user_repo
-from app.repositories import work_session as work_session_repo
-from app.repositories import task_item as task_item_repo
 from app.repositories import role as role_repo
+from app.repositories import organization as organization_repo
 from app.core.security import get_password_hash, verify_password
-from app.services import task_assignment_service
 from app.services.entitlement_service import (
     require_accountant_portal_capacity,
     require_company_feature,
@@ -20,7 +18,10 @@ from app.services.entitlement_service import (
 from app.services import organization_bootstrap_service
 from app.services.external_access_policy import EXTERNAL_PORTAL_ROLE_NAME
 from app.services.user_scope import is_superadmin
-import calendar
+from app.services.user_scope import is_platform_superadmin, require_company_context
+from app.services.organization_authorization_service import require_capability
+from app.services.organization_member_service import active_admin_count
+from app.services.user_stats_service import get_user_stats as _get_user_stats
 
 
 USER_DELETE_RELATED_DATA_ERROR = {
@@ -40,9 +41,14 @@ def _raise_user_delete_conflict() -> None:
 
 
 def get_users(
-    db: Session, company_id: int, skip: int = 0, limit: int = 100
+    db: Session, current_user: User, skip: int = 0, limit: int = 100
 ) -> list[User]:
-    return user_repo.get_all_users(db, company_id, skip, limit)
+    if is_platform_superadmin(current_user):
+        return user_repo.get_all_users(db, None, skip, limit)
+    require_capability(db, current_user, "access.members.read")
+    return user_repo.get_all_users(
+        db, require_company_context(current_user), skip, limit
+    )
 
 
 def get_user(db: Session, user_id: int, current_user: User) -> User:
@@ -51,10 +57,10 @@ def get_user(db: Session, user_id: int, current_user: User) -> User:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
-    if (
-        not is_superadmin(current_user)
-        and existing_user.company_id != current_user.company_id
-    ):
+    if existing_user.id == current_user.id or is_platform_superadmin(current_user):
+        return existing_user
+    require_capability(db, current_user, "access.members.read")
+    if existing_user.company_id != require_company_context(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to access this user",
@@ -68,10 +74,44 @@ def update_user(
     db_user = get_user(db, user_id, current_user)
     is_own_profile = current_user.id == user_id
 
-    if (
-        not is_own_profile
-        and current_user.role.name not in {"superadmin", "admin", "manager"}
-    ):
+    administrative_fields = {"is_active", "role_id", "company_id"}
+    requested_administrative_fields = administrative_fields & user_data.model_fields_set
+    if is_own_profile and requested_administrative_fields:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrative account fields cannot be changed from your profile",
+        )
+
+    if "company_id" in user_data.model_fields_set:
+        if user_data.company_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="A user company cannot be cleared through this endpoint",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Company membership must be changed through organization workflows",
+        )
+
+    if not is_own_profile and not is_platform_superadmin(current_user):
+        require_capability(db, current_user, "access.members.manage")
+        if db_user.company_id != require_company_context(current_user):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not enough permissions to manage this user",
+            )
+
+    if not is_platform_superadmin(current_user) and db_user.company_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform identities can only be managed by platform superadmins",
+        )
+
+    if not is_own_profile and current_user.role.name not in {
+        "superadmin",
+        "admin",
+        "manager",
+    }:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to manage another user",
@@ -184,11 +224,16 @@ def update_user(
             )
         db_user.hashed_password = get_password_hash(user_data.password)
 
-    if user_data.company_id is not None and user_data.company_id != db_user.company_id:
-        if not is_superadmin(current_user):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only superadmins can change the company of a user",
+    membership = None
+    if db_user.company_id is not None and not is_external_portal_user:
+        membership = organization_repo.get_user_membership(
+            db,
+            company_id=db_user.company_id,
+            user_id=db_user.id,
+        )
+        if membership is None:
+            membership = organization_bootstrap_service.ensure_user_membership(
+                db, db_user
             )
     if user_data.role_id is not None and user_data.role_id != db_user.role_id:
         if current_user.role.name not in ["superadmin", "admin"]:
@@ -219,9 +264,44 @@ def update_user(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Only superadmins can assign the superadmin role",
                 )
+    target_role_name = (
+        target_role.name
+        if user_data.role_id is not None and user_data.role_id != db_user.role_id
+        else (db_user.role.name if db_user.role else None)
+    )
+    next_access_class = {
+        "admin": "admin",
+        "manager": "responsible",
+        "viewer": "worker",
+    }.get(target_role_name)
+    suspending_member = user_data.is_active is False and db_user.is_active
+    demoting_admin = bool(
+        membership
+        and membership.access_class == "admin"
+        and next_access_class is not None
+        and next_access_class != "admin"
+    )
+    if (
+        membership
+        and membership.access_class == "admin"
+        and membership.status == "active"
+        and (suspending_member or demoting_admin)
+        and active_admin_count(db, db_user.company_id) == 1
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="A company must keep at least one active administrator",
+        )
+    password_changed = user_data.password is not None
+    if password_changed:
+        db_user.session_version += 1
     updated_user = user_repo.update_user(db, db_user, user_data)
-    if activating_user and membership:
-        membership.status = "active"
+    if membership:
+        if user_data.is_active is not None:
+            membership.status = "active" if user_data.is_active else "suspended"
+            membership.ended_at = None
+        if next_access_class is not None:
+            membership.access_class = next_access_class
         db.add(membership)
         db.commit()
         db.refresh(updated_user)
@@ -231,99 +311,7 @@ def update_user(
 def get_user_stats(
     db: Session, user_id: int, current_user: User, time_range: str | None = None
 ) -> UserStatsResponse:
-    db_user = user_repo.get_user_by_id(db, user_id)
-    if not db_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    is_own_profile = current_user.id == user_id
-    is_super_admin = is_superadmin(current_user)
-    is_admin_or_manager = (
-        current_user.role.name in ["admin", "manager"]
-        and db_user.company_id == current_user.company_id
-    )
-
-    if not (is_own_profile or is_super_admin or is_admin_or_manager):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to view this user's stats",
-        )
-
-    if is_super_admin and db_user.company_id is None:
-        return UserStatsResponse(
-            total_hours_worked=0,
-            total_tasks=0,
-            tasks_completed=0,
-            tasks_pending=0,
-            active_session_id=None,
-            locations_worked_count=0,
-        )
-
-    start_date = None
-    if time_range and time_range != "all":
-        now = datetime.now(timezone.utc)
-        if time_range == "day":
-            start_date = now - timedelta(days=1)
-        elif time_range == "week":
-            start_date = now - timedelta(days=7)
-        elif time_range == "month":
-            year = now.year
-            month = now.month - 1
-            if month == 0:
-                month = 12
-                year -= 1
-            max_days_prev_month = calendar.monthrange(year, month)[1]
-            day = min(now.day, max_days_prev_month)
-            start_date = now.replace(year=year, month=month, day=day)
-        elif time_range == "year":
-            year = now.year - 1
-            day = now.day
-            if now.month == 2 and now.day == 29:
-                if not calendar.isleap(year):
-                    day = 28
-            start_date = now.replace(year=year, day=day)
-
-    active_session = work_session_repo.get_active_session_by_user(db, user_id)
-    active_session_id = active_session.id if active_session else None
-
-    closed_sessions = work_session_repo.get_closed_sessions_by_user(
-        db, user_id, start_date
-    )
-    total_seconds = sum(
-        (s.end_time - s.start_time).total_seconds() for s in closed_sessions
-    )
-    total_hours_worked = round(total_seconds / 3600.0, 2)
-
-    total_tasks = task_item_repo.count_tasks_by_user(
-        db,
-        user_id,
-        start_date,
-        statuses=task_assignment_service.OPERATIONAL_VIEWER_STATUSES,
-    )
-    tasks_completed = task_item_repo.count_tasks_by_user_and_status(
-        db, user_id, "completed", start_date
-    )
-    tasks_pending = task_item_repo.count_tasks_by_user_and_status(
-        db, user_id, "pending", start_date
-    )
-
-    session_locations = work_session_repo.get_distinct_location_ids_by_user(
-        db, user_id, start_date
-    )
-    task_locations = task_item_repo.get_distinct_location_ids_by_user(
-        db, user_id, start_date
-    )
-    locations_worked_count = len(set(session_locations) | set(task_locations))
-
-    return UserStatsResponse(
-        total_hours_worked=total_hours_worked,
-        total_tasks=total_tasks,
-        tasks_completed=tasks_completed,
-        tasks_pending=tasks_pending,
-        active_session_id=active_session_id,
-        locations_worked_count=locations_worked_count,
-    )
+    return _get_user_stats(db, user_id, current_user, time_range)
 
 
 def delete_user_permanently(db: Session, user_id: int, current_user: User) -> None:

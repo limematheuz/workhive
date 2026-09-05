@@ -10,6 +10,7 @@ from app.schemas.template_task import (
     TemplateTaskResponse,
 )
 from app.models.user import User
+from app.services.user_scope import require_company_context
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ async def read_template_tasks(
 ):
     return await db.run_sync(
         lambda sync_db: template_task_service.get_template_tasks(
-            sync_db, current_user.company_id, skip, limit
+            sync_db, require_company_context(current_user), skip, limit
         )
     )
 
@@ -36,7 +37,7 @@ async def read_template_task(
 ):
     return await db.run_sync(
         lambda sync_db: template_task_service.get_template_task(
-            sync_db, template_task_id, current_user.company_id
+            sync_db, template_task_id, require_company_context(current_user)
         )
     )
 
@@ -50,7 +51,7 @@ def create_template_task(
     current_user: User = ActiveAdmin,
 ):
     return template_task_service.create_template_task(
-        db, template_task_data, current_user.company_id
+        db, template_task_data, require_company_context(current_user)
     )
 
 
@@ -62,7 +63,10 @@ def update_template_task(
     current_user: User = ActiveAdmin,
 ):
     return template_task_service.update_template_task(
-        db, template_task_id, template_task_update, current_user.company_id
+        db,
+        template_task_id,
+        template_task_update,
+        require_company_context(current_user),
     )
 
 
@@ -73,6 +77,6 @@ def delete_template_task(
     current_user: User = ActiveAdmin,
 ):
     template_task_service.delete_template_task(
-        db, template_task_id, current_user.company_id
+        db, template_task_id, require_company_context(current_user)
     )
     return None

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.user_invitation import UserInvitation
 from app.services.subscription_policy import require_company_access
+from app.services.organization_authorization_service import require_capability
 
 
 PENDING_STATUS = "pending"
@@ -26,6 +27,7 @@ def expire_if_needed(invitation: UserInvitation) -> bool:
 
 
 def list_company_invitations(db: Session, inviter: User) -> list[UserInvitation]:
+    require_capability(db, inviter, "access.members.manage")
     _require_company_access(inviter)
     invitations = (
         db.query(UserInvitation)
@@ -48,6 +50,7 @@ def cancel_invitation(
     invitation_id: int,
     inviter: User,
 ) -> UserInvitation:
+    require_capability(db, inviter, "access.members.manage")
     _require_company_access(inviter)
     invitation = (
         db.query(UserInvitation)

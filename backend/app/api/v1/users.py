@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import (
     ActiveUser,
     ActiveApplicationUser,
-    AsyncActiveManagerOrAdmin,
     AsyncActiveUser,
     AsyncAuthenticatedUser,
     get_async_db,
@@ -50,12 +49,12 @@ async def read_all_users(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
         lambda sync_db: user_service.get_users(
             sync_db,
-            current_user.company_id,
+            current_user,
             skip,
             limit,
         )
@@ -66,7 +65,7 @@ async def read_all_users(
 async def read_user(
     user_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
         lambda sync_db: user_service.get_user(sync_db, user_id, current_user)
@@ -119,11 +118,10 @@ def upload_user_photo(
     )
     db_user = user_service.get_user(db, user_id, current_user)
 
-    if current_user.id != user_id and current_user.role.name not in ["superadmin", "admin", "manager"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Not enough permissions to update this user's photo",
-        )
+    if current_user.id != user_id:
+        from app.services.organization_authorization_service import require_capability
+
+        require_capability(db, current_user, "access.members.manage")
 
     contents = file.file.read(MAX_IMAGE_BYTES + 1)
     if len(contents) > MAX_IMAGE_BYTES:

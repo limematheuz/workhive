@@ -28,6 +28,7 @@ from app.services import (
     company_update_policy_service,
     organization_bootstrap_service,
 )
+from app.services.organization_authorization_service import require_capability
 
 
 def get_companies(
@@ -303,6 +304,7 @@ def get_company_expenses(
     current_user: User,
 ) -> list[CompanyExpenseResponse]:
     get_company(db, company_id, current_user)
+    require_capability(db, current_user, "finance.read")
     rows = (
         db.query(TaskItem)
         .join(

@@ -19,11 +19,13 @@ from app.schemas.task_report import (
     TaskReportUpdate,
 )
 from app.services import notification_service, task_assignment_service
-from app.services.storage_service import (
-    ObjectNotFoundError,
-    get_object_storage,
-    media_key_from_url,
+from app.services.task_report_access_service import (
+    permitted_report_location_ids,
+    require_report_management,
+    require_report_read,
 )
+from app.services.task_report_media_service import copy_report_media
+from app.services.storage_service import ObjectNotFoundError, get_object_storage
 from app.services.user_scope import require_company_context, role_name
 
 
@@ -66,24 +68,6 @@ def _response(report: TaskReport) -> TaskReportResponse:
         ),
         created_at=report.created_at,
     )
-
-
-def _media_key(payload: TaskReportCreate, company_id: int) -> str | None:
-    if not payload.media_url:
-        return None
-    try:
-        key = media_key_from_url(payload.media_url)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Invalid uploaded media",
-        ) from error
-    if key is None or not key.startswith(f"company/{company_id}/"):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Media must be uploaded by the reporting company",
-        )
-    return key
 
 
 def _checklist_item(task, payload: TaskReportCreate):
@@ -257,20 +241,27 @@ async def create_report(
         payload.task_item_id,
     )
     if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
     if task.company_id != company_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
     if task.status in {"requested", "rejected"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Reports require an accepted task",
         )
+    await require_report_read(db, current_user, task.location_id)
     if role_name(current_user) == "viewer" and (
         not task_assignment_service.can_viewer_access_task(task, current_user.id)
     ):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
+        )
 
-    media_key = _media_key(payload, company_id)
+    media_key = copy_report_media(payload.media_url, company_id)
     checklist_item = _checklist_item(task, payload)
     requesting_company_id = (
         task.checkout_reservation.owner_company_id
@@ -340,11 +331,13 @@ async def list_reports(
 ) -> list[TaskReportResponse]:
     if current_user.company_id is None:
         return []
+    location_ids = await permitted_report_location_ids(db, current_user)
     reports = await task_report_repo.list_for_company(
         db,
         current_user.company_id,
         skip=skip,
         limit=limit,
+        location_ids=location_ids,
     )
     return [_response(report) for report in reports]
 
@@ -361,6 +354,7 @@ async def get_report(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task report not found",
         )
+    await require_report_read(db, current_user, report.task_item.location_id)
     return report
 
 
@@ -375,7 +369,9 @@ async def get_report_response(
 async def get_report_media(db: AsyncSession, current_user: User, report_id: int):
     report = await get_report(db, current_user, report_id)
     if not report.media_key:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Media not found"
+        )
     try:
         return await asyncio.to_thread(get_object_storage().get, report.media_key)
     except ObjectNotFoundError:
@@ -403,6 +399,7 @@ async def update_report(
     payload: TaskReportUpdate,
 ) -> TaskReportResponse:
     report = await get_report(db, current_user, report_id)
+    await require_report_management(db, current_user, report)
     _apply_update(report, payload)
     await db.commit()
     loaded = await task_report_repo.get_for_company(
@@ -421,6 +418,7 @@ async def delete_report(
     report_id: int,
 ) -> None:
     report = await get_report(db, current_user, report_id)
+    await require_report_management(db, current_user, report)
     media_key = report.media_key
     _clear_checklist_evidence(report)
     await _delete_report_notifications(db, [report_id])
@@ -446,6 +444,8 @@ async def bulk_delete_reports(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="One or more task reports were not found",
         )
+    for report in reports:
+        await require_report_management(db, current_user, report)
 
     media_keys = [report.media_key for report in reports if report.media_key]
     report_ids = [report.id for report in reports]

@@ -34,6 +34,10 @@ def test_production_settings_accept_secure_configuration():
     ("override", "expected_message"),
     [
         ({"SECRET_KEY": "secret"}, "unique SECRET_KEY"),
+        (
+            {"SECRET_KEY": "replace-with-a-random-secret-of-at-least-32-characters"},
+            "unique SECRET_KEY",
+        ),
         ({"FRONTEND_URL": "http://app.example.com"}, "FRONTEND_URL must use HTTPS"),
         ({"CORS_ORIGINS": "http://app.example.com"}, "only HTTPS origins"),
         ({"FORCE_HTTPS": False}, "FORCE_HTTPS=true"),
