@@ -20,6 +20,7 @@ from app.repositories import reservation as reservation_repo
 from app.schemas.reservation import ReservationResponse
 from app.schemas.work_session import WorkSessionStartLocationResponse
 from app.services import location_access_service
+from app.services import organization_authorization_service
 from app.services.planning_access_service import require_user_planning
 from app.services.user_scope import (
     can_manage_company,
@@ -91,14 +92,66 @@ def build_reservation_response(
     return response.model_copy(update={"notes": None, "external_reference": None})
 
 
-def _accessible_location_ids(db: Session, current_user: User) -> list[int]:
+def _accessible_location_ids(
+    db: Session,
+    current_user: User,
+    *,
+    include_task_links: bool = False,
+) -> list[int]:
     company_id = scoped_company_id(current_user)
-    return [
+    company_location_ids = {
         location.id
         for location in location_repo.get_locations_by_client(
             db, company_id, client_id=None, skip=0, limit=10000
         )
-    ]
+    }
+    if include_task_links:
+        linked_location_ids = (
+            db.query(TaskItem.location_id)
+            .filter(
+                TaskItem.company_id == company_id,
+                TaskItem.status != "rejected",
+                or_(
+                    TaskItem.checkout_reservation_id.is_not(None),
+                    TaskItem.next_reservation_id.is_not(None),
+                ),
+            )
+            .distinct()
+            .all()
+        )
+        company_location_ids.update(
+            location_id for (location_id,) in linked_location_ids
+        )
+    if current_user.role and current_user.role.name == "admin":
+        return sorted(company_location_ids)
+    permitted_ids = organization_authorization_service.permitted_location_ids(
+        db, current_user, "locations.read"
+    )
+    if permitted_ids is not None:
+        company_location_ids &= permitted_ids
+    return sorted(company_location_ids)
+
+
+def _has_company_reservation_link(
+    db: Session, reservation: Reservation, company_id: int
+) -> bool:
+    if company_id in {
+        reservation.owner_company_id,
+        reservation.assigned_company_id,
+    }:
+        return True
+    return bool(
+        db.query(TaskItem.id)
+        .filter(
+            TaskItem.company_id == company_id,
+            TaskItem.status != "rejected",
+            or_(
+                TaskItem.checkout_reservation_id == reservation.id,
+                TaskItem.next_reservation_id == reservation.id,
+            ),
+        )
+        .first()
+    )
 
 
 def list_reservations(
@@ -150,6 +203,11 @@ def list_upcoming_arrivals(
         company_id = current_user.company_id
         if company_id is None:
             return []
+        location_ids = _accessible_location_ids(
+            db, current_user, include_task_links=True
+        )
+        if not location_ids:
+            return []
         linked_reservation_ids = (
             db.query(Reservation.id)
             .join(
@@ -165,10 +223,11 @@ def list_upcoming_arrivals(
             )
         )
         query = query.filter(
+            Reservation.location_id.in_(location_ids),
             or_(
                 Reservation.owner_company_id == company_id,
                 Reservation.id.in_(linked_reservation_ids),
-            )
+            ),
         )
     return query.order_by(Reservation.check_in_at.asc()).distinct().all()
 
@@ -180,9 +239,19 @@ def get_reservation(
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
-    location_access_service.require_accessible_location(
-        db, current_user, reservation.location_id
-    )
+    if not is_platform_superadmin(current_user):
+        company_id = current_user.company_id
+        if company_id is None or not _has_company_reservation_link(
+            db, reservation, company_id
+        ):
+            raise HTTPException(status_code=404, detail="Reservation not found")
+        organization_authorization_service.require_capability(
+            db,
+            current_user,
+            "locations.read",
+            scope_type="location",
+            scope_id=reservation.location_id,
+        )
     if current_user.role.name == "viewer":
         assigned_link = (
             db.query(TaskItem.id)

@@ -80,7 +80,10 @@ def close_work_session(
 
 
 def get_closed_sessions_by_user(
-    db: Session, user_id: int, start_date: datetime | None = None
+    db: Session,
+    user_id: int,
+    start_date: datetime | None = None,
+    location_ids: set[int] | None = None,
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
@@ -89,11 +92,16 @@ def get_closed_sessions_by_user(
     )
     if start_date:
         query = query.filter(WorkSession.start_time >= start_date)
+    if location_ids is not None:
+        query = query.filter(WorkSession.location_id.in_(location_ids))
     return query.all()
 
 
 def get_distinct_location_ids_by_user(
-    db: Session, user_id: int, start_date: datetime | None = None
+    db: Session,
+    user_id: int,
+    start_date: datetime | None = None,
+    location_ids: set[int] | None = None,
 ) -> list[int]:
     query = (
         db.query(WorkSession.location_id)
@@ -102,6 +110,8 @@ def get_distinct_location_ids_by_user(
     )
     if start_date:
         query = query.filter(WorkSession.start_time >= start_date)
+    if location_ids is not None:
+        query = query.filter(WorkSession.location_id.in_(location_ids))
     results = query.distinct().all()
     return [r[0] for r in results]
 

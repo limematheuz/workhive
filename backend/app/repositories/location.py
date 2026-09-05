@@ -7,8 +7,14 @@ from app.schemas.location import LocationCreate, LocationUpdate
 
 
 def get_location_by_id(
-    db: Session, location_id: int, company_id: int | None
+    db: Session,
+    location_id: int,
+    company_id: int | None,
+    *,
+    allow_global: bool = False,
 ) -> Location | None:
+    if company_id is None and not allow_global:
+        return None
     query = db.query(Location).options(
         selectinload(Location.client),
         selectinload(Location.company_access),
@@ -37,6 +43,8 @@ def get_locations_by_client(
     limit: int = 100,
     location_ids: set[int] | None = None,
 ) -> list[Location]:
+    if company_id is None:
+        return []
     query = db.query(Location).options(
         selectinload(Location.client),
         selectinload(Location.company_access),

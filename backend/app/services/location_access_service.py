@@ -14,7 +14,7 @@ from app.services.user_scope import (
     can_manage_company,
     is_company_admin,
     is_platform_superadmin,
-    scoped_company_id,
+    require_company_context,
 )
 from app.services.organization_authorization_service import require_capability
 
@@ -34,13 +34,39 @@ def _is_service_provider_access(access) -> bool:
     return access.relationship_type in {"service_provider", "default_service_provider"}
 
 
-def require_accessible_location(db: Session, current_user: User, location_id: int) -> Location:
-    company_id = scoped_company_id(current_user)
-    location = location_repo.get_location_by_id(db, location_id, company_id)
+def require_accessible_location(
+    db: Session, current_user: User, location_id: int
+) -> Location:
+    company_id = (
+        None
+        if is_platform_superadmin(current_user)
+        else require_company_context(current_user)
+    )
+    location = location_repo.get_location_by_id(
+        db,
+        location_id,
+        company_id,
+        allow_global=is_platform_superadmin(current_user),
+    )
     if not location:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Location not found or not shared with your company",
+        )
+    return location
+
+
+def require_readable_location(
+    db: Session, current_user: User, location_id: int
+) -> Location:
+    location = require_accessible_location(db, current_user, location_id)
+    if not is_platform_superadmin(current_user):
+        require_capability(
+            db,
+            current_user,
+            "locations.read",
+            scope_type="location",
+            scope_id=location_id,
         )
     return location
 
@@ -141,10 +167,19 @@ def has_location_capability_loaded(
     )
 
 
-def require_location_owner(db: Session, current_user: User, location_id: int) -> Location:
+def require_location_owner(
+    db: Session, current_user: User, location_id: int
+) -> Location:
     location = require_accessible_location(db, current_user, location_id)
     if is_platform_superadmin(current_user):
         return location
+    require_capability(
+        db,
+        current_user,
+        "locations.manage",
+        scope_type="location",
+        scope_id=location_id,
+    )
     owner_company_id = (
         location.owner_company_id
         or (location.client.company_id if location.client else None)

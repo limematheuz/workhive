@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveManagerOrAdmin, get_db
+from app.api.deps import ActiveUser, get_db
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
@@ -38,7 +38,7 @@ def invitation_response(invitation) -> UserInvitationResponse:
 @router.get("/", response_model=list[UserInvitationResponse])
 def list_worker_invitations(
     db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    current_user: User = ActiveUser,
 ) -> list[UserInvitationResponse]:
     invitations = user_invitation_management_service.list_company_invitations(
         db,
@@ -52,7 +52,7 @@ def invite_worker(
     payload: UserInvitationCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    current_user: User = ActiveUser,
 ) -> UserInvitationAccepted:
     enforce_rate_limit(
         request,
@@ -80,7 +80,7 @@ def cancel_worker_invitation(
     invitation_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = ActiveManagerOrAdmin,
+    current_user: User = ActiveUser,
 ):
     invitation = user_invitation_management_service.cancel_invitation(
         db,

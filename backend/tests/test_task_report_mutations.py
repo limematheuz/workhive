@@ -237,6 +237,10 @@ def test_delete_checklist_evidence_and_blocks_unauthorized(client, db):
         f"/api/v1/task-reports/{photo['id']}",
         headers=_headers(users["receiver_admin"]),
     ).status_code == 204
+    assert client.get(
+        uploaded.json()["url"],
+        headers=_headers(users["receiver_admin"]),
+    ).status_code == 200
     db.refresh(task)
     assert evidence_key not in (task.checklist_evidence or {}) or task.checklist_evidence[
         evidence_key

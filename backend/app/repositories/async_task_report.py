@@ -37,6 +37,7 @@ async def list_for_company(
     *,
     skip: int,
     limit: int,
+    location_ids: set[int] | None = None,
 ) -> list[TaskReport]:
     statement = (
         select(TaskReport)
@@ -51,6 +52,10 @@ async def list_for_company(
         .offset(skip)
         .limit(limit)
     )
+    if location_ids is not None:
+        statement = statement.where(
+            TaskReport.task_item.has(TaskItem.location_id.in_(location_ids))
+        )
     result = await db.scalars(statement)
     return list(result.all())
 

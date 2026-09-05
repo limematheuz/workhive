@@ -22,7 +22,7 @@ from app.services.user_scope import (
 _LEGACY_ROLE_CAPABILITIES = {
     "admin": frozenset(
         {
-            "locations.read",
+            "access.members.read", "access.members.manage", "locations.read",
             "locations.manage",
             "work.read",
             "work.manage",

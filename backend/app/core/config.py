@@ -202,6 +202,7 @@ class Settings(BaseSettings):
             "change-me",
             "secret",
             "your-secret-key",
+            "replace-with-a-random-secret-of-at-least-32-characters",
         }:
             raise ValueError("Production requires a unique SECRET_KEY with at least 32 characters")
 

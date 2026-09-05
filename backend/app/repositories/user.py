@@ -33,7 +33,7 @@ def user_response_load_options():
 
 
 def get_all_users(
-    db: Session, company_id: int, skip: int = 0, limit: int = 100
+    db: Session, company_id: int | None, skip: int = 0, limit: int = 100
 ) -> list[User]:
     return (
         db.query(User)

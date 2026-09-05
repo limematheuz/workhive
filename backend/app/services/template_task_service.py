@@ -7,13 +7,13 @@ from app.repositories import location_template as location_template_repo
 
 
 def get_template_tasks(
-    db: Session, company_id: int | None, skip: int = 0, limit: int = 100
+    db: Session, company_id: int, skip: int = 0, limit: int = 100
 ) -> list[TemplateTask]:
     return template_task_repo.get_all_template_tasks(db, company_id, skip, limit)
 
 
 def get_template_task(
-    db: Session, template_id: int, company_id: int | None
+    db: Session, template_id: int, company_id: int
 ) -> TemplateTask:
     template_task = template_task_repo.get_template_task_by_id(
         db, template_id, company_id
@@ -26,13 +26,8 @@ def get_template_task(
 
 
 def create_template_task(
-    db: Session, template_task_data: TemplateTaskCreate, company_id: int | None
+    db: Session, template_task_data: TemplateTaskCreate, company_id: int
 ) -> TemplateTask:
-    if company_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A company is required to create templates",
-        )
     existing_template = template_task_repo.get_template_task_by_name(
         db, template_task_data.name, company_id
     )
@@ -49,7 +44,7 @@ def update_template_task(
     db: Session,
     template_id: int,
     template_update: TemplateTaskUpdate,
-    company_id: int | None,
+    company_id: int,
 ) -> TemplateTask:
     db_template = template_task_repo.get_template_task_by_id(
         db, template_id, company_id
@@ -61,11 +56,13 @@ def update_template_task(
 
     # A template is a recipe for future work. Existing tasks are immutable
     # snapshots of the scope that was agreed when they were created/accepted.
-    return template_task_repo.update_template_task(db, db_template, template_update)
+    return template_task_repo.update_template_task(
+        db, db_template, template_update
+    )
 
 
 def delete_template_task(
-    db: Session, template_id: int, company_id: int | None
+    db: Session, template_id: int, company_id: int
 ) -> None:
     db_template = template_task_repo.get_template_task_by_id(
         db, template_id, company_id

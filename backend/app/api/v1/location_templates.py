@@ -9,7 +9,6 @@ from app.api.deps import (
 )
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.services import location_template_service
-from app.services import location_service
 from app.schemas.location_template import (
     LocationTemplateCreate,
     LocationTemplateResponse,
@@ -17,7 +16,6 @@ from app.schemas.location_template import (
 )
 from app.models.user import User
 from app.services import location_access_service
-from app.services.user_scope import scoped_company_id
 
 router = APIRouter()
 
@@ -38,10 +36,9 @@ async def read_locations_template(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
-    company_id = scoped_company_id(current_user)
     return await db.run_sync(
         lambda sync_db: _read_location_templates(
-            sync_db, location_id, company_id, skip, limit
+            sync_db, current_user, location_id, skip, limit
         )
     )
 
@@ -56,22 +53,23 @@ async def read_location_template(
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
-    company_id = scoped_company_id(current_user)
     return await db.run_sync(
         lambda sync_db: _read_location_template(
-            sync_db, location_id, template_task_id, company_id
+            sync_db, current_user, location_id, template_task_id
         )
     )
 
 
 def _read_location_templates(
     db: Session,
+    current_user: User,
     location_id: int,
-    company_id: int | None,
     skip: int,
     limit: int,
 ):
-    location = location_service.get_location(db, location_id, company_id)
+    location = location_access_service.require_readable_location(
+        db, current_user, location_id
+    )
     owner_company_id = _get_location_owner_company_id(location)
     return location_template_service.get_templates_by_location(
         db, location_id, owner_company_id, skip, limit
@@ -80,11 +78,13 @@ def _read_location_templates(
 
 def _read_location_template(
     db: Session,
+    current_user: User,
     location_id: int,
     template_task_id: int,
-    company_id: int | None,
 ):
-    location = location_service.get_location(db, location_id, company_id)
+    location = location_access_service.require_readable_location(
+        db, current_user, location_id
+    )
     owner_company_id = _get_location_owner_company_id(location)
     return location_template_service.get_location_template(
         db, location_id, template_task_id, owner_company_id
