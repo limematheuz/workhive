@@ -84,6 +84,17 @@ def test_production_deployment_defends_against_invalid_input_and_waits_for_ssm_r
     assert "Timed out waiting for the production deployment result" in wait_step["run"]
 
 
+def test_production_deployment_reports_a_bounded_ssm_stderr_on_failure():
+    workflow = load_workflow()
+    wait_step = workflow_steps(workflow)[3]
+    command = wait_step["run"]
+
+    assert "StandardErrorContent" in command
+    assert "StatusDetails,ResponseCode,StandardErrorContent" in command
+    assert "head -c 4000" in command
+    assert "report_failure" in command
+
+
 def test_production_deployment_pins_every_third_party_action_to_a_commit_sha():
     workflow = load_workflow()
     action_uses = [step["uses"] for step in workflow_steps(workflow) if "uses" in step]
