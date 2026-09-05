@@ -19,4 +19,10 @@ mainSteps:
         - |
           set -eu
           release_tag="${SSM_ReleaseTag:?ReleaseTag is required}"
+          # EC2 never builds application images. Reclaim only Docker artefacts
+          # that are not referenced by a running container before pulling a
+          # new immutable release. Persistent volumes are deliberately untouched.
+          docker builder prune --all --force
+          docker image prune --all --force
+          docker container prune --force
           exec /bin/bash /home/ubuntu/workhive/ops/deploy/deploy_ecr_release.sh "$release_tag"

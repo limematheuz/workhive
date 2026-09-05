@@ -23,4 +23,8 @@ def test_ssm_production_deploy_document_uses_a_sh_compatible_bash_launcher():
     assert "set -eu" in command
     assert "pipefail" not in command
     assert 'release_tag="${SSM_ReleaseTag:?ReleaseTag is required}"' in command
+    assert "docker builder prune --all --force" in command
+    assert "docker image prune --all --force" in command
+    assert "docker container prune --force" in command
+    assert "volume prune" not in command
     assert "exec /bin/bash /home/ubuntu/workhive/ops/deploy/deploy_ecr_release.sh" in command
