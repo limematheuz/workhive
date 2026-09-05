@@ -41,7 +41,7 @@ def _register_company(client, suffix: str) -> tuple[dict[str, str], int]:
     return headers, company.json()["id"]
 
 
-def test_manager_cannot_invite_privileged_users(client, db, monkeypatch):
+def test_manager_without_member_management_cannot_invite_users(client, db, monkeypatch):
     admin_headers, company_id = _register_company(client, "roles")
     manager = User(
         email="manager@workhive.com",
@@ -85,7 +85,7 @@ def test_manager_cannot_invite_privileged_users(client, db, monkeypatch):
             "role_id": 3,
         },
     )
-    assert worker.status_code == 202, worker.text
+    assert worker.status_code == 403, worker.text
 
 
 def test_manager_cannot_manage_external_portal_users(client, db):

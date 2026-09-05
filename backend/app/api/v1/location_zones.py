@@ -22,7 +22,7 @@ async def read_location_zones(
     current_user: User = AsyncActiveUser,
 ):
     def operation(sync_db: Session):
-        location_access_service.require_accessible_location(
+        location_access_service.require_readable_location(
             sync_db,
             current_user,
             location_id,

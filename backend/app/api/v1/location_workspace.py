@@ -24,7 +24,8 @@ from app.services import (
     location_workspace_service,
     location_workspace_mutation_service,
 )
-from app.services.user_scope import scoped_company_id
+from app.services.organization_authorization_service import require_capability
+from app.services.user_scope import require_company_context
 
 
 router = APIRouter()
@@ -51,9 +52,10 @@ def preview_location_import(
     db: Session = Depends(get_db),
     current_user: User = ActiveManagerOrAdmin,
 ):
+    require_capability(db, current_user, "locations.manage")
     return location_import_service.preview_import(
         db,
-        scoped_company_id(current_user),
+        require_company_context(current_user),
         request.csv_content,
     )
 
@@ -68,9 +70,10 @@ def import_locations(
     db: Session = Depends(get_db),
     current_user: User = ActiveManagerOrAdmin,
 ):
+    require_capability(db, current_user, "locations.manage")
     return location_import_service.import_locations(
         db,
-        scoped_company_id(current_user),
+        require_company_context(current_user),
         request.csv_content,
     )
 
@@ -81,7 +84,7 @@ def read_location_spaces(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
-    location_access_service.require_accessible_location(db, current_user, location_id)
+    location_access_service.require_readable_location(db, current_user, location_id)
     return location_workspace_service.list_spaces(db, location_id)
 
 

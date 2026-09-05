@@ -13,7 +13,7 @@ from app.models.role import Role
 from app.models.user import User
 from app.repositories import async_user as async_user_repo
 from app.schemas.user import UserResponse
-from app.services import user_service
+from app.services import organization_bootstrap_service, user_service
 
 
 @pytest_asyncio.fixture()
@@ -39,13 +39,18 @@ async def async_user_session_factory():
             )
             session.add_all([role, company])
             await session.flush()
-            session.add(
-                User(
-                    email="async-user@example.com",
-                    hashed_password="unused",
-                    full_name="Async User",
-                    role_id=role.id,
-                    company_id=company.id,
+            user = User(
+                email="async-user@example.com",
+                hashed_password="unused",
+                full_name="Async User",
+                role_id=role.id,
+                company_id=company.id,
+            )
+            session.add(user)
+            await session.flush()
+            await session.run_sync(
+                lambda db: organization_bootstrap_service.ensure_user_membership(
+                    db, user
                 )
             )
             await session.commit()
@@ -75,13 +80,11 @@ async def test_company_user_list_serializes_without_async_lazy_loading(
     async_user_session_factory,
 ):
     async with async_user_session_factory() as session:
-        company_id = await session.run_sync(
-            lambda db: db.query(Company.id)
-            .filter(Company.tax_id == "ASYNC-USER-1")
-            .scalar()
+        current_user = await async_user_repo.get_user_by_email(
+            session, "async-user@example.com"
         )
         users = await session.run_sync(
-            lambda db: user_service.get_users(db, company_id, 0, 100)
+            lambda db: user_service.get_users(db, current_user, 0, 100)
         )
 
         responses = [UserResponse.model_validate(user) for user in users]

@@ -28,6 +28,7 @@ from app.services.entitlement_service import (
 )
 from app.services.external_access_policy import EXTERNAL_PORTAL_ROLE_NAME
 from app.services.subscription_policy import require_company_access
+from app.services.organization_authorization_service import require_capability
 from app.services.user_scope import is_superadmin
 
 
@@ -104,6 +105,7 @@ def create_invitation(
     payload: UserInvitationCreate,
     inviter: User,
 ) -> UserInvitation:
+    require_capability(db, inviter, "access.members.manage")
     if inviter.company_id is None or inviter.company is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

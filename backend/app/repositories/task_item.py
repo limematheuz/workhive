@@ -181,17 +181,24 @@ def count_tasks_by_user(
     user_id: int,
     start_date: datetime | None = None,
     statuses: Collection[str] | None = None,
+    location_ids: set[int] | None = None,
 ) -> int:
     query = db.query(TaskItem).filter(or_(*_user_assignment_conditions(user_id)))
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
     if statuses is not None:
         query = query.filter(TaskItem.status.in_(statuses))
+    if location_ids is not None:
+        query = query.filter(TaskItem.location_id.in_(location_ids))
     return query.count()
 
 
 def count_tasks_by_user_and_status(
-    db: Session, user_id: int, status: str, start_date: datetime | None = None
+    db: Session,
+    user_id: int,
+    status: str,
+    start_date: datetime | None = None,
+    location_ids: set[int] | None = None,
 ) -> int:
     query = (
         db.query(TaskItem)
@@ -200,11 +207,16 @@ def count_tasks_by_user_and_status(
     )
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
+    if location_ids is not None:
+        query = query.filter(TaskItem.location_id.in_(location_ids))
     return query.count()
 
 
 def get_distinct_location_ids_by_user(
-    db: Session, user_id: int, start_date: datetime | None = None
+    db: Session,
+    user_id: int,
+    start_date: datetime | None = None,
+    location_ids: set[int] | None = None,
 ) -> list[int]:
     query = (
         db.query(TaskItem.location_id)
@@ -213,5 +225,7 @@ def get_distinct_location_ids_by_user(
     )
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
+    if location_ids is not None:
+        query = query.filter(TaskItem.location_id.in_(location_ids))
     results = query.distinct().all()
     return [r[0] for r in results]
