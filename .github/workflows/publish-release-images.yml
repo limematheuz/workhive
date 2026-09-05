@@ -101,25 +101,44 @@ jobs:
             "react-doctor"
           )
 
-          checks_json="$(gh api \
-            -H 'Accept: application/vnd.github+json' \
-            "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
+          for attempt in $(seq 1 17); do
+            checks_json="$(gh api \
+              -H 'Accept: application/vnd.github+json' \
+              "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
+            pending=0
 
-          for check_name in "${required_checks[@]}"; do
-            conclusion="$(jq -r --arg name "$check_name" \
-              '[.check_runs[] | select(.name == $name)]
-               | sort_by(.completed_at)
-               | last
-               | .conclusion // "missing"' <<< "$checks_json")"
+            for check_name in "${required_checks[@]}"; do
+              conclusion="$(jq -r --arg name "$check_name" \
+                '[.check_runs[] | select(.name == $name)]
+                 | sort_by(.completed_at)
+                 | last
+                 | .conclusion // "missing"' <<< "$checks_json")"
 
-            if [[ "$conclusion" != "success" ]]; then
-              printf 'Required check %s is %s for %s.\n' \
-                "$check_name" "$conclusion" "$RELEASE_SHA" >&2
-              exit 1
+              case "$conclusion" in
+                success) ;;
+                queued|in_progress|missing)
+                  printf 'Waiting for required check %s (%s), attempt %s/17.\n' \
+                    "$check_name" "$conclusion" "$attempt"
+                  pending=1
+                  ;;
+                *)
+                  printf 'Required check %s is %s for %s.\n' \
+                    "$check_name" "$conclusion" "$RELEASE_SHA" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+
+            if [[ "$pending" -eq 0 ]]; then
+              printf 'All required CI and security checks passed for the release commit.\n'
+              exit 0
             fi
+
+            sleep 15
           done
 
-          printf 'All required CI and security checks passed for the release commit.\n'
+          printf 'Timed out waiting for required checks for %s.\n' "$RELEASE_SHA" >&2
+          exit 1
 
   publish:
     name: Build and publish immutable images
