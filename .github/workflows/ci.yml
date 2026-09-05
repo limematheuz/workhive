@@ -62,6 +62,9 @@ jobs:
       - name: Test ECR deployment automation
         run: bash ../ops/deploy/test_deploy_ecr_release.sh
 
+      - name: Test host maintenance automation
+        run: bash ../ops/maintenance/test_docker_maintenance.sh
+
       - name: Validate ECR production Compose contract
         working-directory: .
         env:
