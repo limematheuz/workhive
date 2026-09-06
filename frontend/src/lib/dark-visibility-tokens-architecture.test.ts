@@ -32,6 +32,7 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
       globals,
       /\[data-slot="dialog-content"\][\s\S]*backdrop-filter:\s*blur\(var\(--dialog-surface-blur\)\)/
     );
+    assert.match(globals, /\[data-slot="alert-dialog-content"\]\.dialog-glass/);
     assert.match(
       globals,
       /\[data-slot="dialog-overlay"\][\s\S]*backdrop-filter:\s*blur\(var\(--glass-overlay-blur\)\)/

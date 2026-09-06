@@ -129,6 +129,3 @@ export const computeStatusCounts = (invoices: Invoice[]) =>
         acc[invoice.status] = (acc[invoice.status] || 0) + 1;
         return acc;
     }, {});
-
-export const isInvoicesAdmin = (roleName?: string | null) =>
-    roleName === "admin" || roleName === "superadmin";

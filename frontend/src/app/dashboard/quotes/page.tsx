@@ -13,6 +13,7 @@ import { QuoteDetailSheet } from "@/components/quotes/QuoteDetailSheet";
 import { QuotesFiltersSection } from "@/components/quotes/QuotesFiltersSection";
 import { QuotesListSection } from "@/components/quotes/QuotesListSection";
 import { useDictionary } from "@/lib/dictionary-context";
+import { canManageFinance, canViewFinance } from "@/domain/access/roles";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
@@ -49,13 +50,15 @@ function QuotesPageContent() {
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const quoteToDeleteIdRef = useRef<number | null>(null);
+    const canViewQuotes = canViewFinance(user);
+    const canManageQuotes = canManageFinance(user);
 
-    if (!userLoading && (!user || (user.role?.name !== "admin" && user.role?.name !== "superadmin"))) {
+    if (!userLoading && (!user || !canViewQuotes)) {
         redirect("/dashboard");
     }
 
     useEffect(() => {
-        if (userLoading || !user) return;
+        if (userLoading || !user || !canViewQuotes) return;
         let cancelled = false;
 
         const load = async () => {
@@ -77,10 +80,10 @@ function QuotesPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [user, userLoading]);
+    }, [canViewQuotes, user, userLoading]);
 
     const loadQuotes = useCallback(async () => {
-        if (userLoading || !user) return;
+        if (userLoading || !user || !canViewQuotes) return;
         try {
             setLoading(true);
             const data = await QuoteService.getQuotes({
@@ -98,13 +101,14 @@ function QuotesPageContent() {
         } finally {
             setLoading(false);
         }
-    }, [dict.quotes?.error_load, selectedClientId, selectedStatus, user, userLoading]);
+    }, [canViewQuotes, dict.quotes?.error_load, selectedClientId, selectedStatus, user, userLoading]);
 
     useEffect(() => {
+        if (!canViewQuotes) return;
         startTransition(() => {
             void loadQuotes();
         });
-    }, [loadQuotes]);
+    }, [canViewQuotes, loadQuotes]);
 
     const handleDeleteConfirm = async () => {
         const quoteToDeleteId = quoteToDeleteIdRef.current;
@@ -148,7 +152,7 @@ function QuotesPageContent() {
         void QuoteService.getQuote(quoteId)
             .then((quote) => {
                 if (cancelled) return;
-                if (searchParams.get("edit") === "true") {
+                if (canManageQuotes && searchParams.get("edit") === "true") {
                     handleEditQuote(quote);
                 } else {
                     setSelectedQuote(quote);
@@ -165,7 +169,7 @@ function QuotesPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [dict.quotes?.error_load, router, searchParams]);
+    }, [canManageQuotes, dict.quotes?.error_load, router, searchParams]);
 
     const STATUS_LABELS: Record<string, string> = {
         draft: dict.quotes?.status_draft ?? "Borrador",
@@ -185,7 +189,7 @@ function QuotesPageContent() {
         return clients.find((c: Client) => c.id === q.client_id)?.name ?? `#${q.client_id}`;
     };
 
-    if (userLoading || loading) {
+    if (userLoading || (canViewQuotes && loading)) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />
@@ -203,7 +207,7 @@ function QuotesPageContent() {
                 title={dict.quotes?.list_title ?? "Presupuestos"}
                 subtitle={dict.quotes?.list_subtitle ?? "Crea y gestiona presupuestos para tus clientes."}
                 className="mb-8"
-                actions={(
+                actions={canManageQuotes ? (
                     <Button
                         type="button"
                         onClick={() => setIsCreateOpen(true)}
@@ -212,7 +216,7 @@ function QuotesPageContent() {
                         <Plus className="w-4 h-4" />
                         {dict.quotes?.new_quote ?? "Nuevo Presupuesto"}
                     </Button>
-                )}
+                ) : undefined}
             />
 
             <QuotesFiltersSection
@@ -237,6 +241,7 @@ function QuotesPageContent() {
                     actions: dict.quotes?.col_actions ?? "Actions",
                 }}
                 getClientName={getClientName}
+                canManage={canManageQuotes}
                 onViewQuote={handleViewQuote}
                 onEditQuote={handleEditQuote}
                 onDeleteQuote={(quoteId) => {
@@ -266,6 +271,7 @@ function QuotesPageContent() {
                 clients={clients}
                 onQuoteUpdated={loadQuotes}
                 companyName={companyName}
+                canManage={canManageQuotes}
             />
 
             <DeleteConfirmDialog

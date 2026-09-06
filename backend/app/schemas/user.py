@@ -72,6 +72,10 @@ class UserResponse(UserBase):
     updated_at: datetime
     active_location_id: int | None = None
     active_location_name: str | None = None
+    # Presentation hints from the canonical resolver. Backend endpoints still
+    # enforce capabilities independently for every request.
+    can_view_finance: bool = False
+    can_manage_finance: bool = False
 
 
 class UserStatsResponse(BaseModel):

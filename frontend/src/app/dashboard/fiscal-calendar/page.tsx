@@ -2,12 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ExternalLink, Info, Loader2, Settings2 } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     buildFiscalCalendarDeadlines,
@@ -47,7 +48,7 @@ export default function FiscalCalendarPage() {
     const { dict, locale } = useDictionary();
     const text = dict.fiscal_calendar;
     const { user, loading: userLoading } = useUser();
-    const canManage = canAdministerCompany(user) && !isPlatformSuperadmin(user);
+    const canManage = canManageFinance(user) && !isPlatformSuperadmin(user);
     const [settings, setSettings] = useState<CompanyFiscalSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -113,6 +114,8 @@ export default function FiscalCalendarPage() {
         }
     };
 
+    if (!userLoading && !canManage) redirect("/dashboard");
+
     if (userLoading || (loading && canManage)) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
@@ -122,14 +125,7 @@ export default function FiscalCalendarPage() {
         );
     }
 
-    if (!canManage) {
-        return (
-            <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-6">
-                <p className="text-lg font-black text-[var(--text-main)]">{text.restricted_title}</p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">{text.restricted_description}</p>
-            </div>
-        );
-    }
+    if (!canManage) return null;
 
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">

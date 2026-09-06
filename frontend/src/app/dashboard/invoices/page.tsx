@@ -41,7 +41,7 @@ export default function InvoicesPage() {
     const {
         activeView, clients, collaboratorOptions, createSheet, dict, filteredInvoiceableTasks,
         getClientName, getStatusText, handleJobFilterChange, handleToggleJob, invoiceSearch,
-        invoiceStats, isAdmin, jobDateFrom, jobDateTo, jobInvoiceFilter, jobPartyFilter, jobSearch,
+        invoiceStats, canManageInvoices, canViewInvoices, jobDateFrom, jobDateTo, jobInvoiceFilter, jobPartyFilter, jobSearch,
         loadInvoiceableTasks, loadInvoices, loading, loadingJobs, month, openCreateSheet,
         previousInvoiceStats, resetCreateForm, resetInvoiceFilters, selectedClientId, selectedInvoiceId,
         selectedJobIds, selectedJobs, selectedJobsClientId, selectedStatus, setActiveView,
@@ -50,7 +50,7 @@ export default function InvoicesPage() {
         setSelectedJobIds, setSelectedStatus, statusCounts, user, userLoading, visibleInvoices,
     } = workspace;
 
-    if (!userLoading && (!user || !isAdmin)) redirect("/dashboard");
+    if (!userLoading && (!user || !canViewInvoices)) redirect("/dashboard");
 
     if (userLoading || (activeView === "invoices" && loading)) {
         return (
@@ -60,12 +60,12 @@ export default function InvoicesPage() {
             </div>
         );
     }
-    if (!user || !isAdmin) return null;
+    if (!user || !canViewInvoices) return null;
 
     return (
         <div className="dashboard-page-content px-3 py-4 sm:px-5 lg:px-7">
             <div className="mx-auto max-w-[90rem] space-y-5">
-                <InvoicesPageHeader title={dict.invoices.list_title} subtitle={dict.invoices.list_subtitle} newInvoiceLabel={dict.invoices.new_invoice} onCreateInvoice={() => openCreateSheet()} />
+                <InvoicesPageHeader title={dict.invoices.list_title} subtitle={dict.invoices.list_subtitle} newInvoiceLabel={dict.invoices.new_invoice} onCreateInvoice={() => openCreateSheet()} canManage={canManageInvoices} />
 
                 {activeView === "invoices" ? <InvoicesStatsCards stats={invoiceStats} previousStats={previousInvoiceStats} statusCounts={statusCounts} labels={dict.invoices} /> : null}
 
@@ -73,6 +73,7 @@ export default function InvoicesPage() {
                     activeView={activeView}
                     onActiveViewChange={setActiveView}
                     tabLabels={dict.invoices}
+                    canManage={canManageInvoices}
                     filtersProps={{
                         search: invoiceSearch,
                         onSearchChange: setInvoiceSearch,
@@ -126,11 +127,12 @@ export default function InvoicesPage() {
                         getClientName,
                         getStatusText,
                         onOpenInvoice: setSelectedInvoiceId,
+                        canManage: canManageInvoices,
                         labels: dict.invoices,
                     }}
                 />
 
-                <InvoiceCreateSheet
+                {canManageInvoices && <InvoiceCreateSheet
                     key={createSheet.dialogKey}
                     open={createSheet.open}
                     onOpenChange={(open) => {
@@ -148,7 +150,7 @@ export default function InvoicesPage() {
                     initialClientId={createSheet.clientId}
                     initialTaskIds={createSheet.taskIds}
                     initialTasks={createSheet.tasks}
-                />
+                />}
 
                 <InvoiceDetailDialog
                     invoiceId={selectedInvoiceId}

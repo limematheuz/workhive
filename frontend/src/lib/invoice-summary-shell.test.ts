@@ -10,7 +10,8 @@ test("sales ledger reuses shared UI and keeps issued invoices read-only", () => 
 
     assert.match(page, /DataListTable/);
     assert.match(page, /PageHeader/);
-    assert.match(page, /canAdministerCompany\(user\) && !isPlatformSuperadmin\(user\)/);
+    assert.match(page, /canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/);
+    assert.match(page, /canManageFinance\(user\) && !isPlatformSuperadmin\(user\)/);
     assert.match(page, /SalesLedgerService\.getEntries/);
     assert.match(page, /SalesLedgerRecordDialog/);
     assert.match(page, /SalesLedgerImportDialog/);
@@ -18,6 +19,7 @@ test("sales ledger reuses shared UI and keeps issued invoices read-only", () => 
     assert.match(page, /SALES_LEDGER_CSV_TEMPLATE/);
     assert.match(page, /entry\.is_editable/);
     assert.match(page, /ledger_invoice_read_only/);
+    assert.match(page, /canManage && entry\.is_editable/);
     assert.match(page, /grid-cols-\[minmax\(7\.5rem/);
     assert.doesNotMatch(page, /InvoiceCreateSheet|deleteInvoiceDraft/);
     assert.doesNotMatch(page, /onRowClick|router\.push|\?edit=true/);

@@ -9,7 +9,6 @@ import {
     filterInvoiceableTasks,
     filterVisibleInvoices,
     getCollaboratorOptions,
-    isInvoicesAdmin,
     mapCompletedJobsToTasks,
     mergeClientsIfChanged,
     mergeInvoiceableTasksIfChanged,
@@ -19,6 +18,7 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
+import { canManageFinance, canViewFinance } from "@/domain/access/roles";
 import { ClientService, type Client } from "@/services/client.service";
 import { InvoiceService } from "@/services/invoice.service";
 import type { Invoice } from "@/types/invoice";
@@ -60,10 +60,11 @@ export function useInvoicesWorkspace() {
     const [jobDateFrom, setJobDateFrom] = useState("");
     const [jobDateTo, setJobDateTo] = useState("");
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
-    const isAdmin = isInvoicesAdmin(user?.role?.name);
+    const canViewInvoices = canViewFinance(user);
+    const canManageInvoices = canManageFinance(user);
 
     const loadInvoices = useCallback(async () => {
-        if (userLoading || !user || !isAdmin) return;
+        if (userLoading || !user || !canViewInvoices) return;
         try {
             setLoading(true);
             const [data, clientsData] = await Promise.all([
@@ -81,16 +82,16 @@ export function useInvoicesWorkspace() {
         } finally {
             setLoading(false);
         }
-    }, [clients.length, dict.invoices.error_load, isAdmin, selectedClientId, selectedStatus, user, userLoading]);
+    }, [canViewInvoices, clients.length, dict.invoices.error_load, selectedClientId, selectedStatus, user, userLoading]);
 
     useEffect(() => {
-        if (userLoading || !user || !isAdmin) return;
+        if (userLoading || !user || !canViewInvoices) return;
         startTransition(() => void loadInvoices());
-    }, [isAdmin, loadInvoices, user, userLoading]);
+    }, [canViewInvoices, loadInvoices, user, userLoading]);
 
     const jobsLoadedRef = useRef(false);
     const loadInvoiceableTasks = useCallback(async (options?: { silent?: boolean }) => {
-        if (userLoading || !user || !isAdmin) return;
+        if (userLoading || !user || !canManageInvoices) return;
         const showLoader = !options?.silent && !jobsLoadedRef.current;
         try {
             if (showLoader) setLoadingJobs(true);
@@ -105,12 +106,12 @@ export function useInvoicesWorkspace() {
         } finally {
             setLoadingJobs(false);
         }
-    }, [dict.invoices.error_load, isAdmin, user, userLoading]);
+    }, [canManageInvoices, dict.invoices.error_load, user, userLoading]);
 
     useEffect(() => {
-        if (activeView !== "jobs" || userLoading || !user || !isAdmin) return;
+        if (activeView !== "jobs" || userLoading || !user || !canManageInvoices) return;
         startTransition(() => void loadInvoiceableTasks());
-    }, [activeView, isAdmin, loadInvoiceableTasks, user, userLoading]);
+    }, [activeView, canManageInvoices, loadInvoiceableTasks, user, userLoading]);
 
     const getClientName = (clientId: number) => clients.find((client) => client.id === clientId)?.name || `Client ID: ${clientId}`;
     const getStatusText = (status: Invoice["status"]) => getInvoiceStatusText(status, dict.invoices);
@@ -180,7 +181,8 @@ export function useInvoicesWorkspace() {
         invoiceSearch,
         invoiceStats,
         invoiceableTasks,
-        isAdmin,
+        canManageInvoices,
+        canViewInvoices,
         jobDateFrom,
         jobDateTo,
         jobInvoiceFilter,

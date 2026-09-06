@@ -98,6 +98,10 @@ def test_external_accountant_has_read_only_finance_access_and_monthly_exports(cl
         .count()
         == 0
     )
+    identity = client.get("/api/v1/users/me", headers=headers)
+    assert identity.status_code == 200, identity.text
+    assert identity.json()["can_view_finance"] is True
+    assert identity.json()["can_manage_finance"] is False
     own_client = _client(db, company, "principal")
     other_client = _client(db, other_company, "otra")
     db.add_all(

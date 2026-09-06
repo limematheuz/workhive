@@ -26,13 +26,17 @@ from app.schemas.user import UserResponse, UserStatsResponse, UserUpdate
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
 from app.services import user_service
 from app.services import audit_service
+from app.services import organization_authorization_service
 from app.services.subscription_policy import require_company_access
 
 router = APIRouter()
 
 
 @router.get("/me", response_model=UserResponse)
-async def read_current_user(current_user: User = AsyncAuthenticatedUser):
+async def read_current_user(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncAuthenticatedUser,
+):
     """Return the signed-in identity without opening a tenant workspace.
 
     A sponsored partner portal has a valid session but deliberately does not
@@ -41,7 +45,25 @@ async def read_current_user(current_user: User = AsyncAuthenticatedUser):
     """
     if current_user.role.name != "partner_portal" and current_user.company:
         require_company_access(current_user.company)
-    return current_user
+    return await db.run_sync(
+        lambda sync_db: _current_user_response(sync_db, current_user)
+    )
+
+
+def _current_user_response(db: Session, current_user: User) -> UserResponse:
+    response = UserResponse.model_validate(current_user)
+    if current_user.role.name == "partner_portal" or current_user.company_id is None:
+        return response
+    return response.model_copy(
+        update={
+            "can_view_finance": organization_authorization_service.has_capability(
+                db, current_user, "finance.read"
+            ),
+            "can_manage_finance": organization_authorization_service.has_capability(
+                db, current_user, "finance.manage"
+            ),
+        }
+    )
 
 
 @router.get("/", response_model=list[UserResponse])

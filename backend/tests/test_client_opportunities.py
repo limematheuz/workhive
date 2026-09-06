@@ -4,6 +4,7 @@ from app.core.security import create_access_token
 from app.models.client import Client
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership
+from app.models.location import Location
 from app.models.user import User
 from app.services import organization_bootstrap_service
 
@@ -123,6 +124,70 @@ def test_client_opportunities_keep_sales_context_and_an_activity_history(client)
     ]
     assert activities.json()[1]["stage_from"] == "qualified"
     assert activities.json()[1]["stage_to"] == "lost"
+
+
+def test_converting_a_lead_preserves_its_existing_commercial_context(client, db):
+    headers = _admin_headers(client, "conversion")
+    created = client.post(
+        "/api/v1/clients/",
+        headers=headers,
+        json=_lead_payload("Prospecto sin copia"),
+    )
+    assert created.status_code == 201, created.text
+    client_id = created.json()["id"]
+
+    contact = client.post(
+        f"/api/v1/clients/{client_id}/contacts",
+        headers=headers,
+        json={"full_name": "Marta Comercial", "roles": ["commercial"]},
+    )
+    assert contact.status_code == 201, contact.text
+
+    opportunity = client.post(
+        f"/api/v1/clients/{client_id}/opportunities",
+        headers=headers,
+        json={"title": "Primera propuesta"},
+    )
+    assert opportunity.status_code == 201, opportunity.text
+    activity = client.post(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity.json()['id']}/activities",
+        headers=headers,
+        json={"activity_type": "note", "body": "Esperando confirmación."},
+    )
+    assert activity.status_code == 201, activity.text
+
+    company = db.query(Company).filter_by(tax_id="OPPORTUNITY-conversion").one()
+    location = Location(
+        name="Ubicación del prospecto",
+        address="Calle del Prospecto 1",
+        city="Madrid",
+        client_id=client_id,
+        owner_company_id=company.id,
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.commit()
+
+    converted = client.patch(
+        f"/api/v1/clients/{client_id}",
+        headers=headers,
+        json={"relationship_status": "client"},
+    )
+    assert converted.status_code == 200, converted.text
+    assert converted.json()["id"] == client_id
+    assert converted.json()["relationship_status"] == "client"
+
+    contacts = client.get(f"/api/v1/clients/{client_id}/contacts", headers=headers)
+    activities = client.get(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity.json()['id']}/activities",
+        headers=headers,
+    )
+    assert contacts.status_code == 200
+    assert [item["id"] for item in contacts.json()] == [contact.json()["id"]]
+    assert activities.status_code == 200
+    assert activity.json()["id"] in [item["id"] for item in activities.json()]
+    assert db.query(Location).filter_by(id=location.id).one().client_id == client_id
+    assert db.query(Client).filter_by(id=client_id).count() == 1
 
 
 def test_client_opportunities_enforce_tenant_owner_and_write_boundaries(client, db):

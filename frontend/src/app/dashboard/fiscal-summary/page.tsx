@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Calculator, FileText, Landmark, Loader2, ReceiptText } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { PageHeader } from "@/components/ui/page-header";
@@ -76,18 +77,13 @@ export default function FiscalSummaryPage() {
         [currentYear, year],
     );
 
+    if (!userLoading && !canViewSummary) redirect("/dashboard");
+
     if (userLoading || loading) {
         return <FiscalSummaryLoading label={text.loading} />;
     }
 
-    if (!canViewSummary) {
-        return (
-            <div className="mx-auto max-w-3xl rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-6">
-                <p className="text-lg font-black text-[var(--text-main)]">{dict.finance_analytics.restricted_title}</p>
-                <p className="mt-2 text-sm text-[var(--text-muted)]">{dict.finance_analytics.restricted_desc}</p>
-            </div>
-        );
-    }
+    if (!canViewSummary) return null;
 
     if (!summary) return <FiscalSummaryLoading label={text.loading} />;
 

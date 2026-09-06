@@ -32,6 +32,7 @@ interface QuoteDetailSheetProps {
     clients: Client[]
     onQuoteUpdated: () => void
     companyName?: string
+    canManage: boolean
 }
 
 export function QuoteDetailSheet({
@@ -41,6 +42,7 @@ export function QuoteDetailSheet({
     clients,
     onQuoteUpdated,
     companyName,
+    canManage,
 }: QuoteDetailSheetProps) {
     const { dict } = useDictionary()
     const [loading, setLoading] = React.useState(false)
@@ -151,6 +153,7 @@ export function QuoteDetailSheet({
                                 quote={quote}
                                 dict={dict}
                                 loading={loading}
+                                canManage={canManage}
                                 clientName={clientName}
                                 statusLabel={statusLabel}
                                 onDownload={handleDownloadPdf}

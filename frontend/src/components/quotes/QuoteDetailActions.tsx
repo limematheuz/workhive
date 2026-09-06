@@ -20,6 +20,7 @@ type QuoteDetailActionsProps = {
     quote: Quote;
     dict: Dictionary;
     loading: boolean;
+    canManage: boolean;
     clientName: string;
     statusLabel: string;
     onDownload: () => void;
@@ -33,6 +34,7 @@ export function QuoteDetailActions({
     quote,
     dict,
     loading,
+    canManage,
     clientName,
     statusLabel,
     onDownload,
@@ -117,7 +119,7 @@ export function QuoteDetailActions({
                 ))}
             </section>
 
-            {(showEmail || showDraftActions || showSentActions) && (
+            {canManage && (showEmail || showDraftActions || showSentActions) && (
                 <section className="mt-4 flex flex-wrap gap-2 border-t border-[var(--border-soft)] pt-4">
                     {showEmail && (
                         <Button type="button" variant="secondary" disabled={loading} onClick={onSendEmail}>
