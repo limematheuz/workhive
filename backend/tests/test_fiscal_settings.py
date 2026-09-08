@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
@@ -103,6 +104,7 @@ def test_company_fiscal_settings_upload_certificate_and_report_readiness(
     assert payload["producer_configured"] is True
     assert payload["submission_available"] is True
     assert payload["environment"] == "test"
+    assert not Path(settings.FISCAL_CERTIFICATE_STORAGE_PATH).exists()
 
 
 def test_company_fiscal_calendar_preferences_are_company_scoped_and_validated(client):

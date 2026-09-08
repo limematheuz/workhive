@@ -38,12 +38,6 @@ def submit_fiscal_record(
     company_id: int,
     record_id: int,
 ) -> FiscalInvoiceRecord:
-    certificate_path, certificate_password, environment = (
-        company_fiscal_settings_service.get_submission_credentials(
-            db,
-            company_id,
-        )
-    )
     record = _record(db, company_id, record_id)
     if record.submission_status in FINAL_STATUSES:
         return record
@@ -62,12 +56,16 @@ def submit_fiscal_record(
     db.commit()
 
     try:
-        result = submit_record(
-            record.request_xml,
-            certificate_path=certificate_path,
-            certificate_password=certificate_password,
-            environment=environment,
-        )
+        with company_fiscal_settings_service.submission_credentials(
+            db,
+            company_id,
+        ) as (certificate_path, certificate_password, environment):
+            result = submit_record(
+                record.request_xml,
+                certificate_path=certificate_path,
+                certificate_password=certificate_password,
+                environment=environment,
+            )
     except (httpx.HTTPError, OSError, ValueError) as exc:
         record = _record(db, company_id, record_id)
         record.error_message = str(exc)[:2000]

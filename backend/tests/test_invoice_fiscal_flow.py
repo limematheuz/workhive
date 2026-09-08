@@ -1,7 +1,5 @@
 from datetime import datetime, timezone
 from decimal import Decimal
-from pathlib import Path
-
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -22,7 +20,7 @@ from app.schemas.invoice_item import (
     InvoiceItemResponse,
     RectificationInvoiceItemCreate,
 )
-from app.services import invoice_service
+from app.services import facturae_service, invoice_service
 from tests.test_reservations import _company
 
 
@@ -91,8 +89,11 @@ def test_invoice_draft_and_issue_are_consistent_and_chained(db):
     assert issued.recipient_snapshot["tax_id"] == client.legal_number
     assert issued.pdf_generated_at is not None
     assert issued.pdf_sha256 is not None
-    pdf_path = Path(issued.pdf_path)
-    pdf_bytes = pdf_path.read_bytes()
+    assert issued.pdf_path is None
+    assert issued.pdf_storage_key is not None
+    assert issued.pdf_content_type == "application/pdf"
+    _, document = invoice_service.get_invoice_pdf(db, company.id, issued.id)
+    pdf_bytes = document.contents
     assert pdf_bytes.startswith(b"%PDF-")
     assert len(pdf_bytes) > 1_000
     record = (
@@ -107,11 +108,11 @@ def test_invoice_draft_and_issue_are_consistent_and_chained(db):
     original_pdf_hash = issued.pdf_sha256
     original_pdf_bytes = pdf_bytes
     repeated = invoice_service.issue_invoice(db, company.id, draft.id)
-    _, resolved_path = invoice_service.get_invoice_pdf(
+    _, resolved_document = invoice_service.get_invoice_pdf(
         db, company.id, repeated.id
     )
     assert repeated.pdf_sha256 == original_pdf_hash
-    assert resolved_path.read_bytes() == original_pdf_bytes
+    assert resolved_document.contents == original_pdf_bytes
 
 
 def test_full_rectification_preserves_original_and_matches_negative_total(db):
@@ -141,7 +142,43 @@ def test_full_rectification_preserves_original_and_matches_negative_total(db):
     assert rectification.tax_amount == -original.tax_amount
     assert rectification.invoice_hash is not None
     assert rectification.pdf_sha256 is not None
-    assert Path(rectification.pdf_path).read_bytes().startswith(b"%PDF-")
+    assert rectification.pdf_path is None
+    assert rectification.pdf_storage_key is not None
+    _, document = invoice_service.get_invoice_pdf(db, company.id, rectification.id)
+    assert document.contents.startswith(b"%PDF-")
+
+
+def test_facturae_is_stored_as_an_object_without_a_project_path(db):
+    company = _company(db, "Facturae Issuer SL", "A87654320")
+    client = _billing_client(db, company, legal_number="B87654320")
+    company.postal_code = "17001"
+    company.city = "Girona"
+    company.province = "Girona"
+    client.province = "Girona"
+    db.commit()
+    draft = invoice_service.create_invoice_draft(
+        db, company.id, _draft_payload(client.id)
+    )
+    issued = invoice_service.issue_invoice(db, company.id, draft.id)
+
+    invoice, generated = facturae_service.generate_facturae(
+        db,
+        company.id,
+        issued.id,
+        sign=False,
+    )
+
+    assert invoice.facturae_path is None
+    assert invoice.facturae_storage_key is not None
+    assert invoice.facturae_storage_key.startswith(
+        f"company/{company.id}/documents/invoices/facturae/"
+    )
+    assert invoice.facturae_content_type == "application/xml"
+    assert invoice.facturae_size_bytes == len(generated.contents)
+    assert generated.contents.startswith(b"<?xml")
+
+    _, resolved = facturae_service.resolve_facturae(db, company.id, issued.id)
+    assert resolved.contents == generated.contents
 
 
 def test_only_rectification_lines_can_use_negative_prices():
@@ -340,7 +377,7 @@ def test_issued_invoice_uses_snapshot_email_and_stored_pdf(
     assert emailed_invoice.id == issued.id
     assert recipient_email == client.email
     assert delivered["recipient_email"] == [client.email]
-    assert delivered["pdf_path"].read_bytes().startswith(b"%PDF-")
+    assert delivered["pdf_contents"].startswith(b"%PDF-")
 
 
 def test_draft_invoice_email_sends_proforma_without_fiscal_record(
@@ -355,7 +392,7 @@ def test_draft_invoice_email_sends_proforma_without_fiscal_record(
 
     def capture_invoice_email(**kwargs):
         delivered.update(kwargs)
-        assert kwargs["pdf_path"].read_bytes().startswith(b"%PDF-")
+        assert kwargs["pdf_contents"].startswith(b"%PDF-")
         return True
 
     monkeypatch.setattr(

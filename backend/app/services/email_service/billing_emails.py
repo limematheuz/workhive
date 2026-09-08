@@ -31,7 +31,8 @@ def send_invoice_email(
     recipient_name: str,
     issuer_name: str,
     invoice_number: str,
-    pdf_path: Path,
+    pdf_contents: bytes | None = None,
+    pdf_path: Path | None = None,
     subject: str | None = None,
     custom_message: str | None = None,
     sender_copy_email: str | None = None,
@@ -39,6 +40,12 @@ def send_invoice_email(
     document_label: str = "Factura",
     locale: str = "es",
 ) -> bool:
+    if pdf_contents is None:
+        if pdf_path is None:
+            raise ValueError("An invoice PDF attachment is required")
+        pdf_contents = pdf_path.read_bytes()
+    if not pdf_contents.startswith(b"%PDF-"):
+        raise ValueError("Invoice attachment is not a PDF")
     b = _BRAND
     is_english = locale == "en"
     copy = {
@@ -180,7 +187,7 @@ def send_invoice_email(
     message.set_content(plain_text)
     message.add_alternative(html_body, subtype="html")
     message.add_attachment(
-        pdf_path.read_bytes(),
+        pdf_contents,
         maintype="application",
         subtype="pdf",
         filename=f"{invoice_number}.pdf",

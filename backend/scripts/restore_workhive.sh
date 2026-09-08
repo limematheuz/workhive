@@ -26,21 +26,24 @@ pg_restore \
     --no-privileges \
     "${backup_directory}/database.dump"
 
-pdf_storage="${INVOICE_PDF_STORAGE_PATH:-./storage/invoices}"
+pdf_storage="${INVOICE_PDF_STORAGE_PATH:-$HOME/.local/share/workhive/invoices}"
 mkdir -p "${pdf_storage}"
 tar -xzf "${backup_directory}/invoice-pdfs.tar.gz" -C "${pdf_storage}"
 
-electronic_invoice_storage="${ELECTRONIC_INVOICE_STORAGE_PATH:-./storage/electronic-invoices}"
+electronic_invoice_storage="${ELECTRONIC_INVOICE_STORAGE_PATH:-$HOME/.local/share/workhive/electronic-invoices}"
 mkdir -p "${electronic_invoice_storage}"
 tar -xzf \
     "${backup_directory}/electronic-invoices.tar.gz" \
     -C "${electronic_invoice_storage}"
 
 if [[ "${MEDIA_STORAGE_BACKEND:-local}" == "local" ]]; then
-    media_storage="${MEDIA_STORAGE_PATH:-./storage/media}"
+    media_storage="${MEDIA_STORAGE_PATH:-$HOME/.local/share/workhive/media}"
     mkdir -p "${media_storage}"
     tar -xzf "${backup_directory}/media.tar.gz" -C "${media_storage}"
+elif [[ -f "${backup_directory}/S3_OBJECT_STORAGE_BACKUP_REQUIRED.txt" ]]; then
+    cat "${backup_directory}/S3_OBJECT_STORAGE_BACKUP_REQUIRED.txt"
 elif [[ -f "${backup_directory}/S3_MEDIA_BACKUP_REQUIRED.txt" ]]; then
+    # Backups created before object-stored fiscal documents used this filename.
     cat "${backup_directory}/S3_MEDIA_BACKUP_REQUIRED.txt"
 fi
 

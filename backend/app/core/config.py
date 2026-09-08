@@ -102,11 +102,12 @@ class Settings(BaseSettings):
     VERIFACTU_INSTALLATION_ID: str = "1"
     VERIFACTU_TIMEOUT_SECONDS: int = 30
     VERIFACTU_MAX_RETRIES: int = 8
-    INVOICE_PDF_STORAGE_PATH: str = "storage/invoices"
-    ELECTRONIC_INVOICE_STORAGE_PATH: str = "storage/electronic-invoices"
-    FISCAL_CERTIFICATE_STORAGE_PATH: str = "storage/fiscal-certificates"
+    # Legacy filesystem fallback only. Persistent documents use ObjectStorage.
+    INVOICE_PDF_STORAGE_PATH: str = "~/.local/share/workhive/invoices"
+    ELECTRONIC_INVOICE_STORAGE_PATH: str = "~/.local/share/workhive/electronic-invoices"
+    FISCAL_CERTIFICATE_STORAGE_PATH: str = "~/.local/share/workhive/fiscal-certificates"
     MEDIA_STORAGE_BACKEND: str = "local"
-    MEDIA_STORAGE_PATH: str = "storage/media"
+    MEDIA_STORAGE_PATH: str = "~/.local/share/workhive/media"
     S3_ENDPOINT_URL: str | None = None
     S3_REGION: str = "eu-west-1"
     S3_BUCKET: str | None = None

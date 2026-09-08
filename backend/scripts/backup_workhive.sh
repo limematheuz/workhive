@@ -11,9 +11,9 @@ if ! command -v pg_dump >/dev/null 2>&1; then
 fi
 
 backup_root="${BACKUP_DIR:-./backups}"
-pdf_storage="${INVOICE_PDF_STORAGE_PATH:-./storage/invoices}"
-electronic_invoice_storage="${ELECTRONIC_INVOICE_STORAGE_PATH:-./storage/electronic-invoices}"
-media_storage="${MEDIA_STORAGE_PATH:-./storage/media}"
+pdf_storage="${INVOICE_PDF_STORAGE_PATH:-$HOME/.local/share/workhive/invoices}"
+electronic_invoice_storage="${ELECTRONIC_INVOICE_STORAGE_PATH:-$HOME/.local/share/workhive/electronic-invoices}"
+media_storage="${MEDIA_STORAGE_PATH:-$HOME/.local/share/workhive/media}"
 media_backend="${MEDIA_STORAGE_BACKEND:-local}"
 retention_days="${BACKUP_RETENTION_DAYS:-30}"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
@@ -52,8 +52,8 @@ if [[ "${media_backend}" == "local" ]]; then
     archive_directory "${media_storage}" "${destination}/media.tar.gz"
 else
     tar -czf "${destination}/media.tar.gz" --files-from /dev/null
-    echo "Media uses S3; configure bucket versioning/replication separately." \
-        > "${destination}/S3_MEDIA_BACKUP_REQUIRED.txt"
+    echo "Persistent media and fiscal documents use S3; configure bucket versioning and replication separately." \
+        > "${destination}/S3_OBJECT_STORAGE_BACKUP_REQUIRED.txt"
 fi
 
 (

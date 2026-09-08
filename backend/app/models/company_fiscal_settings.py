@@ -29,7 +29,12 @@ class CompanyFiscalSettings(Base):
     quarterly_vat_enabled = Column(Boolean, nullable=False, default=False)
     quarterly_withholding_enabled = Column(Boolean, nullable=False, default=False)
     fiscal_reminder_days = Column(Integer, nullable=False, default=7)
+    # certificate_path is retained only for a controlled legacy read fallback.
     certificate_path = Column(Text, nullable=True)
+    certificate_storage_key = Column(String(500), nullable=True)
+    certificate_sha256 = Column(String(64), nullable=True)
+    certificate_content_type = Column(String(120), nullable=True)
+    certificate_size_bytes = Column(Integer, nullable=True)
     certificate_password_encrypted = Column(Text, nullable=True)
     certificate_uploaded_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

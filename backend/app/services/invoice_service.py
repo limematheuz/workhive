@@ -33,8 +33,9 @@ from app.services.invoice_fiscal import (
 from app.services.invoice_pdf import (
     generate_invoice_pdf,
     generate_invoice_preview_pdf,
-    resolve_invoice_pdf,
 )
+from app.services.invoice_pdf_storage import delete_invoice_pdf, resolve_invoice_pdf
+from app.services.storage_service import StoredObject
 from app.services.invoice_update_policy_service import (
     apply_issued_status_transition,
     task_ids_from_invoice_items,
@@ -185,17 +186,16 @@ def issue_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice:
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
     if invoice.status == "issued" and invoice.invoice_hash:
-        if not invoice.pdf_path:
-            generated_path = None
+        if not invoice.pdf_storage_key and not invoice.pdf_path:
+            generated_key = None
             try:
-                generated_path = generate_invoice_pdf(invoice)
+                generated_key = generate_invoice_pdf(invoice)
                 db.add(invoice)
                 db.commit()
                 db.refresh(invoice)
             except Exception:
                 db.rollback()
-                if generated_path:
-                    generated_path.unlink(missing_ok=True)
+                delete_invoice_pdf(generated_key)
                 raise
         return invoice
     if invoice.status != "draft":
@@ -203,10 +203,10 @@ def issue_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice:
             status_code=status.HTTP_409_CONFLICT,
             detail="Only draft invoices can be issued",
         )
-    generated_path = None
+    generated_key = None
     try:
         issue_invoice_in_transaction(db, invoice, series="INV")
-        generated_path = generate_invoice_pdf(invoice)
+        generated_key = generate_invoice_pdf(invoice)
         db.add(invoice)
         db.commit()
         db.refresh(invoice)
@@ -225,31 +225,29 @@ def issue_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice:
         return invoice
     except Exception:
         db.rollback()
-        if generated_path:
-            generated_path.unlink(missing_ok=True)
+        delete_invoice_pdf(generated_key)
         raise
 
 
 def get_invoice_pdf(
     db: Session, company_id: int, invoice_id: int
-) -> tuple[Invoice, Path]:
+) -> tuple[Invoice, StoredObject]:
     invoice = get_invoice(db, company_id, invoice_id)
     if invoice.status == "draft":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Issue the invoice before downloading its definitive PDF",
         )
-    if not invoice.pdf_path:
-        generated_path = None
+    if not invoice.pdf_storage_key and not invoice.pdf_path:
+        generated_key = None
         try:
-            generated_path = generate_invoice_pdf(invoice)
+            generated_key = generate_invoice_pdf(invoice)
             db.add(invoice)
             db.commit()
             db.refresh(invoice)
         except Exception:
             db.rollback()
-            if generated_path:
-                generated_path.unlink(missing_ok=True)
+            delete_invoice_pdf(generated_key)
             raise
     return invoice, resolve_invoice_pdf(invoice)
 
@@ -274,10 +272,11 @@ def email_invoice(
             recipient,
             document_label="PROFORMA",
         )
-        pdf_path = preview_pdf_path
+        pdf_contents = preview_pdf_path.read_bytes()
         document_label = "Proforma"
     else:
-        invoice, pdf_path = get_invoice_pdf(db, company_id, invoice_id)
+        invoice, stored_pdf = get_invoice_pdf(db, company_id, invoice_id)
+        pdf_contents = stored_pdf.contents
         recipient = invoice.recipient_snapshot or {}
         issuer = invoice.issuer_snapshot or {}
     recipient_emails = [
@@ -319,7 +318,7 @@ def email_invoice(
             or ("client" if locale == "en" else "cliente"),
             issuer_name=issuer.get("name") or "WorkHive",
             invoice_number=invoice.invoice_number,
-            pdf_path=pdf_path,
+            pdf_contents=pdf_contents,
             subject=data.subject,
             custom_message=data.message,
             sender_copy_email=sender_email if data.send_copy else None,
