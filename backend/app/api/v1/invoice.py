@@ -416,11 +416,8 @@ def download_invoice_facturae(
     return Response(
         content=document.contents,
         media_type=media_type,
-        headers={
-            "Content-Disposition": f'attachment; filename="{_facturae_filename(invoice)}"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{_facturae_filename(invoice)}"'},
     )
-
 
 @router.get("/{invoice_id}/items", response_model=list[InvoiceItemResponse])
 async def read_invoice_items(
@@ -465,9 +462,6 @@ def rectify_invoice(
         },
     )
     return rectification
-
-
-
 @router.post(
     "/{invoice_id}/items",
     response_model=InvoiceItemResponse,
@@ -482,8 +476,6 @@ def create_invoice_item(
     return invoice_item_service.create_invoice_item(
         db, current_user.company_id, invoice_id, invoice_item_data
     )
-
-
 @router.patch(
     "/{invoice_id}/items/{item_id}",
     response_model=InvoiceItemResponse,
@@ -498,8 +490,6 @@ def update_invoice_item(
     return invoice_item_service.update_invoice_item(
         db, current_user.company_id, invoice_id, item_id, item_data
     )
-
-
 @router.delete("/{invoice_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_invoice_item(
     invoice_id: int,

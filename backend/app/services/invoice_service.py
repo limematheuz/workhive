@@ -31,11 +31,10 @@ from app.services.invoice_fiscal import (
     issue_invoice_in_transaction,
 )
 from app.services.invoice_pdf import (
-    delete_invoice_pdf,
     generate_invoice_pdf,
     generate_invoice_preview_pdf,
-    resolve_invoice_pdf,
 )
+from app.services.invoice_pdf_storage import delete_invoice_pdf, resolve_invoice_pdf
 from app.services.storage_service import StoredObject
 from app.services.invoice_update_policy_service import (
     apply_issued_status_transition,
