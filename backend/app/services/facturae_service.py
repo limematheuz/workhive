@@ -1,7 +1,5 @@
 import hashlib
 import logging
-import os
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -16,6 +14,12 @@ from app.integrations.facturae.xml import (
     validate_facturae_xml,
 )
 from app.models.invoice import Invoice
+from app.services.storage_service import (
+    ObjectNotFoundError,
+    StoredObject,
+    build_document_key,
+    get_object_storage,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -62,7 +66,7 @@ def generate_facturae(
     invoice_id: int,
     *,
     sign: bool,
-) -> tuple[Invoice, Path]:
+) -> tuple[Invoice, StoredObject]:
     invoice = (
         db.query(Invoice)
         .filter(
@@ -104,22 +108,19 @@ def generate_facturae(
             detail="Facturae document could not be generated",
         ) from exc
 
-    company_directory = _storage_root() / str(company_id)
-    company_directory.mkdir(parents=True, exist_ok=True)
-    suffix = "-signed.xsig" if sign else ".xml"
-    destination = company_directory / f"facturae-{invoice.id}{suffix}"
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".facturae-{invoice.id}-",
-        suffix=suffix,
-        dir=company_directory,
-    )
-    os.close(descriptor)
-    temporary = Path(temporary_name)
+    previous_key = invoice.facturae_storage_key
+    storage_key: str | None = None
     try:
-        temporary.write_bytes(xml)
-        os.chmod(temporary, 0o600)
-        temporary.replace(destination)
-        invoice.facturae_path = str(destination)
+        storage_key = build_document_key(
+            company_id,
+            "invoices/facturae",
+            "xsig" if sign else "xml",
+        )
+        content_type = "application/octet-stream" if sign else "application/xml"
+        get_object_storage().put(storage_key, xml, content_type)
+        invoice.facturae_storage_key = storage_key
+        invoice.facturae_content_type = content_type
+        invoice.facturae_size_bytes = len(xml)
         invoice.facturae_sha256 = hashlib.sha256(xml).hexdigest()
         invoice.facturae_generated_at = datetime.now(timezone.utc)
         invoice.facturae_signature_status = "signed" if sign else "unsigned"
@@ -131,17 +132,25 @@ def generate_facturae(
         db.refresh(invoice)
     except Exception:
         db.rollback()
-        temporary.unlink(missing_ok=True)
-        destination.unlink(missing_ok=True)
+        if storage_key:
+            try:
+                get_object_storage().delete(storage_key)
+            except Exception:
+                logger.warning("Could not clean up generated Facturae object")
         raise
-    return invoice, destination
+    if previous_key and previous_key != storage_key:
+        try:
+            get_object_storage().delete(previous_key)
+        except Exception:
+            logger.warning("Could not clean up replaced Facturae object")
+    return invoice, StoredObject(contents=xml, content_type=content_type)
 
 
 def resolve_facturae(
     db: Session,
     company_id: int,
     invoice_id: int,
-) -> tuple[Invoice, Path]:
+) -> tuple[Invoice, StoredObject]:
     invoice = (
         db.query(Invoice)
         .filter(
@@ -152,10 +161,25 @@ def resolve_facturae(
     )
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
+    if invoice.facturae_storage_key:
+        try:
+            return invoice, get_object_storage().get(invoice.facturae_storage_key)
+        except ObjectNotFoundError as error:
+            raise HTTPException(
+                status_code=404,
+                detail="Facturae file is unavailable",
+            ) from error
     if not invoice.facturae_path:
         raise HTTPException(status_code=404, detail="Facturae has not been generated")
     path = Path(invoice.facturae_path).expanduser().resolve()
     root = _storage_root()
     if root not in path.parents or not path.is_file():
         raise HTTPException(status_code=404, detail="Facturae file is unavailable")
-    return invoice, path
+    return invoice, StoredObject(
+        contents=path.read_bytes(),
+        content_type=(
+            "application/xml"
+            if invoice.facturae_signature_status == "unsigned"
+            else "application/octet-stream"
+        ),
+    )

@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import APIRouter, Depends, Request, Response, status
-from fastapi.responses import FileResponse
 from app.api.deps import ActiveFinanceManager, ActiveFinanceReader
 from app.api.deps import AsyncActiveFinancialReader, get_async_db, get_db
 from app.api.pagination import PaginationLimit, PaginationOffset
@@ -171,19 +170,21 @@ def issue_invoice(
     return invoice
 
 
-@router.get("/{invoice_id}/pdf", response_class=FileResponse)
+@router.get("/{invoice_id}/pdf", response_class=Response)
 def download_invoice_pdf(
     invoice_id: int,
     db: Session = Depends(get_db),
     current_user: User = ActiveFinanceReader,
 ):
-    invoice, path = invoice_service.get_invoice_pdf(
+    invoice, document = invoice_service.get_invoice_pdf(
         db, current_user.company_id, invoice_id
     )
-    return FileResponse(
-        path,
+    return Response(
+        content=document.contents,
         media_type="application/pdf",
-        filename=f"{invoice.invoice_number}.pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{invoice.invoice_number}.pdf"'
+        },
     )
 
 
@@ -365,7 +366,7 @@ def generate_invoice_facturae(
     db: Session = Depends(get_db),
     current_user: User = ActiveFinanceManager,
 ):
-    invoice, path = facturae_service.generate_facturae(
+    invoice, _document = facturae_service.generate_facturae(
         db,
         current_user.company_id,
         invoice_id,
@@ -387,17 +388,22 @@ def generate_invoice_facturae(
     return {
         "status": invoice.facturae_signature_status,
         "sha256": invoice.facturae_sha256,
-        "filename": path.name,
+        "filename": _facturae_filename(invoice),
     }
 
 
-@router.get("/{invoice_id}/facturae", response_class=FileResponse)
+def _facturae_filename(invoice) -> str:
+    suffix = "-signed.xsig" if invoice.facturae_signature_status == "signed" else ".xml"
+    return f"{invoice.invoice_number}{suffix}"
+
+
+@router.get("/{invoice_id}/facturae", response_class=Response)
 def download_invoice_facturae(
     invoice_id: int,
     db: Session = Depends(get_db),
     current_user: User = ActiveFinanceReader,
 ):
-    invoice, path = facturae_service.resolve_facturae(
+    invoice, document = facturae_service.resolve_facturae(
         db,
         current_user.company_id,
         invoice_id,
@@ -407,10 +413,12 @@ def download_invoice_facturae(
         if invoice.facturae_signature_status == "unsigned"
         else "application/octet-stream"
     )
-    return FileResponse(
-        path,
+    return Response(
+        content=document.contents,
         media_type=media_type,
-        filename=path.name,
+        headers={
+            "Content-Disposition": f'attachment; filename="{_facturae_filename(invoice)}"'
+        },
     )
 
 

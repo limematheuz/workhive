@@ -141,6 +141,15 @@ def build_media_key(company_id: int, folder: str, extension: str) -> str:
     return f"company/{company_id}/{safe_folder}/{uuid4().hex}.{extension}"
 
 
+def build_document_key(company_id: int, document_type: str, extension: str) -> str:
+    """Return an opaque, company-bound key for an immutable business document."""
+    safe_type = normalize_key(document_type)
+    safe_extension = extension.strip().lstrip(".")
+    if not safe_extension or "/" in safe_extension or "\\" in safe_extension:
+        raise ValueError("Invalid document extension")
+    return f"company/{company_id}/documents/{safe_type}/{uuid4().hex}.{safe_extension}"
+
+
 def media_url(key: str) -> str:
     return f"{settings.API_V1_STR}/uploads/media/{normalize_key(key)}"
 

@@ -26,6 +26,12 @@ from reportlab.platypus import (
 
 from app.core.config import settings
 from app.models.invoice import Invoice
+from app.services.storage_service import (
+    ObjectNotFoundError,
+    StoredObject,
+    build_document_key,
+    get_object_storage,
+)
 
 
 def _storage_root() -> Path:
@@ -432,7 +438,7 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
     )
 
 
-def generate_invoice_pdf(invoice: Invoice) -> Path:
+def generate_invoice_pdf(invoice: Invoice) -> str:
     if invoice.status not in {"issued", "paid", "overdue", "rectified"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -444,14 +450,9 @@ def generate_invoice_pdf(invoice: Invoice) -> Path:
             detail="The invoice is missing immutable issuer or recipient data",
         )
 
-    root = _storage_root()
-    company_directory = root / str(invoice.company_id)
-    company_directory.mkdir(parents=True, exist_ok=True)
-    destination = company_directory / f"invoice-{invoice.id}.pdf"
     descriptor, temporary_name = tempfile.mkstemp(
         prefix=f".invoice-{invoice.id}-",
         suffix=".pdf",
-        dir=company_directory,
     )
     os.close(descriptor)
     temporary = Path(temporary_name)
@@ -460,16 +461,24 @@ def generate_invoice_pdf(invoice: Invoice) -> Path:
         pdf_bytes = temporary.read_bytes()
         if not pdf_bytes.startswith(b"%PDF-"):
             raise RuntimeError("Generated invoice document is not a PDF")
-        os.chmod(temporary, 0o600)
-        temporary.replace(destination)
+        storage_key = build_document_key(
+            invoice.company_id,
+            "invoices/pdf",
+            "pdf",
+        )
+        get_object_storage().put(storage_key, pdf_bytes, "application/pdf")
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
+    finally:
+        temporary.unlink(missing_ok=True)
 
-    invoice.pdf_path = str(destination)
+    invoice.pdf_storage_key = storage_key
+    invoice.pdf_content_type = "application/pdf"
+    invoice.pdf_size_bytes = len(pdf_bytes)
     invoice.pdf_sha256 = hashlib.sha256(pdf_bytes).hexdigest()
     invoice.pdf_generated_at = datetime.now(timezone.utc)
-    return destination
+    return storage_key
 
 
 def generate_invoice_preview_pdf(
@@ -519,7 +528,30 @@ def generate_invoice_preview_pdf(
         raise
 
 
-def resolve_invoice_pdf(invoice: Invoice) -> Path:
+def delete_invoice_pdf(storage_key: str | None) -> None:
+    if storage_key:
+        try:
+            get_object_storage().delete(storage_key)
+        except Exception:
+            # A failed cleanup must not conceal the database error that triggered it.
+            pass
+
+
+def resolve_invoice_pdf(invoice: Invoice) -> StoredObject:
+    if invoice.pdf_storage_key:
+        try:
+            document = get_object_storage().get(invoice.pdf_storage_key)
+        except ObjectNotFoundError as error:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The invoice PDF is unavailable",
+            ) from error
+        if not document.contents.startswith(b"%PDF-"):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="The invoice PDF is unavailable",
+            )
+        return document
     if not invoice.pdf_path:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -532,4 +564,4 @@ def resolve_invoice_pdf(invoice: Invoice) -> Path:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="The invoice PDF is unavailable",
         )
-    return path
+    return StoredObject(contents=path.read_bytes(), content_type="application/pdf")

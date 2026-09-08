@@ -1,7 +1,12 @@
 import base64
 import hashlib
+import logging
+import os
+import tempfile
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Iterator
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives.serialization import pkcs12
@@ -12,10 +17,16 @@ from app.core.config import settings
 from app.integrations.aeat.verifactu import aeat_endpoint
 from app.models.company_fiscal_settings import CompanyFiscalSettings
 from app.schemas.fiscal_settings import CompanyFiscalSettingsUpdate
+from app.services.storage_service import (
+    ObjectNotFoundError,
+    build_document_key,
+    get_object_storage,
+)
 
 
 MAX_CERTIFICATE_BYTES = 2 * 1024 * 1024
 ALLOWED_ENVIRONMENTS = {"test", "production"}
+logger = logging.getLogger(__name__)
 
 
 def _fernet() -> Fernet:
@@ -121,29 +132,50 @@ def store_certificate(
             detail="The PKCS#12 file has no private key or certificate",
         )
 
-    destination = _certificate_path(company_id)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary = destination.with_suffix(".tmp")
-    temporary.write_bytes(contents)
-    temporary.chmod(0o600)
-    temporary.replace(destination)
-
     fiscal_settings = get_or_create_settings(db, company_id)
-    fiscal_settings.certificate_path = str(destination)
+    previous_key = fiscal_settings.certificate_storage_key
+    storage_key = build_document_key(company_id, "fiscal-certificates", "p12")
+    try:
+        get_object_storage().put(storage_key, contents, "application/x-pkcs12")
+    except Exception:
+        raise
+    fiscal_settings.certificate_storage_key = storage_key
+    fiscal_settings.certificate_sha256 = hashlib.sha256(contents).hexdigest()
+    fiscal_settings.certificate_content_type = "application/x-pkcs12"
+    fiscal_settings.certificate_size_bytes = len(contents)
     fiscal_settings.certificate_password_encrypted = _encrypt(password)
     fiscal_settings.certificate_uploaded_at = datetime.now(timezone.utc)
     db.add(fiscal_settings)
-    db.commit()
-    db.refresh(fiscal_settings)
+    try:
+        db.commit()
+        db.refresh(fiscal_settings)
+    except Exception:
+        db.rollback()
+        try:
+            get_object_storage().delete(storage_key)
+        except Exception:
+            logger.warning("Could not clean up fiscal certificate object")
+        raise
+    if previous_key and previous_key != storage_key:
+        try:
+            get_object_storage().delete(previous_key)
+        except Exception:
+            logger.warning("Could not clean up replaced fiscal certificate object")
     return fiscal_settings
 
 
 def certificate_configured(fiscal_settings: CompanyFiscalSettings | None) -> bool:
     if not fiscal_settings:
         return False
+    if not fiscal_settings.certificate_password_encrypted:
+        return False
+    if fiscal_settings.certificate_storage_key:
+        try:
+            return bool(get_object_storage().get(fiscal_settings.certificate_storage_key).contents)
+        except ObjectNotFoundError:
+            return False
     return bool(
         fiscal_settings.certificate_path
-        and fiscal_settings.certificate_password_encrypted
         and Path(fiscal_settings.certificate_path).is_file()
     )
 
@@ -221,10 +253,11 @@ def get_readiness(db: Session, company_id: int) -> dict:
     return readiness_payload(fiscal_settings)
 
 
-def get_submission_credentials(
+@contextmanager
+def submission_credentials(
     db: Session,
     company_id: int,
-) -> tuple[str, str, str]:
+) -> Iterator[tuple[str, str, str]]:
     fiscal_settings = (
         db.query(CompanyFiscalSettings)
         .filter(CompanyFiscalSettings.company_id == company_id)
@@ -240,12 +273,39 @@ def get_submission_credentials(
     certificate_password = decrypt_password(
         fiscal_settings.certificate_password_encrypted
     )
-    if not fiscal_settings.certificate_path or not certificate_password:
+    if not certificate_password:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="VERI*FACTU company certificate is not configured",
         )
-    return (
+    if fiscal_settings.certificate_storage_key:
+        try:
+            certificate = get_object_storage().get(
+                fiscal_settings.certificate_storage_key
+            ).contents
+        except ObjectNotFoundError as error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="VERI*FACTU company certificate is not configured",
+            ) from error
+        descriptor, temporary_name = tempfile.mkstemp(prefix="workhive-verifactu-", suffix=".p12")
+        try:
+            os.write(descriptor, certificate)
+            os.close(descriptor)
+            descriptor = None
+            Path(temporary_name).chmod(0o600)
+            yield temporary_name, certificate_password, readiness["environment"]
+        finally:
+            if descriptor is not None:
+                os.close(descriptor)
+            Path(temporary_name).unlink(missing_ok=True)
+        return
+    if not fiscal_settings.certificate_path:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="VERI*FACTU company certificate is not configured",
+        )
+    yield (
         fiscal_settings.certificate_path,
         certificate_password,
         readiness["environment"],
