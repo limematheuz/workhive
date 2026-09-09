@@ -171,7 +171,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert "operating_model" in company_columns
     assert "swift_bic" in company_columns
     assert quote_columns["client_id"]["nullable"] is True
-    assert {"revision_number", "accepted_revision_id"} <= quote_columns
+    assert {"revision_number", "accepted_revision_id"} <= set(quote_columns)
     assert {
         "quote_id",
         "company_id",
