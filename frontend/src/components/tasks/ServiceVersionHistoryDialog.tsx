@@ -84,7 +84,7 @@ export function ServiceVersionHistoryDialog({
                 </div>
 
                 <DialogFooter>
-                    <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cerrar</Button>
+                    <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cerrar</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

@@ -322,7 +322,7 @@ function ServiceContractDetailDialogContent({
                                                 ))}
                                             </div>
                                             <div className="mt-3 flex justify-end gap-2">
-                                                <Button type="button" variant="cancel" size="sm" onClick={() => setManagedLocationId(null)}>Cancelar</Button>
+                                                <Button type="button" variant="secondary" size="sm" onClick={() => setManagedLocationId(null)}>Cancelar</Button>
                                                 <Button type="button" size="sm" disabled={saving} onClick={() => handleSaveZones(location.location_id)}>Guardar zonas</Button>
                                             </div>
                                         </div>
@@ -353,7 +353,7 @@ function ServiceContractDetailDialogContent({
                         {canManage && (
                             <div className="mt-4 flex flex-wrap justify-end gap-2">
                                 <DialogClose asChild>
-                                    <Button type="button" variant="cancel" disabled={saving}>Cerrar</Button>
+                                    <Button type="button" variant="secondary" disabled={saving}>Cerrar</Button>
                                 </DialogClose>
                                 <Button type="button" disabled={saving} onClick={handleSaveTerms}>Guardar condiciones</Button>
                                 {contract.status === "draft" && (

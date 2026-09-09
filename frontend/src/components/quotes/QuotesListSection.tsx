@@ -122,7 +122,7 @@ export function QuotesListSection({
                             </TableHeader>
                             <TableBody>
                                 {pagination.pageItems.map((quote) => (
-                                    <TableRow key={quote.id} onClick={() => onViewQuote(quote)} className="cursor-pointer">
+                                    <TableRow key={quote.id} onClick={() => onViewQuote(quote)} className="cursor-pointer border-b border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/55">
                                         <TableCell>
                                             <Button
                                                 type="button"

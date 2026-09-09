@@ -129,7 +129,7 @@ function OpenRegisterClientDialog({
                         <Button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            variant="cancel"
+                            variant="secondary"
                             className="cursor-pointer hover:translate-y-0 hover:shadow-none"
                         >
                             Cancelar

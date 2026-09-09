@@ -100,6 +100,7 @@ export default function ContractsPage() {
                 items={contracts}
                 getRowKey={(contract) => contract.id}
                 desktopFrom="lg"
+                gridClassName="grid-cols-[minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.5fr)_auto_minmax(0,0.8fr)_auto]"
                 header={{
                     title: "Contratos registrados",
                     subtitle: "Revisa servicios, ubicaciones cubiertas, SLA, vigencia y renovación.",

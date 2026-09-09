@@ -191,7 +191,7 @@ export function TemplateModal({
                         <Button
                             type="button"
                             onClick={() => setIsTemplateModalOpen(false)}
-                            variant="cancel"
+                            variant="secondary"
                         >
                             {dict.tasks.template_dialog.cancel}
                         </Button>

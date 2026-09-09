@@ -177,6 +177,7 @@ export function TasksTemplates({
                 getRowKey={(tmpl) => tmpl.id}
                 desktopFrom="md"
                 variant="plain"
+                gridClassName="grid-cols-[minmax(0,1.25fr)_minmax(0,1.8fr)_auto_minmax(0,0.85fr)_auto]"
                 header={{
                     title: "Catálogo de servicios",
                     subtitle: dict.tasks.templates_subtitle
