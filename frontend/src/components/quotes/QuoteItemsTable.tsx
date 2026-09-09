@@ -47,7 +47,7 @@ export function QuoteItemsTable({
             )}
 
             <div className={embedded ? "overflow-x-auto rounded-2xl bg-[var(--bg-tertiary)]/65" : "billing-surface overflow-hidden rounded-[24px]"}>
-                <Table className="w-full min-w-[32rem] border-collapse text-left">
+                <Table className="w-full min-w-[32rem] text-left">
                     <TableHeader>
                         <TableRow className="bg-[var(--bg-tertiary)] text-3xs font-bold uppercase tracking-wider text-[var(--text-muted)] select-none">
                             <TableHead className="px-3 py-2.5">{dict.invoices?.col_description || "Descripción"}</TableHead>

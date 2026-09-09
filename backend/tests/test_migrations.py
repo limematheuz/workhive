@@ -46,6 +46,24 @@ def test_postgresql_schema_matches_invoice_model_contract():
         quote_columns = {
             column["name"]: column for column in inspector.get_columns("quotes")
         }
+        quote_revision_columns = {
+            column["name"] for column in inspector.get_columns("quote_revisions")
+        }
+        service_contract_columns = {
+            column["name"] for column in inspector.get_columns("service_contracts")
+        }
+        service_contract_line_columns = {
+            column["name"]
+            for column in inspector.get_columns("service_contract_lines")
+        }
+        service_contract_location_columns = {
+            column["name"]
+            for column in inspector.get_columns("service_contract_locations")
+        }
+        service_contract_location_zone_columns = {
+            column["name"]
+            for column in inspector.get_columns("service_contract_location_zones")
+        }
         invoice_columns = {
             column["name"] for column in inspector.get_columns("invoices")
         }
@@ -63,6 +81,10 @@ def test_postgresql_schema_matches_invoice_model_contract():
         }
         template_task_columns = {
             column["name"] for column in inspector.get_columns("template_tasks")
+        }
+        service_catalog_version_columns = {
+            column["name"]
+            for column in inspector.get_columns("service_catalog_versions")
         }
         notification_columns = {
             column["name"] for column in inspector.get_columns("notifications")
@@ -149,6 +171,28 @@ def test_postgresql_schema_matches_invoice_model_contract():
     assert "operating_model" in company_columns
     assert "swift_bic" in company_columns
     assert quote_columns["client_id"]["nullable"] is True
+    assert {"revision_number", "accepted_revision_id"} <= quote_columns
+    assert {
+        "quote_id",
+        "company_id",
+        "version",
+        "snapshot",
+        "created_at",
+        "accepted_at",
+    } <= quote_revision_columns
+    assert {
+        "company_id",
+        "client_id",
+        "source_quote_id",
+        "source_quote_revision_id",
+        "contract_number",
+        "status",
+        "renewal_mode",
+        "quote_snapshot",
+    } <= service_contract_columns
+    assert {"contract_id", "position", "description", "quantity", "unit_price", "subtotal"} <= service_contract_line_columns
+    assert {"contract_id", "location_id", "is_active", "covered_from", "covered_until"} <= service_contract_location_columns
+    assert {"contract_location_id", "zone_id"} <= service_contract_location_zone_columns
     assert "paid_at" in invoice_columns
     assert "payment_method" in invoice_columns
     assert "client_id" in expense_columns
@@ -184,7 +228,23 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "billing_quantity_snapshot",
         "billing_unit_snapshot",
     } <= task_columns
-    assert "pricing_mode" in template_task_columns
+    assert {
+        "pricing_mode",
+        "catalog_version",
+        "estimated_duration_minutes",
+        "requirements",
+    } <= template_task_columns
+    assert {
+        "template_task_id",
+        "version",
+        "name",
+        "description",
+        "default_price",
+        "unit",
+        "pricing_mode",
+        "estimated_duration_minutes",
+        "requirements",
+    } <= service_catalog_version_columns
     assert {
         "user_id",
         "company_id",

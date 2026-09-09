@@ -272,6 +272,12 @@ function QuotesPageContent() {
                 onQuoteUpdated={loadQuotes}
                 companyName={companyName}
                 canManage={canManageQuotes}
+                onRevisionCreated={(quote) => {
+                    setSelectedQuote(null);
+                    setIsDetailOpen(false);
+                    setQuoteToEdit(quote);
+                    setIsCreateOpen(true);
+                }}
             />
 
             <DeleteConfirmDialog

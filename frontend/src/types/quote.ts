@@ -22,6 +22,8 @@ export interface Quote {
     base_amount: number;
     tax_amount: number;
     total_amount: number;
+    revision_number: number;
+    accepted_revision_id: number | null;
     discount: number;
     equivalence_surcharge: number;
     retention: number;
@@ -33,4 +35,18 @@ export interface Quote {
     items: QuoteItem[];
     created_at: string;
     updated_at: string;
+}
+
+export interface QuoteRevision {
+    id: number;
+    quote_id: number;
+    company_id: number;
+    version: number;
+    snapshot: {
+        title: string;
+        total_amount: number;
+        items: Array<Pick<QuoteItem, "description" | "quantity" | "unit_price" | "subtotal">>;
+    };
+    created_at: string;
+    accepted_at: string | null;
 }

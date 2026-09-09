@@ -20,6 +20,8 @@ from app.api.v1.invoice import router as invoices_router
 from app.api.v1.fiscal_settings import router as fiscal_settings_router
 from app.api.v1.invoice_email_contacts import router as invoice_email_contacts_router
 from app.api.v1.quotes import router as quotes_router
+from app.api.v1.quote_revisions import router as quote_revisions_router
+from app.api.v1.service_contracts import router as service_contracts_router
 from app.api.v1.expenses import router as expenses_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.reservations import router as reservations_router
@@ -128,6 +130,12 @@ api_router.include_router(
     tags=["fiscal-settings"],
 )
 api_router.include_router(quotes_router, prefix="/quotes", tags=["quotes"])
+api_router.include_router(quote_revisions_router, prefix="/quotes", tags=["quotes"])
+api_router.include_router(
+    service_contracts_router,
+    prefix="/service-contracts",
+    tags=["service-contracts"],
+)
 api_router.include_router(expenses_router, prefix="/expenses", tags=["expenses"])
 api_router.include_router(uploads_router, prefix="/uploads", tags=["uploads"])
 api_router.include_router(

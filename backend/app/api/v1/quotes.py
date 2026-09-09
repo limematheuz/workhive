@@ -20,7 +20,11 @@ from app.schemas.quote import (
     QuoteUpdate,
 )
 from app.schemas.quote_item import QuoteItemCreate, QuoteItemUpdate, QuoteItemResponse
-from app.services import audit_service, quote_item_service, quote_service
+from app.services import (
+    audit_service,
+    quote_item_service,
+    quote_service,
+)
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.services.user_scope import is_platform_superadmin
@@ -116,6 +120,7 @@ def send_quote_email(
         quote_id,
         data,
         sender_email=current_user.email,
+        actor_user_id=current_user.id,
     )
     audit_service.record_event(
         db,
@@ -145,7 +150,11 @@ def update_quote(
     current_user: User = ActiveFinanceManager,
 ):
     return quote_service.update_quote(
-        db, current_user.company_id, quote_id, quote_data
+        db,
+        current_user.company_id,
+        quote_id,
+        quote_data,
+        actor_user_id=current_user.id,
     )
 
 
@@ -161,6 +170,7 @@ def accept_quote(
         current_user.company_id,
         quote_id,
         accept_data,
+        actor_user_id=current_user.id,
     )
 
 

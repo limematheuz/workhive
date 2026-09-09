@@ -10,7 +10,7 @@ import { toast } from "@/lib/toast"
 import { DocumentEmailDialog } from "@/components/billing/DocumentEmailDialog"
 import { QuoteEmailPayload, QuoteService } from "@/services/quote.service"
 import { formatQuoteNumber } from "@/lib/format"
-import { Quote } from "@/types/quote"
+import { Quote, QuoteRevision } from "@/types/quote"
 import { useDictionary } from "@/lib/dictionary-context"
 import type { Client } from "@/services/client.service"
 import {
@@ -23,6 +23,7 @@ import { QuoteDetailItems } from "./QuoteDetailItems"
 import { QuoteDetailNotes } from "./QuoteDetailNotes"
 import { QuoteDetailActions } from "./QuoteDetailActions"
 import { QuoteDetailSummaryAside } from "./QuoteDetailSummaryAside"
+import { QuoteRevisionHistoryDialog } from "./QuoteRevisionHistoryDialog"
 import { getErrorMessage } from "@/lib/errors"
 
 interface QuoteDetailSheetProps {
@@ -33,6 +34,7 @@ interface QuoteDetailSheetProps {
     onQuoteUpdated: () => void
     companyName?: string
     canManage: boolean
+    onRevisionCreated: (quote: Quote) => void
 }
 
 export function QuoteDetailSheet({
@@ -43,12 +45,16 @@ export function QuoteDetailSheet({
     onQuoteUpdated,
     companyName,
     canManage,
+    onRevisionCreated,
 }: QuoteDetailSheetProps) {
     const { dict } = useDictionary()
     const [loading, setLoading] = React.useState(false)
     const [showRegisterClientPrompt, setShowRegisterClientPrompt] = React.useState(false)
     const [showEmailDialog, setShowEmailDialog] = React.useState(false)
     const [isSendingEmail, setIsSendingEmail] = React.useState(false)
+    const [showRevisionHistory, setShowRevisionHistory] = React.useState(false)
+    const [revisions, setRevisions] = React.useState<QuoteRevision[]>([])
+    const [loadingRevisions, setLoadingRevisions] = React.useState(false)
 
     if (!quote) return null
 
@@ -79,15 +85,17 @@ export function QuoteDetailSheet({
     ) => {
         setLoading(true)
         try {
+            let successMessage = dict.quotes?.status_updated ?? "Estado actualizado"
             if (newStatus === "accepted") {
                 await QuoteService.acceptQuote(quote.id, {
                     register_client: Boolean(clientRegistration),
                     ...(clientRegistration ? { client: clientRegistration } : {}),
                 })
+                successMessage = "Presupuesto aceptado. Se ha creado un contrato en borrador."
             } else {
                 await QuoteService.updateQuote(quote.id, { status: newStatus })
             }
-            toast.success(dict.quotes?.status_updated ?? "Estado actualizado")
+            toast.success(successMessage)
             onQuoteUpdated()
             onOpenChange(false)
         } catch (error: unknown) {
@@ -132,6 +140,33 @@ export function QuoteDetailSheet({
         }
     }
 
+    const handleShowRevisionHistory = async () => {
+        setShowRevisionHistory(true)
+        setLoadingRevisions(true)
+        try {
+            setRevisions(await QuoteService.getQuoteRevisions(quote.id))
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, "No se pudo cargar el historial de versiones"))
+        } finally {
+            setLoadingRevisions(false)
+        }
+    }
+
+    const handleCreateRevision = async () => {
+        setLoading(true)
+        try {
+            const revisedQuote = await QuoteService.createQuoteRevision(quote.id)
+            toast.success("Revisión creada. Ya puedes actualizar el presupuesto.")
+            onQuoteUpdated()
+            onOpenChange(false)
+            onRevisionCreated(revisedQuote)
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, "No se pudo crear la revisión"))
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const clientRegistrationDraft = createQuoteClientRegistrationDraft(quote)
     const documentClient = quote.client_id
         ? clients.find((client) => client.id === quote.client_id) ?? null
@@ -167,6 +202,8 @@ export function QuoteDetailSheet({
                                     }
                                 }}
                                 onMarkRejected={() => updateStatus("rejected")}
+                                onCreateRevision={() => void handleCreateRevision()}
+                                onShowRevisionHistory={() => void handleShowRevisionHistory()}
                             />
                         </div>
 
@@ -222,6 +259,14 @@ export function QuoteDetailSheet({
                 fromName={companyName ?? "WorkHive"}
                 isSending={isSendingEmail}
                 onSend={handleSendEmail}
+            />
+
+            <QuoteRevisionHistoryDialog
+                quote={quote}
+                revisions={revisions}
+                open={showRevisionHistory}
+                loading={loadingRevisions}
+                onOpenChange={setShowRevisionHistory}
             />
         </>
     )

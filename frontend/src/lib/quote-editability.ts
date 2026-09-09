@@ -1,7 +1,7 @@
 import type { Quote } from "@/types/quote";
 
-/** Content can still change after email (status → sent). Locked once accepted/rejected/expired. */
-const CONTENT_EDITABLE_STATUSES = new Set<Quote["status"]>(["draft", "sent"]);
+/** A sent quote is an immutable commercial version. Start a revision to edit it. */
+const CONTENT_EDITABLE_STATUSES = new Set<Quote["status"]>(["draft"]);
 
 export function isQuoteContentEditable(status: Quote["status"] | string): boolean {
     return CONTENT_EDITABLE_STATUSES.has(status as Quote["status"]);

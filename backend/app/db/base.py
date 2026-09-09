@@ -27,6 +27,13 @@ from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
+from app.models.quote_revision import QuoteRevision
+from app.models.service_contract import (
+    ServiceContract,
+    ServiceContractLine,
+    ServiceContractLocation,
+    ServiceContractLocationZone,
+)
 from app.models.expense import Expense
 from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.location_company_access import LocationCompanyAccess

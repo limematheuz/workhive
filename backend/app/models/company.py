@@ -60,6 +60,11 @@ class Company(Base):
 
     invoices = relationship("Invoice", back_populates="company")
     quotes = relationship("Quote", back_populates="company")
+    service_contracts = relationship(
+        "ServiceContract",
+        back_populates="company",
+        cascade="all, delete-orphan",
+    )
     expenses = relationship("Expense", back_populates="company")
     sales_ledger_records = relationship(
         "SalesLedgerRecord",

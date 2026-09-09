@@ -26,7 +26,7 @@ export function QuoteDetailItems({ quote, dict }: QuoteDetailItemsProps) {
         <div className="space-y-5">
             <div className="-mx-1 overflow-x-auto px-1">
                 <div className="min-w-[560px] overflow-hidden rounded-2xl bg-[var(--bg-tertiary)]/65">
-                    <Table className="w-full table-fixed border-collapse text-left text-[11px]">
+                    <Table className="w-full table-fixed text-left text-[11px]">
                         <TableHeader>
                             <TableRow className="bg-[color-mix(in_srgb,var(--accent-color)_16%,var(--bg-secondary))] text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                                 <TableHead className="px-3 py-2.5">{dict.invoices?.concept || "Concepto"}</TableHead>

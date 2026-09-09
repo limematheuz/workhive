@@ -7,7 +7,8 @@ from app.repositories import quote as quote_repo
 from app.services.entitlement_service import require_company_feature
 
 
-CONTENT_EDITABLE_STATUSES = frozenset({"draft", "sent"})
+CONTENT_EDITABLE_STATUSES = frozenset({"draft"})
+REVISIONABLE_STATUSES = frozenset({"sent", "rejected", "expired"})
 
 
 def require_quotes_feature(db: Session, company_id: int) -> None:
@@ -16,9 +17,22 @@ def require_quotes_feature(db: Session, company_id: int) -> None:
 
 def assert_quote_content_editable(quote) -> None:
     if quote.status not in CONTENT_EDITABLE_STATUSES:
+        detail = (
+            "Accepted quotes are final and cannot be changed"
+            if quote.status == "accepted"
+            else "Create a new revision before changing a sent, rejected, or expired quote"
+        )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot edit content of an accepted, rejected, or expired quote",
+            detail=detail,
+        )
+
+
+def assert_quote_revisionable(quote) -> None:
+    if quote.status not in REVISIONABLE_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only sent, rejected, or expired quotes can start a new revision",
         )
 
 

@@ -3,11 +3,14 @@
 import {
     CheckCircle,
     Download,
+    FilePenLine,
+    History,
     Loader2,
     Mail,
     Send,
     XCircle,
 } from "lucide-react";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { QUOTE_STATUS_BADGE } from "@/lib/constants";
@@ -28,6 +31,8 @@ type QuoteDetailActionsProps = {
     onMarkSent: () => void;
     onMarkAccepted: () => void;
     onMarkRejected: () => void;
+    onCreateRevision: () => void;
+    onShowRevisionHistory: () => void;
 };
 
 export function QuoteDetailActions({
@@ -42,6 +47,8 @@ export function QuoteDetailActions({
     onMarkSent,
     onMarkAccepted,
     onMarkRejected,
+    onCreateRevision,
+    onShowRevisionHistory,
 }: QuoteDetailActionsProps) {
     const summaryCards = [
         {
@@ -71,6 +78,7 @@ export function QuoteDetailActions({
     const showEmail = quote.status === "draft" || quote.status === "sent";
     const showDraftActions = quote.status === "draft";
     const showSentActions = quote.status === "sent";
+    const canCreateRevision = ["sent", "rejected", "expired"].includes(quote.status);
 
     return (
         <section className="billing-surface rounded-[24px] p-4 sm:p-5">
@@ -87,6 +95,9 @@ export function QuoteDetailActions({
                             )}
                         >
                             {statusLabel}
+                        </span>
+                        <span className="rounded-full border border-[var(--border-soft)] px-2.5 py-1 text-[10px] font-semibold uppercase leading-none text-[var(--text-muted)]">
+                            Versión {quote.revision_number}
                         </span>
                     </div>
                     <h1 className="mt-1 max-w-full text-[clamp(1.25rem,1.8vw,1.75rem)] font-bold leading-none tracking-tight text-[var(--text-main)] [overflow-wrap:anywhere]">
@@ -119,8 +130,18 @@ export function QuoteDetailActions({
                 ))}
             </section>
 
-            {canManage && (showEmail || showDraftActions || showSentActions) && (
-                <section className="mt-4 flex flex-wrap gap-2 border-t border-[var(--border-soft)] pt-4">
+            <section className="mt-4 flex flex-wrap gap-2 border-t border-[var(--border-soft)] pt-4">
+                <Button type="button" variant="secondary" disabled={loading} onClick={onShowRevisionHistory}>
+                    <History className="h-4 w-4" />
+                    Historial
+                </Button>
+                {quote.status === "accepted" && (
+                    <Button asChild type="button" variant="secondary">
+                        <Link href="/dashboard/contracts">Ver contrato</Link>
+                    </Button>
+                )}
+                {canManage && (showEmail || showDraftActions || showSentActions || canCreateRevision) && (
+                    <>
                     {showEmail && (
                         <Button type="button" variant="secondary" disabled={loading} onClick={onSendEmail}>
                             <Mail className="h-4 w-4" />
@@ -145,8 +166,15 @@ export function QuoteDetailActions({
                             </Button>
                         </>
                     )}
-                </section>
-            )}
+                    {canCreateRevision && (
+                        <Button type="button" disabled={loading} onClick={onCreateRevision}>
+                            <FilePenLine className="h-4 w-4" />
+                            Crear revisión
+                        </Button>
+                    )}
+                    </>
+                )}
+            </section>
         </section>
     );
 }
