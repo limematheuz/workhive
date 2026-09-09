@@ -10,10 +10,10 @@ test("tasks tabs use short plain labels in both dictionaries", () => {
 
     assert.equal(es.tasks.tab_kanban, "Tablero");
     assert.equal(es.tasks.tab_list, "Lista");
-    assert.equal(es.tasks.tab_templates, "Plantillas");
+    assert.equal(es.tasks.tab_templates, "Catálogo de servicios");
     assert.equal(en.tasks.tab_kanban, "Board");
     assert.equal(en.tasks.tab_list, "List");
-    assert.equal(en.tasks.tab_templates, "Templates");
+    assert.equal(en.tasks.tab_templates, "Service catalog");
 });
 
 test("resumen week tab shortens on mobile only", () => {

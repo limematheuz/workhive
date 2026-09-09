@@ -213,7 +213,7 @@ export function PlanCatalogEditorDialog({ open, onOpenChange }: PlanCatalogEdito
                             </div>
                         </div>
                         <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
-                            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+                            <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cancelar</Button>
                             <Button type="submit" disabled={saving || changes.length === 0}>
                                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                                 Publicar nueva versión

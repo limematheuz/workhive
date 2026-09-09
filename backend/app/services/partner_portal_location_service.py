@@ -52,6 +52,9 @@ def create_location(db: Session, *, grant: PartnerPortalGrant, data: PartnerPort
         profile=data.profile,
         access=data.access,
         spaces=data.spaces,
+        contacts=data.contacts,
+        risks=data.risks,
+        service_windows=data.service_windows,
     )
     try:
         location = location_service.create_location_in_transaction(

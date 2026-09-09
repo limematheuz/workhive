@@ -272,7 +272,7 @@ export function useProfile() {
                     ? UserService.getUserStats(user.id).catch(() => null)
                     : Promise.resolve(null),
                 canLoadOperationalData ? UserService.getUserWorkSessions(10) : Promise.resolve([]),
-                canLoadOperationalData ? UserService.getUserTasks(user.id, 100) : Promise.resolve([]),
+                canLoadOperationalData ? UserService.getUserTasks(user.id, 100).catch(() => [] as TaskItem[]) : Promise.resolve([]),
                 canLoadOperationalData ? LocationService.getLocations() : Promise.resolve([]),
                 isAdm && canLoadOperationalData ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
                 (isAdm || isMgr) && canLoadOperationalData ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),

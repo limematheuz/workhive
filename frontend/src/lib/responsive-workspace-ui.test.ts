@@ -11,10 +11,12 @@ test("summary metric grids keep two columns on mobile and do not stretch an odd 
     assert.doesNotMatch(grid, /last:col-span-2/);
 });
 
-test("shared shadcn tables remove horizontal scrolling on mobile", () => {
+test("shared shadcn tables keep native table semantics while list views provide cards on mobile", () => {
     const table = read("../components/ui/table.tsx");
-    assert.match(table, /max-md:overflow-visible/);
-    assert.match(table, /max-md:!min-w-0/);
-    assert.match(table, /max-md:\[&_thead\]:sr-only/);
-    assert.match(table, /max-md:\[&_td\]:flex/);
+    const dataList = read("../components/ui/data-list-table.tsx");
+
+    assert.match(table, /w-full caption-bottom text-sm/);
+    assert.match(table, /border-b border-\[var\(--table-divider\)\] transition-colors hover:!bg-muted\/50/);
+    assert.match(dataList, /<Card/);
+    assert.match(dataList, /lg:hidden|md:hidden/);
 });

@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api"
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import { LocationWorkspaceService } from "@/services/location-workspace.service"
 import type {
     Location,
@@ -57,9 +57,7 @@ export const LocationService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching locations")
-        }
+        await assertApiResponseOk(response, "No se pudieron cargar las ubicaciones.")
         return await response.json()
     },
 

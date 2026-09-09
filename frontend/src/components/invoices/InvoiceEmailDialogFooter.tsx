@@ -114,7 +114,7 @@ export function InvoiceEmailDialogFooter({
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-self-end">
                 <Button
                     type="button"
-                    variant="dangerSoft"
+                    variant="cancel"
                     onClick={onCancel}
                     disabled={isSending}
                     className="min-h-11 px-5"

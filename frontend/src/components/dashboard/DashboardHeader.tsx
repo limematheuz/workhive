@@ -23,6 +23,7 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/organization") ? dict.organization.title
         : pathname.includes("/dashboard/collaborations") ? dict.collaborations.title
         : pathname.includes("/dashboard/clients") ? dict.dashboard.clients
+        : pathname.includes("/dashboard/contracts") ? "Contratos"
         : pathname.includes("/dashboard/locations") ? dict.dashboard.locations
         : pathname.includes("/dashboard/tasks") ? dict.dashboard.tasks
         : pathname.includes("/dashboard/invoice-summary") ? dict.invoices.summary_nav

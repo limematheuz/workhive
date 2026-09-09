@@ -1,6 +1,8 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+from app.schemas.location_access import Weekday
 
 
 ScalarAttribute = bool | int | float | str
@@ -34,6 +36,106 @@ class LocationProfileInput(BaseModel):
 
 
 class LocationProfileResponse(LocationProfileInput):
+    location_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+LocationContactRole = Literal[
+    "operations",
+    "access",
+    "emergency",
+    "quality",
+    "general",
+]
+
+
+class LocationContactInput(BaseModel):
+    id: int | None = Field(default=None, gt=0)
+    full_name: str = Field(min_length=1, max_length=120)
+    email: EmailStr | None = None
+    phone: str | None = Field(default=None, max_length=30)
+    role: LocationContactRole = "general"
+    is_primary: bool = False
+    is_active: bool = True
+
+    @field_validator("full_name", "phone")
+    @classmethod
+    def normalize_contact_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("Value cannot be blank")
+        return normalized
+
+    @model_validator(mode="after")
+    def require_a_contact_method(self):
+        if not self.phone and not self.email:
+            raise ValueError("A location contact needs an email or phone number")
+        if self.is_primary and not self.is_active:
+            raise ValueError("An inactive location contact cannot be primary")
+        return self
+
+
+class LocationContactResponse(LocationContactInput):
+    id: int
+    location_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+LocationRiskSeverity = Literal["low", "medium", "high", "critical"]
+LocationRiskStatus = Literal["open", "mitigated"]
+
+
+class LocationRiskInput(BaseModel):
+    id: int | None = Field(default=None, gt=0)
+    title: str = Field(min_length=1, max_length=160)
+    description: str | None = Field(default=None, max_length=2000)
+    severity: LocationRiskSeverity = "medium"
+    status: LocationRiskStatus = "open"
+    mitigation_notes: str | None = Field(default=None, max_length=2000)
+
+    _trim_strings = field_validator(
+        "title", "description", "mitigation_notes"
+    )(_trim_optional)
+
+
+class LocationRiskResponse(LocationRiskInput):
+    id: int
+    location_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LocationServiceWindowInput(BaseModel):
+    id: int | None = Field(default=None, gt=0)
+    label: str | None = Field(default=None, max_length=120)
+    days: list[Weekday] = Field(min_length=1, max_length=7)
+    starts_at: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    ends_at: str = Field(pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    notes: str | None = Field(default=None, max_length=2000)
+    is_active: bool = True
+
+    _trim_strings = field_validator("label", "notes")(_trim_optional)
+
+    @field_validator("days")
+    @classmethod
+    def unique_days(cls, value: list[Weekday]) -> list[Weekday]:
+        if len(value) != len(set(value)):
+            raise ValueError("days must not contain duplicates")
+        return value
+
+    @model_validator(mode="after")
+    def end_must_follow_start(self):
+        if self.ends_at <= self.starts_at:
+            raise ValueError("A service window must end after it starts")
+        return self
+
+
+class LocationServiceWindowResponse(LocationServiceWindowInput):
+    id: int
     location_id: int
 
     model_config = ConfigDict(from_attributes=True)

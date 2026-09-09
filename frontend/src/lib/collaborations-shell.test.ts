@@ -28,6 +28,8 @@ test("partner companies have their own operational workspace", () => {
     assert.match(externalNetwork, /PremiumTabs/);
     assert.match(externalNetwork, /CollaborationControlCenter embedded/);
     assert.match(externalNetwork, /ExternalAccessControlCenter embedded/);
+    assert.match(externalNetwork, /router\.replace\(tab === "operations"/);
+    assert.doesNotMatch(externalNetwork, /window\.history\.replaceState/);
     assert.match(addCollaborator, /connect_existing_company/);
     assert.match(addCollaborator, /invite_property_manager_portal/);
     assert.match(management, /SentCompanyInvitationsPanel/);

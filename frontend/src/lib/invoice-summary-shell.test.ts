@@ -20,7 +20,9 @@ test("sales ledger reuses shared UI and keeps issued invoices read-only", () => 
     assert.match(page, /entry\.is_editable/);
     assert.match(page, /ledger_invoice_read_only/);
     assert.match(page, /canManage && entry\.is_editable/);
-    assert.match(page, /grid-cols-\[minmax\(7\.5rem/);
+    assert.match(page, /renderLedgerDesktopCells/);
+    assert.match(page, /<ReceiptText className="size-4" \/>/);
+    assert.doesNotMatch(page, /grid-cols-\[minmax\(7\.5rem/);
     assert.doesNotMatch(page, /InvoiceCreateSheet|deleteInvoiceDraft/);
     assert.doesNotMatch(page, /onRowClick|router\.push|\?edit=true/);
     assert.doesNotMatch(page, /coste|margen|profit/i);

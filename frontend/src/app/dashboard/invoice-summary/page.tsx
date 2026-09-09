@@ -198,7 +198,6 @@ export default function InvoiceSummaryPage() {
                                                 : column.key === "status" ? copy.ledger_collected
                                                     : column.label,
                     }))}
-                    gridClassName="grid-cols-[minmax(7.5rem,.9fr)_minmax(6.5rem,.75fr)_minmax(10rem,1.3fr)_minmax(7.5rem,.85fr)_minmax(6.5rem,.72fr)_minmax(6.5rem,.72fr)_minmax(6.5rem,.72fr)_minmax(5rem,.5fr)]"
                     header={{ title: copy.ledger_title, subtitle: copy.ledger_rectification_note, countLabel: copy.ledger_records.replace("{count}", String(rows.length)) }}
                     loading={loading}
                     loadingLabel={copy.ledger_loading}
@@ -223,7 +222,7 @@ export default function InvoiceSummaryPage() {
                     )}
                     empty={<p className="text-sm text-[var(--text-muted)]">{copy.ledger_empty}</p>}
                     rowAriaLabel={(entry) => `${entry.document_number}: ${entry.client_name}`}
-                    renderDesktopRow={(entry) => <LedgerDesktopRow entry={entry} copy={copy} onEdit={openEditRecord} canManage={canManageSummary} />}
+                    renderDesktopRow={(entry) => renderLedgerDesktopCells(entry, copy, openEditRecord, canManageSummary)}
                     renderCompactRow={(entry) => <LedgerCompactRow entry={entry} copy={copy} onEdit={openEditRecord} canManage={canManageSummary} />}
                 />
             </div>
@@ -239,19 +238,17 @@ function toTrend(current: number, previous: number, comparisonDirection?: "highe
     return value === null ? undefined : { value, comparisonDirection };
 }
 
-function LedgerDesktopRow({ entry, copy, onEdit, canManage }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void; canManage: boolean }) {
-    return (
-        <>
-            <span className="truncate font-mono text-xs font-semibold text-[var(--text-main)]">{entry.document_number}</span>
-            <span className="text-xs text-[var(--text-muted)]">{formatDate(entry.entry_date)}</span>
-            <span className="min-w-0"><span className="block truncate text-xs font-semibold text-[var(--text-main)]">{entry.client_name}</span><span className="mt-0.5 block text-[10px] text-[var(--text-muted)]">{entry.is_editable ? copy.ledger_manual_record : copy.ledger_invoice_read_only}</span></span>
-            <span className="text-right font-mono text-xs font-semibold text-[var(--text-main)]">{formatCurrency(entry.total_amount)}</span>
-            <span className="text-right font-mono text-xs text-[var(--text-main)]">{formatCurrency(entry.base_amount)}</span>
-            <span className="text-right font-mono text-xs text-[var(--text-main)]">{formatCurrency(entry.tax_amount)}</span>
-            <PaymentBadge entry={entry} copy={copy} />
-            <span className="flex justify-end">{canManage && entry.is_editable && <Button type="button" size="icon-xs" variant="outline" onClick={() => onEdit(entry)} aria-label={copy.ledger_action_edit}><Pencil /></Button>}</span>
-        </>
-    );
+function renderLedgerDesktopCells(entry: SalesLedgerEntry, copy: InvoiceCopy, onEdit: (entry: SalesLedgerEntry) => void, canManage: boolean) {
+    return [
+        <span key="number" className="flex min-w-0 items-center gap-2"><span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent"><ReceiptText className="size-4" /></span><span className="truncate font-mono text-xs font-semibold text-[var(--text-main)]">{entry.document_number}</span></span>,
+        <span key="date" className="text-xs text-[var(--text-muted)]">{formatDate(entry.entry_date)}</span>,
+        <span key="client" className="min-w-0"><span className="block truncate text-xs font-semibold text-[var(--text-main)]">{entry.client_name}</span><span className="mt-0.5 block text-[10px] text-[var(--text-muted)]">{entry.is_editable ? copy.ledger_manual_record : copy.ledger_invoice_read_only}</span></span>,
+        <span key="total" className="text-right font-mono text-xs font-semibold text-[var(--text-main)]">{formatCurrency(entry.total_amount)}</span>,
+        <span key="base" className="text-right font-mono text-xs text-[var(--text-main)]">{formatCurrency(entry.base_amount)}</span>,
+        <span key="tax" className="text-right font-mono text-xs text-[var(--text-main)]">{formatCurrency(entry.tax_amount)}</span>,
+        <PaymentBadge key="status" entry={entry} copy={copy} />,
+        <span key="actions" className="flex justify-end">{canManage && entry.is_editable && <Button type="button" size="icon-xs" variant="outline" onClick={() => onEdit(entry)} aria-label={copy.ledger_action_edit}><Pencil /></Button>}</span>,
+    ];
 }
 
 function LedgerCompactRow({ entry, copy, onEdit, canManage }: { entry: SalesLedgerEntry; copy: InvoiceCopy; onEdit: (entry: SalesLedgerEntry) => void; canManage: boolean }) {

@@ -5,6 +5,7 @@ import { BriefcaseBusiness, Loader2, Receipt, RotateCcw, Search, SlidersHorizont
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -173,6 +174,7 @@ export function InvoiceableJobsSection({
     const selectedJobIdSet = new Set(selectedJobIds);
     const selectedCount = selectedJobIds.length;
     const hasFilters = Boolean(search || partyFilter || invoiceFilter !== "pending" || dateFrom || dateTo);
+    const pagination = useDataTablePagination(tasks, 10);
 
     const resetFilters = () => {
         onSearchChange("");
@@ -293,7 +295,7 @@ export function InvoiceableJobsSection({
                 </div>
             </section>
 
-            <section className="billing-surface w-full overflow-hidden rounded-[22px]">
+            <section className="billing-surface w-full overflow-hidden rounded-[22px] border border-border/50">
                 {loading ? (
                     <div className="flex items-center justify-center gap-3 py-20">
                         <Loader2 className="h-6 w-6 animate-spin text-accent" />
@@ -306,8 +308,8 @@ export function InvoiceableJobsSection({
                     </div>
                 ) : (
                     <>
-                        <div className="grid gap-2.5 p-3 md:hidden">
-                            {tasks.map((task) => (
+                        <div className="grid gap-2.5 p-3 lg:hidden">
+                            {pagination.pageItems.map((task) => (
                                 <JobMobileCard
                                     key={task.id}
                                     task={task}
@@ -318,21 +320,22 @@ export function InvoiceableJobsSection({
                                 />
                             ))}
                         </div>
-                        <div className="hidden overflow-x-auto p-3 md:block">
-                            <Table className="min-w-[940px] table-fixed text-left">
+                        <div className="hidden lg:block">
+                            <Table className="table-fixed text-left">
                                 <colgroup><col className="w-12" /><col className="w-[29%]" /><col className="w-[16%]" /><col className="w-[20%]" /><col className="w-[12%]" /><col className="w-[12%]" /><col className="w-[11%]" /></colgroup>
-                                <TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"><TableHead aria-hidden="true" /><TableHead>{labels.task_title || "Trabajo"}</TableHead><TableHead>{labels.client || "Cliente"}</TableHead><TableHead>{labels.location_label || "Casa / ubicación"}</TableHead><TableHead>{labels.col_date || "Fecha"}</TableHead><TableHead className="text-right">{labels.price || "Importe"}</TableHead><TableHead className="text-center">{labels.title || "Factura"}</TableHead></TableRow></TableHeader>
-                                <TableBody>{tasks.map((task) => {
+                                <TableHeader><TableRow className="hover:bg-transparent"><TableHead aria-hidden="true" className="bg-muted/50" /><TableHead className="bg-muted/50 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">{labels.task_title || "Trabajo"}</TableHead><TableHead className="bg-muted/50 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">{labels.client || "Cliente"}</TableHead><TableHead className="bg-muted/50 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">{labels.location_label || "Casa / ubicación"}</TableHead><TableHead className="bg-muted/50 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">{labels.col_date || "Fecha"}</TableHead><TableHead className="bg-muted/50 text-right text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">{labels.price || "Importe"}</TableHead><TableHead className="bg-muted/50 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-accent">{labels.title || "Factura"}</TableHead></TableRow></TableHeader>
+                                <TableBody>{pagination.pageItems.map((task) => {
                                     const selected = selectedJobIdSet.has(task.id);
                                     const billing = resolveTaskInvoiceBilling(task);
                                     const amount = resolveTaskInvoiceAmount(task);
                                     const personSeconds = resolveTaskPersonSeconds(task);
                                     const workersLine = formatWorkerHoursLine(task.workers, formatHoursShort);
                                     const quantity = task.pricing_mode === "hourly" ? `${formatHoursShort(personSeconds)} × ${formatCurrency(billing.unitPrice)}/h` : `${labels.quantity || "Cant."} ${billing.quantity} ${task.unit}`;
-                                    return <TableRow key={task.id} onClick={() => !task.is_invoiced && onToggleJob(task)} className={cn("border-0 bg-transparent", task.is_invoiced ? "opacity-55" : "cursor-pointer hover:bg-[var(--bg-secondary)]/45", selected && "bg-accent/5")}><TableCell onClick={(event) => event.stopPropagation()}><Checkbox checked={selected} disabled={task.is_invoiced} onCheckedChange={() => onToggleJob(task)} aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`} /></TableCell><TableCell><p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p><p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{quantity}{personSeconds > 0 ? ` · Horas-persona ${formatHoursShort(personSeconds)}` : ""}</p>{workersLine && <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">{workersLine}</p>}</TableCell><TableCell className="truncate text-sm text-[var(--text-muted)]">{task.clientName}</TableCell><TableCell className="truncate text-sm text-[var(--text-muted)]">{task.locationName}</TableCell><TableCell className="text-sm text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(amount)}</TableCell><TableCell className="text-center"><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${task.is_invoiced ? "bg-accent/10 text-accent" : "bg-[var(--bg-primary)] text-[var(--text-muted)]"}`}>{task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}</span></TableCell></TableRow>;
+                                    return <TableRow key={task.id} onClick={() => !task.is_invoiced && onToggleJob(task)} className={cn(task.is_invoiced ? "opacity-55" : "cursor-pointer", selected && "bg-accent/5")}><TableCell onClick={(event) => event.stopPropagation()}><Checkbox checked={selected} disabled={task.is_invoiced} onCheckedChange={() => onToggleJob(task)} aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`} /></TableCell><TableCell><p className="truncate text-sm font-semibold text-[var(--text-main)]">{task.title}</p><p className="mt-0.5 text-[11px] text-[var(--text-muted)]">{quantity}{personSeconds > 0 ? ` · Horas-persona ${formatHoursShort(personSeconds)}` : ""}</p>{workersLine && <p className="mt-0.5 truncate text-[11px] text-[var(--text-muted)]">{workersLine}</p>}</TableCell><TableCell className="truncate text-sm text-[var(--text-muted)]">{task.clientName}</TableCell><TableCell className="truncate text-sm text-[var(--text-muted)]">{task.locationName}</TableCell><TableCell className="text-sm text-[var(--text-muted)]">{formatDate(task.date_done || task.created_at)}</TableCell><TableCell className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(amount)}</TableCell><TableCell className="text-center"><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase ${task.is_invoiced ? "bg-accent/10 text-accent" : "bg-[var(--bg-primary)] text-[var(--text-muted)]"}`}>{task.is_invoiced ? (labels.invoiced || "Facturado") : (labels.status_pending || "Pendiente")}</span></TableCell></TableRow>;
                                 })}</TableBody>
                             </Table>
                         </div>
+                        <DataTablePagination page={pagination.page} totalItems={tasks.length} pageSize={pagination.pageSize} onPageChange={pagination.setPage} onPageSizeChange={pagination.setPageSize} summary={`${tasks.length === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1}-${Math.min(pagination.page * pagination.pageSize, tasks.length)} de ${tasks.length} trabajos`} rowsPerPageLabel="Filas por página" previousLabel="Página anterior" nextLabel="Página siguiente" />
                     </>
                 )}
             </section>

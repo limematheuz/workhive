@@ -57,6 +57,7 @@ def test_frequently_polled_dashboard_reads_are_async():
         quotes.read_quote_items,
         template_tasks.read_template_tasks,
         template_tasks.read_template_task,
+        template_tasks.read_service_catalog_versions,
         roles.read_roles,
         roles.read_role,
         audit_logs.read_audit_logs,

@@ -143,13 +143,14 @@ export default function ProfilePage() {
                                         : "Manage your personal details, corporate info, and security credentials."}
                                 </p>
                             </div>
-                            <button
+                            <Button
                                 type="button"
+                                variant="cancel"
                                 onClick={() => state.setIsEditing(false)}
-                                className="btn-cancel-muted self-start sm:self-auto"
+                                className="self-start sm:self-auto"
                             >
                                 {state.locale === "es" ? "Cerrar Editor" : "Close Editor"}
-                            </button>
+                            </Button>
                         </header>
 
                         <ProfileEditForm

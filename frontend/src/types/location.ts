@@ -33,6 +33,9 @@ export interface Location {
     shared_companies?: number[];
     profile?: LocationProfile | null;
     access?: LocationAccessProfile | null;
+    contacts?: LocationContact[];
+    risks?: LocationRisk[];
+    service_windows?: LocationServiceWindow[];
 }
 
 export type LocationProfileAttributeValue = boolean | number | string;
@@ -49,9 +52,54 @@ export interface LocationProfile {
     attributes: Record<string, LocationProfileAttributeValue>;
 }
 
+export type LocationContactRole = "operations" | "access" | "emergency" | "quality" | "general";
+
+export interface LocationContact {
+    id?: number;
+    /** Solo para mantener estable una fila todavía no guardada en el formulario. */
+    draft_id?: string;
+    location_id?: number;
+    full_name: string;
+    email?: string | null;
+    phone?: string | null;
+    role: LocationContactRole;
+    is_primary: boolean;
+    is_active: boolean;
+}
+
+export type LocationRiskSeverity = "low" | "medium" | "high" | "critical";
+export type LocationRiskStatus = "open" | "mitigated";
+
+export interface LocationRisk {
+    id?: number;
+    /** Solo para mantener estable una fila todavía no guardada en el formulario. */
+    draft_id?: string;
+    location_id?: number;
+    title: string;
+    description?: string | null;
+    severity: LocationRiskSeverity;
+    status: LocationRiskStatus;
+    mitigation_notes?: string | null;
+}
+
+export type LocationWeekday = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
+
+export interface LocationServiceWindow {
+    id?: number;
+    /** Solo para mantener estable una fila todavía no guardada en el formulario. */
+    draft_id?: string;
+    location_id?: number;
+    label?: string | null;
+    days: LocationWeekday[];
+    starts_at: string;
+    ends_at: string;
+    notes?: string | null;
+    is_active: boolean;
+}
+
 export interface LocationAccessProfile {
     location_id?: number;
-    permitted_days: ("mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun")[];
+    permitted_days: LocationWeekday[];
     permitted_from?: string | null;
     permitted_until?: string | null;
     requires_outside_hours_authorization?: boolean;

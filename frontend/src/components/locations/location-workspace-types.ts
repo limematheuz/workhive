@@ -2,8 +2,11 @@ import type {
     Location,
     LocationAccessProfile,
     LocationCatalog,
+    LocationContact,
     LocationProfile,
     LocationProfileAttributeValue,
+    LocationRisk,
+    LocationServiceWindow,
     LocationSpace,
 } from "@/types/location";
 import type { Client } from "@/services/client.service";
@@ -19,6 +22,9 @@ export type LocationWorkspacePayload = Pick<
         clear_access_code?: boolean;
     };
     spaces?: Omit<LocationSpace, "id" | "location_id" | "sort_order" | "is_active">[];
+    contacts?: Omit<LocationContact, "location_id" | "draft_id">[];
+    risks?: Omit<LocationRisk, "location_id" | "draft_id">[];
+    service_windows?: Omit<LocationServiceWindow, "location_id" | "draft_id">[];
 };
 
 export type LocationProfileDraft = Omit<LocationProfile, "location_id">;
@@ -68,6 +74,12 @@ export interface LocationFeaturesStepProps {
     catalog: LocationCatalog | null;
     setProfile: (value: LocationProfileDraft) => void;
     setAttribute: (id: string, value: LocationProfileAttributeValue) => void;
+    contacts: LocationContact[];
+    setContacts: (value: LocationContact[]) => void;
+    risks: LocationRisk[];
+    setRisks: (value: LocationRisk[]) => void;
+    serviceWindows: LocationServiceWindow[];
+    setServiceWindows: (value: LocationServiceWindow[]) => void;
 }
 
 export interface LocationSpacesStepProps {

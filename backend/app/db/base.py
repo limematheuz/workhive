@@ -7,6 +7,9 @@ from app.models.client_contact import ClientContact, ClientContactRole
 from app.models.client_opportunity import ClientOpportunity, ClientOpportunityActivity
 from app.models.client_account_assignment import ClientAccountAssignment
 from app.models.location import Location
+from app.models.location_contact import LocationContact
+from app.models.location_risk import LocationRisk
+from app.models.location_service_window import LocationServiceWindow
 from app.models.location_zone import LocationZone, TaskZone, LocationSpaceTaskTemplate
 from app.models.location_profile import LocationProfile
 from app.models.location_access_profile import LocationAccessProfile

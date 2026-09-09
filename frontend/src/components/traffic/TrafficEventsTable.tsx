@@ -33,12 +33,6 @@ type TrafficEventsTableProps = {
     onPageChange: (page: number) => void;
 };
 
-const LOGINS_GRID =
-    "grid-cols-[minmax(10rem,1.2fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)_minmax(6rem,.6fr)_minmax(7rem,.7fr)_minmax(8rem,.8fr)]";
-
-const URL_ONLY_GRID =
-    "grid-cols-[minmax(7rem,.7fr)_minmax(10rem,1.2fr)_minmax(8rem,.9fr)_minmax(7rem,.8fr)_minmax(7rem,.7fr)_minmax(8rem,.8fr)]";
-
 export function TrafficEventsTable({
     traffic,
     locale,
@@ -122,7 +116,6 @@ export function TrafficEventsTable({
                 <DataListTable
                     items={paginatedEvents}
                     getRowKey={(event) => event.id}
-                    gridClassName={isLoginsTab ? LOGINS_GRID : URL_ONLY_GRID}
                     desktopFrom="lg"
                     variant="plain"
                     columns={isLoginsTab

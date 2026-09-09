@@ -285,7 +285,7 @@ function OpportunityEditorDialog({
                         )}
                     </div>
                     <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
-                        <Button type="button" variant="outline" className="btn-cancel-muted" onClick={() => onOpenChange(false)}>{copy.cancel}</Button>
+                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{copy.cancel}</Button>
                         <Button type="submit" disabled={saving || loadingOptions}>{saving && <Loader2 className="size-4 animate-spin" />}{saving ? copy.saving : copy.save}</Button>
                     </DialogFooter>
                 </form>

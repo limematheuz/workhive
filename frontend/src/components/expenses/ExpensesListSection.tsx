@@ -23,9 +23,6 @@ type ExpensesListSectionProps = {
     canManage: boolean;
 };
 
-const GRID =
-    "grid-cols-[5.5rem_minmax(14rem,2fr)_minmax(9rem,1fr)_minmax(8rem,.9fr)_6.5rem_6.5rem_6.5rem_2.25rem]";
-
 export function ExpensesListSection({
     expenses,
     search,
@@ -60,7 +57,6 @@ export function ExpensesListSection({
         <DataListTable
             items={expenses}
             getRowKey={(expense) => expense.id}
-            gridClassName={GRID}
             desktopFrom="lg"
             header={{
                 title: text.list_title,

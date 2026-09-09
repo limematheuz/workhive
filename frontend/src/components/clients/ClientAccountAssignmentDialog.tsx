@@ -208,7 +208,7 @@ export function ClientAccountAssignmentDialog({
                         )}
                     </div>
                     <DialogFooter className="border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
-                        <Button type="button" variant="outline" className="btn-cancel-muted" onClick={() => onOpenChange(false)}>
+                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>
                             {copy.cancel}
                         </Button>
                         <Button type="submit" disabled={loading || saving}>

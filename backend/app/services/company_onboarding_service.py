@@ -7,6 +7,7 @@ from app.models.company import Company
 from app.models.location import Location
 from app.models.location_template import LocationTemplate
 from app.models.template_task import TemplateTask
+from app.repositories import service_catalog_version as service_version_repo
 from app.models.user import User
 from app.schemas.company import (
     CompanyOnboardingComplete,
@@ -153,6 +154,7 @@ def complete_company_onboarding(
                 )
                 db.add(template)
                 db.flush()
+                service_version_repo.create_from_template(db, template)
 
             db.add(
                 LocationTemplate(

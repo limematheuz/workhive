@@ -1,4 +1,4 @@
-import type { LocationProfile, LocationAccessProfile, LocationSpace } from "@/types/location";
+import type { LocationAccessProfile, LocationContact, LocationProfile, LocationRisk, LocationServiceWindow, LocationSpace } from "@/types/location";
 
 export type OperatingModel = "service_provider" | "property_manager" | "hybrid";
 
@@ -28,6 +28,9 @@ export interface CompanyOnboardingInput {
         profile?: Omit<LocationProfile, "location_id" | "attributes"> & { attributes?: LocationProfile["attributes"] };
         access?: Omit<LocationAccessProfile, "location_id" | "has_access_code"> & { access_code?: string; clear_access_code?: boolean };
         spaces?: Omit<LocationSpace, "id" | "location_id" | "sort_order" | "is_active">[];
+        contacts?: Omit<LocationContact, "location_id" | "draft_id">[];
+        risks?: Omit<LocationRisk, "location_id" | "draft_id">[];
+        service_windows?: Omit<LocationServiceWindow, "location_id" | "draft_id">[];
     };
 }
 

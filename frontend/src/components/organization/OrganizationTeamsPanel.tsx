@@ -446,7 +446,7 @@ function TeamEditDialog({
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={onManageMembers} disabled={!team.is_active}>{copy.manage_members}</Button>
                         {usage.can_delete && <Button type="button" variant="dangerSoft" onClick={onRequestDelete}>{dict.organization.actions.delete}</Button>}
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
+                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving || !name.trim() || (isActive === "inactive" && !usage.can_deactivate)}>
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
                             {dict.organization.actions.save}

@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ClipboardList, Compass, Layers3, MapPinned, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useDialogDismiss } from "@/components/ui/dialog-form-guard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type {
     Location,
     LocationCatalog,
+    LocationContact,
     LocationProfileAttributeValue,
+    LocationRisk,
+    LocationServiceWindow,
     LocationSpace,
 } from "@/types/location";
 import type { Client } from "@/services/client.service";
@@ -25,8 +29,6 @@ import { LocationFeaturesStep } from "./LocationFeaturesStep";
 import { LocationInfoAccessStep } from "./LocationInfoAccessStep";
 import { LocationSpacesStep } from "./LocationSpacesStep";
 import { LocationTypeStep } from "./LocationTypeStep";
-import { LocationWorkspaceSummary } from "./LocationWorkspaceSummary";
-import { LocationWorkspaceWizardProgress } from "./LocationWorkspaceWizardProgress";
 import type {
     LocationAccessDraft,
     LocationProfileDraft,
@@ -34,6 +36,20 @@ import type {
 } from "./location-workspace-types";
 
 export type { LocationWorkspacePayload } from "./location-workspace-types";
+
+type LocationWorkspaceStep = "information" | "type" | "operations" | "spaces";
+
+const WORKSPACE_STEPS: Array<{
+    id: LocationWorkspaceStep;
+    label: string;
+    description: string;
+    icon: typeof MapPinned;
+}> = [
+    { id: "information", label: "Información", description: "Datos, cliente y acceso", icon: MapPinned },
+    { id: "type", label: "Tipo", description: "Características del lugar", icon: Compass },
+    { id: "operations", label: "Operación", description: "Contactos, riesgos y horario", icon: ClipboardList },
+    { id: "spaces", label: "Espacios", description: "Zonas y tareas sugeridas", icon: Layers3 },
+];
 
 interface LocationWorkspaceFormProps {
     clients: Client[];
@@ -54,9 +70,6 @@ const EMPTY_PROFILE: LocationProfileDraft = {
     site_type: "other",
     internal_code: "",
     site_reference: "",
-    contact_name: "",
-    contact_phone: "",
-    contact_email: "",
     service_notes: "",
     attributes: {},
 };
@@ -102,12 +115,35 @@ function initialProfile(location?: Location | null): LocationProfileDraft {
         site_type: location.profile.site_type,
         internal_code: location.profile.internal_code,
         site_reference: location.profile.site_reference,
-        contact_name: location.profile.contact_name,
-        contact_phone: location.profile.contact_phone,
-        contact_email: location.profile.contact_email,
         service_notes: location.profile.service_notes,
         attributes: { ...location.profile.attributes },
     };
+}
+
+function initialContacts(location?: Location | null): LocationContact[] {
+    if (location?.contacts?.length) return location.contacts.map((contact) => ({ ...contact }));
+    const legacy = location?.profile;
+    if (!legacy?.contact_name || (!legacy.contact_email && !legacy.contact_phone)) return [];
+    return [{
+        draft_id: "legacy-location-contact",
+        full_name: legacy.contact_name,
+        email: legacy.contact_email,
+        phone: legacy.contact_phone,
+        role: "general",
+        is_primary: true,
+        is_active: true,
+    }];
+}
+
+function initialRisks(location?: Location | null): LocationRisk[] {
+    return location?.risks?.map((risk) => ({ ...risk })) || [];
+}
+
+function initialServiceWindows(location?: Location | null): LocationServiceWindow[] {
+    return location?.service_windows?.map((serviceWindow) => ({
+        ...serviceWindow,
+        days: [...serviceWindow.days],
+    })) || [];
 }
 
 function initialAccess(location?: Location | null): LocationAccessDraft {
@@ -134,9 +170,6 @@ function cleanProfile(profile: LocationProfileDraft, existing = false) {
         attributes,
         internal_code: profile.internal_code?.trim() || undefined,
         site_reference: profile.site_reference?.trim() || undefined,
-        contact_name: profile.contact_name?.trim() || undefined,
-        contact_phone: profile.contact_phone?.trim() || undefined,
-        contact_email: profile.contact_email?.trim() || undefined,
         service_notes: profile.service_notes?.trim() || undefined,
     };
     const hasOptionalValues = Object.entries(values).some(([key, value]) => key !== "site_type" && key !== "attributes" && Boolean(value));
@@ -175,7 +208,7 @@ export function LocationWorkspaceForm({
     const { user } = useUser();
     const [catalog, setCatalog] = useState<LocationCatalog | null>(null);
     const [catalogLoading, setCatalogLoading] = useState(true);
-    const [step, setStep] = useState(1);
+    const [activeStep, setActiveStep] = useState<LocationWorkspaceStep>("information");
     const [name, setName] = useState(location?.name || "");
     const [address, setAddress] = useState(location?.address || "");
     const [city, setCity] = useState(location?.city || "");
@@ -188,6 +221,9 @@ export function LocationWorkspaceForm({
     const [teamId, setTeamId] = useState(() => location?.team_id?.toString() || "");
     const [profile, setProfile] = useState(() => initialProfile(location));
     const [access, setAccess] = useState(() => initialAccess(location));
+    const [contacts, setContacts] = useState(() => initialContacts(location));
+    const [risks, setRisks] = useState(() => initialRisks(location));
+    const [serviceWindows, setServiceWindows] = useState(() => initialServiceWindows(location));
     const [spaces, setSpaces] = useState<LocationSpace[]>([]);
     const [spaceName, setSpaceName] = useState("");
     const [spaceType, setSpaceType] = useState("other");
@@ -223,11 +259,6 @@ export function LocationWorkspaceForm({
         return () => { cancelled = true; };
     }, [canConfigureOrganizationAssignment]);
 
-    const selectedSiteType = useMemo(
-        () => catalog?.site_types.find((siteType) => siteType.id === profile.site_type),
-        [catalog, profile.site_type],
-    );
-
     const setAttribute = (id: string, value: LocationProfileAttributeValue) => {
         setProfile((current) => ({ ...current, attributes: { ...current.attributes, [id]: value } }));
     };
@@ -262,10 +293,30 @@ export function LocationWorkspaceForm({
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (submitting) return;
-        if (step < 4) { goNext(); return; }
+        if (activeStep !== "spaces") { goNext(); return; }
         if (!name.trim() || !address.trim() || !city.trim() || (requirePostalCode && !postalCode.trim())) {
-            setStep(1);
+            setActiveStep("information");
             toast.error(requirePostalCode ? "Completa nombre, dirección, ciudad y código postal." : "Completa nombre, dirección y ciudad para continuar.");
+            return;
+        }
+        if (contacts.some((contact) => !contact.full_name.trim() || (!contact.phone?.trim() && !contact.email?.trim()))) {
+            setActiveStep("operations");
+            toast.error("Cada contacto operativo necesita nombre y teléfono o email.");
+            return;
+        }
+        if (contacts.filter((contact) => contact.is_primary).length > 1) {
+            setActiveStep("operations");
+            toast.error("Elige un único contacto principal para esta ubicación.");
+            return;
+        }
+        if (risks.some((risk) => !risk.title.trim())) {
+            setActiveStep("operations");
+            toast.error("Cada riesgo operativo necesita un título.");
+            return;
+        }
+        if (serviceWindows.some((serviceWindow) => !serviceWindow.days.length || serviceWindow.ends_at <= serviceWindow.starts_at)) {
+            setActiveStep("operations");
+            toast.error("Cada horario de servicio necesita días y una hora de fin posterior a la de inicio.");
             return;
         }
         await onSubmit({
@@ -280,6 +331,36 @@ export function LocationWorkspaceForm({
             } : {}),
             profile: cleanProfile(profile, Boolean(location?.profile)),
             access: cleanAccess(access, Boolean(location?.access)),
+            contacts: contacts.map(({ draft_id, location_id, ...contact }) => {
+                // These are local/server identifiers, never editable form data.
+                void draft_id;
+                void location_id;
+                return {
+                    ...contact,
+                    full_name: contact.full_name.trim(),
+                    email: contact.email?.trim() || undefined,
+                    phone: contact.phone?.trim() || undefined,
+                };
+            }),
+            risks: risks.map(({ draft_id, location_id, ...risk }) => {
+                void draft_id;
+                void location_id;
+                return {
+                    ...risk,
+                    title: risk.title.trim(),
+                    description: risk.description?.trim() || undefined,
+                    mitigation_notes: risk.mitigation_notes?.trim() || undefined,
+                };
+            }),
+            service_windows: serviceWindows.map(({ draft_id, location_id, ...serviceWindow }) => {
+                void draft_id;
+                void location_id;
+                return {
+                    ...serviceWindow,
+                    label: serviceWindow.label?.trim() || undefined,
+                    notes: serviceWindow.notes?.trim() || undefined,
+                };
+            }),
             ...(location ? {} : {
                 location_type: LEGACY_LOCATION_TYPE_BY_SITE_TYPE[profile.site_type] || "other",
                 spaces: spaces.map(({ name, space_type, parent_id, attributes, tasks }) => ({
@@ -293,33 +374,56 @@ export function LocationWorkspaceForm({
         });
     };
 
+    const activeStepIndex = WORKSPACE_STEPS.findIndex((step) => step.id === activeStep);
+    const isInformationComplete = Boolean(name.trim() && address.trim() && city.trim() && (!requirePostalCode || postalCode.trim()));
+
+    const goToStep = (nextStep: LocationWorkspaceStep) => {
+        setActiveStep(nextStep);
+    };
+
     const goNext = () => {
-        if (step === 1 && (!name.trim() || !address.trim() || !city.trim() || (requirePostalCode && !postalCode.trim()))) {
-            toast.error("Completa nombre, dirección y ciudad para continuar.");
+        if (activeStep === "information" && !isInformationComplete) {
+            toast.error(requirePostalCode ? "Completa nombre, dirección, ciudad y código postal para continuar." : "Completa nombre, dirección y ciudad para continuar.");
             return;
         }
-        setStep((current) => Math.min(4, current + 1));
+        const nextStep = WORKSPACE_STEPS[activeStepIndex + 1];
+        if (nextStep) setActiveStep(nextStep.id);
+    };
+
+    const goPrevious = () => {
+        const previousStep = WORKSPACE_STEPS[activeStepIndex - 1];
+        if (previousStep) setActiveStep(previousStep.id);
     };
 
     return (
         <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
-            <div className="shrink-0 px-4 pt-4 sm:px-6 sm:pt-5 lg:px-7">
-                <LocationWorkspaceWizardProgress step={step} />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-7">
-                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-                    <section className="min-w-0 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
-                    {step === 1 && <LocationInfoAccessStep clients={clients} showClientAssignment={!portalMode} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} />}
-                    {step === 2 && <LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} />}
-                    {step === 3 && <LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} />}
-                    {step === 4 && <LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} />}
-                    </section>
-                    <LocationWorkspaceSummary name={name} address={address} city={city} siteTypeLabel={selectedSiteType?.label} spacesCount={location ? "Gestionables tras guardar" : spaces.length} accessLabel={access.access_code || location?.access?.has_access_code ? "Código protegido" : access.access_method || "Sin configurar"} />
+            <Tabs value={activeStep} onValueChange={(value) => goToStep(value as LocationWorkspaceStep)} className="flex min-h-0 flex-1 flex-col">
+                <div className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 py-3 sm:px-6 sm:py-4 lg:px-7">
+                    <TabsList aria-label="Pasos de la ubicación" className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-[var(--bg-secondary)] p-1 md:grid-cols-4">
+                        {WORKSPACE_STEPS.map((step, index) => {
+                            const Icon = step.icon;
+                            const isActive = activeStep === step.id;
+                            return (
+                                <TabsTrigger key={step.id} value={step.id} className="min-w-0 rounded-lg px-2 py-2.5 text-left data-[state=active]:bg-[var(--bg-primary)] data-[state=active]:text-[var(--text-main)]">
+                                    <span className="flex min-w-0 items-center gap-2">
+                                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${isActive ? "bg-accent text-white" : "bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}`}>{index + 1}</span>
+                                        <span className="min-w-0"><span className="flex items-center gap-1.5 truncate text-xs font-semibold sm:text-sm"><Icon className="h-3.5 w-3.5 shrink-0" />{step.label}</span><span className="hidden truncate text-[11px] font-normal text-[var(--text-muted)] lg:block">{step.description}</span></span>
+                                    </span>
+                                </TabsTrigger>
+                            );
+                        })}
+                    </TabsList>
                 </div>
-            </div>
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-7">
+                    <TabsContent value="information" className="m-0 mx-auto w-full max-w-5xl"><LocationInfoAccessStep clients={clients} showClientAssignment={!portalMode} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} /></TabsContent>
+                    <TabsContent value="type" className="m-0 mx-auto w-full max-w-5xl"><LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} /></TabsContent>
+                    <TabsContent value="operations" className="m-0 mx-auto w-full max-w-5xl"><LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} contacts={contacts} setContacts={setContacts} risks={risks} setRisks={setRisks} serviceWindows={serviceWindows} setServiceWindows={setServiceWindows} /></TabsContent>
+                    <TabsContent value="spaces" className="m-0 mx-auto w-full max-w-5xl"><LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} /></TabsContent>
+                </div>
+            </Tabs>
             <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 py-4 sm:px-6 lg:px-7">
-                <div>{step > 1 && <Button type="button" variant="secondary" onClick={() => setStep((current) => current - 1)}>Anterior</Button>}</div>
-                <div className="flex gap-2"><Button type="button" variant="dangerSoft" onClick={dismiss}>Cancelar</Button>{step < 4 ? <Button key="next" type="button" onClick={(event) => { event.preventDefault(); goNext(); }}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button key="save" type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
+                <div>{activeStepIndex > 0 && <Button type="button" variant="secondary" onClick={goPrevious}><ChevronLeft className="h-4 w-4" />Anterior</Button>}</div>
+                <div className="flex gap-2"><Button type="button" variant="cancel" onClick={dismiss}>Cancelar</Button>{activeStep !== "spaces" ? <Button key="next" type="button" onClick={goNext}>Siguiente <ChevronRight className="h-4 w-4" /></Button> : <Button key="save" type="submit" disabled={submitting}>{submitting ? "Guardando..." : submitLabel}</Button>}</div>
             </div>
         </form>
     );

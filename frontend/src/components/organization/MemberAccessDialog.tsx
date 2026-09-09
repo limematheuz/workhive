@@ -238,7 +238,7 @@ export function MemberAccessDialog({
 
                     <DialogFooter>
                         {canDelete && <Button type="button" variant="dangerSoft" onClick={onRequestDelete}>{dict.organization.actions.permanently_delete}</Button>}
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
+                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving}>
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {dict.organization.actions.save_access}

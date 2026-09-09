@@ -127,7 +127,7 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                     </section>}
 
                     <div className="flex justify-end gap-2 border-t border-[var(--border-soft)] pt-5">
-                        <Button type="button" variant="dangerSoft" onClick={() => setOpen(false)}>Cancelar</Button>
+                        <Button type="button" variant="cancel" onClick={() => setOpen(false)}>Cancelar</Button>
                         {!preview ? <Button type="button" onClick={() => void loadPreview()} disabled={previewing}>{previewing ? "Validando..." : "Vista previa"}</Button> : <Button type="button" onClick={() => void importLocations()} disabled={!preview.valid || importing}>{importing ? "Importando..." : "Importar ubicaciones"}</Button>}
                     </div>
                 </div>

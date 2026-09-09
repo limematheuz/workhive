@@ -369,7 +369,7 @@ function DepartmentEditDialog({
                     )}
                     <DialogFooter>
                         {usage.can_delete && <Button type="button" variant="dangerSoft" onClick={onRequestDelete}>{dict.organization.actions.delete}</Button>}
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
+                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving || !name.trim()}>
                             {saving && <Loader2 className="mr-2 animate-spin" aria-hidden="true" />}
                             {dict.organization.actions.save}

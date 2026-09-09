@@ -275,12 +275,18 @@ def test_complete_portal_property_round_trip_preserves_provider_and_secrets(clie
     payload = {
         **_location_payload(),
         "profile": {"site_type": "tourist_apartment", "contact_email": "reception@example.test", "attributes": {"bedroom_count": 2}},
+        "contacts": [{"full_name": "Recepción", "phone": "600 222 333", "role": "access", "is_primary": True}],
+        "risks": [{"title": "Llaves en portería", "severity": "medium", "mitigation_notes": "Solicitarlas en recepción."}],
+        "service_windows": [{"days": ["mon", "wed"], "starts_at": "10:00", "ends_at": "12:00"}],
         "access": {"permitted_days": ["mon"], "access_method": "key_box", "keys_available": False, "access_code": "e2e-door-code"},
         "spaces": [{"name": "Dormitorio", "space_type": "bedroom", "tasks": [{"title": "Limpiar suelo", "category": "cleaning"}]}],
     }
     created = client.post("/api/v1/partner-portal/locations", headers=context["partner_headers"], json=payload)
     assert created.status_code == 201, created.text
     property_id = created.json()["id"]
+    assert created.json()["contacts"][0]["role"] == "access"
+    assert created.json()["risks"][0]["title"] == "Llaves en portería"
+    assert created.json()["service_windows"][0]["starts_at"] == "10:00"
     assert created.json()["access"]["has_access_code"] is True
     assert "e2e-door-code" not in created.text
     location = db.get(Location, property_id)
@@ -290,11 +296,17 @@ def test_complete_portal_property_round_trip_preserves_provider_and_secrets(clie
     shared_before = [(entry.company_id, entry.can_manage_tasks, entry.can_view_sensitive) for entry in location.company_access]
     updated = client.patch(f"/api/v1/partner-portal/locations/{property_id}", headers=context["partner_headers"], json={
         "profile": {"site_type": "tourist_apartment", "contact_email": None},
+        "contacts": [{"id": created.json()["contacts"][0]["id"], "full_name": "Conserjería", "phone": "600 333 444", "role": "operations", "is_primary": True}],
+        "risks": [{"id": created.json()["risks"][0]["id"], "title": "Llaves en portería", "severity": "medium", "status": "mitigated", "mitigation_notes": "Código entregado al equipo."}],
+        "service_windows": [{"id": created.json()["service_windows"][0]["id"], "days": ["mon", "wed"], "starts_at": "09:00", "ends_at": "12:00"}],
         "access": {"permitted_days": [], "access_method": None, "clear_access_code": True},
     })
     assert updated.status_code == 200, updated.text
     assert updated.json()["default_service_provider_id"] == context["host"].id
     assert updated.json()["profile"]["contact_email"] is None
+    assert updated.json()["contacts"][0]["full_name"] == "Conserjería"
+    assert updated.json()["risks"][0]["status"] == "mitigated"
+    assert updated.json()["service_windows"][0]["starts_at"] == "09:00"
     assert updated.json()["access"]["has_access_code"] is False
     assert updated.json()["access"]["access_method"] is None
     db.refresh(location)

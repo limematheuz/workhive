@@ -24,8 +24,8 @@ export function PropertyDialog({
     const submit = async (payload: LocationWorkspacePayload) => {
         setSubmitting(true);
         try {
-            const { name, address, city, postal_code, location_type, profile, access, spaces } = payload;
-            const portalPayload: PartnerPortalLocationInput = { name, address, city, postal_code, location_type, profile, access };
+            const { name, address, city, postal_code, location_type, profile, access, spaces, contacts, risks, service_windows } = payload;
+            const portalPayload: PartnerPortalLocationInput = { name, address, city, postal_code, location_type, profile, access, contacts, risks, service_windows };
             const saved = location
                 ? await PartnerPortalService.updateLocation(location.id, portalPayload)
                 : await PartnerPortalService.createLocation({ ...portalPayload, spaces });

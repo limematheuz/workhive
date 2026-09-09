@@ -11,6 +11,7 @@ test("shared buttons use the profile export dimensions and semantic palette", ()
     assert.match(button, /default: "px-5 py-2.5/);
     assert.match(button, /gap-1\.5 rounded-xl text-xs font-semibold/);
     assert.match(button, /dangerSoft:/);
+    assert.match(button, /cancel:/);
     assert.match(button, /--btn-primary-bg/);
     assert.match(button, /--btn-secondary-bg/);
     assert.match(button, /--btn-cancel-bg/);

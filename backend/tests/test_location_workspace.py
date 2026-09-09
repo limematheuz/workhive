@@ -226,6 +226,331 @@ def test_location_workspace_fields_are_updated_and_returned(client, db):
     assert "access_code" not in location["access"]
 
 
+def test_location_operational_contacts_are_scoped_to_the_location(client, db):
+    company = _company(db, "LocationContacts")
+    admin = _admin(db, company)
+    headers = _headers(admin)
+    created = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Oficina con recepción",
+            "address": "Calle Contactos 1",
+            "city": "Madrid",
+            "contacts": [
+                {
+                    "full_name": "Ana Recepción",
+                    "phone": "600 111 222",
+                    "role": "access",
+                    "is_primary": True,
+                },
+                {
+                    "full_name": "Luis Guardia",
+                    "email": "luis@example.com",
+                    "role": "emergency",
+                },
+            ],
+        },
+    )
+
+    assert created.status_code == 201, created.text
+    location = created.json()
+    assert [(contact["full_name"], contact["role"]) for contact in location["contacts"]] == [
+        ("Ana Recepción", "access"),
+        ("Luis Guardia", "emergency"),
+    ]
+    primary_contact = location["contacts"][0]
+
+    updated = client.patch(
+        f"/api/v1/locations/{location['id']}",
+        headers=headers,
+        json={
+            "contacts": [
+                {
+                    "id": primary_contact["id"],
+                    "full_name": "Ana Recepción",
+                    "phone": "600 333 444",
+                    "role": "operations",
+                    "is_primary": True,
+                }
+            ],
+        },
+    )
+
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["contacts"] == [
+        {
+            "id": primary_contact["id"],
+            "location_id": location["id"],
+            "full_name": "Ana Recepción",
+            "email": None,
+            "phone": "600 333 444",
+            "role": "operations",
+            "is_primary": True,
+            "is_active": True,
+        }
+    ]
+
+    second_company = _company(db, "OutsideLocationContacts")
+    outside_admin = _admin(db, second_company)
+    denied = client.patch(
+        f"/api/v1/locations/{location['id']}",
+        headers=_headers(outside_admin),
+        json={
+            "contacts": [
+                {
+                    "id": primary_contact["id"],
+                    "full_name": "Intento externo",
+                    "phone": "699 999 999",
+                    "role": "general",
+                    "is_primary": True,
+                }
+            ],
+        },
+    )
+    assert denied.status_code in {403, 404}
+    assert client.get(
+        f"/api/v1/locations/{location['id']}", headers=headers
+    ).json()["contacts"][0]["full_name"] == "Ana Recepción"
+
+
+def test_location_contacts_require_a_single_primary_contact_and_a_contact_method(client, db):
+    company = _company(db, "LocationContactValidation")
+    admin = _admin(db, company)
+    headers = _headers(admin)
+
+    missing_contact_method = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Local sin medio",
+            "address": "Calle Validación 1",
+            "city": "Madrid",
+            "contacts": [{"full_name": "Sin medio", "role": "general"}],
+        },
+    )
+    assert missing_contact_method.status_code == 422
+
+    duplicate_primary = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Local con dos principales",
+            "address": "Calle Validación 2",
+            "city": "Madrid",
+            "contacts": [
+                {
+                    "full_name": "Primera",
+                    "phone": "600 000 001",
+                    "role": "operations",
+                    "is_primary": True,
+                },
+                {
+                    "full_name": "Segunda",
+                    "phone": "600 000 002",
+                    "role": "access",
+                    "is_primary": True,
+                },
+            ],
+        },
+    )
+    assert duplicate_primary.status_code == 422
+
+
+def test_location_operational_risks_are_scoped_to_the_location(client, db):
+    company = _company(db, "LocationRisks")
+    admin = _admin(db, company)
+    headers = _headers(admin)
+    created = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Oficina con riesgos",
+            "address": "Calle Riesgos 1",
+            "city": "Madrid",
+            "risks": [
+                {
+                    "title": "Suelo resbaladizo",
+                    "description": "La entrada queda mojada después de la lluvia.",
+                    "severity": "high",
+                    "mitigation_notes": "Señalizar y usar calzado antideslizante.",
+                },
+                {"title": "Escalera estrecha", "severity": "medium"},
+            ],
+        },
+    )
+
+    assert created.status_code == 201, created.text
+    location = created.json()
+    assert [(risk["title"], risk["severity"], risk["status"]) for risk in location["risks"]] == [
+        ("Suelo resbaladizo", "high", "open"),
+        ("Escalera estrecha", "medium", "open"),
+    ]
+    first_risk = location["risks"][0]
+
+    updated = client.patch(
+        f"/api/v1/locations/{location['id']}",
+        headers=headers,
+        json={
+            "risks": [
+                {
+                    "id": first_risk["id"],
+                    "title": "Suelo resbaladizo",
+                    "description": "La entrada queda mojada después de la lluvia.",
+                    "severity": "high",
+                    "status": "mitigated",
+                    "mitigation_notes": "Alfombrilla instalada y señalización disponible.",
+                }
+            ]
+        },
+    )
+
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["risks"] == [
+        {
+            "id": first_risk["id"],
+            "location_id": location["id"],
+            "title": "Suelo resbaladizo",
+            "description": "La entrada queda mojada después de la lluvia.",
+            "severity": "high",
+            "status": "mitigated",
+            "mitigation_notes": "Alfombrilla instalada y señalización disponible.",
+        }
+    ]
+
+    other = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Otro local",
+            "address": "Calle Riesgos 2",
+            "city": "Madrid",
+            "risks": [{"title": "Escalón", "severity": "low"}],
+        },
+    ).json()
+    denied = client.patch(
+        f"/api/v1/locations/{location['id']}",
+        headers=headers,
+        json={
+            "risks": [
+                {
+                    "id": other["risks"][0]["id"],
+                    "title": "Intento cruzado",
+                    "severity": "critical",
+                }
+            ]
+        },
+    )
+    assert denied.status_code == 404
+    assert client.get(f"/api/v1/locations/{location['id']}", headers=headers).json()["risks"][0]["status"] == "mitigated"
+
+
+def test_location_service_windows_are_separate_from_access_and_scoped(client, db):
+    company = _company(db, "LocationServiceWindows")
+    admin = _admin(db, company)
+    headers = _headers(admin)
+    created = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Clínica con horario de servicio",
+            "address": "Calle Horarios 1",
+            "city": "Madrid",
+            "access": {"permitted_days": ["mon"], "permitted_from": "06:00", "permitted_until": "22:00"},
+            "service_windows": [
+                {
+                    "label": "Antes de abrir",
+                    "days": ["mon", "wed", "fri"],
+                    "starts_at": "07:00",
+                    "ends_at": "08:30",
+                    "notes": "No interrumpir recepción.",
+                }
+            ],
+        },
+    )
+
+    assert created.status_code == 201, created.text
+    location = created.json()
+    assert location["access"]["permitted_until"] == "22:00"
+    assert location["service_windows"] == [
+        {
+            "id": location["service_windows"][0]["id"],
+            "location_id": location["id"],
+            "label": "Antes de abrir",
+            "days": ["mon", "wed", "fri"],
+            "starts_at": "07:00",
+            "ends_at": "08:30",
+            "notes": "No interrumpir recepción.",
+            "is_active": True,
+        }
+    ]
+
+    service_window_id = location["service_windows"][0]["id"]
+    updated = client.patch(
+        f"/api/v1/locations/{location['id']}",
+        headers=headers,
+        json={
+            "service_windows": [
+                {
+                    "id": service_window_id,
+                    "label": "Antes de abrir",
+                    "days": ["mon", "tue", "wed", "thu", "fri"],
+                    "starts_at": "06:30",
+                    "ends_at": "08:30",
+                    "is_active": False,
+                }
+            ]
+        },
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["service_windows"][0]["is_active"] is False
+    assert updated.json()["access"]["permitted_until"] == "22:00"
+
+    other = client.post(
+        "/api/v1/locations/",
+        headers=headers,
+        json={
+            "name": "Otro horario",
+            "address": "Calle Horarios 2",
+            "city": "Madrid",
+            "service_windows": [{"days": ["sat"], "starts_at": "10:00", "ends_at": "12:00"}],
+        },
+    ).json()
+    denied = client.patch(
+        f"/api/v1/locations/{location['id']}",
+        headers=headers,
+        json={
+            "service_windows": [
+                {
+                    "id": other["service_windows"][0]["id"],
+                    "days": ["sat"],
+                    "starts_at": "10:00",
+                    "ends_at": "12:00",
+                }
+            ]
+        },
+    )
+    assert denied.status_code == 404
+    assert client.get(f"/api/v1/locations/{location['id']}", headers=headers).json()["service_windows"][0]["starts_at"] == "06:30"
+
+
+def test_location_service_windows_require_days_and_a_valid_same_day_range(client, db):
+    company = _company(db, "LocationServiceWindowValidation")
+    admin = _admin(db, company)
+
+    invalid = client.post(
+        "/api/v1/locations/",
+        headers=_headers(admin),
+        json={
+            "name": "Horario inválido",
+            "address": "Calle Validación 3",
+            "city": "Madrid",
+            "service_windows": [{"days": [], "starts_at": "18:00", "ends_at": "08:00"}],
+        },
+    )
+    assert invalid.status_code == 422
+
+
 def test_space_catalog_generates_editable_office_suggestions(client, db):
     company = _company(db, "CatalogOwner")
     admin = _admin(db, company)

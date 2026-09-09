@@ -4,7 +4,13 @@ from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
 
 from app.core.banking import normalize_swift_bic
 from app.schemas.location_access import LocationAccessInput
-from app.schemas.location_workspace import LocationProfileInput, LocationSpaceInput
+from app.schemas.location_workspace import (
+    LocationContactInput,
+    LocationProfileInput,
+    LocationRiskInput,
+    LocationServiceWindowInput,
+    LocationSpaceInput,
+)
 from app.schemas.user import validate_user_password
 
 
@@ -112,6 +118,9 @@ class CompanyOnboardingLocationCreate(BaseModel):
     profile: LocationProfileInput | None = None
     access: LocationAccessInput | None = None
     spaces: list[LocationSpaceInput] = Field(default_factory=list, max_length=500)
+    contacts: list[LocationContactInput] | None = Field(default=None, max_length=50)
+    risks: list[LocationRiskInput] | None = Field(default=None, max_length=100)
+    service_windows: list[LocationServiceWindowInput] | None = Field(default=None, max_length=50)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 

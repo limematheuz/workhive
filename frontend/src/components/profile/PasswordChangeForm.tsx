@@ -145,18 +145,18 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                     </div>
 
                     <div className="flex justify-end gap-2.5 border-t border-[var(--border-soft)] pt-3">
-                        <button
+                        <Button
                             type="button"
+                            variant="cancel"
                             onClick={() => {
                                 setProfilePassword("");
                                 setProfileOldPassword("");
                                 setProfileConfirmPassword("");
                                 onCancel();
                             }}
-                            className="btn-cancel-muted"
                         >
                             Cancelar
-                        </button>
+                        </Button>
                         <Button
                             type="submit"
                             disabled={updating}
