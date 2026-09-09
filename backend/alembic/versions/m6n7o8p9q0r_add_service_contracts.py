@@ -194,8 +194,50 @@ def upgrade() -> None:
         ["location_id"],
     )
 
+    op.create_table(
+        "service_contract_location_zones",
+        sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
+        sa.Column(
+            "contract_location_id",
+            sa.Integer(),
+            sa.ForeignKey("service_contract_locations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "zone_id",
+            sa.Integer(),
+            sa.ForeignKey("location_zones.id", ondelete="RESTRICT"),
+            nullable=False,
+        ),
+        sa.UniqueConstraint(
+            "contract_location_id",
+            "zone_id",
+            name="uq_service_contract_location_zone",
+        ),
+    )
+    op.create_index(
+        "ix_service_contract_location_zones_contract_location_id",
+        "service_contract_location_zones",
+        ["contract_location_id"],
+    )
+    op.create_index(
+        "ix_service_contract_location_zones_zone_id",
+        "service_contract_location_zones",
+        ["zone_id"],
+    )
+
 
 def downgrade() -> None:
+    op.drop_index(
+        "ix_service_contract_location_zones_zone_id",
+        table_name="service_contract_location_zones",
+    )
+    op.drop_index(
+        "ix_service_contract_location_zones_contract_location_id",
+        table_name="service_contract_location_zones",
+    )
+    op.drop_table("service_contract_location_zones")
+
     op.drop_index(
         "ix_service_contract_locations_location_id",
         table_name="service_contract_locations",
