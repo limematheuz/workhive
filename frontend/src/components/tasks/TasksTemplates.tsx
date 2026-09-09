@@ -1,14 +1,20 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Library, Edit2, Trash2, Copy, Search } from "lucide-react";
+import { Library, Edit2, Trash2, Copy, History, Loader2, Search } from "lucide-react";
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { DataListTable } from "@/components/ui/data-list-table";
+import { Input } from "@/components/ui/input";
 import { TemplateTask } from "@/hooks/useTasksPage";
 import { useDictionary } from "@/lib/dictionary-context";
+import { getErrorMessage } from "@/lib/errors";
 import { cleanChecklistDescription } from "@/lib/format";
+import { TemplateTaskService } from "@/services/template.service";
+import type { ServiceCatalogVersion } from "@/types/template";
+import { toast } from "@/lib/toast";
+import { ServiceVersionHistoryDialog } from "./ServiceVersionHistoryDialog";
 
 interface TasksTemplatesProps {
     templates: TemplateTask[];
@@ -17,9 +23,6 @@ interface TasksTemplatesProps {
     isDeletingTemplate: boolean;
     onDuplicateTemplate: (template: TemplateTask) => Promise<void>;
 }
-
-const GRID =
-    "grid-cols-[minmax(12rem,1.1fr)_minmax(14rem,1.6fr)_minmax(8rem,.75fr)_5.5rem]";
 
 function parseStepLines(desc: string | null | undefined): string[] {
     if (!desc) return [];
@@ -53,6 +56,9 @@ export function TasksTemplates({
     const { dict } = useDictionary();
     const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [historyService, setHistoryService] = useState<TemplateTask | null>(null);
+    const [historyVersions, setHistoryVersions] = useState<ServiceCatalogVersion[]>([]);
+    const [loadingHistoryId, setLoadingHistoryId] = useState<number | null>(null);
 
     const filteredTemplates = useMemo(() => {
         const query = searchQuery.trim().toLocaleLowerCase("es");
@@ -94,6 +100,13 @@ export function TasksTemplates({
 
     const getTemplateActions = (tmpl: TemplateTask): PopoverOption[] => [
         {
+            label: "Ver historial",
+            icon: History,
+            onClick: () => {
+                void openVersionHistory(tmpl);
+            },
+        },
+        {
             label: dict.tasks.edit || "Editar",
             icon: Edit2,
             variant: "edit",
@@ -113,6 +126,20 @@ export function TasksTemplates({
             onClick: () => setDeleteConfirmId(tmpl.id),
         },
     ];
+
+    const openVersionHistory = async (template: TemplateTask) => {
+        setHistoryService(template);
+        setLoadingHistoryId(template.id);
+        try {
+            setHistoryVersions(await TemplateTaskService.getVersions(template.id));
+        } catch (error) {
+            setHistoryService(null);
+            setHistoryVersions([]);
+            toast.error(getErrorMessage(error, "No se pudo cargar el historial del servicio"));
+        } finally {
+            setLoadingHistoryId(null);
+        }
+    };
 
     const handleConfirmDelete = () => {
         if (deleteConfirmId !== null) {
@@ -148,7 +175,6 @@ export function TasksTemplates({
             <DataListTable
                 items={filteredTemplates}
                 getRowKey={(tmpl) => tmpl.id}
-                gridClassName={GRID}
                 desktopFrom="md"
                 variant="plain"
                 header={{
@@ -165,14 +191,14 @@ export function TasksTemplates({
                                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]"
                                 aria-hidden="true"
                             />
-                            <input
+                            <Input
                                 id="template-search"
                                 type="search"
                                 value={searchQuery}
                                 onChange={(event) => setSearchQuery(event.target.value)}
                                 aria-label="Buscar servicio o paso"
                                 placeholder="Buscar servicio o paso"
-                                className="h-9 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] pl-10 pr-3 text-sm font-medium text-[var(--text-main)] outline-none transition focus:border-accent/50"
+                                className="h-9 w-full pl-10 text-sm"
                             />
                         </label>
                     </div>
@@ -180,6 +206,7 @@ export function TasksTemplates({
                 columns={[
                     { key: "name", label: dict.tasks.template_name || "Nombre de Plantilla" },
                     { key: "description", label: dict.tasks.description || "Descripción" },
+                    { key: "version", label: "Versión" },
                     { key: "price", label: dict.tasks.suggested_price || "Precio Sugerido" },
                     { key: "actions", label: dict.invoices.actions || "Acciones", className: "text-right" },
                 ]}
@@ -188,7 +215,7 @@ export function TasksTemplates({
                     <>
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-[var(--text-main)]">{tmpl.name}</p>
+                                <div className="flex items-center gap-2"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{tmpl.name}</p><span className="shrink-0 rounded-full border border-[var(--border-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-muted)]">v{tmpl.catalog_version ?? 1}</span></div>
                                 <div className="mt-1.5">{renderCleanDescription(tmpl.description)}</div>
                             </div>
                             <ActionPopover align="end" options={getTemplateActions(tmpl)} />
@@ -201,12 +228,14 @@ export function TasksTemplates({
                                 {formatSuggestedPrice(tmpl)}
                             </span>
                         </div>
+                        {tmpl.estimated_duration_minutes && <p className="mt-2 text-xs text-[var(--text-muted)]">Duración estimada: {tmpl.estimated_duration_minutes} min</p>}
                     </>
                 )}
                 renderDesktopRow={(tmpl) => (
                     <>
                         <span className="min-w-0 truncate font-semibold text-[var(--text-main)]">{tmpl.name}</span>
                         <div className="min-w-0">{renderCleanDescription(tmpl.description)}</div>
+                        <span className="text-xs font-semibold text-[var(--text-muted)]">v{tmpl.catalog_version ?? 1}</span>
                         <span className="text-sm font-semibold text-[var(--text-main)]">
                             {formatSuggestedPrice(tmpl)}
                         </span>
@@ -226,6 +255,24 @@ export function TasksTemplates({
                 isDeleting={isDeletingTemplate}
                 confirmText={dict.tasks.delete || "Eliminar"}
                 cancelText={dict.tasks.cancel || "Cancelar"}
+            />
+
+            {loadingHistoryId !== null && (
+                <div className="fixed inset-0 z-[10002] flex items-center justify-center" aria-live="polite">
+                    <span className="sr-only">Cargando historial del servicio</span>
+                    <Loader2 className="size-5 animate-spin text-accent" aria-hidden="true" />
+                </div>
+            )}
+            <ServiceVersionHistoryDialog
+                service={historyService}
+                versions={historyVersions}
+                open={historyService !== null && loadingHistoryId === null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setHistoryService(null);
+                        setHistoryVersions([]);
+                    }
+                }}
             />
         </>
     );

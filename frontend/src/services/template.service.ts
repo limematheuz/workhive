@@ -2,6 +2,7 @@ import { apiFetch, extractErrorMessage } from "@/lib/api";
 import type {
     LocationTemplate,
     TemplateTask,
+    ServiceCatalogVersion,
 } from "@/types/template";
 
 export interface TemplateTaskInput {
@@ -10,6 +11,8 @@ export interface TemplateTaskInput {
     default_price?: number | null;
     unit: string;
     pricing_mode?: "fixed" | "hourly";
+    estimated_duration_minutes?: number | null;
+    requirements?: string | null;
     is_active?: boolean;
 }
 
@@ -64,6 +67,17 @@ export const TemplateTaskService = {
         if (!response.ok) {
             throw new Error(await extractErrorMessage(response, "Error deleting template"));
         }
+    },
+
+    getVersions: async (templateId: number): Promise<ServiceCatalogVersion[]> => {
+        const response = await apiFetch(`/api/v1/template-tasks/${templateId}/versions`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "Error loading service versions"));
+        }
+        return response.json();
     },
 };
 

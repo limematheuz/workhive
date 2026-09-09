@@ -110,6 +110,10 @@ interface TaskFormModalsProps {
      setTmplUnit: (val: string) => void;
      tmplPricingMode: "fixed" | "hourly";
      setTmplPricingMode: (val: "fixed" | "hourly") => void;
+     tmplDurationMinutes: string;
+     setTmplDurationMinutes: (val: string) => void;
+     tmplRequirements: string;
+     setTmplRequirements: (val: string) => void;
      handleSaveTemplate: (e: React.FormEvent) => void;
  }
  
@@ -204,6 +208,10 @@ interface TaskFormModalsProps {
      setTmplUnit,
      tmplPricingMode,
      setTmplPricingMode,
+     tmplDurationMinutes,
+     setTmplDurationMinutes,
+     tmplRequirements,
+     setTmplRequirements,
      handleSaveTemplate,
  }: TaskFormModalsProps) {
      return (
@@ -310,6 +318,10 @@ interface TaskFormModalsProps {
                 setTmplUnit={setTmplUnit}
                 tmplPricingMode={tmplPricingMode}
                 setTmplPricingMode={setTmplPricingMode}
+                tmplDurationMinutes={tmplDurationMinutes}
+                setTmplDurationMinutes={setTmplDurationMinutes}
+                tmplRequirements={tmplRequirements}
+                setTmplRequirements={setTmplRequirements}
                 handleSaveTemplate={handleSaveTemplate}
             />
         </>

@@ -9,6 +9,8 @@ from app.schemas.task_item import (
     TaskChecklistItemUpdate,
 )
 from app.repositories import task_item as task_item_repo
+from app.repositories import service_catalog_version as service_catalog_version_repo
+from app.repositories import template_task as template_task_repo
 from app.repositories import user as user_repo
 from app.services import location_access_service
 from app.services.organization_authorization_service import require_capability
@@ -96,6 +98,37 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
         setattr(task, field, value)
 
 
+def _resolve_current_catalog_version_id(
+    db: Session,
+    *,
+    template_task_id: int,
+    company_id: int | None,
+) -> int:
+    """Resolve an active service in the caller's company to its immutable revision."""
+    template = template_task_repo.get_template_task_by_id(
+        db,
+        template_task_id,
+        company_id,
+    )
+    if not template or not template.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Service catalog entry not found",
+        )
+
+    version = service_catalog_version_repo.get_current_for_template(
+        db,
+        template_task_id=template.id,
+        version=template.catalog_version,
+    )
+    # The migration creates this record for every legacy template. Keeping this
+    # repair path protects a partially migrated local database without ever
+    # altering an existing immutable version.
+    if version is None:
+        version = service_catalog_version_repo.create_from_template(db, template)
+    return version.id
+
+
 def create_task_item(
     db: Session, current_user: User, task_item_data: TaskItemCreate
 ) -> TaskItem:
@@ -152,6 +185,13 @@ def create_task_item(
         current_user.company_id,
         task_item_data.description,
     )
+    service_catalog_version_id = None
+    if task_item_data.template_task_id is not None:
+        service_catalog_version_id = _resolve_current_catalog_version_id(
+            db,
+            template_task_id=task_item_data.template_task_id,
+            company_id=current_user.company_id,
+        )
     # Manual work starts in the pending column. External company requests are
     # created by the reservation flow and remain requested.
     pricing_mode = task_billing_service.normalize_pricing_mode(
@@ -175,6 +215,7 @@ def create_task_item(
         db,
         current_user.company_id,
         task_item_data,
+        service_catalog_version_id=service_catalog_version_id,
     )
     location_zone_service.sync_task_zones(
         db,
@@ -258,6 +299,17 @@ def update_task_item(
         is_external,
     ):
         _freeze_live_external_snapshot(db, db_task_item)
+
+    if "template_task_id" in task_data.model_fields_set:
+        db_task_item.service_catalog_version_id = (
+            _resolve_current_catalog_version_id(
+                db,
+                template_task_id=task_data.template_task_id,
+                company_id=current_user.company_id,
+            )
+            if task_data.template_task_id is not None
+            else None
+        )
 
     pricing_updates = task_data.model_dump(exclude_unset=True)
     task_billing_service.validate_pricing_update(db_task_item, pricing_updates)

@@ -63,6 +63,16 @@ class TaskItem(Base):
     template_task_id = Column(Integer, ForeignKey("template_tasks.id"), nullable=True)
     template_task = relationship("TemplateTask", back_populates="task_items")
 
+    # The template is the current service definition; this reference preserves
+    # the exact immutable catalog revision selected when the work was created.
+    service_catalog_version_id = Column(
+        Integer,
+        ForeignKey("service_catalog_versions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    service_catalog_version = relationship("ServiceCatalogVersion")
+
     checkout_reservation_id = Column(
         Integer, ForeignKey("reservations.id", ondelete="SET NULL"), nullable=True
     )

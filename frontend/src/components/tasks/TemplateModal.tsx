@@ -5,6 +5,10 @@ import { Loader2 } from "lucide-react";
 import { TemplateTask } from "@/hooks/useTasksPage";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { ChecklistStepsEditor } from "./ChecklistStepsEditor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     Dialog,
     DialogContent,
@@ -15,7 +19,6 @@ import {
 import {
     taskDialogBodyClass,
     taskDialogContentClass,
-    taskDialogDangerBtnClass,
     taskDialogFooterClass,
     taskDialogHeaderClass,
     taskDialogOverlayClass,
@@ -42,6 +45,10 @@ interface TemplateModalProps {
     setTmplUnit: (val: string) => void;
     tmplPricingMode: "fixed" | "hourly";
     setTmplPricingMode: (val: "fixed" | "hourly") => void;
+    tmplDurationMinutes: string;
+    setTmplDurationMinutes: (val: string) => void;
+    tmplRequirements: string;
+    setTmplRequirements: (val: string) => void;
     handleSaveTemplate: (e: React.FormEvent) => void;
 }
 
@@ -61,6 +68,10 @@ export function TemplateModal({
     setTmplUnit,
     tmplPricingMode,
     setTmplPricingMode,
+    tmplDurationMinutes,
+    setTmplDurationMinutes,
+    tmplRequirements,
+    setTmplRequirements,
     handleSaveTemplate,
 }: TemplateModalProps) {
     return (
@@ -71,25 +82,25 @@ export function TemplateModal({
             >
                 <DialogHeader className={taskDialogHeaderClass}>
                     <DialogTitle className="text-lg font-bold tracking-tight text-[var(--text-main)]">
-                        {selectedTemplate ? "Edit service" : "New service"}
+                        {selectedTemplate ? "Editar servicio" : "Nuevo servicio"}
                     </DialogTitle>
                     <DialogDescription className="mt-1 text-xs font-semibold text-[var(--text-muted)]">
-                        Define the service and the steps the team must complete.
+                        Define el servicio y las comprobaciones que debe completar el equipo.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSaveTemplate} className="flex min-h-0 flex-1 flex-col font-sans">
                     <div className={taskDialogBodyClass}>
                         <div className="space-y-1">
-                            <label htmlFor="template-name" className="text-xs uppercase font-bold text-[var(--text-muted)]">{dict.tasks.template_dialog.name_label}</label>
-                            <input
+                            <Label htmlFor="template-name" className="text-xs uppercase font-bold text-[var(--text-muted)]">{dict.tasks.template_dialog.name_label}</Label>
+                            <Input
                                 id="template-name"
                                 type="text"
                                 value={tmplName}
                                 onChange={(e) => setTmplName(e.target.value)}
                                 required
-                                placeholder="e.g.: Standard cleaning, Boiler inspection, etc."
-                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-sm outline-none focus:border-accent"
+                                placeholder="Ej.: limpieza estándar, revisión de caldera…"
+                                className="h-10 rounded-xl text-sm"
                             />
                         </div>
 
@@ -104,24 +115,25 @@ export function TemplateModal({
 
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                             <div className="space-y-1">
-                                <label htmlFor="template-pricing-mode" className="text-xs font-bold uppercase text-[var(--text-muted)]">Modo de cobro</label>
-                                <select
-                                    id="template-pricing-mode"
+                                <Label htmlFor="template-pricing-mode" className="text-xs font-bold uppercase text-[var(--text-muted)]">Modo de cobro</Label>
+                                <Select
                                     value={tmplPricingMode}
-                                    onChange={(event) => {
-                                        const mode = event.target.value as "fixed" | "hourly";
+                                    onValueChange={(value) => {
+                                        const mode = value as "fixed" | "hourly";
                                         setTmplPricingMode(mode);
                                         if (mode === "hourly") setTmplUnit("hour");
                                     }}
-                                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent"
                                 >
-                                    <option value="fixed">Precio fijo</option>
-                                    <option value="hourly">Por horas</option>
-                                </select>
+                                    <SelectTrigger id="template-pricing-mode"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="fixed">Precio fijo</SelectItem>
+                                        <SelectItem value="hourly">Por horas</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-1">
-                                <label htmlFor="template-price" className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.tasks.template_dialog.price_label}</label>
-                                <input
+                                <Label htmlFor="template-price" className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.tasks.template_dialog.price_label}</Label>
+                                <Input
                                     id="template-price"
                                     type="number"
                                     step="0.01"
@@ -129,36 +141,61 @@ export function TemplateModal({
                                     value={tmplPrice}
                                     onChange={(e) => setTmplPrice(e.target.value)}
                                     placeholder="0.00"
-                                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 font-mono text-sm text-[var(--text-main)] outline-none focus:border-accent"
+                                    className="h-10 rounded-xl font-mono text-sm"
                                 />
                             </div>
                             <div className="space-y-1">
-                                <label htmlFor="template-unit" className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.tasks.template_dialog.unit_label}</label>
-                                <select
-                                    id="template-unit"
+                                <Label htmlFor="template-unit" className="text-xs font-bold uppercase text-[var(--text-muted)]">{dict.tasks.template_dialog.unit_label}</Label>
+                                <Select
                                     value={tmplUnit}
-                                    onChange={(e) => setTmplUnit(e.target.value)}
+                                    onValueChange={setTmplUnit}
                                     disabled={tmplPricingMode === "hourly"}
-                                    aria-label={dict.tasks.template_dialog.unit_label}
-                                    className="w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm text-[var(--text-main)] outline-none focus:border-accent"
                                 >
-                                    {UNIT_OPTIONS.map((opt) => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
-                                </select>
+                                    <SelectTrigger id="template-unit" aria-label={dict.tasks.template_dialog.unit_label}><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {UNIT_OPTIONS.map((opt) => (
+                                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            <div className="space-y-1">
+                                <Label htmlFor="template-duration" className="text-xs font-bold uppercase text-[var(--text-muted)]">Duración estimada (minutos)</Label>
+                                <Input
+                                    id="template-duration"
+                                    type="number"
+                                    min="1"
+                                    value={tmplDurationMinutes}
+                                    onChange={(event) => setTmplDurationMinutes(event.target.value)}
+                                    placeholder="Ej.: 90"
+                                    className="h-10 rounded-xl font-mono text-sm"
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="template-requirements" className="text-xs font-bold uppercase text-[var(--text-muted)]">Requisitos</Label>
+                                <Input
+                                    id="template-requirements"
+                                    value={tmplRequirements}
+                                    onChange={(event) => setTmplRequirements(event.target.value)}
+                                    placeholder="Ej.: llaves, material y acceso"
+                                    className="h-10 rounded-xl text-sm"
+                                />
                             </div>
                         </div>
                     </div>
 
                     <div className={`${taskDialogFooterClass} justify-end`}>
-                        <button
+                        <Button
                             type="button"
                             onClick={() => setIsTemplateModalOpen(false)}
-                            className={taskDialogDangerBtnClass}
+                            variant="cancel"
                         >
                             {dict.tasks.template_dialog.cancel}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
                             disabled={isSaving}
                             className={taskDialogPrimaryBtnClass}
@@ -171,7 +208,7 @@ export function TemplateModal({
                             ) : (
                                 selectedTemplate ? "Save changes" : "Create service"
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </DialogContent>

@@ -4,12 +4,18 @@ from app.schemas.template_task import TemplateTaskCreate, TemplateTaskUpdate
 
 
 def get_template_task_by_id(
-    db: Session, template_id: int, company_id: int | None
+    db: Session,
+    template_id: int,
+    company_id: int | None,
+    *,
+    for_update: bool = False,
 ) -> TemplateTask | None:
     if company_id is None:
         return None
     query = db.query(TemplateTask).filter(TemplateTask.id == template_id)
     query = query.filter(TemplateTask.company_id == company_id)
+    if for_update:
+        query = query.with_for_update()
     return query.first()
 
 
@@ -44,8 +50,7 @@ def create_template_task(
         company_id=company_id,
     )
     db.add(db_template)
-    db.commit()
-    db.refresh(db_template)
+    db.flush()
     return db_template
 
 
@@ -56,8 +61,7 @@ def update_template_task(
     for key, value in update_template.items():
         setattr(db_template, key, value)
     db.add(db_template)
-    db.commit()
-    db.refresh(db_template)
+    db.flush()
     return db_template
 
 
@@ -65,4 +69,4 @@ def delete_template_task(db: Session, db_template: TemplateTask) -> None:
     """Soft-delete: marca la plantilla como inactiva para no romper FK con tareas existentes."""
     db_template.is_active = False
     db.add(db_template)
-    db.commit()
+    db.flush()

@@ -165,6 +165,7 @@ class TaskItemResponse(TaskItemBase):
     billing_price_snapshot: float | None = None
     billing_quantity_snapshot: float | None = None
     billing_unit_snapshot: str | None = None
+    service_catalog_version_id: int | None = None
     created_at: datetime
     updated_at: datetime
     checkout_reservation: ReservationOperationalResponse | None = None
