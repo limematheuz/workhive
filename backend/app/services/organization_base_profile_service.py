@@ -129,11 +129,17 @@ def _ensure_system_profile(
     elif not profile.is_system:
         # Do not convert or modify a customer-managed profile during bootstrap.
         return profile
-    else:
+    elif name == ADMIN_PROFILE_NAME:
         profile.description = description
         profile.is_system = True
         profile.is_active = True
         db.add(profile)
+
+    else:
+        # Base profiles are safe starting points, not immutable policy. Once a
+        # company changes Comercial, Operaciones, Finanzas or Consulta, that
+        # choice must not be overwritten whenever a member signs in.
+        return profile
 
     definitions = organization_repo.list_permission_definitions(db)
     allowed_codes = (

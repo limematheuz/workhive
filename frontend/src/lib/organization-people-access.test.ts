@@ -97,6 +97,15 @@ test("organization teams use the shared table while permission profiles expose r
     assert.match(controlCenter, /ActionPopover/);
     assert.match(controlCenter, /OrganizationService\.updatePermissionProfile/);
     assert.match(controlCenter, /OrganizationService\.deletePermissionProfile/);
+    assert.match(controlCenter, /const canManage = profile\.is_editable/);
+    assert.match(controlCenter, /profileCopy\.default_edit_description/);
+    assert.match(controlCenter, /profileCopy\.default_name_locked/);
+    assert.match(controlCenter, /disabled=\{Boolean\(profile\?\.is_system\)\}/);
+    const memberAccessDialog = readFileSync(
+        new URL("../components/organization/MemberAccessDialog.tsx", import.meta.url),
+        "utf8",
+    );
+    assert.match(memberAccessDialog, /profile\.is_editable && profile\.is_active/);
 });
 
 test("organization tables keep the mobile layout to the essential columns", () => {

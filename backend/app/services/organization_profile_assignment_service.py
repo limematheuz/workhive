@@ -73,10 +73,17 @@ def replace_member_profile_assignments(
 
     now = datetime.now(timezone.utc)
     for assignment in existing_assignments:
-        if not assignment.permission_profile.is_system:
-            assignment.is_active = False
-            assignment.revoked_at = now
-            db.add(assignment)
+        # The administrator profile is tied to the administrator membership
+        # class. Every other profile, including editable base profiles, must
+        # follow the replacement payload so it can also be removed safely.
+        if (
+            assignment.permission_profile.is_system
+            and assignment.permission_profile.name == ADMIN_PROFILE_NAME
+        ):
+            continue
+        assignment.is_active = False
+        assignment.revoked_at = now
+        db.add(assignment)
 
     for input_assignment in payload.assignments:
         for scope in input_assignment.scopes:

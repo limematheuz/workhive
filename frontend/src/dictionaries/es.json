@@ -2303,9 +2303,12 @@
       "empty": "Crea perfiles para Comercial, RRHH, Calidad u Operaciones.",
       "profile": "Perfil",
       "permissions": "Permisos",
-      "system": "Sistema",
+      "system": "Predeterminado",
       "custom": "Personalizado",
-      "system_managed": "Gestionado por WorkHive",
+      "protected": "Protegido",
+      "system_managed": "Este perfil está protegido por WorkHive",
+      "default_edit_description": "Este perfil parte de una configuración recomendada. Puedes ajustarlo para esta empresa; los permisos reservados de administrador siguen protegidos.",
+      "default_name_locked": "El nombre identifica esta plantilla recomendada y no se puede cambiar.",
       "no_description": "Sin descripción",
       "permission_count_one": "permiso",
       "permission_count_many": "permisos",
@@ -2347,7 +2350,13 @@
       "permission_categories": {
         "access": "Accesos",
         "company": "Empresa",
-        "organization": "Organización"
+        "organization": "Organización",
+        "clients": "Clientes",
+        "locations": "Ubicaciones",
+        "work": "Trabajo",
+        "time": "Tiempo",
+        "finance": "Finanzas",
+        "commercial": "Comercial"
       },
       "permission_catalog": {
         "access.members.read": "Ver las personas de la empresa",
@@ -2360,6 +2369,18 @@
         "organization.departments.manage": "Crear y actualizar departamentos",
         "organization.teams.read": "Ver equipos",
         "organization.teams.manage": "Crear y actualizar equipos",
+        "clients.read": "Ver clientes y contactos",
+        "clients.manage": "Crear y actualizar clientes",
+        "commercial.follow_ups.read": "Ver seguimiento comercial",
+        "commercial.follow_ups.manage": "Gestionar seguimiento comercial",
+        "locations.read": "Ver ubicaciones",
+        "locations.manage": "Crear y actualizar ubicaciones",
+        "work.read": "Ver trabajos",
+        "work.manage": "Crear y actualizar trabajos",
+        "time.read": "Ver registros de tiempo",
+        "time.manage": "Registrar y gestionar tiempo permitido",
+        "finance.read": "Ver presupuestos, facturas, gastos y fiscalidad",
+        "finance.manage": "Gestionar información financiera",
         "unknown": "Permiso adicional de WorkHive"
       },
       "permission_guidance": {
@@ -2372,7 +2393,19 @@
         "organization.departments.read": "Consulta la estructura de departamentos de esta empresa.",
         "organization.departments.manage": "Crea, modifica, desactiva o elimina departamentos sin datos vinculados.",
         "organization.teams.read": "Consulta los equipos y su composición dentro de esta empresa.",
-        "organization.teams.manage": "Crea, modifica, desactiva y administra integrantes de equipos dentro de esta empresa."
+        "organization.teams.manage": "Crea, modifica, desactiva y administra integrantes de equipos dentro de esta empresa.",
+        "clients.read": "Consulta los clientes y las personas de contacto de esta empresa.",
+        "clients.manage": "Crea y actualiza clientes y sus datos de contacto.",
+        "commercial.follow_ups.read": "Consulta las actividades y el historial de seguimiento comercial.",
+        "commercial.follow_ups.manage": "Registra y actualiza llamadas, visitas, notas y próximos pasos comerciales.",
+        "locations.read": "Consulta las ubicaciones donde la empresa presta servicios.",
+        "locations.manage": "Crea y actualiza ubicaciones de la empresa.",
+        "work.read": "Consulta los trabajos y su planificación.",
+        "work.manage": "Crea y actualiza trabajos y sus asignaciones.",
+        "time.read": "Consulta los registros de tiempo autorizados.",
+        "time.manage": "Inicia y registra tiempo en el trabajo permitido.",
+        "finance.read": "Consulta presupuestos, facturas, gastos y registros fiscales.",
+        "finance.manage": "Crea y actualiza información financiera de la empresa."
       }
     },
     "member_dialog": {

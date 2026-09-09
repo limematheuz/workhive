@@ -2303,9 +2303,12 @@
       "empty": "Create profiles for Sales, HR, Quality, or Operations.",
       "profile": "Profile",
       "permissions": "Permissions",
-      "system": "System",
+      "system": "Default",
       "custom": "Custom",
-      "system_managed": "Managed by WorkHive",
+      "protected": "Protected",
+      "system_managed": "This profile is protected by WorkHive",
+      "default_edit_description": "This profile starts from a recommended setup. You can adjust it for this company; administrator-only permissions remain protected.",
+      "default_name_locked": "The name identifies this recommended template and cannot be changed.",
       "no_description": "No description",
       "permission_count_one": "permission",
       "permission_count_many": "permissions",
@@ -2347,7 +2350,13 @@
       "permission_categories": {
         "access": "Access",
         "company": "Company",
-        "organization": "Organization"
+        "organization": "Organization",
+        "clients": "Clients",
+        "locations": "Locations",
+        "work": "Work",
+        "time": "Time",
+        "finance": "Finance",
+        "commercial": "Sales"
       },
       "permission_catalog": {
         "access.members.read": "View company people",
@@ -2360,6 +2369,18 @@
         "organization.departments.manage": "Create and update departments",
         "organization.teams.read": "View teams",
         "organization.teams.manage": "Create and update teams",
+        "clients.read": "View clients and contacts",
+        "clients.manage": "Create and update clients",
+        "commercial.follow_ups.read": "View sales follow-ups",
+        "commercial.follow_ups.manage": "Manage sales follow-ups",
+        "locations.read": "View locations",
+        "locations.manage": "Create and update locations",
+        "work.read": "View work",
+        "work.manage": "Create and update work",
+        "time.read": "View time records",
+        "time.manage": "Log and manage permitted time",
+        "finance.read": "View quotes, invoices, expenses, and fiscal records",
+        "finance.manage": "Manage financial information",
         "unknown": "Additional WorkHive permission"
       },
       "permission_guidance": {
@@ -2372,7 +2393,19 @@
         "organization.departments.read": "View this company's department structure.",
         "organization.departments.manage": "Create, update, deactivate, or delete departments without linked data.",
         "organization.teams.read": "View teams and their members within this company.",
-        "organization.teams.manage": "Create, update, deactivate, and manage people assigned to teams within this company."
+        "organization.teams.manage": "Create, update, deactivate, and manage people assigned to teams within this company.",
+        "clients.read": "View this company's clients and contacts.",
+        "clients.manage": "Create and update clients and their contact details.",
+        "commercial.follow_ups.read": "View sales activities and follow-up history.",
+        "commercial.follow_ups.manage": "Record and update sales calls, visits, notes, and next steps.",
+        "locations.read": "View the locations where this company provides services.",
+        "locations.manage": "Create and update company locations.",
+        "work.read": "View work and its schedule.",
+        "work.manage": "Create and update work and its assignments.",
+        "time.read": "View permitted time records.",
+        "time.manage": "Start and log time for permitted work.",
+        "finance.read": "View quotes, invoices, expenses, and fiscal records.",
+        "finance.manage": "Create and update company financial information."
       }
     },
     "member_dialog": {

@@ -292,6 +292,7 @@ class PermissionProfileResponse(BaseModel):
     name: str
     description: str | None
     is_system: bool
+    is_editable: bool
     is_active: bool
     permission_codes: list[str]
     usage: dict[str, int | bool]

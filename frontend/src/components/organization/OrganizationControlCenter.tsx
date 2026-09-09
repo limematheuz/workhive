@@ -754,7 +754,7 @@ function ProfilesTable({
                 </TableHeader>
                 <TableBody>
                     {pagination.pageItems.map((profile) => {
-                        const canManage = !profile.is_system;
+                        const canManage = profile.is_editable;
                         const summary = permissionSummary(profile, definitionByCode, copy);
                         const actionOptions: PopoverOption[] = canManage ? [
                             { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onEdit(profile) },
@@ -786,7 +786,7 @@ function ProfilesTable({
                                 <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)] lg:hidden">{profile.permission_codes.length} {profile.permission_codes.length === 1 ? copy.profiles.permission_count_one : copy.profiles.permission_count_many} · {summary}</p>
                             </TableCell>
                             <TableCell className="hidden text-sm text-[var(--text-muted)] lg:table-cell"><p className="line-clamp-2">{summary}</p></TableCell>
-                            <TableCell><Badge variant="outline" className={profile.is_system ? "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? copy.profiles.system : copy.profiles.custom}</Badge></TableCell>
+                            <TableCell><Badge variant="outline" className={profile.is_system ? profile.is_editable ? "border-accent/45 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? profile.is_editable ? copy.profiles.system : copy.profiles.protected : copy.profiles.custom}</Badge></TableCell>
                             <TableCell className="hidden sm:table-cell"><StatusBadge status={profile.is_active ? "active" : "inactive"} /></TableCell>
                             <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                                 {canManage ? (
@@ -836,7 +836,7 @@ function PermissionProfileCard({
 }) {
     const { dict } = useDictionary();
     const copy = dict.organization;
-    const canManage = !profile.is_system;
+    const canManage = profile.is_editable;
     const summary = permissionSummary(profile, definitionByCode, copy);
     const actionOptions: PopoverOption[] = canManage ? [
         { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit },
@@ -869,7 +869,7 @@ function PermissionProfileCard({
                     {profile.permission_codes.length} {profile.permission_codes.length === 1 ? copy.profiles.permission_count_one : copy.profiles.permission_count_many} · {summary}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className={profile.is_system ? "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? copy.profiles.system : copy.profiles.custom}</Badge>
+                    <Badge variant="outline" className={profile.is_system ? profile.is_editable ? "border-accent/45 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? profile.is_editable ? copy.profiles.system : copy.profiles.protected : copy.profiles.custom}</Badge>
                     <StatusBadge status={profile.is_active ? "active" : "inactive"} />
                 </div>
             </CardContent>
@@ -1020,12 +1020,19 @@ function CreateOrganizationDialog({
                 <form onSubmit={handleSubmit} className="min-w-0">
                     <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-4 pr-14 sm:px-6">
                         <DialogTitle>{title}</DialogTitle>
-                        <DialogDescription>{profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
+                        <DialogDescription>{profile?.is_system ? profileCopy.default_edit_description : profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 px-5 py-4 sm:px-6">
                         <div className="space-y-2">
                             <Label htmlFor="organization-name">{copy.name}</Label>
-                            <Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required />
+                            <Input
+                                id="organization-name"
+                                value={name}
+                                onChange={(event) => setName(event.target.value)}
+                                disabled={Boolean(profile?.is_system)}
+                                required
+                            />
+                            {profile?.is_system && <p className="text-xs text-[var(--text-muted)]">{profileCopy.default_name_locked}</p>}
                         </div>
                         {!isProfile && (
                             <div className="space-y-2">

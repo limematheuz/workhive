@@ -22,6 +22,14 @@ test("organization and invitation flows use the shared English and Spanish dicti
     assert.equal(es.organization.profiles.clear_category, "Deseleccionar todo");
     assert.equal(en.organization.profiles.select_category, "Select all");
     assert.equal(en.organization.profiles.clear_category, "Deselect all");
+    assert.equal(es.organization.profiles.system, "Predeterminado");
+    assert.equal(es.organization.profiles.protected, "Protegido");
+    assert.equal(en.organization.profiles.system, "Default");
+    assert.equal(en.organization.profiles.protected, "Protected");
+    assert.equal(es.organization.profiles.permission_catalog["clients.manage"], "Crear y actualizar clientes");
+    assert.equal(es.organization.profiles.permission_catalog["finance.read"], "Ver presupuestos, facturas, gastos y fiscalidad");
+    assert.equal(es.organization.profiles.permission_catalog["commercial.follow_ups.manage"], "Gestionar seguimiento comercial");
+    assert.equal(es.organization.profiles.default_name_locked, "El nombre identifica esta plantilla recomendada y no se puede cambiar.");
     assert.equal(es.organization.filters.search_people, "Buscar por nombre, correo o perfil");
     assert.equal(es.organization.filters.clear, "Limpiar filtros");
     assert.equal(en.organization.filters.search_profiles, "Search by name, description, or permission");
@@ -29,6 +37,7 @@ test("organization and invitation flows use the shared English and Spanish dicti
     assert.match(controlCenter, /useDictionary/);
     assert.match(invitationDialog, /useDictionary/);
     assert.match(accessDialog, /useDictionary/);
+    assert.match(accessDialog, /profile\.is_editable/);
     assert.match(dictionaryContext, /DEFAULT_LOCALE: Locale = "es"/);
     assert.match(dictionaryContext, /return stored === "en" \? "en" : "es"/);
 });

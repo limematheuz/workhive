@@ -23,6 +23,11 @@ from app.services.organization_permission_policy import (
     recommended_audiences,
     require_custom_profile_permissions_assignable,
 )
+from app.services.organization_base_profile_service import ADMIN_PROFILE_NAME
+
+
+def _is_protected_administrator_profile(profile: PermissionProfile) -> bool:
+    return profile.is_system and profile.name == ADMIN_PROFILE_NAME
 
 
 def profile_response(
@@ -36,6 +41,7 @@ def profile_response(
         name=profile.name,
         description=profile.description,
         is_system=profile.is_system,
+        is_editable=not _is_protected_administrator_profile(profile),
         is_active=profile.is_active,
         permission_codes=sorted(
             permission.permission_definition.code
@@ -134,9 +140,15 @@ def update_permission_profile(
     )
     if not profile:
         not_found("Permission profile")
-    if profile.is_system:
-        conflict("System permission profiles are managed by WorkHive")
+    if _is_protected_administrator_profile(profile):
+        conflict("The company administrator profile is managed by WorkHive")
     updates = payload.model_dump(exclude_unset=True)
+    if (
+        profile.is_system
+        and "name" in updates
+        and updates["name"] != profile.name
+    ):
+        conflict("Default permission profile names are managed by WorkHive")
     permission_codes = updates.pop("permission_codes", None)
     for field, value in updates.items():
         setattr(profile, field, value)

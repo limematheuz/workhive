@@ -56,13 +56,12 @@ function buildAssignmentDrafts(
     profiles: PermissionProfile[],
 ): AssignmentDraft[] {
     if (!member) return [];
-    const systemProfileIds = new Set<number>();
-    for (const profile of profiles) {
-        if (profile.is_system) systemProfileIds.add(profile.id);
-    }
+    const editableProfileIds = new Set(
+        profiles.filter((profile) => profile.is_editable).map((profile) => profile.id),
+    );
     const drafts: AssignmentDraft[] = [];
     for (const assignment of member.profile_assignments) {
-        if (systemProfileIds.has(assignment.permission_profile_id)) continue;
+        if (!editableProfileIds.has(assignment.permission_profile_id)) continue;
         const scope = assignment.scopes[0];
         if (scope) {
             drafts.push({
@@ -101,7 +100,7 @@ export function MemberAccessDialog({
     const [saving, setSaving] = useState(false);
 
     const availableProfiles = useMemo(
-        () => profiles.filter((profile) => !profile.is_system && profile.is_active),
+        () => profiles.filter((profile) => profile.is_editable && profile.is_active),
         [profiles],
     );
 
