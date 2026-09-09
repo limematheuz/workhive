@@ -145,13 +145,19 @@ def create_task_item(
     db: Session,
     company_id: int,
     task_item_data: TaskItemCreate,
+    *,
+    service_catalog_version_id: int | None = None,
 ) -> TaskItem:
     dump = task_item_data.model_dump(
         exclude={"zone_ids", "space_ids", "space_task_template_ids"}
     )
     if dump.get("created_at") is None:
         dump.pop("created_at", None)
-    db_task_item = TaskItem(**dump, company_id=company_id)
+    db_task_item = TaskItem(
+        **dump,
+        company_id=company_id,
+        service_catalog_version_id=service_catalog_version_id,
+    )
     db.add(db_task_item)
     db.flush()
     return db_task_item

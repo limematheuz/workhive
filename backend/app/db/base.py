@@ -14,6 +14,7 @@ from app.models.role import Role
 from app.models.company import Company
 from app.models.company_purchase_intent import CompanyPurchaseIntent
 from app.models.template_task import TemplateTask
+from app.models.service_catalog_version import ServiceCatalogVersion
 from app.models.location_template import LocationTemplate
 from app.models.work_session import WorkSession
 from app.models.task_item import TaskItem
@@ -26,6 +27,13 @@ from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
+from app.models.quote_revision import QuoteRevision
+from app.models.service_contract import (
+    ServiceContract,
+    ServiceContractLine,
+    ServiceContractLocation,
+    ServiceContractLocationZone,
+)
 from app.models.expense import Expense
 from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.location_company_access import LocationCompanyAccess

@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -14,13 +15,18 @@ from app.schemas.quote import (
     QuoteUpdate,
 )
 from app.schemas.quote_item import QuoteItemCreate
-from app.services import email_service, invoice_email_contact_service
+from app.services import (
+    email_service,
+    invoice_email_contact_service,
+    service_contract_service,
+)
 from app.services.quote_policy_service import (
     assert_quote_content_editable,
     get_quote_or_404,
     require_quotes_feature,
 )
 from app.services.quote_pdf import generate_quote_email_pdf
+from app.services import quote_revision_service
 
 VALID_TRANSITIONS: dict[str, list[str]] = {
     "draft": ["sent", "rejected", "expired"],
@@ -98,9 +104,15 @@ def email_quote(
     data: QuoteEmailRequest,
     *,
     sender_email: str | None = None,
+    actor_user_id: int | None = None,
 ):
     require_quotes_feature(db, company_id)
-    quote = get_quote_or_404(db, company_id, quote_id)
+    quote = quote_repo.get_quote_for_update(db, company_id, quote_id)
+    if quote is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Quote not found",
+        )
     if quote.status not in {"draft", "sent"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -162,8 +174,13 @@ def email_quote(
     try:
         if quote.status == "draft":
             quote.status = "sent"
-            db.add(quote)
-            db.commit()
+        quote_revision_service.get_or_create_current_quote_revision(
+            db,
+            quote,
+            actor_user_id=actor_user_id,
+        )
+        db.add(quote)
+        db.commit()
         if data.save_recipient_to_client_id is not None:
             invoice_email_contact_service.save_email_to_client(
                 db,
@@ -261,7 +278,14 @@ def _replace_quote_items(db: Session, quote, items: list[QuoteItemCreate]) -> No
     db.expire(quote, ["items"])
 
 
-def update_quote(db: Session, company_id: int, quote_id: int, data: QuoteUpdate):
+def update_quote(
+    db: Session,
+    company_id: int,
+    quote_id: int,
+    data: QuoteUpdate,
+    *,
+    actor_user_id: int | None = None,
+):
     require_quotes_feature(db, company_id)
     quote = quote_repo.get_quote_for_update(db, company_id, quote_id)
     if quote is None:
@@ -277,6 +301,12 @@ def update_quote(db: Session, company_id: int, quote_id: int, data: QuoteUpdate)
         if data.items is not None:
             _replace_quote_items(db, updated_quote, data.items)
         quote_repo.recalculate_totals(db, updated_quote)
+        if data.status == "sent":
+            quote_revision_service.get_or_create_current_quote_revision(
+                db,
+                updated_quote,
+                actor_user_id=actor_user_id,
+            )
         db.commit()
         return quote_repo.get_quote(db, company_id, quote_id)
     except Exception:
@@ -289,6 +319,8 @@ def accept_quote(
     company_id: int,
     quote_id: int,
     data: QuoteAcceptRequest,
+    *,
+    actor_user_id: int | None = None,
 ):
     require_quotes_feature(db, company_id)
     quote = quote_repo.get_quote_for_update(db, company_id, quote_id)
@@ -307,6 +339,12 @@ def accept_quote(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A quote must contain at least one item",
         )
+
+    accepted_revision = quote_revision_service.get_or_create_current_quote_revision(
+        db,
+        quote,
+        actor_user_id=actor_user_id,
+    )
 
     if data.register_client:
         if quote.client_id is not None:
@@ -329,9 +367,19 @@ def accept_quote(
         registered_client = client_repo.stage_client(db, client_data)
         quote.client_id = registered_client.id
 
+    accepted_revision.accepted_at = datetime.now(timezone.utc)
+    quote.accepted_revision_id = accepted_revision.id
     quote.status = "accepted"
     db.add(quote)
     try:
+        # Acceptance creates the agreement record, never an operational task.
+        # The contract remains a draft until its locations and operating terms
+        # are explicitly confirmed.
+        service_contract_service.ensure_contract_from_accepted_quote(
+            db,
+            quote,
+            actor_user_id=actor_user_id,
+        )
         db.commit()
     except IntegrityError as exc:
         db.rollback()

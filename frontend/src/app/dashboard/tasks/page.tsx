@@ -57,7 +57,7 @@ function TasksPageContent() {
                             ...(state.isAdminOrManager
                                 ? [
                                     { id: "list" as const, label: state.dict.tasks?.tab_list || "Lista", icon: ListTodo },
-                                    { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Plantillas", icon: Library }
+                                    { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Catálogo de servicios", icon: Library }
                                   ]
                                 : [])
                         ]}

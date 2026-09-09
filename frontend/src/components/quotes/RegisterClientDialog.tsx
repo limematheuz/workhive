@@ -129,7 +129,7 @@ function OpenRegisterClientDialog({
                         <Button
                             type="button"
                             onClick={() => onOpenChange(false)}
-                            variant="dangerSoft"
+                            variant="secondary"
                             className="cursor-pointer hover:translate-y-0 hover:shadow-none"
                         >
                             Cancelar

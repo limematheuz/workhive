@@ -19,7 +19,7 @@ export type SidebarNavUserFlags = {
 const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
 const ACCOUNTANT_HREFS = new Set(["/dashboard/analytics", "/dashboard/fiscal-summary"]);
 const NAVIGATION_FEATURES: Record<string, string> = {
-    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/tasks": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/invoices": "features.invoices",
+    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/tasks": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices",
 };
 
 function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
@@ -40,6 +40,7 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         ] : []),
         ...(flags.canViewFinance ? [
             { href: "/dashboard/quotes", label: dict.quotes?.nav_label ?? "Presupuestos", exact: false, icon: <FileText /> },
+            { href: "/dashboard/contracts", label: "Contratos", exact: false, icon: <FileText /> },
             { href: "/dashboard/invoices", label: dict.dashboard.invoices, exact: false, icon: <ReceiptText /> },
             { href: "/dashboard/invoice-summary", label: dict.invoices.summary_nav, exact: false, icon: <FileChartColumn /> },
             { href: "/dashboard/expenses", label: dict.expenses.title, exact: false, icon: <WalletCards /> },
@@ -82,7 +83,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
     const navGroups = [
         group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/locations", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/external-network"]),
         group("clients", "Clientes", <Building2 />, ["/dashboard/clients", "/dashboard/quotes"]),
-        group("billing", "Facturación", <ReceiptText />, ["/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar"]),
+        group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar"]),
         group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization"]),
         group("platform", "Plataforma WorkHive", <CloudCog />, ["/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"]),
     ].filter(Boolean) as NavGroup[];

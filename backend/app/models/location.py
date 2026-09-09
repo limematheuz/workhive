@@ -101,6 +101,10 @@ class Location(Base):
         return self.access_profile
 
     task_items = relationship("TaskItem", back_populates="location")
+    service_contract_links = relationship(
+        "ServiceContractLocation",
+        back_populates="location",
+    )
     reservations = relationship(
         "Reservation", back_populates="location", cascade="all, delete-orphan"
     )

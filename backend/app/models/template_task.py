@@ -25,6 +25,11 @@ class TemplateTask(Base):
     default_price = Column(Float)
     unit = Column(String(50), nullable=False)
     pricing_mode = Column(String(20), nullable=False, default="fixed")
+    # The live projection is kept for existing task and location flows. Every
+    # change is also recorded as an immutable ServiceCatalogVersion snapshot.
+    catalog_version = Column(Integer, nullable=False, default=1)
+    estimated_duration_minutes = Column(Integer, nullable=True)
+    requirements = Column(String(2000), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
@@ -40,5 +45,11 @@ class TemplateTask(Base):
     company = relationship("Company", back_populates="template_tasks")
 
     locations = relationship("LocationTemplate", back_populates="template", cascade="all, delete-orphan")
+    catalog_versions = relationship(
+        "ServiceCatalogVersion",
+        back_populates="template_task",
+        cascade="all, delete-orphan",
+        order_by="ServiceCatalogVersion.version.desc()",
+    )
 
     task_items = relationship("TaskItem", back_populates="template_task")

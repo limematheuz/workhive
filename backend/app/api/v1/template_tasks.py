@@ -1,13 +1,19 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Depends, APIRouter, status
-from app.api.deps import ActiveAdmin, AsyncActiveUser, get_async_db, get_db
+from app.api.deps import (
+    get_async_db,
+    get_db,
+    require_company_capability,
+    require_company_capability_async,
+)
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.services import template_task_service
 from app.schemas.template_task import (
     TemplateTaskCreate,
     TemplateTaskUpdate,
     TemplateTaskResponse,
+    ServiceCatalogVersionResponse,
 )
 from app.models.user import User
 from app.services.user_scope import require_company_context
@@ -20,7 +26,7 @@ async def read_template_tasks(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 100,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveUser,
+    current_user: User = Depends(require_company_capability_async("work.manage")),
 ):
     return await db.run_sync(
         lambda sync_db: template_task_service.get_template_tasks(
@@ -33,11 +39,29 @@ async def read_template_tasks(
 async def read_template_task(
     template_task_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveUser,
+    current_user: User = Depends(require_company_capability_async("work.manage")),
 ):
     return await db.run_sync(
         lambda sync_db: template_task_service.get_template_task(
             sync_db, template_task_id, require_company_context(current_user)
+        )
+    )
+
+
+@router.get(
+    "/{template_task_id}/versions",
+    response_model=list[ServiceCatalogVersionResponse],
+)
+async def read_service_catalog_versions(
+    template_task_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = Depends(require_company_capability_async("work.manage")),
+):
+    return await db.run_sync(
+        lambda sync_db: template_task_service.get_service_catalog_versions(
+            sync_db,
+            template_task_id,
+            require_company_context(current_user),
         )
     )
 
@@ -48,7 +72,7 @@ async def read_template_task(
 def create_template_task(
     template_task_data: TemplateTaskCreate,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = Depends(require_company_capability("work.manage")),
 ):
     return template_task_service.create_template_task(
         db, template_task_data, require_company_context(current_user)
@@ -60,7 +84,7 @@ def update_template_task(
     template_task_update: TemplateTaskUpdate,
     template_task_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = Depends(require_company_capability("work.manage")),
 ):
     return template_task_service.update_template_task(
         db,
@@ -74,7 +98,7 @@ def update_template_task(
 def delete_template_task(
     template_task_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveAdmin,
+    current_user: User = Depends(require_company_capability("work.manage")),
 ):
     template_task_service.delete_template_task(
         db, template_task_id, require_company_context(current_user)

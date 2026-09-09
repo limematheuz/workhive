@@ -71,6 +71,7 @@ class Client(Base):
 
     invoices = relationship("Invoice", back_populates="client")
     quotes = relationship("Quote", back_populates="client")
+    service_contracts = relationship("ServiceContract", back_populates="client")
     expenses = relationship("Expense", back_populates="client")
 
     @property

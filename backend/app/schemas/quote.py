@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -88,6 +89,24 @@ class QuoteAcceptRequest(BaseModel):
         return self
 
 
+class QuoteRevisionCreate(BaseModel):
+    """Starts a new editable revision from a sent, rejected, or expired quote."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class QuoteRevisionResponse(BaseModel):
+    id: int
+    quote_id: int
+    company_id: int
+    version: int
+    snapshot: dict[str, Any]
+    created_at: datetime
+    accepted_at: datetime | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class QuoteEmailRequest(InvoiceEmailRequest):
     pass
 
@@ -100,6 +119,8 @@ class QuoteResponse(QuoteBase):
     base_amount: float
     tax_amount: float
     total_amount: float
+    revision_number: int
+    accepted_revision_id: int | None
     items: list[QuoteItemResponse]
     created_at: datetime
     updated_at: datetime

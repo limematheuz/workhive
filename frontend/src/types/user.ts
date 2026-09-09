@@ -92,6 +92,7 @@ export interface TaskItem {
     billing_quantity_snapshot?: number | null;
     billing_unit_snapshot?: string | null;
     template_task_id?: number | null;
+    service_catalog_version_id?: number | null;
     location_id: number;
     user_id: number | null;
     status: TaskStatusValue;

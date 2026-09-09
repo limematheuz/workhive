@@ -43,6 +43,17 @@ class Quote(Base):
     custom_issuer_info = Column(String(1000), nullable=True)
     custom_recipient_info = Column(String(1000), nullable=True)
     signature_url = Column(Text, nullable=True)
+    revision_number = Column(Integer, default=1, nullable=False)
+    accepted_revision_id = Column(
+        Integer,
+        ForeignKey(
+            "quote_revisions.id",
+            name="fk_quotes_accepted_revision",
+            ondelete="SET NULL",
+            use_alter=True,
+        ),
+        nullable=True,
+    )
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
@@ -56,3 +67,19 @@ class Quote(Base):
     client = relationship("Client", back_populates="quotes")
 
     items = relationship("QuoteItem", back_populates="quote", cascade="all, delete-orphan")
+    revisions = relationship(
+        "QuoteRevision",
+        back_populates="quote",
+        cascade="all, delete-orphan",
+        foreign_keys="QuoteRevision.quote_id",
+    )
+    accepted_revision = relationship(
+        "QuoteRevision",
+        foreign_keys=[accepted_revision_id],
+        post_update=True,
+    )
+    service_contract = relationship(
+        "ServiceContract",
+        back_populates="source_quote",
+        uselist=False,
+    )

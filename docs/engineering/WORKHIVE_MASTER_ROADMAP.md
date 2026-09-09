@@ -278,10 +278,30 @@ como WorkHive Core solo cuando el caso real las exige.
 
 - ✅ Presupuestos, líneas, facturas, snapshots fiscales y rectificaciones ya
   existen y se conservan.
-- ⬜ Catálogo único de servicios y versiones.
-- ⬜ Revisiones y aprobaciones de presupuesto.
-- ⬜ Contratos, SLA, renovaciones, servicios contratados y ubicaciones cubiertas.
-- ⬜ Regla presupuesto aceptado → contrato; nunca crear un trabajo directamente.
+- 🟡 Catálogo único de servicios y versiones: cada servicio conserva duración
+  estimada y requisitos, publica un historial inmutable y los trabajos creados
+  desde catálogo quedan vinculados a la versión exacta seleccionada. Cubierto
+  con migración reversible, aislamiento entre empresas y pruebas de regresión;
+  pendiente de revisión visual autenticada y publicación para marcarlo como
+  completado.
+- 🟡 Revisiones y aprobaciones de presupuesto: cada envío genera una versión
+  inmutable; cualquier cambio posterior exige crear una revisión editable. La
+  aceptación queda ligada a la versión enviada y el historial es visible desde
+  el detalle. Cubierto con migración reversible, aislamiento entre empresas y
+  pruebas de regresión; pendiente de revisión visual autenticada y publicación
+  para marcarlo como completado.
+- 🟡 Contratos, SLA, renovaciones, servicios contratados y ubicaciones cubiertas:
+  al aceptar un presupuesto se crea un contrato borrador con las líneas
+  inmutables de la revisión aceptada; permite fijar SLA, vigencia y renovación,
+  cubrir únicamente ubicaciones activas del mismo cliente y activarlo tras esa
+  comprobación. Cubierto con migración reversible y pruebas de autorización,
+  aislamiento, servicio y ubicación cubierta; pendiente de revisión visual
+  autenticada y publicación para marcarlo como completado.
+- 🟡 Regla presupuesto aceptado → contrato; nunca crear un trabajo directamente:
+  la aceptación crea como máximo un contrato borrador por presupuesto y no toca
+  `TaskItem`; el contrato requiere una activación explícita tras fijar sus
+  ubicaciones. Cubierto con regresiones; pendiente de revisión visual
+  autenticada y publicación para marcarlo como completado.
 
 ### Fase 4 — Ubicaciones Enterprise
 

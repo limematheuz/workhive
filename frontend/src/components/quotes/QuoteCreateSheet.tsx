@@ -25,6 +25,7 @@ export function QuoteCreateSheet({
     onQuoteCreated,
     quoteToEdit = null,
 }: QuoteCreateSheetProps) {
+    const isRevision = Boolean(quoteToEdit && quoteToEdit.revision_number > 1);
     const {
         dict,
         clients,
@@ -116,10 +117,10 @@ export function QuoteCreateSheet({
             onOpenChange={handleClose}
             onSubmit={handleCreateQuote}
             icon={<FileText className="h-5 w-5" />}
-            title={quoteToEdit ? (dict.quotes?.edit_title || "Editar presupuesto") : (dict.quotes?.create_title || "Nuevo presupuesto")}
-            description={quoteToEdit ? (dict.quotes?.edit_description || "Actualiza los detalles y conceptos del presupuesto.") : (dict.quotes?.create_description || "Crea un presupuesto claro, con sus conceptos y condiciones comerciales.")}
+            title={isRevision ? `Revisión ${quoteToEdit?.revision_number}` : quoteToEdit ? (dict.quotes?.edit_title || "Editar presupuesto") : (dict.quotes?.create_title || "Nuevo presupuesto")}
+            description={isRevision ? "Actualiza esta nueva versión; la anterior se conserva en el historial." : quoteToEdit ? (dict.quotes?.edit_description || "Actualiza los detalles y conceptos del presupuesto.") : (dict.quotes?.create_description || "Crea un presupuesto claro, con sus conceptos y condiciones comerciales.")}
             cancelLabel={dict.clients?.form?.cancel || "Cancelar"}
-            submitLabel={quoteToEdit ? (dict.quotes?.save_changes || "Guardar cambios") : (dict.quotes?.save || "Crear presupuesto")}
+            submitLabel={isRevision ? "Guardar revisión" : quoteToEdit ? (dict.quotes?.save_changes || "Guardar cambios") : (dict.quotes?.save || "Crear presupuesto")}
             submittingLabel={dict.quotes?.saving || "Guardando..."}
             submitting={submitting}
             submitDisabled={concepts.length === 0 || loadingClients}

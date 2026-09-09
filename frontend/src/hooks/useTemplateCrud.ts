@@ -19,6 +19,8 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
     const [tmplPrice, setTmplPrice] = useState<string>("");
     const [tmplUnit, setTmplUnit] = useState<string>("unidad");
     const [tmplPricingMode, setTmplPricingMode] = useState<"fixed" | "hourly">("fixed");
+    const [tmplDurationMinutes, setTmplDurationMinutes] = useState<string>("");
+    const [tmplRequirements, setTmplRequirements] = useState<string>("");
     const [isDeletingTemplate, setIsDeletingTemplate] = useState<boolean>(false);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateTask | null>(null);
 
@@ -33,6 +35,8 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
                 default_price: (tmplPrice !== "" && tmplPrice !== null && tmplPrice !== undefined) ? parseFloat(tmplPrice) : null,
                 unit: tmplPricingMode === "hourly" ? "hour" : tmplUnit,
                 pricing_mode: tmplPricingMode,
+                estimated_duration_minutes: tmplDurationMinutes ? Number(tmplDurationMinutes) : null,
+                requirements: tmplRequirements.trim() || null,
             };
 
             if (selectedTemplate) {
@@ -61,12 +65,16 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
             setTmplPrice(template.default_price !== null && template.default_price !== undefined ? template.default_price.toString() : "");
             setTmplUnit(template.unit || "unidad");
             setTmplPricingMode(template.pricing_mode === "hourly" ? "hourly" : "fixed");
+            setTmplDurationMinutes(template.estimated_duration_minutes?.toString() ?? "");
+            setTmplRequirements(template.requirements ?? "");
         } else {
             setTmplName("");
             setTmplDescription("");
             setTmplPrice("");
             setTmplUnit("unidad");
             setTmplPricingMode("fixed");
+            setTmplDurationMinutes("");
+            setTmplRequirements("");
         }
         setIsTemplateModalOpen(true);
     };
@@ -95,6 +103,8 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
                 default_price: template.default_price !== null && template.default_price !== undefined ? template.default_price : null,
                 unit: template.unit,
                 pricing_mode: template.pricing_mode === "hourly" ? "hourly" : "fixed",
+                estimated_duration_minutes: template.estimated_duration_minutes ?? null,
+                requirements: template.requirements ?? null,
             };
 
             await TemplateTaskService.createTemplate(payload);
@@ -121,6 +131,10 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
         setTmplUnit,
         tmplPricingMode,
         setTmplPricingMode,
+        tmplDurationMinutes,
+        setTmplDurationMinutes,
+        tmplRequirements,
+        setTmplRequirements,
         isDeletingTemplate,
         selectedTemplate,
         setSelectedTemplate,

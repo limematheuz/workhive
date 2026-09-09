@@ -20,12 +20,13 @@ from app.repositories import invoice_item as invoice_item_repo
 from app.repositories import quote_item as quote_item_repo
 from app.schemas.invoice import InvoiceDraftCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate
-from app.schemas.quote import QuoteCreate, QuoteUpdate
+from app.schemas.quote import QuoteCreate, QuoteRevisionCreate, QuoteUpdate
 from app.schemas.quote_item import QuoteItemCreate
 from app.schemas.reservation import ReservationUpdate
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
 from app.services import (
     invoice_service,
+    quote_revision_service,
     quote_service,
     reservation_service,
     task_item_service,
@@ -179,7 +180,7 @@ def test_quote_update_replaces_the_draft_item_snapshot_atomically(db):
     assert updated.base_amount == 80
 
 
-def test_sent_quote_content_remains_editable_after_email_transition(db):
+def test_sent_quote_content_requires_a_new_revision_before_editing(db):
     company = _company(db, "Sent quote edit", "SENTQUOTE")
     quote = quote_service.create_quote(
         db,
@@ -193,6 +194,22 @@ def test_sent_quote_content_remains_editable_after_email_transition(db):
         QuoteUpdate(status="sent"),
     )
 
+    with pytest.raises(HTTPException) as exc_info:
+        quote_service.update_quote(
+            db,
+            company.id,
+            quote.id,
+            QuoteUpdate(title="Enviado y corregido"),
+        )
+    assert exc_info.value.status_code == 400
+    assert "revision" in str(exc_info.value.detail).lower()
+
+    quote_revision_service.create_quote_revision(
+        db,
+        company.id,
+        quote.id,
+        QuoteRevisionCreate(),
+    )
     updated = quote_service.update_quote(
         db,
         company.id,
@@ -209,7 +226,7 @@ def test_sent_quote_content_remains_editable_after_email_transition(db):
         ),
     )
 
-    assert updated.status == "sent"
+    assert updated.status == "draft"
     assert updated.title == "Enviado y corregido"
     assert [item.description for item in updated.items] == ["Línea corregida"]
     assert updated.base_amount == 30

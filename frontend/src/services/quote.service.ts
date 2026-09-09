@@ -1,6 +1,6 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api"
 import type { QuoteClientRegistrationInput } from "@/lib/quote-client-registration"
-import { Quote, QuoteItem } from "@/types/quote"
+import { Quote, QuoteItem, QuoteRevision } from "@/types/quote"
 
 export interface QuoteCreate {
     client_id?: number | null;
@@ -134,6 +134,24 @@ export const QuoteService = {
             body: JSON.stringify(data),
         })
         await assertApiResponseOk(response, "Error accepting quote")
+        return await response.json()
+    },
+
+    getQuoteRevisions: async (id: number): Promise<QuoteRevision[]> => {
+        const response = await apiFetch(`/api/v1/quotes/${id}/revisions`, {
+            method: "GET",
+            cache: "no-store",
+        })
+        await assertApiResponseOk(response, "Error fetching quote revisions")
+        return await response.json()
+    },
+
+    createQuoteRevision: async (id: number): Promise<Quote> => {
+        const response = await apiFetch(`/api/v1/quotes/${id}/revisions`, {
+            method: "POST",
+            body: JSON.stringify({}),
+        })
+        await assertApiResponseOk(response, "Error creating quote revision")
         return await response.json()
     },
 
