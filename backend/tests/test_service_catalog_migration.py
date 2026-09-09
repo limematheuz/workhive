@@ -36,6 +36,15 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         metadata,
         Column("id", Integer, primary_key=True),
     )
+    # `main` also carries the object-storage branch from this historical
+    # revision. These are intentionally minimal because this test only
+    # validates catalog backfill, but they must exist for that branch to run.
+    Table("invoices", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "company_fiscal_settings",
+        metadata,
+        Column("id", Integer, primary_key=True),
+    )
     alembic_version = Table(
         "alembic_version",
         metadata,
