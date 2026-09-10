@@ -705,12 +705,20 @@ def _set_task_status_after_user_finish(db: Session, task: TaskItem) -> None:
 def _close_user_task_sessions(
     db: Session,
     active_sessions: list[WorkSession],
+    *,
+    end_latitude: float | None = None,
+    end_longitude: float | None = None,
+    end_accuracy_meters: float | None = None,
 ) -> None:
     completed_at = datetime.now(timezone.utc)
     for index, active_session in enumerate(active_sessions):
         active_session.end_time = (
             completed_at if index == 0 else active_session.start_time
         )
+        if index == 0:
+            active_session.end_latitude = end_latitude
+            active_session.end_longitude = end_longitude
+            active_session.end_accuracy_meters = end_accuracy_meters
         db.add(active_session)
 
 
@@ -718,6 +726,10 @@ def finish_task_work(
     db: Session,
     current_user: User,
     task_item_id: int,
+    *,
+    end_latitude: float | None = None,
+    end_longitude: float | None = None,
+    end_accuracy_meters: float | None = None,
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     task = get_task_item(db, current_user, task_item_id)
@@ -739,7 +751,13 @@ def finish_task_work(
         return _finish_without_active_session(task, current_user.id)
 
     _complete_user_assignment(task, current_user.id)
-    _close_user_task_sessions(db, active_sessions)
+    _close_user_task_sessions(
+        db,
+        active_sessions,
+        end_latitude=end_latitude,
+        end_longitude=end_longitude,
+        end_accuracy_meters=end_accuracy_meters,
+    )
     _set_task_status_after_user_finish(db, task)
     db.add(task)
     db.commit()

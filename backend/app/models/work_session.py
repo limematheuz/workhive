@@ -13,6 +13,9 @@ class WorkSession(Base):
     start_latitude = Column(Float, nullable=True)
     start_longitude = Column(Float, nullable=True)
     start_accuracy_meters = Column(Float, nullable=True)
+    end_latitude = Column(Float, nullable=True)
+    end_longitude = Column(Float, nullable=True)
+    end_accuracy_meters = Column(Float, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

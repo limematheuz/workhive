@@ -13,6 +13,7 @@ from app.services import organization_authorization_service
 from app.models.user import User
 from app.schemas.work_session import (
     WorkSessionCreate,
+    WorkSessionEnd,
     WorkSessionResponse,
     ActiveCompanySessionResponse,
     TaskWorkSummaryResponse,
@@ -175,10 +176,12 @@ def start_work_session(
     "/stop", response_model=WorkSessionResponse, status_code=status.HTTP_200_OK
 )
 def stop_work_session(
+    end_data: WorkSessionEnd | None = None,
     db: Session = Depends(get_db), current_user: User = ActiveUser
 ):
     return work_session_service.end_work_session(
         db,
         current_user.id,
         current_user=current_user,
+        end_data=end_data,
     )

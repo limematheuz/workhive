@@ -16,6 +16,7 @@ import { WorkSessionMobileBar } from "./work-session/WorkSessionMobileBar"
 import { WorkSessionStopWarningDialog } from "./work-session/WorkSessionStopWarningDialog"
 import { WorkSessionWidgetLoading } from "./work-session/WorkSessionWidgetLoading"
 import { cleanWorkSessionLocalStorage, formatElapsedTimeFromStart } from "./work-session/work-session-utils"
+import { getCurrentWorkEndLocation } from "@/lib/work-start-location"
 
 interface WorkSessionWidgetProps {
     allowedLocations?: Location[];
@@ -237,7 +238,13 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         try {
             setActionLoading(true)
             const sessionId = activeSession.id
-            await WorkSessionService.stopSession()
+            let endLocation
+            try {
+                endLocation = await getCurrentWorkEndLocation()
+            } catch {
+                // GPS is optional when finishing a shift.
+            }
+            await WorkSessionService.stopSession(endLocation)
             cleanWorkSessionLocalStorage(user.id, sessionId)
             setActiveSession(null)
             setMonitoredTaskIds([])

@@ -5,7 +5,10 @@ import { WorkSession, WorkerTimeSummary } from "@/types/user";
 import { WorkSessionService } from "@/services/work-session.service";
 import { TaskService } from "@/services/task.service";
 import { toast } from "@/lib/toast";
-import { getCurrentWorkStartLocation } from "@/lib/work-start-location";
+import {
+    getCurrentWorkEndLocation,
+    getCurrentWorkStartLocation,
+} from "@/lib/work-start-location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { POLL_INTERVALS } from "@/lib/polling";
 
@@ -173,7 +176,13 @@ export function useTechTaskWorkSession({
 
         try {
             setUpdatingStatus(true);
-            await TaskService.finishTaskWork(taskId);
+            let endLocation;
+            try {
+                endLocation = await getCurrentWorkEndLocation();
+            } catch {
+                // GPS is optional when finishing work.
+            }
+            await TaskService.finishTaskWork(taskId, endLocation);
             setActiveSession(null);
             window.dispatchEvent(new CustomEvent("workhive:session-changed"));
             toast.success(dict.tech.toast_work_completed);

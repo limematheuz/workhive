@@ -3,7 +3,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.work_session import WorkSession
 from app.models.user import User
-from app.schemas.work_session import WorkSessionCreate
+from app.schemas.work_session import WorkSessionCreate, WorkSessionEnd
 from app.repositories import work_session as work_session_repo
 from app.repositories import user as user_repo
 from app.repositories import task_item as task_item_repo
@@ -114,6 +114,7 @@ def end_work_session(
     user_id: int,
     *,
     current_user: User | None = None,
+    end_data: WorkSessionEnd | None = None,
 ) -> WorkSession:
     active_session = work_session_repo.get_active_session_by_user(db, user_id)
     if not active_session:
@@ -141,6 +142,10 @@ def end_work_session(
     )
 
     active_session.end_time = end_time
+    if end_data is not None:
+        active_session.end_latitude = end_data.end_latitude
+        active_session.end_longitude = end_data.end_longitude
+        active_session.end_accuracy_meters = end_data.end_accuracy_meters
     if task and db_user:
         personal_status = task_assignment_service.get_user_assignment_status(
             task, user_id

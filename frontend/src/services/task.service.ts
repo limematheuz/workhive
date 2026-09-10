@@ -226,9 +226,17 @@ export const TaskService = {
         return task
     },
 
-    finishTaskWork: async (id: number): Promise<TaskItem> => {
+    finishTaskWork: async (
+        id: number,
+        endLocation?: {
+            end_latitude: number;
+            end_longitude: number;
+            end_accuracy_meters: number | null;
+        }
+    ): Promise<TaskItem> => {
         const response = await apiFetch(`/api/v1/task-items/${id}/finish-work`, {
-            method: "POST"
+            method: "POST",
+            body: JSON.stringify(endLocation ?? {})
         })
         if (!response.ok) {
             const errMsg = await extractErrorMessage(response, "Error finishing task work")

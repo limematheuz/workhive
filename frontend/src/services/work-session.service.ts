@@ -12,6 +12,12 @@ export interface WorkSessionCreate {
     start_accuracy_meters?: number | null;
 }
 
+export interface WorkSessionEnd {
+    end_latitude?: number;
+    end_longitude?: number;
+    end_accuracy_meters?: number | null;
+}
+
 export const WorkSessionService = {
     getWorkSessions: async (skip: number = 0, limit: number = 100): Promise<WorkSession[]> => {
         const response = await apiFetch(`/api/v1/work-sessions/?skip=${skip}&limit=${limit}`, {
@@ -113,9 +119,10 @@ export const WorkSessionService = {
         return await response.json()
     },
 
-    stopSession: async (): Promise<WorkSession> => {
+    stopSession: async (data: WorkSessionEnd = {}): Promise<WorkSession> => {
         const response = await apiFetch(`/api/v1/work-sessions/stop`, {
-            method: "POST"
+            method: "POST",
+            body: JSON.stringify(data)
         })
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}))

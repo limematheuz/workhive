@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from datetime import datetime
 
 
@@ -23,11 +23,26 @@ class WorkSessionUpdate(BaseModel):
     notes: str | None = None
 
 
+class WorkSessionEnd(BaseModel):
+    end_latitude: float | None = Field(default=None, ge=-90, le=90)
+    end_longitude: float | None = Field(default=None, ge=-180, le=180)
+    end_accuracy_meters: float | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def require_coordinate_pair(self):
+        if (self.end_latitude is None) != (self.end_longitude is None):
+            raise ValueError("La ubicación final necesita latitud y longitud")
+        return self
+
+
 class WorkSessionResponse(WorkSessionBase):
     id: int
     user_id: int
     start_time: datetime
     end_time: datetime | None = None
+    end_latitude: float | None = None
+    end_longitude: float | None = None
+    end_accuracy_meters: float | None = None
     created_at: datetime
     updated_at: datetime
 
