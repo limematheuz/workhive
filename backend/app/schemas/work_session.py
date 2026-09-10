@@ -43,6 +43,8 @@ class WorkSessionResponse(WorkSessionBase):
     end_latitude: float | None = None
     end_longitude: float | None = None
     end_accuracy_meters: float | None = None
+    paused_at: datetime | None = None
+    paused_seconds: int = 0
     created_at: datetime
     updated_at: datetime
 

@@ -9,11 +9,13 @@ from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
+from app.models.work_session_pause import WorkSessionPause
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate, TaskWorkFinishRequest
 from app.schemas.work_session import WorkSessionEnd
 from app.services import (
     reservation_service,
     task_assignment_service,
+    task_billing_service,
     task_item_service,
     user_service,
     work_session_service,
@@ -614,6 +616,96 @@ def test_manual_clock_out_resets_unfinished_viewer_assignment_to_pending(db):
         task, worker.id
     ) == "pending"
     assert work_session_service.get_active_session(db, worker.id) is None
+
+
+def test_pause_resume_excludes_paused_time_and_keeps_an_audit_record(db):
+    company = _company(db, "PauseClock")
+    manager = _user(db, company, "manager@pause-clock.test", role_id=2)
+    worker = _user(db, company, "worker@pause-clock.test", role_id=3)
+    location = Location(
+        name="Casa con pausa",
+        address="Calle Pausa 1",
+        city="Girona",
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.commit()
+    task = TaskItem(
+        title="Trabajo con pausa",
+        description=f"[ ] Limpiar entrada (@{worker.id}:Trabajador:pending)",
+        unit="servicio",
+        company_id=company.id,
+        location_id=location.id,
+        user_id=manager.id,
+        status="accepted",
+    )
+    db.add(task)
+    db.commit()
+
+    _start_task_work(db, worker, task.id)
+    paused = work_session_service.pause_work_session(db, worker.id)
+    assert paused.paused_at is not None
+
+    with pytest.raises(HTTPException) as already_paused:
+        work_session_service.pause_work_session(db, worker.id)
+    assert already_paused.value.status_code == 409
+
+    pause = db.query(WorkSessionPause).filter_by(work_session_id=paused.id).one()
+    pause.started_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    paused.paused_at = pause.started_at
+    db.commit()
+    resumed = work_session_service.resume_work_session(db, worker.id)
+
+    assert resumed.paused_at is None
+    assert 599 <= resumed.paused_seconds <= 601
+    pause = db.query(WorkSessionPause).filter_by(work_session_id=resumed.id).one()
+    assert pause.ended_at is not None
+
+    resumed.start_time = datetime.now(timezone.utc) - timedelta(hours=1)
+    resumed.end_time = datetime.now(timezone.utc)
+    db.commit()
+    assert task_billing_service.session_duration_seconds(
+        resumed,
+        now=resumed.end_time,
+    ) in range(2_999, 3_002)
+
+
+def test_pause_requires_the_current_users_time_scope(db):
+    company = _company(db, "PauseScope")
+    outsider_company = _company(db, "PauseScopeOutsider")
+    worker = _user(db, company, "worker@pause-scope.test", role_id=3)
+    outsider = _user(db, outsider_company, "outsider@pause-scope.test")
+    location = Location(
+        name="Casa ámbito pausa",
+        address="Calle Ámbito 1",
+        city="Girona",
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.flush()
+    db.add(
+        WorkSession(
+            user_id=worker.id,
+            location_id=location.id,
+            start_time=datetime.now(timezone.utc),
+        )
+    )
+    db.commit()
+
+    paused = work_session_service.pause_work_session(
+        db,
+        worker.id,
+        current_user=worker,
+    )
+    assert paused.paused_at is not None
+
+    with pytest.raises(HTTPException) as denied:
+        work_session_service.resume_work_session(
+            db,
+            worker.id,
+            current_user=outsider,
+        )
+    assert denied.value.status_code == 403
 
 
 def test_clock_out_and_resume_preserve_worker_and_external_task_time(db):

@@ -185,3 +185,29 @@ def stop_work_session(
         current_user=current_user,
         end_data=end_data,
     )
+
+
+@router.post(
+    "/pause", response_model=WorkSessionResponse, status_code=status.HTTP_200_OK
+)
+def pause_work_session(
+    db: Session = Depends(get_db), current_user: User = ActiveUser
+):
+    return work_session_service.pause_work_session(
+        db,
+        current_user.id,
+        current_user=current_user,
+    )
+
+
+@router.post(
+    "/resume", response_model=WorkSessionResponse, status_code=status.HTTP_200_OK
+)
+def resume_work_session(
+    db: Session = Depends(get_db), current_user: User = ActiveUser
+):
+    return work_session_service.resume_work_session(
+        db,
+        current_user.id,
+        current_user=current_user,
+    )

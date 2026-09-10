@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.work_session import WorkSession
+from app.models.work_session_pause import WorkSessionPause
 from app.models.user import User
 from app.schemas.work_session import WorkSessionCreate, WorkSessionEnd
 from app.repositories import work_session as work_session_repo
@@ -12,6 +13,38 @@ from app.services import task_structure_service
 from app.services import task_item_service
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import require_capability
+from app.services.work_session_pause_service import close_open_pause
+
+
+def _require_manageable_active_session(
+    db: Session,
+    user_id: int,
+    current_user: User | None,
+) -> WorkSession:
+    if current_user is not None:
+        _require_time_tracking_feature(db, current_user.company_id)
+        if current_user.id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You can only manage your own work session",
+            )
+    active_session = work_session_repo.get_active_session_by_user_for_update(db, user_id)
+    if not active_session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active session found",
+        )
+    if current_user:
+        require_capability(
+            db,
+            current_user,
+            "time.manage",
+            scope_type=(
+                "location" if active_session.location_id is not None else "company"
+            ),
+            scope_id=active_session.location_id,
+        )
+    return active_session
 
 
 def _require_time_tracking_feature(
@@ -116,22 +149,7 @@ def end_work_session(
     current_user: User | None = None,
     end_data: WorkSessionEnd | None = None,
 ) -> WorkSession:
-    active_session = work_session_repo.get_active_session_by_user(db, user_id)
-    if not active_session:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active session found",
-        )
-    if current_user:
-        require_capability(
-            db,
-            current_user,
-            "time.manage",
-            scope_type=(
-                "location" if active_session.location_id is not None else "company"
-            ),
-            scope_id=active_session.location_id,
-        )
+    active_session = _require_manageable_active_session(db, user_id, current_user)
 
     end_time = datetime.now(timezone.utc)
     db_user = user_repo.get_user_by_id(db, user_id)
@@ -141,6 +159,7 @@ def end_work_session(
         else None
     )
 
+    close_open_pause(db, active_session, end_time)
     active_session.end_time = end_time
     if end_data is not None:
         active_session.end_latitude = end_data.end_latitude
@@ -183,6 +202,48 @@ def end_work_session(
 
         db.add(task)
 
+    db.add(active_session)
+    db.commit()
+    db.refresh(active_session)
+    return active_session
+
+
+def pause_work_session(
+    db: Session,
+    user_id: int,
+    *,
+    current_user: User | None = None,
+) -> WorkSession:
+    active_session = _require_manageable_active_session(db, user_id, current_user)
+    if active_session.paused_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The work session is already paused",
+        )
+
+    paused_at = datetime.now(timezone.utc)
+    active_session.paused_at = paused_at
+    db.add(WorkSessionPause(work_session_id=active_session.id, started_at=paused_at))
+    db.add(active_session)
+    db.commit()
+    db.refresh(active_session)
+    return active_session
+
+
+def resume_work_session(
+    db: Session,
+    user_id: int,
+    *,
+    current_user: User | None = None,
+) -> WorkSession:
+    active_session = _require_manageable_active_session(db, user_id, current_user)
+    if active_session.paused_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="The work session is not paused",
+        )
+
+    close_open_pause(db, active_session, datetime.now(timezone.utc))
     db.add(active_session)
     db.commit()
     db.refresh(active_session)

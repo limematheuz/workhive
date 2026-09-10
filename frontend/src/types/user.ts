@@ -40,6 +40,8 @@ export interface WorkSession {
     end_latitude?: number | null;
     end_longitude?: number | null;
     end_accuracy_meters?: number | null;
+    paused_at?: string | null;
+    paused_seconds?: number;
     created_at: string;
     updated_at: string;
 }

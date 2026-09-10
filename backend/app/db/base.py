@@ -22,6 +22,7 @@ from app.models.template_task import TemplateTask
 from app.models.service_catalog_version import ServiceCatalogVersion
 from app.models.location_template import LocationTemplate
 from app.models.work_session import WorkSession
+from app.models.work_session_pause import WorkSessionPause
 from app.models.task_item import TaskItem
 from app.models.work_order import WorkOrder
 from app.models.task_structure import (

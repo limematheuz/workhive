@@ -129,5 +129,27 @@ export const WorkSessionService = {
             throw new Error(errData.detail || "Error stopping work session")
         }
         return await response.json()
+    },
+
+    pauseSession: async (): Promise<WorkSession> => {
+        const response = await apiFetch(`/api/v1/work-sessions/pause`, {
+            method: "POST",
+        })
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}))
+            throw new Error(errData.detail || "Error pausing work session")
+        }
+        return await response.json()
+    },
+
+    resumeSession: async (): Promise<WorkSession> => {
+        const response = await apiFetch(`/api/v1/work-sessions/resume`, {
+            method: "POST",
+        })
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}))
+            throw new Error(errData.detail || "Error resuming work session")
+        }
+        return await response.json()
     }
 }

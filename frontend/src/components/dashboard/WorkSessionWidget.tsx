@@ -213,7 +213,11 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
     useEffect(() => {
         if (activeSession) {
             const calculateElapsed = () => {
-                setElapsedTime(formatElapsedTimeFromStart(activeSession.start_time))
+                setElapsedTime(formatElapsedTimeFromStart(
+                    activeSession.start_time,
+                    activeSession.paused_at,
+                    activeSession.paused_seconds,
+                ))
             }
 
             startTransition(calculateElapsed)
@@ -290,6 +294,27 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         await handleStopShift()
     }
 
+    const togglePause = async () => {
+        if (!activeSession) return
+        try {
+            setActionLoading(true)
+            const updatedSession = activeSession.paused_at
+                ? await WorkSessionService.resumeSession()
+                : await WorkSessionService.pauseSession()
+            setActiveSession(updatedSession)
+            window.dispatchEvent(new CustomEvent("workhive:session-changed"))
+            toast.success(
+                activeSession.paused_at
+                    ? (dict.work_sessions.success_resume || "Jornada reanudada")
+                    : (dict.work_sessions.success_pause || "Jornada pausada")
+            )
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, dict.work_sessions.error_stop))
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
     return {
         actionLoading,
         activeSession,
@@ -303,6 +328,7 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         preStopShift,
         setShowStopWarning,
         showStopWarning,
+        togglePause,
         user,
     }
 }
@@ -334,6 +360,7 @@ function WorkSessionWidgetContent({
         preStopShift,
         setShowStopWarning,
         showStopWarning,
+        togglePause,
         user,
     } = controller
 
@@ -356,6 +383,7 @@ function WorkSessionWidgetContent({
                 user={user}
                 actionLoading={actionLoading}
                 onPreStopShift={preStopShift}
+                onTogglePause={togglePause}
             />
 
             <WorkSessionMobileBar
@@ -367,6 +395,7 @@ function WorkSessionWidgetContent({
                 user={user}
                 actionLoading={actionLoading}
                 onPreStopShift={preStopShift}
+                onTogglePause={togglePause}
             />
 
             <WorkSessionStopWarningDialog

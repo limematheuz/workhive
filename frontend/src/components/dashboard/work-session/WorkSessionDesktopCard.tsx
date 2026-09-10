@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, AlertCircle, PlayCircle } from "lucide-react";
+import { Clock, AlertCircle, PauseCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { WorkSession } from "@/services/work-session.service";
 import type { TaskItem } from "@/types/user";
@@ -12,6 +12,9 @@ interface WorkSessionDesktopCardProps {
             title: string;
             elapsed_time: string;
             stop_shift: string;
+            pause_shift: string;
+            resume_shift: string;
+            paused?: string;
             inactive_shift_timer_desc?: string;
             viewer_no_pending_tasks?: string;
             no_accepted_tasks_warning?: string;
@@ -32,6 +35,7 @@ interface WorkSessionDesktopCardProps {
     user: User | null;
     actionLoading: boolean;
     onPreStopShift: () => void;
+    onTogglePause: () => void;
 }
 
 export function WorkSessionDesktopCard({
@@ -44,6 +48,7 @@ export function WorkSessionDesktopCard({
     user,
     actionLoading,
     onPreStopShift,
+    onTogglePause,
 }: WorkSessionDesktopCardProps) {
     return (
         <div className="hidden md:flex flex-col bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow justify-between min-h-[220px] w-full">
@@ -54,8 +59,10 @@ export function WorkSessionDesktopCard({
                     </h3>
                     {activeSession && (
                         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
-                            <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
-                            {dict.profile.stats.active_shift}
+                            <span className={`w-2 h-2 rounded-full bg-accent ${activeSession.paused_at ? "" : "animate-pulse"}`}></span>
+                            {activeSession.paused_at
+                                ? (dict.work_sessions.paused || "Jornada pausada")
+                                : dict.profile.stats.active_shift}
                         </span>
                     )}
                 </div>
@@ -110,12 +117,25 @@ export function WorkSessionDesktopCard({
 
             <div className="mt-6">
                 {activeSession ? (
-                    <div>
+                    <div className="flex gap-2">
                         <Button
                             type="button"
+                            variant="outline"
+                            onClick={onTogglePause}
+                            disabled={actionLoading}
+                            className="flex-1"
+                        >
+                            <PauseCircle className="size-4" />
+                            {activeSession.paused_at
+                                ? dict.work_sessions.resume_shift
+                                : dict.work_sessions.pause_shift}
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
                             onClick={onPreStopShift}
                             disabled={actionLoading}
-                            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-xl py-2.5 text-sm font-semibold ui-motion shadow-sm border-none cursor-pointer flex items-center justify-center"
+                            className="flex-1"
                         >
                             {actionLoading ? (
                                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

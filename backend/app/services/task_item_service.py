@@ -31,6 +31,7 @@ from app.services import (
 )
 from app.services.company_client_service import ensure_company_as_client
 from app.services.entitlement_service import require_company_feature
+from app.services.work_session_pause_service import close_open_pause
 from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.task_item_read_service import (
@@ -402,6 +403,7 @@ def start_task_work(
         if all(session.task_item_id == task.id for session in active_sessions):
             for duplicate in active_sessions[1:]:
                 duplicate.end_time = duplicate.start_time
+                close_open_pause(db, duplicate, duplicate.end_time)
                 db.add(duplicate)
             updated_description, updated_count = (
                 task_assignment_service.set_user_assignment_status(
@@ -715,6 +717,7 @@ def _close_user_task_sessions(
         active_session.end_time = (
             completed_at if index == 0 else active_session.start_time
         )
+        close_open_pause(db, active_session, active_session.end_time)
         if index == 0:
             active_session.end_latitude = end_latitude
             active_session.end_longitude = end_longitude

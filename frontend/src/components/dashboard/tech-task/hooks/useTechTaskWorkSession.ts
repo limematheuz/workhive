@@ -98,7 +98,13 @@ export function useTechTaskWorkSession({
 
     const isCurrentTaskSessionActive = activeSession?.task_item_id === taskId;
     const personalElapsedSeconds = isCurrentTaskSessionActive && activeSession
-        ? Math.max(0, Math.floor((nowMs - new Date(activeSession.start_time).getTime()) / 1000))
+        ? Math.max(0,
+            Math.floor((nowMs - new Date(activeSession.start_time).getTime()) / 1000)
+            - (activeSession.paused_seconds ?? 0)
+            - (activeSession.paused_at
+                ? Math.max(0, Math.floor((nowMs - new Date(activeSession.paused_at).getTime()) / 1000))
+                : 0)
+        )
         : 0;
     const hasAnotherActiveSession = Boolean(
         activeSession && activeSession.task_item_id !== taskId
