@@ -17,6 +17,9 @@ from app.api.v1.location_assets import router as location_assets_router
 from app.api.v1.location_documents import router as location_documents_router
 from app.api.v1.location_equipment import router as location_equipment_router
 from app.api.v1.work_sessions import router as work_sessions_router
+from app.api.v1.work_session_corrections import (
+    router as work_session_corrections_router,
+)
 from app.api.v1.task_items import router as task_items_router
 from app.api.v1.task_item_read import router as task_item_read_router
 from app.api.v1.invoice import router as invoices_router
@@ -100,6 +103,11 @@ api_router.include_router(
 )
 api_router.include_router(
     work_sessions_router, prefix="/work-sessions", tags=["work-session"]
+)
+api_router.include_router(
+    work_session_corrections_router,
+    prefix="/work-session-corrections",
+    tags=["work-session-corrections"],
 )
 api_router.include_router(task_item_read_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])

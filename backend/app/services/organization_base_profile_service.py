@@ -42,6 +42,7 @@ DEFAULT_PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("work.manage", "work", "Create and update work orders"),
     ("time.read", "time", "View company time records"),
     ("time.manage", "time", "Start and manage permitted work time"),
+    ("time.approve", "time", "Review requested work-time corrections"),
     ("finance.read", "finance", "View quotes, invoices, expenses, and fiscal records"),
     ("finance.manage", "finance", "Create and update financial records"),
     (
@@ -79,6 +80,7 @@ OPERATIONS_PERMISSION_CODES = frozenset(
         "work.manage",
         "time.read",
         "time.manage",
+        "time.approve",
     }
 )
 

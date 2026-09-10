@@ -58,6 +58,7 @@ def get_work_session_by_id(
     session_id: int,
     user_id: int,
     location_ids: set[int] | None = None,
+    for_update: bool = False,
 ) -> WorkSession | None:
     query = (
         db.query(WorkSession)
@@ -67,6 +68,8 @@ def get_work_session_by_id(
     )
     if location_ids is not None:
         query = query.filter(WorkSession.location_id.in_(location_ids))
+    if for_update:
+        query = query.with_for_update()
     return query.first()
 
 

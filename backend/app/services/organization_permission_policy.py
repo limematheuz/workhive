@@ -37,6 +37,7 @@ PERMISSION_RECOMMENDED_AUDIENCES: dict[str, tuple[str, ...]] = {
     "work.manage": ("operations", "responsibles"),
     "time.read": ("operations", "responsibles"),
     "time.manage": ("operations", "workers"),
+    "time.approve": ("operations", "responsibles"),
     "finance.read": ("finance", "company_administrators"),
     "finance.manage": ("company_administrators",),
 }

@@ -28,6 +28,7 @@ _LEGACY_ROLE_CAPABILITIES = {
             "work.manage",
             "time.read",
             "time.manage",
+            "time.approve",
             "finance.read",
             "finance.manage",
         }
@@ -40,6 +41,7 @@ _LEGACY_ROLE_CAPABILITIES = {
             "work.manage",
             "time.read",
             "time.manage",
+            "time.approve",
         }
     ),
     "viewer": frozenset(
@@ -114,6 +116,7 @@ def _require_active_company_principal(
         "work.manage": "features.work_orders",
         "time.read": "features.time_tracking",
         "time.manage": "features.time_tracking",
+        "time.approve": "features.time_tracking",
     }.get(capability)
     if feature_code:
         require_feature(db, company, feature_code)
