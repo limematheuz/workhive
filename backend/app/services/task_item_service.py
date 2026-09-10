@@ -130,7 +130,11 @@ def _resolve_current_catalog_version_id(
 
 
 def create_task_item(
-    db: Session, current_user: User, task_item_data: TaskItemCreate
+    db: Session,
+    current_user: User,
+    task_item_data: TaskItemCreate,
+    *,
+    work_order_id: int | None = None,
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     location_access_service.require_location_capability(
@@ -216,6 +220,7 @@ def create_task_item(
         current_user.company_id,
         task_item_data,
         service_catalog_version_id=service_catalog_version_id,
+        work_order_id=work_order_id,
     )
     location_zone_service.sync_task_zones(
         db,

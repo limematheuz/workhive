@@ -344,8 +344,10 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Trabajos actuales, asignaciones, checklist, evidencias, calendario y
   sesiones de trabajo/fichaje existen.
 - ✅ Los trabajos facturables pueden seleccionarse para crear facturas.
-- ⬜ Modelo `work_orders` y recurrencia contractual sin destruir `TaskItem` de
-  golpe.
+- 🟡 Modelo `work_orders` separado de `TaskItem`: una orden individual o
+  recurrente puede vincularse a un contrato activo y generar tareas
+  ejecutables trazables sin alterar tareas existentes. Pendiente de UI,
+  revisión visual y publicación.
 - ⬜ Previsión de personas/minutos, pausas, GPS final, correcciones justificadas,
   aprobaciones, partes y coste laboral.
 

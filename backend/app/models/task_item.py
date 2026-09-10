@@ -73,6 +73,16 @@ class TaskItem(Base):
     )
     service_catalog_version = relationship("ServiceCatalogVersion")
 
+    # Existing tasks stay valid. New task instances generated from a work order
+    # use this optional link for operational traceability.
+    work_order_id = Column(
+        Integer,
+        ForeignKey("work_orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    work_order = relationship("WorkOrder", back_populates="task_items")
+
     checkout_reservation_id = Column(
         Integer, ForeignKey("reservations.id", ondelete="SET NULL"), nullable=True
     )
