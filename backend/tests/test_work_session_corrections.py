@@ -219,6 +219,10 @@ def test_correction_api_exposes_only_the_requesters_history(client, db):
     )
     customer = _client(client, headers, name="Cliente de corrección")
     location = _location(client, headers, customer["id"])
+    current_user = client.get("/api/v1/users/me", headers=headers)
+    assert current_user.status_code == 200, current_user.text
+    assert current_user.json()["can_manage_time"] is True
+    assert current_user.json()["can_approve_time"] is True
     user = db.query(User).filter(User.email == "correction-api@example.com").one()
     session = WorkSession(
         user_id=user.id,
@@ -249,3 +253,5 @@ def test_correction_api_exposes_only_the_requesters_history(client, db):
     assert own_history.status_code == 200, own_history.text
     assert [item["id"] for item in own_history.json()] == [created.json()["id"]]
     assert own_history.json()[0]["status"] == "pending"
+    assert own_history.json()[0]["requester_name"] == "Correcciones API"
+    assert own_history.json()[0]["location_name"] == location["name"]

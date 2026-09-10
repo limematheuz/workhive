@@ -62,6 +62,12 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
             "can_manage_finance": organization_authorization_service.has_capability(
                 db, current_user, "finance.manage"
             ),
+            "can_manage_time": organization_authorization_service.has_capability(
+                db, current_user, "time.manage"
+            ),
+            "can_approve_time": organization_authorization_service.has_capability(
+                db, current_user, "time.approve"
+            ),
         }
     )
 

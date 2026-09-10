@@ -15,6 +15,8 @@ export interface User {
     active_location_name?: string | null;
     can_view_finance?: boolean;
     can_manage_finance?: boolean;
+    can_manage_time?: boolean;
+    can_approve_time?: boolean;
 }
 
 export interface UserStatsResponse {
@@ -42,6 +44,7 @@ export interface WorkSession {
     end_accuracy_meters?: number | null;
     paused_at?: string | null;
     paused_seconds?: number;
+    location_name?: string | null;
     created_at: string;
     updated_at: string;
 }

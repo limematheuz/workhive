@@ -62,7 +62,7 @@ def get_work_session_by_id(
 ) -> WorkSession | None:
     query = (
         db.query(WorkSession)
-        .options(selectinload(WorkSession.pauses))
+        .options(selectinload(WorkSession.pauses), joinedload(WorkSession.location))
         .filter(WorkSession.id == session_id)
         .filter(WorkSession.user_id == user_id)
     )
@@ -82,7 +82,7 @@ def get_work_session_by_user(
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
-        .options(selectinload(WorkSession.pauses))
+        .options(selectinload(WorkSession.pauses), joinedload(WorkSession.location))
         .filter(WorkSession.user_id == user_id)
     )
     if location_ids is not None:

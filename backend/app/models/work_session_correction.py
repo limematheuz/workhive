@@ -73,3 +73,19 @@ class WorkSessionCorrection(Base):
     work_session = relationship("WorkSession")
     requested_by = relationship("User", foreign_keys=[requested_by_user_id])
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_user_id])
+
+    @property
+    def requester_name(self) -> str | None:
+        if not self.requested_by:
+            return None
+        return self.requested_by.full_name or self.requested_by.email
+
+    @property
+    def location_id(self) -> int | None:
+        return self.work_session.location_id if self.work_session else None
+
+    @property
+    def location_name(self) -> str | None:
+        if not self.work_session or not self.work_session.location:
+            return None
+        return self.work_session.location.name

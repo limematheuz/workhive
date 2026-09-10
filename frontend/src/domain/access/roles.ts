@@ -77,6 +77,16 @@ export function canManageFinance(user?: User | null): boolean {
     return isCompanyAdminRole(getRoleName(user));
 }
 
+export function canManageTime(user?: User | null): boolean {
+    if (typeof user?.can_manage_time === "boolean") return user.can_manage_time;
+    return isCalendarViewerRole(getRoleName(user));
+}
+
+export function canApproveTime(user?: User | null): boolean {
+    if (typeof user?.can_approve_time === "boolean") return user.can_approve_time;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
 export function canManageCompanyCalendar(user?: User | null): boolean {
     return isCalendarManagerRole(getRoleName(user));
 }

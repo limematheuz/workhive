@@ -45,6 +45,7 @@ class WorkSessionResponse(WorkSessionBase):
     end_accuracy_meters: float | None = None
     paused_at: datetime | None = None
     paused_seconds: int = 0
+    location_name: str | None = None
     created_at: datetime
     updated_at: datetime
 

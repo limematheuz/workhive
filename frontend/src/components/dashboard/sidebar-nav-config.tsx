@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { BarChart3, Building2, CalendarDays, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, UserRound, WalletCards, Workflow } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, ClipboardCheck, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, UserRound, WalletCards, Workflow } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = { href: string; label: string; exact: boolean; icon: ReactNode };
@@ -9,6 +9,7 @@ export const SIDEBAR_LOGO_STYLE: CSSProperties = { filter: "var(--logo-filter)" 
 export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
     isCompanyAdmin: boolean;
+    canManageTime: boolean;
     canViewOrganization?: boolean;
     canViewFinance: boolean;
     isAccountant: boolean;
@@ -20,7 +21,7 @@ export type SidebarNavUserFlags = {
 const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
 const ACCOUNTANT_HREFS = new Set(["/dashboard/analytics", "/dashboard/fiscal-summary"]);
 const NAVIGATION_FEATURES: Record<string, string> = {
-    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/documents": "features.locations", "/dashboard/assets": "features.locations", "/dashboard/tasks": "features.work_orders", "/dashboard/work-orders": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices",
+    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/documents": "features.locations", "/dashboard/assets": "features.locations", "/dashboard/tasks": "features.work_orders", "/dashboard/work-orders": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/time-corrections": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices",
 };
 
 function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
@@ -32,6 +33,7 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         { href: "/dashboard/locations", label: dict.dashboard.locations, exact: false, icon: <MapPin /> },
         { href: "/dashboard/documents", label: "Documentos", exact: false, icon: <FileText /> },
         { href: "/dashboard/assets", label: "Activos", exact: false, icon: <PackagePlus /> },
+        ...(flags.canManageTime ? [{ href: "/dashboard/time-corrections", label: "Fichajes", exact: false, icon: <ClipboardCheck /> }] : []),
         ...(flags.isAdminOrManager ? [
             { href: "/dashboard/reservations", label: dict.dashboard.reservations || "Planificación", exact: false, icon: <Workflow /> },
             { href: "/dashboard/live-work", label: dict.dashboard.live_work || "Fichajes en vivo", exact: false, icon: <Workflow /> },
@@ -85,7 +87,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         return children.length ? { id, label, icon, children } : null;
     };
     const navGroups = [
-        group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/work-orders", "/dashboard/locations", "/dashboard/documents", "/dashboard/assets", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/external-network"]),
+        group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/work-orders", "/dashboard/locations", "/dashboard/documents", "/dashboard/assets", "/dashboard/time-corrections", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/external-network"]),
         group("clients", "Clientes", <Building2 />, ["/dashboard/clients", "/dashboard/quotes"]),
         group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar"]),
         group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization"]),

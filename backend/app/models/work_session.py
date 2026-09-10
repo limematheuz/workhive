@@ -39,3 +39,7 @@ class WorkSession(Base):
         cascade="all, delete-orphan",
         order_by="WorkSessionPause.started_at",
     )
+
+    @property
+    def location_name(self) -> str | None:
+        return self.location.name if self.location else None

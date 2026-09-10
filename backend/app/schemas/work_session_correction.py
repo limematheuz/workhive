@@ -26,6 +26,9 @@ class WorkSessionCorrectionResponse(BaseModel):
     company_id: int
     work_session_id: int
     requested_by_user_id: int | None
+    requester_name: str | None
+    location_id: int | None
+    location_name: str | None
     original_start_time: datetime
     original_end_time: datetime
     requested_start_time: datetime

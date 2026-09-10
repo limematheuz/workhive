@@ -2382,6 +2382,7 @@
         "work.manage": "Create and update work",
         "time.read": "View time records",
         "time.manage": "Log and manage permitted time",
+        "time.approve": "Review time correction requests",
         "finance.read": "View quotes, invoices, expenses, and fiscal records",
         "finance.manage": "Manage financial information",
         "unknown": "Additional WorkHive permission"
@@ -2407,6 +2408,7 @@
         "work.manage": "Create and update work and its assignments.",
         "time.read": "View permitted time records.",
         "time.manage": "Start and log time for permitted work.",
+        "time.approve": "Review and decide time correction requests in permitted locations.",
         "finance.read": "View quotes, invoices, expenses, and fiscal records.",
         "finance.manage": "Create and update company financial information."
       }

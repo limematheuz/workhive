@@ -2382,6 +2382,7 @@
         "work.manage": "Crear y actualizar trabajos",
         "time.read": "Ver registros de tiempo",
         "time.manage": "Registrar y gestionar tiempo permitido",
+        "time.approve": "Revisar correcciones de fichajes",
         "finance.read": "Ver presupuestos, facturas, gastos y fiscalidad",
         "finance.manage": "Gestionar información financiera",
         "unknown": "Permiso adicional de WorkHive"
@@ -2407,6 +2408,7 @@
         "work.manage": "Crea y actualiza trabajos y sus asignaciones.",
         "time.read": "Consulta los registros de tiempo autorizados.",
         "time.manage": "Inicia y registra tiempo en el trabajo permitido.",
+        "time.approve": "Revisa y decide las correcciones de fichajes dentro de las ubicaciones permitidas.",
         "finance.read": "Consulta presupuestos, facturas, gastos y registros fiscales.",
         "finance.manage": "Crea y actualiza información financiera de la empresa."
       }

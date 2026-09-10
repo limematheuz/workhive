@@ -13,7 +13,10 @@ def get_correction(
 ) -> WorkSessionCorrection | None:
     query = (
         db.query(WorkSessionCorrection)
-        .options(joinedload(WorkSessionCorrection.work_session))
+        .options(
+            joinedload(WorkSessionCorrection.requested_by),
+            joinedload(WorkSessionCorrection.work_session).joinedload(WorkSession.location),
+        )
         .filter(
             WorkSessionCorrection.company_id == company_id,
             WorkSessionCorrection.id == correction_id,
@@ -48,6 +51,10 @@ def list_own_corrections(
 ) -> list[WorkSessionCorrection]:
     return (
         db.query(WorkSessionCorrection)
+        .options(
+            joinedload(WorkSessionCorrection.requested_by),
+            joinedload(WorkSessionCorrection.work_session).joinedload(WorkSession.location),
+        )
         .filter(
             WorkSessionCorrection.company_id == company_id,
             WorkSessionCorrection.requested_by_user_id == user_id,
@@ -65,7 +72,10 @@ def list_reviewable_corrections(
 ) -> list[WorkSessionCorrection]:
     query = (
         db.query(WorkSessionCorrection)
-        .options(joinedload(WorkSessionCorrection.work_session))
+        .options(
+            joinedload(WorkSessionCorrection.requested_by),
+            joinedload(WorkSessionCorrection.work_session).joinedload(WorkSession.location),
+        )
         .filter(WorkSessionCorrection.company_id == company_id)
     )
     if location_ids is not None:
