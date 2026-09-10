@@ -1,4 +1,5 @@
 from app.models.location import Location
+from app.models.location_document import LocationDocument
 from tests.test_location_workspace import _admin, _company, _headers
 
 
@@ -19,7 +20,7 @@ def _location(db, company, name="Centro de pruebas"):
     return location
 
 
-def test_location_documents_are_private_validated_and_archived(client, db, monkeypatch):
+def test_location_documents_are_private_validated_and_archived(client, db):
     owner_company = _company(db, "AssetOwner")
     owner = _admin(db, owner_company)
     location = _location(db, owner_company)
@@ -66,17 +67,6 @@ def test_location_documents_are_private_validated_and_archived(client, db, monke
     )
     assert invalid.status_code == 422
 
-    from app.core.config import settings
-
-    monkeypatch.setattr(settings, "LOCATION_DOCUMENT_COMPANY_MAX_BYTES", len(PDF))
-    quota_reached = client.post(
-        f"/api/v1/locations/{location.id}/documents",
-        headers=owner_headers,
-        files={"file": ("segundo.pdf", PDF, "application/pdf")},
-    )
-    assert quota_reached.status_code == 409
-    assert quota_reached.headers["x-workhive-error-code"] == "location_documents.storage_limit_reached"
-
     archived = client.delete(
         f"/api/v1/locations/{location.id}/documents/{document['id']}", headers=owner_headers
     )
@@ -85,6 +75,59 @@ def test_location_documents_are_private_validated_and_archived(client, db, monke
     assert client.get(
         f"/api/v1/locations/{location.id}/documents/{document['id']}/download", headers=owner_headers
     ).status_code == 404
+
+
+def test_location_document_storage_uses_the_company_plan(client, db):
+    mebibyte = 1024 * 1024
+    basic_company = _company(db, "BasicAssets")
+    basic_company.subscription_plan = "basic"
+    db.commit()
+    basic_admin = _admin(db, basic_company)
+    basic_location = _location(db, basic_company)
+
+    too_large = b"%PDF-" + b"0" * mebibyte
+    rejected = client.post(
+        f"/api/v1/locations/{basic_location.id}/documents",
+        headers=_headers(basic_admin),
+        files={"file": ("demasiado-grande.pdf", too_large, "application/pdf")},
+    )
+    assert rejected.status_code == 413
+    assert rejected.headers["x-workhive-error-code"] == "entitlement.quota_reached"
+
+    db.add(
+        LocationDocument(
+            company_id=basic_company.id,
+            location_id=basic_location.id,
+            name="limite.pdf",
+            document_type="other",
+            storage_key="tests/basic-storage-limit.pdf",
+            content_type="application/pdf",
+            size_bytes=mebibyte,
+            sha256="0" * 64,
+            created_by_user_id=basic_admin.id,
+        )
+    )
+    db.commit()
+    quota_reached = client.post(
+        f"/api/v1/locations/{basic_location.id}/documents",
+        headers=_headers(basic_admin),
+        files={"file": ("otro.pdf", PDF, "application/pdf")},
+    )
+    assert quota_reached.status_code == 409
+    assert quota_reached.headers["x-workhive-error-code"] == "entitlement.quota_reached"
+
+    top_company = _company(db, "TopAssets")
+    top_company.subscription_plan = "top"
+    db.commit()
+    top_admin = _admin(db, top_company)
+    top_location = _location(db, top_company)
+    allowed = b"%PDF-" + b"0" * mebibyte
+    uploaded = client.post(
+        f"/api/v1/locations/{top_location.id}/documents",
+        headers=_headers(top_admin),
+        files={"file": ("ampliado.pdf", allowed, "application/pdf")},
+    )
+    assert uploaded.status_code == 201, uploaded.text
 
 
 def test_location_assets_reject_other_company_and_manage_equipment(client, db):

@@ -70,7 +70,7 @@ export default function DocumentsPage() {
     };
 
     return <div className="dashboard-page-content px-[3%] py-6 md:p-8">
-        <PageHeader icon={FileText} title="Documentos" subtitle="Documentación operativa vinculada a ubicaciones. Máximo 1 MB por archivo y 10 MB por empresa." className="mb-6" />
+        <PageHeader icon={FileText} title="Documentos" subtitle="Documentación operativa vinculada a ubicaciones. El límite depende del plan contratado." className="mb-6" />
         <DataListTable
             items={documents}
             getRowKey={(document) => document.id}

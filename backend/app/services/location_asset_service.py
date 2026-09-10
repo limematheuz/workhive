@@ -13,12 +13,14 @@ from app.models.location_equipment import LocationEquipment
 from app.models.user import User
 from app.repositories import location_assets as assets_repo
 from app.schemas.location_assets import LocationEquipmentInput, LocationEquipmentUpdate
-from app.core.config import settings
 from app.services.storage_service import ObjectNotFoundError, build_document_key, get_object_storage
 from app.services import location_service, organization_authorization_service
+from app.services import entitlement_service
 from app.services.user_scope import scoped_company_id
 
 
+DOCUMENT_STORAGE_ENTITLEMENT = "limits.location_document_storage_bytes"
+ABSOLUTE_MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 _FILE_TYPES = {
     "application/pdf": ("pdf", b"%PDF-"),
     "image/jpeg": ("jpg", b"\xff\xd8\xff"),
@@ -26,13 +28,22 @@ _FILE_TYPES = {
 }
 
 
-def _validated_document(contents: bytes, content_type: str | None) -> tuple[str, str]:
+def document_storage_limit(db: Session, company_id: int) -> int:
+    return entitlement_service.byte_quota_limit(
+        db, company_id=company_id, code=DOCUMENT_STORAGE_ENTITLEMENT
+    )
+
+
+def _validated_document(
+    contents: bytes, content_type: str | None, *, size_limit: int
+) -> tuple[str, str]:
     if not contents:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Document file is empty")
-    if len(contents) > settings.LOCATION_DOCUMENT_MAX_BYTES:
+    if len(contents) > size_limit:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Document exceeds the configured file size limit",
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="El documento supera el límite permitido por tu plan",
+            headers={"X-WorkHive-Error-Code": "entitlement.quota_reached"},
         )
     detected = next((value for value in _FILE_TYPES.items() if contents.startswith(value[1][1])), None)
     if detected is None:
@@ -90,14 +101,20 @@ def upload_document(
     normalized_type = document_type.strip().lower() or "other"
     if len(normalized_type) > 40:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Document type is too long")
-    stored_content_type, extension = _validated_document(contents, content_type)
-    used_bytes = assets_repo.active_document_bytes_for_company_locked(db, company_id)
-    if used_bytes + len(contents) > settings.LOCATION_DOCUMENT_COMPANY_MAX_BYTES:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Your company has reached its document storage limit",
-            headers={"X-WorkHive-Error-Code": "location_documents.storage_limit_reached"},
-        )
+    size_limit = document_storage_limit(db, company_id)
+    stored_content_type, extension = _validated_document(
+        contents, content_type, size_limit=size_limit
+    )
+    entitlement_service.require_byte_quota(
+        db,
+        company_id=company_id,
+        code=DOCUMENT_STORAGE_ENTITLEMENT,
+        requested_bytes=len(contents),
+        current_usage=lambda: assets_repo.active_document_bytes_for_company(
+            db, company_id
+        ),
+        resource_label="almacenamiento de documentos de ubicación",
+    )
     storage_key = build_document_key(company_id, f"locations/{location_id}", extension)
     storage = get_object_storage()
     try:

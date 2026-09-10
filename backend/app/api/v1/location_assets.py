@@ -48,7 +48,15 @@ def upload_location_document(
         current_user=current_user,
         filename=file.filename,
         content_type=file.content_type,
-        contents=file.file.read(settings.LOCATION_DOCUMENT_MAX_BYTES + 1),
+        contents=file.file.read(
+            min(
+                location_asset_service.document_storage_limit(
+                    db, scoped_company_id(current_user)
+                ),
+                location_asset_service.ABSOLUTE_MAX_DOCUMENT_BYTES,
+            )
+            + 1
+        ),
         document_type=document_type,
     )
 

@@ -1,7 +1,6 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.company import Company
 from app.models.location_document import LocationDocument
 from app.models.location_equipment import LocationEquipment
 from app.models.location import Location
@@ -16,17 +15,9 @@ def list_documents(db: Session, location_id: int) -> list[LocationDocument]:
     )
 
 
-def active_document_bytes_for_company_locked(db: Session, company_id: int) -> int:
-    """Serialize storage reservations per company before accepting an upload."""
+def active_document_bytes_for_company(db: Session, company_id: int) -> int:
+    """Return active document usage. Caller owns any required quota lock."""
 
-    if (
-        db.query(Company.id)
-        .filter(Company.id == company_id)
-        .with_for_update()
-        .scalar()
-        is None
-    ):
-        return 0
     return int(
         db.query(func.coalesce(func.sum(LocationDocument.size_bytes), 0))
         .filter(

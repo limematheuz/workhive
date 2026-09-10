@@ -324,7 +324,8 @@ como WorkHive Core solo cuando el caso real las exige.
   cubiertos con migración reversible y regresiones de aislamiento. Pendiente de
   revisión visual autenticada y publicación para marcarlo como completado.
 - 🟡 Documentos y equipos normalizados por ubicación: documentos privados PDF,
-  JPEG y PNG con hash, máximo 1 MB por archivo y 10 MB por empresa; inventario
+  JPEG y PNG con hash, cuota documental por empresa: 1 MB en Basic/Medium y 10 MB
+  en Top/Enterprise; inventario
   con estado, cantidad y mantenimiento. Lectura por ámbito y altas/archivo solo
   para la empresa propietaria con `locations.manage`; migración y regresiones
   cubiertas. Vistas independientes de Documentos y Activos, sin mezclarlas con
