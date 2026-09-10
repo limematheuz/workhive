@@ -63,6 +63,17 @@ def test_recurring_work_order_creates_traceable_task_instances(client, db):
     work_order = created.json()
     assert work_order["next_occurrence_at"].startswith("2026-10-01T09:00:00")
 
+    candidates = client.get("/api/v1/work-orders/contract-candidates", headers=owner_headers)
+    assert candidates.status_code == 200, candidates.text
+    assert candidates.json() == [
+        {
+            "contract_id": contract["id"],
+            "contract_title": contract["title"],
+            "location_id": location["id"],
+            "location_name": location["name"],
+        }
+    ]
+
     assert client.get(
         f"/api/v1/work-orders/{work_order['id']}", headers=other_headers
     ).status_code == 404

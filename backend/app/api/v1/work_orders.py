@@ -5,6 +5,7 @@ from app.api.deps import ActiveUser, get_db
 from app.models.user import User
 from app.schemas.work_order import (
     WorkOrderCreate,
+    WorkOrderContractCandidate,
     WorkOrderOccurrenceResponse,
     WorkOrderResponse,
     WorkOrderUpdate,
@@ -24,6 +25,14 @@ def read_work_orders(
     return work_order_service.list_work_orders(
         db, current_user, status_filter=status_filter
     )
+
+
+@router.get("/contract-candidates", response_model=list[WorkOrderContractCandidate])
+def read_contract_candidates(
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    return work_order_service.list_contract_candidates(db, current_user)
 
 
 @router.post("/", response_model=WorkOrderResponse, status_code=status.HTTP_201_CREATED)

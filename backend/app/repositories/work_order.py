@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.models.service_contract import ServiceContract, ServiceContractLocation
 from app.models.work_order import WorkOrder
 
 
@@ -34,6 +35,28 @@ def create_work_order(db: Session, **values) -> WorkOrder:
     db.add(work_order)
     db.flush()
     return work_order
+
+
+def list_contract_candidates(
+    db: Session, *, company_id: int, location_ids: set[int] | None
+) -> list[tuple[ServiceContract, ServiceContractLocation]]:
+    query = (
+        db.query(ServiceContract, ServiceContractLocation)
+        .join(
+            ServiceContractLocation,
+            ServiceContractLocation.contract_id == ServiceContract.id,
+        )
+        .filter(
+            ServiceContract.company_id == company_id,
+            ServiceContract.status == "active",
+            ServiceContractLocation.is_active.is_(True),
+        )
+    )
+    if location_ids is not None:
+        query = query.filter(ServiceContractLocation.location_id.in_(location_ids))
+    return query.order_by(
+        ServiceContract.title.asc(), ServiceContractLocation.location_id.asc()
+    ).all()
 
 
 def task_exists_for_occurrence(

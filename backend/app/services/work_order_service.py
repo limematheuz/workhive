@@ -83,6 +83,27 @@ def list_work_orders(db: Session, current_user: User, *, status_filter: str | No
     )
 
 
+def list_contract_candidates(db: Session, current_user: User):
+    """Return operational contract choices without exposing prices or terms."""
+
+    company_id = require_company_context(current_user)
+    _require_work_orders(company_id, db)
+    candidates = work_order_repo.list_contract_candidates(
+        db,
+        company_id=company_id,
+        location_ids=permitted_location_ids(db, current_user, "work.manage"),
+    )
+    return [
+        {
+            "contract_id": contract.id,
+            "contract_title": contract.title,
+            "location_id": link.location_id,
+            "location_name": link.location.name if link.location else f"Ubicación {link.location_id}",
+        }
+        for contract, link in candidates
+    ]
+
+
 def get_work_order(db: Session, current_user: User, work_order_id: int) -> WorkOrder:
     company_id = require_company_context(current_user)
     _require_work_orders(company_id, db)

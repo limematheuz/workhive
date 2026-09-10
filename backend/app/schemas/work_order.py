@@ -88,3 +88,10 @@ class WorkOrderResponse(BaseModel):
 class WorkOrderOccurrenceResponse(BaseModel):
     work_order: WorkOrderResponse
     task_item_id: int
+
+
+class WorkOrderContractCandidate(BaseModel):
+    contract_id: int
+    contract_title: str
+    location_id: int
+    location_name: str
