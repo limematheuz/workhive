@@ -31,6 +31,8 @@ import {
     withVisibleReportsSelection,
 } from "@/features/task-reports/task-report-selection";
 import { useDictionary } from "@/lib/dictionary-context";
+import { useUser } from "@/lib/user-context";
+import { canManageWorkReports, canViewWorkReports } from "@/domain/access/roles";
 import { TaskReportService, type TaskReport, type TaskReportUpdate } from "@/services/task-report.service";
 
 type ReportFilter = TaskReportCategory | "all";
@@ -40,7 +42,10 @@ const scrollHide =
 
 export default function TaskReportsPage() {
     const { dict, locale } = useDictionary();
+    const { user, loading: userLoading } = useUser();
     const copy = dict.task_reports;
+    const canView = canViewWorkReports(user);
+    const canManage = canManageWorkReports(user);
     const [reports, setReports] = useState<TaskReport[]>([]);
     const [query, setQuery] = useState("");
     const [type, setType] = useState<ReportFilter>("all");
@@ -74,8 +79,10 @@ export default function TaskReportsPage() {
     });
 
     useEffect(() => {
-        startTransition(() => { void loadReports(); });
-    }, []);
+        if (!userLoading && canView) {
+            startTransition(() => { void loadReports(); });
+        }
+    }, [canView, userLoading]);
 
     const filtered = useMemo(() => filterTaskReports(reports, { type, query }), [query, reports, type]);
     const totalPages = totalPagesForCount(filtered.length);
@@ -155,7 +162,7 @@ export default function TaskReportsPage() {
                     title={copy.title}
                     subtitle={copy.subtitle}
                     actions={(
-                        selectionMode ? (
+                        canManage && selectionMode ? (
                             <div className={reportActionCluster}>
                                 <button
                                     type="button"
@@ -182,7 +189,7 @@ export default function TaskReportsPage() {
                                     {copy.delete_selected}
                                 </button>
                             </div>
-                        ) : (
+                        ) : canManage ? (
                             <button
                                 type="button"
                                 className={reportPrimaryBtn}
@@ -191,23 +198,29 @@ export default function TaskReportsPage() {
                                 <CheckSquare className="h-3.5 w-3.5" />
                                 {copy.select}
                             </button>
-                        )
+                        ) : null
                     )}
                 />
 
-                {selectionMode && selectedIds.size > 0 && (
+                {!userLoading && !canView && (
+                    <div className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-6 text-center text-sm text-[var(--text-muted)]">
+                        No tienes permisos para consultar los partes de trabajo.
+                    </div>
+                )}
+
+                {canView && selectionMode && selectedIds.size > 0 && (
                     <p className="text-xs font-semibold text-[var(--text-muted)]">
                         {copy.selected_count.replace("{count}", String(selectedIds.size))}
                     </p>
                 )}
 
-                {actionError && (
+                {canView && actionError && (
                     <div className="rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-3 text-sm text-[var(--btn-cancel-text)]">
                         {actionError}
                     </div>
                 )}
 
-                <section className="space-y-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2.5 shadow-sm sm:p-3">
+                {canView && <section className="space-y-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2.5 shadow-sm sm:p-3">
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                         <Input
@@ -228,21 +241,21 @@ export default function TaskReportsPage() {
                         activeTab={type}
                         onChange={changeType}
                     />
-                </section>
+                </section>}
 
-                {loading && <p className="py-14 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>}
-                {!loading && error && (
+                {canView && loading && <p className="py-14 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>}
+                {canView && !loading && error && (
                     <div className="rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-4 text-sm text-[var(--btn-cancel-text)]">
                         {copy.error}
                     </div>
                 )}
-                {!loading && !error && filtered.length === 0 && (
+                {canView && !loading && !error && filtered.length === 0 && (
                     <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)] p-8 text-center text-sm text-[var(--text-muted)]">
                         {copy.empty}
                     </div>
                 )}
 
-                <section className="grid items-start gap-2 md:grid-cols-2">
+                {canView && <section className="grid items-start gap-2 md:grid-cols-2">
                     {pageItems.map(report => (
                         <TaskReportCard
                             key={report.id}
@@ -255,9 +268,9 @@ export default function TaskReportsPage() {
                             onOpen={setSelectedReport}
                         />
                     ))}
-                </section>
+                </section>}
 
-                {!loading && !error && filtered.length > 0 && totalPages > 1 && (
+                {canView && !loading && !error && filtered.length > 0 && totalPages > 1 && (
                     <div className="flex flex-col items-center justify-between gap-3 border-t border-[var(--border-soft)] pt-4 text-xs font-semibold text-[var(--text-muted)] sm:flex-row">
                         <p>
                             {copy.pagination_info
@@ -296,6 +309,7 @@ export default function TaskReportsPage() {
                 labels={labels}
                 copy={copy}
                 saving={saving}
+                canManage={canManage}
                 onClose={() => setSelectedReport(null)}
                 onSave={handleSave}
                 onDelete={() => setPendingDelete("single")}

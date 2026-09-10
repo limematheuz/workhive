@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
     canManageFinance,
+    canManageWorkReports,
     canViewFinance,
     canViewFinanceRole,
+    canViewWorkReports,
     isCompanyAdminRole,
     isExternalPortalRole,
     isPartnerPortalRole,
@@ -46,4 +48,20 @@ test("external accountants can read finance without becoming company administrat
 test("explicit company capabilities override a legacy role for financial UI", () => {
     assert.equal(canViewFinance(commercialWithoutFinance), false);
     assert.equal(canManageFinance(commercialWithoutFinance), false);
+});
+
+test("explicit work-report capabilities control report visibility and mutations", () => {
+    const reader = {
+        ...commercialWithoutFinance,
+        can_view_work_reports: true,
+        can_manage_work_reports: false,
+    } satisfies User;
+    const manager = {
+        ...reader,
+        can_manage_work_reports: true,
+    } satisfies User;
+
+    assert.equal(canViewWorkReports(reader), true);
+    assert.equal(canManageWorkReports(reader), false);
+    assert.equal(canManageWorkReports(manager), true);
 });

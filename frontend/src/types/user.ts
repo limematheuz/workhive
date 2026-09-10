@@ -17,6 +17,8 @@ export interface User {
     can_manage_finance?: boolean;
     can_manage_time?: boolean;
     can_approve_time?: boolean;
+    can_view_work_reports?: boolean;
+    can_manage_work_reports?: boolean;
 }
 
 export interface UserStatsResponse {

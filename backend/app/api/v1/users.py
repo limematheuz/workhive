@@ -68,6 +68,12 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
             "can_approve_time": organization_authorization_service.has_capability(
                 db, current_user, "time.approve"
             ),
+            "can_view_work_reports": organization_authorization_service.has_capability(
+                db, current_user, "work.read"
+            ),
+            "can_manage_work_reports": organization_authorization_service.has_capability(
+                db, current_user, "work.manage"
+            ),
         }
     )
 

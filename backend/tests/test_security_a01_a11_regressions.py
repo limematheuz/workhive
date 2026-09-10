@@ -192,8 +192,8 @@ def test_a02_location_children_and_import_honor_profile_scope(client, db):
 
 
 def test_a03_task_reports_honor_work_scope_for_all_operations(client, db):
-    company, admin, manager, _, denied = _scoped_users(db)
-    task = TaskItem(
+    company, admin, manager, allowed, denied = _scoped_users(db)
+    denied_task = TaskItem(
         title="Denied task",
         company_id=company.id,
         location_id=denied.id,
@@ -202,20 +202,41 @@ def test_a03_task_reports_honor_work_scope_for_all_operations(client, db):
         quantity=1,
         unit="unit",
     )
-    db.add(task)
+    allowed_task = TaskItem(
+        title="Allowed task",
+        company_id=company.id,
+        location_id=allowed.id,
+        status="pending",
+        price=1,
+        quantity=1,
+        unit="unit",
+    )
+    db.add_all([denied_task, allowed_task])
     db.commit()
-    created = client.post(
+    denied_created = client.post(
         "/api/v1/task-reports/",
         headers=_headers(admin),
         json={
-            "task_item_id": task.id,
+            "task_item_id": denied_task.id,
             "client_event_id": str(uuid4()),
             "report_type": "issue",
             "title": "Restricted report",
         },
     )
-    assert created.status_code == 201, created.text
-    report_id = created.json()["id"]
+    assert denied_created.status_code == 201, denied_created.text
+    denied_report_id = denied_created.json()["id"]
+    allowed_created = client.post(
+        "/api/v1/task-reports/",
+        headers=_headers(admin),
+        json={
+            "task_item_id": allowed_task.id,
+            "client_event_id": str(uuid4()),
+            "report_type": "issue",
+            "title": "Allowed report",
+        },
+    )
+    assert allowed_created.status_code == 201, allowed_created.text
+    allowed_report_id = allowed_created.json()["id"]
     headers = _headers(manager)
 
     assert (
@@ -223,7 +244,7 @@ def test_a03_task_reports_honor_work_scope_for_all_operations(client, db):
             "/api/v1/task-reports/",
             headers=headers,
             json={
-                "task_item_id": task.id,
+                "task_item_id": denied_task.id,
                 "client_event_id": str(uuid4()),
                 "report_type": "issue",
                 "title": "Blocked",
@@ -231,21 +252,23 @@ def test_a03_task_reports_honor_work_scope_for_all_operations(client, db):
         ).status_code
         == 403
     )
-    assert client.get("/api/v1/task-reports/", headers=headers).json() == []
+    listed = client.get("/api/v1/task-reports/", headers=headers)
+    assert listed.status_code == 200, listed.text
+    assert [report["id"] for report in listed.json()] == [allowed_report_id]
     assert (
-        client.get(f"/api/v1/task-reports/{report_id}", headers=headers).status_code
+        client.get(f"/api/v1/task-reports/{denied_report_id}", headers=headers).status_code
         == 403
     )
     assert (
         client.patch(
-            f"/api/v1/task-reports/{report_id}",
+            f"/api/v1/task-reports/{allowed_report_id}",
             headers=headers,
             json={"title": "Blocked edit"},
         ).status_code
         == 403
     )
     assert (
-        client.delete(f"/api/v1/task-reports/{report_id}", headers=headers).status_code
+        client.delete(f"/api/v1/task-reports/{allowed_report_id}", headers=headers).status_code
         == 403
     )
 

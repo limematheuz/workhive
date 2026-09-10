@@ -10,6 +10,7 @@ export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
     isCompanyAdmin: boolean;
     canManageTime: boolean;
+    canViewWorkReports: boolean;
     canViewOrganization?: boolean;
     canViewFinance: boolean;
     isAccountant: boolean;
@@ -37,8 +38,10 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         ...(flags.isAdminOrManager ? [
             { href: "/dashboard/reservations", label: dict.dashboard.reservations || "Planificación", exact: false, icon: <Workflow /> },
             { href: "/dashboard/live-work", label: dict.dashboard.live_work || "Fichajes en vivo", exact: false, icon: <Workflow /> },
-            { href: "/dashboard/task-reports", label: dict.task_reports.nav_label, exact: false, icon: <ShieldAlert /> },
             { href: "/dashboard/external-network", label: dict.external_network.title, exact: false, icon: <Network /> },
+        ] : []),
+        ...(flags.canViewWorkReports ? [
+            { href: "/dashboard/task-reports", label: dict.task_reports.nav_label, exact: false, icon: <ShieldAlert /> },
         ] : []),
         { href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> },
         ...(flags.isCompanyAdmin || flags.canViewOrganization ? [

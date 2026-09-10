@@ -87,6 +87,16 @@ export function canApproveTime(user?: User | null): boolean {
     return isCompanyTaskManagerRole(getRoleName(user));
 }
 
+export function canViewWorkReports(user?: User | null): boolean {
+    if (typeof user?.can_view_work_reports === "boolean") return user.can_view_work_reports;
+    return isCalendarViewerRole(getRoleName(user));
+}
+
+export function canManageWorkReports(user?: User | null): boolean {
+    if (typeof user?.can_manage_work_reports === "boolean") return user.can_manage_work_reports;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
 export function canManageCompanyCalendar(user?: User | null): boolean {
     return isCalendarManagerRole(getRoleName(user));
 }
