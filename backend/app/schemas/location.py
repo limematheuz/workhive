@@ -126,6 +126,7 @@ class LocationResponse(LocationBase):
     access: LocationAccessResponse | None = None
     can_manage_reservations: bool | None = None
     can_manage_tasks: bool | None = None
+    can_manage_location: bool | None = None
     shared_companies: list[int] = []
     contacts: list[LocationContactResponse] = []
     risks: list[LocationRiskResponse] = []

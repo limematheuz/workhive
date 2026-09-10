@@ -7,8 +7,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useDictionary } from "@/lib/dictionary-context"
-import { useUser } from "@/lib/user-context"
-import { isSuperadmin } from "@/domain/access/roles"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
 import type { LocationSpace } from "@/types/location"
 import { LocationTasksWorkspace } from "./LocationTasksWorkspace"
@@ -37,7 +35,6 @@ export function LocationDetailDialog({
     onEdit,
 }: LocationDetailDialogProps) {
     const { dict } = useDictionary()
-    const { user } = useUser()
     const [spaces, setSpaces] = useState<LocationSpace[]>([])
     const [spacesLoading, setSpacesLoading] = useState(true)
     const locationId = location?.id
@@ -63,8 +60,7 @@ export function LocationDetailDialog({
         other: dict.locations?.type_other,
     })
     const siteTypeLabel = location.profile?.site_type?.replaceAll("_", " ") ?? null
-    const locationOwnerCompanyId = location.owner_company_id ?? location.managing_company_id
-    const canManageSpaces = Boolean(user && (isSuperadmin(user) || locationOwnerCompanyId === user.company_id))
+    const canManageLocation = location.can_manage_location === true
 
     return (
         <Dialog open={location !== null} onOpenChange={(open) => !open && onClose()}>
@@ -93,7 +89,7 @@ export function LocationDetailDialog({
                         <SummaryMetric label="Acceso" value={location.access?.access_method || (location.access?.has_access_code ? "Código" : "Sin configurar")} />
                     </section>
 
-                    <div className="mt-3 flex justify-end"><Button type="button" size="sm" className="border-accent bg-accent text-white hover:bg-accent/90" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" />Editar ubicación</Button></div>
+                    {canManageLocation && <div className="mt-3 flex justify-end"><Button type="button" size="sm" className="border-accent bg-accent text-white hover:bg-accent/90" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" />Editar ubicación</Button></div>}
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
                         <LocationDetailOverview location={location} siteTypeLabel={siteTypeLabel} sectionClass={sectionClass} mapButtonClass={mapButtonClass} />
@@ -102,7 +98,7 @@ export function LocationDetailDialog({
 
                     <section className={`${sectionClass} mt-5`}>
                         <div className="mb-4"><h4 className="text-sm font-bold text-[var(--text-main)]">Estructura de espacios</h4><p className="mt-1 text-xs text-[var(--text-muted)]">Organiza las zonas de trabajo y sus tareas sugeridas sin entrar en los servicios habituales.</p></div>
-                        <LocationSpacesTab locationId={location.id} open={location !== null} canManage={canManageSpaces} />
+                        <LocationSpacesTab locationId={location.id} open={location !== null} canManage={canManageLocation} />
                     </section>
 
                     <section className={`${sectionClass} mt-5`}>

@@ -17,6 +17,7 @@ export interface Location {
     default_service_provider_id?: number | null;
     can_manage_reservations?: boolean;
     can_manage_tasks?: boolean;
+    can_manage_location?: boolean;
     num_bathrooms?: number;
     has_garage?: boolean;
     has_kitchen?: boolean;
@@ -95,6 +96,41 @@ export interface LocationServiceWindow {
     ends_at: string;
     notes?: string | null;
     is_active: boolean;
+}
+
+export interface LocationDocument {
+    id: number;
+    name: string;
+    document_type: string;
+    content_type: string;
+    size_bytes: number;
+    sha256: string;
+    created_at: string;
+}
+
+export interface LocationDocumentLibraryItem extends LocationDocument {
+    location_id: number;
+    location_name: string;
+}
+
+export type LocationEquipmentStatus = "active" | "maintenance" | "retired";
+
+export interface LocationEquipment {
+    id: number;
+    name: string;
+    category: string;
+    serial_number?: string | null;
+    quantity: number;
+    status: LocationEquipmentStatus;
+    next_service_at?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface LocationEquipmentLibraryItem extends LocationEquipment {
+    location_id: number;
+    location_name: string;
 }
 
 export interface LocationAccessProfile {

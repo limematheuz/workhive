@@ -110,6 +110,12 @@ class Location(Base):
         back_populates="location",
         cascade="all, delete-orphan",
     )
+    documents = relationship(
+        "LocationDocument", back_populates="location", cascade="all, delete-orphan"
+    )
+    equipment = relationship(
+        "LocationEquipment", back_populates="location", cascade="all, delete-orphan"
+    )
     risks = relationship(
         "LocationRisk",
         back_populates="location",

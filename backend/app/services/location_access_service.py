@@ -16,7 +16,7 @@ from app.services.user_scope import (
     is_platform_superadmin,
     require_company_context,
 )
-from app.services.organization_authorization_service import require_capability
+from app.services.organization_authorization_service import has_capability, require_capability
 
 
 def _is_direct_company_location(location: Location, company_id: int | None) -> bool:
@@ -191,6 +191,28 @@ def require_location_owner(
             detail="Only the location owner company can modify the property",
         )
     return location
+
+
+def can_manage_owned_location(
+    db: Session, current_user: User, location: Location
+) -> bool:
+    """Mirror owner-only mutation access for UI capability hints.
+
+    The API remains authoritative; this only prevents offering controls that
+    would be denied by ``require_location_owner``.
+    """
+
+    if is_platform_superadmin(current_user):
+        return True
+    if not _is_direct_company_location(location, current_user.company_id):
+        return False
+    return has_capability(
+        db,
+        current_user,
+        "locations.manage",
+        scope_type="location",
+        scope_id=location.id,
+    )
 
 
 def can_view_sensitive(db: Session, current_user: User, location_id: int) -> bool:

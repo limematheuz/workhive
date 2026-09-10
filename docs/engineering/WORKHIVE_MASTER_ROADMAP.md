@@ -323,7 +323,14 @@ como WorkHive Core solo cuando el caso real las exige.
   al crear o editar en el espacio interno, portal patrocinado y alta inicial;
   cubiertos con migración reversible y regresiones de aislamiento. Pendiente de
   revisión visual autenticada y publicación para marcarlo como completado.
-- ⬜ Documentos, equipos y servicios contratados normalizados por ubicación.
+- 🟡 Documentos y equipos normalizados por ubicación: documentos privados PDF,
+  JPEG y PNG con hash, máximo 1 MB por archivo y 10 MB por empresa; inventario
+  con estado, cantidad y mantenimiento. Lectura por ámbito y altas/archivo solo
+  para la empresa propietaria con `locations.manage`; migración y regresiones
+  cubiertas. Vistas independientes de Documentos y Activos, sin mezclarlas con
+  Ubicaciones. Pendiente de revisión visual autenticada y publicación.
+  Servicios contratados quedan cubiertos por la relación formal de contratos
+  siguiente.
 - 🟡 Relación formal cliente → contrato → ubicación → zona: un contrato nace
   de la revisión aceptada, solo puede cubrir ubicaciones activas de su cliente y
   puede restringirse a zonas activas de esas ubicaciones; sin zonas elegidas,

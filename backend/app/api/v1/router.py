@@ -13,6 +13,9 @@ from app.api.v1.template_tasks import router as template_tasks_router
 from app.api.v1.location_templates import router as location_templates_router
 from app.api.v1.location_zones import router as location_zones_router
 from app.api.v1.location_workspace import router as location_workspace_router
+from app.api.v1.location_assets import router as location_assets_router
+from app.api.v1.location_documents import router as location_documents_router
+from app.api.v1.location_equipment import router as location_equipment_router
 from app.api.v1.work_sessions import router as work_sessions_router
 from app.api.v1.task_items import router as task_items_router
 from app.api.v1.task_item_read import router as task_item_read_router
@@ -63,6 +66,9 @@ api_router.include_router(
     prefix="/locations",
     tags=["location-workspace"],
 )
+api_router.include_router(location_assets_router, prefix="/locations", tags=["location-assets"])
+api_router.include_router(location_documents_router, prefix="/location-documents", tags=["location-documents"])
+api_router.include_router(location_equipment_router, prefix="/location-equipment", tags=["location-equipment"])
 api_router.include_router(locations_router, prefix="/locations", tags=["locations"])
 api_router.include_router(
     location_operational_history_router,
