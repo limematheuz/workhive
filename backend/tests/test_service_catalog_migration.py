@@ -40,6 +40,18 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
     # revision. These are intentionally minimal because this test only
     # validates catalog backfill, but they must exist for that branch to run.
     Table("invoices", metadata, Column("id", Integer, primary_key=True))
+    # The explicit-permission migration evolves these pre-existing tables too.
+    Table(
+        "company_memberships", metadata,
+        Column("id", Integer, primary_key=True),
+        Column("company_id", Integer, nullable=False),
+    )
+    Table(
+        "membership_permission_profile_assignments", metadata,
+        Column("id", Integer, primary_key=True),
+        Column("company_id", Integer, nullable=False),
+        Column("company_membership_id", Integer, nullable=False),
+    )
     Table(
         "company_fiscal_settings",
         metadata,

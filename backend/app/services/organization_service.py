@@ -3,8 +3,8 @@
 from app.services.organization_member_service import (
     list_members,
     remove_member,
-    update_member,
 )
+from app.services.organization_member_access_service import update_member
 from app.services.organization_permission_profile_service import (
     create_permission_profile,
     delete_permission_profile,

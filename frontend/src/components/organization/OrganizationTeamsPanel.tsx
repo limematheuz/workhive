@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useOrganizationPermission } from "@/components/organization/organization-access-context";
 import { Loader2, Pencil, Power, Trash2, UsersRound } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
@@ -269,11 +270,13 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
 
 function TeamCard({ team, departments, onEdit, onManageMembers, onRequestStatusChange, onRequestDelete }: { team: OrganizationTeam; departments: OrganizationDepartment[]; onEdit: () => void; onManageMembers: () => void; onRequestStatusChange: () => void; onRequestDelete: () => void; }) {
     const { dict } = useDictionary();
+    const canReadMembers = useOrganizationPermission("access.members.read");
+    const canManage = useOrganizationPermission("organization.teams.manage");
     const copy = dict.organization.teams;
     const usage = teamUsage(team);
     const departmentName = departments.find((department) => department.id === team.department_id)?.name || copy.no_department;
-    const actionOptions: PopoverOption[] = [{ label: dict.organization.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit }, { label: copy.members_action, icon: UsersRound, onClick: onManageMembers, disabled: !team.is_active }, { label: team.is_active ? copy.deactivate : copy.reactivate, icon: Power, variant: team.is_active ? "deactivate" : "default", onClick: onRequestStatusChange, disabled: team.is_active && !usage.can_deactivate }, ...(usage.can_delete ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onRequestDelete }] : [])];
-    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{team.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{team.code || dict.organization.departments.no_code}</p></div><ActionPopover align="end" triggerLabel={`${copy.actions}: ${team.name}`} options={actionOptions} /></div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={team.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{team.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{departmentName}</span><span className="text-xs text-[var(--text-muted)]">{usage.active_member_assignments} {copy.members.toLowerCase()}</span></div></CardContent></Card>;
+    const actionOptions: PopoverOption[] = [{ label: dict.organization.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit }, { label: copy.members_action, icon: UsersRound, onClick: onManageMembers, disabled: !team.is_active || !canReadMembers }, { label: team.is_active ? copy.deactivate : copy.reactivate, icon: Power, variant: team.is_active ? "deactivate" : "default", onClick: onRequestStatusChange, disabled: team.is_active && !usage.can_deactivate }, ...(usage.can_delete ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onRequestDelete }] : [])];
+    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{team.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{team.code || dict.organization.departments.no_code}</p></div>{canManage && <ActionPopover align="end" triggerLabel={`${copy.actions}: ${team.name}`} options={actionOptions} />}</div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={team.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{team.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{departmentName}</span><span className="text-xs text-[var(--text-muted)]">{usage.active_member_assignments} {copy.members.toLowerCase()}</span></div></CardContent></Card>;
 }
 
 function TeamRow({
@@ -292,12 +295,14 @@ function TeamRow({
     onRequestDelete: () => void;
 }) {
     const { dict } = useDictionary();
+    const canReadMembers = useOrganizationPermission("access.members.read");
+    const canManage = useOrganizationPermission("organization.teams.manage");
     const copy = dict.organization.teams;
     const usage = teamUsage(team);
     const departmentName = departments.find((department) => department.id === team.department_id)?.name || copy.no_department;
     const actionOptions: PopoverOption[] = [
         { label: dict.organization.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit },
-        { label: copy.members_action, icon: UsersRound, onClick: onManageMembers, disabled: !team.is_active },
+        { label: copy.members_action, icon: UsersRound, onClick: onManageMembers, disabled: !team.is_active || !canReadMembers },
         {
             label: team.is_active ? copy.deactivate : copy.reactivate,
             icon: Power,
@@ -313,14 +318,14 @@ function TeamRow({
     return (
         <TableRow
             className="bg-[var(--bg-secondary)]/20 last:border-b-0 hover:brightness-[0.94]"
-            onClick={onEdit}
+            onClick={canManage ? onEdit : undefined}
             onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (canManage && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
                     onEdit();
                 }
             }}
-            tabIndex={0}
+            tabIndex={canManage ? 0 : undefined}
             aria-label={`${dict.organization.actions.edit} ${team.name}`}
         >
             <TableCell>
@@ -336,7 +341,7 @@ function TeamRow({
                 </Badge>
             </TableCell>
             <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-                <ActionPopover align="end" triggerLabel={`${copy.actions}: ${team.name}`} options={actionOptions} />
+                {canManage && <ActionPopover align="end" triggerLabel={`${copy.actions}: ${team.name}`} options={actionOptions} />}
             </TableCell>
         </TableRow>
     );
@@ -358,6 +363,7 @@ function TeamEditDialog({
     onRequestDelete: () => void;
 }) {
     const { dict } = useDictionary();
+    const canReadMembers = useOrganizationPermission("access.members.read");
     const copy = dict.organization.teams;
     const [name, setName] = useState(team.name);
     const [code, setCode] = useState(team.code ?? "");
@@ -444,7 +450,7 @@ function TeamEditDialog({
                         </div>
                     )}
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onManageMembers} disabled={!team.is_active}>{copy.manage_members}</Button>
+                        <Button type="button" variant="outline" onClick={onManageMembers} disabled={!team.is_active || !canReadMembers}>{copy.manage_members}</Button>
                         {usage.can_delete && <Button type="button" variant="dangerSoft" onClick={onRequestDelete}>{dict.organization.actions.delete}</Button>}
                         <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving || !name.trim() || (isActive === "inactive" && !usage.can_deactivate)}>

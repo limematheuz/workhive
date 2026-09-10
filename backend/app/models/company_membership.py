@@ -8,6 +8,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    false,
     func,
 )
 from sqlalchemy.orm import relationship
@@ -58,6 +59,8 @@ class CompanyMembership(Base):
     )
     access_class = Column(String(20), nullable=False, index=True)
     status = Column(String(20), nullable=False, default="active", index=True)
+    # An explicit empty permission selection must not restore a legacy role.
+    permissions_configured = Column(Boolean, nullable=False, default=False, server_default=false())
     started_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

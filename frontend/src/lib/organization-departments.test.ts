@@ -32,7 +32,8 @@ test("organization departments use the shared shadcn table and safe management s
 test("department rows open their editor and keep actions inside the shadcn menu", () => {
     const panel = source("../components/organization/OrganizationDepartmentsPanel.tsx");
 
-    assert.match(panel, /onClick=\{onEdit\}/);
+    assert.match(panel, /onClick=\{canManage \? onEdit : undefined\}/);
+    assert.match(panel, /useOrganizationPermission\("organization\.departments\.manage"\)/);
     assert.match(panel, /triggerLabel=\{`\$\{copy\.actions\}: \$\{department\.name\}`\}/);
     assert.match(panel, /variant: "delete"/);
 });

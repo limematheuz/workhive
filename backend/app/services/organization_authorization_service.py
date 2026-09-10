@@ -53,12 +53,8 @@ def _has_explicit_profile_assignments(
     company_id: int,
     membership_id: int,
 ) -> bool:
-    return bool(
-        organization_repo.list_profile_assignments(
-            db,
-            company_id=company_id,
-            membership_id=membership_id,
-        )
+    return organization_repo.has_profile_assignment_history(
+        db, company_id=company_id, membership_id=membership_id
     )
 
 def _legacy_role_allows(
@@ -72,16 +68,18 @@ def _legacy_role_allows(
     """Preserve legacy operational roles until they receive an explicit profile.
 
     This applies only to the newly protected operational domains. Existing
-    client and commercial authorization remains strict-profile-only. Any active
-    profile assignment disables this bridge, so an explicit narrow scope can
-    never be widened by a legacy role.
+    client and commercial authorization remains strict-profile-only. Any past
+    or current profile assignment disables this bridge, including after a
+    revocation. Removing permission must never restore a broader legacy role.
     """
 
-    if _has_explicit_profile_assignments(
+    if capability not in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ()):
+        return False
+    if membership.permissions_configured or _has_explicit_profile_assignments(
         db, company_id=company_id, membership_id=membership.id
     ):
         return False
-    return capability in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ())
+    return True
 
 
 def _require_active_company_principal(

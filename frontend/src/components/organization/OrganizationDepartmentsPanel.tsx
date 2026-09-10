@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useOrganizationPermission } from "@/components/organization/organization-access-context";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { ActionPopover } from "@/components/ui/action-popover";
@@ -204,11 +205,12 @@ export function OrganizationDepartmentsPanel({ departments, onChanged }: Organiz
 
 function DepartmentCard({ department, departments, onEdit, onDelete }: { department: OrganizationDepartment; departments: OrganizationDepartment[]; onEdit: () => void; onDelete: () => void; }) {
     const { dict } = useDictionary();
+    const canManage = useOrganizationPermission("organization.departments.manage");
     const copy = dict.organization.departments;
     const usage = departmentUsage(department);
     const parentName = departments.find((item) => item.id === department.parent_department_id)?.name ?? copy.no_parent;
     const actionOptions = [{ label: dict.organization.actions.edit, icon: Pencil, variant: "edit" as const, onClick: onEdit }, ...(usage.can_delete ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onDelete }] : [])];
-    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{department.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{department.code || copy.no_code}</p></div><ActionPopover align="end" triggerLabel={`${copy.actions}: ${department.name}`} options={actionOptions} /></div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={department.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{department.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{parentName}</span></div></CardContent></Card>;
+    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{department.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{department.code || copy.no_code}</p></div>{canManage && <ActionPopover align="end" triggerLabel={`${copy.actions}: ${department.name}`} options={actionOptions} />}</div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={department.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{department.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{parentName}</span></div></CardContent></Card>;
 }
 
 function DepartmentRow({
@@ -223,6 +225,7 @@ function DepartmentRow({
     onDelete: () => void;
 }) {
     const { dict } = useDictionary();
+    const canManage = useOrganizationPermission("organization.departments.manage");
     const copy = dict.organization.departments;
     const usage = departmentUsage(department);
     const parentName = departments.find((item) => item.id === department.parent_department_id)?.name ?? copy.no_parent;
@@ -230,14 +233,14 @@ function DepartmentRow({
     return (
         <TableRow
             className="bg-[var(--bg-secondary)]/20 last:border-b-0 hover:brightness-[0.94]"
-            onClick={onEdit}
+            onClick={canManage ? onEdit : undefined}
             onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (canManage && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
                     onEdit();
                 }
             }}
-            tabIndex={0}
+            tabIndex={canManage ? 0 : undefined}
             aria-label={`${dict.organization.actions.edit} ${department.name}`}
         >
             <TableCell>
@@ -252,7 +255,7 @@ function DepartmentRow({
                 </Badge>
             </TableCell>
             <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-                <ActionPopover
+                {canManage && <ActionPopover
                     align="end"
                     triggerLabel={`${copy.actions}: ${department.name}`}
                     options={[
@@ -261,7 +264,7 @@ function DepartmentRow({
                             ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onDelete }]
                             : []),
                     ]}
-                />
+                />}
             </TableCell>
         </TableRow>
     );

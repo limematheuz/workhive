@@ -51,7 +51,7 @@ export function DataTablePagination({ page, totalItems, pageSize, onPageChange, 
                     <Label htmlFor={rowsPerPageId} className="text-xs font-medium text-[var(--text-muted)]">{rowsPerPageLabel}</Label>
                     <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value))}>
                         <SelectTrigger id={rowsPerPageId} className="h-8 w-18 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent align="start">{[10, 25, 50, 100].map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}</SelectContent>
+                        <SelectContent align="start">{[...new Set([10, 25, 50, 100, pageSize])].sort((a, b) => a - b).map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}</SelectContent>
                     </Select>
                 </div>
             </div>

@@ -11,6 +11,7 @@ import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { canAdministerCompany, canManageCompanyTasks, canViewFinance, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
+import { OrganizationService } from "@/services/organization.service";
 import { NotificationService } from "@/services/notification.service";
 import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
 import { countOperationalPendingTasks } from "@/lib/operational-task-count";
@@ -38,6 +39,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         values: Set<string> | null;
     } | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+    const [organizationAccess, setOrganizationAccess] = useState<{ context: string; allowed: boolean } | null>(null);
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
@@ -46,6 +48,17 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const featureContext = user && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal
         ? `${user.id}:${user.company_id ?? "none"}`
         : null;
+
+    useEffect(() => {
+        if (!featureContext) return;
+        let cancelled = false;
+        void OrganizationService.getAccess().then(access => {
+            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: Object.entries(access).some(([code, granted]) => code.endsWith(".read") && granted) });
+        }).catch(() => {
+            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: false });
+        });
+        return () => { cancelled = true; };
+    }, [featureContext]);
 
     useEffect(() => {
         if (!featureContext) return;
@@ -88,7 +101,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     useBackgroundPolling(refreshTasks, POLL_INTERVALS.sidebarTaskCount);
     useBackgroundPolling(refreshReports, POLL_INTERVALS.sidebar);
 
-    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canViewFinance: canViewFinance(user), isAccountant, isPartnerPortal, userIsPlatformSuperadmin, enabledFeatures });
+    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), isAccountant, isPartnerPortal, userIsPlatformSuperadmin, enabledFeatures });
     const expanded = state === "expanded";
     return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>

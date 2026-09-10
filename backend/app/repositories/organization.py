@@ -113,6 +113,21 @@ def list_team_member_assignments(
     )
 
 
+def has_profile_assignment_history(
+    db: Session, *, company_id: int, membership_id: int
+) -> bool:
+    """Revocation never opts a member back into legacy role authorization."""
+    history = db.query(MembershipPermissionProfileAssignment.id).filter(
+        MembershipPermissionProfileAssignment.company_id == company_id,
+        MembershipPermissionProfileAssignment.company_membership_id == membership_id,
+    ).exists()
+    return db.query(CompanyMembership.id).filter(
+        CompanyMembership.company_id == company_id,
+        CompanyMembership.id == membership_id,
+        or_(CompanyMembership.permissions_configured.is_(True), history),
+    ).first() is not None
+
+
 def list_profile_assignments(
     db: Session,
     *,
@@ -412,7 +427,16 @@ def has_permission_in_scope(
         )
     )
     if require_system_profile:
-        query = query.filter(PermissionProfile.is_system.is_(True))
+        query = query.filter(
+            PermissionProfile.is_system.is_(True),
+            PermissionProfile.name == "Administrador de empresa",
+            db.query(CompanyMembership.id).filter(
+                CompanyMembership.id == membership_id,
+                CompanyMembership.company_id == company_id,
+                CompanyMembership.access_class == "admin",
+                CompanyMembership.status == "active",
+            ).exists(),
+        )
     return query.first() is not None
 
 
@@ -466,7 +490,16 @@ def list_permission_scope_ids(
         )
     )
     if require_system_profile:
-        query = query.filter(PermissionProfile.is_system.is_(True))
+        query = query.filter(
+            PermissionProfile.is_system.is_(True),
+            PermissionProfile.name == "Administrador de empresa",
+            db.query(CompanyMembership.id).filter(
+                CompanyMembership.id == membership_id,
+                CompanyMembership.company_id == company_id,
+                CompanyMembership.access_class == "admin",
+                CompanyMembership.status == "active",
+            ).exists(),
+        )
     return sorted({scope_id for (scope_id,) in query.all()})
 
 

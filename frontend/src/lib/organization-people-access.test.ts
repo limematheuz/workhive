@@ -97,7 +97,8 @@ test("organization teams use the shared table while permission profiles expose r
     assert.match(controlCenter, /ActionPopover/);
     assert.match(controlCenter, /OrganizationService\.updatePermissionProfile/);
     assert.match(controlCenter, /OrganizationService\.deletePermissionProfile/);
-    assert.match(controlCenter, /const canManage = profile\.is_editable/);
+    assert.match(controlCenter, /const canManage = canManageProfiles && profile\.is_editable/);
+    assert.match(controlCenter, /useOrganizationPermission\("access\.profiles\.manage"\)/);
     assert.match(controlCenter, /profileCopy\.default_edit_description/);
     assert.match(controlCenter, /profileCopy\.default_name_locked/);
     assert.match(controlCenter, /disabled=\{Boolean\(profile\?\.is_system\)\}/);
@@ -105,7 +106,9 @@ test("organization teams use the shared table while permission profiles expose r
         new URL("../components/organization/MemberAccessDialog.tsx", import.meta.url),
         "utf8",
     );
-    assert.match(memberAccessDialog, /profile\.is_editable && profile\.is_active/);
+    assert.match(memberAccessDialog, /profile\.is_editable && \(profile\.is_active \|\| assignments\.some/);
+    assert.match(memberAccessDialog, /profile_assignments: \{ assignments: assignmentPayload\(assignments\) \}/);
+    assert.doesNotMatch(memberAccessDialog, /await OrganizationService\.replaceMemberProfileAssignments/);
 });
 
 test("organization tables keep the mobile layout to the essential columns", () => {
@@ -130,7 +133,7 @@ test("organization tables paginate with the shared shadcn controls and keep perm
     assert.match(controlCenter, /selectedPermissionCodeSet.has\(definition\.code\)/);
     assert.match(pagination, /@\/components\/ui\/pagination/);
     assert.match(pagination, /@\/components\/ui\/select/);
-    assert.match(pagination, /\[10, 25, 50, 100\]/);
+    assert.match(pagination, /new Set\(\[10, 25, 50, 100, pageSize\]\)/);
     assert.match(pagination, /useId/);
     assert.doesNotMatch(pagination, /if \(totalItems <= 20\) return null/);
 });
