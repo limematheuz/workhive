@@ -31,6 +31,8 @@ test("sidebar groups navigation by domain while preserving role and feature filt
     assert.match(navigation, /state === "collapsed"/);
     assert.match(navigation, /!overflow-y-auto/);
     assert.match(navigation, /scrollbar-width:none/);
+    assert.match(navigation, /sidebar-group-content/);
+    assert.match(navigation, /sidebar-group-close_130ms/);
     assert.match(navigation, /tooltip=\{item\.label\}/);
     assert.match(navigation, /const open = props\.openGroups\[group\.id\] \?\? active/);
     assert.match(sidebar, /Object\.fromEntries\(navigation\.navGroups\.map/);

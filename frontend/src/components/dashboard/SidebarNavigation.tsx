@@ -44,7 +44,7 @@ export function SidebarNavigation(props: SidebarNavigationProps) {
                     <CollapsibleTrigger className={`flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-[var(--bg-tertiary)] ${active ? "text-[var(--text-main)]" : "text-[var(--text-muted)]"}`}>
                         <span className="[&>svg]:size-4">{group.icon}</span><span className="flex-1">{group.label}</span><ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
                     </CollapsibleTrigger>
-                    <CollapsibleContent><SidebarGroupContent><SidebarMenuSub className="border-[var(--text-muted)]/70">{group.children.map(item => <li key={item.href}>{link(item, true)}</li>)}</SidebarMenuSub></SidebarGroupContent></CollapsibleContent>
+                    <CollapsibleContent className="sidebar-group-content overflow-hidden data-[state=closed]:animate-[sidebar-group-close_130ms_ease-in] data-[state=open]:animate-[sidebar-group-open_160ms_ease-out]"><SidebarGroupContent><SidebarMenuSub className="border-[var(--text-muted)]/70">{group.children.map(item => <li key={item.href}>{link(item, true)}</li>)}</SidebarMenuSub></SidebarGroupContent></CollapsibleContent>
                 </Collapsible>
             </SidebarGroup>;
         })}

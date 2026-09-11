@@ -1367,9 +1367,32 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
+@keyframes sidebar-group-open {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes sidebar-group-close {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .invoice-detail-backlight,
   .dashboard-shell-backlight,
+  .sidebar-group-content,
   .ui-motion,
   body {
     animation: none;
