@@ -51,6 +51,8 @@ DEFAULT_PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("quality.templates.manage", "quality", "Create and update inspection templates"),
     ("quality.inspections.read", "quality", "View quality inspections"),
     ("quality.inspections.manage", "quality", "Perform and close quality inspections"),
+    ("quality.incidents.read", "quality", "View quality incidents and corrective actions"),
+    ("quality.incidents.manage", "quality", "Manage quality incidents and corrective actions"),
     (
         "commercial.follow_ups.read",
         "commercial",
@@ -91,6 +93,8 @@ OPERATIONS_PERMISSION_CODES = frozenset(
         "quality.templates.manage",
         "quality.inspections.read",
         "quality.inspections.manage",
+        "quality.incidents.read",
+        "quality.incidents.manage",
     }
 )
 
