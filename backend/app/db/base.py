@@ -26,6 +26,7 @@ from app.models.work_session_pause import WorkSessionPause
 from app.models.work_session_correction import WorkSessionCorrection
 from app.models.labor_cost_rate import LaborCostRate
 from app.models.quality_template import QualityInspectionTemplate, QualityInspectionTemplateItem
+from app.models.quality_inspection import QualityInspection, QualityInspectionItem
 from app.models.task_item import TaskItem
 from app.models.work_order import WorkOrder
 from app.models.task_structure import (

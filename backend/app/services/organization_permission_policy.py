@@ -46,6 +46,8 @@ PERMISSION_RECOMMENDED_AUDIENCES: dict[str, tuple[str, ...]] = {
     "labor_costs.manage": ("company_administrators",),
     "quality.templates.read": ("operations", "responsibles"),
     "quality.templates.manage": ("operations", "responsibles"),
+    "quality.inspections.read": ("operations", "responsibles"),
+    "quality.inspections.manage": ("operations", "responsibles"),
 }
 
 
