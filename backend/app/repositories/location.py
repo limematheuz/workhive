@@ -78,6 +78,29 @@ def get_locations_by_client(
     return query.offset(skip).limit(limit).all()
 
 
+def list_accessible_location_ids(db: Session, *, company_id: int) -> list[int]:
+    """Return location identifiers without loading the location workspace."""
+    return [
+        location_id
+        for (location_id,) in (
+            db.query(Location.id)
+            .outerjoin(Client)
+            .filter(
+                Location.is_active.is_(True),
+                or_(
+                    Client.company_id == company_id,
+                    Location.owner_company_id == company_id,
+                    Location.managing_company_id == company_id,
+                    Location.company_access.any(
+                        LocationCompanyAccess.company_id == company_id
+                    ),
+                ),
+            )
+            .all()
+        )
+    ]
+
+
 def create_location(db: Session, location_data: LocationCreate) -> Location:
     dump = location_data.model_dump(exclude={"profile", "access", "spaces", "contacts", "risks", "service_windows"})
     db_location = Location(**dump)

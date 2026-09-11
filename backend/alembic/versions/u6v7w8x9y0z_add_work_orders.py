@@ -50,10 +50,23 @@ def upgrade() -> None:
         "service_contract_id",
     ):
         op.create_index(f"ix_work_orders_{column}", "work_orders", [column])
-    op.add_column(
-        "task_items",
-        sa.Column("work_order_id", sa.Integer(), nullable=True),
-    )
+    if op.get_bind().dialect.name == "sqlite":
+        # SQLite cannot add a foreign-key constraint with ALTER TABLE. Batch
+        # mode recreates only this existing table while preserving the same
+        # schema change used by PostgreSQL in production.
+        with op.batch_alter_table("task_items") as batch:
+            batch.add_column(sa.Column("work_order_id", sa.Integer(), nullable=True))
+            batch.create_foreign_key(
+                "fk_task_items_work_order_id",
+                "work_orders",
+                ["work_order_id"],
+                ["id"],
+                ondelete="SET NULL",
+            )
+            batch.create_index("ix_task_items_work_order_id", ["work_order_id"])
+        return
+
+    op.add_column("task_items", sa.Column("work_order_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_task_items_work_order_id",
         "task_items",
@@ -66,6 +79,14 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    if op.get_bind().dialect.name == "sqlite":
+        with op.batch_alter_table("task_items") as batch:
+            batch.drop_index("ix_task_items_work_order_id")
+            batch.drop_constraint("fk_task_items_work_order_id", type_="foreignkey")
+            batch.drop_column("work_order_id")
+        op.drop_table("work_orders")
+        return
+
     op.drop_index("ix_task_items_work_order_id", table_name="task_items")
     op.drop_constraint("fk_task_items_work_order_id", "task_items", type_="foreignkey")
     op.drop_column("task_items", "work_order_id")

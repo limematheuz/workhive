@@ -46,6 +46,7 @@ def legacy_role_allows(
     *,
     company_id: int,
     membership: CompanyMembership,
+    has_explicit_assignments: bool | None = None,
 ) -> bool:
     """Preserve legacy operational roles until they receive an explicit profile.
 
@@ -57,6 +58,10 @@ def legacy_role_allows(
 
     if capability not in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ()):
         return False
-    return not membership.permissions_configured and not has_explicit_profile_assignments(
-        db, company_id=company_id, membership_id=membership.id
-    )
+    if membership.permissions_configured:
+        return False
+    if has_explicit_assignments is None:
+        has_explicit_assignments = has_explicit_profile_assignments(
+            db, company_id=company_id, membership_id=membership.id
+        )
+    return not has_explicit_assignments

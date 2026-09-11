@@ -60,40 +60,61 @@ def upgrade() -> None:
         "ix_labor_cost_rates_effective_on", "labor_cost_rates", ["effective_on"]
     )
 
-    op.add_column(
-        "work_sessions",
+    session_columns = (
         sa.Column("labor_cost_company_id", sa.Integer(), nullable=True),
-    )
-    op.add_column(
-        "work_sessions",
         sa.Column("labor_cost_membership_id", sa.Integer(), nullable=True),
+        sa.Column(
+            "labor_cost_rate_snapshot",
+            sa.Numeric(precision=10, scale=2),
+            nullable=True,
+        ),
+        sa.Column(
+            "labor_cost_amount_snapshot",
+            sa.Numeric(precision=12, scale=2),
+            nullable=True,
+        ),
     )
-    op.add_column(
-        "work_sessions",
-        sa.Column("labor_cost_rate_snapshot", sa.Numeric(precision=10, scale=2), nullable=True),
-    )
-    op.add_column(
-        "work_sessions",
-        sa.Column("labor_cost_amount_snapshot", sa.Numeric(precision=12, scale=2), nullable=True),
-    )
-    op.create_foreign_key(
-        "fk_work_sessions_labor_cost_company",
-        "work_sessions",
-        "companies",
-        ["labor_cost_company_id"],
-        ["id"],
-        ondelete="SET NULL",
-    )
-    op.create_index(
-        "ix_work_sessions_labor_cost_company_id",
-        "work_sessions",
-        ["labor_cost_company_id"],
-    )
-    op.create_index(
-        "ix_work_sessions_labor_cost_membership_id",
-        "work_sessions",
-        ["labor_cost_membership_id"],
-    )
+    if op.get_bind().dialect.name == "sqlite":
+        # SQLite needs table recreation for a post-create foreign key.
+        with op.batch_alter_table("work_sessions") as batch:
+            for column in session_columns:
+                batch.add_column(column)
+            batch.create_foreign_key(
+                "fk_work_sessions_labor_cost_company",
+                "companies",
+                ["labor_cost_company_id"],
+                ["id"],
+                ondelete="SET NULL",
+            )
+            batch.create_index(
+                "ix_work_sessions_labor_cost_company_id",
+                ["labor_cost_company_id"],
+            )
+            batch.create_index(
+                "ix_work_sessions_labor_cost_membership_id",
+                ["labor_cost_membership_id"],
+            )
+    else:
+        for column in session_columns:
+            op.add_column("work_sessions", column)
+        op.create_foreign_key(
+            "fk_work_sessions_labor_cost_company",
+            "work_sessions",
+            "companies",
+            ["labor_cost_company_id"],
+            ["id"],
+            ondelete="SET NULL",
+        )
+        op.create_index(
+            "ix_work_sessions_labor_cost_company_id",
+            "work_sessions",
+            ["labor_cost_company_id"],
+        )
+        op.create_index(
+            "ix_work_sessions_labor_cost_membership_id",
+            "work_sessions",
+            ["labor_cost_membership_id"],
+        )
 
     permission_definitions = sa.table(
         "permission_definitions",
@@ -152,19 +173,31 @@ def downgrade() -> None:
         "DELETE FROM permission_definitions "
         "WHERE code IN ('labor_costs.read', 'labor_costs.manage')"
     )
-    op.drop_index(
-        "ix_work_sessions_labor_cost_membership_id", table_name="work_sessions"
-    )
-    op.drop_index(
-        "ix_work_sessions_labor_cost_company_id", table_name="work_sessions"
-    )
-    op.drop_constraint(
-        "fk_work_sessions_labor_cost_company", "work_sessions", type_="foreignkey"
-    )
-    op.drop_column("work_sessions", "labor_cost_amount_snapshot")
-    op.drop_column("work_sessions", "labor_cost_rate_snapshot")
-    op.drop_column("work_sessions", "labor_cost_membership_id")
-    op.drop_column("work_sessions", "labor_cost_company_id")
+    if op.get_bind().dialect.name == "sqlite":
+        with op.batch_alter_table("work_sessions") as batch:
+            batch.drop_index("ix_work_sessions_labor_cost_membership_id")
+            batch.drop_index("ix_work_sessions_labor_cost_company_id")
+            batch.drop_constraint(
+                "fk_work_sessions_labor_cost_company", type_="foreignkey"
+            )
+            batch.drop_column("labor_cost_amount_snapshot")
+            batch.drop_column("labor_cost_rate_snapshot")
+            batch.drop_column("labor_cost_membership_id")
+            batch.drop_column("labor_cost_company_id")
+    else:
+        op.drop_index(
+            "ix_work_sessions_labor_cost_membership_id", table_name="work_sessions"
+        )
+        op.drop_index(
+            "ix_work_sessions_labor_cost_company_id", table_name="work_sessions"
+        )
+        op.drop_constraint(
+            "fk_work_sessions_labor_cost_company", "work_sessions", type_="foreignkey"
+        )
+        op.drop_column("work_sessions", "labor_cost_amount_snapshot")
+        op.drop_column("work_sessions", "labor_cost_rate_snapshot")
+        op.drop_column("work_sessions", "labor_cost_membership_id")
+        op.drop_column("work_sessions", "labor_cost_company_id")
     op.drop_index("ix_labor_cost_rates_effective_on", table_name="labor_cost_rates")
     op.drop_index(
         "ix_labor_cost_rates_company_membership_id", table_name="labor_cost_rates"

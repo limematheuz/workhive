@@ -263,12 +263,18 @@ def resolve_location_capabilities(
             detail="Not enough permissions",
         )
     membership = principal
+    has_explicit_assignments = has_explicit_profile_assignments(
+        db,
+        company_id=company_id,
+        membership_id=membership.id,
+    )
     if legacy_role_allows(
         db,
         current_user,
         read_capability,
         company_id=company_id,
         membership=membership,
+        has_explicit_assignments=has_explicit_assignments,
     ):
         legacy_manage_locations = (
             None
@@ -278,6 +284,7 @@ def resolve_location_capabilities(
                 manage_capability,
                 company_id=company_id,
                 membership=membership,
+                has_explicit_assignments=has_explicit_assignments,
             )
             else set()
         )

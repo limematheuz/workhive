@@ -99,12 +99,9 @@ def _accessible_location_ids(
     include_task_links: bool = False,
 ) -> list[int]:
     company_id = scoped_company_id(current_user)
-    company_location_ids = {
-        location.id
-        for location in location_repo.get_locations_by_client(
-            db, company_id, client_id=None, skip=0, limit=10000
-        )
-    }
+    company_location_ids = set(
+        location_repo.list_accessible_location_ids(db, company_id=company_id)
+    )
     if include_task_links:
         linked_location_ids = (
             db.query(TaskItem.location_id)

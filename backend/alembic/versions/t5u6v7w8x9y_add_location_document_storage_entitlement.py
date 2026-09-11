@@ -24,6 +24,9 @@ LOCATION_DOCUMENT_STORAGE_BYTES = {
 
 
 def upgrade() -> None:
+    inspector = sa.inspect(op.get_bind())
+    if not {"subscription_plans", "plan_entitlements"} <= set(inspector.get_table_names()):
+        return
     for plan_code, limit in LOCATION_DOCUMENT_STORAGE_BYTES.items():
         op.execute(
             sa.text(
@@ -47,6 +50,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    if "plan_entitlements" not in sa.inspect(op.get_bind()).get_table_names():
+        return
     op.execute(
         "DELETE FROM plan_entitlements "
         "WHERE code = 'limits.location_document_storage_bytes'"
