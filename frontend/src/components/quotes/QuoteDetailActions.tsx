@@ -137,7 +137,7 @@ export function QuoteDetailActions({
                 </Button>
                 {quote.status === "accepted" && (
                     <Button asChild type="button" variant="secondary">
-                        <Link href="/dashboard/contracts">Ver contrato</Link>
+                        <Link href={`/dashboard/contracts?quote=${quote.id}`}>Ver contrato</Link>
                     </Button>
                 )}
                 {canManage && (showEmail || showDraftActions || showSentActions || canCreateRevision) && (

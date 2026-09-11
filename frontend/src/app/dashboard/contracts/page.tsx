@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { FileSignature, Loader2, MapPin } from "lucide-react"
-import { redirect } from "next/navigation"
+import { redirect, useRouter, useSearchParams } from "next/navigation"
 
 import { ServiceContractDetailDialog } from "@/components/contracts/ServiceContractDetailDialog"
 import { Badge } from "@/components/ui/badge"
@@ -30,6 +30,8 @@ function contractClientName(contract: ServiceContract, clients: Client[]) {
 
 export default function ContractsPage() {
     const { user, loading: userLoading } = useUser()
+    const router = useRouter()
+    const searchParams = useSearchParams()
     const [contracts, setContracts] = React.useState<ServiceContract[]>([])
     const [clients, setClients] = React.useState<Client[]>([])
     const [loading, setLoading] = React.useState(true)
@@ -59,19 +61,28 @@ export default function ContractsPage() {
         }
     }, [canViewContracts])
 
-    React.useEffect(() => {
-        const timer = window.setTimeout(() => void loadContracts(), 0)
-        return () => window.clearTimeout(timer)
-    }, [loadContracts])
-
-    const openContract = async (contract: ServiceContract) => {
+    const openContract = React.useCallback(async (contract: ServiceContract) => {
         try {
             setSelectedContract(await ServiceContractService.getContract(contract.id))
         } catch {
             setSelectedContract(contract)
         }
         setDetailOpen(true)
-    }
+    }, [])
+
+    React.useEffect(() => {
+        const timer = window.setTimeout(() => void loadContracts(), 0)
+        return () => window.clearTimeout(timer)
+    }, [loadContracts])
+
+    const sourceQuoteId = Number(searchParams.get("quote"))
+    React.useEffect(() => {
+        if (loading || !Number.isSafeInteger(sourceQuoteId) || sourceQuoteId < 1) return
+
+        const contract = contracts.find((item) => item.source_quote_id === sourceQuoteId)
+        if (contract) void openContract(contract)
+        router.replace("/dashboard/contracts", { scroll: false })
+    }, [contracts, loading, openContract, router, sourceQuoteId])
 
     const receiveContractUpdate = (updated: ServiceContract) => {
         setContracts((current) => current.map((contract) => contract.id === updated.id ? updated : contract))
