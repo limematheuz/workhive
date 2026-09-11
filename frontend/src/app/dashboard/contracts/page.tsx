@@ -28,7 +28,7 @@ function contractClientName(contract: ServiceContract, clients: Client[]) {
     return clients.find((client) => client.id === contract.client_id)?.name ?? `Cliente #${contract.client_id}`
 }
 
-export default function ContractsPage() {
+function ContractsPageContent() {
     const { user, loading: userLoading } = useUser()
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -171,5 +171,22 @@ export default function ContractsPage() {
                 onContractUpdated={receiveContractUpdate}
             />
         </div>
+    )
+}
+
+function ContractsPageLoading() {
+    return (
+        <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
+            <Loader2 className="size-8 animate-spin text-accent" aria-hidden="true" />
+            <span className="text-xs text-[var(--text-muted)]">Cargando contratos…</span>
+        </div>
+    )
+}
+
+export default function ContractsPage() {
+    return (
+        <React.Suspense fallback={<ContractsPageLoading />}>
+            <ContractsPageContent />
+        </React.Suspense>
     )
 }
