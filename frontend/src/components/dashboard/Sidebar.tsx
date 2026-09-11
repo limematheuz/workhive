@@ -106,7 +106,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const expanded = state === "expanded";
     return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>
-        <SidebarNavigation pathname={pathname} {...navigation} pendingRequestsCount={pendingRequestsCount} taskPendingCount={taskPendingCount} reportAlertsCount={reportAlertsCount} openGroups={openGroups} onOpenGroupChange={(id, open) => setOpenGroups(current => ({ ...current, [id]: open }))} />
+        <SidebarNavigation pathname={pathname} {...navigation} pendingRequestsCount={pendingRequestsCount} taskPendingCount={taskPendingCount} reportAlertsCount={reportAlertsCount} openGroups={openGroups} onOpenGroupChange={(id, open) => setOpenGroups(current => open ? Object.fromEntries(navigation.navGroups.map(group => [group.id, group.id === id])) : { ...current, [id]: false })} />
         <SidebarFooter>
             <SidebarFooterControls isOpen={expanded} theme={theme} locale={locale} onThemeChange={onThemeChange} onLocaleChange={setLocale} />
             {user && <SidebarMenu>

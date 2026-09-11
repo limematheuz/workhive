@@ -20,6 +20,7 @@ test("sidebar uses the shared shadcn sidebar, Sheet, and tooltips instead of a b
 test("sidebar groups navigation by domain while preserving role and feature filtering", () => {
     const config = read("../components/dashboard/sidebar-nav-config.tsx");
     const navigation = read("../components/dashboard/SidebarNavigation.tsx");
+    const sidebar = read("../components/dashboard/Sidebar.tsx");
 
     for (const group of ["operations", "clients", "billing", "organization", "platform"]) {
         assert.match(config, new RegExp(`group\\(\\"${group}\\"`));
@@ -28,9 +29,11 @@ test("sidebar groups navigation by domain while preserving role and feature filt
     assert.match(config, /PLATFORM_SUPERADMIN_HREFS/);
     assert.match(config, /ACCOUNTANT_HREFS/);
     assert.match(navigation, /state === "collapsed"/);
-    assert.match(navigation, /md:overflow-y-auto/);
+    assert.match(navigation, /!overflow-y-auto/);
+    assert.match(navigation, /scrollbar-width:none/);
     assert.match(navigation, /tooltip=\{item\.label\}/);
     assert.match(navigation, /const open = props\.openGroups\[group\.id\] \?\? active/);
+    assert.match(sidebar, /Object\.fromEntries\(navigation\.navGroups\.map/);
 });
 
 test("profile actions have one home in the sidebar footer, not a duplicate header menu", () => {
