@@ -117,6 +117,12 @@ def _require_active_company_principal(
         "time.read": "features.time_tracking",
         "time.manage": "features.time_tracking",
         "time.approve": "features.time_tracking",
+        "quality.templates.read": "features.quality",
+        "quality.templates.manage": "features.quality",
+        "quality.inspections.read": "features.quality",
+        "quality.inspections.manage": "features.quality",
+        "quality.incidents.read": "features.quality",
+        "quality.incidents.manage": "features.quality",
     }.get(capability)
     if feature_code:
         require_feature(db, company, feature_code)

@@ -78,6 +78,8 @@ class UserResponse(UserBase):
     can_manage_finance: bool = False
     can_view_labor_costs: bool = False
     can_manage_labor_costs: bool = False
+    can_view_quality: bool = False
+    can_manage_quality: bool = False
     can_manage_time: bool = False
     can_approve_time: bool = False
     can_view_work_reports: bool = False

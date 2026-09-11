@@ -88,6 +88,16 @@ export function canManageLaborCosts(user?: User | null): boolean {
     return isCompanyAdminRole(getRoleName(user));
 }
 
+export function canViewQuality(user?: User | null): boolean {
+    if (typeof user?.can_view_quality === "boolean") return user.can_view_quality;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
+export function canManageQuality(user?: User | null): boolean {
+    if (typeof user?.can_manage_quality === "boolean") return user.can_manage_quality;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
 export function canManageTime(user?: User | null): boolean {
     if (typeof user?.can_manage_time === "boolean") return user.can_manage_time;
     return isCalendarViewerRole(getRoleName(user));

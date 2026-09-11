@@ -8,6 +8,8 @@ import {
     canViewFinance,
     canViewLaborCosts,
     canViewFinanceRole,
+    canManageQuality,
+    canViewQuality,
     canViewWorkReports,
     isCompanyAdminRole,
     isExternalPortalRole,
@@ -84,4 +86,20 @@ test("labour-cost workspace requires the explicit reserved capability", () => {
     assert.equal(canManageLaborCosts(viewer), false);
     assert.equal(canViewLaborCosts(administrator), true);
     assert.equal(canManageLaborCosts(administrator), true);
+});
+
+test("quality workspace follows explicit quality capabilities", () => {
+    const reader = {
+        ...commercialWithoutFinance,
+        can_view_quality: true,
+        can_manage_quality: false,
+    } satisfies User;
+    const manager = {
+        ...reader,
+        can_manage_quality: true,
+    } satisfies User;
+
+    assert.equal(canViewQuality(reader), true);
+    assert.equal(canManageQuality(reader), false);
+    assert.equal(canManageQuality(manager), true);
 });
