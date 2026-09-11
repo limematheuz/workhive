@@ -76,6 +76,8 @@ class UserResponse(UserBase):
     # enforce capabilities independently for every request.
     can_view_finance: bool = False
     can_manage_finance: bool = False
+    can_view_labor_costs: bool = False
+    can_manage_labor_costs: bool = False
     can_manage_time: bool = False
     can_approve_time: bool = False
     can_view_work_reports: bool = False

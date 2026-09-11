@@ -77,6 +77,17 @@ export function canManageFinance(user?: User | null): boolean {
     return isCompanyAdminRole(getRoleName(user));
 }
 
+/** Internal labour costs are deliberately reserved to company administrators. */
+export function canViewLaborCosts(user?: User | null): boolean {
+    if (typeof user?.can_view_labor_costs === "boolean") return user.can_view_labor_costs;
+    return isCompanyAdminRole(getRoleName(user));
+}
+
+export function canManageLaborCosts(user?: User | null): boolean {
+    if (typeof user?.can_manage_labor_costs === "boolean") return user.can_manage_labor_costs;
+    return isCompanyAdminRole(getRoleName(user));
+}
+
 export function canManageTime(user?: User | null): boolean {
     if (typeof user?.can_manage_time === "boolean") return user.can_manage_time;
     return isCalendarViewerRole(getRoleName(user));

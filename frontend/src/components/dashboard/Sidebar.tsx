@@ -9,7 +9,7 @@ import { useUser } from "@/lib/user-context";
 import { TaskService } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFinance, canViewWorkReports, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFinance, canViewLaborCosts, canViewWorkReports, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { OrganizationService } from "@/services/organization.service";
 import { NotificationService } from "@/services/notification.service";
@@ -102,7 +102,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     useBackgroundPolling(refreshTasks, POLL_INTERVALS.sidebarTaskCount);
     useBackgroundPolling(refreshReports, POLL_INTERVALS.sidebar);
 
-    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), isAccountant, isPartnerPortal, userIsPlatformSuperadmin, enabledFeatures });
+    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, userIsPlatformSuperadmin, enabledFeatures });
     const expanded = state === "expanded";
     return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>

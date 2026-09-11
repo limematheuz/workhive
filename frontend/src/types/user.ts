@@ -15,6 +15,8 @@ export interface User {
     active_location_name?: string | null;
     can_view_finance?: boolean;
     can_manage_finance?: boolean;
+    can_view_labor_costs?: boolean;
+    can_manage_labor_costs?: boolean;
     can_manage_time?: boolean;
     can_approve_time?: boolean;
     can_view_work_reports?: boolean;

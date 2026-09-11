@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { BarChart3, Building2, CalendarDays, ClipboardCheck, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, UserRound, WalletCards, Workflow } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, CircleDollarSign, ClipboardCheck, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, UserRound, WalletCards, Workflow } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = { href: string; label: string; exact: boolean; icon: ReactNode };
@@ -13,6 +13,7 @@ export type SidebarNavUserFlags = {
     canViewWorkReports: boolean;
     canViewOrganization?: boolean;
     canViewFinance: boolean;
+    canViewLaborCosts: boolean;
     isAccountant: boolean;
     isPartnerPortal: boolean;
     userIsPlatformSuperadmin: boolean;
@@ -57,6 +58,9 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
             { href: "/dashboard/fiscal-summary", label: dict.fiscal_summary.nav_label, exact: false, icon: <Landmark /> },
             { href: "/dashboard/fiscal-calendar", label: dict.fiscal_calendar.title, exact: false, icon: <CalendarDays /> },
         ] : []),
+        ...(flags.canViewLaborCosts ? [
+            { href: "/dashboard/labor-costs", label: "Costes laborales", exact: false, icon: <CircleDollarSign /> },
+        ] : []),
         ...(flags.userIsPlatformSuperadmin ? [
             { href: "/dashboard/companies", label: dict.dashboard.companies, exact: false, icon: <Building2 /> },
             { href: "/dashboard/integrations", label: dict.dashboard.integrations, exact: false, icon: <CloudCog /> },
@@ -92,7 +96,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
     const navGroups = [
         group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/work-orders", "/dashboard/locations", "/dashboard/documents", "/dashboard/assets", "/dashboard/time-corrections", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/external-network"]),
         group("clients", "Clientes", <Building2 />, ["/dashboard/clients", "/dashboard/quotes"]),
-        group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar"]),
+        group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar", "/dashboard/labor-costs"]),
         group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization"]),
         group("platform", "Plataforma WorkHive", <CloudCog />, ["/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"]),
     ].filter(Boolean) as NavGroup[];

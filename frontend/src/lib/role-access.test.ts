@@ -3,8 +3,10 @@ import test from "node:test";
 
 import {
     canManageFinance,
+    canManageLaborCosts,
     canManageWorkReports,
     canViewFinance,
+    canViewLaborCosts,
     canViewFinanceRole,
     canViewWorkReports,
     isCompanyAdminRole,
@@ -64,4 +66,22 @@ test("explicit work-report capabilities control report visibility and mutations"
     assert.equal(canViewWorkReports(reader), true);
     assert.equal(canManageWorkReports(reader), false);
     assert.equal(canManageWorkReports(manager), true);
+});
+
+test("labour-cost workspace requires the explicit reserved capability", () => {
+    const viewer = {
+        ...commercialWithoutFinance,
+        can_view_labor_costs: false,
+        can_manage_labor_costs: false,
+    } satisfies User;
+    const administrator = {
+        ...viewer,
+        can_view_labor_costs: true,
+        can_manage_labor_costs: true,
+    } satisfies User;
+
+    assert.equal(canViewLaborCosts(viewer), false);
+    assert.equal(canManageLaborCosts(viewer), false);
+    assert.equal(canViewLaborCosts(administrator), true);
+    assert.equal(canManageLaborCosts(administrator), true);
 });

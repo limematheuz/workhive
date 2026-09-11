@@ -15,6 +15,8 @@ def test_labor_costs_are_admin_only_and_snapshot_closed_work(client, db):
     admin = _bootstrap_admin(db, company, "labor-cost-admin")
     worker = _user(db, company, "labor-cost-worker", role_id=3)
     manager = _user(db, company, "labor-cost-manager", role_id=2)
+    admin.email = "labor-cost-admin@example.com"
+    manager.email = "labor-cost-manager@example.com"
     worker_membership = organization_bootstrap_service.ensure_user_membership(db, worker)
     organization_bootstrap_service.ensure_user_membership(db, manager)
     db.commit()
@@ -34,6 +36,10 @@ def test_labor_costs_are_admin_only_and_snapshot_closed_work(client, db):
     assert created.status_code == 201, created.text
     assert created.json()["member_name"] == worker.full_name
     assert created.json()["hourly_cost"] == "25.00"
+    admin_identity = client.get("/api/v1/users/me", headers=_headers(admin))
+    assert admin_identity.status_code == 200, admin_identity.text
+    assert admin_identity.json()["can_view_labor_costs"] is True
+    assert admin_identity.json()["can_manage_labor_costs"] is True
     audit_event = (
         db.query(AuditLog)
         .filter(AuditLog.action == "labor_cost_rate.created")
@@ -51,6 +57,10 @@ def test_labor_costs_are_admin_only_and_snapshot_closed_work(client, db):
     assert client.get(
         "/api/v1/labor-costs/rates", headers=_headers(manager)
     ).status_code == 403
+    manager_identity = client.get("/api/v1/users/me", headers=_headers(manager))
+    assert manager_identity.status_code == 200, manager_identity.text
+    assert manager_identity.json()["can_view_labor_costs"] is False
+    assert manager_identity.json()["can_manage_labor_costs"] is False
     assert client.post(
         "/api/v1/labor-costs/rates",
         headers=_headers(manager),
