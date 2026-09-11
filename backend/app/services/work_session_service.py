@@ -14,6 +14,7 @@ from app.services import task_item_service
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import require_capability
 from app.services.work_session_pause_service import close_open_pause
+from app.services.labor_cost_snapshot_service import refresh_work_session_labor_cost
 
 
 def _require_manageable_active_session(
@@ -202,6 +203,12 @@ def end_work_session(
 
         db.add(task)
 
+    if db_user and db_user.company_id is not None:
+        refresh_work_session_labor_cost(
+            db,
+            work_session=active_session,
+            company_id=db_user.company_id,
+        )
     db.add(active_session)
     db.commit()
     db.refresh(active_session)

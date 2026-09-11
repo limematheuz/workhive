@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 from fastapi import HTTPException
 
 from app.models.location import Location
+from app.models.labor_cost_rate import LaborCostRate
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
@@ -12,6 +14,8 @@ from app.schemas.work_session_correction import (
     WorkSessionCorrectionReview,
 )
 from app.services import work_session_correction_service
+from app.services import organization_bootstrap_service
+from app.services.labor_cost_snapshot_service import refresh_work_session_labor_cost
 from tests.test_service_contracts import _authenticated_company, _client, _location
 from tests.test_work_operations import _company, _user
 
@@ -82,6 +86,22 @@ def test_manager_approval_preserves_history_and_refreshes_completed_snapshot(db)
     db.add(session)
     db.commit()
     db.refresh(session)
+    membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    assert membership is not None
+    db.add(
+        LaborCostRate(
+            company_id=company.id,
+            company_membership_id=membership.id,
+            hourly_cost=Decimal("20.00"),
+            effective_on=session.end_time.date(),
+            created_by_user_id=manager.id,
+        )
+    )
+    db.flush()
+    refresh_work_session_labor_cost(db, work_session=session, company_id=company.id)
+    db.commit()
+    db.refresh(session)
+    assert session.labor_cost_amount_snapshot == Decimal("40.00")
 
     correction = work_session_correction_service.request_correction(
         db,
@@ -113,6 +133,7 @@ def test_manager_approval_preserves_history_and_refreshes_completed_snapshot(db)
     assert session.start_time == correction.requested_start_time
     assert session.end_time == correction.requested_end_time
     assert task.worked_seconds_snapshot == 10_800
+    assert session.labor_cost_amount_snapshot == Decimal("60.00")
 
 
 def test_worker_cannot_duplicate_or_approve_own_pending_correction(db):

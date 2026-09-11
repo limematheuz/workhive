@@ -13,6 +13,7 @@ from app.schemas.work_session_correction import (
     WorkSessionCorrectionReview,
 )
 from app.services import task_billing_service
+from app.services.labor_cost_snapshot_service import refresh_work_session_labor_cost
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import (
     permitted_location_ids,
@@ -178,6 +179,11 @@ def review_correction(
     if review.decision == "approved":
         work_session.start_time = correction.requested_start_time
         work_session.end_time = correction.requested_end_time
+        refresh_work_session_labor_cost(
+            db,
+            work_session=work_session,
+            company_id=company_id,
+        )
         correction.applied_at = reviewed_at
         if task and task.status == "completed":
             task_billing_service.capture_completed_work_snapshot(

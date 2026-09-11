@@ -45,6 +45,8 @@ DEFAULT_PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("time.approve", "time", "Review requested work-time corrections"),
     ("finance.read", "finance", "View quotes, invoices, expenses, and fiscal records"),
     ("finance.manage", "finance", "Create and update financial records"),
+    ("labor_costs.read", "finance", "View confidential internal labour costs"),
+    ("labor_costs.manage", "finance", "Set confidential internal labour costs"),
     (
         "commercial.follow_ups.read",
         "commercial",

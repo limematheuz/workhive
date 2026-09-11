@@ -97,6 +97,11 @@ class CompanyMembership(Base):
         back_populates="company_membership",
         viewonly=True,
     )
+    labor_cost_rates = relationship(
+        "LaborCostRate",
+        back_populates="company_membership",
+        viewonly=True,
+    )
 
 
 class Department(Base):
