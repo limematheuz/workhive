@@ -89,7 +89,7 @@ export function DocumentFormDialog({
 
                     <footer className="dialog-glass-chrome flex flex-none flex-col-reverse gap-2 border-t border-[var(--border-soft)] px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-6">
                         {footerStart}
-                        <Button type="button" variant="dangerSoft" onClick={onCancel} className="w-full sm:w-auto">
+                        <Button type="button" variant="cancel" onClick={onCancel} className="w-full sm:w-auto">
                             {cancelLabel}
                         </Button>
                         <Button type="submit" disabled={submitDisabled || submitting} className="w-full sm:min-w-48 sm:w-auto">

@@ -18,6 +18,9 @@ test("partner portal is isolated from the internal dashboard navigation", () => 
     assert.match(sidebar, /"\/dashboard\/partner\/requests"/);
     assert.match(source("../components/partner-portal/PartnerPortalRequestDialog.tsx"), /PartnerPortalService\.createReservation/);
     assert.match(source("../components/partner-portal/PartnerPortalPropertyDialog.tsx"), /PartnerPortalService\.createLocation/);
+    assert.match(source("../components/partner-portal/PartnerPortalPropertyDialog.tsx"), /contacts/);
+    assert.match(source("../components/partner-portal/PartnerPortalPropertyDialog.tsx"), /risks/);
+    assert.match(source("../components/partner-portal/PartnerPortalPropertyDialog.tsx"), /service_windows/);
     assert.match(workspace, /PremiumTabs/);
     assert.match(workspace, /initialLoadStartedRef/);
     assert.match(workspace, /loadPromiseRef/);

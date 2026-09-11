@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,22 +18,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { getErrorMessage } from "@/lib/errors";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
+import { assignmentPayload, buildAssignmentDrafts, hasInvalidDraftScopes, type AssignmentDraft } from "@/lib/organization-assignment-drafts";
+import { MemberProfileScopeFields } from "@/components/organization/MemberProfileScopeFields";
+import { LocationService, type Location } from "@/services/location.service";
 import {
     OrganizationService,
     type OrganizationAccessClass,
     type OrganizationDepartment,
     type OrganizationMember,
     type OrganizationMembershipStatus,
-    type OrganizationScopeType,
     type OrganizationTeam,
     type PermissionProfile,
 } from "@/services/organization.service";
-
-type AssignmentDraft = {
-    profileId: number;
-    scopeType: OrganizationScopeType;
-    scopeId: number;
-};
 
 type MemberAccessDialogProps = {
     open: boolean;
@@ -50,30 +46,6 @@ type MemberAccessDialogProps = {
 
 const ACCESS_CLASSES: OrganizationAccessClass[] = ["admin", "responsible", "worker"];
 const MEMBERSHIP_STATUSES: OrganizationMembershipStatus[] = ["active", "suspended"];
-
-function buildAssignmentDrafts(
-    member: OrganizationMember | null,
-    profiles: PermissionProfile[],
-): AssignmentDraft[] {
-    if (!member) return [];
-    const systemProfileIds = new Set<number>();
-    for (const profile of profiles) {
-        if (profile.is_system) systemProfileIds.add(profile.id);
-    }
-    const drafts: AssignmentDraft[] = [];
-    for (const assignment of member.profile_assignments) {
-        if (systemProfileIds.has(assignment.permission_profile_id)) continue;
-        const scope = assignment.scopes[0];
-        if (scope) {
-            drafts.push({
-                profileId: assignment.permission_profile_id,
-                scopeType: scope.scope_type,
-                scopeId: scope.scope_id,
-            });
-        }
-    }
-    return drafts;
-}
 
 function toggleMembershipId(ids: number[], id: number): number[] {
     return ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id];
@@ -99,38 +71,35 @@ export function MemberAccessDialog({
     const [teamIds, setTeamIds] = useState<number[]>(member?.team_ids ?? []);
     const [assignments, setAssignments] = useState<AssignmentDraft[]>(() => buildAssignmentDrafts(member, profiles));
     const [saving, setSaving] = useState(false);
+    const [locations, setLocations] = useState<Location[]>([]);
+    const [locationError, setLocationError] = useState(false);
+    useEffect(() => {
+        if (!open) return;
+        let active = true;
+        LocationService.getLocations().then(items => {
+            if (active) setLocations(items);
+        }).catch(() => { if (active) setLocationError(true); });
+        return () => { active = false; };
+    }, [open]);
 
     const availableProfiles = useMemo(
-        () => profiles.filter((profile) => !profile.is_system && profile.is_active),
-        [profiles],
+        () => profiles.filter((profile) => profile.is_editable && (profile.is_active || assignments.some(assignment => assignment.permission_profile_id === profile.id))),
+        [profiles, assignments],
     );
 
     const setProfileEnabled = (profileId: number, enabled: boolean) => {
         setAssignments((current) => enabled
-            ? [...current, { profileId, scopeType: "company", scopeId: companyId }]
-            : current.filter((assignment) => assignment.profileId !== profileId));
-    };
-
-    const updateAssignment = (profileId: number, update: Partial<AssignmentDraft>) => {
-        setAssignments((current) => current.map((assignment) => {
-            if (assignment.profileId !== profileId) return assignment;
-            const next = { ...assignment, ...update };
-            if (update.scopeType === "company") next.scopeId = companyId;
-            if (update.scopeType === "department") next.scopeId = departments[0]?.id ?? companyId;
-            if (update.scopeType === "team") next.scopeId = teams[0]?.id ?? companyId;
-            return next;
-        }));
-    };
-
-    const scopeOptions = (scopeType: OrganizationScopeType) => {
-        if (scopeType === "company") return [{ id: companyId, name: copy.scope_company }];
-        if (scopeType === "department") return departments.map((department) => ({ id: department.id, name: department.name }));
-        return teams.map((team) => ({ id: team.id, name: team.name }));
+            ? [...current, { permission_profile_id: profileId, scopes: [{ scope_type: "company", scope_id: companyId, draft_id: crypto.randomUUID() }] }]
+            : current.filter((assignment) => assignment.permission_profile_id !== profileId));
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         if (!member) return;
+        if (hasInvalidDraftScopes(assignments)) {
+            toast.error(copy.invalid_scopes);
+            return;
+        }
         try {
             setSaving(true);
             await OrganizationService.updateMember(member.id, {
@@ -138,14 +107,8 @@ export function MemberAccessDialog({
                 status: membershipStatus,
                 department_ids: departmentIds,
                 team_ids: teamIds,
+                profile_assignments: { assignments: assignmentPayload(assignments) },
             });
-            await OrganizationService.replaceMemberProfileAssignments(
-                member.id,
-                assignments.map((assignment) => ({
-                    permission_profile_id: assignment.profileId,
-                    scopes: [{ scope_type: assignment.scopeType, scope_id: assignment.scopeId }],
-                })),
-            );
             await onSaved();
             toast.success(copy.updated);
             onOpenChange(false);
@@ -195,12 +158,12 @@ export function MemberAccessDialog({
                         <div>
                             <h3 className="text-sm font-semibold text-[var(--text-main)]">{copy.profiles_scope}</h3>
                             <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.profiles_scope_description}</p>
+                            {locationError && <p role="status" className="mt-1 text-xs text-[var(--text-muted)]">{copy.locations_unavailable}</p>}
                         </div>
                         {availableProfiles.length === 0 ? (
                             <p className="rounded-xl border border-dashed border-[var(--border-soft)] p-4 text-sm text-[var(--text-muted)]">{copy.profiles_empty}</p>
                         ) : availableProfiles.map((profile) => {
-                            const assignment = assignments.find((item) => item.profileId === profile.id);
-                            const targets = assignment ? scopeOptions(assignment.scopeType) : [];
+                            const assignment = assignments.find((item) => item.permission_profile_id === profile.id);
                             return (
                                 <div key={profile.id} className="rounded-xl border border-[var(--border-soft)] p-3">
                                     <div className="flex items-start gap-3">
@@ -212,25 +175,14 @@ export function MemberAccessDialog({
                                         <div className="min-w-0 flex-1">
                                             <Label htmlFor={`profile-${profile.id}`} className="cursor-pointer">{profile.name}</Label>
                                             {profile.description && <p className="mt-1 text-xs text-[var(--text-muted)]">{profile.description}</p>}
+                                            {!profile.is_active && <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.inactive_profile}</p>}
                                         </div>
                                     </div>
                                     {assignment && (
-                                        <div className="mt-3 grid gap-3 pl-8 sm:grid-cols-2">
-                                            <Select value={assignment.scopeType} onValueChange={(value) => updateAssignment(profile.id, { scopeType: value as OrganizationScopeType })}>
-                                                <SelectTrigger aria-label={copy.scope_for.replace("{name}", profile.name)}><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="company">{copy.scope_company}</SelectItem>
-                                                    <SelectItem value="department" disabled={!departments.length}>{copy.scope_department}</SelectItem>
-                                                    <SelectItem value="team" disabled={!teams.length}>{copy.scope_team}</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <Select value={String(assignment.scopeId)} onValueChange={(value) => updateAssignment(profile.id, { scopeId: Number(value) })}>
-                                                <SelectTrigger aria-label={copy.target_for.replace("{name}", profile.name)}><SelectValue /></SelectTrigger>
-                                                <SelectContent>
-                                                    {targets.map((target) => <SelectItem key={target.id} value={String(target.id)}>{target.name}</SelectItem>)}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
+                                        <MemberProfileScopeFields scopes={assignment.scopes}
+                                            onChange={scopes => setAssignments(current => current.map(item => item.permission_profile_id === profile.id ? { ...item, scopes } : item))}
+                                            companyId={companyId} departments={departments} teams={teams} locations={locations}
+                                            disabled={!profile.is_active} name={profile.name} />
                                     )}
                                 </div>
                             );
@@ -239,8 +191,8 @@ export function MemberAccessDialog({
 
                     <DialogFooter>
                         {canDelete && <Button type="button" variant="dangerSoft" onClick={onRequestDelete}>{dict.organization.actions.permanently_delete}</Button>}
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
-                        <Button type="submit" disabled={saving}>
+                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
+                        <Button type="submit" disabled={saving || hasInvalidDraftScopes(assignments)}>
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {dict.organization.actions.save_access}
                         </Button>

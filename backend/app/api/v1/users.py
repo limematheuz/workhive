@@ -31,7 +31,6 @@ from app.services.subscription_policy import require_company_access
 
 router = APIRouter()
 
-
 @router.get("/me", response_model=UserResponse)
 async def read_current_user(
     db: AsyncSession = Depends(get_async_db),
@@ -61,6 +60,44 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
             ),
             "can_manage_finance": organization_authorization_service.has_capability(
                 db, current_user, "finance.manage"
+            ),
+            "can_view_labor_costs": organization_authorization_service.has_capability(
+                db, current_user, "labor_costs.read"
+            ),
+            "can_manage_labor_costs": organization_authorization_service.has_capability(
+                db, current_user, "labor_costs.manage"
+            ),
+            "can_view_quality": any(
+                organization_authorization_service.has_capability(
+                    db, current_user, capability
+                )
+                for capability in (
+                    "quality.templates.read",
+                    "quality.inspections.read",
+                    "quality.incidents.read",
+                )
+            ),
+            "can_manage_quality": any(
+                organization_authorization_service.has_capability(
+                    db, current_user, capability
+                )
+                for capability in (
+                    "quality.templates.manage",
+                    "quality.inspections.manage",
+                    "quality.incidents.manage",
+                )
+            ),
+            "can_manage_time": organization_authorization_service.has_capability(
+                db, current_user, "time.manage"
+            ),
+            "can_approve_time": organization_authorization_service.has_capability(
+                db, current_user, "time.approve"
+            ),
+            "can_view_work_reports": organization_authorization_service.has_capability(
+                db, current_user, "work.read"
+            ),
+            "can_manage_work_reports": organization_authorization_service.has_capability(
+                db, current_user, "work.manage"
             ),
         }
     )

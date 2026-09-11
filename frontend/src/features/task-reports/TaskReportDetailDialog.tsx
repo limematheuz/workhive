@@ -25,6 +25,7 @@ type Props = {
     labels: Record<"issue" | "note" | "photo", string>;
     copy: Record<string, string>;
     saving: boolean;
+    canManage: boolean;
     onClose: () => void;
     onSave: (reportId: number, payload: TaskReportUpdate) => Promise<void>;
     onDelete: (report: TaskReport) => void;
@@ -36,6 +37,7 @@ export function TaskReportDetailDialog({
     labels,
     copy,
     saving,
+    canManage,
     onClose,
     onSave,
     onDelete,
@@ -137,7 +139,7 @@ export function TaskReportDetailDialog({
 
                         {!editing && (
                             <div className={`${reportActionCluster} w-full sm:w-auto`}>
-                                {editable && (
+                                {canManage && editable && (
                                     <button
                                         type="button"
                                         onClick={() => setEditingReportId(report.id)}
@@ -147,14 +149,16 @@ export function TaskReportDetailDialog({
                                         {copy.edit}
                                     </button>
                                 )}
-                                <button
-                                    type="button"
-                                    onClick={() => onDelete(report)}
-                                    className={reportDangerBtn}
-                                >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                    {copy.delete}
-                                </button>
+                                {canManage && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onDelete(report)}
+                                        className={reportDangerBtn}
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        {copy.delete}
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>

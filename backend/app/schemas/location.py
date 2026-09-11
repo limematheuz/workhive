@@ -2,7 +2,17 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.schemas.location_workspace import LocationProfileInput, LocationProfileResponse, LocationSpaceInput
+from app.schemas.location_workspace import (
+    LocationContactInput,
+    LocationContactResponse,
+    LocationProfileInput,
+    LocationProfileResponse,
+    LocationRiskInput,
+    LocationRiskResponse,
+    LocationServiceWindowInput,
+    LocationServiceWindowResponse,
+    LocationSpaceInput,
+)
 from app.schemas.location_access import LocationAccessInput, LocationAccessResponse
 
 
@@ -72,6 +82,9 @@ class LocationCreate(LocationBase):
     profile: LocationProfileInput | None = None
     access: LocationAccessInput | None = None
     spaces: list[LocationSpaceInput] = Field(default_factory=list, max_length=500)
+    contacts: list[LocationContactInput] | None = Field(default=None, max_length=50)
+    risks: list[LocationRiskInput] | None = Field(default=None, max_length=100)
+    service_windows: list[LocationServiceWindowInput] | None = Field(default=None, max_length=50)
 
 
 class LocationUpdate(BaseModel):
@@ -97,6 +110,9 @@ class LocationUpdate(BaseModel):
     team_id: int | None = Field(default=None, gt=0)
     profile: LocationProfileInput | None = None
     access: LocationAccessInput | None = None
+    contacts: list[LocationContactInput] | None = Field(default=None, max_length=50)
+    risks: list[LocationRiskInput] | None = Field(default=None, max_length=100)
+    service_windows: list[LocationServiceWindowInput] | None = Field(default=None, max_length=50)
 
     @field_validator("map_url")
     @classmethod
@@ -110,4 +126,8 @@ class LocationResponse(LocationBase):
     access: LocationAccessResponse | None = None
     can_manage_reservations: bool | None = None
     can_manage_tasks: bool | None = None
+    can_manage_location: bool | None = None
     shared_companies: list[int] = []
+    contacts: list[LocationContactResponse] = []
+    risks: list[LocationRiskResponse] = []
+    service_windows: list[LocationServiceWindowResponse] = []

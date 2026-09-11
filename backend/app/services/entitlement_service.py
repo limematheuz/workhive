@@ -143,6 +143,50 @@ def _require_quota(
     )
 
 
+def byte_quota_limit(db: Session, *, company_id: int, code: str) -> int:
+    """Return an explicitly provisioned byte quota for a company plan."""
+
+    company = entitlement_repo.get_company(db, company_id=company_id)
+    if company is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+    limit = entitlement_value(db, company, code)
+    if not isinstance(limit, int) or isinstance(limit, bool):
+        raise RuntimeError(f"Entitlement {code} is not an integer quota")
+    return limit
+
+
+def require_byte_quota(
+    db: Session,
+    *,
+    company_id: int,
+    code: str,
+    requested_bytes: int,
+    current_usage: Callable[[], int],
+    resource_label: str,
+) -> int:
+    """Reserve byte capacity under a company row lock before a storage write."""
+
+    company = entitlement_repo.lock_company(db, company_id=company_id)
+    if company is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+    limit = entitlement_value(db, company, code)
+    if not isinstance(limit, int) or isinstance(limit, bool):
+        raise RuntimeError(f"Entitlement {code} is not an integer quota")
+    if requested_bytes > limit:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"El documento supera el límite de {resource_label} de tu plan",
+            headers={"X-WorkHive-Error-Code": "entitlement.quota_reached"},
+        )
+    if current_usage() + requested_bytes <= limit:
+        return limit
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=f"Tu plan ha alcanzado el límite de {resource_label}",
+        headers={"X-WorkHive-Error-Code": "entitlement.quota_reached"},
+    )
+
+
 def require_internal_member_capacity(
     db: Session,
     *,

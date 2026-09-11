@@ -108,13 +108,13 @@ export function ClientsTable({
     );
 
     return (
-        <section className="billing-surface overflow-hidden rounded-[26px]">
+        <section className="billing-surface overflow-hidden rounded-[26px] border border-[color-mix(in_srgb,var(--border-color)_32%,transparent)]">
             <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-semibold text-[var(--text-main)]">{workspace.list_title}</h2><p className="mt-1 text-xs text-[var(--text-muted)]">{workspace.list_subtitle}</p></div><span className="w-fit rounded-full bg-[var(--bg-tertiary)] px-3 py-1 text-xs font-semibold text-[var(--text-main)]">{rows.length} {rows.length === 1 ? workspace.client_singular : workspace.client_plural}</span></header>
             {rows.length === 0 ? <div className="px-5 py-16 text-center"><Users className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" /><h2 className="mt-3 text-sm font-semibold text-[var(--text-main)]">{workspace.empty_title}</h2><p className="mx-auto mt-1 max-w-md text-xs leading-5 text-[var(--text-muted)]">{workspace.empty_description}</p></div> : <>
                 <div className="hidden xl:block [&_[data-slot=table-container]]:overflow-x-hidden">
                     <Table className="table-fixed text-left">
                         <TableHeader>
-                            <TableRow className="bg-[var(--bg-secondary)]/40 text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
+                            <TableRow className="text-[9px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
                                 <TableHead className="w-[29%] whitespace-nowrap px-2.5 py-3 text-[var(--btn-secondary-text)]">{dict.clients.table.name}</TableHead>
                                 <TableHead className="w-[25%] whitespace-nowrap px-2.5 py-3 text-[var(--btn-secondary-text)]">{workspace.table_contact}</TableHead>
                                 <TableHead className="w-[17%] whitespace-nowrap px-2.5 py-3 text-[var(--btn-secondary-text)]">{dict.clients.account_assignment.table_short_label}</TableHead>
@@ -129,7 +129,7 @@ export function ClientsTable({
                                 <TableRow
                                     key={row.client.id}
                                     onClick={() => onDetails(row.client)}
-                                    className="cursor-pointer bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55"
+                                    className="cursor-pointer"
                                 >
                                     <TableCell className="align-top px-2.5">
                                         <ClientIdentity row={row} noTaxId={workspace.no_tax_id}>

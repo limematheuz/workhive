@@ -90,6 +90,7 @@ export type PermissionProfile = {
     name: string;
     description: string | null;
     is_system: boolean;
+    is_editable: boolean;
     is_active: boolean;
     permission_codes: string[];
     usage: PermissionProfileUsage;
@@ -109,6 +110,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const OrganizationService = {
+    getAccess: () => request<Record<string, boolean>>("/access", { cache: "no-store" }),
     getMembers: () => request<OrganizationMember[]>("/members", { cache: "no-store" }),
     getDepartments: () => request<OrganizationDepartment[]>("/departments", { cache: "no-store" }),
     getTeams: () => request<OrganizationTeam[]>("/teams", { cache: "no-store" }),
@@ -178,6 +180,10 @@ export const OrganizationService = {
         status?: OrganizationMembershipStatus;
         department_ids?: number[];
         team_ids?: number[];
+        profile_assignments?: { assignments: Array<{
+            permission_profile_id: number;
+            scopes: Array<{ scope_type: OrganizationScopeType; scope_id: number }>;
+        }> };
     }) => request<OrganizationMember>(`/members/${membershipId}`, {
         method: "PATCH",
         body: JSON.stringify(payload),

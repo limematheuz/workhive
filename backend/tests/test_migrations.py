@@ -142,6 +142,16 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("client_contact_roles")
         }
+        location_contact_columns = {
+            column["name"] for column in inspector.get_columns("location_contacts")
+        }
+        location_risk_columns = {
+            column["name"] for column in inspector.get_columns("location_risks")
+        }
+        location_service_window_columns = {
+            column["name"]
+            for column in inspector.get_columns("location_service_windows")
+        }
         client_opportunity_columns = {
             column["name"]
             for column in inspector.get_columns("client_opportunities")
@@ -328,6 +338,32 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "is_active",
     } <= client_contact_columns
     assert {"id", "client_contact_id", "role"} <= client_contact_role_columns
+    assert {
+        "location_id",
+        "full_name",
+        "email",
+        "phone",
+        "role",
+        "is_primary",
+        "is_active",
+    } <= location_contact_columns
+    assert {
+        "location_id",
+        "title",
+        "description",
+        "severity",
+        "status",
+        "mitigation_notes",
+    } <= location_risk_columns
+    assert {
+        "location_id",
+        "label",
+        "days",
+        "starts_at",
+        "ends_at",
+        "notes",
+        "is_active",
+    } <= location_service_window_columns
     assert {
         "id",
         "client_id",

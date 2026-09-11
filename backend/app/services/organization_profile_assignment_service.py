@@ -29,6 +29,8 @@ def replace_member_profile_assignments(
     membership_id: int,
     payload: OrganizationMemberProfileAssignmentsUpdate,
     current_user: User,
+    *,
+    commit: bool = True,
 ) -> OrganizationMemberResponse:
     company_id = require_capability(db, current_user, CAPABILITY_MEMBERS_MANAGE)
     require_capability(db, current_user, CAPABILITY_SCOPES_MANAGE)
@@ -56,14 +58,22 @@ def replace_member_profile_assignments(
         conflict(
             "The administrator profile is assigned only through the administrator class"
         )
-    if any(not profile.is_active for profile in profiles.values()):
-        conflict("Inactive permission profiles cannot be assigned")
-
     existing_assignments = organization_repo.list_profile_assignments(
         db,
         company_id=company_id,
         membership_id=membership.id,
     )
+    existing_scopes = {
+        assignment.permission_profile_id: {
+            (scope.scope_type, scope.scope_id) for scope in assignment.scopes
+        }
+        for assignment in existing_assignments
+    }
+    for assignment in payload.assignments:
+        if not profiles[assignment.permission_profile_id].is_active and not {
+            (scope.scope_type, scope.scope_id) for scope in assignment.scopes
+        }.issubset(existing_scopes.get(assignment.permission_profile_id, set())):
+            conflict("Inactive permission profiles cannot be assigned")
     validate_profile_scopes(
         db,
         company_id=company_id,
@@ -71,12 +81,21 @@ def replace_member_profile_assignments(
         existing_assignments=existing_assignments,
     )
 
+    membership.permissions_configured = True
+    db.add(membership)
     now = datetime.now(timezone.utc)
     for assignment in existing_assignments:
-        if not assignment.permission_profile.is_system:
-            assignment.is_active = False
-            assignment.revoked_at = now
-            db.add(assignment)
+        # The administrator profile is tied to the administrator membership
+        # class. Every other profile, including editable base profiles, must
+        # follow the replacement payload so it can also be removed safely.
+        if (
+            assignment.permission_profile.is_system
+            and assignment.permission_profile.name == ADMIN_PROFILE_NAME
+        ):
+            continue
+        assignment.is_active = False
+        assignment.revoked_at = now
+        db.add(assignment)
 
     for input_assignment in payload.assignments:
         for scope in input_assignment.scopes:
@@ -120,6 +139,9 @@ def replace_member_profile_assignments(
                     scope_id=scope.scope_id,
                 )
             )
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(membership)
     return member_response(db, company_id=company_id, membership=membership)

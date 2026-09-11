@@ -99,10 +99,12 @@ def test_report_history_is_normalized_visible_to_both_companies_and_not_in_task_
         assert listed.status_code == 200, (user_key, listed.text)
         assert [item["id"] for item in listed.json()] == [payload["id"]]
 
-    assert client.get(
+    viewer_history = client.get(
         "/api/v1/task-reports/",
         headers=_headers(users["receiver_viewer"]),
-    ).status_code == 403
+    )
+    assert viewer_history.status_code == 200, viewer_history.text
+    assert [item["id"] for item in viewer_history.json()] == [payload["id"]]
     assert client.get(
         "/api/v1/task-reports/",
         headers=_headers(users["unrelated_admin"]),

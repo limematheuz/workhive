@@ -5,6 +5,7 @@ import { Building2, ChevronDown, Layers3, Loader2, Pencil, Plus, Power, ShieldCh
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { MemberAccessDialog } from "@/components/organization/MemberAccessDialog";
+import { OrganizationAccessContext, useOrganizationPermission } from "@/components/organization/organization-access-context";
 import { PendingInvitationsPanel } from "@/components/organization/PendingInvitationsPanel";
 import { OrganizationDepartmentsPanel } from "@/components/organization/OrganizationDepartmentsPanel";
 import { OrganizationInvitePersonDialog } from "@/components/organization/OrganizationInvitePersonDialog";
@@ -56,6 +57,7 @@ import { UserService, type UserInvitation } from "@/services/user.service";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 
 type OrganizationTab = "people" | "departments" | "teams" | "profiles";
+const tabPermissions: Record<OrganizationTab, string> = { people: "access.members", departments: "organization.departments", teams: "organization.teams", profiles: "access.profiles" };
 type CreateKind = "department" | "team" | "profile" | null;
 const ORGANIZATION_PAGE_SIZE = 20;
 
@@ -78,7 +80,10 @@ export function OrganizationControlCenter() {
     const [data, setData] = useState<OrganizationData>(EMPTY_DATA);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
-    const [tab, setTab] = useState<OrganizationTab>("people");
+    const [selectedTab, setTab] = useState<OrganizationTab>("people");
+    const [access, setAccess] = useState<Record<string, boolean>>({});
+    const allowedTabs = (Object.keys(tabPermissions) as OrganizationTab[]).filter(key => access[`${tabPermissions[key]}.read`]);
+    const tab = allowedTabs.includes(selectedTab) ? selectedTab : allowedTabs[0] ?? selectedTab;
     const [createKind, setCreateKind] = useState<CreateKind>(null);
     const [selectedMember, setSelectedMember] = useState<OrganizationMember | null>(null);
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -92,30 +97,32 @@ export function OrganizationControlCenter() {
     const [updatingProfile, setUpdatingProfile] = useState(false);
 
     const companyId = user?.company_id ?? null;
-    const canInvitePeople = user?.role?.name === "admin" || user?.role?.name === "manager";
-    const canRemovePeople = user?.role?.name === "admin";
+    const canInvitePeople = access["access.members.manage"] === true;
+    const canRemovePeople = canInvitePeople;
     const load = useCallback(async () => {
         if (!companyId) return;
         setLoading(true);
         setLoadError(null);
         try {
+            const permissions = await OrganizationService.getAccess();
             const [members, departments, teams, definitions, profiles, invitations] = await Promise.all([
-                OrganizationService.getMembers(),
-                OrganizationService.getDepartments(),
-                OrganizationService.getTeams(),
-                OrganizationService.getPermissionDefinitions(),
-                OrganizationService.getPermissionProfiles(),
-                canInvitePeople
+                permissions["access.members.read"] ? OrganizationService.getMembers() : Promise.resolve([]),
+                permissions["organization.departments.read"] ? OrganizationService.getDepartments() : Promise.resolve([]),
+                permissions["organization.teams.read"] ? OrganizationService.getTeams() : Promise.resolve([]),
+                permissions["access.profiles.read"] ? OrganizationService.getPermissionDefinitions() : Promise.resolve([]),
+                permissions["access.profiles.read"] ? OrganizationService.getPermissionProfiles() : Promise.resolve([]),
+                permissions["access.members.manage"]
                     ? UserService.getInvitations()
                     : Promise.resolve([] as UserInvitation[]),
             ]);
             setData({ members, departments, teams, definitions, profiles, invitations });
+            setAccess(permissions);
         } catch (error) {
             setLoadError(getErrorMessage(error, copy.load_error));
         } finally {
             setLoading(false);
         }
-    }, [canInvitePeople, companyId, copy.load_error]);
+    }, [companyId, copy.load_error]);
     const loadEvent = useEffectEvent(load);
 
     useEffect(() => {
@@ -196,6 +203,7 @@ export function OrganizationControlCenter() {
     };
 
     const openAction = () => {
+        if (!access[`${tabPermissions[tab]}.manage`]) return;
         if (tab === "people") {
             void openInvitation();
             return;
@@ -208,6 +216,7 @@ export function OrganizationControlCenter() {
     }
 
     return (
+        <OrganizationAccessContext.Provider value={access}>
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={Building2}
@@ -218,7 +227,7 @@ export function OrganizationControlCenter() {
                     <Button
                         type="button"
                         onClick={openAction}
-                        disabled={loadingInvitationRoles || (tab === "people" && !canInvitePeople)}
+                        disabled={loading || loadingInvitationRoles || !access[`${tabPermissions[tab]}.manage`]}
                         title={tab === "people" && !canInvitePeople ? copy.people.invite_permission : undefined}
                     >
                         {tab === "people" ? <UserPlus className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
@@ -235,14 +244,14 @@ export function OrganizationControlCenter() {
                     { id: "departments", label: copy.tabs.departments, compactLabel: copy.tabs.departments_compact, icon: Building2 },
                     { id: "teams", label: copy.tabs.teams, compactLabel: copy.tabs.teams_compact, icon: Layers3 },
                     { id: "profiles", label: copy.tabs.profiles, compactLabel: copy.tabs.profiles_compact, icon: ShieldCheck },
-                ]}
+                ].filter(item => allowedTabs.includes(item.id as OrganizationTab)) as Array<{ id: OrganizationTab; label: string; compactLabel: string; icon: typeof UsersRound }>}
                 activeTab={tab}
                 onChange={setTab}
             />
 
-            {loading ? <LoadingState /> : loadError ? <RestrictedOrganizationState message={loadError} /> : (
+            {loading ? <LoadingState /> : loadError || !allowedTabs.length ? <RestrictedOrganizationState message={loadError || copy.configuration_unavailable} /> : (
                 <>
-                    {tab === "people" && <MembersTable members={data.members} departments={data.departments} teams={data.teams} invitations={data.invitations} onInvitationChanged={load} onSelect={setSelectedMember} onDelete={setDeleteTarget} canDelete={canRemovePeople} currentUserId={user?.id} />}
+                    {tab === "people" && <MembersTable members={data.members} departments={data.departments} teams={data.teams} invitations={data.invitations} onInvitationChanged={load} onSelect={member => canInvitePeople && setSelectedMember(member)} onDelete={setDeleteTarget} canDelete={canRemovePeople} currentUserId={user?.id} />}
                     {tab === "departments" && <OrganizationDepartmentsPanel departments={data.departments} onChanged={load} />}
                     {tab === "teams" && <OrganizationTeamsPanel teams={data.teams} departments={data.departments} members={data.members} onChanged={load} />}
                     {tab === "profiles" && (
@@ -331,6 +340,7 @@ export function OrganizationControlCenter() {
                 confirmVariant={profileStatusTarget?.is_active ? "soft-danger" : "primary"}
             />
         </div>
+        </OrganizationAccessContext.Provider>
     );
 }
 
@@ -525,6 +535,7 @@ function CurrentMemberRow({
     canDelete: boolean;
 }) {
     const { dict } = useDictionary();
+    const canManage = useOrganizationPermission("access.members.manage");
     const copy = dict.organization;
     const accessLabel = copy.access[member.access_class];
     const profileText = member.profile_assignments.map((assignment) => assignment.permission_profile_name).join(", ") || copy.people.no_additional_profile;
@@ -538,14 +549,14 @@ function CurrentMemberRow({
     return (
         <TableRow
             className="border-b border-[var(--border-soft)] bg-[var(--bg-secondary)]/20 last:border-b-0"
-            onClick={() => onSelect(member)}
+            onClick={canManage ? () => onSelect(member) : undefined}
             onKeyDown={(event) => {
-                if (event.key === "Enter" || event.key === " ") {
+                if (canManage && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
                     onSelect(member);
                 }
             }}
-            tabIndex={0}
+            tabIndex={canManage ? 0 : undefined}
             aria-label={copy.people.configure_access.replace("{name}", memberName)}
         >
             <TableCell>
@@ -557,7 +568,7 @@ function CurrentMemberRow({
             <TableCell><StatusBadge status={member.status} /></TableCell>
             <TableCell className="hidden 2xl:table-cell"><p className="truncate text-sm text-[var(--text-muted)]">{profileText}</p></TableCell>
             <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
-                <ActionPopover align="end" triggerLabel={`${copy.actions.edit}: ${memberName}`} options={actionOptions} />
+                {canManage && <ActionPopover align="end" triggerLabel={`${copy.actions.edit}: ${memberName}`} options={actionOptions} />}
             </TableCell>
         </TableRow>
     );
@@ -568,7 +579,8 @@ function CurrentMemberCard({ member, onSelect, onDelete, canDelete }: { member: 
     const copy = dict.organization;
     const memberName = member.full_name || member.email;
     const profiles = member.profile_assignments.map((assignment) => assignment.permission_profile_name).join(", ") || copy.people.no_additional_profile;
-    const actionOptions: PopoverOption[] = [{ label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onSelect(member) }, ...(canDelete ? [{ label: copy.people.remove_action, icon: UserMinus, variant: "delete" as const, onClick: () => onDelete(member) }] : [])];
+    const canManage = useOrganizationPermission("access.members.manage");
+    const actionOptions: PopoverOption[] = [{ label: copy.actions.edit, icon: Pencil, variant: "edit", disabled: !canManage, onClick: () => onSelect(member) }, ...(canDelete ? [{ label: copy.people.remove_action, icon: UserMinus, variant: "delete" as const, onClick: () => onDelete(member) }] : [])];
     return <Card className="min-w-0"><CardContent className="min-w-0 space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{memberName}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{member.email}</p></div><div className="shrink-0" onClick={(event) => event.stopPropagation()}><ActionPopover align="end" triggerLabel={`${copy.actions.edit}: ${memberName}`} options={actionOptions} /></div></div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><StatusBadge status={member.status} /><span className="text-xs font-medium text-[var(--text-muted)]">{copy.access[member.access_class]}</span></div><p className="truncate text-xs text-[var(--text-muted)]">{profiles}</p></CardContent></Card>;
 }
 
@@ -680,6 +692,7 @@ function ProfilesTable({
     onRequestDelete: (profile: PermissionProfile) => void;
 }) {
     const { dict } = useDictionary();
+    const canManageProfiles = useOrganizationPermission("access.profiles.manage");
     const copy = dict.organization;
     const definitionByCode = useMemo(
         () => new Map(definitions.map((definition) => [definition.code, definition])),
@@ -754,7 +767,7 @@ function ProfilesTable({
                 </TableHeader>
                 <TableBody>
                     {pagination.pageItems.map((profile) => {
-                        const canManage = !profile.is_system;
+                        const canManage = canManageProfiles && profile.is_editable;
                         const summary = permissionSummary(profile, definitionByCode, copy);
                         const actionOptions: PopoverOption[] = canManage ? [
                             { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: () => onEdit(profile) },
@@ -786,7 +799,7 @@ function ProfilesTable({
                                 <p className="mt-1 line-clamp-2 text-xs text-[var(--text-muted)] lg:hidden">{profile.permission_codes.length} {profile.permission_codes.length === 1 ? copy.profiles.permission_count_one : copy.profiles.permission_count_many} · {summary}</p>
                             </TableCell>
                             <TableCell className="hidden text-sm text-[var(--text-muted)] lg:table-cell"><p className="line-clamp-2">{summary}</p></TableCell>
-                            <TableCell><Badge variant="outline" className={profile.is_system ? "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? copy.profiles.system : copy.profiles.custom}</Badge></TableCell>
+                            <TableCell><Badge variant="outline" className={profile.is_system ? profile.is_editable ? "border-accent/45 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? profile.is_editable ? copy.profiles.system : copy.profiles.protected : copy.profiles.custom}</Badge></TableCell>
                             <TableCell className="hidden sm:table-cell"><StatusBadge status={profile.is_active ? "active" : "inactive"} /></TableCell>
                             <TableCell className="text-right" onClick={(event) => event.stopPropagation()}>
                                 {canManage ? (
@@ -836,7 +849,7 @@ function PermissionProfileCard({
 }) {
     const { dict } = useDictionary();
     const copy = dict.organization;
-    const canManage = !profile.is_system;
+    const canManage = useOrganizationPermission("access.profiles.manage") && profile.is_editable;
     const summary = permissionSummary(profile, definitionByCode, copy);
     const actionOptions: PopoverOption[] = canManage ? [
         { label: copy.actions.edit, icon: Pencil, variant: "edit", onClick: onEdit },
@@ -869,7 +882,7 @@ function PermissionProfileCard({
                     {profile.permission_codes.length} {profile.permission_codes.length === 1 ? copy.profiles.permission_count_one : copy.profiles.permission_count_many} · {summary}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className={profile.is_system ? "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? copy.profiles.system : copy.profiles.custom}</Badge>
+                    <Badge variant="outline" className={profile.is_system ? profile.is_editable ? "border-accent/45 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]" : "border-[color:var(--btn-secondary-text)]/45 text-[var(--btn-secondary-text)]"}>{profile.is_system ? profile.is_editable ? copy.profiles.system : copy.profiles.protected : copy.profiles.custom}</Badge>
                     <StatusBadge status={profile.is_active ? "active" : "inactive"} />
                 </div>
             </CardContent>
@@ -1020,12 +1033,19 @@ function CreateOrganizationDialog({
                 <form onSubmit={handleSubmit} className="min-w-0">
                     <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-4 pr-14 sm:px-6">
                         <DialogTitle>{title}</DialogTitle>
-                        <DialogDescription>{profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
+                        <DialogDescription>{profile?.is_system ? profileCopy.default_edit_description : profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 px-5 py-4 sm:px-6">
                         <div className="space-y-2">
                             <Label htmlFor="organization-name">{copy.name}</Label>
-                            <Input id="organization-name" value={name} onChange={(event) => setName(event.target.value)} required />
+                            <Input
+                                id="organization-name"
+                                value={name}
+                                onChange={(event) => setName(event.target.value)}
+                                disabled={Boolean(profile?.is_system)}
+                                required
+                            />
+                            {profile?.is_system && <p className="text-xs text-[var(--text-muted)]">{profileCopy.default_name_locked}</p>}
                         </div>
                         {!isProfile && (
                             <div className="space-y-2">
@@ -1151,7 +1171,7 @@ function PermissionCategory({
                                     ? "border-[color:var(--accent-color)]/60 bg-accent/10"
                                     : "border-transparent hover:border-[var(--border-soft)] hover:bg-[var(--bg-secondary)]/45",
                                 definition.is_system_only && !canRemoveLegacySelection
-                                    ? "opacity-75"
+                                    ? "bg-[var(--bg-secondary)]/20"
                                     : "",
                             )}
                         >

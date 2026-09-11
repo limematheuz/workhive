@@ -71,7 +71,7 @@ test("checklist dialog reuses billing-surface primitives and shadcn controls", (
     assert.match(dialogSource, /from "@\/components\/ui\/checkbox"/);
     assert.match(dialogSource, /from "@\/components\/ui\/label"/);
     assert.match(dialogSource, /from "@\/components\/ui\/badge"/);
-    assert.match(dialogSource, /btn-cancel-muted/);
+    assert.match(dialogSource, /variant="cancel"/);
     assert.match(dialogSource, /border-none/);
     assert.match(dialogSource, /bg-accent/);
     assert.doesNotMatch(dialogSource, /absolute left-4 right-4 top-3(?: z-10)? h-1\.5 rounded-full bg-accent/);

@@ -9,10 +9,13 @@ from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
-from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
+from app.models.work_session_pause import WorkSessionPause
+from app.schemas.task_item import TaskItemCreate, TaskItemUpdate, TaskWorkFinishRequest
+from app.schemas.work_session import WorkSessionEnd
 from app.services import (
     reservation_service,
     task_assignment_service,
+    task_billing_service,
     task_item_service,
     user_service,
     work_session_service,
@@ -467,12 +470,21 @@ def test_viewers_start_accepted_work_and_finish_only_their_assigned_work(db):
         TaskItemUpdate(description=checked_description),
     )
     finished_first = task_item_service.finish_task_work(
-        db, first_worker, task.id
+        db,
+        first_worker,
+        task.id,
+        end_latitude=41.3859,
+        end_longitude=2.1747,
+        end_accuracy_meters=6.0,
     )
 
     assert updated.id == task.id
     assert finished_first.status == "progress"
     assert work_session_service.get_active_session(db, first_worker.id) is None
+    closed_session = db.query(WorkSession).filter_by(user_id=first_worker.id).one()
+    assert closed_session.end_latitude == 41.3859
+    assert closed_session.end_longitude == 2.1747
+    assert closed_session.end_accuracy_meters == 6.0
     assert task_assignment_service.get_user_assignment_status(
         finished_first, first_worker.id
     ) == "completed"
@@ -497,6 +509,11 @@ def test_viewers_start_accepted_work_and_finish_only_their_assigned_work(db):
     assert finished_second.status == "completed"
     assert finished_second.date_done is not None
     assert work_session_service.get_active_session(db, second_worker.id) is None
+
+
+def test_finish_work_rejects_partial_end_location():
+    with pytest.raises(ValueError, match="ubicación final necesita latitud y longitud"):
+        TaskWorkFinishRequest(end_latitude=41.3859)
 
 
 def test_start_work_repairs_an_existing_session_and_task_status(db):
@@ -579,15 +596,116 @@ def test_manual_clock_out_resets_unfinished_viewer_assignment_to_pending(db):
         started, worker.id
     ) == "progress"
 
-    closed_session = work_session_service.end_work_session(db, worker.id)
+    closed_session = work_session_service.end_work_session(
+        db,
+        worker.id,
+        end_data=WorkSessionEnd(
+            end_latitude=41.3902,
+            end_longitude=2.1540,
+            end_accuracy_meters=12.0,
+        ),
+    )
     db.refresh(task)
 
     assert closed_session.end_time is not None
+    assert closed_session.end_latitude == 41.3902
+    assert closed_session.end_longitude == 2.1540
+    assert closed_session.end_accuracy_meters == 12.0
     assert task.status == "accepted"
     assert task_assignment_service.get_user_assignment_status(
         task, worker.id
     ) == "pending"
     assert work_session_service.get_active_session(db, worker.id) is None
+
+
+def test_pause_resume_excludes_paused_time_and_keeps_an_audit_record(db):
+    company = _company(db, "PauseClock")
+    manager = _user(db, company, "manager@pause-clock.test", role_id=2)
+    worker = _user(db, company, "worker@pause-clock.test", role_id=3)
+    location = Location(
+        name="Casa con pausa",
+        address="Calle Pausa 1",
+        city="Girona",
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.commit()
+    task = TaskItem(
+        title="Trabajo con pausa",
+        description=f"[ ] Limpiar entrada (@{worker.id}:Trabajador:pending)",
+        unit="servicio",
+        company_id=company.id,
+        location_id=location.id,
+        user_id=manager.id,
+        status="accepted",
+    )
+    db.add(task)
+    db.commit()
+
+    _start_task_work(db, worker, task.id)
+    paused = work_session_service.pause_work_session(db, worker.id)
+    assert paused.paused_at is not None
+
+    with pytest.raises(HTTPException) as already_paused:
+        work_session_service.pause_work_session(db, worker.id)
+    assert already_paused.value.status_code == 409
+
+    pause = db.query(WorkSessionPause).filter_by(work_session_id=paused.id).one()
+    pause.started_at = datetime.now(timezone.utc) - timedelta(minutes=10)
+    paused.paused_at = pause.started_at
+    db.commit()
+    resumed = work_session_service.resume_work_session(db, worker.id)
+
+    assert resumed.paused_at is None
+    assert 599 <= resumed.paused_seconds <= 601
+    pause = db.query(WorkSessionPause).filter_by(work_session_id=resumed.id).one()
+    assert pause.ended_at is not None
+
+    resumed.start_time = datetime.now(timezone.utc) - timedelta(hours=1)
+    resumed.end_time = datetime.now(timezone.utc)
+    db.commit()
+    assert task_billing_service.session_duration_seconds(
+        resumed,
+        now=resumed.end_time,
+    ) in range(2_999, 3_002)
+
+
+def test_pause_requires_the_current_users_time_scope(db):
+    company = _company(db, "PauseScope")
+    outsider_company = _company(db, "PauseScopeOutsider")
+    worker = _user(db, company, "worker@pause-scope.test", role_id=3)
+    outsider = _user(db, outsider_company, "outsider@pause-scope.test")
+    location = Location(
+        name="Casa ámbito pausa",
+        address="Calle Ámbito 1",
+        city="Girona",
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.flush()
+    db.add(
+        WorkSession(
+            user_id=worker.id,
+            location_id=location.id,
+            start_time=datetime.now(timezone.utc),
+        )
+    )
+    db.commit()
+
+    paused = work_session_service.pause_work_session(
+        db,
+        worker.id,
+        current_user=worker,
+    )
+    assert paused.paused_at is not None
+
+    with pytest.raises(HTTPException) as denied:
+        work_session_service.resume_work_session(
+            db,
+            worker.id,
+            current_user=outsider,
+        )
+    assert denied.value.status_code == 403
 
 
 def test_clock_out_and_resume_preserve_worker_and_external_task_time(db):

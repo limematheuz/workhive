@@ -6,6 +6,7 @@ export const buttonVariants = cva(
     variants: {
       variant: {
         default: "border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]",
+        cancel: "border-transparent bg-[var(--btn-neutral-bg)] text-[var(--text-muted)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]",
         destructive: "border-[var(--btn-cancel-hover-bg)] bg-[var(--btn-cancel-hover-bg)] text-[var(--btn-cancel-hover-text)] hover:brightness-95 focus-visible:ring-[var(--btn-cancel-border)]",
         dangerSoft: "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] focus-visible:ring-[var(--btn-cancel-border)]",
         outline: "border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] text-[var(--btn-neutral-text)] hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)]",

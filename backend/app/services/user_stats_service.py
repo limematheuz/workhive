@@ -10,6 +10,7 @@ from app.repositories import user as user_repo
 from app.repositories import work_session as work_session_repo
 from app.schemas.user import UserStatsResponse
 from app.services import task_assignment_service
+from app.services.work_session_duration_service import elapsed_seconds
 from app.services.organization_authorization_service import permitted_location_ids
 from app.services.user_scope import is_platform_superadmin, is_superadmin
 
@@ -87,8 +88,7 @@ def get_user_stats(
         db, user_id, start_date, visible_location_ids
     )
     total_seconds = sum(
-        (session.end_time - session.start_time).total_seconds()
-        for session in closed_sessions
+        elapsed_seconds(session, now=session.end_time) for session in closed_sessions
     )
     total_hours_worked = round(total_seconds / 3600.0, 2)
 

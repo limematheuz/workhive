@@ -1,41 +1,18 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { Building2, Layers3, ListChecks, PencilLine } from "lucide-react"
 import { Location, LocationService } from "@/services/location.service"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { MapPin, Building2, Navigation, Bath, Car, ChefHat, Sun, Bed, Users, Clock3, KeyRound, Layers3, ListChecks, PencilLine } from "lucide-react"
 import { useDictionary } from "@/lib/dictionary-context"
-import { useUser } from "@/lib/user-context"
-import { isSuperadmin } from "@/domain/access/roles"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
-import { isSafeLocationMapUrl } from "@/lib/location-map-url"
 import type { LocationSpace } from "@/types/location"
 import { LocationTasksWorkspace } from "./LocationTasksWorkspace"
 import { LocationSpacesTab } from "./LocationSpacesTab"
-
-const getGoogleMapsUrl = (loc: Location) => {
-    if (isSafeLocationMapUrl(loc.map_url)) {
-        return loc.map_url
-    }
-    if (loc.latitude && loc.longitude) {
-        return `https://www.google.com/maps/search/?api=1&query=${loc.latitude},${loc.longitude}`
-    }
-    const queryStr = `${loc.address}, ${loc.postal_code ? loc.postal_code + " " : ""}${loc.city}`
-    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(queryStr)}`
-}
-
-const getWazeUrl = (loc: Location) => {
-    if (isSafeLocationMapUrl(loc.map_url) && loc.map_url.includes("waze")) {
-        return loc.map_url
-    }
-    if (loc.latitude && loc.longitude) {
-        return `https://waze.com/ul?ll=${loc.latitude},${loc.longitude}&navigate=yes`
-    }
-    const queryStr = `${loc.address}, ${loc.postal_code ? loc.postal_code + " " : ""}${loc.city}`
-    return `https://waze.com/ul?q=${encodeURIComponent(queryStr)}&navigate=yes`
-}
+import { LocationDetailAttributes } from "./LocationDetailAttributes"
+import { LocationDetailOverview } from "./LocationDetailOverview"
 
 interface LocationDetailDialogProps {
     location: Location | null
@@ -47,9 +24,7 @@ interface LocationDetailDialogProps {
 }
 
 const sectionClass = "glass-panel rounded-2xl p-3.5"
-
-const mapBtnClass =
-    "glass-panel inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-[var(--text-main)] transition-colors hover:border-accent/35 hover:text-accent"
+const mapButtonClass = "glass-panel inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-[var(--text-main)] transition-colors hover:border-accent/35 hover:text-accent"
 
 export function LocationDetailDialog({
     location,
@@ -60,15 +35,12 @@ export function LocationDetailDialog({
     onEdit,
 }: LocationDetailDialogProps) {
     const { dict } = useDictionary()
-    const { user } = useUser()
     const [spaces, setSpaces] = useState<LocationSpace[]>([])
     const [spacesLoading, setSpacesLoading] = useState(true)
     const locationId = location?.id
 
     useEffect(() => {
-        if (!locationId) {
-            return
-        }
+        if (!locationId) return
         let cancelled = false
         void LocationService.getSpaces(locationId)
             .then((items) => { if (!cancelled) setSpaces(items) })
@@ -87,13 +59,8 @@ export function LocationDetailDialog({
         exterior: dict.locations?.type_exterior,
         other: dict.locations?.type_other,
     })
-    const siteTypeLabel = location.profile?.site_type
-        ? location.profile.site_type.replaceAll("_", " ")
-        : null
-    const locationOwnerCompanyId = location.owner_company_id ?? location.managing_company_id
-    const canManageSpaces = Boolean(
-        user && (isSuperadmin(user) || locationOwnerCompanyId === user.company_id),
-    )
+    const siteTypeLabel = location.profile?.site_type?.replaceAll("_", " ") ?? null
+    const canManageLocation = location.can_manage_location === true
 
     return (
         <Dialog open={location !== null} onOpenChange={(open) => !open && onClose()}>
@@ -106,235 +73,44 @@ export function LocationDetailDialog({
                         <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0 space-y-1">
                                 <div className="flex flex-wrap gap-1.5">
-                                    <Badge variant={location.is_active ? "default" : "secondary"} className={location.is_active ? "border-0 bg-accent text-xs font-semibold uppercase tracking-wide text-white" : "text-xs font-semibold uppercase tracking-wide"}>
-                                        {location.is_active ? activeLabel : inactiveLabel}
-                                    </Badge>
+                                    <Badge variant={location.is_active ? "default" : "secondary"} className={location.is_active ? "border-0 bg-accent text-xs font-semibold uppercase tracking-wide text-white" : "text-xs font-semibold uppercase tracking-wide"}>{location.is_active ? activeLabel : inactiveLabel}</Badge>
                                     <Badge variant="secondary" className="text-xs font-medium">{locationTypeLabel}</Badge>
                                 </div>
-                                <DialogTitle className="text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">
-                                    {location.name}
-                                </DialogTitle>
-                                <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]">
-                                    <Building2 className="h-3.5 w-3.5 shrink-0" />
-                                    <span>{clientName}</span>
-                                </div>
+                                <DialogTitle className="text-xl font-bold tracking-tight text-[var(--text-main)] sm:text-2xl">{location.name}</DialogTitle>
+                                <div className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)]"><Building2 className="h-3.5 w-3.5 shrink-0" /><span>{clientName}</span></div>
                             </div>
                         </div>
                     </DialogHeader>
 
                     <section className="mt-5 grid grid-cols-2 gap-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:grid-cols-4">
-                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Código</p><p className="mt-1 truncate text-sm font-semibold text-[var(--text-main)]">{location.profile?.internal_code || `LOC-${location.id}`}</p></div>
-                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Espacios</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[var(--text-main)]"><Layers3 className="h-4 w-4 text-accent" /> {spacesLoading ? "…" : spaces.length}</p></div>
-                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Tareas</p><p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-[var(--text-main)]"><ListChecks className="h-4 w-4 text-accent" /> {spacesLoading ? "…" : taskTemplateCount}</p></div>
-                        <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">Acceso</p><p className="mt-1 truncate text-sm font-semibold text-[var(--text-main)]">{location.access?.access_method || (location.access?.has_access_code ? "Código" : "Sin configurar")}</p></div>
+                        <SummaryMetric label="Código" value={location.profile?.internal_code || `LOC-${location.id}`} />
+                        <SummaryMetric label="Espacios" value={spacesLoading ? "…" : spaces.length} icon={<Layers3 className="h-4 w-4 text-accent" />} />
+                        <SummaryMetric label="Tareas" value={spacesLoading ? "…" : taskTemplateCount} icon={<ListChecks className="h-4 w-4 text-accent" />} />
+                        <SummaryMetric label="Acceso" value={location.access?.access_method || (location.access?.has_access_code ? "Código" : "Sin configurar")} />
                     </section>
 
-                    <div className="mt-3 flex justify-end">
-                        <Button type="button" size="sm" className="border-accent bg-accent text-white hover:bg-accent/90" onClick={onEdit}>
-                            <PencilLine className="h-3.5 w-3.5" /> Editar ubicación
-                        </Button>
-                    </div>
+                    {canManageLocation && <div className="mt-3 flex justify-end"><Button type="button" size="sm" className="border-accent bg-accent text-white hover:bg-accent/90" onClick={onEdit}><PencilLine className="h-3.5 w-3.5" />Editar ubicación</Button></div>}
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-                        <div className="space-y-3.5">
-                            <div className={sectionClass}>
-                                <div className="flex items-start gap-2.5">
-                                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                                    <div className="min-w-0">
-                                        <p className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                            Dirección
-                                        </p>
-                                        <p className="text-sm font-semibold leading-relaxed text-[var(--text-main)]">
-                                            {location.address},{" "}
-                                            {location.postal_code ? `${location.postal_code} ` : ""}
-                                            {location.city}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {location.latitude && location.longitude && (
-                                <div className={sectionClass}>
-                                    <div className="flex items-start gap-2.5">
-                                        <Navigation className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                                        <div>
-                                            <p className="mb-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                                Coordenadas
-                                            </p>
-                                            <p className="font-mono text-xs font-semibold text-[var(--text-main)]">
-                                                {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {(location.profile || location.access) && (
-                                <div className={sectionClass}>
-                                    <h4 className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                        Información operativa
-                                    </h4>
-                                    <div className="space-y-2 text-xs">
-                                        {location.profile && (
-                                            <div className="flex items-start justify-between gap-3">
-                                                <span className="text-[var(--text-muted)]">Tipo</span>
-                                                <span className="text-right font-semibold capitalize text-[var(--text-main)]">{siteTypeLabel}</span>
-                                            </div>
-                                        )}
-                                        {location.profile?.internal_code && (
-                                            <div className="flex items-start justify-between gap-3">
-                                                <span className="text-[var(--text-muted)]">Código interno</span>
-                                                <span className="text-right font-semibold text-[var(--text-main)]">{location.profile.internal_code}</span>
-                                            </div>
-                                        )}
-                                        {location.access && (
-                                            <div className="flex items-start gap-2 pt-1 text-[var(--text-main)]">
-                                                <Clock3 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                                                <span>{location.access.permitted_days.length ? `${location.access.permitted_from || "--:--"} – ${location.access.permitted_until || "--:--"}` : "Horario de acceso sin configurar"}</span>
-                                            </div>
-                                        )}
-                                        {location.access?.instructions && (
-                                            <div className="flex items-start gap-2 pt-1 text-[var(--text-main)]">
-                                                <KeyRound className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                                                <span>{location.access.instructions}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="grid grid-cols-2 gap-2.5">
-                                <a
-                                    href={getGoogleMapsUrl(location)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={mapBtnClass}
-                                >
-                                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 .007c-6.628 0-12 5.372-12 12s5.372 12 12 12 12-5.372 12-12-5.372-12-12-12zm-3 17.5v-11l7.5 5.5-7.5 5.5z" />
-                                    </svg>
-                                    Google Maps
-                                </a>
-                                <a
-                                    href={getWazeUrl(location)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={mapBtnClass}
-                                >
-                                    <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M19.98 12.39c-.19-1.28-1.04-2.31-2.22-2.73V7.91c0-1.88-1.53-3.41-3.41-3.41s-3.41 1.53-3.41 3.41v1.75c-1.18.42-2.03 1.45-2.22 2.73H7.07c.18-1.92 1.51-3.49 3.32-4.04V7.91c0-2.65 2.15-4.8 4.8-4.8s4.8 2.15 4.8 4.8v.44c1.81.55 3.14 2.12 3.32 4.04H19.98z" />
-                                    </svg>
-                                    Waze
-                                </a>
-                            </div>
-                        </div>
-
-                        <div className="space-y-3.5">
-                            <div className={sectionClass}>
-                                <h4 className="mb-3 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                    Características e Instalaciones
-                                </h4>
-                                <div className="grid grid-cols-2 gap-2.5 text-xs font-semibold text-[var(--text-main)]">
-                                    <div className="glass-panel flex items-center gap-2 rounded-xl px-2.5 py-2">
-                                        <Bath className="h-4 w-4 shrink-0 text-accent" />
-                                        <span>{location.num_bathrooms || 0} Baño(s)</span>
-                                    </div>
-                                    <div className="glass-panel flex items-center gap-2 rounded-xl px-2.5 py-2">
-                                        <ChefHat className="h-4 w-4 shrink-0 text-accent" />
-                                        <span>{location.has_kitchen ? "Con Cocina" : "Sin Cocina"}</span>
-                                    </div>
-                                    <div className="glass-panel flex items-center gap-2 rounded-xl px-2.5 py-2">
-                                        <Car className="h-4 w-4 shrink-0 text-accent" />
-                                        <span>{location.has_garage ? "Con Garaje" : "Sin Garaje"}</span>
-                                    </div>
-                                    <div className="glass-panel flex items-center gap-2 rounded-xl px-2.5 py-2">
-                                        <Sun className="h-4 w-4 shrink-0 text-accent" />
-                                        <span>{location.has_terrace ? "Con Terraza" : "Sin Terraza"}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={`${sectionClass} space-y-3`}>
-                                <div className="mb-1 flex items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-2">
-                                    <h4 className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">
-                                        Distribución de Dormitorios
-                                    </h4>
-                                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-accent/10 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-accent">
-                                        <Users className="h-3 w-3" />
-                                        <span>Cap. {location.max_capacity || 0} pers.</span>
-                                    </div>
-                                </div>
-
-                                {(!location.rooms || location.rooms.length === 0) ? (
-                                    <p className="pl-1 text-[11px] italic text-[var(--text-muted)]">
-                                        No hay habitaciones configuradas.
-                                    </p>
-                                ) : (
-                                    <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
-                                        {location.rooms.map((room) => {
-                                            const rCap =
-                                                room.double_beds * 2 +
-                                                room.single_beds * 1 +
-                                                room.bunk_beds * 2
-                                            return (
-                                                <div
-                                                    key={`${room.name}-${room.double_beds}-${room.single_beds}-${room.bunk_beds}`}
-                                                    className="glass-panel flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-xs"
-                                                >
-                                                    <div className="flex min-w-0 items-center gap-2">
-                                                        <Bed className="h-3.5 w-3.5 shrink-0 text-[var(--text-muted)]" />
-                                                        <span className="truncate font-bold text-[var(--text-main)]">
-                                                            {room.name}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex shrink-0 items-center gap-1.5 text-[10px] font-medium text-[var(--text-muted)]">
-                                                        {room.double_beds > 0 && (
-                                                            <span className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-1.5 py-0.5">
-                                                                {room.double_beds} Matr.
-                                                            </span>
-                                                        )}
-                                                        {room.single_beds > 0 && (
-                                                            <span className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-1.5 py-0.5">
-                                                                {room.single_beds} Indiv.
-                                                            </span>
-                                                        )}
-                                                        {room.bunk_beds > 0 && (
-                                                            <span className="rounded-md border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-1.5 py-0.5">
-                                                                {room.bunk_beds} Lit.
-                                                            </span>
-                                                        )}
-                                                        <span className="rounded-md bg-accent/15 px-1.5 py-0.5 font-black text-accent">
-                                                            Cap: {rCap}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <LocationDetailOverview location={location} siteTypeLabel={siteTypeLabel} sectionClass={sectionClass} mapButtonClass={mapButtonClass} />
+                        <LocationDetailAttributes location={location} sectionClass={sectionClass} />
                     </div>
 
                     <section className={`${sectionClass} mt-5`}>
-                        <div className="mb-4">
-                            <h4 className="text-sm font-bold text-[var(--text-main)]">Estructura de espacios</h4>
-                            <p className="mt-1 text-xs text-[var(--text-muted)]">Organiza las zonas de trabajo y sus tareas sugeridas sin entrar en los servicios habituales.</p>
-                        </div>
-                        <LocationSpacesTab locationId={location.id} open={location !== null} canManage={canManageSpaces} />
+                        <div className="mb-4"><h4 className="text-sm font-bold text-[var(--text-main)]">Estructura de espacios</h4><p className="mt-1 text-xs text-[var(--text-muted)]">Organiza las zonas de trabajo y sus tareas sugeridas sin entrar en los servicios habituales.</p></div>
+                        <LocationSpacesTab locationId={location.id} open={location !== null} canManage={canManageLocation} />
                     </section>
 
                     <section className={`${sectionClass} mt-5`}>
-                        <div className="mb-4">
-                            <div>
-                                <h4 className="text-sm font-bold text-[var(--text-main)]">Operativa de la ubicación</h4>
-                                <p className="mt-1 text-xs text-[var(--text-muted)]">Servicios habituales, estructura de espacios y registro de trabajos en un mismo lugar.</p>
-                            </div>
-                        </div>
+                        <div className="mb-4"><h4 className="text-sm font-bold text-[var(--text-main)]">Operativa de la ubicación</h4><p className="mt-1 text-xs text-[var(--text-muted)]">Servicios habituales, estructura de espacios y registro de trabajos en un mismo lugar.</p></div>
                         <LocationTasksWorkspace location={location} open={location !== null} initialTab="history" showSpaces={false} />
                     </section>
                 </div>
             </DialogContent>
         </Dialog>
     )
+}
+
+function SummaryMetric({ label, value, icon }: { label: string; value: string | number; icon?: React.ReactNode }) {
+    return <div className="rounded-xl bg-[var(--bg-primary)] px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--text-muted)]">{label}</p><p className="mt-1 flex items-center gap-1.5 truncate text-sm font-semibold text-[var(--text-main)]">{icon}{value}</p></div>
 }

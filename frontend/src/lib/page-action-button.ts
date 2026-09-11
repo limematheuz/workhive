@@ -10,10 +10,3 @@ export const PAGE_ACTION_BUTTON_BASE =
 /** Primary black/white semantic tokens (matches Export CTA). */
 export const PAGE_ACTION_BUTTON_PRIMARY =
     `${PAGE_ACTION_BUTTON_BASE} border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] hover:bg-[var(--btn-primary-hover-bg)]`;
-
-/**
- * Secondary muted gray cancel / dismiss.
- * Solid muted bluish-grey cancel / dismiss — see globals.css `.btn-cancel-muted`.
- * Do NOT compose with PAGE_ACTION_BUTTON_BASE (different padding / shadow / hover lift).
- */
-export const PAGE_ACTION_BUTTON_SECONDARY = "btn-cancel-muted";

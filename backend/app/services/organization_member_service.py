@@ -130,6 +130,8 @@ def update_member(
     membership_id: int,
     payload: OrganizationMemberUpdate,
     current_user: User,
+    *,
+    commit: bool = True,
 ) -> OrganizationMemberResponse:
     company_id = require_capability(db, current_user, CAPABILITY_MEMBERS_MANAGE)
     membership = organization_repo.get_company_membership(
@@ -164,6 +166,7 @@ def update_member(
             exclude_membership_id=membership.id,
         )
 
+    security_changed = next_status != membership.status or next_access_class != membership.access_class
     previous_status = membership.status
     membership.access_class = next_access_class
     membership.status = next_status
@@ -172,6 +175,8 @@ def update_member(
     elif next_status == "active":
         membership.ended_at = None
     membership.user.is_active = next_status == "active"
+    if security_changed:
+        membership.user.session_version += 1
     db.add_all([membership, membership.user])
     if (
         payload.access_class
@@ -205,7 +210,10 @@ def update_member(
             team_ids=payload.team_ids,
         )
     organization_bootstrap_service.ensure_user_membership(db, membership.user)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(membership)
     return member_response(db, company_id=company_id, membership=membership)
 

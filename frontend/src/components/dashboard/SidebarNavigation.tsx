@@ -30,9 +30,9 @@ export function SidebarNavigation(props: SidebarNavigationProps) {
         return <SidebarMenuButton asChild isActive={isActive(item.href, item.exact)} tooltip={item.label}><Link href={item.href}><span className="size-5 shrink-0 [&>svg]:size-5">{item.icon}</span>{state !== "collapsed" && <span>{item.label}</span>}{count > 0 && state !== "collapsed" && <SidebarMenuBadge className="rounded-md bg-[var(--sidebar-active-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--sidebar-active-text)]">{formatSidebarAlertCount(count)}</SidebarMenuBadge>}</Link></SidebarMenuButton>;
     };
 
-    if (state === "collapsed") return <SidebarContent className="overflow-y-auto pt-2 md:overflow-y-auto"><SidebarMenu>{props.visibleNavLinks.map(item => <SidebarMenuItem key={item.href}>{link(item)}</SidebarMenuItem>)}</SidebarMenu></SidebarContent>;
+    if (state === "collapsed") return <SidebarContent className="!overflow-y-auto overscroll-contain pt-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:!overflow-y-auto"><SidebarMenu>{props.visibleNavLinks.map(item => <SidebarMenuItem key={item.href}>{link(item)}</SidebarMenuItem>)}</SidebarMenu></SidebarContent>;
 
-    return <SidebarContent className="pb-1 pt-0.5">
+    return <SidebarContent className="!overflow-y-auto overscroll-contain pb-1 pt-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:!overflow-y-auto">
         <SidebarMenu className="mb-1">{props.plainLinks.map(item => <SidebarMenuItem key={item.href}>{link(item)}</SidebarMenuItem>)}</SidebarMenu>
         {props.navGroups.map(group => {
             const active = group.children.some(item => isActive(item.href, item.exact));
@@ -44,7 +44,7 @@ export function SidebarNavigation(props: SidebarNavigationProps) {
                     <CollapsibleTrigger className={`flex h-9 w-full items-center gap-2 rounded-lg px-2 text-left text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors hover:bg-[var(--bg-tertiary)] ${active ? "text-[var(--text-main)]" : "text-[var(--text-muted)]"}`}>
                         <span className="[&>svg]:size-4">{group.icon}</span><span className="flex-1">{group.label}</span><ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
                     </CollapsibleTrigger>
-                    <CollapsibleContent><SidebarGroupContent><SidebarMenuSub className="border-[var(--text-muted)]/70">{group.children.map(item => <li key={item.href}>{link(item, true)}</li>)}</SidebarMenuSub></SidebarGroupContent></CollapsibleContent>
+                    <CollapsibleContent className="sidebar-group-content overflow-hidden data-[state=closed]:animate-[sidebar-group-close_130ms_ease-in] data-[state=open]:animate-[sidebar-group-open_160ms_ease-out]"><SidebarGroupContent><SidebarMenuSub className="border-[var(--text-muted)]/70">{group.children.map(item => <li key={item.href}>{link(item, true)}</li>)}</SidebarMenuSub></SidebarGroupContent></CollapsibleContent>
                 </Collapsible>
             </SidebarGroup>;
         })}

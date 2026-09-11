@@ -11,7 +11,7 @@ test("location list uses a dense operational table and keeps the detail free of 
     const dialog = read("../components/ui/dialog.tsx");
 
     assert.match(grid, /DataListTable/);
-    assert.match(grid, /DataListRow|gridClassName/);
+    assert.match(grid, /desktopFrom="lg"/);
     assert.match(grid, /dict\.locations\.title/);
     assert.match(grid, /workspace\.tasks/);
     assert.match(grid, /dict\.locations\.table\.status/);

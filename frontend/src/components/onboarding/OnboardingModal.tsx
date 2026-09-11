@@ -107,7 +107,7 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
 
     const createStarterSetup = async (payload: LocationWorkspacePayload) => {
         if (!user.company_id) return
-        const { name, address, city, postal_code, location_type, profile, access, spaces } = payload
+        const { name, address, city, postal_code, location_type, profile, access, spaces, contacts, risks, service_windows } = payload
 
         setLoading(true)
         try {
@@ -116,7 +116,7 @@ function useOnboardingModalController({ user, onComplete }: OnboardingModalProps
                 { operating_model: operatingModel, location: {
                     name, address, city, postal_code: postal_code || "",
                     location_type: (location_type || "other") as OnboardingLocationType,
-                    profile, access, spaces,
+                    profile, access, spaces, contacts, risks, service_windows,
                 } },
             )
             setResult(onboardingResult)

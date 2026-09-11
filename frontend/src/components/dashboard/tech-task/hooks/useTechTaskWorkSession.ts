@@ -5,7 +5,10 @@ import { WorkSession, WorkerTimeSummary } from "@/types/user";
 import { WorkSessionService } from "@/services/work-session.service";
 import { TaskService } from "@/services/task.service";
 import { toast } from "@/lib/toast";
-import { getCurrentWorkStartLocation } from "@/lib/work-start-location";
+import {
+    getCurrentWorkEndLocation,
+    getCurrentWorkStartLocation,
+} from "@/lib/work-start-location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { POLL_INTERVALS } from "@/lib/polling";
 
@@ -95,7 +98,13 @@ export function useTechTaskWorkSession({
 
     const isCurrentTaskSessionActive = activeSession?.task_item_id === taskId;
     const personalElapsedSeconds = isCurrentTaskSessionActive && activeSession
-        ? Math.max(0, Math.floor((nowMs - new Date(activeSession.start_time).getTime()) / 1000))
+        ? Math.max(0,
+            Math.floor((nowMs - new Date(activeSession.start_time).getTime()) / 1000)
+            - (activeSession.paused_seconds ?? 0)
+            - (activeSession.paused_at
+                ? Math.max(0, Math.floor((nowMs - new Date(activeSession.paused_at).getTime()) / 1000))
+                : 0)
+        )
         : 0;
     const hasAnotherActiveSession = Boolean(
         activeSession && activeSession.task_item_id !== taskId
@@ -173,7 +182,13 @@ export function useTechTaskWorkSession({
 
         try {
             setUpdatingStatus(true);
-            await TaskService.finishTaskWork(taskId);
+            let endLocation;
+            try {
+                endLocation = await getCurrentWorkEndLocation();
+            } catch {
+                // GPS is optional when finishing work.
+            }
+            await TaskService.finishTaskWork(taskId, endLocation);
             setActiveSession(null);
             window.dispatchEvent(new CustomEvent("workhive:session-changed"));
             toast.success(dict.tech.toast_work_completed);

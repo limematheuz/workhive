@@ -1,4 +1,4 @@
-import type { Location, LocationAccessProfile, LocationProfile, LocationSpace } from "@/types/location";
+import type { Location, LocationAccessProfile, LocationContact, LocationProfile, LocationRisk, LocationServiceWindow, LocationSpace } from "@/types/location";
 import type { Reservation, ReservationInput } from "@/types/reservation";
 
 export type PartnerPortalOverview = {
@@ -20,6 +20,9 @@ export type PartnerPortalLocationInput = Pick<Location, "name" | "address" | "ci
         clear_access_code?: boolean;
     };
     spaces?: Omit<LocationSpace, "id" | "location_id" | "sort_order" | "is_active">[];
+    contacts?: Omit<LocationContact, "location_id" | "draft_id">[];
+    risks?: Omit<LocationRisk, "location_id" | "draft_id">[];
+    service_windows?: Omit<LocationServiceWindow, "location_id" | "draft_id">[];
 };
 
 export type PartnerPortalLocationUpdate = Omit<PartnerPortalLocationInput, "spaces">;

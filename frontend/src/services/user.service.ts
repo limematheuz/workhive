@@ -66,9 +66,7 @@ export const UserService = {
             method: "GET",
             cache: "no-store"
         });
-        if (!response.ok) {
-            throw new Error("Error fetching user tasks");
-        }
+        await assertApiResponseOk(response, "Error fetching user tasks");
         return await response.json();
     },
 

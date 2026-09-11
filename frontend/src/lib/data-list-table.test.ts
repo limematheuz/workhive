@@ -17,10 +17,18 @@ test("shared DataListTable powers the remaining generic data lists", () => {
 
     assert.match(table, /export function DataListTable/);
     assert.match(table, /export function DataListRow/);
-    assert.match(table, /billing-block/);
+    assert.match(table, /from "@\/components\/ui\/card"/);
+    assert.match(table, /<Card/);
+    assert.match(table, /from "@\/components\/ui\/table"/);
+    assert.match(table, /<TableHeader>/);
+    assert.match(table, /<TableBody>/);
+    assert.match(table, /<Table\b/);
+    assert.match(table, /Array\.isArray\(node\)/);
     assert.match(table, /variant\?: "surface" \| "plain"/);
     assert.match(table, /renderCompactRow/);
     assert.match(table, /footer\?: ReactNode/);
+    assert.match(table, /DataTablePagination/);
+    assert.doesNotMatch(table, /!grid/);
 
     for (const [name, file] of [
         ["expenses", expenses],
@@ -47,6 +55,15 @@ test("shared DataListTable powers the remaining generic data lists", () => {
     assert.doesNotMatch(integrations, /surface-glass-card/);
 });
 
+test("the shared table keeps rounded borders and low-contrast row separators", () => {
+    const table = source("../components/ui/table.tsx");
+    const dataList = source("../components/ui/data-list-table.tsx");
+
+    assert.match(dataList, /overflow-hidden rounded-2xl border border-\[color-mix\(in_srgb,var\(--border-color\)_32%,transparent\)\]/);
+    assert.match(table, /border-b border-\[var\(--table-divider\)\] transition-colors hover:!bg-muted\/50/);
+    assert.match(table, /--table-divider:color-mix\(in_srgb,var\(--border-color\)_12%,transparent\)/);
+});
+
 test("invoice and quote lists use the shared shadcn table primitive", () => {
     const invoices = source("../components/invoices/InvoicesListSection.tsx");
     const quotes = source("../components/quotes/QuotesListSection.tsx");
@@ -70,7 +87,7 @@ test("invoice and quote lists use the shared shadcn table primitive", () => {
     assert.match(jobs, /from "@\/components\/ui\/checkbox"/);
     assert.match(jobs, /function JobMobileCard/);
     assert.match(jobs, /<Checkbox/);
-    assert.match(jobs, /grid gap-2\.5 p-3 md:hidden/);
+    assert.match(jobs, /grid gap-2\.5 p-3 lg:hidden/);
     assert.doesNotMatch(jobs, /CheckSquare/);
 });
 
@@ -82,7 +99,12 @@ test("invoice and quote lists paginate both desktop tables and mobile cards cons
         assert.match(file, /DataTablePagination/);
         assert.match(file, new RegExp(`useDataTablePagination\\(${collection}, 10\\)`));
         assert.match(file, /pagination\.pageItems\.map/);
-        assert.match(file, /border-b border-\[var\(--border-soft\)\]/, `${name} should keep a visible row separator`);
+        assert.match(file, /<TableRow/, `${name} should use the shared row separator`);
         assert.match(file, /text-\[var\(--btn-secondary-text\)\]/, `${name} should use the shared blue table headings`);
     }
+
+    assert.match(quotes, /hidden xl:block/);
+    assert.match(quotes, /xl:hidden/);
+    assert.doesNotMatch(quotes, /overflow-x-auto p-3/);
+    assert.doesNotMatch(quotes, /min-w-\[820px\]/);
 });

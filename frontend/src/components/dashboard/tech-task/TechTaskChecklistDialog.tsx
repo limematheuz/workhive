@@ -260,14 +260,15 @@ function TechTaskChecklistDialogContent({
                         uploadingChecklistItem={uploadingChecklistItem}
                     />
 
-                    <button
+                    <Button
                         type="button"
+                        variant="cancel"
                         onClick={onResetChecklist}
-                        className="btn-cancel-muted w-full"
+                        className="w-full"
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                         {dict.tech.reset_checklist}
-                    </button>
+                    </Button>
                 </main>
 
                 <footer className="dialog-glass-chrome flex shrink-0 items-center gap-3 border-t border-[var(--border-soft)] px-3 py-3 sm:px-5">

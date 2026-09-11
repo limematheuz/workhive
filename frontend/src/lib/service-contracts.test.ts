@@ -9,6 +9,7 @@ test("contracts are a finance-gated agreement workspace, not a task shortcut", (
     const page = source("../app/dashboard/contracts/page.tsx")
     const detail = source("../components/contracts/ServiceContractDetailDialog.tsx")
     const service = source("../services/service-contract.service.ts")
+    const quoteActions = source("../components/quotes/QuoteDetailActions.tsx")
 
     assert.match(sidebar, /href: "\/dashboard\/contracts"/)
     assert.match(page, /const canViewContracts = canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/)
@@ -20,4 +21,7 @@ test("contracts are a finance-gated agreement workspace, not a task shortcut", (
     assert.match(service, /\/api\/v1\/service-contracts\//)
     assert.match(service, /getLocationCandidates/)
     assert.match(service, /updateLocationZones/)
+    assert.match(quoteActions, /\/dashboard\/contracts\?quote=\$\{quote\.id\}/)
+    assert.match(page, /searchParams\.get\("quote"\)/)
+    assert.match(page, /item\.source_quote_id === sourceQuoteId/)
 })

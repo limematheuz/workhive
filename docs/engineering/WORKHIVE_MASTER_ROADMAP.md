@@ -307,17 +307,47 @@ como WorkHive Core solo cuando el caso real las exige.
 
 - ✅ Ubicaciones, perfiles operativos, zonas y acceso protegido ya existen.
 - ✅ La interfaz de Ubicaciones y el acceso rápido desde Clientes existen.
-- ⬜ Contactos por ubicación, ventanas/SLA, riesgos, documentos, equipos y
-  servicios contratados normalizados.
-- ⬜ Relación formal cliente → contrato → ubicación → zona.
+- 🟡 Contactos operativos por ubicación: cada local puede tener varias personas
+  para operaciones, acceso, calidad o emergencias, con un contacto principal;
+  no se confunden con los contactos comerciales o de facturación de la cuenta.
+  Cubierto con migración reversible, aislamiento entre empresas y pruebas de
+  regresión; pendiente de revisión visual autenticada y publicación para
+  marcarlo como completado.
+- 🟡 Riesgos operativos por ubicación: el local puede mantener riesgos abiertos
+  o mitigados, con severidad, instrucciones y medida preventiva. Está
+  integrado en los tres flujos canónicos de alta/edición, con migración
+  reversible y regresiones de aislamiento; pendiente de revisión visual
+  autenticada y publicación para marcarlo como completado.
+- 🟡 Horarios de servicio por ubicación: se guardan separados de las
+  credenciales/horarios de acceso, por días, franja y estado. Están disponibles
+  al crear o editar en el espacio interno, portal patrocinado y alta inicial;
+  cubiertos con migración reversible y regresiones de aislamiento. Pendiente de
+  revisión visual autenticada y publicación para marcarlo como completado.
+- 🟡 Documentos y equipos normalizados por ubicación: documentos privados PDF,
+  JPEG y PNG con hash, cuota documental por empresa: 1 MB en Basic/Medium y 10 MB
+  en Top/Enterprise; inventario
+  con estado, cantidad y mantenimiento. Lectura por ámbito y altas/archivo solo
+  para la empresa propietaria con `locations.manage`; migración y regresiones
+  cubiertas. Vistas independientes de Documentos y Activos, sin mezclarlas con
+  Ubicaciones. Pendiente de revisión visual autenticada y publicación.
+  Servicios contratados quedan cubiertos por la relación formal de contratos
+  siguiente.
+- 🟡 Relación formal cliente → contrato → ubicación → zona: un contrato nace
+  de la revisión aceptada, solo puede cubrir ubicaciones activas de su cliente y
+  puede restringirse a zonas activas de esas ubicaciones; sin zonas elegidas,
+  cubre la ubicación completa. Cubierto con migración reversible, aislamiento y
+  regresiones; pendiente de revisión visual autenticada y publicación para
+  marcarlo como completado.
 
 ### Fase 5 — Órdenes, recurrencia y tiempo
 
 - ✅ Trabajos actuales, asignaciones, checklist, evidencias, calendario y
   sesiones de trabajo/fichaje existen.
 - ✅ Los trabajos facturables pueden seleccionarse para crear facturas.
-- ⬜ Modelo `work_orders` y recurrencia contractual sin destruir `TaskItem` de
-  golpe.
+- 🟡 Modelo `work_orders` separado de `TaskItem`: una orden individual o
+  recurrente puede vincularse a un contrato activo y generar tareas
+  ejecutables trazables sin alterar tareas existentes. Pendiente de UI,
+  revisión visual y publicación.
 - ⬜ Previsión de personas/minutos, pausas, GPS final, correcciones justificadas,
   aprobaciones, partes y coste laboral.
 

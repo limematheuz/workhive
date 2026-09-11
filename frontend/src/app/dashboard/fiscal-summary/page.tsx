@@ -138,7 +138,6 @@ export default function FiscalSummaryPage() {
                                         : column.key === "balance" ? text.vat_balance
                                             : text.irpf_withheld,
                     }))}
-                    gridClassName="grid-cols-[minmax(5rem,.7fr)_minmax(8rem,.95fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)]"
                     header={{ title: text.periods_title, subtitle: text.periods_subtitle }}
                     desktopFrom="lg"
                     rowAriaLabel={(period) => `${period.label}: ${getFiscalActivityLabel(text.activity, period)}`}

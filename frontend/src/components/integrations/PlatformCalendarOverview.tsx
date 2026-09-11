@@ -66,8 +66,6 @@ type DetailItem = {
     icon?: ComponentType<{ className?: string }>;
 };
 
-const DETAIL_GRID = "grid-cols-[minmax(9rem,.9fr)_minmax(12rem,1.6fr)_3rem]";
-
 function Metric({
     icon: Icon,
     label,
@@ -177,7 +175,6 @@ export function PlatformCalendarOverview({
             <DataListTable
                 items={detailItems}
                 getRowKey={(item) => item.key}
-                gridClassName={DETAIL_GRID}
                 desktopFrom="md"
                 header={{
                     title: labels.technical_details,

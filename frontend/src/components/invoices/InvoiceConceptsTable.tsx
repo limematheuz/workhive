@@ -81,7 +81,7 @@ export function InvoiceConceptsTable({
             </div>
 
             <div className="overflow-hidden rounded-[22px] border border-[var(--border-soft)] bg-[var(--bg-tertiary)]">
-                <Table className="w-full border-collapse text-left">
+                <Table className="w-full text-left">
                     <TableHeader>
                         <TableRow className="bg-[var(--bg-secondary)]/50 text-3xs uppercase font-bold tracking-wider text-[var(--text-muted)] select-none">
                             <TableHead className="py-2.5 px-3">{dict.invoices?.col_description || "Descripción"}</TableHead>

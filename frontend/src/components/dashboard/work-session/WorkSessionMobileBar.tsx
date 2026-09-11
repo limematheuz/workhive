@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, PlayCircle } from "lucide-react";
+import { AlertCircle, PauseCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { WorkSession } from "@/services/work-session.service";
 import type { TaskItem, User } from "@/types/user";
@@ -9,6 +9,8 @@ interface WorkSessionMobileBarProps {
     dict: {
         work_sessions: {
             stop_shift: string;
+            pause_shift: string;
+            resume_shift: string;
             inactive_shift_mobile_desc?: string;
             viewer_no_pending_tasks?: string;
             no_accepted_tasks_warning?: string;
@@ -26,6 +28,7 @@ interface WorkSessionMobileBarProps {
     user: User | null;
     actionLoading: boolean;
     onPreStopShift: () => void;
+    onTogglePause: () => void;
 }
 
 export function WorkSessionMobileBar({
@@ -37,6 +40,7 @@ export function WorkSessionMobileBar({
     user,
     actionLoading,
     onPreStopShift,
+    onTogglePause,
 }: WorkSessionMobileBarProps) {
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--bg-card)]/95 backdrop-blur-md border-t border-[var(--border-soft)] p-4 z-50 flex flex-col gap-2 shadow-[0_-4px_20px_rgba(0,0,0,0.15)] pb-[calc(1rem+env(safe-area-inset-bottom))] w-full">
@@ -56,9 +60,22 @@ export function WorkSessionMobileBar({
                     <div className="flex items-center gap-2 shrink-0">
                         <Button
                             type="button"
+                            variant="outline"
+                            size="icon"
+                            onClick={onTogglePause}
+                            disabled={actionLoading}
+                            aria-label={activeSession.paused_at
+                                ? dict.work_sessions.resume_shift
+                                : dict.work_sessions.pause_shift}
+                        >
+                            <PauseCircle className="size-4" />
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="destructive"
                             onClick={onPreStopShift}
                             disabled={actionLoading}
-                            className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-5 py-2.5 text-xs font-bold ui-motion border-none shadow-sm cursor-pointer flex items-center justify-center"
+                            className="px-4"
                         >
                             {actionLoading ? (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

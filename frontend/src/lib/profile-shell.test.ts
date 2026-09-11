@@ -18,7 +18,6 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     const password = source("../components/profile/PasswordChangeForm.tsx");
     const email = source("../components/profile/EmailChangeForm.tsx");
     const section = source("../components/profile/ProfileFormSection.tsx");
-    const globals = source("../app/globals.css");
 
     assert.match(page, /billing-surface/);
     assert.match(page, /billing-surface-accent-pad/);
@@ -26,7 +25,7 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     assert.match(page, /from "@\/components\/ui\/badge"/);
     assert.match(page, /from "@\/components\/ui\/button"/);
     assert.match(page, /ProfileHistories/);
-    assert.match(page, /btn-cancel-muted/);
+    assert.match(page, /variant="cancel"/);
     assert.match(page, /Cerrar Editor|Close Editor/);
 
     assert.match(privacyUi, /billing-surface/);
@@ -42,17 +41,15 @@ test("profile identity, privacy, and stats use billing surfaces without touching
     assert.match(details, /DocumentFormField/);
     assert.match(details, /DocumentFormInput/);
     assert.match(details, /ProfileFormSection/);
-    assert.match(details, /btn-cancel-muted/);
+    assert.match(details, /variant="cancel"/);
     assert.match(details, /PAGE_ACTION_BUTTON_PRIMARY/);
     assert.match(company, /DocumentFormField/);
     assert.match(company, /company-swift-bic/);
-    assert.match(company, /btn-cancel-muted/);
+    assert.match(company, /variant="cancel"/);
     assert.match(password, /DocumentFormField/);
-    assert.match(password, /btn-cancel-muted/);
+    assert.match(password, /variant="cancel"/);
     assert.match(email, /DocumentFormField/);
     assert.match(email, /PAGE_ACTION_BUTTON_PRIMARY/);
-    assert.match(globals, /\.btn-cancel-muted/);
-    assert.match(globals, /var\(--bg-tertiary\)/);
     // Histories / tables stay on the shared DataListTable path — leave table markup alone.
     assert.match(histories, /DataListTable/);
     assert.match(histories, /variant="plain"/);

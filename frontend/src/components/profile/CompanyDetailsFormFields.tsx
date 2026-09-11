@@ -285,13 +285,13 @@ export function CompanyDetailsFormFields({
             </ProfileFormSection>
 
             <div className="flex justify-end gap-2.5 border-t border-[var(--border-soft)] pt-3">
-                <button
+                <Button
                     type="button"
+                    variant="cancel"
                     onClick={onCancel}
-                    className="btn-cancel-muted"
                 >
                     {dict.locations?.form?.cancel || "Cancel"}
-                </button>
+                </Button>
                 <Button
                     type="submit"
                     disabled={updating}

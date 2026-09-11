@@ -120,6 +120,18 @@ class TaskWorkStartRequest(BaseModel):
     start_accuracy_meters: float | None = Field(default=None, ge=0)
 
 
+class TaskWorkFinishRequest(BaseModel):
+    end_latitude: float | None = Field(default=None, ge=-90, le=90)
+    end_longitude: float | None = Field(default=None, ge=-180, le=180)
+    end_accuracy_meters: float | None = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def require_coordinate_pair(self):
+        if (self.end_latitude is None) != (self.end_longitude is None):
+            raise ValueError("La ubicación final necesita latitud y longitud")
+        return self
+
+
 class TaskChecklistItemUpdate(BaseModel):
     completed: bool
     answer: Literal["yes", "no"] | None = None

@@ -716,7 +716,6 @@ function ClientProfitabilityDashboard({
                         items={current.clients}
                         getRowKey={(item) => item.client_id}
                         columns={columns}
-                        gridClassName="grid-cols-[minmax(11rem,1.35fr)_5rem_7rem_7rem_5rem]"
                         header={{
                             title: text.profitability_table_title,
                             subtitle: text.profitability_table_subtitle,

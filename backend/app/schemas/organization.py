@@ -93,6 +93,10 @@ class OrganizationMemberProfileAssignmentsUpdate(BaseModel):
         return value
 
 
+class OrganizationMemberAccessUpdate(OrganizationMemberUpdate):
+    profile_assignments: OrganizationMemberProfileAssignmentsUpdate | None = None
+
+
 class DepartmentCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     code: str | None = Field(default=None, max_length=50)
@@ -137,6 +141,8 @@ class DepartmentUpdate(BaseModel):
     def reject_explicit_null_name(self) -> "DepartmentUpdate":
         if "name" in self.model_fields_set and self.name is None:
             raise ValueError("Name cannot be null")
+        if "is_active" in self.model_fields_set and self.is_active is None:
+            raise ValueError("Active status cannot be null")
         return self
 
 
@@ -165,6 +171,12 @@ class TeamCreate(BaseModel):
     code: str | None = Field(default=None, max_length=50)
     department_id: int | None = Field(default=None, gt=0)
 
+    @model_validator(mode="after")
+    def require_name(self) -> "TeamCreate":
+        if not self.name:
+            raise ValueError("Name cannot be blank")
+        return self
+
     @field_validator("name", "code")
     @classmethod
     def trim_text(cls, value: str | None) -> str | None:
@@ -179,6 +191,13 @@ class TeamUpdate(BaseModel):
     code: str | None = Field(default=None, max_length=50)
     department_id: int | None = Field(default=None, gt=0)
     is_active: bool | None = None
+
+    @model_validator(mode="after")
+    def reject_explicit_null_fields(self) -> "TeamUpdate":
+        for field in ("name", "is_active"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be null")
+        return self
 
     @field_validator("name", "code")
     @classmethod
@@ -239,6 +258,12 @@ class PermissionProfileCreate(BaseModel):
     description: str | None = Field(default=None, max_length=2_000)
     permission_codes: list[str] = Field(min_length=1, max_length=100)
 
+    @model_validator(mode="after")
+    def require_name(self) -> "PermissionProfileCreate":
+        if not self.name:
+            raise ValueError("Name cannot be blank")
+        return self
+
     @field_validator("name", "description")
     @classmethod
     def trim_text(cls, value: str | None) -> str | None:
@@ -266,6 +291,13 @@ class PermissionProfileUpdate(BaseModel):
     )
     is_active: bool | None = None
 
+    @model_validator(mode="after")
+    def reject_explicit_null_fields(self) -> "PermissionProfileUpdate":
+        for field in ("name", "is_active"):
+            if field in self.model_fields_set and getattr(self, field) is None:
+                raise ValueError(f"{field} cannot be null")
+        return self
+
     @field_validator("name", "description")
     @classmethod
     def trim_text(cls, value: str | None) -> str | None:
@@ -292,6 +324,7 @@ class PermissionProfileResponse(BaseModel):
     name: str
     description: str | None
     is_system: bool
+    is_editable: bool
     is_active: bool
     permission_codes: list[str]
     usage: dict[str, int | bool]

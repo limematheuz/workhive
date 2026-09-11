@@ -3,8 +3,14 @@ import test from "node:test";
 
 import {
     canManageFinance,
+    canManageLaborCosts,
+    canManageWorkReports,
     canViewFinance,
+    canViewLaborCosts,
     canViewFinanceRole,
+    canManageQuality,
+    canViewQuality,
+    canViewWorkReports,
     isCompanyAdminRole,
     isExternalPortalRole,
     isPartnerPortalRole,
@@ -46,4 +52,54 @@ test("external accountants can read finance without becoming company administrat
 test("explicit company capabilities override a legacy role for financial UI", () => {
     assert.equal(canViewFinance(commercialWithoutFinance), false);
     assert.equal(canManageFinance(commercialWithoutFinance), false);
+});
+
+test("explicit work-report capabilities control report visibility and mutations", () => {
+    const reader = {
+        ...commercialWithoutFinance,
+        can_view_work_reports: true,
+        can_manage_work_reports: false,
+    } satisfies User;
+    const manager = {
+        ...reader,
+        can_manage_work_reports: true,
+    } satisfies User;
+
+    assert.equal(canViewWorkReports(reader), true);
+    assert.equal(canManageWorkReports(reader), false);
+    assert.equal(canManageWorkReports(manager), true);
+});
+
+test("labour-cost workspace requires the explicit reserved capability", () => {
+    const viewer = {
+        ...commercialWithoutFinance,
+        can_view_labor_costs: false,
+        can_manage_labor_costs: false,
+    } satisfies User;
+    const administrator = {
+        ...viewer,
+        can_view_labor_costs: true,
+        can_manage_labor_costs: true,
+    } satisfies User;
+
+    assert.equal(canViewLaborCosts(viewer), false);
+    assert.equal(canManageLaborCosts(viewer), false);
+    assert.equal(canViewLaborCosts(administrator), true);
+    assert.equal(canManageLaborCosts(administrator), true);
+});
+
+test("quality workspace follows explicit quality capabilities", () => {
+    const reader = {
+        ...commercialWithoutFinance,
+        can_view_quality: true,
+        can_manage_quality: false,
+    } satisfies User;
+    const manager = {
+        ...reader,
+        can_manage_quality: true,
+    } satisfies User;
+
+    assert.equal(canViewQuality(reader), true);
+    assert.equal(canManageQuality(reader), false);
+    assert.equal(canManageQuality(manager), true);
 });

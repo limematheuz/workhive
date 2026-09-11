@@ -1,10 +1,11 @@
 from datetime import datetime
 from app.schemas.work_session import WorkSessionCreate
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.work_session import WorkSession
+from app.models.work_session_pause import WorkSessionPause
 from app.models.user import User
 
 
@@ -13,11 +14,38 @@ def get_active_session_by_user(db: Session, user_id: int) -> WorkSession | None:
     return sessions[0] if sessions else None
 
 
+def get_active_session_by_user_for_update(
+    db: Session, user_id: int
+) -> WorkSession | None:
+    return (
+        db.query(WorkSession)
+        .filter(WorkSession.user_id == user_id, WorkSession.end_time.is_(None))
+        .order_by(WorkSession.id.desc())
+        .with_for_update()
+        .first()
+    )
+
+
+def get_active_pause_for_update(
+    db: Session, work_session_id: int
+) -> WorkSessionPause | None:
+    return (
+        db.query(WorkSessionPause)
+        .filter(
+            WorkSessionPause.work_session_id == work_session_id,
+            WorkSessionPause.ended_at.is_(None),
+        )
+        .with_for_update()
+        .first()
+    )
+
+
 def get_active_sessions_by_user(
     db: Session, user_id: int
 ) -> list[WorkSession]:
     return (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses))
         .filter(WorkSession.user_id == user_id)
         .filter(WorkSession.end_time.is_(None))
         .order_by(WorkSession.id.desc())
@@ -30,14 +58,18 @@ def get_work_session_by_id(
     session_id: int,
     user_id: int,
     location_ids: set[int] | None = None,
+    for_update: bool = False,
 ) -> WorkSession | None:
     query = (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses), joinedload(WorkSession.location))
         .filter(WorkSession.id == session_id)
         .filter(WorkSession.user_id == user_id)
     )
     if location_ids is not None:
         query = query.filter(WorkSession.location_id.in_(location_ids))
+    if for_update:
+        query = query.with_for_update()
     return query.first()
 
 
@@ -50,6 +82,7 @@ def get_work_session_by_user(
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses), joinedload(WorkSession.location))
         .filter(WorkSession.user_id == user_id)
     )
     if location_ids is not None:
@@ -87,6 +120,7 @@ def get_closed_sessions_by_user(
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses))
         .filter(WorkSession.user_id == user_id)
         .filter(WorkSession.end_time.isnot(None))
     )
@@ -119,6 +153,7 @@ def get_distinct_location_ids_by_user(
 def get_sessions_by_task(db: Session, task_item_id: int) -> list[WorkSession]:
     return (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses))
         .filter(WorkSession.task_item_id == task_item_id)
         .order_by(WorkSession.start_time.asc())
         .all()
@@ -130,7 +165,7 @@ def get_sessions_by_tasks(db: Session, task_item_ids: list[int]) -> list[WorkSes
         return []
     return (
         db.query(WorkSession)
-        .options(joinedload(WorkSession.user))
+        .options(joinedload(WorkSession.user), selectinload(WorkSession.pauses))
         .filter(WorkSession.task_item_id.in_(task_item_ids))
         .order_by(WorkSession.task_item_id.asc(), WorkSession.start_time.asc())
         .all()
@@ -142,6 +177,7 @@ def get_visible_sessions_by_task(
 ) -> list[WorkSession]:
     return (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses))
         .join(User, WorkSession.user_id == User.id)
         .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
         .outerjoin(
@@ -172,7 +208,7 @@ def get_visible_sessions_by_tasks(
         return []
     return (
         db.query(WorkSession)
-        .options(joinedload(WorkSession.user))
+        .options(joinedload(WorkSession.user), selectinload(WorkSession.pauses))
         .join(User, WorkSession.user_id == User.id)
         .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
         .outerjoin(
@@ -203,6 +239,7 @@ def get_visible_active_sessions(
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
+        .options(selectinload(WorkSession.pauses))
         .join(User, WorkSession.user_id == User.id)
         .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
         .outerjoin(

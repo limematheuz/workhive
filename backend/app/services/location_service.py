@@ -7,7 +7,12 @@ from app.schemas.location import LocationCreate, LocationUpdate
 from app.repositories import location as location_repo
 from app.repositories import client as client_repo
 from fastapi import HTTPException, status
-from app.services import location_access_service
+from app.services import (
+    location_access_service,
+    location_contact_service,
+    location_risk_service,
+    location_service_window_service,
+)
 from app.services import location_workspace_service
 from app.services.location_organization_assignment_service import (
     resolve_organization_assignment,
@@ -176,6 +181,21 @@ def create_location_in_transaction(
             company_id,
             location_data.profile,
         )
+    location_contact_service.sync_contacts(
+        db,
+        location,
+        location_data.contacts,
+    )
+    location_risk_service.sync_risks(
+        db,
+        location,
+        location_data.risks,
+    )
+    location_service_window_service.sync_service_windows(
+        db,
+        location,
+        location_data.service_windows,
+    )
     location_workspace_service.sync_access_profile(
         db,
         location,
@@ -288,6 +308,21 @@ def update_location(
                 company_id,
                 location_update.profile,
             )
+        location_contact_service.sync_contacts(
+            db,
+            location,
+            location_update.contacts,
+        )
+        location_risk_service.sync_risks(
+            db,
+            location,
+            location_update.risks,
+        )
+        location_service_window_service.sync_service_windows(
+            db,
+            location,
+            location_update.service_windows,
+        )
         location_workspace_service.sync_access_profile(
             db,
             location,

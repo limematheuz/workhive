@@ -1,6 +1,17 @@
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import Column, Float, Integer, MetaData, String, Table, create_engine, inspect, text
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Float,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    create_engine,
+    inspect,
+    text,
+)
 
 from app.core.config import settings
 
@@ -28,6 +39,34 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         Column("id", Integer, primary_key=True),
         Column("template_task_id", Integer, nullable=True),
     )
+    # These are established tables at the historical revision under test.
+    # They let the fixture exercise migrations all the way to the current head
+    # without pretending that later additions already exist.
+    Table("companies", metadata, Column("id", Integer, primary_key=True))
+    Table("locations", metadata, Column("id", Integer, primary_key=True))
+    Table("users", metadata, Column("id", Integer, primary_key=True))
+    Table("work_sessions", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "permission_definitions",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("code", String(255), nullable=False),
+        Column("category", String(255), nullable=False),
+        Column("description", String(500), nullable=False),
+        Column("is_active", Boolean, nullable=False),
+    )
+    Table(
+        "permission_profiles",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("name", String(255), nullable=False),
+    )
+    Table(
+        "permission_profile_permissions",
+        metadata,
+        Column("permission_profile_id", Integer, primary_key=True),
+        Column("permission_definition_id", Integer, primary_key=True),
+    )
     # Later migrations add quote revisions. Keep this legacy fixture minimal,
     # while still representing the pre-existing quote table those migrations
     # legitimately evolve on a real WorkHive database.
@@ -40,6 +79,18 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
     # revision. These are intentionally minimal because this test only
     # validates catalog backfill, but they must exist for that branch to run.
     Table("invoices", metadata, Column("id", Integer, primary_key=True))
+    # The explicit-permission migration evolves these pre-existing tables too.
+    Table(
+        "company_memberships", metadata,
+        Column("id", Integer, primary_key=True),
+        Column("company_id", Integer, nullable=False),
+    )
+    Table(
+        "membership_permission_profile_assignments", metadata,
+        Column("id", Integer, primary_key=True),
+        Column("company_id", Integer, nullable=False),
+        Column("company_membership_id", Integer, nullable=False),
+    )
     Table(
         "company_fiscal_settings",
         metadata,

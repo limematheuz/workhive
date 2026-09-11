@@ -54,7 +54,7 @@ export function DeleteConfirmDialog({
                     <Button
                         type="button"
                         onClick={() => onOpenChange(false)}
-                        variant="outline"
+                        variant="cancel"
                         className="w-full sm:w-auto"
                     >
                         {cancelText}

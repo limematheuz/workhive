@@ -13,7 +13,17 @@ from app.api.v1.template_tasks import router as template_tasks_router
 from app.api.v1.location_templates import router as location_templates_router
 from app.api.v1.location_zones import router as location_zones_router
 from app.api.v1.location_workspace import router as location_workspace_router
+from app.api.v1.location_assets import router as location_assets_router
+from app.api.v1.location_documents import router as location_documents_router
+from app.api.v1.location_equipment import router as location_equipment_router
 from app.api.v1.work_sessions import router as work_sessions_router
+from app.api.v1.work_session_corrections import (
+    router as work_session_corrections_router,
+)
+from app.api.v1.labor_costs import router as labor_costs_router
+from app.api.v1.quality_templates import router as quality_templates_router
+from app.api.v1.quality_inspections import router as quality_inspections_router
+from app.api.v1.quality_incidents import router as quality_incidents_router
 from app.api.v1.task_items import router as task_items_router
 from app.api.v1.task_item_read import router as task_item_read_router
 from app.api.v1.invoice import router as invoices_router
@@ -22,6 +32,7 @@ from app.api.v1.invoice_email_contacts import router as invoice_email_contacts_r
 from app.api.v1.quotes import router as quotes_router
 from app.api.v1.quote_revisions import router as quote_revisions_router
 from app.api.v1.service_contracts import router as service_contracts_router
+from app.api.v1.work_orders import router as work_orders_router
 from app.api.v1.expenses import router as expenses_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.reservations import router as reservations_router
@@ -63,6 +74,9 @@ api_router.include_router(
     prefix="/locations",
     tags=["location-workspace"],
 )
+api_router.include_router(location_assets_router, prefix="/locations", tags=["location-assets"])
+api_router.include_router(location_documents_router, prefix="/location-documents", tags=["location-documents"])
+api_router.include_router(location_equipment_router, prefix="/location-equipment", tags=["location-equipment"])
 api_router.include_router(locations_router, prefix="/locations", tags=["locations"])
 api_router.include_router(
     location_operational_history_router,
@@ -93,6 +107,31 @@ api_router.include_router(
 )
 api_router.include_router(
     work_sessions_router, prefix="/work-sessions", tags=["work-session"]
+)
+api_router.include_router(
+    work_session_corrections_router,
+    prefix="/work-session-corrections",
+    tags=["work-session-corrections"],
+)
+api_router.include_router(
+    labor_costs_router,
+    prefix="/labor-costs",
+    tags=["labor-costs"],
+)
+api_router.include_router(
+    quality_templates_router,
+    prefix="/quality/templates",
+    tags=["quality-templates"],
+)
+api_router.include_router(
+    quality_inspections_router,
+    prefix="/quality/inspections",
+    tags=["quality-inspections"],
+)
+api_router.include_router(
+    quality_incidents_router,
+    prefix="/quality/incidents",
+    tags=["quality-incidents"],
 )
 api_router.include_router(task_item_read_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])
@@ -136,6 +175,7 @@ api_router.include_router(
     prefix="/service-contracts",
     tags=["service-contracts"],
 )
+api_router.include_router(work_orders_router, prefix="/work-orders", tags=["work-orders"])
 api_router.include_router(expenses_router, prefix="/expenses", tags=["expenses"])
 api_router.include_router(uploads_router, prefix="/uploads", tags=["uploads"])
 api_router.include_router(

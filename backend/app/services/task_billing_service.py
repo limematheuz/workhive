@@ -15,6 +15,8 @@ from sqlalchemy.orm import Session
 
 from app.models.task_item import TaskItem
 from app.models.work_session import WorkSession
+from app.services.work_session_duration_service import elapsed_seconds
+from app.services.work_session_pause_service import close_open_pause
 from app.repositories import work_session as work_session_repo
 from app.repositories.invoice_item import DETAIL_QUANTUM
 
@@ -191,13 +193,7 @@ def session_duration_seconds(
     *,
     now: datetime,
 ) -> int:
-    start = work_session.start_time
-    end = work_session.end_time or now
-    if start.tzinfo is None:
-        start = start.replace(tzinfo=timezone.utc)
-    if end.tzinfo is None:
-        end = end.replace(tzinfo=timezone.utc)
-    return max(0, int((end - start).total_seconds()))
+    return elapsed_seconds(work_session, now=now)
 
 
 def sum_person_seconds(
@@ -233,6 +229,7 @@ def close_active_task_sessions(
             session.end_time = end_time
         else:
             session.end_time = session.start_time
+        close_open_pause(db, session, session.end_time)
         db.add(session)
 
 

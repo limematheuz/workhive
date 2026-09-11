@@ -4,6 +4,12 @@ export interface WorkStartLocation {
     start_accuracy_meters: number | null;
 }
 
+export interface WorkEndLocation {
+    end_latitude: number;
+    end_longitude: number;
+    end_accuracy_meters: number | null;
+}
+
 export function getCurrentWorkStartLocation(): Promise<WorkStartLocation> {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
         return Promise.reject(new Error("Geolocation is not supported"));
@@ -28,6 +34,15 @@ export function getCurrentWorkStartLocation(): Promise<WorkStartLocation> {
             }
         );
     });
+}
+
+export async function getCurrentWorkEndLocation(): Promise<WorkEndLocation> {
+    const location = await getCurrentWorkStartLocation();
+    return {
+        end_latitude: location.start_latitude,
+        end_longitude: location.start_longitude,
+        end_accuracy_meters: location.start_accuracy_meters,
+    };
 }
 
 export function buildWorkStartMapUrl(

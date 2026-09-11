@@ -16,6 +16,7 @@ from app.schemas.work_session import (
     WorkerTimeSummary,
 )
 from app.services import task_assignment_service
+from app.services.work_session_duration_service import elapsed_seconds
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import (
     require_capability,
@@ -66,13 +67,7 @@ def get_task_work_summary(
     total_seconds = 0
     active_workers: set[int] = set()
     for work_session in sessions:
-        end_time = work_session.end_time or now
-        start_time = work_session.start_time
-        if start_time.tzinfo is None:
-            start_time = start_time.replace(tzinfo=timezone.utc)
-        if end_time.tzinfo is None:
-            end_time = end_time.replace(tzinfo=timezone.utc)
-        total_seconds += max(0, int((end_time - start_time).total_seconds()))
+        total_seconds += elapsed_seconds(work_session, now=now)
         if work_session.end_time is None:
             active_workers.add(work_session.user_id)
 
@@ -100,9 +95,6 @@ def get_active_company_sessions(
         current_user.company_id,
         location_ids,
     ):
-        start_time = work_session.start_time
-        if start_time.tzinfo is None:
-            start_time = start_time.replace(tzinfo=timezone.utc)
         responses.append(
             ActiveCompanySessionResponse(
                 id=work_session.id,
@@ -115,6 +107,8 @@ def get_active_company_sessions(
                 start_accuracy_meters=work_session.start_accuracy_meters,
                 start_time=work_session.start_time,
                 end_time=work_session.end_time,
+                paused_at=work_session.paused_at,
+                paused_seconds=work_session.paused_seconds,
                 created_at=work_session.created_at,
                 updated_at=work_session.updated_at,
                 user_name=work_session.user.full_name or work_session.user.email,
@@ -130,7 +124,7 @@ def get_active_company_sessions(
                 task_title=(
                     work_session.task_item.title if work_session.task_item else None
                 ),
-                elapsed_seconds=max(0, int((now - start_time).total_seconds())),
+                elapsed_seconds=elapsed_seconds(work_session, now=now),
             )
         )
     return responses
@@ -219,13 +213,7 @@ def _build_task_work_detailed_summary(
 ) -> TaskWorkDetailedSummaryResponse:
     user_data: dict[int, dict] = {}
     for work_session in sessions:
-        end_time = work_session.end_time or now
-        start_time = work_session.start_time
-        if start_time.tzinfo is None:
-            start_time = start_time.replace(tzinfo=timezone.utc)
-        if end_time.tzinfo is None:
-            end_time = end_time.replace(tzinfo=timezone.utc)
-        elapsed_seconds = max(0, int((end_time - start_time).total_seconds()))
+        session_seconds = elapsed_seconds(work_session, now=now)
         is_active = work_session.end_time is None
 
         if work_session.user_id not in user_data:
@@ -240,7 +228,7 @@ def _build_task_work_detailed_summary(
                 "total_seconds": 0,
                 "is_active": False,
             }
-        user_data[work_session.user_id]["total_seconds"] += elapsed_seconds
+        user_data[work_session.user_id]["total_seconds"] += session_seconds
         if is_active:
             user_data[work_session.user_id]["is_active"] = True
 

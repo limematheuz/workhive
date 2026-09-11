@@ -17,6 +17,7 @@ from app.schemas.location_history import (
 )
 from app.services import location_access_service, task_assignment_service
 from app.services.user_scope import can_manage_company
+from app.services.work_session_duration_service import elapsed_seconds_between
 
 
 def _as_utc(value: datetime) -> datetime:
@@ -125,7 +126,11 @@ def get_operational_history(
             continue
         clipped_start = max(started_at, period_start)
         clipped_end = min(ended_at, period_end)
-        worked_seconds = max(0, int((clipped_end - clipped_start).total_seconds()))
+        worked_seconds = elapsed_seconds_between(
+            session,
+            start=clipped_start,
+            end=clipped_end,
+        )
         if worked_seconds == 0:
             continue
         history_sessions.append(

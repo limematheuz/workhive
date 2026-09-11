@@ -1,6 +1,9 @@
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.location_profile import LocationProfile
+from app.models.location_contact import LocationContact
+from app.models.location_risk import LocationRisk
+from app.models.location_service_window import LocationServiceWindow
 from app.models.location_access_profile import LocationAccessProfile
 from app.models.location_zone import LocationSpaceTaskTemplate, LocationZone
 
@@ -11,6 +14,33 @@ def get_profile(db: Session, location_id: int) -> LocationProfile | None:
 
 def get_access_profile(db: Session, location_id: int) -> LocationAccessProfile | None:
     return db.get(LocationAccessProfile, location_id)
+
+
+def list_contacts(db: Session, location_id: int) -> list[LocationContact]:
+    return (
+        db.query(LocationContact)
+        .filter(LocationContact.location_id == location_id)
+        .order_by(LocationContact.is_primary.desc(), LocationContact.full_name, LocationContact.id)
+        .all()
+    )
+
+
+def list_risks(db: Session, location_id: int) -> list[LocationRisk]:
+    return (
+        db.query(LocationRisk)
+        .filter(LocationRisk.location_id == location_id)
+        .order_by(LocationRisk.status, LocationRisk.severity.desc(), LocationRisk.title, LocationRisk.id)
+        .all()
+    )
+
+
+def list_service_windows(db: Session, location_id: int) -> list[LocationServiceWindow]:
+    return (
+        db.query(LocationServiceWindow)
+        .filter(LocationServiceWindow.location_id == location_id)
+        .order_by(LocationServiceWindow.id)
+        .all()
+    )
 
 
 def get_space(db: Session, location_id: int, space_id: int) -> LocationZone | None:

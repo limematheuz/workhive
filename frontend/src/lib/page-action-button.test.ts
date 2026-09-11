@@ -5,7 +5,6 @@ import test from "node:test";
 import {
     PAGE_ACTION_BUTTON_BASE,
     PAGE_ACTION_BUTTON_PRIMARY,
-    PAGE_ACTION_BUTTON_SECONDARY,
 } from "./page-action-button.ts";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
@@ -18,33 +17,24 @@ test("PAGE_ACTION_BUTTON_PRIMARY includes Export CTA metrics", () => {
     assert.ok(PAGE_ACTION_BUTTON_PRIMARY.startsWith(PAGE_ACTION_BUTTON_BASE));
 });
 
-test("PAGE_ACTION_BUTTON_SECONDARY uses btn-cancel-muted utility", () => {
-    assert.equal(PAGE_ACTION_BUTTON_SECONDARY, "btn-cancel-muted");
-    assert.doesNotMatch(PAGE_ACTION_BUTTON_SECONDARY, /hover:-translate-y/);
-    const globals = read("../app/globals.css");
-    assert.match(globals, /\.btn-cancel-muted\s*\{/);
-    assert.match(globals, /var\(--bg-tertiary\)/);
-    assert.match(globals, /var\(--text-muted\)/);
-    assert.match(globals, /var\(--bg-secondary\)/);
-    const cancelBlock = globals.slice(
-        globals.indexOf(".btn-cancel-muted"),
-        globals.indexOf(".btn-cancel-muted:disabled"),
-    );
-    assert.match(cancelBlock, /border:\s*none\s*!important/);
-    assert.doesNotMatch(cancelBlock, /border-color\)\s*30%/);
-    assert.doesNotMatch(cancelBlock, /--btn-neutral-bg/);
+test("cancel and dismiss actions use the shared shadcn cancel variant", () => {
+    const variants = read("../components/ui/button-variants.ts");
+
+    assert.match(variants, /cancel: "border-transparent bg-\[var\(--btn-neutral-bg\)\]/);
+    assert.match(variants, /hover:bg-\[var\(--btn-neutral-hover-bg\)\]/);
+    assert.doesNotMatch(read("../app/globals.css"), /\.btn-cancel-muted\s*\{/);
 });
 
-test("profile Cancelar / Cerrar Editor use btn-cancel-muted", () => {
+test("profile Cancelar / Cerrar Editor use the shared cancel variant", () => {
     const page = read("../app/dashboard/profile/page.tsx");
     const details = read("../components/profile/ProfileDetailsForm.tsx");
     const password = read("../components/profile/PasswordChangeForm.tsx");
     const company = read("../components/profile/CompanyDetailsFormFields.tsx");
 
-    assert.match(page, /btn-cancel-muted/);
-    assert.match(details, /btn-cancel-muted/);
-    assert.match(password, /btn-cancel-muted/);
-    assert.match(company, /btn-cancel-muted/);
+    for (const source of [page, details, password, company]) {
+        assert.match(source, /variant="cancel"/);
+        assert.doesNotMatch(source, /btn-cancel-muted/);
+    }
 });
 
 test("PrivacyControls Export CTA uses PAGE_ACTION_BUTTON_PRIMARY", () => {

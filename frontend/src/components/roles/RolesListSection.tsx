@@ -26,9 +26,6 @@ type RolesListSectionProps = {
     onEdit: (role: Role) => void;
 };
 
-const GRID =
-    "grid-cols-[minmax(10rem,1.1fr)_minmax(14rem,1.6fr)_7.5rem_5.5rem]";
-
 export function RolesListSection({
     roles,
     labels,
@@ -58,7 +55,6 @@ export function RolesListSection({
         <DataListTable
             items={roles}
             getRowKey={(role) => role.id}
-            gridClassName={GRID}
             desktopFrom="lg"
             header={{
                 title: labels.listTitle,

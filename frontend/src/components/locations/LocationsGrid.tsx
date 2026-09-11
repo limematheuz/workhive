@@ -28,8 +28,6 @@ interface LocationsGridProps {
     onDelete: (location: Location) => void
 }
 
-const GRID_CLASS = "grid-cols-[minmax(12rem,1.35fr)_minmax(9rem,1fr)_minmax(6.5rem,.7fr)_minmax(13rem,1.2fr)_minmax(10rem,.8fr)_minmax(7rem,.65fr)_2.25rem]"
-
 export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: LocationsGridProps) {
     const { dict } = useDictionary()
     const workspace = dict.locations.workspace
@@ -113,15 +111,14 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             items={locations}
             getRowKey={(location) => location.id}
             columns={[
-                { key: "location", label: dict.locations.title },
-                { key: "client", label: dict.locations.form.client_label },
-                { key: "type", label: dict.locations.table.type },
-                { key: "address", label: dict.locations.table.address },
-                { key: "tasks", label: workspace.tasks },
-                { key: "status", label: dict.locations.table.status },
-                { key: "actions", label: <span className="sr-only">Acciones</span> },
+                { key: "location", label: dict.locations.title, className: "w-[23%]" },
+                { key: "client", label: dict.locations.form.client_label, className: "w-[16%]" },
+                { key: "type", label: dict.locations.table.type, className: "w-[12%]" },
+                { key: "address", label: dict.locations.table.address, className: "w-[25%]" },
+                { key: "tasks", label: workspace.tasks, className: "w-[12%]" },
+                { key: "status", label: dict.locations.table.status, className: "w-[8%]" },
+                { key: "actions", label: <span className="sr-only">Acciones</span>, className: "w-[4%] text-right" },
             ]}
-            gridClassName={GRID_CLASS}
             desktopFrom="lg"
             renderDesktopRow={renderDesktopRow}
             renderCompactRow={renderCompactRow}
@@ -130,6 +127,6 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
             empty={<div className="flex flex-col items-center gap-3"><span className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent/10 text-accent"><MapPin className="h-6 w-6" /></span><p className="text-sm font-medium text-[var(--text-muted)]">{dict.locations.table.empty}</p></div>}
         />
 
-        {selectedLocation && <LocationDetailDialog location={selectedLocation} clientName={getClientName(selectedLocation.client_id)} activeLabel={dict.locations.table.active} inactiveLabel={dict.locations.table.inactive} onClose={() => setSelectedLocationId(null)} onEdit={() => onEdit(selectedLocation)} />}
+        {selectedLocation && <LocationDetailDialog location={selectedLocation} clientName={getClientName(selectedLocation.client_id)} activeLabel={dict.locations.table.active} inactiveLabel={dict.locations.table.inactive} onClose={() => setSelectedLocationId(null)} onEdit={() => { setSelectedLocationId(null); onEdit(selectedLocation); }} />}
     </>
 }

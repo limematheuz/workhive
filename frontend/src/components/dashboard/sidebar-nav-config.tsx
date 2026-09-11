@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { BarChart3, Building2, CalendarDays, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, ReceiptText, ShieldAlert, UserRound, WalletCards, Workflow } from "lucide-react";
+import { BarChart3, Building2, CalendarDays, CircleDollarSign, ClipboardCheck, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, Sparkles, UserRound, WalletCards, Workflow } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = { href: string; label: string; exact: boolean; icon: ReactNode };
@@ -9,7 +9,12 @@ export const SIDEBAR_LOGO_STYLE: CSSProperties = { filter: "var(--logo-filter)" 
 export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
     isCompanyAdmin: boolean;
+    canManageTime: boolean;
+    canViewWorkReports: boolean;
+    canViewOrganization?: boolean;
     canViewFinance: boolean;
+    canViewLaborCosts: boolean;
+    canViewQuality: boolean;
     isAccountant: boolean;
     isPartnerPortal: boolean;
     userIsPlatformSuperadmin: boolean;
@@ -19,7 +24,7 @@ export type SidebarNavUserFlags = {
 const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
 const ACCOUNTANT_HREFS = new Set(["/dashboard/analytics", "/dashboard/fiscal-summary"]);
 const NAVIGATION_FEATURES: Record<string, string> = {
-    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/tasks": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices",
+    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/documents": "features.locations", "/dashboard/assets": "features.locations", "/dashboard/tasks": "features.work_orders", "/dashboard/work-orders": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/time-corrections": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices", "/dashboard/quality": "features.quality",
 };
 
 function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
@@ -27,15 +32,24 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         { href: "/dashboard", label: dict.dashboard.overview, exact: true, icon: <Gauge /> },
         { href: "/dashboard/calendar", label: dict.dashboard.calendar, exact: false, icon: <CalendarDays /> },
         { href: "/dashboard/tasks", label: dict.dashboard.tasks, exact: false, icon: <ClipboardList /> },
+        { href: "/dashboard/work-orders", label: "Órdenes", exact: false, icon: <Repeat2 /> },
         { href: "/dashboard/locations", label: dict.dashboard.locations, exact: false, icon: <MapPin /> },
+        { href: "/dashboard/documents", label: "Documentos", exact: false, icon: <FileText /> },
+        { href: "/dashboard/assets", label: "Activos", exact: false, icon: <PackagePlus /> },
+        ...(flags.canManageTime ? [{ href: "/dashboard/time-corrections", label: "Fichajes", exact: false, icon: <ClipboardCheck /> }] : []),
         ...(flags.isAdminOrManager ? [
             { href: "/dashboard/reservations", label: dict.dashboard.reservations || "Planificación", exact: false, icon: <Workflow /> },
             { href: "/dashboard/live-work", label: dict.dashboard.live_work || "Fichajes en vivo", exact: false, icon: <Workflow /> },
-            { href: "/dashboard/task-reports", label: dict.task_reports.nav_label, exact: false, icon: <ShieldAlert /> },
             { href: "/dashboard/external-network", label: dict.external_network.title, exact: false, icon: <Network /> },
         ] : []),
+        ...(flags.canViewWorkReports ? [
+            { href: "/dashboard/task-reports", label: dict.task_reports.nav_label, exact: false, icon: <ShieldAlert /> },
+        ] : []),
+        ...(flags.canViewQuality ? [
+            { href: "/dashboard/quality", label: "Calidad", exact: false, icon: <Sparkles /> },
+        ] : []),
         { href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> },
-        ...(flags.isCompanyAdmin ? [
+        ...(flags.isCompanyAdmin || flags.canViewOrganization ? [
             { href: "/dashboard/organization", label: dict.organization.nav_label, exact: false, icon: <Network /> },
         ] : []),
         ...(flags.canViewFinance ? [
@@ -47,6 +61,9 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
             { href: "/dashboard/analytics", label: dict.finance_analytics.eyebrow, exact: false, icon: <BarChart3 /> },
             { href: "/dashboard/fiscal-summary", label: dict.fiscal_summary.nav_label, exact: false, icon: <Landmark /> },
             { href: "/dashboard/fiscal-calendar", label: dict.fiscal_calendar.title, exact: false, icon: <CalendarDays /> },
+        ] : []),
+        ...(flags.canViewLaborCosts ? [
+            { href: "/dashboard/labor-costs", label: "Costes laborales", exact: false, icon: <CircleDollarSign /> },
         ] : []),
         ...(flags.userIsPlatformSuperadmin ? [
             { href: "/dashboard/companies", label: dict.dashboard.companies, exact: false, icon: <Building2 /> },
@@ -81,9 +98,9 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         return children.length ? { id, label, icon, children } : null;
     };
     const navGroups = [
-        group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/locations", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/external-network"]),
+        group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/work-orders", "/dashboard/locations", "/dashboard/documents", "/dashboard/assets", "/dashboard/time-corrections", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/quality", "/dashboard/external-network"]),
         group("clients", "Clientes", <Building2 />, ["/dashboard/clients", "/dashboard/quotes"]),
-        group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar"]),
+        group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar", "/dashboard/labor-costs"]),
         group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization"]),
         group("platform", "Plataforma WorkHive", <CloudCog />, ["/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"]),
     ].filter(Boolean) as NavGroup[];

@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.task_item import (
     TaskAcceptRequest,
+    TaskWorkFinishRequest,
     TaskWorkStartRequest,
     TaskItemCreate,
     TaskItemUpdate,
@@ -126,6 +127,7 @@ async def start_task_work(
 @router.post("/{task_item_id}/finish-work", response_model=TaskItemResponse)
 async def finish_task_work(
     task_item_id: int,
+    finish_data: TaskWorkFinishRequest | None = None,
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
     background_tasks: BackgroundTasks = None,
@@ -135,6 +137,11 @@ async def finish_task_work(
             sync_db,
             current_user,
             task_item_id,
+            end_latitude=finish_data.end_latitude if finish_data else None,
+            end_longitude=finish_data.end_longitude if finish_data else None,
+            end_accuracy_meters=(
+                finish_data.end_accuracy_meters if finish_data else None
+            ),
         )
         return task_item_service.build_task_response(sync_db, task, current_user)
 

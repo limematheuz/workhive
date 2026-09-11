@@ -16,6 +16,7 @@ import { WorkSessionMobileBar } from "./work-session/WorkSessionMobileBar"
 import { WorkSessionStopWarningDialog } from "./work-session/WorkSessionStopWarningDialog"
 import { WorkSessionWidgetLoading } from "./work-session/WorkSessionWidgetLoading"
 import { cleanWorkSessionLocalStorage, formatElapsedTimeFromStart } from "./work-session/work-session-utils"
+import { getCurrentWorkEndLocation } from "@/lib/work-start-location"
 
 interface WorkSessionWidgetProps {
     allowedLocations?: Location[];
@@ -212,7 +213,11 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
     useEffect(() => {
         if (activeSession) {
             const calculateElapsed = () => {
-                setElapsedTime(formatElapsedTimeFromStart(activeSession.start_time))
+                setElapsedTime(formatElapsedTimeFromStart(
+                    activeSession.start_time,
+                    activeSession.paused_at,
+                    activeSession.paused_seconds,
+                ))
             }
 
             startTransition(calculateElapsed)
@@ -237,7 +242,13 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         try {
             setActionLoading(true)
             const sessionId = activeSession.id
-            await WorkSessionService.stopSession()
+            let endLocation
+            try {
+                endLocation = await getCurrentWorkEndLocation()
+            } catch {
+                // GPS is optional when finishing a shift.
+            }
+            await WorkSessionService.stopSession(endLocation)
             cleanWorkSessionLocalStorage(user.id, sessionId)
             setActiveSession(null)
             setMonitoredTaskIds([])
@@ -283,6 +294,27 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         await handleStopShift()
     }
 
+    const togglePause = async () => {
+        if (!activeSession) return
+        try {
+            setActionLoading(true)
+            const updatedSession = activeSession.paused_at
+                ? await WorkSessionService.resumeSession()
+                : await WorkSessionService.pauseSession()
+            setActiveSession(updatedSession)
+            window.dispatchEvent(new CustomEvent("workhive:session-changed"))
+            toast.success(
+                activeSession.paused_at
+                    ? (dict.work_sessions.success_resume || "Jornada reanudada")
+                    : (dict.work_sessions.success_pause || "Jornada pausada")
+            )
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, dict.work_sessions.error_stop))
+        } finally {
+            setActionLoading(false)
+        }
+    }
+
     return {
         actionLoading,
         activeSession,
@@ -296,6 +328,7 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         preStopShift,
         setShowStopWarning,
         showStopWarning,
+        togglePause,
         user,
     }
 }
@@ -327,6 +360,7 @@ function WorkSessionWidgetContent({
         preStopShift,
         setShowStopWarning,
         showStopWarning,
+        togglePause,
         user,
     } = controller
 
@@ -349,6 +383,7 @@ function WorkSessionWidgetContent({
                 user={user}
                 actionLoading={actionLoading}
                 onPreStopShift={preStopShift}
+                onTogglePause={togglePause}
             />
 
             <WorkSessionMobileBar
@@ -360,6 +395,7 @@ function WorkSessionWidgetContent({
                 user={user}
                 actionLoading={actionLoading}
                 onPreStopShift={preStopShift}
+                onTogglePause={togglePause}
             />
 
             <WorkSessionStopWarningDialog

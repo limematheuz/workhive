@@ -6,16 +6,22 @@ from app.models.user import User
 from app.schemas.organization import (
     OrganizationMemberProfileAssignmentsUpdate,
     OrganizationMemberResponse,
-    OrganizationMemberUpdate,
+    OrganizationMemberAccessUpdate,
     PermissionDefinitionResponse,
     PermissionProfileCreate,
     PermissionProfileResponse,
     PermissionProfileUpdate,
 )
 from app.services import audit_service, organization_service
+from app.services.organization_access_summary_service import access_summary
 
 
 router = APIRouter()
+
+
+@router.get("/access", response_model=dict[str, bool])
+def read_organization_access(db: Session = Depends(get_db), current_user: User = ActiveApplicationUser):
+    return access_summary(db, current_user)
 
 
 @router.get("/members", response_model=list[OrganizationMemberResponse])
@@ -29,7 +35,7 @@ def read_members(
 @router.patch("/members/{membership_id}", response_model=OrganizationMemberResponse)
 def update_member(
     membership_id: int,
-    payload: OrganizationMemberUpdate,
+    payload: OrganizationMemberAccessUpdate,
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = ActiveApplicationUser,

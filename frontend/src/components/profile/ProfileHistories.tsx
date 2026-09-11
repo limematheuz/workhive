@@ -33,12 +33,6 @@ interface ProfileHistoriesProps {
     canViewActiveTeam: boolean;
 }
 
-const SESSIONS_GRID =
-    "grid-cols-[minmax(8rem,.9fr)_minmax(12rem,1.4fr)_minmax(6rem,.7fr)_minmax(6rem,.7fr)_minmax(6rem,.7fr)]";
-
-const TASKS_GRID =
-    "grid-cols-[minmax(12rem,1.5fr)_minmax(10rem,1.1fr)_minmax(6rem,.7fr)_minmax(7rem,.8fr)_minmax(7rem,.8fr)]";
-
 export function ProfileHistories({
     activeTab,
     setActiveTab,
@@ -141,7 +135,6 @@ export function ProfileHistories({
                     <DataListTable
                         items={sessions}
                         getRowKey={(session) => session.id}
-                        gridClassName={SESSIONS_GRID}
                         variant="plain"
                         columns={[
                             { key: "date", label: dict.profile?.tables?.date || "Fecha" },
@@ -216,7 +209,6 @@ export function ProfileHistories({
                     <DataListTable
                         items={tasks}
                         getRowKey={(task) => task.id}
-                        gridClassName={TASKS_GRID}
                         variant="plain"
                         columns={[
                             { key: "title", label: dict.profile?.tables?.title || "Título" },

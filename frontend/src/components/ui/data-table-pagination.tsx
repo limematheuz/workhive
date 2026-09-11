@@ -44,14 +44,14 @@ export function DataTablePagination({ page, totalItems, pageSize, onPageChange, 
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const safePage = Math.min(Math.max(page, 1), totalPages);
     return (
-        <footer className="flex flex-col gap-3 border-t border-[var(--border-soft)] px-5 py-3 text-xs text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-3 border-t border-[color-mix(in_srgb,var(--border-color)_12%,transparent)] px-5 py-3 text-xs text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3">
                 <p>{summary}</p>
                 <div className="flex items-center gap-2">
                     <Label htmlFor={rowsPerPageId} className="text-xs font-medium text-[var(--text-muted)]">{rowsPerPageLabel}</Label>
                     <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value))}>
                         <SelectTrigger id={rowsPerPageId} className="h-8 w-18 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent align="start">{[10, 25, 50, 100].map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}</SelectContent>
+                        <SelectContent align="start">{[...new Set([10, 25, 50, 100, pageSize])].sort((a, b) => a - b).map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}</SelectContent>
                     </Select>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, Network, ShieldCheck } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { CollaborationControlCenter } from "@/components/collaborations/CollaborationControlCenter";
 import { ExternalAccessControlCenter } from "@/components/organization/ExternalAccessControlCenter";
@@ -17,6 +17,7 @@ export function ExternalNetworkControlCenter() {
     const { user, loading: userLoading } = useUser();
     const isCompanyAdmin = user?.role?.name === "admin" && Boolean(user.company_id);
     const canShowProfessionalAccess = userLoading || isCompanyAdmin;
+    const router = useRouter();
     const searchParams = useSearchParams();
     const activeTab: ExternalNetworkTab = canShowProfessionalAccess && searchParams.get("tab") === "professionals" ? "professionals" : "operations";
 
@@ -27,10 +28,7 @@ export function ExternalNetworkControlCenter() {
 
     const changeTab = (tab: ExternalNetworkTab) => {
         if (tab === "professionals" && !userLoading && !isCompanyAdmin) return;
-        const url = new URL(window.location.href);
-        if (tab === "operations") url.searchParams.delete("tab");
-        else url.searchParams.set("tab", tab);
-        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}${url.hash}`);
+        router.replace(tab === "operations" ? "/dashboard/external-network" : "/dashboard/external-network?tab=professionals");
     };
 
     return (

@@ -7,6 +7,11 @@ from app.models.client_contact import ClientContact, ClientContactRole
 from app.models.client_opportunity import ClientOpportunity, ClientOpportunityActivity
 from app.models.client_account_assignment import ClientAccountAssignment
 from app.models.location import Location
+from app.models.location_contact import LocationContact
+from app.models.location_document import LocationDocument
+from app.models.location_equipment import LocationEquipment
+from app.models.location_risk import LocationRisk
+from app.models.location_service_window import LocationServiceWindow
 from app.models.location_zone import LocationZone, TaskZone, LocationSpaceTaskTemplate
 from app.models.location_profile import LocationProfile
 from app.models.location_access_profile import LocationAccessProfile
@@ -17,7 +22,14 @@ from app.models.template_task import TemplateTask
 from app.models.service_catalog_version import ServiceCatalogVersion
 from app.models.location_template import LocationTemplate
 from app.models.work_session import WorkSession
+from app.models.work_session_pause import WorkSessionPause
+from app.models.work_session_correction import WorkSessionCorrection
+from app.models.labor_cost_rate import LaborCostRate
+from app.models.quality_template import QualityInspectionTemplate, QualityInspectionTemplateItem
+from app.models.quality_inspection import QualityInspection, QualityInspectionItem
+from app.models.quality_incident import QualityCorrectiveAction, QualityIncident
 from app.models.task_item import TaskItem
+from app.models.work_order import WorkOrder
 from app.models.task_structure import (
     TaskAssignment,
     TaskChecklistAssignment,

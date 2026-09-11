@@ -77,6 +77,47 @@ export function canManageFinance(user?: User | null): boolean {
     return isCompanyAdminRole(getRoleName(user));
 }
 
+/** Internal labour costs are deliberately reserved to company administrators. */
+export function canViewLaborCosts(user?: User | null): boolean {
+    if (typeof user?.can_view_labor_costs === "boolean") return user.can_view_labor_costs;
+    return isCompanyAdminRole(getRoleName(user));
+}
+
+export function canManageLaborCosts(user?: User | null): boolean {
+    if (typeof user?.can_manage_labor_costs === "boolean") return user.can_manage_labor_costs;
+    return isCompanyAdminRole(getRoleName(user));
+}
+
+export function canViewQuality(user?: User | null): boolean {
+    if (typeof user?.can_view_quality === "boolean") return user.can_view_quality;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
+export function canManageQuality(user?: User | null): boolean {
+    if (typeof user?.can_manage_quality === "boolean") return user.can_manage_quality;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
+export function canManageTime(user?: User | null): boolean {
+    if (typeof user?.can_manage_time === "boolean") return user.can_manage_time;
+    return isCalendarViewerRole(getRoleName(user));
+}
+
+export function canApproveTime(user?: User | null): boolean {
+    if (typeof user?.can_approve_time === "boolean") return user.can_approve_time;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
+export function canViewWorkReports(user?: User | null): boolean {
+    if (typeof user?.can_view_work_reports === "boolean") return user.can_view_work_reports;
+    return isCalendarViewerRole(getRoleName(user));
+}
+
+export function canManageWorkReports(user?: User | null): boolean {
+    if (typeof user?.can_manage_work_reports === "boolean") return user.can_manage_work_reports;
+    return isCompanyTaskManagerRole(getRoleName(user));
+}
+
 export function canManageCompanyCalendar(user?: User | null): boolean {
     return isCalendarManagerRole(getRoleName(user));
 }

@@ -56,6 +56,7 @@ QUOTA_CODES = (
     "limits.external_portals",
     "limits.accountant_portals",
     "limits.partner_portals",
+    "limits.location_document_storage_bytes",
 )
 ALL_ENTITLEMENT_CODES = frozenset((*FEATURE_CODES, *QUOTA_CODES))
 
@@ -144,6 +145,7 @@ _PLAN_LIMITS = {
         "limits.external_portals": 5,
         "limits.accountant_portals": 1,
         "limits.partner_portals": 0,
+        "limits.location_document_storage_bytes": 1 * 1024 * 1024,
     },
     "medium": {
         "limits.internal_admins": 3,
@@ -154,6 +156,7 @@ _PLAN_LIMITS = {
         "limits.external_portals": 25,
         "limits.accountant_portals": 2,
         "limits.partner_portals": 0,
+        "limits.location_document_storage_bytes": 1 * 1024 * 1024,
     },
     "top": {
         "limits.internal_admins": 10,
@@ -164,6 +167,7 @@ _PLAN_LIMITS = {
         "limits.external_portals": 100,
         "limits.accountant_portals": 5,
         "limits.partner_portals": 2,
+        "limits.location_document_storage_bytes": 10 * 1024 * 1024,
     },
     "mega": {
         "limits.internal_admins": 25,
@@ -174,6 +178,7 @@ _PLAN_LIMITS = {
         "limits.external_portals": 500,
         "limits.accountant_portals": 20,
         "limits.partner_portals": 10,
+        "limits.location_document_storage_bytes": 10 * 1024 * 1024,
     },
 }
 _PLAN_NAMES = {
@@ -218,6 +223,7 @@ _ENTITLEMENT_LABELS = {
     "limits.external_portals": "Usuarios de portal externo",
     "limits.accountant_portals": "Usuarios de portal de gestoría",
     "limits.partner_portals": "Usuarios de portal de colaboradores",
+    "limits.location_document_storage_bytes": "Almacenamiento de documentos de ubicación",
 }
 
 

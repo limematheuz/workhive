@@ -105,6 +105,28 @@ class Location(Base):
         "ServiceContractLocation",
         back_populates="location",
     )
+    contacts = relationship(
+        "LocationContact",
+        back_populates="location",
+        cascade="all, delete-orphan",
+    )
+    documents = relationship(
+        "LocationDocument", back_populates="location", cascade="all, delete-orphan"
+    )
+    equipment = relationship(
+        "LocationEquipment", back_populates="location", cascade="all, delete-orphan"
+    )
+    risks = relationship(
+        "LocationRisk",
+        back_populates="location",
+        cascade="all, delete-orphan",
+    )
+    service_windows = relationship(
+        "LocationServiceWindow",
+        back_populates="location",
+        cascade="all, delete-orphan",
+        order_by="LocationServiceWindow.id",
+    )
     reservations = relationship(
         "Reservation", back_populates="location", cascade="all, delete-orphan"
     )

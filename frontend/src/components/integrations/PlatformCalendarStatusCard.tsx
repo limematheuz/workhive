@@ -31,8 +31,6 @@ type StatusItem = {
     icon: ComponentType<{ className?: string }>;
 };
 
-const STATUS_GRID = "grid-cols-[minmax(12rem,1.4fr)_8rem]";
-
 function StatusBadge({ active, activeLabel, inactiveLabel }: Omit<StatusItem, "key" | "label" | "icon">) {
     return (
         <Badge
@@ -91,7 +89,6 @@ export function PlatformCalendarStatusCard({
                     <DataListTable
                         items={statusItems}
                         getRowKey={(item) => item.key}
-                        gridClassName={STATUS_GRID}
                         desktopFrom="md"
                         variant="plain"
                         columns={[

@@ -209,6 +209,102 @@ def test_critical_permissions_cannot_be_delegated_through_custom_profiles(client
     assert update.status_code == 409, update.text
 
 
+def test_default_profiles_are_editable_assignable_and_preserve_company_changes(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "editable-default-profiles")
+    admin = _bootstrap_admin(db, company, "editable-default-profiles-admin")
+    worker = _user(db, company, "editable-default-profiles-worker", role_id=3)
+    worker_membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    assert worker_membership is not None
+    db.commit()
+    headers = _headers(admin)
+
+    profiles_response = client.get(
+        "/api/v1/organization/permission-profiles", headers=headers
+    )
+    assert profiles_response.status_code == 200, profiles_response.text
+    profiles = {profile["name"]: profile for profile in profiles_response.json()}
+    administrator = profiles["Administrador de empresa"]
+    commercial = profiles["Comercial"]
+    assert administrator["is_editable"] is False
+    assert commercial["is_system"] is True
+    assert commercial["is_editable"] is True
+
+    update = client.patch(
+        f"/api/v1/organization/permission-profiles/{commercial['id']}",
+        headers=headers,
+        json={
+            "name": "Comercial",
+            "description": "Gestiona la cartera de esta empresa",
+            "permission_codes": ["clients.read"],
+        },
+    )
+    assert update.status_code == 200, update.text
+    assert update.json()["description"] == "Gestiona la cartera de esta empresa"
+    assert update.json()["permission_codes"] == ["clients.read"]
+
+    reserved_permission = client.patch(
+        f"/api/v1/organization/permission-profiles/{commercial['id']}",
+        headers=headers,
+        json={"permission_codes": ["access.members.manage"]},
+    )
+    assert reserved_permission.status_code == 409, reserved_permission.text
+
+    renamed = client.patch(
+        f"/api/v1/organization/permission-profiles/{commercial['id']}",
+        headers=headers,
+        json={"name": "Ventas"},
+    )
+    assert renamed.status_code == 409, renamed.text
+
+    protected = client.patch(
+        f"/api/v1/organization/permission-profiles/{administrator['id']}",
+        headers=headers,
+        json={"description": "No se debe editar"},
+    )
+    assert protected.status_code == 409, protected.text
+
+    assigned = client.put(
+        f"/api/v1/organization/members/{worker_membership.id}/profile-assignments",
+        headers=headers,
+        json={
+            "assignments": [
+                {
+                    "permission_profile_id": commercial["id"],
+                    "scopes": [
+                        {"scope_type": "company", "scope_id": company.id}
+                    ],
+                }
+            ]
+        },
+    )
+    assert assigned.status_code == 200, assigned.text
+    assert [
+        assignment["permission_profile_name"]
+        for assignment in assigned.json()["profile_assignments"]
+    ] == ["Comercial"]
+
+    removed = client.put(
+        f"/api/v1/organization/members/{worker_membership.id}/profile-assignments",
+        headers=headers,
+        json={"assignments": []},
+    )
+    assert removed.status_code == 200, removed.text
+    assert removed.json()["profile_assignments"] == []
+
+    organization_bootstrap_service.ensure_company_permission_profiles(db, company.id)
+    db.commit()
+    persisted = client.get(
+        "/api/v1/organization/permission-profiles", headers=headers
+    )
+    assert persisted.status_code == 200, persisted.text
+    persisted_commercial = next(
+        profile for profile in persisted.json() if profile["name"] == "Comercial"
+    )
+    assert persisted_commercial["description"] == "Gestiona la cartera de esta empresa"
+    assert persisted_commercial["permission_codes"] == ["clients.read"]
+
+
 def test_legacy_custom_profile_cannot_authorize_critical_permissions(client, db):
     _seed_permission_definitions(db)
     company = _company(db, "legacy-critical")

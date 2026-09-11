@@ -20,8 +20,6 @@ from app.services import location_access_service
 from app.services.user_scope import is_platform_superadmin, scoped_company_id
 
 router = APIRouter()
-
-
 @router.get("/", response_model=list[LocationResponse])
 async def read_locations(
     client_id: int | None = None,
@@ -63,6 +61,9 @@ async def read_locations(
                     location,
                     "can_manage_tasks",
                 )
+            )
+            response.can_manage_location = location_access_service.can_manage_owned_location(
+                sync_db, current_user, location
             )
             response.shared_companies = [
                 access.company_id for access in location.company_access
@@ -111,6 +112,9 @@ async def read_location(
                 location,
                 "can_manage_tasks",
             )
+        )
+        response.can_manage_location = location_access_service.can_manage_owned_location(
+            sync_db, current_user, location
         )
         response.shared_companies = [
             access.company_id for access in location.company_access

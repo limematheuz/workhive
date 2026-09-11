@@ -11,77 +11,15 @@ from app.services.external_access_policy import require_external_company_capabil
 from app.services.organization_location_scope_service import (
     resolve_permitted_location_ids,
 )
+from app.services.organization_legacy_authorization_service import (
+    has_explicit_profile_assignments,
+    legacy_role_allows,
+)
 from app.services.organization_permission_policy import is_system_only_permission
 from app.services.user_scope import (
     is_platform_superadmin,
     require_company_context,
-    role_name,
 )
-
-
-_LEGACY_ROLE_CAPABILITIES = {
-    "admin": frozenset(
-        {
-            "access.members.read", "access.members.manage", "locations.read",
-            "locations.manage",
-            "work.read",
-            "work.manage",
-            "time.read",
-            "time.manage",
-            "finance.read",
-            "finance.manage",
-        }
-    ),
-    "manager": frozenset(
-        {
-            "locations.read",
-            "locations.manage",
-            "work.read",
-            "work.manage",
-            "time.read",
-            "time.manage",
-        }
-    ),
-    "viewer": frozenset(
-        {"locations.read", "work.read", "time.read", "time.manage"}
-    ),
-}
-
-def _has_explicit_profile_assignments(
-    db: Session,
-    *,
-    company_id: int,
-    membership_id: int,
-) -> bool:
-    return bool(
-        organization_repo.list_profile_assignments(
-            db,
-            company_id=company_id,
-            membership_id=membership_id,
-        )
-    )
-
-def _legacy_role_allows(
-    db: Session,
-    current_user: User,
-    capability: str,
-    *,
-    company_id: int,
-    membership: CompanyMembership,
-) -> bool:
-    """Preserve legacy operational roles until they receive an explicit profile.
-
-    This applies only to the newly protected operational domains. Existing
-    client and commercial authorization remains strict-profile-only. Any active
-    profile assignment disables this bridge, so an explicit narrow scope can
-    never be widened by a legacy role.
-    """
-
-    if _has_explicit_profile_assignments(
-        db, company_id=company_id, membership_id=membership.id
-    ):
-        return False
-    return capability in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ())
 
 
 def _require_active_company_principal(
@@ -116,6 +54,13 @@ def _require_active_company_principal(
         "work.manage": "features.work_orders",
         "time.read": "features.time_tracking",
         "time.manage": "features.time_tracking",
+        "time.approve": "features.time_tracking",
+        "quality.templates.read": "features.quality",
+        "quality.templates.manage": "features.quality",
+        "quality.inspections.read": "features.quality",
+        "quality.inspections.manage": "features.quality",
+        "quality.incidents.read": "features.quality",
+        "quality.incidents.manage": "features.quality",
     }.get(capability)
     if feature_code:
         require_feature(db, company, feature_code)
@@ -173,7 +118,7 @@ def require_capability(
     membership = principal
 
     target_id = scope_id if scope_id is not None else company_id
-    if _legacy_role_allows(
+    if legacy_role_allows(
         db,
         current_user,
         capability,
@@ -248,7 +193,7 @@ def uses_legacy_role_authorization(
     if isinstance(principal, ExternalAccessGrant):
         return False
     membership = principal
-    return not _has_explicit_profile_assignments(
+    return not has_explicit_profile_assignments(
         db,
         company_id=company_id,
         membership_id=membership.id,
@@ -276,7 +221,7 @@ def permitted_location_ids(
             detail="Not enough permissions",
         )
     membership = principal
-    if _legacy_role_allows(
+    if legacy_role_allows(
         db,
         current_user,
         capability,
@@ -318,17 +263,29 @@ def resolve_location_capabilities(
             detail="Not enough permissions",
         )
     membership = principal
-    if _legacy_role_allows(
+    has_explicit_assignments = has_explicit_profile_assignments(
+        db,
+        company_id=company_id,
+        membership_id=membership.id,
+    )
+    if legacy_role_allows(
         db,
         current_user,
         read_capability,
         company_id=company_id,
         membership=membership,
+        has_explicit_assignments=has_explicit_assignments,
     ):
         legacy_manage_locations = (
             None
-            if manage_capability
-            in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ())
+            if legacy_role_allows(
+                db,
+                current_user,
+                manage_capability,
+                company_id=company_id,
+                membership=membership,
+                has_explicit_assignments=has_explicit_assignments,
+            )
             else set()
         )
         return None, legacy_manage_locations, True

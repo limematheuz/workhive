@@ -4,7 +4,10 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.schemas.location_access import LocationAccessInput
 from app.schemas.location_workspace import (
+    LocationContactInput,
     LocationProfileInput,
+    LocationRiskInput,
+    LocationServiceWindowInput,
     LocationSpaceInput,
 )
 
@@ -24,6 +27,9 @@ class PartnerPortalLocationCreate(BaseModel):
     profile: LocationProfileInput | None = None
     access: LocationAccessInput | None = None
     spaces: list[LocationSpaceInput] = Field(default_factory=list, max_length=500)
+    contacts: list[LocationContactInput] | None = Field(default=None, max_length=50)
+    risks: list[LocationRiskInput] | None = Field(default=None, max_length=100)
+    service_windows: list[LocationServiceWindowInput] | None = Field(default=None, max_length=50)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -38,6 +44,9 @@ class PartnerPortalLocationUpdate(BaseModel):
     location_type: str | None = Field(default=None, max_length=50)
     profile: LocationProfileInput | None = None
     access: LocationAccessInput | None = None
+    contacts: list[LocationContactInput] | None = Field(default=None, max_length=50)
+    risks: list[LocationRiskInput] | None = Field(default=None, max_length=100)
+    service_windows: list[LocationServiceWindowInput] | None = Field(default=None, max_length=50)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 

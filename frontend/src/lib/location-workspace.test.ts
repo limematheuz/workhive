@@ -21,7 +21,7 @@ test("location workspace has optional profiles, spaces, and a catalog in one API
     assert.match(workspaceService, /importBulkLocations/);
 });
 
-test("the new location wizard follows the four-step workflow and keeps suggestions optional", () => {
+test("the location workspace uses shadcn tabs as four visible steps and keeps suggestions optional", () => {
     const form = read("../components/locations/LocationWorkspaceForm.tsx");
     const infoStep = read("../components/locations/LocationInfoAccessStep.tsx");
     const types = read("../types/location.ts");
@@ -34,6 +34,11 @@ test("the new location wizard follows the four-step workflow and keeps suggestio
     assert.match(featuresStep, /Características/);
     assert.match(spacesStep, /Espacios y tareas/);
     assert.match(spacesStep, /Sugerir espacios/);
+    assert.match(form, /WORKSPACE_STEPS/);
+    assert.match(form, /TabsList/);
+    assert.match(form, /TabsTrigger/);
+    assert.match(form, /Operación/);
+    assert.match(form, /Contactos, riesgos y horario/);
     assert.match(form, /profile/);
     assert.match(form, /spaces/);
     assert.match(form, /flex h-full min-h-0 flex-col/);
@@ -56,6 +61,55 @@ test("the new location wizard follows the four-step workflow and keeps suggestio
     assert.doesNotMatch(featuresStep, /className="pl-9"/);
 });
 
+test("location contacts are operational, scoped to the site, and separate from account contacts", () => {
+    const types = read("../types/location.ts");
+    const form = read("../components/locations/LocationWorkspaceForm.tsx");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
+
+    assert.match(types, /LocationContactRole/);
+    assert.match(types, /contacts\?: LocationContact\[\]/);
+    assert.match(form, /initialContacts/);
+    assert.match(form, /contacts: contacts\.map/);
+    assert.match(featuresStep, /Contactos operativos/);
+    assert.match(featuresStep, /No sustituyen los contactos comerciales o de facturación de la cuenta/);
+    assert.match(featuresStep, /Acceso/);
+    assert.match(featuresStep, /Emergencias/);
+    assert.doesNotMatch(featuresStep, /contact_name/);
+});
+
+test("location risks stay attached to the site with severity and mitigation guidance", () => {
+    const types = read("../types/location.ts");
+    const form = read("../components/locations/LocationWorkspaceForm.tsx");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
+    const risksSection = read("../components/locations/LocationRisksSection.tsx");
+
+    assert.match(types, /LocationRiskSeverity/);
+    assert.match(types, /risks\?: LocationRisk\[\]/);
+    assert.match(form, /initialRisks/);
+    assert.match(form, /risks: risks\.map/);
+    assert.match(featuresStep, /LocationRisksSection/);
+    assert.match(risksSection, /Riesgos operativos/);
+    assert.match(risksSection, /Medida preventiva o corrección/);
+    assert.match(risksSection, /Crítico/);
+    assert.match(risksSection, /Mitigado/);
+});
+
+test("service schedules are distinct from access and support multiple weekday windows", () => {
+    const types = read("../types/location.ts");
+    const form = read("../components/locations/LocationWorkspaceForm.tsx");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
+    const windowsSection = read("../components/locations/LocationServiceWindowsSection.tsx");
+
+    assert.match(types, /LocationServiceWindow/);
+    assert.match(types, /service_windows\?: LocationServiceWindow\[\]/);
+    assert.match(form, /initialServiceWindows/);
+    assert.match(form, /service_windows: serviceWindows\.map/);
+    assert.match(featuresStep, /LocationServiceWindowsSection/);
+    assert.match(windowsSection, /Horarios de servicio/);
+    assert.match(windowsSection, /distinto del horario y las credenciales de acceso/);
+    assert.match(windowsSection, /No hay horarios de servicio registrados/);
+});
+
 test("bulk import previews the CSV before it commits any locations", () => {
     const dialog = read("../components/locations/LocationBulkImportDialog.tsx");
 
@@ -65,18 +119,23 @@ test("bulk import previews the CSV before it commits any locations", () => {
     assert.match(dialog, /Vista previa/);
     assert.match(dialog, /fileInputRef/);
     assert.match(dialog, /variant="default" size="sm"/);
-    assert.match(dialog, /variant="dangerSoft"/);
+    assert.match(dialog, /variant="cancel"/);
 });
 
 test("locations use the shared data table and show operational detail without a photo", () => {
     const list = read("../components/locations/LocationsGrid.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");
+    const overview = read("../components/locations/LocationDetailOverview.tsx");
 
     assert.match(list, /DataListTable/);
     assert.doesNotMatch(list, /LocationCard/);
     assert.match(list, /onRowClick=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
     assert.doesNotMatch(detail, /photo_url|<Image/);
     assert.match(detail, /LocationTasksWorkspace/);
+    assert.match(overview, /Operación y planificación/);
+    assert.match(overview, /Sin contactos operativos/);
+    assert.match(overview, /Sin riesgos pendientes/);
+    assert.match(overview, /Sin horarios de servicio/);
     assert.match(list, /triggerLabel/);
     assert.doesNotMatch(list, /MoreHorizontal/);
     assert.doesNotMatch(list, /onTasks:/);
@@ -117,8 +176,17 @@ test("opening a location shows its detail first and keeps editing as an explicit
     assert.match(grid, /onRowClick=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
     assert.doesNotMatch(grid, /Ver detalle/);
     assert.match(grid, /workspace\.view_location/);
+    assert.match(grid, /setSelectedLocationId\(null\); onEdit\(selectedLocation\)/);
     assert.match(detail, /onEdit/);
-    assert.match(editSheet, /PremiumTabs/);
-    assert.match(editSheet, /Espacios y tareas/);
-    assert.match(editSheet, /LocationSpacesTab/);
+    assert.doesNotMatch(editSheet, /PremiumTabs/);
+    assert.doesNotMatch(editSheet, /LocationSpacesTab/);
+    assert.match(editSheet, /Empieza por los datos básicos o revisa cualquier paso/);
+});
+
+test("the locations catalog preserves the API error details for the user", () => {
+    const service = read("../services/location.service.ts");
+
+    assert.match(service, /assertApiResponseOk/);
+    assert.match(service, /No se pudieron cargar las ubicaciones/);
+    assert.doesNotMatch(service, /throw new Error\("Error fetching locations"\)/);
 });

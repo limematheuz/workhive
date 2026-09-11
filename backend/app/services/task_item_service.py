@@ -30,9 +30,13 @@ from app.services import (
     task_update_policy_service,
 )
 from app.services.company_client_service import ensure_company_as_client
-from app.services.entitlement_service import require_company_feature
 from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
+from app.services.task_work_completion_service import (
+    complete_task_when_checklist_is_done as _complete_task_when_checklist_is_done,
+    finish_task_work,
+    require_work_orders_feature as _require_work_orders_feature,
+)
 from app.services.task_item_read_service import (
     build_loaded_task_response,  # noqa: F401 - public compatibility re-export
     build_task_response,  # noqa: F401 - public compatibility re-export
@@ -41,47 +45,6 @@ from app.services.task_item_read_service import (
     get_task_items,  # noqa: F401 - public compatibility re-export
     get_task_items_async,  # noqa: F401 - public compatibility re-export
 )
-
-
-def _require_work_orders_feature(db: Session, current_user: User) -> None:
-    if current_user.company_id is not None:
-        require_company_feature(
-            db,
-            company_id=current_user.company_id,
-            code="features.work_orders",
-        )
-
-
-def _mark_task_completed(
-    db: Session,
-    task: TaskItem,
-    *,
-    completed_at: datetime | None = None,
-) -> datetime:
-    stamped_at = completed_at or datetime.now(timezone.utc)
-    task_billing_service.lock_task_pricing(task, locked_at=stamped_at)
-    task.status = "completed"
-    task.date_done = stamped_at
-    task_billing_service.capture_completed_work_snapshot(
-        db,
-        task,
-        completed_at=stamped_at,
-    )
-    return stamped_at
-
-
-def _complete_task_when_checklist_is_done(
-    db: Session,
-    task: TaskItem,
-) -> bool:
-    if task.status in {"requested", "rejected", "completed"}:
-        return False
-    if not task_assignment_service.all_task_checklist_items_are_complete(task):
-        return False
-
-    _mark_task_completed(db, task)
-    return True
-
 
 def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
     from app.services import reservation_service
@@ -130,7 +93,11 @@ def _resolve_current_catalog_version_id(
 
 
 def create_task_item(
-    db: Session, current_user: User, task_item_data: TaskItemCreate
+    db: Session,
+    current_user: User,
+    task_item_data: TaskItemCreate,
+    *,
+    work_order_id: int | None = None,
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     location_access_service.require_location_capability(
@@ -216,6 +183,7 @@ def create_task_item(
         current_user.company_id,
         task_item_data,
         service_catalog_version_id=service_catalog_version_id,
+        work_order_id=work_order_id,
     )
     location_zone_service.sync_task_zones(
         db,
@@ -397,6 +365,7 @@ def start_task_work(
         if all(session.task_item_id == task.id for session in active_sessions):
             for duplicate in active_sessions[1:]:
                 duplicate.end_time = duplicate.start_time
+                close_open_pause(db, duplicate, duplicate.end_time)
                 db.add(duplicate)
             updated_description, updated_count = (
                 task_assignment_service.set_user_assignment_status(
@@ -626,123 +595,6 @@ def reject_task_item(
         current_user,
     )
     return rejected
-
-
-def _require_finishable_user_assignment(task: TaskItem, user_id: int) -> None:
-    if not task_assignment_service.is_user_assigned(task, user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only finish work assigned to you",
-        )
-    if not task_assignment_service.user_checklist_is_complete(
-        task,
-        user_id,
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Complete all your assigned checklist items before finishing",
-        )
-
-
-def _active_sessions_for_task(
-    db: Session,
-    user_id: int,
-    task_id: int,
-) -> list[WorkSession]:
-    return [
-        session
-        for session in work_session_repo.get_active_sessions_by_user(db, user_id)
-        if session.task_item_id == task_id
-    ]
-
-
-def _finish_without_active_session(task: TaskItem, user_id: int) -> TaskItem:
-    assignment_status = task_assignment_service.get_user_assignment_status(
-        task,
-        user_id,
-    )
-    if task.status == "completed" or assignment_status == "completed":
-        return task
-    raise HTTPException(
-        status_code=status.HTTP_409_CONFLICT,
-        detail="No active work session exists for this task",
-    )
-
-
-def _complete_user_assignment(task: TaskItem, user_id: int) -> None:
-    updated_description, updated_count = (
-        task_assignment_service.set_user_assignment_status(
-            task.description,
-            user_id,
-            "completed",
-        )
-    )
-    if updated_count:
-        task.description = updated_description
-    task_structure_service.set_user_status(task, user_id, "completed")
-
-
-def _set_task_status_after_user_finish(db: Session, task: TaskItem) -> None:
-    checklist_complete = task_assignment_service.all_task_checklist_items_are_complete(
-        task
-    )
-    has_explicit_assignments = task_assignment_service.has_explicit_assignments(
-        task.description
-    )
-    if checklist_complete or not has_explicit_assignments:
-        _mark_task_completed(db, task)
-        return
-    task.status = "progress"
-    task.date_done = None
-    task_billing_service.clear_work_snapshot_on_reopen(task)
-
-
-def _close_user_task_sessions(
-    db: Session,
-    active_sessions: list[WorkSession],
-) -> None:
-    completed_at = datetime.now(timezone.utc)
-    for index, active_session in enumerate(active_sessions):
-        active_session.end_time = (
-            completed_at if index == 0 else active_session.start_time
-        )
-        db.add(active_session)
-
-
-def finish_task_work(
-    db: Session,
-    current_user: User,
-    task_item_id: int,
-) -> TaskItem:
-    _require_work_orders_feature(db, current_user)
-    task = get_task_item(db, current_user, task_item_id)
-    require_capability(
-        db,
-        current_user,
-        "time.manage",
-        scope_type="location",
-        scope_id=task.location_id,
-    )
-    was_completed = task.status == "completed"
-    _require_finishable_user_assignment(task, current_user.id)
-    active_sessions = _active_sessions_for_task(
-        db,
-        current_user.id,
-        task.id,
-    )
-    if not active_sessions:
-        return _finish_without_active_session(task, current_user.id)
-
-    _complete_user_assignment(task, current_user.id)
-    _close_user_task_sessions(db, active_sessions)
-    _set_task_status_after_user_finish(db, task)
-    db.add(task)
-    db.commit()
-    db.refresh(task)
-    calendar_sync_service.enqueue_task_sync(db, task)
-    if not was_completed and task.status == "completed":
-        task_lifecycle_notification_service.notify_task_completed(db, task)
-    return task
 
 
 def update_task_checklist_item(

@@ -42,8 +42,17 @@ DEFAULT_PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("work.manage", "work", "Create and update work orders"),
     ("time.read", "time", "View company time records"),
     ("time.manage", "time", "Start and manage permitted work time"),
+    ("time.approve", "time", "Review requested work-time corrections"),
     ("finance.read", "finance", "View quotes, invoices, expenses, and fiscal records"),
     ("finance.manage", "finance", "Create and update financial records"),
+    ("labor_costs.read", "finance", "View confidential internal labour costs"),
+    ("labor_costs.manage", "finance", "Set confidential internal labour costs"),
+    ("quality.templates.read", "quality", "View inspection templates"),
+    ("quality.templates.manage", "quality", "Create and update inspection templates"),
+    ("quality.inspections.read", "quality", "View quality inspections"),
+    ("quality.inspections.manage", "quality", "Perform and close quality inspections"),
+    ("quality.incidents.read", "quality", "View quality incidents and corrective actions"),
+    ("quality.incidents.manage", "quality", "Manage quality incidents and corrective actions"),
     (
         "commercial.follow_ups.read",
         "commercial",
@@ -79,6 +88,13 @@ OPERATIONS_PERMISSION_CODES = frozenset(
         "work.manage",
         "time.read",
         "time.manage",
+        "time.approve",
+        "quality.templates.read",
+        "quality.templates.manage",
+        "quality.inspections.read",
+        "quality.inspections.manage",
+        "quality.incidents.read",
+        "quality.incidents.manage",
     }
 )
 
@@ -129,11 +145,17 @@ def _ensure_system_profile(
     elif not profile.is_system:
         # Do not convert or modify a customer-managed profile during bootstrap.
         return profile
-    else:
+    elif name == ADMIN_PROFILE_NAME:
         profile.description = description
         profile.is_system = True
         profile.is_active = True
         db.add(profile)
+
+    else:
+        # Base profiles are safe starting points, not immutable policy. Once a
+        # company changes Comercial, Operaciones, Finanzas or Consulta, that
+        # choice must not be overwritten whenever a member signs in.
+        return profile
 
     definitions = organization_repo.list_permission_definitions(db)
     allowed_codes = (

@@ -1,15 +1,20 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api"
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import { LocationWorkspaceService } from "@/services/location-workspace.service"
 import type {
     Location,
     LocationSpace,
     LocationSpaceTask,
     LocationZone,
+    LocationDocument,
+    LocationDocumentLibraryItem,
+    LocationEquipment,
+    LocationEquipmentLibraryItem,
+    LocationEquipmentStatus,
 } from "@/types/location"
 import { Company } from "@/types/company"
 import { User } from "@/types/user"
 
-export type { Location, LocationSpace, LocationSpaceTask, LocationZone };
+export type { Location, LocationSpace, LocationSpaceTask, LocationZone, LocationDocument, LocationDocumentLibraryItem, LocationEquipment, LocationEquipmentLibraryItem, LocationEquipmentStatus };
 
 export type LocationHistoryPeriod = "day" | "week" | "month";
 
@@ -57,9 +62,7 @@ export const LocationService = {
             method: "GET",
             cache: "no-store"
         })
-        if (!response.ok) {
-            throw new Error("Error fetching locations")
-        }
+        await assertApiResponseOk(response, "No se pudieron cargar las ubicaciones.")
         return await response.json()
     },
 
@@ -195,5 +198,52 @@ export const LocationService = {
         if (!response.ok) {
             throw new Error("Error revoking shared location access")
         }
-    }
+    },
+    getDocuments: async (locationId: number): Promise<LocationDocument[]> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/documents`, { method: "GET", cache: "no-store" });
+        await assertApiResponseOk(response, "No se pudieron cargar los documentos.");
+        return response.json();
+    },
+    getDocumentLibrary: async (): Promise<LocationDocumentLibraryItem[]> => {
+        const response = await apiFetch("/api/v1/location-documents", { method: "GET", cache: "no-store" });
+        await assertApiResponseOk(response, "No se pudieron cargar los documentos.");
+        return response.json();
+    },
+    uploadDocument: async (locationId: number, file: File, documentType = "other"): Promise<LocationDocument> => {
+        const body = new FormData();
+        body.append("file", file);
+        body.append("document_type", documentType);
+        const response = await apiFetch(`/api/v1/locations/${locationId}/documents`, { method: "POST", body });
+        await assertApiResponseOk(response, "No se pudo subir el documento.");
+        return response.json();
+    },
+    archiveDocument: async (locationId: number, documentId: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/documents/${documentId}`, { method: "DELETE" });
+        await assertApiResponseOk(response, "No se pudo archivar el documento.");
+    },
+    documentDownloadUrl: (locationId: number, documentId: number) => `/api/v1/locations/${locationId}/documents/${documentId}/download`,
+    getEquipment: async (locationId: number): Promise<LocationEquipment[]> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/equipment`, { method: "GET", cache: "no-store" });
+        await assertApiResponseOk(response, "No se pudo cargar el equipo.");
+        return response.json();
+    },
+    getEquipmentLibrary: async (): Promise<LocationEquipmentLibraryItem[]> => {
+        const response = await apiFetch("/api/v1/location-equipment", { method: "GET", cache: "no-store" });
+        await assertApiResponseOk(response, "No se pudo cargar el equipo.");
+        return response.json();
+    },
+    createEquipment: async (locationId: number, data: Omit<LocationEquipment, "id" | "created_at" | "updated_at">): Promise<LocationEquipment> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/equipment`, { method: "POST", body: JSON.stringify(data) });
+        await assertApiResponseOk(response, "No se pudo añadir el equipo.");
+        return response.json();
+    },
+    updateEquipment: async (locationId: number, equipmentId: number, data: Partial<Omit<LocationEquipment, "id" | "created_at" | "updated_at">>): Promise<LocationEquipment> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/equipment/${equipmentId}`, { method: "PATCH", body: JSON.stringify(data) });
+        await assertApiResponseOk(response, "No se pudo actualizar el equipo.");
+        return response.json();
+    },
+    archiveEquipment: async (locationId: number, equipmentId: number): Promise<void> => {
+        const response = await apiFetch(`/api/v1/locations/${locationId}/equipment/${equipmentId}`, { method: "DELETE" });
+        await assertApiResponseOk(response, "No se pudo archivar el equipo.");
+    },
 }
