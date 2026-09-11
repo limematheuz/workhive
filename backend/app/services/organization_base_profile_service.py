@@ -47,6 +47,8 @@ DEFAULT_PERMISSION_DEFINITIONS: tuple[tuple[str, str, str], ...] = (
     ("finance.manage", "finance", "Create and update financial records"),
     ("labor_costs.read", "finance", "View confidential internal labour costs"),
     ("labor_costs.manage", "finance", "Set confidential internal labour costs"),
+    ("quality.templates.read", "quality", "View inspection templates"),
+    ("quality.templates.manage", "quality", "Create and update inspection templates"),
     (
         "commercial.follow_ups.read",
         "commercial",
@@ -83,6 +85,8 @@ OPERATIONS_PERMISSION_CODES = frozenset(
         "time.read",
         "time.manage",
         "time.approve",
+        "quality.templates.read",
+        "quality.templates.manage",
     }
 )
 

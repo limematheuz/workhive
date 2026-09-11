@@ -21,6 +21,7 @@ from app.api.v1.work_session_corrections import (
     router as work_session_corrections_router,
 )
 from app.api.v1.labor_costs import router as labor_costs_router
+from app.api.v1.quality_templates import router as quality_templates_router
 from app.api.v1.task_items import router as task_items_router
 from app.api.v1.task_item_read import router as task_item_read_router
 from app.api.v1.invoice import router as invoices_router
@@ -114,6 +115,11 @@ api_router.include_router(
     labor_costs_router,
     prefix="/labor-costs",
     tags=["labor-costs"],
+)
+api_router.include_router(
+    quality_templates_router,
+    prefix="/quality/templates",
+    tags=["quality-templates"],
 )
 api_router.include_router(task_item_read_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])
