@@ -14,12 +14,17 @@ from app.schemas.quality_inspection import (
     QualityInspectionReview,
 )
 from app.services import location_access_service
+from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import permitted_location_ids
 from app.services.user_scope import require_company_context
 
 
 READ_CAPABILITY = "quality.inspections.read"
 MANAGE_CAPABILITY = "quality.inspections.manage"
+
+
+def _require_quality(company_id: int, db: Session) -> None:
+    require_company_feature(db, company_id=company_id, code="features.quality")
 
 
 def _response(inspection: QualityInspection) -> QualityInspectionResponse:
@@ -55,6 +60,7 @@ def _require_location_access(
 
 def list_inspections(db: Session, current_user: User) -> list[QualityInspectionResponse]:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     inspections = inspection_repo.list_inspections(
         db,
         company_id=company_id,
@@ -69,6 +75,7 @@ def get_inspection(
     inspection_id: int,
 ) -> QualityInspectionResponse:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     inspection = inspection_repo.get_inspection(
         db, company_id=company_id, inspection_id=inspection_id
     )
@@ -84,6 +91,7 @@ def create_inspection(
     payload: QualityInspectionCreate,
 ) -> QualityInspectionResponse:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     template = template_repo.get_template(
         db, company_id=company_id, template_id=payload.template_id
     )
@@ -129,6 +137,7 @@ def complete_inspection(
     payload: QualityInspectionReview,
 ) -> QualityInspectionResponse:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     inspection = inspection_repo.get_inspection(
         db, company_id=company_id, inspection_id=inspection_id, for_update=True
     )

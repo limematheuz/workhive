@@ -6,12 +6,17 @@ from app.models.user import User
 from app.repositories import quality_template as quality_template_repo
 from app.schemas.quality_template import QualityInspectionTemplateCreate, QualityInspectionTemplateUpdate
 from app.services import location_access_service
+from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import permitted_location_ids, require_capability
 from app.services.user_scope import require_company_context
 
 
 READ_CAPABILITY = "quality.templates.read"
 MANAGE_CAPABILITY = "quality.templates.manage"
+
+
+def _require_quality(company_id: int, db: Session) -> None:
+    require_company_feature(db, company_id=company_id, code="features.quality")
 
 
 def _replace_items(template: QualityInspectionTemplate, items) -> None:
@@ -47,6 +52,7 @@ def _require_template_access(
 
 def list_templates(db: Session, current_user: User) -> list[QualityInspectionTemplate]:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     return quality_template_repo.list_templates(
         db,
         company_id=company_id,
@@ -60,6 +66,7 @@ def get_template(
     template_id: int,
 ) -> QualityInspectionTemplate:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     template = quality_template_repo.get_template(
         db, company_id=company_id, template_id=template_id
     )
@@ -75,6 +82,7 @@ def create_template(
     payload: QualityInspectionTemplateCreate,
 ) -> QualityInspectionTemplate:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     if payload.location_id is None:
         require_capability(db, current_user, MANAGE_CAPABILITY)
     else:
@@ -107,6 +115,7 @@ def update_template(
     payload: QualityInspectionTemplateUpdate,
 ) -> QualityInspectionTemplate:
     company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
     template = quality_template_repo.get_template(
         db, company_id=company_id, template_id=template_id, for_update=True
     )
