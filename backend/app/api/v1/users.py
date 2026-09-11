@@ -31,7 +31,6 @@ from app.services.subscription_policy import require_company_access
 
 router = APIRouter()
 
-
 @router.get("/me", response_model=UserResponse)
 async def read_current_user(
     db: AsyncSession = Depends(get_async_db),

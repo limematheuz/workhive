@@ -11,77 +11,15 @@ from app.services.external_access_policy import require_external_company_capabil
 from app.services.organization_location_scope_service import (
     resolve_permitted_location_ids,
 )
+from app.services.organization_legacy_authorization_service import (
+    has_explicit_profile_assignments,
+    legacy_role_allows,
+)
 from app.services.organization_permission_policy import is_system_only_permission
 from app.services.user_scope import (
     is_platform_superadmin,
     require_company_context,
-    role_name,
 )
-
-
-_LEGACY_ROLE_CAPABILITIES = {
-    "admin": frozenset(
-        {
-            "access.members.read", "access.members.manage", "locations.read",
-            "locations.manage",
-            "work.read",
-            "work.manage",
-            "time.read",
-            "time.manage",
-            "time.approve",
-            "finance.read",
-            "finance.manage",
-        }
-    ),
-    "manager": frozenset(
-        {
-            "locations.read",
-            "locations.manage",
-            "work.read",
-            "work.manage",
-            "time.read",
-            "time.manage",
-            "time.approve",
-        }
-    ),
-    "viewer": frozenset(
-        {"locations.read", "work.read", "time.read", "time.manage"}
-    ),
-}
-
-def _has_explicit_profile_assignments(
-    db: Session,
-    *,
-    company_id: int,
-    membership_id: int,
-) -> bool:
-    return organization_repo.has_profile_assignment_history(
-        db, company_id=company_id, membership_id=membership_id
-    )
-
-def _legacy_role_allows(
-    db: Session,
-    current_user: User,
-    capability: str,
-    *,
-    company_id: int,
-    membership: CompanyMembership,
-) -> bool:
-    """Preserve legacy operational roles until they receive an explicit profile.
-
-    This applies only to the newly protected operational domains. Existing
-    client and commercial authorization remains strict-profile-only. Any past
-    or current profile assignment disables this bridge, including after a
-    revocation. Removing permission must never restore a broader legacy role.
-    """
-
-    if capability not in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ()):
-        return False
-    if membership.permissions_configured or _has_explicit_profile_assignments(
-        db, company_id=company_id, membership_id=membership.id
-    ):
-        return False
-    return True
 
 
 def _require_active_company_principal(
@@ -180,7 +118,7 @@ def require_capability(
     membership = principal
 
     target_id = scope_id if scope_id is not None else company_id
-    if _legacy_role_allows(
+    if legacy_role_allows(
         db,
         current_user,
         capability,
@@ -255,7 +193,7 @@ def uses_legacy_role_authorization(
     if isinstance(principal, ExternalAccessGrant):
         return False
     membership = principal
-    return not _has_explicit_profile_assignments(
+    return not has_explicit_profile_assignments(
         db,
         company_id=company_id,
         membership_id=membership.id,
@@ -283,7 +221,7 @@ def permitted_location_ids(
             detail="Not enough permissions",
         )
     membership = principal
-    if _legacy_role_allows(
+    if legacy_role_allows(
         db,
         current_user,
         capability,
@@ -325,7 +263,7 @@ def resolve_location_capabilities(
             detail="Not enough permissions",
         )
     membership = principal
-    if _legacy_role_allows(
+    if legacy_role_allows(
         db,
         current_user,
         read_capability,
@@ -334,8 +272,13 @@ def resolve_location_capabilities(
     ):
         legacy_manage_locations = (
             None
-            if manage_capability
-            in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ())
+            if legacy_role_allows(
+                db,
+                current_user,
+                manage_capability,
+                company_id=company_id,
+                membership=membership,
+            )
             else set()
         )
         return None, legacy_manage_locations, True

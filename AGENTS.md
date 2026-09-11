@@ -20,6 +20,7 @@ Platform instructions and the user's current request still take precedence. When
 - Routes must not access the database directly. Put queries in repositories and business rules in services.
 - Frontend pages, components, and hooks must not call HTTP directly. Use the frontend service layer.
 - Before extending a module, check its responsibility and architecture budget. Extract a focused policy, repository, serializer, or domain service when needed; never raise a guardrail merely to fit a change.
+- When a module exceeds its line budget or another architectural guardrail fails, do not raise, freeze, or relax that guardrail to make CI pass. Extract a coherent responsibility into a focused module, then rerun the affected checks.
 - Before changing product behavior, map the affected entities, fields, API contracts, permissions, migrations, reporting, and downstream flows.
 - Build frontend UI with the existing shadcn/ui components and patterns. Do not introduce a parallel primitive when an appropriate project component already exists.
 - When replacing a frontend flow, remove obsolete components and update the related architecture tests in the same change. Icon-only controls must retain an accessible name.
