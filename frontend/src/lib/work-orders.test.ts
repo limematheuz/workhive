@@ -12,8 +12,11 @@ test("work orders have an independent operational service and page", () => {
     assert.match(service, /\/api\/v1\/work-orders\//);
     assert.match(service, /contract-candidates/);
     assert.match(service, /generate/);
+    assert.match(service, /materials/);
+    assert.match(service, /reverseMaterialConsumption/);
     assert.match(page, /DataListTable/);
     assert.match(page, /Nueva orden/);
     assert.match(page, /Generar tarea/);
+    assert.match(page, /WorkOrderMaterialsDialog/);
     assert.match(sidebar, /"\/dashboard\/work-orders"/);
 });

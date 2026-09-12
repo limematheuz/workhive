@@ -55,6 +55,8 @@ def _require_active_company_principal(
         "time.read": "features.time_tracking",
         "time.manage": "features.time_tracking",
         "time.approve": "features.time_tracking",
+        "inventory.read": "features.inventory",
+        "inventory.manage": "features.inventory",
         "quality.templates.read": "features.quality",
         "quality.templates.manage": "features.quality",
         "quality.inspections.read": "features.quality",

@@ -66,6 +66,15 @@ def test_incident_tracks_corrective_actions_without_changing_inspection_history(
     assert completed_action.status_code == 200, completed_action.text
     assert completed_action.json()["completed_at"] is not None
 
+    cancelled_action = client.patch(
+        f"/api/v1/quality/incidents/{incident['id']}/actions/{action.json()['id']}",
+        headers=_headers(admin),
+        json={"status": "cancelled"},
+    )
+    assert cancelled_action.status_code == 200, cancelled_action.text
+    assert cancelled_action.json()["status"] == "cancelled"
+    assert cancelled_action.json()["completed_at"] is None
+
     resolved = client.patch(
         f"/api/v1/quality/incidents/{incident['id']}",
         headers=_headers(admin),
@@ -73,7 +82,7 @@ def test_incident_tracks_corrective_actions_without_changing_inspection_history(
     )
     assert resolved.status_code == 200, resolved.text
     assert resolved.json()["resolved_at"] is not None
-    assert resolved.json()["corrective_actions"][0]["status"] == "completed"
+    assert resolved.json()["corrective_actions"][0]["status"] == "cancelled"
     assert client.get(
         f"/api/v1/quality/inspections/{inspection['id']}", headers=_headers(admin)
     ).json()["status"] == "draft"

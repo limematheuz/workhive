@@ -23,6 +23,7 @@ Platform instructions and the user's current request still take precedence. When
 - When a module exceeds its line budget or another architectural guardrail fails, do not raise, freeze, or relax that guardrail to make CI pass. Extract a coherent responsibility into a focused module, then rerun the affected checks.
 - Before changing product behavior, map the affected entities, fields, API contracts, permissions, migrations, reporting, and downstream flows.
 - Build frontend UI with the existing shadcn/ui components and patterns. Do not introduce a parallel primitive when an appropriate project component already exists.
+- Keep tab navigation responsive and complete: desktop may render tabs in a row, but tablet and mobile must compact them into the same dropdown/select pattern without dropping, reordering, or changing the visibility rules of any item.
 - When replacing a frontend flow, remove obsolete components and update the related architecture tests in the same change. Icon-only controls must retain an accessible name.
 
 ## Security and authorization
