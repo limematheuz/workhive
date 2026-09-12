@@ -5,7 +5,7 @@ from app.models.invoice import Invoice
 from app.models.user import User
 
 
-PAYMENT_REMINDER_STATUSES = ("issued", "overdue")
+PAYMENT_REMINDER_STATUSES = ("issued", "partially_paid", "overdue")
 
 
 def list_unpaid_invoices_with_due_date(db: Session) -> list[Invoice]:

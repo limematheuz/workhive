@@ -7,7 +7,13 @@ from app.models.invoice import Invoice
 from app.models.sales_ledger_record import SalesLedgerRecord
 
 
-REPORTABLE_INVOICE_STATUSES = ("issued", "paid", "overdue", "rectified")
+REPORTABLE_INVOICE_STATUSES = (
+    "issued",
+    "partially_paid",
+    "paid",
+    "overdue",
+    "rectified",
+)
 
 
 def list_reportable_invoices(

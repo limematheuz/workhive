@@ -2,13 +2,21 @@ import type { Expense } from "@/types/expense";
 import type { SalesLedgerEntry } from "@/services/sales-ledger.service";
 
 export interface FinanceRevenueRecord {
+    id?: number;
     issue_date: string;
     due_date?: string | null;
     paid_at?: string | null;
-    status: "issued" | "paid" | "overdue" | "rectified" | "draft" | "cancelled";
+    status: "issued" | "partially_paid" | "paid" | "overdue" | "rectified" | "draft" | "cancelled";
     base_amount: number;
     tax_amount: number;
     total_amount: number;
+}
+
+export interface FinancePaymentRecord {
+    received_at: string;
+    amount: string | number;
+    status: "received" | "voided";
+    allocations: Array<{ invoice_id: number; amount: string | number }>;
 }
 
 export interface FinanceMonth {
@@ -47,7 +55,7 @@ export interface FinancePeriodComparison {
     previous: FinancePeriodSummary;
 }
 
-const REVENUE_STATUSES = new Set(["issued", "paid", "overdue", "rectified"]);
+const REVENUE_STATUSES = new Set(["issued", "partially_paid", "paid", "overdue", "rectified"]);
 
 function parseDate(value: string) {
     const parsed = new Date(value);
@@ -154,20 +162,36 @@ function summarizeRange(
     expenses: Expense[],
     start: Date,
     end: Date,
+    payments: FinancePaymentRecord[] = [],
 ): FinancePeriodSummary {
     const summary = emptyPeriodSummary();
+    const allocatedByInvoice = new Map<number, number>();
+    payments.forEach((payment) => {
+        if (payment.status !== "received") return;
+        if (isInRange(parseDate(payment.received_at), start, end)) {
+            summary.paid += Number(payment.amount);
+        }
+        payment.allocations.forEach((allocation) => {
+            allocatedByInvoice.set(
+                allocation.invoice_id,
+                (allocatedByInvoice.get(allocation.invoice_id) || 0) + Number(allocation.amount),
+            );
+        });
+    });
     invoices.forEach((invoice) => {
         const issueDate = parseDate(invoice.issue_date);
         const paymentDate = parseDate(invoice.paid_at || invoice.issue_date);
         const overdueDate = parseDate(invoice.due_date || invoice.issue_date);
-        if (invoice.status === "paid" && isInRange(paymentDate, start, end)) {
+        const allocated = invoice.id ? allocatedByInvoice.get(invoice.id) || 0 : 0;
+        const pendingAmount = Math.max(0, invoice.total_amount - allocated);
+        if (invoice.status === "paid" && allocated === 0 && isInRange(paymentDate, start, end)) {
             summary.paid += invoice.total_amount;
         }
-        if (invoice.status === "issued" && isInRange(issueDate, start, end)) {
-            summary.pending += invoice.total_amount;
+        if (["issued", "partially_paid"].includes(invoice.status) && isInRange(issueDate, start, end)) {
+            summary.pending += pendingAmount;
         }
         if (invoice.status === "overdue" && isInRange(overdueDate, start, end)) {
-            summary.overdue += invoice.total_amount;
+            summary.overdue += pendingAmount;
         }
         if (isRevenueInvoice(invoice) && isInRange(issueDate, start, end)) {
             summary.revenue += invoice.base_amount;
@@ -256,6 +280,7 @@ export function buildFinanceSeries(
     locale: "en" | "es",
     period: FinancePeriod,
     now = new Date(),
+    payments: FinancePaymentRecord[] = [],
 ): FinanceSeriesPoint[] {
     const count = periodBucketCount(period);
     const currentStart = startOfPeriod(now, period);
@@ -265,7 +290,7 @@ export function buildFinanceSeries(
         return {
             key: periodKey(start, period),
             label: periodLabel(start, period, locale),
-            ...summarizeRange(invoices, expenses, start, end),
+            ...summarizeRange(invoices, expenses, start, end, payments),
         };
     });
 }
@@ -275,13 +300,14 @@ export function summarizeFinancePeriod(
     expenses: Expense[],
     period: FinancePeriod,
     now = new Date(),
+    payments: FinancePaymentRecord[] = [],
 ): FinancePeriodComparison {
     const currentStart = startOfPeriod(now, period);
     const currentEnd = addPeriod(currentStart, period, 1);
     const previousStart = addPeriod(currentStart, period, -1);
     return {
-        current: summarizeRange(invoices, expenses, currentStart, currentEnd),
-        previous: summarizeRange(invoices, expenses, previousStart, currentStart),
+        current: summarizeRange(invoices, expenses, currentStart, currentEnd, payments),
+        previous: summarizeRange(invoices, expenses, previousStart, currentStart, payments),
     };
 }
 

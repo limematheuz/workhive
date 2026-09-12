@@ -67,6 +67,12 @@ export function getInvoiceStatusMeta(status: string, dict: Dictionary) {
             className: "border-[color-mix(in_srgb,var(--accent-color)_34%,transparent)] bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent",
         };
     }
+    if (status === "partially_paid") {
+        return {
+            label: dict.invoices.status_partially_paid,
+            className: "border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]",
+        };
+    }
     if (status === "overdue") {
         return {
             label: dict.invoices.status_overdue || "Vencida",

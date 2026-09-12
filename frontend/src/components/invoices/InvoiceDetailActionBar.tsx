@@ -138,7 +138,7 @@ export function InvoiceDetailActionBar({
                 </>
             )}
 
-            {!invoice.is_rectification && ["issued", "paid", "overdue"].includes(invoice.status) && (
+            {!invoice.is_rectification && ["issued", "partially_paid", "paid", "overdue"].includes(invoice.status) && (
                 <Button
                     type="button"
                     onClick={onOpenRectification}
@@ -149,7 +149,7 @@ export function InvoiceDetailActionBar({
                 </Button>
             )}
 
-            {["draft", "issued", "paid", "overdue", "rectified"].includes(invoice.status) && (
+            {["draft", "issued", "partially_paid", "paid", "overdue", "rectified"].includes(invoice.status) && (
                 <Button
                     type="button"
                     onClick={onOpenEmailDialog}

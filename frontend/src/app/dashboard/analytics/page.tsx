@@ -35,6 +35,7 @@ import {
     type FinancePeriodSummary,
     type FinanceRevenueRecord,
     type FinanceSeriesPoint,
+    type FinancePaymentRecord,
 } from "@/lib/finance-analytics";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
@@ -61,6 +62,7 @@ import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-me
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
+import { CustomerPaymentService } from "@/services/customer-payment.service";
 
 type AnalyticsTab = "finance" | "profitability" | "operations";
 
@@ -84,6 +86,7 @@ export default function FinanceAnalyticsPage() {
     const [period, setPeriod] = useState<FinancePeriod>("month");
     const [revenueRecords, setRevenueRecords] = useState<FinanceRevenueRecord[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [payments, setPayments] = useState<FinancePaymentRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [exportYear, setExportYear] = useState(() => new Date().getFullYear());
     const [exportPeriod, setExportPeriod] = useState<AccountantExportPeriod>("month");
@@ -126,10 +129,11 @@ export default function FinanceAnalyticsPage() {
         if (!canViewAnalytics) return;
         try {
             setLoading(true);
-            const [invoiceData, expenseData, salesLedgerEntries] = await Promise.all([
+            const [invoiceData, expenseData, salesLedgerEntries, customerPayments] = await Promise.all([
                 InvoiceService.getAllInvoices(),
                 ExpenseService.getAllExpenses(),
                 collectPaginated((skip, limit) => SalesLedgerService.getEntries({ skip, limit })),
+                CustomerPaymentService.getPayments(),
             ]);
             setRevenueRecords([
                 ...invoiceData,
@@ -140,6 +144,7 @@ export default function FinanceAnalyticsPage() {
                     .map(manualSalesLedgerToFinanceRevenue),
             ]);
             setExpenses(expenseData);
+            setPayments(customerPayments);
         } catch (error) {
             console.error("Error loading finance analytics", error);
             toast.error(text.error_load);
@@ -214,12 +219,12 @@ export default function FinanceAnalyticsPage() {
     );
 
     const series = useMemo(
-        () => buildFinanceSeries(revenueRecords, expenses, locale, period),
-        [expenses, revenueRecords, locale, period],
+        () => buildFinanceSeries(revenueRecords, expenses, locale, period, new Date(), payments),
+        [expenses, revenueRecords, locale, payments, period],
     );
     const comparison = useMemo(
-        () => summarizeFinancePeriod(revenueRecords, expenses, period),
-        [expenses, revenueRecords, period],
+        () => summarizeFinancePeriod(revenueRecords, expenses, period, new Date(), payments),
+        [expenses, revenueRecords, payments, period],
     );
     const categoryTotals = useMemo(
         () => groupExpensesByCategory(expenses, period),

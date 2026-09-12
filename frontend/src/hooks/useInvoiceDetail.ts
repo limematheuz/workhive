@@ -64,6 +64,7 @@ const EMPTY_BILLING_PARTY_FIELDS: BillingPartyFields = {
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
     draft: ["issued", "cancelled"],
     issued: ["paid", "overdue"],
+    partially_paid: [],
     paid: [],
     cancelled: [],
     overdue: ["paid"],
@@ -241,7 +242,7 @@ export function useInvoiceDetail(invoiceId: number) {
             setLoading(true);
             const loadedInvoice = await InvoiceService.getInvoice(invoiceId);
             setInvoice(loadedInvoice);
-            const isIssued = ["issued", "paid", "overdue", "rectified"].includes(
+            const isIssued = ["issued", "partially_paid", "paid", "overdue", "rectified"].includes(
                 loadedInvoice.status
             );
             const [
@@ -301,7 +302,7 @@ export function useInvoiceDetail(invoiceId: number) {
 
     const handlePdfAction = useCallback(async () => {
         if (!invoice) return;
-        if (!["issued", "paid", "overdue", "rectified"].includes(invoice.status)) {
+        if (!["issued", "partially_paid", "paid", "overdue", "rectified"].includes(invoice.status)) {
             handlePrint();
             return;
         }

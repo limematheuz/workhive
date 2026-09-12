@@ -117,7 +117,7 @@ export const computeInvoiceStats = (invoices: Invoice[]) => ({
         .filter((invoice) => invoice.status === "paid")
         .reduce((sum, invoice) => sum + invoice.total_amount, 0),
     openAmount: invoices
-        .filter((invoice) => ["draft", "issued", "overdue"].includes(invoice.status))
+        .filter((invoice) => ["draft", "issued", "partially_paid", "overdue"].includes(invoice.status))
         .reduce((sum, invoice) => sum + invoice.total_amount, 0),
     overdueAmount: invoices
         .filter((invoice) => invoice.status === "overdue")
