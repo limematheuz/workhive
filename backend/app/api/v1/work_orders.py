@@ -10,7 +10,12 @@ from app.schemas.work_order import (
     WorkOrderResponse,
     WorkOrderUpdate,
 )
-from app.services import audit_service, work_order_service
+from app.schemas.inventory import (
+    InventoryMovementResponse,
+    InventoryWorkOrderConsumptionCreate,
+    InventoryWorkOrderConsumptionReversal,
+)
+from app.services import audit_service, work_order_inventory_service, work_order_service
 
 
 router = APIRouter()
@@ -63,6 +68,75 @@ def read_work_order(
     current_user: User = ActiveUser,
 ):
     return work_order_service.get_work_order(db, current_user, work_order_id)
+
+
+@router.get(
+    "/{work_order_id}/materials", response_model=list[InventoryMovementResponse]
+)
+def read_work_order_consumptions(
+    work_order_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    return work_order_inventory_service.list_consumptions(
+        db, current_user, work_order_id
+    )
+
+
+@router.post(
+    "/{work_order_id}/materials",
+    response_model=InventoryMovementResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_work_order_consumption(
+    work_order_id: int,
+    payload: InventoryWorkOrderConsumptionCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    movement = work_order_inventory_service.create_consumption(
+        db, current_user, work_order_id, payload
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="work_order.material_consumed",
+        entity_type="work_order",
+        entity_id=work_order_id,
+        request=request,
+        details={"movement_id": movement.id, "material_id": movement.material_id},
+    )
+    return movement
+
+
+@router.post(
+    "/{work_order_id}/materials/{movement_id}/reverse",
+    response_model=InventoryMovementResponse,
+)
+def reverse_work_order_consumption(
+    work_order_id: int,
+    movement_id: int,
+    payload: InventoryWorkOrderConsumptionReversal,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    movement = work_order_inventory_service.reverse_consumption(
+        db, current_user, work_order_id, movement_id, payload
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="work_order.material_consumption_reversed",
+        entity_type="work_order",
+        entity_id=work_order_id,
+        request=request,
+        details={"movement_id": movement.id, "reversal_of_movement_id": movement.reversal_of_movement_id},
+    )
+    return movement
 
 
 @router.patch("/{work_order_id}", response_model=WorkOrderResponse)

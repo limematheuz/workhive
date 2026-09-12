@@ -34,6 +34,8 @@ from app.api.v1.quote_revisions import router as quote_revisions_router
 from app.api.v1.service_contracts import router as service_contracts_router
 from app.api.v1.work_orders import router as work_orders_router
 from app.api.v1.expenses import router as expenses_router
+from app.api.v1.inventory import router as inventory_router
+from app.api.v1.inventory_purchases import router as inventory_purchases_router
 from app.api.v1.uploads import router as uploads_router
 from app.api.v1.reservations import router as reservations_router
 from app.api.v1.location_company_access import router as location_company_access_router
@@ -177,6 +179,12 @@ api_router.include_router(
 )
 api_router.include_router(work_orders_router, prefix="/work-orders", tags=["work-orders"])
 api_router.include_router(expenses_router, prefix="/expenses", tags=["expenses"])
+api_router.include_router(inventory_router, prefix="/inventory", tags=["inventory"])
+api_router.include_router(
+    inventory_purchases_router,
+    prefix="/inventory/purchases",
+    tags=["inventory-purchases"],
+)
 api_router.include_router(uploads_router, prefix="/uploads", tags=["uploads"])
 api_router.include_router(
     collaborations_router, prefix="/collaborations", tags=["collaborations"]

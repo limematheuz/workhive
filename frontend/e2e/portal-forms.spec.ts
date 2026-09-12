@@ -57,11 +57,27 @@ test("property and cleaning request create/edit/delete round trip without reload
     await page.getByRole("button", { name: "Siguiente", exact: true }).click();
     await page.getByRole("button", { name: /Apartamento turístico/ }).click();
     await page.getByRole("button", { name: "Siguiente", exact: true }).click();
-    await page.locator("#location-contact-email").fill("reception@e2e.example");
+    await page.getByRole("button", { name: "Añadir contacto", exact: true }).click();
+    await page.locator("#location-contact-name-0").fill("Recepción E2E");
+    await page.locator("#location-contact-email-0").fill("reception@e2e.example");
+    await page.getByRole("button", { name: "Añadir riesgo", exact: true }).click();
+    await page.locator("#location-risk-title-0").fill("E2E wet entrance");
+    await page.locator("#location-risk-description-0").fill("Colocar señalización al limpiar.");
+    await page.locator("#location-risk-mitigation-0").fill("Revisar el suelo antes de abrir.");
+    await page.getByRole("button", { name: "Añadir horario", exact: true }).click();
+    await page.locator("#location-service-window-label-0").fill("E2E before opening");
+    await page.locator("#location-service-window-from-0").fill("07:00");
+    await page.locator("#location-service-window-until-0").fill("09:00");
     await page.getByRole("button", { name: "Siguiente", exact: true }).click();
     const created = page.waitForResponse(response => response.url().endsWith("/partner-portal/locations") && response.request().method() === "POST");
     await page.getByRole("button", { name: "Crear y compartir", exact: true }).click();
-    expect((await created).status()).toBe(201);
+    const createdResponse = await created;
+    expect(createdResponse.status()).toBe(201);
+    await expect(createdResponse.json()).resolves.toMatchObject({
+        contacts: [{ full_name: "Recepción E2E" }],
+        risks: [{ title: "E2E wet entrance", status: "open" }],
+        service_windows: [{ label: "E2E before opening", starts_at: "07:00", ends_at: "09:00" }],
+    });
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await page.getByRole("button", { name: "Acciones para Portal E2E property" }).last().click();
     await page.getByRole("menuitem", { name: "Editar", exact: true }).click();

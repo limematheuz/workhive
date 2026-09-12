@@ -36,6 +36,18 @@ export type WorkOrderCreate = {
     estimated_minutes?: number;
 };
 
+export type WorkOrderUpdate = {
+    title?: string;
+    description?: string | null;
+    status?: WorkOrderStatus;
+    scheduled_start_at?: string;
+    recurrence_unit?: RecurrenceUnit;
+    recurrence_interval?: number;
+    recurrence_ends_at?: string | null;
+    estimated_people?: number | null;
+    estimated_minutes?: number | null;
+};
+
 export type WorkOrderContractCandidate = {
     contract_id: number;
     contract_title: string;

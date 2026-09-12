@@ -14,12 +14,14 @@ _LEGACY_ROLE_CAPABILITIES = {
             "access.members.read", "access.members.manage", "locations.read",
             "locations.manage", "work.read", "work.manage", "time.read",
             "time.manage", "time.approve", "finance.read", "finance.manage",
+            "inventory.read", "inventory.manage",
         }
     ),
     "manager": frozenset(
         {
             "locations.read", "locations.manage", "work.read", "work.manage",
             "time.read", "time.manage", "time.approve",
+            "inventory.read", "inventory.manage",
         }
     ),
     "viewer": frozenset(

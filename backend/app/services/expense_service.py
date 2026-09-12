@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.repositories import expense as expense_repo
+from app.repositories import inventory_purchase as inventory_purchase_repo
 from app.schemas.expense import ExpenseCreate, ExpenseUpdate
 from app.services import client_service
 
@@ -20,6 +21,18 @@ def _get_expense_or_404(db: Session, company_id: int, expense_id: int):
             detail="Expense not found",
         )
     return expense
+
+
+def _reject_purchase_managed_expense(db: Session, company_id: int, expense_id: int) -> None:
+    purchase = inventory_purchase_repo.get_purchase_by_expense(
+        db, company_id=company_id, expense_id=expense_id
+    )
+    if purchase is not None and purchase.status == "received":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este gasto procede de una compra de material. Corrige la compra para conservar el stock coherente.",
+            headers={"X-WorkHive-Error-Code": "inventory.purchase_managed_expense"},
+        )
 
 
 def _validate_client_assignment(
@@ -83,6 +96,7 @@ def update_expense(
     data: ExpenseUpdate,
 ):
     expense = _get_expense_or_404(db, company_id, expense_id)
+    _reject_purchase_managed_expense(db, company_id, expense_id)
     payload = data.model_dump(exclude_unset=True)
     if "client_id" in payload:
         _validate_client_assignment(db, company_id, payload["client_id"])
@@ -95,4 +109,5 @@ def update_expense(
 
 def delete_expense(db: Session, company_id: int, expense_id: int) -> None:
     expense = _get_expense_or_404(db, company_id, expense_id)
+    _reject_purchase_managed_expense(db, company_id, expense_id)
     expense_repo.delete_expense(db, expense)

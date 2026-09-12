@@ -47,6 +47,14 @@ from app.models.service_contract import (
     ServiceContractLocationZone,
 )
 from app.models.expense import Expense
+from app.models.inventory import (
+    InventoryMaterial,
+    InventoryMovement,
+    InventorySupplier,
+    InventoryWarehouse,
+)
+from app.models.inventory_lot import InventoryLot
+from app.models.inventory_purchase import InventoryPurchase, InventoryPurchaseLine
 from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.reservation import Reservation
