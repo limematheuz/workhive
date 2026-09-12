@@ -1585,6 +1585,7 @@
     "actions": "Acciones",
     "status_draft": "Borrador",
     "status_issued": "Emitida",
+    "status_partially_paid": "Parcialmente cobrada",
     "status_paid": "Pagada",
     "status_overdue": "Vencida",
     "status_cancelled": "Cancelada",

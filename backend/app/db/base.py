@@ -47,6 +47,7 @@ from app.models.service_contract import (
     ServiceContractLocationZone,
 )
 from app.models.expense import Expense
+from app.models.customer_payment import CustomerPayment, CustomerPaymentAllocation
 from app.models.inventory import (
     InventoryMaterial,
     InventoryMovement,

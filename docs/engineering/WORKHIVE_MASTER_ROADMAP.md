@@ -392,10 +392,17 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 8 — Cobros, margen y analítica
 
 - ✅ Facturación, registros fiscales y resúmenes financieros básicos existen.
-- ⬜ Cobros, repartos de pago, conciliación, coste de personal/material/
-  subcontrata y margen previsto frente a real.
-- ⬜ Analítica por sociedad, delegación, cliente, contrato, ubicación, servicio,
-  equipo y trabajo con permisos de lectura.
+- 🟡 Cobros: recibos de cliente inmutables con reparto entre facturas, saldo no
+  aplicado y anulación auditable; actualizan el estado de cobro sin alterar el
+  registro fiscal ni el IVA. Validado por API y UI local; pendiente de revisión
+  visual autenticada.
+- ✅ Coste laboral interno con históricos inmutables por sesión y rentabilidad
+  conocida por cliente a partir de ingresos y gastos asignados.
+- ⬜ Conciliación bancaria, imputación de material/subcontrata y margen previsto
+  frente a real, sin duplicar compras de inventario como gasto.
+- 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
+  lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
+  ubicación, servicio, equipo y trabajo.
 
 ### Fase 9 — Portales e integraciones
 

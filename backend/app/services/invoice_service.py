@@ -50,8 +50,8 @@ from app.services.invoice_tasks import (  # noqa: F401
 from app.services.entitlement_service import require_company_feature
 
 
-RECTIFIABLE_STATUSES = {"issued", "paid", "overdue"}
-PAYMENT_STATUSES = {"issued", "paid", "overdue"}
+RECTIFIABLE_STATUSES = {"issued", "partially_paid", "paid", "overdue"}
+PAYMENT_STATUSES = {"issued", "partially_paid", "paid", "overdue"}
 logger = logging.getLogger(__name__)
 
 

@@ -55,11 +55,12 @@ type BuildClientWorkspaceInput = {
 
 const REVENUE_STATUSES = new Set<Invoice["status"]>([
     "issued",
+    "partially_paid",
     "paid",
     "overdue",
     "rectified",
 ]);
-const PENDING_PAYMENT_STATUSES = new Set<Invoice["status"]>(["issued", "overdue"]);
+const PENDING_PAYMENT_STATUSES = new Set<Invoice["status"]>(["issued", "partially_paid", "overdue"]);
 const COMPLETE_TASK_STATUSES = new Set(["completed", "cancelled"]);
 
 function validDate(value: string | null | undefined): Date | null {

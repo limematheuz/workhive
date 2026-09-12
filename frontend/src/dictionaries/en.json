@@ -1585,6 +1585,7 @@
     "actions": "Actions",
     "status_draft": "Draft",
     "status_issued": "Issued",
+    "status_partially_paid": "Partially paid",
     "status_paid": "Paid",
     "status_overdue": "Overdue",
     "status_cancelled": "Cancelled",

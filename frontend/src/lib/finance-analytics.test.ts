@@ -265,6 +265,42 @@ test("paid totals use collection date while revenue keeps issue date", () => {
     assert.equal(comparison.previous.revenue, 100);
 });
 
+test("customer receipts count cash once and leave only the unpaid invoice balance pending", () => {
+    const comparison = summarizeFinancePeriod(
+        [
+            makeInvoice({
+                id: 1,
+                status: "partially_paid",
+                issue_date: "2026-07-04T10:00:00",
+                base_amount: 100,
+                tax_amount: 21,
+                total_amount: 121,
+            }),
+        ],
+        [],
+        "month",
+        new Date("2026-07-07T12:00:00"),
+        [
+            {
+                received_at: "2026-07-06T10:00:00",
+                amount: "80.00",
+                status: "received",
+                allocations: [{ invoice_id: 1, amount: "50.00" }],
+            },
+            {
+                received_at: "2026-07-06T11:00:00",
+                amount: "20.00",
+                status: "voided",
+                allocations: [{ invoice_id: 1, amount: "20.00" }],
+            },
+        ],
+    );
+
+    assert.equal(comparison.current.paid, 80);
+    assert.equal(comparison.current.pending, 71);
+    assert.equal(comparison.current.revenue, 100);
+});
+
 test("overdue totals use due date instead of issue date", () => {
     const comparison = summarizeFinancePeriod(
         [
