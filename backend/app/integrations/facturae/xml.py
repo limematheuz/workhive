@@ -202,7 +202,7 @@ def _invoice_parties(invoice: Invoice) -> tuple[dict, dict]:
 
 
 def build_facturae_xml(invoice: Invoice) -> bytes:
-    if invoice.status not in {"issued", "paid", "overdue", "rectified"}:
+    if invoice.status not in {"issued", "partially_paid", "paid", "overdue", "rectified"}:
         raise ValueError("Facturae can only be generated for issued invoices")
     seller, buyer = _invoice_parties(invoice)
     root = etree.Element(

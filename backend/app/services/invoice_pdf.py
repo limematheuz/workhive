@@ -433,7 +433,7 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
 
 
 def generate_invoice_pdf(invoice: Invoice) -> str:
-    if invoice.status not in {"issued", "paid", "overdue", "rectified"}:
+    if invoice.status not in {"issued", "partially_paid", "paid", "overdue", "rectified"}:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This invoice status does not have a definitive PDF",

@@ -63,11 +63,11 @@ const EMPTY_BILLING_PARTY_FIELDS: BillingPartyFields = {
 
 const ALLOWED_TRANSITIONS: Record<string, string[]> = {
     draft: ["issued", "cancelled"],
-    issued: ["paid", "overdue"],
+    issued: ["overdue"],
     partially_paid: [],
     paid: [],
     cancelled: [],
-    overdue: ["paid"],
+    overdue: [],
     rectified: [],
 };
 
