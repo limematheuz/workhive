@@ -276,6 +276,7 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "event_type",
         "read_at",
         "href",
+        "dedupe_key",
     } <= notification_columns
     assert {"task_id", "user_id", "status", "source"} <= assignment_columns
     assert {"task_id", "position", "text", "completed"} <= checklist_columns

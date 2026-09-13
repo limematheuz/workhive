@@ -465,7 +465,14 @@ como WorkHive Core solo cuando el caso real las exige.
   puede consultar los últimos usos de cada clave sin exponer secretos ni IP;
   queda pendiente validar ese historial autenticado y definir el siguiente
   contrato de integración real antes de cerrar esta línea.
-- ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
+- 🟡 Automatizaciones seguras para vencimientos, avisos y aprobaciones reales:
+  recordatorios de prueba, cobro y calendario fiscal se ejecutan bajo bandera
+  de configuración y no cambian por sí mismos el estado fiscal de una factura.
+  La deduplicación de avisos ya es persistente por destinatario y evento, por
+  lo que reintentos y procesos simultáneos convergen en una sola notificación.
+  Cubierto localmente con migración, idempotencia y pruebas de destinatarios;
+  pendiente de validación operativa en el despliegue y de ampliar las
+  aprobaciones de negocio antes de marcarlo como completado.
 
 ## 6. Puerta de salida obligatoria para cada fase
 

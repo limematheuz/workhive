@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import select, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -66,24 +68,12 @@ def notify_users_once(
     if not unique_users:
         return 0
 
-    existing = (
-        db.query(Notification)
-        .filter(
-            Notification.user_id.in_(unique_users),
-            Notification.event_type == event_type,
-            Notification.entity_type == entity_type,
-            Notification.entity_id == entity_id,
-        )
-        .all()
-    )
-    notified_user_ids = {
-        notification.user_id
-        for notification in existing
-        if (notification.metadata_json or {}).get("dedupe_key") == dedupe_key
-    }
     event_metadata = {**(metadata or {}), "dedupe_key": dedupe_key}
-    notifications = [
-        Notification(
+    dialect_name = db.get_bind().dialect.name
+    insert = postgresql_insert if dialect_name == "postgresql" else sqlite_insert
+    notification_count = 0
+    for user in unique_users.values():
+        statement = insert(Notification).values(
             user_id=user.id,
             company_id=user.company_id,
             event_type=event_type,
@@ -92,17 +82,22 @@ def notify_users_once(
             entity_type=entity_type,
             entity_id=entity_id,
             href=href,
+            dedupe_key=dedupe_key,
             metadata_json=event_metadata,
+        ).on_conflict_do_nothing(
+            index_elements=[
+                "user_id",
+                "event_type",
+                "entity_type",
+                "entity_id",
+                "dedupe_key",
+            ]
         )
-        for user in unique_users.values()
-        if user.id not in notified_user_ids
-    ]
-    db.add_all(notifications)
+        result = db.execute(statement)
+        notification_count += int(result.rowcount or 0)
     if commit:
         db.commit()
-    else:
-        db.flush()
-    return len(notifications)
+    return notification_count
 
 
 def list_notifications(
