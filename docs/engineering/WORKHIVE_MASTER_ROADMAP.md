@@ -398,8 +398,13 @@ como WorkHive Core solo cuando el caso real las exige.
   visual autenticada.
 - ✅ Coste laboral interno con históricos inmutables por sesión y rentabilidad
   conocida por cliente a partir de ingresos y gastos asignados.
-- ⬜ Conciliación bancaria, imputación de material/subcontrata y margen previsto
-  frente a real, sin duplicar compras de inventario como gasto.
+- 🟡 Conciliación bancaria manual: apuntes de extracto inmutables, vínculo de
+  importe exacto con un único cobro y reversión auditada. No crea ingresos ni
+  altera IVA; un cobro conciliado exige deshacer el vínculo antes de anularse.
+  Backend, migración y UI local validados sin navegador; pendiente de revisión
+  visual autenticada e importación bancaria.
+- ⬜ Imputación de material/subcontrata y margen previsto frente a real, sin
+  duplicar compras de inventario como gasto.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
   lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
   ubicación, servicio, equipo y trabajo.

@@ -191,6 +191,18 @@ def void_payment(
             status_code=status.HTTP_409_CONFLICT,
             detail="El cobro ya fue anulado",
         )
+    # A bank statement entry is external accounting evidence. Require its
+    # explicit unmatch first so a receipt cannot disappear from the operational
+    # balance while remaining silently reconciled in the bank trail.
+    from app.services import bank_reconciliation_service
+
+    if bank_reconciliation_service.payment_is_reconciled(
+        db, customer_payment_id=payment.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Desconciliá el apunte bancario antes de anular el cobro",
+        )
     invoices = customer_payment_repo.get_invoices_for_update(
         db,
         company_id=company_id,

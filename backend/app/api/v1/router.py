@@ -28,6 +28,7 @@ from app.api.v1.task_items import router as task_items_router
 from app.api.v1.task_item_read import router as task_item_read_router
 from app.api.v1.invoice import router as invoices_router
 from app.api.v1.customer_payments import router as customer_payments_router
+from app.api.v1.bank_reconciliation import router as bank_reconciliation_router
 from app.api.v1.fiscal_settings import router as fiscal_settings_router
 from app.api.v1.invoice_email_contacts import router as invoice_email_contacts_router
 from app.api.v1.quotes import router as quotes_router
@@ -149,6 +150,11 @@ api_router.include_router(
     customer_payments_router,
     prefix="/customer-payments",
     tags=["customer-payments"],
+)
+api_router.include_router(
+    bank_reconciliation_router,
+    prefix="/bank-reconciliation",
+    tags=["bank-reconciliation"],
 )
 api_router.include_router(
     sales_ledger_router, prefix="/sales-ledger", tags=["sales-ledger"]
