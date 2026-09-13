@@ -14,16 +14,16 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.create_unique_constraint(
-        "uq_reservation_owner_source_external_reference",
-        "reservations",
-        ["owner_company_id", "source", "external_reference"],
-    )
+    with op.batch_alter_table("reservations") as batch:
+        batch.create_unique_constraint(
+            "uq_reservation_owner_source_external_reference",
+            ["owner_company_id", "source", "external_reference"],
+        )
 
 
 def downgrade() -> None:
-    op.drop_constraint(
-        "uq_reservation_owner_source_external_reference",
-        "reservations",
-        type_="unique",
-    )
+    with op.batch_alter_table("reservations") as batch:
+        batch.drop_constraint(
+            "uq_reservation_owner_source_external_reference",
+            type_="unique",
+        )
