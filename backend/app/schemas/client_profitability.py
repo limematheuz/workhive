@@ -23,6 +23,7 @@ class ClientProfitabilityPeriod(BaseModel):
     known_margin_percentage: Decimal | None
     client_count: int
     unassigned_expense_base_amount: Decimal
+    unassigned_material_cost_base_amount: Decimal
     unlinked_historical_sales_base_amount: Decimal
     clients: list[ClientProfitabilityRow]
 

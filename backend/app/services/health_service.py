@@ -17,6 +17,9 @@ REQUIRED_SCHEMA_COLUMNS = {
     # Keep this column in readiness so a database that predates client cost
     # attribution is declared unavailable before those views can return 500.
     "expenses": frozenset({"client_id"}),
+    # Profitability reads the immutable customer snapshot on material issues.
+    # Keep readiness coupled to that migration for the same reason as expenses.
+    "inventory_movements": frozenset({"client_id"}),
 }
 
 
