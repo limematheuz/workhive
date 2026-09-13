@@ -34,6 +34,11 @@ class User(Base):
         back_populates="user",
         foreign_keys="PartnerPortalGrant.user_id",
     )
+    client_portal_grants = relationship(
+        "ClientPortalGrant",
+        back_populates="user",
+        foreign_keys="ClientPortalGrant.user_id",
+    )
 
     work_sessions = relationship("WorkSession", back_populates="user")
 

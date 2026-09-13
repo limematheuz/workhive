@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
-import { isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
+import { isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
 import {
     HEADER_ALERT_BADGE_CLASS,
     HEADER_UPDATE_BADGE_CLASS,
@@ -28,7 +28,8 @@ export function NotificationPanel() {
     // for their non-paying tenant and must never bounce them out of the portal.
     const enabled = Boolean(user)
         && !isExternalPortalRole(user?.role?.name)
-        && !isPartnerPortalRole(user?.role?.name);
+        && !isPartnerPortalRole(user?.role?.name)
+        && !isClientPortalRole(user?.role?.name);
     const notifications = useNotifications({
         enabled,
         userId: user?.id,

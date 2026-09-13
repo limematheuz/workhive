@@ -38,7 +38,7 @@ export function PremiumTabs<T extends string>({
 
     return (
         <Tabs value={activeTab} onValueChange={(id) => onChange(id as T)}>
-        {usesMobileSelect && <div className="mb-4 md:hidden">
+        {usesMobileSelect && <div className="mb-4 lg:hidden">
             <Select value={activeTab} onValueChange={(id) => onChange(id as T)}>
                 <SelectTrigger aria-label={mobileLabel} className="h-11 rounded-2xl bg-[var(--bg-primary)]/45 font-semibold text-[var(--text-main)]">
                     <SelectValue />
@@ -60,7 +60,7 @@ export function PremiumTabs<T extends string>({
             </Select>
         </div>}
         <TabsList
-            className={`${usesMobileSelect ? "hidden md:flex" : "flex"} h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
+            className={`${usesMobileSelect ? "hidden lg:flex" : "flex"} h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
                 fit
                     ? "overflow-hidden"
                     : "snap-x overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"

@@ -62,6 +62,7 @@ from app.api.v1.organization_departments import (
 )
 from app.api.v1.organization_teams import router as organization_teams_router
 from app.api.v1.partner_portal import router as partner_portal_router
+from app.api.v1.client_portal import router as client_portal_router
 
 api_router = APIRouter()
 
@@ -233,4 +234,9 @@ api_router.include_router(
     partner_portal_router,
     prefix="/partner-portal",
     tags=["partner-portal"],
+)
+api_router.include_router(
+    client_portal_router,
+    prefix="/client-portal",
+    tags=["client-portal"],
 )

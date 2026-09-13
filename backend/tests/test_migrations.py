@@ -132,6 +132,18 @@ def test_postgresql_schema_matches_invoice_model_contract():
             column["name"]
             for column in inspector.get_columns("external_access_grants")
         }
+        client_portal_grant_columns = {
+            column["name"]
+            for column in inspector.get_columns("client_portal_grants")
+        }
+        client_portal_invitation_columns = {
+            column["name"]
+            for column in inspector.get_columns("client_portal_invitations")
+        }
+        client_portal_invitation_foreign_keys = {
+            tuple(foreign_key["constrained_columns"])
+            for foreign_key in inspector.get_foreign_keys("client_portal_invitations")
+        }
         client_columns = {
             column["name"] for column in inspector.get_columns("clients")
         }
@@ -326,6 +338,27 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "revoked_by_user_id",
         "revoked_at",
     } <= external_access_grant_columns
+    assert {
+        "company_id",
+        "client_id",
+        "user_id",
+        "status",
+        "expires_at",
+        "granted_by_user_id",
+        "revoked_by_user_id",
+        "revoked_at",
+    } <= client_portal_grant_columns
+    assert {
+        "company_id",
+        "client_id",
+        "email",
+        "token_hash",
+        "verification_code_hash",
+        "status",
+        "expires_at",
+        "accepted_at",
+    } <= client_portal_invitation_columns
+    assert ("client_id", "company_id") in client_portal_invitation_foreign_keys
     assert "relationship_status" in client_columns
     assert {
         "id",

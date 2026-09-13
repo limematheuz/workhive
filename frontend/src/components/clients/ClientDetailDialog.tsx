@@ -29,6 +29,7 @@ type ClientDetailDialogProps = {
     canManage?: boolean;
     canReadCommercialFollowUps?: boolean;
     canManageCommercialFollowUps?: boolean;
+    canManageClientPortal?: boolean;
 };
 
 export function ClientDetailDialog(props: ClientDetailDialogProps) {
@@ -60,6 +61,7 @@ function ClientDetailDialogBody({
     canManage = false,
     canReadCommercialFollowUps = false,
     canManageCommercialFollowUps = false,
+    canManageClientPortal = false,
 }: Omit<ClientDetailDialogProps, "client" | "workspaceRow" | "open"> & { client: Client; workspaceRow: ClientWorkspaceRow }) {
     const [activeTab, setActiveTab] = useState<ClientDetailTab>("overview");
     const [taskSearch, setTaskSearch] = useState("");
@@ -115,6 +117,7 @@ function ClientDetailDialogBody({
                     canManage={canManage}
                     canReadCommercialFollowUps={canReadCommercialFollowUps}
                     canManageCommercialFollowUps={canManageCommercialFollowUps}
+                    canManageClientPortal={canManageClientPortal}
                     taskSearch={taskSearch}
                     onTaskSearchChange={setTaskSearch}
                     taskStatusFilter={taskStatusFilter}
