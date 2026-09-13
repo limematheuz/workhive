@@ -321,7 +321,11 @@ def update_reservation(db: Session, current_user: User, reservation_id: int, dat
     reservation = reservation_repo.get_reservation(db, reservation_id)
     if not reservation:
         raise HTTPException(status_code=404, detail="Reservation not found")
-    require_reservation_owner(current_user, reservation.owner_company_id)
+    if access and access.allow_integration_company:
+        if reservation.owner_company_id != access.planning_company_id:
+            raise HTTPException(status_code=404, detail="Reservation not found")
+    else:
+        require_reservation_owner(current_user, reservation.owner_company_id)
     require_reservation_mutation_access(db, current_user, reservation.location_id, access=access)
     _, check_out_at, guest_count, location = _validate_reservation_update_schedule(
         db,

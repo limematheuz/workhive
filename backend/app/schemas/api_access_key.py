@@ -6,7 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-ApiAccessScope = Literal["work_orders.read"]
+ApiAccessScope = Literal["work_orders.read", "reservations.write"]
 
 
 class ApiAccessKeyCreate(BaseModel):

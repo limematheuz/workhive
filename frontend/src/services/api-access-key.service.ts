@@ -1,5 +1,5 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
-import type { ApiAccessKey, CreatedApiAccessKey } from "@/types/api-access-key";
+import type { ApiAccessKey, ApiAccessScope, CreatedApiAccessKey } from "@/types/api-access-key";
 
 export const ApiAccessKeyService = {
     list: async (): Promise<ApiAccessKey[]> => {
@@ -8,10 +8,10 @@ export const ApiAccessKeyService = {
         return response.json();
     },
 
-    create: async (name: string): Promise<CreatedApiAccessKey> => {
+    create: async (name: string, scopes: ApiAccessScope[]): Promise<CreatedApiAccessKey> => {
         const response = await apiFetch("/api/v1/api-access-keys/", {
             method: "POST",
-            body: JSON.stringify({ name, scopes: ["work_orders.read"] }),
+            body: JSON.stringify({ name, scopes }),
         });
         await assertApiResponseOk(response, "No se pudo crear la clave API");
         return response.json();

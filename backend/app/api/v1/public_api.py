@@ -2,15 +2,28 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Path, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
-from app.schemas.public_api import PublicWorkOrderResponse
-from app.services import api_access_key_service, audit_service, public_api_service
-from app.services.api_access_key_service import ApiAccessPrincipal, WORK_ORDERS_READ_SCOPE
+from app.schemas.public_api import (
+    PublicReservationResponse,
+    PublicReservationUpsert,
+    PublicWorkOrderResponse,
+)
+from app.services import (
+    api_access_key_service,
+    audit_service,
+    public_api_service,
+    public_reservation_service,
+)
+from app.services.api_access_key_service import (
+    ApiAccessPrincipal,
+    RESERVATIONS_WRITE_SCOPE,
+    WORK_ORDERS_READ_SCOPE,
+)
 
 
 router = APIRouter()
@@ -49,6 +62,7 @@ def require_api_scope(scope: str):
 
 
 PublicWorkOrdersReader = Depends(require_api_scope(WORK_ORDERS_READ_SCOPE))
+PublicReservationsWriter = Depends(require_api_scope(RESERVATIONS_WRITE_SCOPE))
 
 
 @router.get("/work-orders", response_model=list[PublicWorkOrderResponse])
@@ -87,3 +101,29 @@ def read_public_work_order(
     if work_order is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
     return work_order
+
+
+@router.put(
+    "/reservations/{source}/{external_reference}",
+    response_model=PublicReservationResponse,
+    status_code=status.HTTP_200_OK,
+)
+def upsert_public_reservation(
+    payload: PublicReservationUpsert,
+    source: str = Path(
+        min_length=1,
+        max_length=20,
+        pattern=r"^[a-z0-9][a-z0-9_-]{0,19}$",
+    ),
+    external_reference: str = Path(min_length=1, max_length=100),
+    db: Session = Depends(get_db),
+    principal: ApiAccessPrincipal = PublicReservationsWriter,
+):
+    reservation, _created = public_reservation_service.upsert_reservation(
+        db,
+        company_id=principal.company_id,
+        source=source,
+        external_reference=external_reference,
+        payload=payload,
+    )
+    return reservation

@@ -7,6 +7,7 @@ from app.models.api_access_key import ApiAccessKey
 from app.models.audit_log import AuditLog
 from app.models.company import Company
 from app.models.location import Location
+from app.models.reservation import Reservation
 from app.models.role import Role
 from app.models.user import User
 from app.models.work_order import WorkOrder
@@ -161,3 +162,76 @@ def test_public_api_fails_closed_for_missing_scope_plan_and_non_admin(client, db
     company.subscription_plan = "top"
     db.commit()
     assert client.get("/api/v1/api-access-keys/", headers=admin_headers).status_code == 403
+
+
+def test_public_reservation_upsert_is_idempotent_and_company_scoped(client, db):
+    company = _company(db, "RESERVATIONS")
+    _, admin_headers = _user(db, company=company, role_name="admin", suffix="RESERVATIONS")
+    order = _work_order(db, company=company, suffix="RESERVATIONS")
+    second_order = _work_order(db, company=company, suffix="RESERVATIONS-SECOND")
+    other_company = _company(db, "RESERVATIONS-OTHER")
+    other_order = _work_order(db, company=other_company, suffix="RESERVATIONS-OTHER")
+    db.commit()
+
+    created_key = client.post(
+        "/api/v1/api-access-keys/",
+        headers=admin_headers,
+        json={"name": "PMS", "scopes": ["reservations.write"]},
+    )
+    assert created_key.status_code == 201, created_key.text
+    headers = {"X-WorkHive-API-Key": created_key.json()["api_key"]}
+    payload = {
+        "location_id": order.location_id,
+        "check_in_at": "2026-11-01T16:00:00Z",
+        "check_out_at": "2026-11-04T11:00:00Z",
+        "guest_count": 2,
+        "cleaning_required": True,
+    }
+    first = client.put("/api/v1/public/reservations/pms/stay-42", headers=headers, json=payload)
+    assert first.status_code == 200, first.text
+    assert first.json()["source"] == "pms"
+    assert first.json()["external_reference"] == "stay-42"
+
+    retry = client.put(
+        "/api/v1/public/reservations/pms/stay-42",
+        headers=headers,
+        json={**payload, "guest_count": 3},
+    )
+    assert retry.status_code == 200, retry.text
+    assert retry.json()["id"] == first.json()["id"]
+    assert retry.json()["guest_count"] == 3
+    assert db.query(Reservation).filter(Reservation.owner_company_id == company.id).count() == 1
+
+    moved = client.put(
+        "/api/v1/public/reservations/pms/stay-42",
+        headers=headers,
+        json={**payload, "location_id": second_order.location_id},
+    )
+    assert moved.status_code == 409
+
+    unknown_cancellation = client.put(
+        "/api/v1/public/reservations/pms/cancelled-before-create",
+        headers=headers,
+        json={**payload, "status": "cancelled"},
+    )
+    assert unknown_cancellation.status_code == 404
+
+    cross_tenant = client.put(
+        "/api/v1/public/reservations/pms/other-company",
+        headers=headers,
+        json={**payload, "location_id": other_order.location_id},
+    )
+    assert cross_tenant.status_code == 404
+
+    read_only_key = client.post(
+        "/api/v1/api-access-keys/",
+        headers=admin_headers,
+        json={"name": "Read only", "scopes": ["work_orders.read"]},
+    )
+    assert read_only_key.status_code == 201, read_only_key.text
+    denied = client.put(
+        "/api/v1/public/reservations/pms/blocked",
+        headers={"X-WorkHive-API-Key": read_only_key.json()["api_key"]},
+        json=payload,
+    )
+    assert denied.status_code == 403
