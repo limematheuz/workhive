@@ -9,6 +9,7 @@ export function DashboardHeader() {
     const { dict } = useDictionary();
     const pathname = usePathname();
     const pageTitle = pathname === "/dashboard" ? dict.dashboard.overview
+        : pathname.includes("/dashboard/client") ? "Portal de cliente"
         : pathname.includes("/dashboard/fiscal-summary") ? dict.fiscal_summary.title
         : pathname.includes("/dashboard/analytics") ? dict.finance_analytics.eyebrow
         : pathname.includes("/dashboard/fiscal-calendar") ? dict.fiscal_calendar.title
@@ -19,6 +20,7 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/time-corrections") ? "Fichajes"
         : pathname.includes("/dashboard/calendar") ? dict.dashboard.calendar
         : pathname.includes("/dashboard/integrations") ? dict.dashboard.integrations
+        : pathname.includes("/dashboard/api-access") ? "Acceso API"
         : pathname.includes("/dashboard/external-network") ? dict.external_network.title
         : pathname.includes("/dashboard/external-access") ? dict.organization.external_access.title
         : pathname.includes("/dashboard/organization") ? dict.organization.title

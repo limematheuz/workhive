@@ -13,10 +13,10 @@ import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
-import { isExternalPortalRole } from "@/domain/access/roles";
+import { isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
 import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant-dashboard";
-import { isPartnerPortalRole } from "@/domain/access/roles";
 import { canAccessPartnerPortalDashboardPath } from "@/domain/access/partner-portal-dashboard";
+import { canAccessClientPortalDashboardPath } from "@/domain/access/client-portal-dashboard";
 import { NoWorkspaceAccount } from "@/components/dashboard/NoWorkspaceAccount";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -36,10 +36,11 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [showOnboarding, setShowOnboarding] = useState(false);
     const isExternalPortal = isExternalPortalRole(user?.role?.name);
     const isPartnerPortal = isPartnerPortalRole(user?.role?.name);
+    const isClientPortal = isClientPortalRole(user?.role?.name);
 
     // Check if onboarding should be shown
     useEffect(() => {
-        if (!user || loading || isPartnerPortal) return;
+        if (!user || loading || isPartnerPortal || isClientPortal) return;
 
         // Accounts and admin permissions are provisioned by WorkHive.
         if (!shouldShowCompanyOnboarding(user)) {
@@ -65,7 +66,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
                 setShowOnboarding(true);
             })
             .catch(() => {});
-    }, [user, loading, isPartnerPortal]);
+    }, [user, loading, isClientPortal, isPartnerPortal]);
 
     const handleLogout = async () => {
         try {
@@ -93,7 +94,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (user.company_id == null && user.role?.name !== "superadmin") {
+    if (user.company_id == null && user.role?.name !== "superadmin" && !isClientPortal) {
         return <NoWorkspaceAccount onLogout={() => { void handleLogout(); }} />;
     }
 
@@ -103,6 +104,10 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     if (isPartnerPortal && !canAccessPartnerPortalDashboardPath(pathname)) {
         redirect("/dashboard/partner");
+    }
+
+    if (isClientPortal && !canAccessClientPortalDashboardPath(pathname)) {
+        redirect("/dashboard/client");
     }
 
     return <SidebarProvider defaultOpen>

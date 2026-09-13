@@ -20,6 +20,7 @@ export type ClientProfitabilityPeriodSummary = {
     known_margin_percentage: number | null;
     client_count: number;
     unassigned_expense_base_amount: number;
+    unassigned_material_cost_base_amount: number;
     unlinked_historical_sales_base_amount: number;
     clients: ClientProfitabilityRow[];
 };
@@ -50,6 +51,7 @@ type ApiClientProfitabilityPeriodSummary = Omit<
     | "known_margin_amount"
     | "known_margin_percentage"
     | "unassigned_expense_base_amount"
+    | "unassigned_material_cost_base_amount"
     | "unlinked_historical_sales_base_amount"
     | "clients"
 > & {
@@ -58,6 +60,7 @@ type ApiClientProfitabilityPeriodSummary = Omit<
     known_margin_amount: ApiAmount;
     known_margin_percentage: ApiAmount | null;
     unassigned_expense_base_amount: ApiAmount;
+    unassigned_material_cost_base_amount: ApiAmount;
     unlinked_historical_sales_base_amount: ApiAmount;
     clients: ApiClientProfitabilityRow[];
 };
@@ -96,6 +99,7 @@ export function normalizeClientProfitabilityPeriod(
         known_margin_amount: amount(summary.known_margin_amount),
         known_margin_percentage: nullableAmount(summary.known_margin_percentage),
         unassigned_expense_base_amount: amount(summary.unassigned_expense_base_amount),
+        unassigned_material_cost_base_amount: amount(summary.unassigned_material_cost_base_amount),
         unlinked_historical_sales_base_amount: amount(summary.unlinked_historical_sales_base_amount),
         clients: summary.clients.map(normalizeRow),
     };

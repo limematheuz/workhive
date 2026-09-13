@@ -43,6 +43,8 @@ def create_expense(
     db: Session,
     company_id: int,
     created_by_user_id: int | None,
+    *,
+    commit: bool = True,
     **data,
 ) -> Expense:
     expense = Expense(
@@ -51,8 +53,10 @@ def create_expense(
         **data,
     )
     db.add(expense)
-    db.commit()
-    db.refresh(expense)
+    db.flush()
+    if commit:
+        db.commit()
+        db.refresh(expense)
     return expense
 
 

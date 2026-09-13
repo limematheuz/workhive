@@ -18,6 +18,8 @@ from app.services.organization_authorization_service import require_capability
 from app.services.user_scope import is_superadmin
 from app.models.partner_portal_grant import PartnerPortalGrant
 from app.services import partner_portal_policy
+from app.models.client_portal_grant import ClientPortalGrant
+from app.services import client_portal_policy
 
 
 def get_db():
@@ -226,6 +228,12 @@ class PartnerPortalPrincipal:
     grant: PartnerPortalGrant
 
 
+@dataclass(frozen=True)
+class ClientPortalPrincipal:
+    user: User
+    grant: ClientPortalGrant
+
+
 def require_partner_portal_principal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_authenticated_user),
@@ -239,6 +247,31 @@ def require_partner_portal_principal(
             current_user=current_user,
         ),
     )
+
+
+def require_client_portal_principal(
+    grant_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+) -> ClientPortalPrincipal:
+    """Authenticate a customer workspace without opening tenant access."""
+
+    return ClientPortalPrincipal(
+        user=current_user,
+        grant=client_portal_policy.require_active_client_portal(
+            db,
+            current_user=current_user,
+            grant_id=grant_id,
+        ),
+    )
+
+
+def require_client_portal_user(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_authenticated_user),
+) -> User:
+    client_portal_policy.list_active_client_portal_grants(db, current_user=current_user)
+    return current_user
 
 
 # External portal users must opt into a tenant-bound grant. Finance access is
@@ -269,3 +302,5 @@ AsyncAuthenticatedAdmin = Depends(require_authenticated_role_async("admin"))
 AuthenticatedUser = Depends(get_authenticated_user)
 AuthenticatedAdmin = Depends(require_authenticated_role("admin"))
 ActivePartnerPortal = Depends(require_partner_portal_principal)
+ActiveClientPortal = Depends(require_client_portal_principal)
+ActiveClientPortalUser = Depends(require_client_portal_user)

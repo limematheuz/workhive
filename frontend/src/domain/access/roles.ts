@@ -41,6 +41,13 @@ export function isPartnerPortalRole(
     return role === "partner_portal";
 }
 
+/** A customer sees only the documents attached to its explicit portal grant. */
+export function isClientPortalRole(
+    role: RoleName | string | null | undefined,
+): boolean {
+    return role === "client_portal";
+}
+
 export function canViewFinanceRole(
     role: RoleName | string | null | undefined,
 ): boolean {

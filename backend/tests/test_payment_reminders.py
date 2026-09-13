@@ -107,6 +107,7 @@ def test_payment_reminders_alert_only_active_company_admins_and_deduplicate(db):
     assert all(
         item.href == f"/dashboard/invoices/{item.entity_id}" for item in notifications
     )
+    assert all(item.dedupe_key for item in notifications)
     assert payment_reminder_service.send_due_payment_notifications(db, now=now) == 0
     assert db.query(Notification).count() == 2
 

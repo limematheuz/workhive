@@ -16,13 +16,14 @@ import {
     Download,
     Inbox,
     Loader2,
+    Package,
     PieChart,
     ReceiptText,
     TriangleAlert,
     UsersRound,
 } from "lucide-react";
 
-import { canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
@@ -35,6 +36,7 @@ import {
     type FinancePeriodSummary,
     type FinanceRevenueRecord,
     type FinanceSeriesPoint,
+    type FinancePaymentRecord,
 } from "@/lib/finance-analytics";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
@@ -61,8 +63,10 @@ import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-me
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
+import { CustomerPaymentService } from "@/services/customer-payment.service";
+import { BankReconciliationSection } from "@/components/analytics/BankReconciliationSection";
 
-type AnalyticsTab = "finance" | "profitability" | "operations";
+type AnalyticsTab = "finance" | "profitability" | "reconciliation" | "operations";
 
 const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 
@@ -76,6 +80,7 @@ export default function FinanceAnalyticsPage() {
     const { dict, locale } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const canViewAnalytics = canViewFinance(user) && !isPlatformSuperadmin(user);
+    const canManageAnalytics = canManageFinance(user) && !isPlatformSuperadmin(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const text = dict.finance_analytics;
     const profileCharts = useProfile();
@@ -84,6 +89,7 @@ export default function FinanceAnalyticsPage() {
     const [period, setPeriod] = useState<FinancePeriod>("month");
     const [revenueRecords, setRevenueRecords] = useState<FinanceRevenueRecord[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
+    const [payments, setPayments] = useState<FinancePaymentRecord[]>([]);
     const [loading, setLoading] = useState(true);
     const [exportYear, setExportYear] = useState(() => new Date().getFullYear());
     const [exportPeriod, setExportPeriod] = useState<AccountantExportPeriod>("month");
@@ -126,10 +132,11 @@ export default function FinanceAnalyticsPage() {
         if (!canViewAnalytics) return;
         try {
             setLoading(true);
-            const [invoiceData, expenseData, salesLedgerEntries] = await Promise.all([
+            const [invoiceData, expenseData, salesLedgerEntries, customerPayments] = await Promise.all([
                 InvoiceService.getAllInvoices(),
                 ExpenseService.getAllExpenses(),
                 collectPaginated((skip, limit) => SalesLedgerService.getEntries({ skip, limit })),
+                CustomerPaymentService.getPayments(),
             ]);
             setRevenueRecords([
                 ...invoiceData,
@@ -140,6 +147,7 @@ export default function FinanceAnalyticsPage() {
                     .map(manualSalesLedgerToFinanceRevenue),
             ]);
             setExpenses(expenseData);
+            setPayments(customerPayments);
         } catch (error) {
             console.error("Error loading finance analytics", error);
             toast.error(text.error_load);
@@ -214,12 +222,12 @@ export default function FinanceAnalyticsPage() {
     );
 
     const series = useMemo(
-        () => buildFinanceSeries(revenueRecords, expenses, locale, period),
-        [expenses, revenueRecords, locale, period],
+        () => buildFinanceSeries(revenueRecords, expenses, locale, period, new Date(), payments),
+        [expenses, revenueRecords, locale, payments, period],
     );
     const comparison = useMemo(
-        () => summarizeFinancePeriod(revenueRecords, expenses, period),
-        [expenses, revenueRecords, period],
+        () => summarizeFinancePeriod(revenueRecords, expenses, period, new Date(), payments),
+        [expenses, revenueRecords, payments, period],
     );
     const categoryTotals = useMemo(
         () => groupExpensesByCategory(expenses, period),
@@ -253,6 +261,7 @@ export default function FinanceAnalyticsPage() {
                                 : [
                                     { id: "finance", label: text.tab_finance },
                                     ...(canViewProfitability ? [{ id: "profitability" as const, label: text.tab_profitability }] : []),
+                                    { id: "reconciliation", label: text.tab_reconciliation },
                                     { id: "operations", label: text.tab_operations },
                                 ]}
                             activeTab={activeTab}
@@ -337,6 +346,8 @@ export default function FinanceAnalyticsPage() {
                         period={profitabilityPeriod}
                         setPeriod={setProfitabilityPeriod}
                     />
+                ) : activeTab === "reconciliation" ? (
+                    <BankReconciliationSection copy={text} canManage={canManageAnalytics} />
                 ) : (
                     <OperationsDashboard
                         text={text}
@@ -628,6 +639,10 @@ function ClientProfitabilityDashboard({
     }
 
     const { current, previous } = data;
+    const hasUnassignedMaterial = (
+        current.unassigned_material_cost_base_amount > 0
+        || previous.unassigned_material_cost_base_amount > 0
+    );
     const metrics = [
         {
             label: text.profitability_revenue,
@@ -657,6 +672,13 @@ function ClientProfitabilityDashboard({
             icon: Inbox,
             comparisonDirection: "lower" as const,
         },
+        ...(hasUnassignedMaterial ? [{
+            label: text.profitability_unassigned_material,
+            value: current.unassigned_material_cost_base_amount,
+            previous: previous.unassigned_material_cost_base_amount,
+            icon: Package,
+            comparisonDirection: "lower" as const,
+        }] : []),
     ];
     const columns: DataListColumn[] = [
         { key: "client", label: text.profitability_client },
@@ -705,7 +727,7 @@ function ClientProfitabilityDashboard({
 
             {data ? (
                 <>
-                    <SummaryMetricGrid desktopColumns={4} className="gap-2.5">
+                    <SummaryMetricGrid desktopColumns={hasUnassignedMaterial ? 5 : 4} className="gap-2.5">
                         {metrics.map(({ label, value, previous: previousValue, icon, comparisonDirection }) => {
                             const change = getPercentageChange(value, previousValue);
                             return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
@@ -758,6 +780,13 @@ function ClientProfitabilityDashboard({
                             <p className="mt-1 text-xl font-semibold text-[var(--text-main)]">{formatCurrency(current.unassigned_expense_base_amount)}</p>
                             <p className="mt-1 text-xs text-[var(--text-muted)]">{text.profitability_unassigned_expenses_desc}</p>
                         </div>
+                        {current.unassigned_material_cost_base_amount > 0 ? (
+                            <div className="billing-block rounded-2xl p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{text.profitability_unassigned_material}</p>
+                                <p className="mt-1 text-xl font-semibold text-[var(--text-main)]">{formatCurrency(current.unassigned_material_cost_base_amount)}</p>
+                                <p className="mt-1 text-xs text-[var(--text-muted)]">{text.profitability_unassigned_material_desc}</p>
+                            </div>
+                        ) : null}
                         {current.unlinked_historical_sales_base_amount > 0 ? (
                             <div className="billing-block rounded-2xl p-4 text-sm text-[var(--text-muted)]">
                                 {text.profitability_history_notice.replace(

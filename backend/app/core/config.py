@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     CALENDAR_OAUTH_RATE_LIMIT: int = 10
     CALENDAR_OWNERSHIP_REQUEST_RATE_LIMIT: int = 5
     CALENDAR_SYNC_RATE_LIMIT: int = 10
+    PUBLIC_API_RATE_LIMIT: int = 60
+    PUBLIC_API_RATE_LIMIT_WINDOW_SECONDS: int = 60
     ALLOW_PUBLIC_REGISTRATION: bool = False
     ENVIRONMENT: str = "development"
     FRONTEND_URL: str = "http://localhost:3000"

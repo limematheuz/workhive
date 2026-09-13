@@ -10,7 +10,7 @@ import { formatCurrency, formatDate, formatInvoiceNumber } from "@/lib/format";
 import type { Invoice } from "@/types/invoice";
 
 type ClientDetailBillingTabProps = { invoices: Invoice[]; };
-const STATUS_LABELS: Record<Invoice["status"], string> = { draft: "Borrador", issued: "Emitida", paid: "Cobrada", overdue: "Vencida", cancelled: "Anulada", rectified: "Rectificada" };
+const STATUS_LABELS: Record<Invoice["status"], string> = { draft: "Borrador", issued: "Emitida", partially_paid: "Parcialmente cobrada", paid: "Cobrada", overdue: "Vencida", cancelled: "Anulada", rectified: "Rectificada" };
 
 export function ClientDetailBillingTab({ invoices }: ClientDetailBillingTabProps) {
     const pagination = useDataTablePagination(invoices, 10);

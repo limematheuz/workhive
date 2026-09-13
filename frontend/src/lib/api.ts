@@ -21,6 +21,7 @@ const CSRF_EXEMPT_PATHS = new Set([
     "/api/v1/collaborations/invitations/verify-code",
     "/api/v1/collaborations/invitations/decline-external",
     "/api/v1/collaborations/sponsored-invitations/accept",
+    "/api/v1/client-portal/invitations/accept",
     "/api/v1/contact/",
     "/api/v1/traffic/page-view",
 ]);

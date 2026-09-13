@@ -41,6 +41,18 @@ class Company(Base):
     external_access_grants = relationship(
         "ExternalAccessGrant", back_populates="company", cascade="all, delete-orphan"
     )
+    client_portal_grants = relationship(
+        "ClientPortalGrant",
+        back_populates="company",
+        cascade="all, delete-orphan",
+        overlaps="client,portal_grants",
+    )
+    client_portal_invitations = relationship(
+        "ClientPortalInvitation", back_populates="company", cascade="all, delete-orphan"
+    )
+    api_access_keys = relationship(
+        "ApiAccessKey", back_populates="company", cascade="all, delete-orphan"
+    )
     sponsored_partner_portal_grants = relationship(
         "PartnerPortalGrant",
         back_populates="host_company",

@@ -12,6 +12,7 @@ import {
     canViewQuality,
     canViewWorkReports,
     isCompanyAdminRole,
+    isClientPortalRole,
     isExternalPortalRole,
     isPartnerPortalRole,
 } from "../domain/access/roles.ts";
@@ -40,6 +41,12 @@ test("sponsored partner portals are neither finance nor company roles", () => {
     assert.equal(isPartnerPortalRole("partner_portal"), true);
     assert.equal(isCompanyAdminRole("partner_portal"), false);
     assert.equal(canViewFinanceRole("partner_portal"), false);
+});
+
+test("client portals are documentary-only external accounts", () => {
+    assert.equal(isClientPortalRole("client_portal"), true);
+    assert.equal(isCompanyAdminRole("client_portal"), false);
+    assert.equal(canViewFinanceRole("client_portal"), false);
 });
 
 test("external accountants can read finance without becoming company administrators", () => {

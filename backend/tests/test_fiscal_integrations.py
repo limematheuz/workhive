@@ -133,6 +133,16 @@ def test_facturae_322_is_schema_valid(db):
     ) == "121.00"
 
 
+def test_partially_paid_invoice_keeps_its_definitive_facturae_document(db):
+    invoice = _issued_invoice(db)
+    invoice.status = "partially_paid"
+    db.commit()
+
+    xml = build_facturae_xml(invoice)
+
+    validate_facturae_xml(xml)
+
+
 def test_facturae_xades_signature_is_cryptographically_valid(db, tmp_path):
     invoice = _issued_invoice(db)
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)

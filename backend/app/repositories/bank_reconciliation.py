@@ -1,0 +1,94 @@
+"""Persistence queries for bank entries and their reconciliation history."""
+
+from sqlalchemy.orm import Session, joinedload, selectinload
+
+from app.models.bank_reconciliation import BankReconciliation, BankStatementEntry
+
+
+def _entry_details(query):
+    return query.options(
+        selectinload(BankStatementEntry.reconciliations).joinedload(
+            BankReconciliation.payment
+        )
+    )
+
+
+def list_entries(
+    db: Session,
+    *,
+    company_id: int,
+    entry_status: str | None = None,
+) -> list[BankStatementEntry]:
+    query = _entry_details(
+        db.query(BankStatementEntry).filter(BankStatementEntry.company_id == company_id)
+    )
+    if entry_status is not None:
+        query = query.filter(BankStatementEntry.status == entry_status)
+    return query.order_by(BankStatementEntry.booked_at.desc(), BankStatementEntry.id.desc()).all()
+
+
+def get_entry(
+    db: Session,
+    *,
+    company_id: int,
+    entry_id: int,
+    for_update: bool = False,
+) -> BankStatementEntry | None:
+    query = _entry_details(
+        db.query(BankStatementEntry).filter(
+            BankStatementEntry.company_id == company_id,
+            BankStatementEntry.id == entry_id,
+        )
+    )
+    if for_update and db.bind and db.bind.dialect.name == "postgresql":
+        query = query.with_for_update()
+    return query.one_or_none()
+
+
+def get_active_reconciliation(
+    db: Session,
+    *,
+    entry_id: int,
+    for_update: bool = False,
+) -> BankReconciliation | None:
+    query = (
+        db.query(BankReconciliation)
+        .options(joinedload(BankReconciliation.payment))
+        .filter(
+            BankReconciliation.bank_statement_entry_id == entry_id,
+            BankReconciliation.status == "matched",
+        )
+    )
+    if for_update and db.bind and db.bind.dialect.name == "postgresql":
+        query = query.with_for_update()
+    return query.one_or_none()
+
+
+def payment_has_active_reconciliation(
+    db: Session,
+    *,
+    customer_payment_id: int,
+) -> bool:
+    return (
+        db.query(BankReconciliation.id)
+        .filter(
+            BankReconciliation.customer_payment_id == customer_payment_id,
+            BankReconciliation.status == "matched",
+        )
+        .first()
+        is not None
+    )
+
+
+def create_entry(db: Session, **values) -> BankStatementEntry:
+    entry = BankStatementEntry(**values)
+    db.add(entry)
+    db.flush()
+    return entry
+
+
+def create_reconciliation(db: Session, **values) -> BankReconciliation:
+    reconciliation = BankReconciliation(**values)
+    db.add(reconciliation)
+    db.flush()
+    return reconciliation

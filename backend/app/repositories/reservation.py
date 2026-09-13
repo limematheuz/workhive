@@ -83,7 +83,7 @@ def find_overlaps(
 
 
 def create_reservation(
-    db: Session, data: ReservationCreate, user_id: int, owner_company_id: int
+    db: Session, data: ReservationCreate, user_id: int | None, owner_company_id: int
 ) -> Reservation:
     db_data = data.model_dump()
     reservation = Reservation(
@@ -98,7 +98,7 @@ def create_reservation(
 
 
 def update_reservation(
-    db: Session, reservation: Reservation, data: ReservationUpdate, user_id: int
+    db: Session, reservation: Reservation, data: ReservationUpdate, user_id: int | None
 ) -> Reservation:
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -107,6 +107,24 @@ def update_reservation(
     db.add(reservation)
     db.flush()
     return reservation
+
+
+def get_by_external_reference(
+    db: Session,
+    *,
+    owner_company_id: int,
+    source: str,
+    external_reference: str,
+) -> Reservation | None:
+    return (
+        db.query(Reservation)
+        .filter(
+            Reservation.owner_company_id == owner_company_id,
+            Reservation.source == source,
+            Reservation.external_reference == external_reference,
+        )
+        .one_or_none()
+    )
 
 
 def delete_reservation(db: Session, reservation: Reservation) -> None:

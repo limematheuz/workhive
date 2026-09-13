@@ -10,13 +10,20 @@ def list_work_orders(
     company_id: int,
     location_ids: set[int] | None,
     status: str | None = None,
+    skip: int = 0,
+    limit: int | None = None,
 ) -> list[WorkOrder]:
     query = db.query(WorkOrder).filter(WorkOrder.company_id == company_id)
     if location_ids is not None:
         query = query.filter(WorkOrder.location_id.in_(location_ids))
     if status is not None:
         query = query.filter(WorkOrder.status == status)
-    return query.order_by(WorkOrder.next_occurrence_at.asc().nullslast(), WorkOrder.id.desc()).all()
+    query = query.order_by(WorkOrder.next_occurrence_at.asc().nullslast(), WorkOrder.id.desc())
+    if skip:
+        query = query.offset(skip)
+    if limit is not None:
+        query = query.limit(limit)
+    return query.all()
 
 
 def get_work_order(

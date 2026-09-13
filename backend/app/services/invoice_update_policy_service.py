@@ -6,8 +6,6 @@ rules here makes the allowed invoice lifecycle explicit and independently
 testable.
 """
 
-from datetime import datetime, timezone
-
 from fastapi import HTTPException, status
 
 from app.models.invoice import Invoice
@@ -40,7 +38,12 @@ def apply_issued_status_transition(
     replacement_items: list[InvoiceItemCreate] | None,
     requested_status: str | None,
 ) -> None:
-    """Apply the only mutable field of a definitive invoice: payment state."""
+    """Apply the only manual lifecycle change for a definitive invoice.
+
+    Collection is deliberately absent here.  It is derived exclusively from
+    immutable customer-payment allocations, so a direct invoice update cannot
+    create an unaudited paid balance.
+    """
     detail_changes = {key for key in changes if key != "status"}
     if replacement_items is not None:
         detail_changes.add("items")
@@ -51,16 +54,20 @@ def apply_issued_status_transition(
         )
 
     allowed = {
-        "issued": {"paid", "overdue"},
-        "overdue": {"paid"},
+        "issued": {"overdue"},
+        "overdue": set(),
+        "partially_paid": set(),
         "paid": set(),
         "rectified": set(),
         "cancelled": set(),
     }
+    if requested_status in {"paid", "partially_paid"}:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Register a customer payment instead of changing the collection status",
+        )
     if requested_status not in allowed.get(invoice.status, set()):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid invoice status transition",
         )
-    if requested_status == "paid":
-        invoice.paid_at = datetime.now(timezone.utc)

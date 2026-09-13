@@ -38,7 +38,9 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ## 2. Estado de publicación
 
-- ✅ Producción: `v1.6.0` (`ec0a755`), publicada desde `main`.
+- ✅ Producción: `v1.6.1` (`c3da6be`), publicada desde `main` con imágenes
+  inmutables en ECR y despliegue SSM verificado. Backend, frontend, React
+  Doctor, SAST, secretos y GitGuardian terminaron correctamente.
 - ✅ `main` local y `origin/main` están alineadas en `3a0c034`; incluye la
   preparación versionada de mantenimiento seguro del host, observabilidad y
   migración de cuenta AWS. La asociación semanal, agente CloudWatch y alarma
@@ -57,8 +59,9 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Diálogos con cabecera y pie translúcidos, sin blanco sólido.
 - ✅ Listas de negocio: tabla shadcn en escritorio y tarjetas shadcn en móvil.
 - ✅ Métricas: dos columnas en móvil; una tarjeta impar no se estira.
-- ✅ Tabs: hasta cuatro opciones se muestran en fila; más de cuatro usan
-  selector móvil con separación respecto del contenido.
+- ✅ Tabs: escritorio puede mostrarlas en fila; tablet y móvil siempre las
+  compactan en el mismo selector desplegable, con la misma cantidad, orden y
+  reglas de visibilidad de opciones que el escritorio.
 - ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
@@ -100,12 +103,12 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ El acceso de gestoría actual es revocable y de solo lectura a Finanzas
   (`finance.read`), exige la funcionalidad `features.accountant_portal` y se
   limita a la empresa que emitió el grant.
-- 🟡 **Red externa** unifica la navegación de empresas colaboradoras y accesos
+- ✅ **Red externa** unifica la navegación de empresas colaboradoras y accesos
   profesionales en dos tabs, sin fusionar sus modelos ni permisos: la
   colaboración B2B y el portal inmobiliario siguen en Operación; la gestoría
   financiera sigue siendo un `ExternalAccessGrant` de solo lectura. Las rutas
-  históricas redirigen de forma compatible. Falta validación visual y de
-  producción antes de declararla publicada.
+  históricas redirigen de forma compatible. Validada con navegación E2E
+  autenticada local en `v1.6.1`.
 - ✅ Los antiguos usuarios con rol `accountant` se convierten de forma
   conciliable: grant activo, membresía archivada, invitaciones convertidas y
   rol retirado. El recorrido se validó en PostgreSQL sobre una base efímera.
@@ -113,7 +116,8 @@ como WorkHive Core solo cuando el caso real las exige.
   `PartnerPortalGrant`, el rol técnico `partner_portal`, cuota
   `limits.partner_portals` de la empresa anfitriona y rutas propias. Solo
   muestra propiedades propias y solicitudes de limpieza hacia la anfitriona;
-  no recibe dashboard, plazas ni perfiles internos.
+  no recibe dashboard, plazas ni perfiles internos. Validado con E2E
+  autenticada local en `v1.6.1`.
 - ✅ La inmobiliaria crea sus propias propiedades desde su portal. La propiedad
   queda bajo su propiedad y gestión; se comparte automáticamente y solo con la
   empresa anfitriona como proveedor predeterminado, que puede gestionar tareas
@@ -134,9 +138,10 @@ como WorkHive Core solo cuando el caso real las exige.
   empresa anfitriona al aceptar. Está cubierta por pruebas de aceptación,
   denegación de dashboard genérico, revocación y no sobrescritura de cuentas,
   además de validar la migración desde su revisión anterior.
-- 🟡 Falta validación visual y de producción del portal patrocinado y su alta
-  nueva antes de declararlos publicados. No se ha convertido ningún dato
-  existente de forma automática.
+- ✅ La interfaz de la alta patrocinada nueva conserva el borrador al volver
+  entre pasos y completa la aceptación segura con datos legales, credenciales
+  e inicio de sesión restringido al portal. Validada con E2E autenticada local
+  en `v1.6.1`; no se ha convertido ningún dato existente de forma automática.
 - ⬜ Diseñar el portal de cliente y el selector de varias empresas para una
   persona externa; cada uno con política propia y sin heredar perfiles internos.
 
@@ -278,30 +283,28 @@ como WorkHive Core solo cuando el caso real las exige.
 
 - ✅ Presupuestos, líneas, facturas, snapshots fiscales y rectificaciones ya
   existen y se conservan.
-- 🟡 Catálogo único de servicios y versiones: cada servicio conserva duración
+- ✅ Catálogo único de servicios y versiones: cada servicio conserva duración
   estimada y requisitos, publica un historial inmutable y los trabajos creados
   desde catálogo quedan vinculados a la versión exacta seleccionada. Cubierto
-  con migración reversible, aislamiento entre empresas y pruebas de regresión;
-  pendiente de revisión visual autenticada y publicación para marcarlo como
-  completado.
-- 🟡 Revisiones y aprobaciones de presupuesto: cada envío genera una versión
+  con migración reversible, aislamiento entre empresas y pruebas de regresión,
+  más validación E2E autenticada local en `v1.6.1`.
+- ✅ Revisiones y aprobaciones de presupuesto: cada envío genera una versión
   inmutable; cualquier cambio posterior exige crear una revisión editable. La
   aceptación queda ligada a la versión enviada y el historial es visible desde
   el detalle. Cubierto con migración reversible, aislamiento entre empresas y
-  pruebas de regresión; pendiente de revisión visual autenticada y publicación
-  para marcarlo como completado.
-- 🟡 Contratos, SLA, renovaciones, servicios contratados y ubicaciones cubiertas:
+  pruebas de regresión y validación E2E autenticada local en `v1.6.1`.
+- ✅ Contratos, SLA, renovaciones, servicios contratados y ubicaciones cubiertas:
   al aceptar un presupuesto se crea un contrato borrador con las líneas
   inmutables de la revisión aceptada; permite fijar SLA, vigencia y renovación,
   cubrir únicamente ubicaciones activas del mismo cliente y activarlo tras esa
   comprobación. Cubierto con migración reversible y pruebas de autorización,
-  aislamiento, servicio y ubicación cubierta; pendiente de revisión visual
-  autenticada y publicación para marcarlo como completado.
-- 🟡 Regla presupuesto aceptado → contrato; nunca crear un trabajo directamente:
+  aislamiento, servicio y ubicación cubierta, más validación E2E autenticada
+  local en `v1.6.1`.
+- ✅ Regla presupuesto aceptado → contrato; nunca crear un trabajo directamente:
   la aceptación crea como máximo un contrato borrador por presupuesto y no toca
   `TaskItem`; el contrato requiere una activación explícita tras fijar sus
-  ubicaciones. Cubierto con regresiones; pendiente de revisión visual
-  autenticada y publicación para marcarlo como completado.
+  ubicaciones. Cubierto con regresiones y validación E2E autenticada local en
+  `v1.6.1`.
 
 ### Fase 4 — Ubicaciones Enterprise
 
@@ -310,65 +313,113 @@ como WorkHive Core solo cuando el caso real las exige.
 - 🟡 Contactos operativos por ubicación: cada local puede tener varias personas
   para operaciones, acceso, calidad o emergencias, con un contacto principal;
   no se confunden con los contactos comerciales o de facturación de la cuenta.
-  Cubierto con migración reversible, aislamiento entre empresas y pruebas de
-  regresión; pendiente de revisión visual autenticada y publicación para
-  marcarlo como completado.
+  Cubierto con migración reversible, aislamiento entre empresas, regresiones y
+  E2E autenticada local; pendiente de revisión visual autenticada y publicación
+  para marcarlo como completado.
 - 🟡 Riesgos operativos por ubicación: el local puede mantener riesgos abiertos
   o mitigados, con severidad, instrucciones y medida preventiva. Está
   integrado en los tres flujos canónicos de alta/edición, con migración
-  reversible y regresiones de aislamiento; pendiente de revisión visual
-  autenticada y publicación para marcarlo como completado.
+  reversible, regresiones de aislamiento y E2E autenticada local; pendiente de
+  revisión visual autenticada y publicación para marcarlo como completado.
 - 🟡 Horarios de servicio por ubicación: se guardan separados de las
   credenciales/horarios de acceso, por días, franja y estado. Están disponibles
   al crear o editar en el espacio interno, portal patrocinado y alta inicial;
-  cubiertos con migración reversible y regresiones de aislamiento. Pendiente de
-  revisión visual autenticada y publicación para marcarlo como completado.
+  cubiertos con migración reversible, regresiones de aislamiento y E2E
+  autenticada local. Pendiente de revisión visual autenticada y publicación
+  para marcarlo como completado.
 - 🟡 Documentos y equipos normalizados por ubicación: documentos privados PDF,
   JPEG y PNG con hash, cuota documental por empresa: 1 MB en Basic/Medium y 10 MB
   en Top/Enterprise; inventario
   con estado, cantidad y mantenimiento. Lectura por ámbito y altas/archivo solo
   para la empresa propietaria con `locations.manage`; migración y regresiones
-  cubiertas. Vistas independientes de Documentos y Activos, sin mezclarlas con
-  Ubicaciones. Pendiente de revisión visual autenticada y publicación.
+  cubiertas, con E2E autenticada local de alta y archivo. Vistas independientes
+  de Documentos y Activos, sin mezclarlas con Ubicaciones. Pendiente de revisión
+  visual autenticada y publicación.
   Servicios contratados quedan cubiertos por la relación formal de contratos
   siguiente.
 - 🟡 Relación formal cliente → contrato → ubicación → zona: un contrato nace
   de la revisión aceptada, solo puede cubrir ubicaciones activas de su cliente y
   puede restringirse a zonas activas de esas ubicaciones; sin zonas elegidas,
-  cubre la ubicación completa. Cubierto con migración reversible, aislamiento y
-  regresiones; pendiente de revisión visual autenticada y publicación para
-  marcarlo como completado.
+  cubre la ubicación completa. Cubierto con migración reversible, aislamiento,
+  regresiones y E2E autenticada local; pendiente de revisión visual autenticada
+  y publicación para marcarlo como completado.
 
 ### Fase 5 — Órdenes, recurrencia y tiempo
 
 - ✅ Trabajos actuales, asignaciones, checklist, evidencias, calendario y
   sesiones de trabajo/fichaje existen.
 - ✅ Los trabajos facturables pueden seleccionarse para crear facturas.
-- 🟡 Modelo `work_orders` separado de `TaskItem`: una orden individual o
+- ✅ Modelo `work_orders` separado de `TaskItem`: una orden individual o
   recurrente puede vincularse a un contrato activo y generar tareas
-  ejecutables trazables sin alterar tareas existentes. Pendiente de UI,
-  revisión visual y publicación.
+  ejecutables trazables sin alterar tareas existentes. Publicado en `v1.6.1`;
+  la UI permite crear, replanificar, pausar, reactivar y generar ejecuciones,
+  validado con E2E autenticada local.
 - ⬜ Previsión de personas/minutos, pausas, GPS final, correcciones justificadas,
   aprobaciones, partes y coste laboral.
 
 ### Fase 6 — Calidad e incidencias
 
-- ⬜ Plantillas, inspecciones, puntuaciones, fotos, firmas, incidencias,
-  reclamaciones y acciones correctivas.
+- ✅ Plantillas de inspección, inspecciones, puntuaciones, incidencias y
+  acciones correctivas con ámbitos por empresa y ubicación están publicados
+  en `v1.6.1`. La UI de plantillas, inspecciones, puntuación, incidencias y
+  creación o cierre de acciones correctivas está validada con E2E autenticada
+  local; la cancelación está cubierta por la regresión backend.
+- ⬜ Fotos, firmas y reclamaciones siguen sin iniciar.
 
 ### Fase 7 — Material, compras y activos
 
 - ✅ Gastos básicos existen.
-- ⬜ Proveedores, catálogo de material, almacenes, stock, lotes, movimientos,
-  pedidos, activos y consumo por orden.
+- 🟡 Base de inventario: proveedores, catálogo de material, almacenes,
+  movimientos inmutables y saldo calculado por almacén. Cubierta con migración
+  reversible, permisos por empresa, aislamiento, regresiones y recorrido API
+  autenticado local. Interfaz local de stock, materiales, proveedores,
+  almacenes y movimientos integrada y validada sin navegador; pendiente de
+  revisión visual autenticada y publicación.
+- 🟡 Flujo de compra de material local: la cabecera usa un proveedor del
+  directorio y conserva su snapshot fiscal; sus líneas crean entradas
+  inmutables y un único gasto fiscal con IVA, pago y justificante. Finanzas
+  cuenta solo el gasto; una corrección crea movimientos de ajuste, archiva el
+  gasto enlazado y bloquea su edición/borrado directo. Backend, migración y UI
+  local validados sin navegador; pendiente de revisión visual autenticada y
+  publicación.
+- 🟡 Lotes, activos operativos y consumo por orden local: los activos ya se
+  administran por ubicación, separados del stock. Una recepción puede crear
+  un lote con caducidad y saldo propio; una orden de trabajo registra su
+  consumo como salida inmutable y una corrección añade la entrada inversa una
+  sola vez. Backend, migración y UI local validados sin navegador; pendiente
+  de revisión visual autenticada y publicación.
 
 ### Fase 8 — Cobros, margen y analítica
 
 - ✅ Facturación, registros fiscales y resúmenes financieros básicos existen.
-- ⬜ Cobros, repartos de pago, conciliación, coste de personal/material/
-  subcontrata y margen previsto frente a real.
-- ⬜ Analítica por sociedad, delegación, cliente, contrato, ubicación, servicio,
-  equipo y trabajo con permisos de lectura.
+- 🟡 Cobros: recibos de cliente inmutables con reparto entre facturas, saldo no
+  aplicado y anulación auditable; actualizan el estado de cobro sin alterar el
+  registro fiscal ni el IVA. Validado por API y UI local; pendiente de revisión
+  visual autenticada.
+- ✅ Coste laboral interno con históricos inmutables por sesión y rentabilidad
+  conocida por cliente a partir de ingresos y gastos asignados.
+- 🟡 Conciliación bancaria manual: apuntes de extracto inmutables, vínculo de
+  importe exacto con un único cobro y reversión auditada. No crea ingresos ni
+  altera IVA; un cobro conciliado exige deshacer el vínculo antes de anularse.
+  Backend, migración y UI local validados sin navegador; pendiente de revisión
+  visual autenticada e importación bancaria.
+- 🟡 Imputación de material: el consumo por orden conserva el coste medio
+  ponderado disponible y el cliente de la ubicación como snapshots inmutables;
+  una corrección queda fuera del margen y un coste no trazable no se estima.
+  La compra sigue siendo un gasto fiscal, pero se excluye del margen de cliente
+  hasta que el stock se consume, evitando el doble conteo. Backend, migración y
+  UI local validados sin navegador; pendiente de revisión visual autenticada.
+- 🟡 Subcontrata: Gastos incorpora la categoría operativa `subcontracting`; al
+  asignarla a un cliente ya entra como coste directo en la rentabilidad, con el
+  mismo IVA, pago, justificante y edición de Gastos. Se mantiene separada del
+  inventario y no crea stock. Validada por tests y UI local sin navegador;
+  pendiente de revisión visual autenticada.
+- ⬜ Margen previsto frente a real: necesita un presupuesto de coste explícito
+  por contrato u orden antes de comparar, sin repartir gastos generales ni
+  fabricar estimaciones globales.
+- 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
+  lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
+  ubicación, servicio, equipo y trabajo.
 
 ### Fase 9 — Portales e integraciones
 
@@ -380,17 +431,48 @@ como WorkHive Core solo cuando el caso real las exige.
   proveedor anfitrión están aisladas por backend. La inmobiliaria puede crear
   propiedades propias, compartidas automáticamente solo con su anfitriona,
   editarlas o archivarlas; las solicitudes solo se modifican antes de iniciar
-  el trabajo o facturarlo.
-- 🟡 Validación visual y despliegue del portal de inmobiliaria y su alta
-  patrocinada nueva pendientes.
+  el trabajo o facturarlo. Validado con E2E autenticada local en `v1.6.1`.
 - ✅ Alta patrocinada de inmobiliaria nueva: invitación de un solo uso,
   empresa sin plan, colaboración aceptada y grant inicial sin plaza interna.
-- 🟡 Red externa: navegación común con tabs de colaboradores operativos y
-  accesos profesionales; conserva modelos y autorización separados. Pendiente
-  de validación visual y despliegue junto al portal patrocinado.
-- ⬜ Portal de cliente y selector de varias empresas para personas externas.
-- ⬜ Aplicación ampliada de trabajador, API pública e integraciones auditables.
-- ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
+  Validada con E2E autenticada local en `v1.6.1`.
+- ✅ Red externa: navegación común con tabs de colaboradores operativos y
+  accesos profesionales; conserva modelos y autorización separados. Validada
+  con navegación E2E autenticada local en `v1.6.1`.
+- 🟡 Portal de cliente y selector de varias empresas para personas externas:
+  invitación de un solo uso y grant revocable por cliente–empresa, sin plaza ni
+  membresía interna; una persona puede seleccionar solo sus espacios
+  documentales concedidos. El portal expone únicamente presupuestos enviados,
+  contratos y facturas del cliente, con PDF protegido y sin costes, márgenes ni
+  notas privadas. Cubierto localmente con migración, permisos positivos,
+  denegación, aislamiento entre clientes/empresas, tests de interfaz,
+  typecheck, lint y build; pendiente de revisión visual autenticada para
+  marcarlo como completado.
+- 🟡 API pública inicial: gestión de claves por administrador, revocables y
+  mostradas solo al emitirlas; consulta de órdenes de trabajo y entrada de
+  reservas mediante contratos con alcance explícito. La entrada de reservas es
+  idempotente por empresa, fuente y referencia externa; reutiliza las
+  validaciones de capacidad, solapes, limpieza y tareas, sin permitir cambiar
+  la ubicación ni cruzar empresas. Todos los usos quedan limitados por
+  frecuencia y suscripción y auditados sin guardar el secreto. Cubierto
+  localmente con migración, permisos, denegación, aislamiento, reintentos,
+  historial administrativo por clave, typecheck, tests, lint focalizado y
+  build; pendiente de revisión visual
+  autenticada y de un contrato de integración real antes de marcarlo como
+  completado.
+- 🟡 Ampliación de aplicación de trabajador e integraciones auditables: la
+  aplicación de trabajador ya cubre asignación, checklist, inicio, pausa,
+  cierre, evidencias e incidencias. Para la API pública, cada administrador
+  puede consultar los últimos usos de cada clave sin exponer secretos ni IP;
+  queda pendiente validar ese historial autenticado y definir el siguiente
+  contrato de integración real antes de cerrar esta línea.
+- 🟡 Automatizaciones seguras para vencimientos, avisos y aprobaciones reales:
+  recordatorios de prueba, cobro y calendario fiscal se ejecutan bajo bandera
+  de configuración y no cambian por sí mismos el estado fiscal de una factura.
+  La deduplicación de avisos ya es persistente por destinatario y evento, por
+  lo que reintentos y procesos simultáneos convergen en una sola notificación.
+  Cubierto localmente con migración, idempotencia y pruebas de destinatarios;
+  pendiente de validación operativa en el despliegue y de ampliar las
+  aprobaciones de negocio antes de marcarlo como completado.
 
 ## 6. Puerta de salida obligatoria para cada fase
 
@@ -409,12 +491,9 @@ cualquier punto como ✅.
 
 ## 7. Orden de trabajo vigente
 
-1. Validar visualmente en producción el portal patrocinado, su alta nueva y
-   Red externa antes de declararlos publicados.
-2. Construir Fase 3: catálogo, revisiones y contratos.
-3. Completar Ubicaciones Enterprise y evolucionar trabajos a órdenes.
-4. Calidad, material, cobros/margen y portales, en ese orden.
-5. Retomar Stripe solo cuando los contratos, el responsable legal y los precios
+1. Completar Ubicaciones Enterprise; después material, cobros/margen y
+   portales, en ese orden.
+2. Retomar Stripe solo cuando los contratos, el responsable legal y los precios
    definitivos estén cerrados.
 
 ## 8. Riesgos que controlamos

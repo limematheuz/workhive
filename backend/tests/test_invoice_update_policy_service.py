@@ -57,17 +57,20 @@ def test_definitive_invoice_rejects_payment_method_changes():
     assert error.value.status_code == 403
 
 
-def test_issued_invoice_can_move_to_paid_and_records_timestamp():
+def test_issued_invoice_cannot_be_marked_paid_without_a_customer_payment():
     invoice = SimpleNamespace(status="issued", paid_at=None)
 
-    invoice_update_policy_service.apply_issued_status_transition(
-        invoice,
-        {"status": "paid"},
-        replacement_items=None,
-        requested_status="paid",
-    )
+    with pytest.raises(HTTPException) as error:
+        invoice_update_policy_service.apply_issued_status_transition(
+            invoice,
+            {"status": "paid"},
+            replacement_items=None,
+            requested_status="paid",
+        )
 
-    assert invoice.paid_at is not None
+    assert error.value.status_code == 400
+    assert "customer payment" in error.value.detail.lower()
+    assert invoice.paid_at is None
 
 
 def test_paid_invoice_cannot_transition_again():

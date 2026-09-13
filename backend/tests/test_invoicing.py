@@ -438,7 +438,7 @@ def test_viewer_sees_accepted_external_task_in_company_pool(db):
     assert task_assignment_service.can_viewer_access_task(task, receiver_worker.id)
 
 
-def test_marking_invoice_paid_records_collection_time(db):
+def test_marking_invoice_paid_directly_is_rejected(db):
     company = _company(db, "Cobros", "COBROS")
     client = Client(
         name="Cliente cobrado",
@@ -464,17 +464,16 @@ def test_marking_invoice_paid_records_collection_time(db):
     db.commit()
     db.refresh(invoice)
 
-    before_payment = datetime.now(timezone.utc)
-    updated = invoice_service.update_invoice(
-        db,
-        company.id,
-        invoice.id,
-        InvoiceUpdate(status="paid"),
-    )
+    with pytest.raises(HTTPException) as error:
+        invoice_service.update_invoice(
+            db,
+            company.id,
+            invoice.id,
+            InvoiceUpdate(status="paid"),
+        )
 
-    assert updated.status == "paid"
-    assert updated.paid_at is not None
-    paid_at = updated.paid_at
-    if paid_at.tzinfo is None:
-        paid_at = paid_at.replace(tzinfo=timezone.utc)
-    assert paid_at >= before_payment
+    assert error.value.status_code == 400
+    assert "customer payment" in error.value.detail.lower()
+    db.refresh(invoice)
+    assert invoice.status == "issued"
+    assert invoice.paid_at is None

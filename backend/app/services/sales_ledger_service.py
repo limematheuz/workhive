@@ -21,7 +21,13 @@ from app.schemas.sales_ledger import (
 )
 
 
-REPORTABLE_INVOICE_STATUSES = {"issued", "paid", "overdue", "rectified"}
+REPORTABLE_INVOICE_STATUSES = {
+    "issued",
+    "partially_paid",
+    "paid",
+    "overdue",
+    "rectified",
+}
 SALES_LEDGER_CSV_HEADERS = (
     "N Factura",
     "Fecha",

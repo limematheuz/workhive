@@ -5,6 +5,8 @@ export const getStatusBadgeClass = (status: Invoice["status"]) => {
         case "paid":
             // Blue — cobrada
             return "border border-[color-mix(in_srgb,var(--accent-color)_34%,transparent)] bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent";
+        case "partially_paid":
+            return "border border-[color-mix(in_srgb,var(--alert-warning-border)_54%,transparent)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]";
         case "draft":
             // Orange — borrador
             return "border border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]";
@@ -23,6 +25,7 @@ export const getStatusBadgeClass = (status: Invoice["status"]) => {
 export const getInvoiceStatusText = (status: Invoice["status"], labels: {
     status_draft: string;
     status_issued: string;
+    status_partially_paid: string;
     status_paid: string;
     status_overdue: string;
     status_cancelled: string;
@@ -35,6 +38,8 @@ export const getInvoiceStatusText = (status: Invoice["status"], labels: {
             return labels.status_issued;
         case "paid":
             return labels.status_paid;
+        case "partially_paid":
+            return labels.status_partially_paid;
         case "overdue":
             return labels.status_overdue;
         case "cancelled":

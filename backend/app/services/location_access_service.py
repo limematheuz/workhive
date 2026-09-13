@@ -122,6 +122,36 @@ def require_location_capability(
     return location
 
 
+def require_company_location_capability(
+    db: Session,
+    *,
+    company_id: int,
+    location_id: int,
+    capability: str,
+) -> Location:
+    """Authorize an integration key as its company, never as an individual user."""
+
+    location = location_repo.get_location_by_id(db, location_id, company_id)
+    if location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Location not found")
+    if _is_direct_company_location(location, company_id):
+        return location
+    access = access_repo.get_access(db, location_id, company_id)
+    if (
+        access is None
+        or not getattr(access, capability, False)
+        or (
+            capability == "can_manage_reservations"
+            and _is_service_provider_access(access)
+        )
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Your company does not have {capability} permission for this location",
+        )
+    return location
+
+
 def has_location_capability(
     db: Session, current_user: User, location: Location, capability: str
 ) -> bool:

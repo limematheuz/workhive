@@ -33,6 +33,7 @@ type InvoicesFiltersBarProps = {
         filter_all_statuses?: string;
         status_draft: string;
         status_issued: string;
+        status_partially_paid: string;
         status_paid: string;
         status_overdue: string;
         status_cancelled: string;
@@ -118,6 +119,7 @@ export function InvoicesFiltersBar({
                             <SelectItem value="__all-statuses__">{labels.filter_all_statuses || "Todos los estados"}</SelectItem>
                             <SelectItem value="draft">{labels.status_draft}</SelectItem>
                             <SelectItem value="issued">{labels.status_issued}</SelectItem>
+                            <SelectItem value="partially_paid">{labels.status_partially_paid}</SelectItem>
                             <SelectItem value="paid">{labels.status_paid}</SelectItem>
                             <SelectItem value="overdue">{labels.status_overdue}</SelectItem>
                             <SelectItem value="cancelled">{labels.status_cancelled}</SelectItem>

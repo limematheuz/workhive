@@ -3,6 +3,7 @@ export const ROLE_NAMES = [
     "admin",
     "external_portal",
     "partner_portal",
+    "client_portal",
     "manager",
     "viewer",
 ] as const;
