@@ -63,6 +63,8 @@ from app.api.v1.organization_departments import (
 from app.api.v1.organization_teams import router as organization_teams_router
 from app.api.v1.partner_portal import router as partner_portal_router
 from app.api.v1.client_portal import router as client_portal_router
+from app.api.v1.api_access_keys import router as api_access_keys_router
+from app.api.v1.public_api import router as public_api_router
 
 api_router = APIRouter()
 
@@ -239,4 +241,14 @@ api_router.include_router(
     client_portal_router,
     prefix="/client-portal",
     tags=["client-portal"],
+)
+api_router.include_router(
+    api_access_keys_router,
+    prefix="/api-access-keys",
+    tags=["api-access-keys"],
+)
+api_router.include_router(
+    public_api_router,
+    prefix="/public",
+    tags=["public-api"],
 )

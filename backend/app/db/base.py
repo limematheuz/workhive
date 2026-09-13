@@ -94,6 +94,7 @@ from app.models.partner_portal_grant import PartnerPortalGrant
 from app.models.sponsored_partner_invitation import SponsoredPartnerInvitation
 from app.models.client_portal_grant import ClientPortalGrant
 from app.models.client_portal_invitation import ClientPortalInvitation
+from app.models.api_access_key import ApiAccessKey
 from app.models.permission_profile import (
     MembershipPermissionProfileAssignment,
     MembershipPermissionProfileScope,

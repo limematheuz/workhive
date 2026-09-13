@@ -144,6 +144,9 @@ def test_postgresql_schema_matches_invoice_model_contract():
             tuple(foreign_key["constrained_columns"])
             for foreign_key in inspector.get_foreign_keys("client_portal_invitations")
         }
+        api_access_key_columns = {
+            column["name"] for column in inspector.get_columns("api_access_keys")
+        }
         client_columns = {
             column["name"] for column in inspector.get_columns("clients")
         }
@@ -359,6 +362,17 @@ def test_postgresql_schema_matches_invoice_model_contract():
         "accepted_at",
     } <= client_portal_invitation_columns
     assert ("client_id", "company_id") in client_portal_invitation_foreign_keys
+    assert {
+        "company_id",
+        "name",
+        "key_prefix",
+        "key_hash",
+        "scopes",
+        "status",
+        "expires_at",
+        "last_used_at",
+        "revoked_at",
+    } <= api_access_key_columns
     assert "relationship_status" in client_columns
     assert {
         "id",

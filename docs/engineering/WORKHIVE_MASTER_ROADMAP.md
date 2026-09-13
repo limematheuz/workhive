@@ -447,7 +447,14 @@ como WorkHive Core solo cuando el caso real las exige.
   denegación, aislamiento entre clientes/empresas, tests de interfaz,
   typecheck, lint y build; pendiente de revisión visual autenticada para
   marcarlo como completado.
-- ⬜ Aplicación ampliada de trabajador, API pública e integraciones auditables.
+- 🟡 API pública inicial: gestión de claves por administrador, revocables y
+  mostradas solo al emitirlas; primer contrato de solo lectura para órdenes de
+  trabajo, aislado por empresa, limitado por alcance, frecuencia y suscripción, y
+  auditado sin guardar el secreto. Cubierto localmente con migración, permisos,
+  denegación, aislamiento, typecheck, lint y build; pendiente de revisión visual
+  autenticada y de un contrato de integración real antes de marcarlo como
+  completado.
+- ⬜ Ampliación de aplicación de trabajador e integraciones auditables.
 - ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
 
 ## 6. Puerta de salida obligatoria para cada fase

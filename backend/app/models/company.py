@@ -50,6 +50,9 @@ class Company(Base):
     client_portal_invitations = relationship(
         "ClientPortalInvitation", back_populates="company", cascade="all, delete-orphan"
     )
+    api_access_keys = relationship(
+        "ApiAccessKey", back_populates="company", cascade="all, delete-orphan"
+    )
     sponsored_partner_portal_grants = relationship(
         "PartnerPortalGrant",
         back_populates="host_company",
