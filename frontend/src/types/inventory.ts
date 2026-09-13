@@ -42,6 +42,7 @@ export type InventoryMovement = {
     warehouse_id: number;
     lot_id: number | null;
     work_order_id: number | null;
+    client_id: number | null;
     reversal_of_movement_id: number | null;
     movement_type: InventoryMovementType;
     quantity: string;

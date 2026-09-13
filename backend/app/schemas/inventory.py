@@ -87,6 +87,7 @@ class InventoryMovementResponse(InventoryMovementCreate):
     id: int
     lot_id: int | None
     work_order_id: int | None
+    client_id: int | None
     reversal_of_movement_id: int | None
     recorded_by_user_id: int | None
     created_at: datetime

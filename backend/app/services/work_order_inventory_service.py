@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.inventory import InventoryMovement
 from app.models.user import User
+from app.repositories import client as client_repo
 from app.repositories import inventory as inventory_repo
 from app.repositories import work_order as work_order_repo
 from app.schemas.inventory import (
@@ -45,7 +46,9 @@ def _work_order_or_404(
         db, company_id=company_id, work_order_id=work_order_id
     )
     if work_order is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Orden no encontrada"
+        )
     location_access_service.require_location_capability(
         db,
         current_user,
@@ -56,9 +59,28 @@ def _work_order_or_404(
     return work_order
 
 
-def _movement_reference(work_order_id: int, title: str, *, correction: bool = False) -> str:
+def _movement_reference(
+    work_order_id: int, title: str, *, correction: bool = False
+) -> str:
     prefix = "Corrección de consumo" if correction else "Consumo"
     return f"{prefix} · Orden #{work_order_id} · {title}"[:160]
+
+
+def _client_id_for_work_order(
+    db: Session, *, company_id: int, work_order
+) -> int | None:
+    """Freeze the customer that owns the work-order location for this issue."""
+
+    location = work_order.location
+    if location is None or location.client_id is None:
+        return None
+    client = client_repo.get_client_by_id(db, location.client_id, company_id)
+    if client is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="La ubicación de la orden no pertenece a un cliente de la empresa",
+        )
+    return client.id
 
 
 def _commit(db: Session, movement_id: int):
@@ -72,14 +94,14 @@ def _commit(db: Session, movement_id: int):
         ) from error
     movement = db.get(InventoryMovement, movement_id)
     if movement is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movimiento no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Movimiento no encontrado"
+        )
     return movement
 
 
 def list_consumptions(db: Session, current_user: User, work_order_id: int):
-    company_id = _company_id(
-        db, current_user, inventory=INVENTORY_READ, work=WORK_READ
-    )
+    company_id = _company_id(db, current_user, inventory=INVENTORY_READ, work=WORK_READ)
     _work_order_or_404(
         db,
         current_user,
@@ -118,7 +140,9 @@ def create_consumption(
         db, company_id=company_id, material_id=payload.material_id
     )
     if material is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Material no encontrado"
+        )
     warehouse = inventory_repo.get_warehouse(
         db,
         company_id=company_id,
@@ -126,7 +150,9 @@ def create_consumption(
         for_update=True,
     )
     if warehouse is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Almacén no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Almacén no encontrado"
+        )
     lot = None
     if payload.lot_id is not None:
         lot = inventory_repo.get_lot(
@@ -137,7 +163,9 @@ def create_consumption(
             warehouse_id=warehouse.id,
         )
         if lot is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado"
+            )
     elif inventory_repo.has_lots(
         db,
         company_id=company_id,
@@ -150,9 +178,7 @@ def create_consumption(
             headers={"X-WorkHive-Error-Code": "inventory.lot_required"},
         )
     available = (
-        inventory_repo.available_lot_quantity(
-            db, company_id=company_id, lot_id=lot.id
-        )
+        inventory_repo.available_lot_quantity(db, company_id=company_id, lot_id=lot.id)
         if lot is not None
         else inventory_repo.available_quantity(
             db,
@@ -167,6 +193,13 @@ def create_consumption(
             detail="No hay stock suficiente para registrar el consumo",
             headers={"X-WorkHive-Error-Code": "inventory.insufficient_stock"},
         )
+    unit_cost = inventory_repo.available_unit_cost(
+        db,
+        company_id=company_id,
+        material_id=material.id,
+        warehouse_id=warehouse.id,
+        lot_id=lot.id if lot else None,
+    )
     movement = inventory_repo.create_movement(
         db,
         company_id=company_id,
@@ -174,9 +207,12 @@ def create_consumption(
         warehouse_id=warehouse.id,
         lot_id=lot.id if lot else None,
         work_order_id=work_order.id,
+        client_id=_client_id_for_work_order(
+            db, company_id=company_id, work_order=work_order
+        ),
         movement_type="issue",
         quantity=payload.quantity,
-        unit_cost=None,
+        unit_cost=unit_cost,
         reference=_movement_reference(work_order.id, work_order.title),
         notes=payload.notes,
         recorded_by_user_id=current_user.id,
@@ -209,7 +245,9 @@ def reverse_consumption(
         for_update=True,
     )
     if movement is None or movement.movement_type != "issue":
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Consumo no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Consumo no encontrado"
+        )
     if movement.reversal_of_movement_id is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -232,6 +270,7 @@ def reverse_consumption(
         warehouse_id=movement.warehouse_id,
         lot_id=movement.lot_id,
         work_order_id=work_order.id,
+        client_id=movement.client_id,
         reversal_of_movement_id=movement.id,
         movement_type="adjustment_in",
         quantity=movement.quantity,

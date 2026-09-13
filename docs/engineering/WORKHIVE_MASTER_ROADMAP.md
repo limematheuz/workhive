@@ -403,8 +403,13 @@ como WorkHive Core solo cuando el caso real las exige.
   altera IVA; un cobro conciliado exige deshacer el vínculo antes de anularse.
   Backend, migración y UI local validados sin navegador; pendiente de revisión
   visual autenticada e importación bancaria.
-- ⬜ Imputación de material/subcontrata y margen previsto frente a real, sin
-  duplicar compras de inventario como gasto.
+- 🟡 Imputación de material: el consumo por orden conserva el coste medio
+  ponderado disponible y el cliente de la ubicación como snapshots inmutables;
+  una corrección queda fuera del margen y un coste no trazable no se estima.
+  La compra sigue siendo un gasto fiscal, pero se excluye del margen de cliente
+  hasta que el stock se consume, evitando el doble conteo. Backend, migración y
+  UI local validados sin navegador; pendiente de revisión visual autenticada.
+- ⬜ Imputación específica de subcontrata y margen previsto frente a real.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
   lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
   ubicación, servicio, equipo y trabajo.

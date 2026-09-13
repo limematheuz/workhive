@@ -5,9 +5,18 @@ from app.core.security import create_access_token
 from app.models.client import Client
 from app.models.company import Company
 from app.models.expense import Expense
+from app.models.inventory import (
+    InventoryMaterial,
+    InventoryMovement,
+    InventorySupplier,
+    InventoryWarehouse,
+)
+from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
+from app.models.location import Location
 from app.models.sales_ledger_record import SalesLedgerRecord
 from app.models.user import User
+from app.models.work_order import WorkOrder
 
 
 def _company(db, suffix: str) -> Company:
@@ -224,6 +233,7 @@ def test_client_profitability_uses_reportable_invoices_and_direct_costs_only(cli
         "known_margin_percentage": "66.67",
         "client_count": 2,
         "unassigned_expense_base_amount": "20.00",
+        "unassigned_material_cost_base_amount": "0.00",
         "unlinked_historical_sales_base_amount": "30.00",
         "clients": [
             {
@@ -255,6 +265,7 @@ def test_client_profitability_uses_reportable_invoices_and_direct_costs_only(cli
         "known_margin_percentage": "75.00",
         "client_count": 1,
         "unassigned_expense_base_amount": "0.00",
+        "unassigned_material_cost_base_amount": "0.00",
         "unlinked_historical_sales_base_amount": "0.00",
         "clients": [
             {
@@ -269,6 +280,143 @@ def test_client_profitability_uses_reportable_invoices_and_direct_costs_only(cli
             },
         ],
     }
+
+
+def test_client_profitability_uses_unreversed_material_cost_without_counting_purchase_twice(
+    client, db
+):
+    company = _company(db, "MATERIAL")
+    headers = _headers(db, company, 1, "admin-material")
+    customer = _client(db, company, "Material cliente")
+    issued_at = datetime(2026, 8, 12, tzinfo=timezone.utc)
+    _invoice(
+        db,
+        company,
+        customer,
+        number="INV-MATERIAL",
+        issue_date=issued_at,
+        status="issued",
+        base="100.00",
+    )
+    supplier = InventorySupplier(company_id=company.id, name="Proveedor de material")
+    material = InventoryMaterial(
+        company_id=company.id,
+        sku="MAT-PROFIT-001",
+        name="Consumible rentable",
+        unit="unit",
+        reorder_point=Decimal("0"),
+    )
+    warehouse = InventoryWarehouse(company_id=company.id, name="Almacén rentable")
+    location = Location(
+        name="Centro rentable",
+        address="Calle Rentable 1",
+        city="Girona",
+        owner_company_id=company.id,
+        client_id=customer.id,
+    )
+    purchase_expense = Expense(
+        company_id=company.id,
+        client_id=customer.id,
+        expense_date=issued_at,
+        category="supplies",
+        description="Compra que no debe entrar dos veces en margen",
+        base_amount=50.0,
+        tax_amount=0.0,
+        total_amount=50.0,
+    )
+    db.add_all([supplier, material, warehouse, location, purchase_expense])
+    db.flush()
+    work_order = WorkOrder(
+        company_id=company.id,
+        location_id=location.id,
+        title="Orden con material",
+        status="active",
+        order_type="one_off",
+        scheduled_start_at=issued_at,
+    )
+    db.add(work_order)
+    db.flush()
+    purchase = InventoryPurchase(
+        company_id=company.id,
+        supplier_id=supplier.id,
+        expense_id=purchase_expense.id,
+        supplier_name_snapshot=supplier.name,
+    )
+    db.add(purchase)
+    db.flush()
+    consumed = InventoryMovement(
+        company_id=company.id,
+        material_id=material.id,
+        warehouse_id=warehouse.id,
+        work_order_id=work_order.id,
+        client_id=customer.id,
+        movement_type="issue",
+        quantity=Decimal("4.000"),
+        unit_cost=Decimal("2.5000"),
+        created_at=issued_at,
+    )
+    reversed_consumption = InventoryMovement(
+        company_id=company.id,
+        material_id=material.id,
+        warehouse_id=warehouse.id,
+        work_order_id=work_order.id,
+        client_id=customer.id,
+        movement_type="issue",
+        quantity=Decimal("2.000"),
+        unit_cost=Decimal("5.0000"),
+        created_at=issued_at,
+    )
+    unassigned_consumption = InventoryMovement(
+        company_id=company.id,
+        material_id=material.id,
+        warehouse_id=warehouse.id,
+        work_order_id=work_order.id,
+        movement_type="issue",
+        quantity=Decimal("3.000"),
+        unit_cost=Decimal("2.0000"),
+        created_at=issued_at,
+    )
+    db.add_all([consumed, reversed_consumption, unassigned_consumption])
+    db.flush()
+    db.add(
+        InventoryMovement(
+            company_id=company.id,
+            material_id=material.id,
+            warehouse_id=warehouse.id,
+            work_order_id=work_order.id,
+            client_id=customer.id,
+            reversal_of_movement_id=reversed_consumption.id,
+            movement_type="adjustment_in",
+            quantity=Decimal("2.000"),
+            unit_cost=Decimal("5.0000"),
+            created_at=issued_at,
+        )
+    )
+    db.commit()
+
+    response = client.get(
+        "/api/v1/client-profitability/?period=month&reference_date=2026-08-20",
+        headers=headers,
+    )
+
+    assert response.status_code == 200, response.text
+    current = response.json()["current"]
+    assert current["direct_cost_base_amount"] == "10.00"
+    assert current["known_margin_amount"] == "90.00"
+    assert current["unassigned_expense_base_amount"] == "0.00"
+    assert current["unassigned_material_cost_base_amount"] == "6.00"
+    assert current["clients"] == [
+        {
+            "client_id": customer.id,
+            "client_name": customer.name,
+            "invoice_count": 1,
+            "direct_cost_count": 1,
+            "revenue_base_amount": "100.00",
+            "direct_cost_base_amount": "10.00",
+            "known_margin_amount": "90.00",
+            "known_margin_percentage": "90.00",
+        }
+    ]
 
 
 def test_client_profitability_year_comparison_is_tenant_scoped_and_admin_only(client, db):

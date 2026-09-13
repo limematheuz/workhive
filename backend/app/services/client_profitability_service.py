@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from sqlalchemy.orm import Session
 
 from app.models.expense import Expense
+from app.models.inventory import InventoryMovement
 from app.models.invoice import Invoice
 from app.repositories import client_profitability as profitability_repo
 from app.schemas.client_profitability import (
@@ -13,7 +14,9 @@ from app.schemas.client_profitability import (
     ClientProfitabilityRow,
 )
 from app.services.entitlement_service import require_company_feature
-from app.services.reportable_sales_service import manual_records_without_workhive_invoice
+from app.services.reportable_sales_service import (
+    manual_records_without_workhive_invoice,
+)
 
 
 MONEY = Decimal("0.01")
@@ -30,11 +33,15 @@ def _money(value: Decimal) -> Decimal:
 
 def _period_range(period: str, reference_date: date) -> tuple[datetime, datetime]:
     if period == "month":
-        start = datetime(reference_date.year, reference_date.month, 1, tzinfo=timezone.utc)
+        start = datetime(
+            reference_date.year, reference_date.month, 1, tzinfo=timezone.utc
+        )
         if reference_date.month == 12:
             end = datetime(reference_date.year + 1, 1, 1, tzinfo=timezone.utc)
         else:
-            end = datetime(reference_date.year, reference_date.month + 1, 1, tzinfo=timezone.utc)
+            end = datetime(
+                reference_date.year, reference_date.month + 1, 1, tzinfo=timezone.utc
+            )
         return start, end
     return (
         datetime(reference_date.year, 1, 1, tzinfo=timezone.utc),
@@ -44,7 +51,11 @@ def _period_range(period: str, reference_date: date) -> tuple[datetime, datetime
 
 def _previous_reference_date(period: str, reference_date: date) -> date:
     if period == "month":
-        return date(reference_date.year - 1, 12, 1) if reference_date.month == 1 else date(reference_date.year, reference_date.month - 1, 1)
+        return (
+            date(reference_date.year - 1, 12, 1)
+            if reference_date.month == 1
+            else date(reference_date.year, reference_date.month - 1, 1)
+        )
     return date(reference_date.year - 1, 1, 1)
 
 
@@ -64,6 +75,12 @@ class _ClientTotals:
     def include_expense(self, expense: Expense) -> None:
         self.direct_cost_count += 1
         self.direct_cost_base_amount += _decimal(expense.base_amount)
+
+    def include_material_consumption(self, movement: InventoryMovement) -> None:
+        self.direct_cost_count += 1
+        self.direct_cost_base_amount += _decimal(movement.quantity) * _decimal(
+            movement.unit_cost
+        )
 
     def to_response(self) -> ClientProfitabilityRow:
         revenue = _money(self.revenue_base_amount)
@@ -108,6 +125,9 @@ def _summarize_period(
         db, company_id, start=start, end=end
     )
     expenses = profitability_repo.list_expenses(db, company_id, start=start, end=end)
+    material_consumptions = profitability_repo.list_unreversed_material_consumptions(
+        db, company_id, start=start, end=end
+    )
     manual_records = profitability_repo.list_active_manual_sales_records(
         db, company_id, start=start, end=end
     )
@@ -132,13 +152,34 @@ def _summarize_period(
             client_name=expense.client.name,
         ).include_expense(expense)
 
+    unassigned_material_costs = ZERO
+    for movement, client in material_consumptions:
+        material_cost = _decimal(movement.quantity) * _decimal(movement.unit_cost)
+        if movement.client_id is None or client is None:
+            unassigned_material_costs += material_cost
+            continue
+        _get_client_totals(
+            client_totals,
+            client_id=client.id,
+            client_name=client.name,
+        ).include_material_consumption(movement)
+
     unlinked_historical_sales = sum(
-        (_decimal(record.base_amount) for record in manual_records_without_workhive_invoice(invoices, manual_records)),
+        (
+            _decimal(record.base_amount)
+            for record in manual_records_without_workhive_invoice(
+                invoices, manual_records
+            )
+        ),
         ZERO,
     )
     rows = [totals.to_response() for totals in client_totals.values()]
     rows.sort(
-        key=lambda item: (-item.known_margin_amount, -item.revenue_base_amount, item.client_name.casefold())
+        key=lambda item: (
+            -item.known_margin_amount,
+            -item.revenue_base_amount,
+            item.client_name.casefold(),
+        )
     )
     revenue = sum((row.revenue_base_amount for row in rows), ZERO)
     direct_cost = sum((row.direct_cost_base_amount for row in rows), ZERO)
@@ -147,9 +188,12 @@ def _summarize_period(
         revenue_base_amount=_money(revenue),
         direct_cost_base_amount=_money(direct_cost),
         known_margin_amount=margin,
-        known_margin_percentage=(_money(margin * Decimal(100) / revenue) if revenue else None),
+        known_margin_percentage=(
+            _money(margin * Decimal(100) / revenue) if revenue else None
+        ),
         client_count=len(rows),
         unassigned_expense_base_amount=_money(unassigned_expenses),
+        unassigned_material_cost_base_amount=_money(unassigned_material_costs),
         unlinked_historical_sales_base_amount=_money(unlinked_historical_sales),
         clients=rows,
     )

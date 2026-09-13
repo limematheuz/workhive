@@ -1,6 +1,6 @@
 """Database queries for the company-scoped inventory ledger."""
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
@@ -12,6 +12,10 @@ from app.models.inventory import (
     InventoryWarehouse,
 )
 from app.models.inventory_lot import InventoryLot
+
+
+UNIT_COST_QUANTUM = Decimal("0.0001")
+INCOMING_MOVEMENT_TYPES = frozenset({"receipt", "adjustment_in"})
 
 
 def list_suppliers(db: Session, *, company_id: int) -> list[InventorySupplier]:
@@ -217,6 +221,49 @@ def available_lot_quantity(
         .scalar()
     )
     return Decimal(str(value or 0))
+
+
+def available_unit_cost(
+    db: Session,
+    *,
+    company_id: int,
+    material_id: int,
+    warehouse_id: int,
+    lot_id: int | None,
+) -> Decimal | None:
+    """Return the weighted-average cost of the currently available stock.
+
+    A value is only returned when every movement that makes up that ledger
+    balance is costed. This deliberately fails closed for legacy/manual stock
+    without a cost, rather than inventing a client margin from an estimate.
+    """
+
+    query = db.query(
+        InventoryMovement.movement_type,
+        InventoryMovement.quantity,
+        InventoryMovement.unit_cost,
+    ).filter(
+        InventoryMovement.company_id == company_id,
+        InventoryMovement.material_id == material_id,
+        InventoryMovement.warehouse_id == warehouse_id,
+    )
+    if lot_id is not None:
+        query = query.filter(InventoryMovement.lot_id == lot_id)
+
+    quantity = Decimal("0")
+    value = Decimal("0")
+    for movement_type, movement_quantity, unit_cost in query:
+        if unit_cost is None:
+            return None
+        signed_quantity = Decimal(str(movement_quantity))
+        if movement_type not in INCOMING_MOVEMENT_TYPES:
+            signed_quantity = -signed_quantity
+        quantity += signed_quantity
+        value += signed_quantity * Decimal(str(unit_cost))
+
+    if quantity <= 0 or value < 0:
+        return None
+    return (value / quantity).quantize(UNIT_COST_QUANTUM, rounding=ROUND_HALF_UP)
 
 
 def create_movement(db: Session, **values) -> InventoryMovement:

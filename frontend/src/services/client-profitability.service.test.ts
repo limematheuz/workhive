@@ -11,6 +11,7 @@ test("client profitability normalizes decimal API values without leaking NaN", (
         known_margin_percentage: "100.00",
         client_count: 1,
         unassigned_expense_base_amount: "20.00",
+        unassigned_material_cost_base_amount: "invalid",
         unlinked_historical_sales_base_amount: "",
         clients: [{
             client_id: 9,
@@ -26,6 +27,7 @@ test("client profitability normalizes decimal API values without leaking NaN", (
 
     assert.equal(result.revenue_base_amount, 250.5);
     assert.equal(result.direct_cost_base_amount, 0);
+    assert.equal(result.unassigned_material_cost_base_amount, 0);
     assert.equal(result.unlinked_historical_sales_base_amount, 0);
     assert.equal(result.clients[0].known_margin_amount, 230.5);
     assert.equal(result.clients[0].known_margin_percentage, null);

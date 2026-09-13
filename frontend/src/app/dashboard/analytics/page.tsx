@@ -16,6 +16,7 @@ import {
     Download,
     Inbox,
     Loader2,
+    Package,
     PieChart,
     ReceiptText,
     TriangleAlert,
@@ -638,6 +639,10 @@ function ClientProfitabilityDashboard({
     }
 
     const { current, previous } = data;
+    const hasUnassignedMaterial = (
+        current.unassigned_material_cost_base_amount > 0
+        || previous.unassigned_material_cost_base_amount > 0
+    );
     const metrics = [
         {
             label: text.profitability_revenue,
@@ -667,6 +672,13 @@ function ClientProfitabilityDashboard({
             icon: Inbox,
             comparisonDirection: "lower" as const,
         },
+        ...(hasUnassignedMaterial ? [{
+            label: text.profitability_unassigned_material,
+            value: current.unassigned_material_cost_base_amount,
+            previous: previous.unassigned_material_cost_base_amount,
+            icon: Package,
+            comparisonDirection: "lower" as const,
+        }] : []),
     ];
     const columns: DataListColumn[] = [
         { key: "client", label: text.profitability_client },
@@ -715,7 +727,7 @@ function ClientProfitabilityDashboard({
 
             {data ? (
                 <>
-                    <SummaryMetricGrid desktopColumns={4} className="gap-2.5">
+                    <SummaryMetricGrid desktopColumns={hasUnassignedMaterial ? 5 : 4} className="gap-2.5">
                         {metrics.map(({ label, value, previous: previousValue, icon, comparisonDirection }) => {
                             const change = getPercentageChange(value, previousValue);
                             return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
@@ -768,6 +780,13 @@ function ClientProfitabilityDashboard({
                             <p className="mt-1 text-xl font-semibold text-[var(--text-main)]">{formatCurrency(current.unassigned_expense_base_amount)}</p>
                             <p className="mt-1 text-xs text-[var(--text-muted)]">{text.profitability_unassigned_expenses_desc}</p>
                         </div>
+                        {current.unassigned_material_cost_base_amount > 0 ? (
+                            <div className="billing-block rounded-2xl p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">{text.profitability_unassigned_material}</p>
+                                <p className="mt-1 text-xl font-semibold text-[var(--text-main)]">{formatCurrency(current.unassigned_material_cost_base_amount)}</p>
+                                <p className="mt-1 text-xs text-[var(--text-muted)]">{text.profitability_unassigned_material_desc}</p>
+                            </div>
+                        ) : null}
                         {current.unlinked_historical_sales_base_amount > 0 ? (
                             <div className="billing-block rounded-2xl p-4 text-sm text-[var(--text-muted)]">
                                 {text.profitability_history_notice.replace(

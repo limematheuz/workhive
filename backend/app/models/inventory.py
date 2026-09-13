@@ -171,6 +171,15 @@ class InventoryMovement(Base):
         nullable=True,
         index=True,
     )
+    # The customer is captured when material is consumed by a work order.
+    # It must not be inferred later from the location because that assignment
+    # can legitimately change without rewriting the immutable stock ledger.
+    client_id = Column(
+        Integer,
+        ForeignKey("clients.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
+    )
     reversal_of_movement_id = Column(
         Integer,
         # A reversal remains immutable in application flows.  SET NULL only
