@@ -1,4 +1,4 @@
-export type ApiAccessScope = "work_orders.read";
+export type ApiAccessScope = "work_orders.read" | "reservations.write";
 
 export type ApiAccessKey = {
     id: number;

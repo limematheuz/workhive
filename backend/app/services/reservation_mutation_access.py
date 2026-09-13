@@ -18,6 +18,7 @@ class ReservationMutationAccess:
 
     planning_company_id: int
     allow_partner_portal_owner: bool = False
+    allow_integration_company: bool = False
 
 
 def require_reservation_mutation_access(
@@ -31,6 +32,14 @@ def require_reservation_mutation_access(
         require_user_planning(db, current_user)
     else:
         require_company_planning(db, access.planning_company_id)
+    if access and access.allow_integration_company:
+        location_access_service.require_company_location_capability(
+            db,
+            company_id=access.planning_company_id,
+            location_id=location_id,
+            capability="can_manage_reservations",
+        )
+        return
     location_access_service.require_location_capability(
         db,
         current_user,

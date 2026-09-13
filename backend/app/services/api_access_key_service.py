@@ -20,6 +20,7 @@ from app.services.user_scope import require_company_context
 
 API_FEATURE_CODE = "features.api"
 WORK_ORDERS_READ_SCOPE = "work_orders.read"
+RESERVATIONS_WRITE_SCOPE = "reservations.write"
 
 
 @dataclass(frozen=True)

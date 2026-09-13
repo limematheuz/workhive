@@ -448,10 +448,14 @@ como WorkHive Core solo cuando el caso real las exige.
   typecheck, lint y build; pendiente de revisión visual autenticada para
   marcarlo como completado.
 - 🟡 API pública inicial: gestión de claves por administrador, revocables y
-  mostradas solo al emitirlas; primer contrato de solo lectura para órdenes de
-  trabajo, aislado por empresa, limitado por alcance, frecuencia y suscripción, y
-  auditado sin guardar el secreto. Cubierto localmente con migración, permisos,
-  denegación, aislamiento, typecheck, lint y build; pendiente de revisión visual
+  mostradas solo al emitirlas; consulta de órdenes de trabajo y entrada de
+  reservas mediante contratos con alcance explícito. La entrada de reservas es
+  idempotente por empresa, fuente y referencia externa; reutiliza las
+  validaciones de capacidad, solapes, limpieza y tareas, sin permitir cambiar
+  la ubicación ni cruzar empresas. Todos los usos quedan limitados por
+  frecuencia y suscripción y auditados sin guardar el secreto. Cubierto
+  localmente con migración, permisos, denegación, aislamiento, reintentos,
+  typecheck, tests, lint focalizado y build; pendiente de revisión visual
   autenticada y de un contrato de integración real antes de marcarlo como
   completado.
 - ⬜ Ampliación de aplicación de trabajador e integraciones auditables.

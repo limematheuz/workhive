@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -6,6 +6,12 @@ from app.db.session import Base
 
 class Reservation(Base):
     __tablename__ = "reservations"
+    __table_args__ = (
+        UniqueConstraint(
+            "owner_company_id", "source", "external_reference",
+            name="uq_reservation_owner_source_external_reference",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     check_in_at = Column(DateTime(timezone=True), nullable=False, index=True)

@@ -14,6 +14,8 @@ test("API access uses the service layer and keeps the raw credential one-time on
     assert.match(workspace, /ApiAccessKeyService\.list/);
     assert.match(workspace, /ApiAccessKeyService\.create/);
     assert.match(workspace, /ApiAccessKeyService\.revoke/);
+    assert.match(workspace, /reservations\.write/);
+    assert.match(workspace, /PUT \/public\/reservations/);
     assert.match(workspace, /navigator\.clipboard\.writeText/);
     assert.match(workspace, /solo se muestra una vez/);
     assert.doesNotMatch(workspace, /\bfetch\s*\(/);
