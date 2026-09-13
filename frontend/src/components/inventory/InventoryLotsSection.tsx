@@ -19,12 +19,15 @@ const columns: DataListColumn[] = [
     { key: "available", label: "Disponible", className: "w-[17%] text-right" },
 ];
 
+const quantityFormatter = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
+const dateFormatter = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeZone: "Europe/Madrid" });
+
 function quantity(value: string) {
-    return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(Number(value));
+    return quantityFormatter.format(Number(value));
 }
 
 function date(value: string | null) {
-    return value ? new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(`${value}T12:00:00`)) : "Sin caducidad";
+    return value ? dateFormatter.format(new Date(`${value}T12:00:00`)) : "Sin caducidad";
 }
 
 export function InventoryLotsSection({ lots, loading }: InventoryLotsSectionProps) {

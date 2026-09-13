@@ -32,8 +32,10 @@ const columns: DataListColumn[] = [
     { key: "actions", label: "", className: "w-[18%] text-right" },
 ];
 
+const quantityFormatter = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
+
 function quantity(value: string) {
-    return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(Number(value));
+    return quantityFormatter.format(Number(value));
 }
 
 export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: WorkOrderMaterialsDialogProps) {
