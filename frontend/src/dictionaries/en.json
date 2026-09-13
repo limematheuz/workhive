@@ -206,6 +206,7 @@
     "keep_adding": "Keep adding expenses",
     "categories": {
       "operations": "Operations",
+      "subcontracting": "Subcontracting",
       "supplies": "Supplies",
       "software": "Software",
       "transport": "Transport",

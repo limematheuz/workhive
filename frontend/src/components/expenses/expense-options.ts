@@ -1,5 +1,6 @@
 export const CATEGORY_OPTIONS = [
     "operations",
+    "subcontracting",
     "supplies",
     "software",
     "transport",

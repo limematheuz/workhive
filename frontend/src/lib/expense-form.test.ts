@@ -14,6 +14,7 @@ import {
     toExpenseAmount,
     type ExpenseFormState,
 } from "./expense-form.ts";
+import { CATEGORY_OPTIONS } from "../components/expenses/expense-options.ts";
 import type { Expense } from "../types/expense.ts";
 
 const baseExpense = {
@@ -127,6 +128,24 @@ test("expense filters search across vendor category description and payment meth
     assert.deepEqual(filterExpenses(expenses, "taxi", "").map((item) => item.id), [2]);
     assert.deepEqual(filterExpenses(expenses, "bank", "").map((item) => item.id), [2]);
     assert.deepEqual(filterExpenses(expenses, "", "supplies").map((item) => item.id), [1]);
+});
+
+test("expense categories expose subcontracting without changing its client attribution", () => {
+    assert.ok(CATEGORY_OPTIONS.includes("subcontracting"));
+    const payload = buildExpensePayload({
+        expense_date: "2026-07-16",
+        client_id: "3",
+        vendor: "Proveedor externo",
+        category: "subcontracting",
+        description: "Refuerzo de turno",
+        payment_method: "bank_transfer",
+        base_amount: "80",
+        tax_rate: "0.21",
+        notes: "",
+    });
+
+    assert.equal(payload.category, "subcontracting");
+    assert.equal(payload.client_id, 3);
 });
 
 test("expense notes tooltip receives trimmed notes only when present", () => {
