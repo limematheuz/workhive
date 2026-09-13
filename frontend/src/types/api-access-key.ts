@@ -15,3 +15,11 @@ export type ApiAccessKey = {
 export type CreatedApiAccessKey = ApiAccessKey & {
     api_key: string;
 };
+
+export type ApiAccessKeyUsage = {
+    id: number;
+    scope: ApiAccessScope | null;
+    method: string | null;
+    path: string | null;
+    created_at: string;
+};

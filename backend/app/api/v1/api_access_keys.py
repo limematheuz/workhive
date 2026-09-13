@@ -4,11 +4,13 @@ from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveAdmin, get_db
+from app.api.pagination import PaginationLimit
 from app.models.user import User
 from app.schemas.api_access_key import (
     ApiAccessKeyCreate,
     ApiAccessKeyCreated,
     ApiAccessKeyResponse,
+    ApiAccessKeyUsageResponse,
 )
 from app.services import api_access_key_service, audit_service
 
@@ -51,6 +53,21 @@ def create_api_access_key(
         details={"api_key_prefix": created.key.key_prefix, "scopes": created.key.scopes},
     )
     return {**ApiAccessKeyResponse.model_validate(created.key).model_dump(), "api_key": created.secret}
+
+
+@router.get("/{key_id}/usage", response_model=list[ApiAccessKeyUsageResponse])
+def read_api_access_key_usage(
+    key_id: int,
+    limit: PaginationLimit = 50,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveAdmin,
+):
+    return api_access_key_service.list_usage(
+        db,
+        current_user=current_user,
+        key_id=key_id,
+        limit=limit,
+    )
 
 
 @router.post("/{key_id}/revoke", response_model=ApiAccessKeyResponse)
