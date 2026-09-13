@@ -33,13 +33,24 @@ export function BankReconciliationSection({ copy, canManage }: { copy: Copy; can
     const [createOpen, setCreateOpen] = useState(false);
     const [matchingEntry, setMatchingEntry] = useState<BankStatementEntry | null>(null);
     const [unmatchingEntry, setUnmatchingEntry] = useState<BankStatementEntry | null>(null);
-    const [bookedAt, setBookedAt] = useState(currentLocalDateTime);
-    const [amount, setAmount] = useState("");
-    const [reference, setReference] = useState("");
-    const [externalId, setExternalId] = useState("");
-    const [counterparty, setCounterparty] = useState("");
-    const [paymentId, setPaymentId] = useState("");
-    const [unmatchReason, setUnmatchReason] = useState("");
+    const [reconciliationForm, setReconciliationForm] = useState({
+        bookedAt: currentLocalDateTime(),
+        amount: "",
+        reference: "",
+        externalId: "",
+        counterparty: "",
+        paymentId: "",
+        unmatchReason: "",
+    });
+    const { bookedAt, amount, reference, externalId, counterparty, paymentId, unmatchReason } = reconciliationForm;
+    const updateReconciliationForm = (patch: Partial<typeof reconciliationForm>) => setReconciliationForm((current) => ({ ...current, ...patch }));
+    const setBookedAt = (bookedAt: string) => updateReconciliationForm({ bookedAt });
+    const setAmount = (amount: string) => updateReconciliationForm({ amount });
+    const setReference = (reference: string) => updateReconciliationForm({ reference });
+    const setExternalId = (externalId: string) => updateReconciliationForm({ externalId });
+    const setCounterparty = (counterparty: string) => updateReconciliationForm({ counterparty });
+    const setPaymentId = (paymentId: string) => updateReconciliationForm({ paymentId });
+    const setUnmatchReason = (unmatchReason: string) => updateReconciliationForm({ unmatchReason });
 
     const load = useCallback(async () => {
         try {

@@ -39,11 +39,20 @@ export function CustomerPaymentSection({ invoice, canManage, onChanged }: Custom
     const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [saving, setSaving] = useState(false);
-    const [receivedAt, setReceivedAt] = useState(currentLocalDateTime);
-    const [amount, setAmount] = useState("");
-    const [allocatedAmount, setAllocatedAmount] = useState("");
-    const [paymentMethod, setPaymentMethod] = useState<InvoicePaymentMethod>(invoice.payment_method || "bank_transfer");
-    const [reference, setReference] = useState("");
+    const [paymentDetails, setPaymentDetails] = useState({
+        receivedAt: currentLocalDateTime(),
+        amount: "",
+        allocatedAmount: "",
+        paymentMethod: invoice.payment_method || "bank_transfer" as InvoicePaymentMethod,
+        reference: "",
+    });
+    const { receivedAt, amount, allocatedAmount, paymentMethod, reference } = paymentDetails;
+    const updatePaymentDetails = (patch: Partial<typeof paymentDetails>) => setPaymentDetails((current) => ({ ...current, ...patch }));
+    const setReceivedAt = (receivedAt: string) => updatePaymentDetails({ receivedAt });
+    const setAmount = (amount: string) => updatePaymentDetails({ amount });
+    const setAllocatedAmount = (allocatedAmount: string) => updatePaymentDetails({ allocatedAmount });
+    const setPaymentMethod = (paymentMethod: InvoicePaymentMethod) => updatePaymentDetails({ paymentMethod });
+    const setReference = (reference: string) => updatePaymentDetails({ reference });
 
     const loadPayments = useCallback(async () => {
         try {

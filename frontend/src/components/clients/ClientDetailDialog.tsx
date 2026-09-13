@@ -10,7 +10,7 @@ import type { TaskItem } from "@/services/task.service";
 import type { Invoice } from "@/types/invoice";
 
 import { ClientDetailDialogHeader } from "./ClientDetailDialogHeader";
-import { ClientDetailDialogTabsSection, type ClientDetailTab } from "./ClientDetailDialogTabsSection";
+import { ClientDetailDialogTabsSection, type ClientDetailPermissions, type ClientDetailTab } from "./ClientDetailDialogTabsSection";
 
 type ClientDetailDialogProps = {
     client: Client | null;
@@ -26,10 +26,7 @@ type ClientDetailDialogProps = {
     onEditClient?: (client: Client) => void;
     onToggleActiveClient?: (client: Client) => void;
     onDeleteClient?: (client: Client) => void;
-    canManage?: boolean;
-    canReadCommercialFollowUps?: boolean;
-    canManageCommercialFollowUps?: boolean;
-    canManageClientPortal?: boolean;
+    permissions?: Partial<ClientDetailPermissions>;
 };
 
 export function ClientDetailDialog(props: ClientDetailDialogProps) {
@@ -58,11 +55,15 @@ function ClientDetailDialogBody({
     onEditClient,
     onToggleActiveClient,
     onDeleteClient,
-    canManage = false,
-    canReadCommercialFollowUps = false,
-    canManageCommercialFollowUps = false,
-    canManageClientPortal = false,
+    permissions: providedPermissions = {},
 }: Omit<ClientDetailDialogProps, "client" | "workspaceRow" | "open"> & { client: Client; workspaceRow: ClientWorkspaceRow }) {
+    const permissions: ClientDetailPermissions = {
+        canManage: false,
+        canReadCommercialFollowUps: false,
+        canManageCommercialFollowUps: false,
+        canManageClientPortal: false,
+        ...providedPermissions,
+    };
     const [activeTab, setActiveTab] = useState<ClientDetailTab>("overview");
     const [taskSearch, setTaskSearch] = useState("");
     const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
@@ -97,7 +98,7 @@ function ClientDetailDialogBody({
         <>
             <ClientDetailDialogHeader
                 client={client}
-                canManage={canManage}
+                canManage={permissions.canManage}
                 onEditClient={onEditClient}
                 onToggleActiveClient={onToggleActiveClient}
                 onDeleteClient={onDeleteClient}
@@ -114,10 +115,7 @@ function ClientDetailDialogBody({
                     filteredTasks={filteredTasks}
                     invoices={clientInvoices}
                     financialDataAvailable={financialDataAvailable}
-                    canManage={canManage}
-                    canReadCommercialFollowUps={canReadCommercialFollowUps}
-                    canManageCommercialFollowUps={canManageCommercialFollowUps}
-                    canManageClientPortal={canManageClientPortal}
+                    permissions={permissions}
                     taskSearch={taskSearch}
                     onTaskSearchChange={setTaskSearch}
                     taskStatusFilter={taskStatusFilter}
