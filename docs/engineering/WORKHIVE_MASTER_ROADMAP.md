@@ -409,7 +409,14 @@ como WorkHive Core solo cuando el caso real las exige.
   La compra sigue siendo un gasto fiscal, pero se excluye del margen de cliente
   hasta que el stock se consume, evitando el doble conteo. Backend, migración y
   UI local validados sin navegador; pendiente de revisión visual autenticada.
-- ⬜ Imputación específica de subcontrata y margen previsto frente a real.
+- 🟡 Subcontrata: Gastos incorpora la categoría operativa `subcontracting`; al
+  asignarla a un cliente ya entra como coste directo en la rentabilidad, con el
+  mismo IVA, pago, justificante y edición de Gastos. Se mantiene separada del
+  inventario y no crea stock. Validada por tests y UI local sin navegador;
+  pendiente de revisión visual autenticada.
+- ⬜ Margen previsto frente a real: necesita un presupuesto de coste explícito
+  por contrato u orden antes de comparar, sin repartir gastos generales ni
+  fabricar estimaciones globales.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
   lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
   ubicación, servicio, equipo y trabajo.
