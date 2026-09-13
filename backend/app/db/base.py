@@ -48,6 +48,7 @@ from app.models.service_contract import (
 )
 from app.models.expense import Expense
 from app.models.customer_payment import CustomerPayment, CustomerPaymentAllocation
+from app.models.bank_reconciliation import BankReconciliation, BankStatementEntry
 from app.models.inventory import (
     InventoryMaterial,
     InventoryMovement,

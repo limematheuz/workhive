@@ -22,7 +22,7 @@ import {
     UsersRound,
 } from "lucide-react";
 
-import { canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
@@ -63,8 +63,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { CustomerPaymentService } from "@/services/customer-payment.service";
+import { BankReconciliationSection } from "@/components/analytics/BankReconciliationSection";
 
-type AnalyticsTab = "finance" | "profitability" | "operations";
+type AnalyticsTab = "finance" | "profitability" | "reconciliation" | "operations";
 
 const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 
@@ -78,6 +79,7 @@ export default function FinanceAnalyticsPage() {
     const { dict, locale } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const canViewAnalytics = canViewFinance(user) && !isPlatformSuperadmin(user);
+    const canManageAnalytics = canManageFinance(user) && !isPlatformSuperadmin(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const text = dict.finance_analytics;
     const profileCharts = useProfile();
@@ -258,6 +260,7 @@ export default function FinanceAnalyticsPage() {
                                 : [
                                     { id: "finance", label: text.tab_finance },
                                     ...(canViewProfitability ? [{ id: "profitability" as const, label: text.tab_profitability }] : []),
+                                    { id: "reconciliation", label: text.tab_reconciliation },
                                     { id: "operations", label: text.tab_operations },
                                 ]}
                             activeTab={activeTab}
@@ -342,6 +345,8 @@ export default function FinanceAnalyticsPage() {
                         period={profitabilityPeriod}
                         setPeriod={setProfitabilityPeriod}
                     />
+                ) : activeTab === "reconciliation" ? (
+                    <BankReconciliationSection copy={text} canManage={canManageAnalytics} />
                 ) : (
                     <OperationsDashboard
                         text={text}
