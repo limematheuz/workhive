@@ -364,7 +364,11 @@ como WorkHive Core solo cuando el caso real las exige.
   en `v1.6.1`. La UI de plantillas, inspecciones, puntuación, incidencias y
   creación o cierre de acciones correctivas está validada con E2E autenticada
   local; la cancelación está cubierta por la regresión backend.
-- ⬜ Fotos, firmas y reclamaciones siguen sin iniciar.
+- 🟡 Fotos de evidencia privadas para inspecciones e incidencias están listas
+  localmente: se almacenan por empresa y ubicación, se descargan solo por sus
+  rutas autorizadas y el cargador genérico las rechaza. Falta validación visual
+  autenticada y publicación.
+- ⬜ Firmas de conformidad y reclamaciones siguen sin iniciar.
 
 ### Fase 7 — Material, compras y activos
 
