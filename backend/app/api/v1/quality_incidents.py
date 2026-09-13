@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveUser, get_db
@@ -11,10 +11,18 @@ from app.schemas.quality_incident import (
     QualityIncidentResponse,
     QualityIncidentUpdate,
 )
-from app.services import audit_service, quality_incident_service
+from app.schemas.quality_evidence import QualityEvidenceCreate, QualityEvidenceResponse
+from app.services import audit_service, quality_evidence_service, quality_incident_service
+from app.services.image_service import MAX_IMAGE_BYTES
 
 
 router = APIRouter()
+
+
+def _evidence_payload(file: UploadFile, caption: str | None) -> QualityEvidenceCreate:
+    if file.filename and len(file.filename.strip()) > 255:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="El nombre del archivo es demasiado largo")
+    return QualityEvidenceCreate(file_name=file.filename, caption=caption)
 
 
 @router.get("/", response_model=list[QualityIncidentResponse])
@@ -53,3 +61,53 @@ def update_quality_corrective_action(incident_id: int, action_id: int, payload: 
     action = quality_incident_service.update_corrective_action(db, current_user, incident_id, action_id, payload)
     audit_service.record_event(db, actor=current_user, company_id=current_user.company_id, action="quality_corrective_action.updated", entity_type="quality_corrective_action", entity_id=action.id, request=request, details={"incident_id": incident_id, "status": action.status})
     return action
+
+
+@router.post(
+    "/{incident_id}/evidence",
+    response_model=QualityEvidenceResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_quality_incident_evidence(
+    incident_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    caption: str | None = Form(default=None, max_length=1_000),
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    evidence = quality_evidence_service.create_incident_evidence(
+        db,
+        current_user,
+        incident_id,
+        file.file.read(MAX_IMAGE_BYTES + 1),
+        _evidence_payload(file, caption),
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="quality_evidence.created",
+        entity_type="quality_evidence",
+        entity_id=evidence.id,
+        request=request,
+        details={"incident_id": incident_id},
+    )
+    return evidence
+
+
+@router.get("/{incident_id}/evidence/{evidence_id}/media")
+def read_quality_incident_evidence_media(
+    incident_id: int,
+    evidence_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    stored = quality_evidence_service.get_incident_evidence_media(
+        db, current_user, incident_id, evidence_id
+    )
+    return Response(
+        content=stored.contents,
+        media_type=stored.content_type,
+        headers={"Cache-Control": "private, max-age=3600"},
+    )

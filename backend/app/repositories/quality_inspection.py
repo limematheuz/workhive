@@ -11,7 +11,10 @@ def list_inspections(
 ) -> list[QualityInspection]:
     query = (
         db.query(QualityInspection)
-        .options(selectinload(QualityInspection.items))
+        .options(
+            selectinload(QualityInspection.items),
+            selectinload(QualityInspection.evidence),
+        )
         .filter(QualityInspection.company_id == company_id)
     )
     if location_ids is not None:
@@ -30,7 +33,10 @@ def get_inspection(
 ) -> QualityInspection | None:
     query = (
         db.query(QualityInspection)
-        .options(selectinload(QualityInspection.items))
+        .options(
+            selectinload(QualityInspection.items),
+            selectinload(QualityInspection.evidence),
+        )
         .filter(
             QualityInspection.company_id == company_id,
             QualityInspection.id == inspection_id,

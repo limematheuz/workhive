@@ -40,6 +40,12 @@ class QualityIncident(Base):
         cascade="all, delete-orphan",
         order_by="QualityCorrectiveAction.id",
     )
+    evidence = relationship(
+        "QualityEvidence",
+        back_populates="incident",
+        cascade="all, delete-orphan",
+        order_by="QualityEvidence.created_at",
+    )
 
 
 class QualityCorrectiveAction(Base):

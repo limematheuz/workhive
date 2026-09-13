@@ -13,6 +13,7 @@ from app.schemas.quality_inspection import (
     QualityInspectionResponse,
     QualityInspectionReview,
 )
+from app.schemas.quality_evidence import QualityEvidenceResponse
 from app.services import location_access_service
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import permitted_location_ids
@@ -40,6 +41,7 @@ def _response(inspection: QualityInspection) -> QualityInspectionResponse:
         score=sum(item.points_awarded for item in inspection.items),
         max_score=sum(item.max_points for item in inspection.items),
         items=[QualityInspectionItemResponse.model_validate(item) for item in inspection.items],
+        evidence=[QualityEvidenceResponse.model_validate(item) for item in inspection.evidence],
     )
 
 

@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.quality_evidence import QualityEvidenceResponse
+
 
 InspectionStatus = Literal["draft", "completed"]
 InspectionItemStatus = Literal["not_assessed", "passed", "failed"]
@@ -66,5 +68,6 @@ class QualityInspectionResponse(BaseModel):
     score: int
     max_score: int
     items: list[QualityInspectionItemResponse]
+    evidence: list[QualityEvidenceResponse]
 
     model_config = ConfigDict(from_attributes=True)

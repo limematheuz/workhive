@@ -36,6 +36,12 @@ class QualityInspection(Base):
         cascade="all, delete-orphan",
         order_by="QualityInspectionItem.position",
     )
+    evidence = relationship(
+        "QualityEvidence",
+        back_populates="inspection",
+        cascade="all, delete-orphan",
+        order_by="QualityEvidence.created_at",
+    )
 
 
 class QualityInspectionItem(Base):

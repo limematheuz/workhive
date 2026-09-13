@@ -26,6 +26,14 @@ export type QualityInspectionItem = QualityTemplateItem & {
     notes: string | null;
 };
 
+export type QualityEvidence = {
+    id: number;
+    file_name: string | null;
+    caption: string | null;
+    media_url: string;
+    created_at: string;
+};
+
 export type QualityInspection = {
     id: number;
     location_id: number;
@@ -38,6 +46,7 @@ export type QualityInspection = {
     score: number;
     max_score: number;
     items: QualityInspectionItem[];
+    evidence: QualityEvidence[];
 };
 
 export type QualityCorrectiveAction = {
@@ -61,10 +70,20 @@ export type QualityIncident = {
     created_at: string;
     resolved_at: string | null;
     corrective_actions: QualityCorrectiveAction[];
+    evidence: QualityEvidence[];
 };
 
 async function request<T>(path: string, init: RequestInit = {}, message = "No se pudo completar la acción de calidad."): Promise<T> {
     const response = await apiFetch(`/api/v1/quality${path}`, init);
+    await assertApiResponseOk(response, message);
+    return response.json();
+}
+
+async function uploadEvidence<T>(path: string, file: File, caption: string | undefined, message: string): Promise<T> {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (caption) formData.append("caption", caption);
+    const response = await apiFetch(`/api/v1/quality${path}`, { method: "POST", body: formData });
     await assertApiResponseOk(response, message);
     return response.json();
 }
@@ -75,8 +94,10 @@ export const QualityService = {
     getInspections: () => request<QualityInspection[]>("/inspections/", { cache: "no-store" }, "No se pudieron cargar las inspecciones."),
     createInspection: (payload: { template_id: number; location_id: number; notes?: string }) => request<QualityInspection>("/inspections/", { method: "POST", body: JSON.stringify(payload) }, "No se pudo iniciar la inspección."),
     completeInspection: (inspectionId: number, payload: { notes?: string; items: Array<{ id: number; status: QualityInspectionItem["status"]; points_awarded: number; notes?: string }> }) => request<QualityInspection>(`/inspections/${inspectionId}/complete`, { method: "POST", body: JSON.stringify(payload) }, "No se pudo cerrar la inspección."),
+    addInspectionEvidence: (inspectionId: number, file: File, caption?: string) => uploadEvidence<QualityEvidence>(`/inspections/${inspectionId}/evidence`, file, caption, "No se pudo guardar la foto de la inspección."),
     getIncidents: () => request<QualityIncident[]>("/incidents/", { cache: "no-store" }, "No se pudieron cargar las incidencias."),
     createIncident: (payload: { location_id: number; title: string; description?: string; severity: QualityIncident["severity"]; inspection_id?: number; inspection_item_id?: number }) => request<QualityIncident>("/incidents/", { method: "POST", body: JSON.stringify(payload) }, "No se pudo registrar la incidencia."),
+    addIncidentEvidence: (incidentId: number, file: File, caption?: string) => uploadEvidence<QualityEvidence>(`/incidents/${incidentId}/evidence`, file, caption, "No se pudo guardar la foto de la incidencia."),
     createCorrectiveAction: (incidentId: number, payload: { title: string; description?: string; due_at?: string }) => request<QualityCorrectiveAction>(`/incidents/${incidentId}/actions`, { method: "POST", body: JSON.stringify(payload) }, "No se pudo crear la acción correctiva."),
     updateCorrectiveAction: (incidentId: number, actionId: number, payload: { title?: string; description?: string | null; due_at?: string | null; status?: QualityCorrectiveAction["status"] }) => request<QualityCorrectiveAction>(`/incidents/${incidentId}/actions/${actionId}`, { method: "PATCH", body: JSON.stringify(payload) }, "No se pudo actualizar la acción correctiva."),
 };
