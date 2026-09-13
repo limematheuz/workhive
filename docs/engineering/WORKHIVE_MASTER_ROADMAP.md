@@ -455,10 +455,16 @@ como WorkHive Core solo cuando el caso real las exige.
   la ubicación ni cruzar empresas. Todos los usos quedan limitados por
   frecuencia y suscripción y auditados sin guardar el secreto. Cubierto
   localmente con migración, permisos, denegación, aislamiento, reintentos,
-  typecheck, tests, lint focalizado y build; pendiente de revisión visual
+  historial administrativo por clave, typecheck, tests, lint focalizado y
+  build; pendiente de revisión visual
   autenticada y de un contrato de integración real antes de marcarlo como
   completado.
-- ⬜ Ampliación de aplicación de trabajador e integraciones auditables.
+- 🟡 Ampliación de aplicación de trabajador e integraciones auditables: la
+  aplicación de trabajador ya cubre asignación, checklist, inicio, pausa,
+  cierre, evidencias e incidencias. Para la API pública, cada administrador
+  puede consultar los últimos usos de cada clave sin exponer secretos ni IP;
+  queda pendiente validar ese historial autenticado y definir el siguiente
+  contrato de integración real antes de cerrar esta línea.
 - ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
 
 ## 6. Puerta de salida obligatoria para cada fase

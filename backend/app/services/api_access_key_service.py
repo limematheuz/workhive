@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models.api_access_key import ApiAccessKey
 from app.models.user import User
+from app.repositories import audit_log as audit_log_repo
 from app.repositories import api_access_key as api_key_repo
 from app.schemas.api_access_key import ApiAccessKeyCreate
 from app.services.entitlement_service import require_company_feature
@@ -21,6 +22,7 @@ from app.services.user_scope import require_company_context
 API_FEATURE_CODE = "features.api"
 WORK_ORDERS_READ_SCOPE = "work_orders.read"
 RESERVATIONS_WRITE_SCOPE = "reservations.write"
+KNOWN_SCOPES = {WORK_ORDERS_READ_SCOPE, RESERVATIONS_WRITE_SCOPE}
 
 
 @dataclass(frozen=True)
@@ -141,6 +143,47 @@ def revoke_key(
     db.commit()
     db.refresh(key)
     return key
+
+
+def _safe_audit_detail(details: object, key: str) -> str | None:
+    if not isinstance(details, dict):
+        return None
+    value = details.get(key)
+    return value if isinstance(value, str) else None
+
+
+def list_usage(
+    db: Session,
+    *,
+    current_user: User,
+    key_id: int,
+    limit: int,
+) -> list[dict]:
+    """Return the safe, per-key slice of public API audit history."""
+
+    company_id = _require_company_api_access(db, current_user)
+    key = api_key_repo.get_for_company(db, company_id=company_id, key_id=key_id)
+    if key is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found")
+    events = audit_log_repo.list_api_key_usage(
+        db,
+        company_id=company_id,
+        api_key_id=key.id,
+        limit=limit,
+    )
+    history = []
+    for event in events:
+        scope = _safe_audit_detail(event.details, "scope")
+        history.append(
+            {
+                "id": event.id,
+                "scope": scope if scope in KNOWN_SCOPES else None,
+                "method": _safe_audit_detail(event.details, "method"),
+                "path": _safe_audit_detail(event.details, "path"),
+                "created_at": event.created_at,
+            }
+        )
+    return history
 
 
 def authenticate_key(

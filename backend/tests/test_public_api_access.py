@@ -79,6 +79,7 @@ def test_public_api_key_is_company_scoped_minimized_audited_and_revocable(client
     _, admin_headers = _user(db, company=company, role_name="admin", suffix="OWN")
     own_order = _work_order(db, company=company, suffix="OWN")
     other_company = _company(db, "OTHER")
+    _, other_admin_headers = _user(db, company=other_company, role_name="admin", suffix="OTHER")
     other_order = _work_order(db, company=other_company, suffix="OTHER")
     db.commit()
 
@@ -107,6 +108,21 @@ def test_public_api_key_is_company_scoped_minimized_audited_and_revocable(client
     assert client.get(
         f"/api/v1/public/work-orders/{other_order.id}",
         headers=public_headers,
+    ).status_code == 404
+
+    usage_response = client.get(
+        f"/api/v1/api-access-keys/{created_body['id']}/usage",
+        headers=admin_headers,
+    )
+    assert usage_response.status_code == 200, usage_response.text
+    usage = usage_response.json()
+    assert [event["scope"] for event in usage] == ["work_orders.read", "work_orders.read"]
+    assert all(event["method"] == "GET" for event in usage)
+    assert all(event["path"].startswith("/api/v1/public/work-orders") for event in usage)
+    assert created_body["api_key"] not in str(usage)
+    assert client.get(
+        f"/api/v1/api-access-keys/{created_body['id']}/usage",
+        headers=other_admin_headers,
     ).status_code == 404
 
     db.expire_all()

@@ -14,12 +14,15 @@ test("API access uses the service layer and keeps the raw credential one-time on
     assert.match(workspace, /ApiAccessKeyService\.list/);
     assert.match(workspace, /ApiAccessKeyService\.create/);
     assert.match(workspace, /ApiAccessKeyService\.revoke/);
+    assert.match(workspace, /ApiAccessKeyService\.listUsage/);
+    assert.match(workspace, /Historial de uso/);
     assert.match(workspace, /reservations\.write/);
     assert.match(workspace, /PUT \/public\/reservations/);
     assert.match(workspace, /navigator\.clipboard\.writeText/);
     assert.match(workspace, /solo se muestra una vez/);
     assert.doesNotMatch(workspace, /\bfetch\s*\(/);
     assert.match(service, /\/api\/v1\/api-access-keys\//);
+    assert.match(service, /\/usage\?limit=50/);
     assert.match(service, /assertApiResponseOk/);
     assert.match(sidebar, /"\/dashboard\/api-access": "features\.api"/);
     assert.match(sidebar, /href: "\/dashboard\/api-access", label: "Acceso API"/);

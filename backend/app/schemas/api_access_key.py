@@ -40,3 +40,11 @@ class ApiAccessKeyResponse(BaseModel):
 
 class ApiAccessKeyCreated(ApiAccessKeyResponse):
     api_key: str
+
+
+class ApiAccessKeyUsageResponse(BaseModel):
+    id: int
+    scope: ApiAccessScope | None
+    method: str | None
+    path: str | None
+    created_at: datetime
