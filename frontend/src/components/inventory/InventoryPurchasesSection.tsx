@@ -56,8 +56,10 @@ function createLine(): PurchaseLineDraft {
     };
 }
 
+const dateFormatter = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeZone: "Europe/Madrid" });
+
 function formatDate(value: string) {
-    return new Intl.DateTimeFormat("es-ES", { dateStyle: "medium" }).format(new Date(value));
+    return dateFormatter.format(new Date(value));
 }
 
 function PurchaseDialog({

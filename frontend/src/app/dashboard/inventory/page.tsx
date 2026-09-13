@@ -86,8 +86,10 @@ const movementColumns: DataListColumn[] = [
     { key: "quantity", label: "Cantidad", className: "w-[20%] text-right" },
 ];
 
+const quantityFormatter = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 });
+
 function quantity(value: string) {
-    return new Intl.NumberFormat("es-ES", { maximumFractionDigits: 3 }).format(Number(value));
+    return quantityFormatter.format(Number(value));
 }
 
 function optional(value: string): string | null {

@@ -15,7 +15,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ApiAccessKeyService } from "@/services/api-access-key.service";
 import type { ApiAccessKey, ApiAccessKeyUsage, ApiAccessScope, CreatedApiAccessKey } from "@/types/api-access-key";
 
-const dateTime = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" });
+const dateTime = new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Europe/Madrid",
+});
 
 function formatDate(value: string | null): string {
     return value ? dateTime.format(new Date(value)) : "Aún no se ha usado";
