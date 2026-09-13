@@ -9,7 +9,7 @@ import { useUser } from "@/lib/user-context";
 import { TaskService } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { OrganizationService } from "@/services/organization.service";
 import { NotificationService } from "@/services/notification.service";
@@ -45,8 +45,9 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const canManageTimeAccess = canManageTime(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const isPartnerPortal = isPartnerPortalRole(user?.role?.name);
+    const isClientPortal = isClientPortalRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
-    const featureContext = user && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal
+    const featureContext = user && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal
         ? `${user.id}:${user.company_id ?? "none"}`
         : null;
 
@@ -84,17 +85,17 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         : null;
 
     const refreshPending = useCallback(async () => {
-        if (!isAdminOrManager || userIsPlatformSuperadmin || isPartnerPortal) return setPendingRequestsCount(0);
+        if (!isAdminOrManager || userIsPlatformSuperadmin || isPartnerPortal || isClientPortal) return setPendingRequestsCount(0);
         try { setPendingRequestsCount((await TaskService.getTaskItems({ status: "requested" })).filter(task => task.status === "requested").length); } catch { /* navigation stays available */ }
-    }, [isAdminOrManager, isPartnerPortal, userIsPlatformSuperadmin]);
+    }, [isAdminOrManager, isClientPortal, isPartnerPortal, userIsPlatformSuperadmin]);
     const refreshTasks = useCallback(async () => {
-        if (!user || userIsPlatformSuperadmin || isAccountant || isPartnerPortal) return setTaskPendingCount(0);
+        if (!user || userIsPlatformSuperadmin || isAccountant || isPartnerPortal || isClientPortal) return setTaskPendingCount(0);
         try { setTaskPendingCount(countOperationalPendingTasks(await TaskService.getAllTaskItems(), user.id, isAdminOrManager)); } catch { /* keep last count */ }
-    }, [isAccountant, isAdminOrManager, isPartnerPortal, user, userIsPlatformSuperadmin]);
+    }, [isAccountant, isAdminOrManager, isClientPortal, isPartnerPortal, user, userIsPlatformSuperadmin]);
     const refreshReports = useCallback(async () => {
-        if (!user || isAccountant || isPartnerPortal) return setReportAlertsCount(0);
+        if (!user || isAccountant || isPartnerPortal || isClientPortal) return setReportAlertsCount(0);
         try { setReportAlertsCount(countUnreadTaskReportNotifications(await NotificationService.listUnread())); } catch { /* keep last count */ }
-    }, [isAccountant, isPartnerPortal, user]);
+    }, [isAccountant, isClientPortal, isPartnerPortal, user]);
     useEffect(() => { startTransition(() => { void refreshPending(); void refreshTasks(); void refreshReports(); }); }, [refreshPending, refreshReports, refreshTasks]);
     useEffect(() => { const refresh = () => void refreshReports(); window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); }, [refreshReports]);
     useEffect(() => { const refresh = () => void refreshTasks(); window.addEventListener("workhive:tasks-changed", refresh); window.addEventListener("workhive:session-changed", refresh); return () => { window.removeEventListener("workhive:tasks-changed", refresh); window.removeEventListener("workhive:session-changed", refresh); }; }, [refreshTasks]);
@@ -102,7 +103,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     useBackgroundPolling(refreshTasks, POLL_INTERVALS.sidebarTaskCount);
     useBackgroundPolling(refreshReports, POLL_INTERVALS.sidebar);
 
-    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewQuality: canViewQuality(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, userIsPlatformSuperadmin, enabledFeatures });
+    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewQuality: canViewQuality(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, isClientPortal, userIsPlatformSuperadmin, enabledFeatures });
     const expanded = state === "expanded";
     return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>
@@ -118,7 +119,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
                         <DropdownMenuContent side={isMobile ? "top" : "right"} align={isMobile ? "start" : "end"} sideOffset={10} className="sidebar-account-menu w-60 rounded-2xl p-0">
                             <div className="flex min-w-0 items-center gap-2.5 px-3 py-3"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-9 shrink-0" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{user.full_name || "Usuario"}</p><p className="truncate text-xs text-[var(--text-muted)]">{user.email}</p></div></div>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild className="h-10 rounded-none px-3 text-sm"><Link href={isPartnerPortal ? "/dashboard/partner/profile" : "/dashboard/profile"}><UserRound className="size-4" />{dict.dashboard.view_profile}</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild className="h-10 rounded-none px-3 text-sm"><Link href={isPartnerPortal ? "/dashboard/partner/profile" : isClientPortal ? "/dashboard/client/profile" : "/dashboard/profile"}><UserRound className="size-4" />{dict.dashboard.view_profile}</Link></DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem variant="destructive" onSelect={onLogout} className="h-10 rounded-none px-3 text-sm"><LogOut className="size-4" />{dict.dashboard.logout}</DropdownMenuItem>
                         </DropdownMenuContent>

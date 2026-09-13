@@ -43,7 +43,7 @@ test("profile actions have one home in the sidebar footer, not a duplicate heade
     const sidebar = read("../components/dashboard/Sidebar.tsx");
 
     assert.match(sidebar, /SidebarFooter/);
-    assert.match(sidebar, /isPartnerPortal \? "\/dashboard\/partner\/profile" : "\/dashboard\/profile"/);
+    assert.match(sidebar, /isPartnerPortal \? "\/dashboard\/partner\/profile" : isClientPortal \? "\/dashboard\/client\/profile" : "\/dashboard\/profile"/);
     assert.match(sidebar, /onSelect=\{onLogout\}/);
     assert.doesNotMatch(header, /UserAvatar/);
     assert.doesNotMatch(header, /Abrir menú de perfil/);

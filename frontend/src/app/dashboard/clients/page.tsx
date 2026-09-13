@@ -385,6 +385,7 @@ export default function ClientsPage() {
                 canManage={canManageClients}
                 canReadCommercialFollowUps={access?.can_read_commercial_follow_ups === true}
                 canManageCommercialFollowUps={access?.can_manage_commercial_follow_ups === true}
+                canManageClientPortal={user?.role?.name === "admin"}
             />
             <LocationTasksSheet location={tasksLocation} open={tasksSheetOpen} onOpenChange={(open) => setPageState("tasksSheetOpen", open)} initialCreateForm={false} readOnly />
             <ClientTaskDetailDialog

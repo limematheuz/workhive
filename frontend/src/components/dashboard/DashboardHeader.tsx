@@ -9,6 +9,7 @@ export function DashboardHeader() {
     const { dict } = useDictionary();
     const pathname = usePathname();
     const pageTitle = pathname === "/dashboard" ? dict.dashboard.overview
+        : pathname.includes("/dashboard/client") ? "Portal de cliente"
         : pathname.includes("/dashboard/fiscal-summary") ? dict.fiscal_summary.title
         : pathname.includes("/dashboard/analytics") ? dict.finance_analytics.eyebrow
         : pathname.includes("/dashboard/fiscal-calendar") ? dict.fiscal_calendar.title

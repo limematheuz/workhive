@@ -131,6 +131,57 @@ def send_sponsored_partner_invitation_email(
     return transport.send_email(message)
 
 
+def send_client_portal_invitation_email(
+    *,
+    recipient_email: str,
+    inviter_company_name: str,
+    client_name: str,
+    invitation_url: str,
+    verification_code: str,
+    expires_at: datetime,
+) -> bool:
+    """Invite a customer to its restricted document workspace."""
+
+    b = _BRAND
+    safe_company = escape(inviter_company_name)
+    safe_client = escape(client_name)
+    safe_code = escape(verification_code)
+    expires_text = expires_at.astimezone().strftime("%d/%m/%Y %H:%M")
+    html_body = base_layout(
+        f"""
+{heading("Invitación al portal de cliente")}
+{lead(f'<strong style="color:{b["text"]};">{safe_company}</strong> te invita al portal documental de <strong style="color:{b["text"]};">{safe_client}</strong> en WorkHive.')}
+{muted_note("El acceso solo muestra los presupuestos enviados, contratos activos y facturas de este cliente. No da acceso al espacio de trabajo ni a datos de otros clientes.")}
+{muted_note("Abre el enlace y usa este código de verificación para completar tu acceso.")}
+<p style="margin:12px 0 8px;font-size:30px;font-weight:800;letter-spacing:6px;color:{b["text"]};text-align:center;">{safe_code}</p>
+{button(invitation_url, "Abrir portal")}
+{muted_note(f"La invitación caduca el {escape(expires_text)}.")}
+{fallback_link(invitation_url)}
+""",
+        preview_text=f"{inviter_company_name} te invita a su portal de cliente",
+    )
+    message = EmailMessage()
+    message["Subject"] = f"Invitación al portal de cliente: {inviter_company_name}"
+    message["From"] = transport.from_address("Clientes")
+    message["To"] = recipient_email
+    message.set_content(
+        plain_body(
+            [
+                "Invitación al portal de cliente en WorkHive.",
+                "",
+                f"{inviter_company_name} te invita al portal documental de {client_name}.",
+                "Solo verás presupuestos enviados, contratos activos y facturas de este cliente.",
+                "No da acceso al dashboard ni a otros clientes.",
+                f"Código de verificación: {verification_code}",
+                f"Abrir portal: {invitation_url}",
+                f"La invitación caduca el {expires_text}.",
+            ]
+        )
+    )
+    message.add_alternative(html_body, subtype="html")
+    return transport.send_email(message)
+
+
 def send_company_collaboration_decision_email(
     *,
     recipient_email: str,

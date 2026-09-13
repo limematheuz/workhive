@@ -122,6 +122,11 @@ def db():
             name="partner_portal",
             description="Sponsored property-manager portal user",
         ),
+        Role(
+            id=7,
+            name="client_portal",
+            description="Document-only customer portal user",
+        ),
     ]
     session.add_all(roles)
     seed_default_plan_catalog(session)

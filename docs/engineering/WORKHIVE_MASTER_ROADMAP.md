@@ -438,7 +438,15 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Red externa: navegación común con tabs de colaboradores operativos y
   accesos profesionales; conserva modelos y autorización separados. Validada
   con navegación E2E autenticada local en `v1.6.1`.
-- ⬜ Portal de cliente y selector de varias empresas para personas externas.
+- 🟡 Portal de cliente y selector de varias empresas para personas externas:
+  invitación de un solo uso y grant revocable por cliente–empresa, sin plaza ni
+  membresía interna; una persona puede seleccionar solo sus espacios
+  documentales concedidos. El portal expone únicamente presupuestos enviados,
+  contratos y facturas del cliente, con PDF protegido y sin costes, márgenes ni
+  notas privadas. Cubierto localmente con migración, permisos positivos,
+  denegación, aislamiento entre clientes/empresas, tests de interfaz,
+  typecheck, lint y build; pendiente de revisión visual autenticada para
+  marcarlo como completado.
 - ⬜ Aplicación ampliada de trabajador, API pública e integraciones auditables.
 - ⬜ Automatizaciones seguras para vencimientos, avisos y aprobaciones reales.
 

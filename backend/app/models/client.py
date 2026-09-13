@@ -73,6 +73,18 @@ class Client(Base):
     quotes = relationship("Quote", back_populates="client")
     service_contracts = relationship("ServiceContract", back_populates="client")
     expenses = relationship("Expense", back_populates="client")
+    portal_grants = relationship(
+        "ClientPortalGrant",
+        back_populates="client",
+        cascade="all, delete-orphan",
+        overlaps="company,client_portal_grants",
+    )
+    portal_invitations = relationship(
+        "ClientPortalInvitation",
+        back_populates="client",
+        cascade="all, delete-orphan",
+        overlaps="company,client_portal_invitations",
+    )
 
     @property
     def current_account_assignment(self):

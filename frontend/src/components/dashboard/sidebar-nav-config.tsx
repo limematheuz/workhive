@@ -17,6 +17,7 @@ export type SidebarNavUserFlags = {
     canViewQuality: boolean;
     isAccountant: boolean;
     isPartnerPortal: boolean;
+    isClientPortal: boolean;
     userIsPlatformSuperadmin: boolean;
     enabledFeatures?: ReadonlySet<string> | null;
 };
@@ -76,6 +77,18 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
 }
 
 export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlags) {
+    if (flags.isClientPortal) {
+        const clientLinks: NavLink[] = [
+            { href: "/dashboard/client", label: "Documentos", exact: true, icon: <FileText /> },
+            { href: "/dashboard/client/profile", label: "Perfil", exact: false, icon: <UserRound /> },
+        ];
+        return {
+            navLinks: clientLinks,
+            visibleNavLinks: clientLinks,
+            navGroups: [],
+            plainLinks: clientLinks,
+        };
+    }
     if (flags.isPartnerPortal) {
         const partnerLinks: NavLink[] = [
             { href: "/dashboard/partner", label: "Resumen", exact: true, icon: <Gauge /> },
