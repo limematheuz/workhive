@@ -19,6 +19,13 @@ import { ClientPortalAccessTab } from "./ClientPortalAccessTab";
 
 export type ClientDetailTab = "overview" | "commercial" | "locations" | "tasks" | "billing" | "portal";
 
+export type ClientDetailPermissions = {
+    canManage: boolean;
+    canReadCommercialFollowUps: boolean;
+    canManageCommercialFollowUps: boolean;
+    canManageClientPortal: boolean;
+};
+
 type ClientDetailDialogTabsSectionProps = {
     activeTab: ClientDetailTab;
     onActiveTabChange: (tab: ClientDetailTab) => void;
@@ -29,10 +36,7 @@ type ClientDetailDialogTabsSectionProps = {
     filteredTasks: TaskItem[];
     invoices: Invoice[];
     financialDataAvailable: boolean;
-    canManage: boolean;
-    canReadCommercialFollowUps: boolean;
-    canManageCommercialFollowUps: boolean;
-    canManageClientPortal: boolean;
+    permissions: ClientDetailPermissions;
     taskSearch: string;
     onTaskSearchChange: (value: string) => void;
     taskStatusFilter: string;
@@ -52,10 +56,7 @@ export function ClientDetailDialogTabsSection({
     filteredTasks,
     invoices,
     financialDataAvailable,
-    canManage,
-    canReadCommercialFollowUps,
-    canManageCommercialFollowUps,
-    canManageClientPortal,
+    permissions,
     taskSearch,
     onTaskSearchChange,
     taskStatusFilter,
@@ -66,6 +67,7 @@ export function ClientDetailDialogTabsSection({
 }: ClientDetailDialogTabsSectionProps) {
     const { dict } = useDictionary();
     const workspace = dict.clients.workspace;
+    const { canManage, canReadCommercialFollowUps, canManageCommercialFollowUps, canManageClientPortal } = permissions;
     const tabs = [
         { id: "overview" as const, label: workspace.overview, compactLabel: "Res.", icon: PanelTop },
         ...(canReadCommercialFollowUps ? [{ id: "commercial" as const, label: dict.clients.opportunities.tab, compactLabel: "Com.", icon: BriefcaseBusiness }] : []),

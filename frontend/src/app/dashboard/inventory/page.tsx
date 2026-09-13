@@ -102,13 +102,16 @@ export default function InventoryPage() {
     const canViewPurchases = canViewFinance(user) && !isPlatformSuperadmin(user);
     const canManagePurchases = canManageFinance(user) && !isPlatformSuperadmin(user);
     const [activeTab, setActiveTab] = useState<InventoryTab>("stock");
-    const [suppliers, setSuppliers] = useState<InventorySupplier[]>([]);
-    const [materials, setMaterials] = useState<InventoryMaterial[]>([]);
-    const [warehouses, setWarehouses] = useState<InventoryWarehouse[]>([]);
-    const [movements, setMovements] = useState<InventoryMovement[]>([]);
-    const [stock, setStock] = useState<InventoryStockBalance[]>([]);
-    const [lots, setLots] = useState<InventoryLot[]>([]);
-    const [purchases, setPurchases] = useState<InventoryPurchase[]>([]);
+    const [inventoryData, setInventoryData] = useState({
+        suppliers: [] as InventorySupplier[],
+        materials: [] as InventoryMaterial[],
+        warehouses: [] as InventoryWarehouse[],
+        movements: [] as InventoryMovement[],
+        stock: [] as InventoryStockBalance[],
+        lots: [] as InventoryLot[],
+        purchases: [] as InventoryPurchase[],
+    });
+    const { suppliers, materials, warehouses, movements, stock, lots, purchases } = inventoryData;
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [supplierName, setSupplierName] = useState("");
@@ -139,13 +142,15 @@ export default function InventoryPage() {
                 InventoryService.getLots(),
                 canViewPurchases ? InventoryService.getPurchases() : Promise.resolve<InventoryPurchase[]>([]),
             ]);
-            setSuppliers(nextSuppliers);
-            setMaterials(nextMaterials);
-            setWarehouses(nextWarehouses);
-            setMovements(nextMovements);
-            setStock(nextStock);
-            setLots(nextLots);
-            setPurchases(nextPurchases);
+            setInventoryData({
+                suppliers: nextSuppliers,
+                materials: nextMaterials,
+                warehouses: nextWarehouses,
+                movements: nextMovements,
+                stock: nextStock,
+                lots: nextLots,
+                purchases: nextPurchases,
+            });
         } catch (error) {
             toast.error(getErrorMessage(error, "No se pudo cargar el inventario."));
         } finally {

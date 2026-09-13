@@ -77,14 +77,26 @@ function PurchaseDialog({
     warehouses: InventoryWarehouse[];
     onCreated: () => Promise<void>;
 }) {
-    const [supplierId, setSupplierId] = useState("");
-    const [expenseDate, setExpenseDate] = useState(() => new Date().toISOString().slice(0, 10));
-    const [description, setDescription] = useState("");
-    const [paymentMethod, setPaymentMethod] = useState("");
-    const [taxAmount, setTaxAmount] = useState("0");
-    const [reference, setReference] = useState("");
-    const [receiptUrl, setReceiptUrl] = useState("");
-    const [notes, setNotes] = useState("");
+    const [purchaseDetails, setPurchaseDetails] = useState({
+        supplierId: "",
+        expenseDate: new Date().toISOString().slice(0, 10),
+        description: "",
+        paymentMethod: "",
+        taxAmount: "0",
+        reference: "",
+        receiptUrl: "",
+        notes: "",
+    });
+    const { supplierId, expenseDate, description, paymentMethod, taxAmount, reference, receiptUrl, notes } = purchaseDetails;
+    const updatePurchaseDetails = (patch: Partial<typeof purchaseDetails>) => setPurchaseDetails((current) => ({ ...current, ...patch }));
+    const setSupplierId = (supplierId: string) => updatePurchaseDetails({ supplierId });
+    const setExpenseDate = (expenseDate: string) => updatePurchaseDetails({ expenseDate });
+    const setDescription = (description: string) => updatePurchaseDetails({ description });
+    const setPaymentMethod = (paymentMethod: string) => updatePurchaseDetails({ paymentMethod });
+    const setTaxAmount = (taxAmount: string) => updatePurchaseDetails({ taxAmount });
+    const setReference = (reference: string) => updatePurchaseDetails({ reference });
+    const setReceiptUrl = (receiptUrl: string) => updatePurchaseDetails({ receiptUrl });
+    const setNotes = (notes: string) => updatePurchaseDetails({ notes });
     const [lines, setLines] = useState<PurchaseLineDraft[]>([createLine()]);
     const [saving, setSaving] = useState(false);
 
