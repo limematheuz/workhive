@@ -43,9 +43,41 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
     # They let the fixture exercise migrations all the way to the current head
     # without pretending that later additions already exist.
     Table("companies", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "clients",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("company_id", Integer, nullable=False),
+    )
     Table("locations", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "reservations",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("owner_company_id", Integer, nullable=False),
+        Column("source", String(50), nullable=False),
+        Column("external_reference", String(255), nullable=True),
+    )
     Table("users", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "roles",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("name", String(255), nullable=False),
+        Column("description", String(500), nullable=False),
+        Column("is_active", Boolean, nullable=False),
+    )
     Table("work_sessions", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "notifications",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("user_id", Integer, nullable=False),
+        Column("event_type", String(100), nullable=False),
+        Column("entity_type", String(100), nullable=False),
+        Column("entity_id", Integer, nullable=False),
+        Column("metadata_json", String(1000), nullable=True),
+    )
     Table(
         "permission_definitions",
         metadata,
