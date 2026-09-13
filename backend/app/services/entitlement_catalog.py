@@ -94,7 +94,7 @@ _FEATURE_AVAILABILITY: dict[str, FeatureAvailability] = {
     "features.approvals": "coming_soon",
     "features.branches": "coming_soon",
     "features.corporate_structure": "coming_soon",
-    "features.api": "coming_soon",
+    "features.api": "available",
     # These currently configure WorkHive's platform integrations; they are not
     # a tenant-ready integration product and must not be advertised for sale.
     "features.integrations": "platform_internal",
