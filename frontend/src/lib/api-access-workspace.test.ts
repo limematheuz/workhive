@@ -15,6 +15,11 @@ test("API access uses the service layer and keeps the raw credential one-time on
     assert.match(workspace, /ApiAccessKeyService\.create/);
     assert.match(workspace, /ApiAccessKeyService\.revoke/);
     assert.match(workspace, /ApiAccessKeyService\.listUsage/);
+    assert.match(workspace, /CompanyPlanAccessService\.getCurrentEntitlements/);
+    assert.match(workspace, /API_FEATURE_CODE = "features\.api"/);
+    assert.match(workspace, /Acceso API no disponible/);
+    assert.match(workspace, /Un administrador de plataforma puede habilitarla desde Plan y acceso/);
+    assert.doesNotMatch(workspace, /router\.replace\(/);
     assert.match(workspace, /Historial de uso/);
     assert.match(workspace, /reservations\.write/);
     assert.match(workspace, /PUT \/public\/reservations/);

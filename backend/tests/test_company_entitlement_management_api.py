@@ -128,6 +128,7 @@ def test_platform_superadmin_changes_plan_and_creates_audited_exception(client, 
     availability = {item["code"]: item["availability"] for item in mega["entitlements"]}
     assert availability["features.profitability"] == "available"
     assert availability["features.planning"] == "available"
+    assert availability["features.api"] == "available"
     assert availability["features.integrations"] == "platform_internal"
 
     change = client.put(
@@ -168,6 +169,19 @@ def test_platform_superadmin_changes_plan_and_creates_audited_exception(client, 
         item["label"] == "Inventario" and item["value"] is True
         for item in refreshed.json()["entitlements"]
     )
+
+    api_exception = client.post(
+        f"/api/v1/companies/{company.id}/plan-access/overrides",
+        headers=headers,
+        json={
+            "code": "features.api",
+            "boolean_value": True,
+            "reason": "API integration approved for this customer",
+        },
+    )
+    assert api_exception.status_code == 201
+    assert api_exception.json()["label"] == "Acceso API"
+    assert api_exception.json()["value"] is True
     assert any(
         item["action"] == "entitlement.override_set"
         for item in refreshed.json()["audit"]
