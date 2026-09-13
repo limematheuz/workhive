@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { BarChart3, Boxes, Building2, CalendarDays, CircleDollarSign, ClipboardCheck, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, Sparkles, UserRound, WalletCards, Workflow } from "lucide-react";
+import { BarChart3, Boxes, Building2, CalendarDays, CircleDollarSign, ClipboardCheck, ClipboardList, CloudCog, FileChartColumn, FileText, Gauge, KeyRound, Landmark, MapPin, Network, PackagePlus, ReceiptText, Repeat2, ShieldAlert, Sparkles, UserRound, WalletCards, Workflow } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 export type NavLink = { href: string; label: string; exact: boolean; icon: ReactNode };
@@ -25,7 +25,7 @@ export type SidebarNavUserFlags = {
 const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
 const ACCOUNTANT_HREFS = new Set(["/dashboard/analytics", "/dashboard/fiscal-summary"]);
 const NAVIGATION_FEATURES: Record<string, string> = {
-    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/documents": "features.locations", "/dashboard/assets": "features.locations", "/dashboard/inventory": "features.inventory", "/dashboard/tasks": "features.work_orders", "/dashboard/work-orders": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/time-corrections": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices", "/dashboard/quality": "features.quality",
+    "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/documents": "features.locations", "/dashboard/assets": "features.locations", "/dashboard/inventory": "features.inventory", "/dashboard/tasks": "features.work_orders", "/dashboard/work-orders": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/time-corrections": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/api-access": "features.api", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices", "/dashboard/quality": "features.quality",
 };
 
 function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
@@ -53,6 +53,9 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         { href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> },
         ...(flags.isCompanyAdmin || flags.canViewOrganization ? [
             { href: "/dashboard/organization", label: dict.organization.nav_label, exact: false, icon: <Network /> },
+        ] : []),
+        ...(flags.isCompanyAdmin && flags.enabledFeatures?.has("features.api") ? [
+            { href: "/dashboard/api-access", label: "Acceso API", exact: false, icon: <KeyRound /> },
         ] : []),
         ...(flags.canViewFinance ? [
             { href: "/dashboard/quotes", label: dict.quotes?.nav_label ?? "Presupuestos", exact: false, icon: <FileText /> },
@@ -115,7 +118,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
         group("operations", "Operación", <Workflow />, ["/dashboard/calendar", "/dashboard/tasks", "/dashboard/work-orders", "/dashboard/locations", "/dashboard/documents", "/dashboard/assets", "/dashboard/inventory", "/dashboard/time-corrections", "/dashboard/reservations", "/dashboard/live-work", "/dashboard/task-reports", "/dashboard/quality", "/dashboard/external-network"]),
         group("clients", "Clientes", <Building2 />, ["/dashboard/clients", "/dashboard/quotes"]),
         group("billing", "Facturación", <ReceiptText />, ["/dashboard/contracts", "/dashboard/invoices", "/dashboard/invoice-summary", "/dashboard/expenses", "/dashboard/analytics", "/dashboard/fiscal-summary", "/dashboard/fiscal-calendar", "/dashboard/labor-costs"]),
-        group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization"]),
+        group("organization", dict.organization.nav_label, <Network />, ["/dashboard/organization", "/dashboard/api-access"]),
         group("platform", "Plataforma WorkHive", <CloudCog />, ["/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"]),
     ].filter(Boolean) as NavGroup[];
     const grouped = new Set(navGroups.flatMap(item => item.children.map(link => link.href)));
