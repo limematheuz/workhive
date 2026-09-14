@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
+import { MarginForecastPanel } from "@/components/margin-forecast/MarginForecastPanel"
 import { ServiceContractService } from "@/services/service-contract.service"
 import type { Location, LocationSpace } from "@/types/location"
 import type { ServiceContract, ServiceContractLocation } from "@/types/service-contract"
@@ -42,6 +43,7 @@ type ServiceContractDetailDialogProps = {
     contract: ServiceContract | null
     clientName: string
     canManage: boolean
+    canViewMargin: boolean
     open: boolean
     onOpenChange: (open: boolean) => void
     onContractUpdated: (contract: ServiceContract) => void
@@ -81,6 +83,7 @@ function ServiceContractDetailDialogContent({
     contract,
     clientName,
     canManage,
+    canViewMargin,
     open,
     onOpenChange,
     onContractUpdated,
@@ -331,6 +334,12 @@ function ServiceContractDetailDialogContent({
                             ))}
                         </div>
                     </section>
+
+                    {canViewMargin && <MarginForecastPanel
+                        scopeType="contract"
+                        scopeId={contract.id}
+                        canManage={canManage}
+                    />}
 
                     <section className="py-5">
                         <div className="flex items-center justify-between gap-3">

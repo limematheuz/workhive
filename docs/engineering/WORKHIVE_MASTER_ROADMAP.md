@@ -436,9 +436,13 @@ como WorkHive Core solo cuando el caso real las exige.
   mismo IVA, pago, justificante y edición de Gastos. Se mantiene separada del
   inventario y no crea stock. Validada por tests y UI local sin navegador;
   pendiente de revisión visual autenticada.
-- ⬜ Margen previsto frente a real: necesita un presupuesto de coste explícito
-  por contrato u orden antes de comparar, sin repartir gastos generales ni
-  fabricar estimaciones globales.
+- 🟡 Margen previsto frente a real: hay presupuesto de coste explícito por
+  contrato u orden, con la oferta aceptada como ingreso previsto del contrato
+  y coste/ingreso trazado desde tareas facturadas, fichajes con snapshot y
+  material consumido no revertido. Los gastos generales —incluidos gastos solo
+  asignados a cliente— no se reparten ni se inventan. Backend, migración y UI
+  local en validación; falta revisión visual autenticada y decidir la
+  imputación explícita de subcontratas u otros gastos a contrato/orden.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
   lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
   ubicación, servicio, equipo y trabajo.

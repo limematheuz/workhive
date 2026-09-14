@@ -34,6 +34,7 @@ from app.models.quality_inspection import (
 )
 from app.models.quality_incident import QualityCorrectiveAction, QualityIncident
 from app.models.quality_complaint import QualityComplaint
+from app.models.margin_forecast import MarginForecast
 from app.models.quality_evidence import QualityEvidence
 from app.models.task_item import TaskItem
 from app.models.work_order import WorkOrder

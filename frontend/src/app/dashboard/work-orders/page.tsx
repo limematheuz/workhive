@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { CalendarPlus, ClipboardList, Loader2, MapPin, PackageMinus, Pencil, Plus, Repeat2 } from "lucide-react";
+import { CalendarPlus, ChartNoAxesCombined, ClipboardList, Loader2, MapPin, PackageMinus, Pencil, Plus, Repeat2 } from "lucide-react";
 
+import { MarginForecastDialog } from "@/components/margin-forecast/MarginForecastDialog";
 import { WorkOrderMaterialsDialog } from "@/components/work-orders/WorkOrderMaterialsDialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { formatDate } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
+import { canManageFinance, canViewFinance, canViewLaborCosts, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { toast } from "@/lib/toast";
+import { useUser } from "@/lib/user-context";
 import { LocationService, type Location } from "@/services/location.service";
 import { WorkOrderService } from "@/services/work-order.service";
 import type { WorkOrder, WorkOrderContractCandidate, WorkOrderCreate, WorkOrderType, WorkOrderUpdate } from "@/types/work-order";
@@ -214,6 +217,9 @@ function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated }: {
 }
 
 export default function WorkOrdersPage() {
+    const { user } = useUser();
+    const canViewMargin = canViewFinance(user) && canViewLaborCosts(user) && !isPlatformSuperadmin(user);
+    const canManageMargin = canManageFinance(user) && canViewMargin;
     const [workOrders, setWorkOrders] = React.useState<WorkOrder[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [contracts, setContracts] = React.useState<WorkOrderContractCandidate[]>([]);
@@ -222,6 +228,7 @@ export default function WorkOrdersPage() {
     const [editing, setEditing] = React.useState<WorkOrder | null>(null);
     const [generatingId, setGeneratingId] = React.useState<number | null>(null);
     const [materialsFor, setMaterialsFor] = React.useState<WorkOrder | null>(null);
+    const [marginFor, setMarginFor] = React.useState<WorkOrder | null>(null);
 
     const reload = React.useCallback(async () => {
         setLoading(true);
@@ -269,12 +276,13 @@ export default function WorkOrdersPage() {
             desktopFrom="lg"
             header={{ title: "Planificación operativa", subtitle: "Una orden organiza el trabajo; una tarea registra la ejecución real.", countLabel: `${workOrders.length} órdenes` }}
             columns={[{ key: "title", label: "Orden", className: "w-[20%]" }, { key: "location", label: "Ubicación", className: "w-[15%]" }, { key: "next", label: "Próxima ejecución", className: "w-[13%]" }, { key: "type", label: "Tipo", className: "w-[10%]" }, { key: "status", label: "Estado", className: "w-[10%]" }, { key: "actions", label: "", className: "w-[32%] text-right" }]}
-            renderDesktopRow={(order) => [<div key="title" className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{order.title}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{order.service_contract_id ? "Contrato vinculado" : "Orden independiente"}</p></div>, <div key="location" className="flex min-w-0 items-center gap-2 text-sm text-[var(--text-main)]"><MapPin className="size-4 shrink-0 text-accent" /><span className="truncate">{locationName(order.location_id)}</span></div>, <p key="next" className="text-sm text-[var(--text-main)]">{order.next_occurrence_at ? formatDate(order.next_occurrence_at) : "—"}</p>, <div key="type"><Badge variant="secondary">{order.order_type === "recurring" ? <><Repeat2 className="mr-1 size-3" />Recurrente</> : "Puntual"}</Badge></div>, <div key="status"><Badge variant={order.status === "active" ? "default" : "secondary"}>{statusCopy[order.status]}</Badge></div>, <div key="actions" className="flex justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); setMaterialsFor(order); }}><PackageMinus className="size-4" />Material</Button><Button type="button" size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); setEditing(order); }}><Pencil className="size-4" />Editar</Button>{order.status === "active" && order.next_occurrence_at && <Button type="button" size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); void generate(order); }} disabled={generatingId === order.id}>{generatingId === order.id ? <Loader2 className="size-4 animate-spin" /> : <CalendarPlus className="size-4" />}Generar</Button>}</div> ]}
-            renderCompactRow={(order) => <div className="min-w-0"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{order.title}</p><p className="mt-1 flex items-center gap-1.5 truncate text-xs text-[var(--text-muted)]"><MapPin className="size-3.5" />{locationName(order.location_id)}</p></div><Badge variant={order.status === "active" ? "default" : "secondary"}>{statusCopy[order.status]}</Badge></div><div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--table-divider)] pt-3"><span className="text-xs text-[var(--text-muted)]">{order.next_occurrence_at ? formatDate(order.next_occurrence_at) : "Sin ejecución pendiente"}</span><div className="flex flex-wrap justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setMaterialsFor(order)}><PackageMinus className="size-4" />Material</Button><Button type="button" size="sm" variant="ghost" onClick={() => setEditing(order)}><Pencil className="size-4" />Editar</Button>{order.status === "active" && order.next_occurrence_at && <Button type="button" size="sm" variant="secondary" onClick={() => void generate(order)} disabled={generatingId === order.id}>Generar tarea</Button>}</div></div></div>}
+            renderDesktopRow={(order) => [<div key="title" className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{order.title}</p><p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{order.service_contract_id ? "Contrato vinculado" : "Orden independiente"}</p></div>, <div key="location" className="flex min-w-0 items-center gap-2 text-sm text-[var(--text-main)]"><MapPin className="size-4 shrink-0 text-accent" /><span className="truncate">{locationName(order.location_id)}</span></div>, <p key="next" className="text-sm text-[var(--text-main)]">{order.next_occurrence_at ? formatDate(order.next_occurrence_at) : "—"}</p>, <div key="type"><Badge variant="secondary">{order.order_type === "recurring" ? <><Repeat2 className="mr-1 size-3" />Recurrente</> : "Puntual"}</Badge></div>, <div key="status"><Badge variant={order.status === "active" ? "default" : "secondary"}>{statusCopy[order.status]}</Badge></div>, <div key="actions" className="flex flex-wrap justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); setMaterialsFor(order); }}><PackageMinus className="size-4" />Material</Button>{canViewMargin && <Button type="button" size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); setMarginFor(order); }}><ChartNoAxesCombined className="size-4" />Margen</Button>}<Button type="button" size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); setEditing(order); }}><Pencil className="size-4" />Editar</Button>{order.status === "active" && order.next_occurrence_at && <Button type="button" size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); void generate(order); }} disabled={generatingId === order.id}>{generatingId === order.id ? <Loader2 className="size-4 animate-spin" /> : <CalendarPlus className="size-4" />}Generar</Button>}</div> ]}
+            renderCompactRow={(order) => <div className="min-w-0"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{order.title}</p><p className="mt-1 flex items-center gap-1.5 truncate text-xs text-[var(--text-muted)]"><MapPin className="size-3.5" />{locationName(order.location_id)}</p></div><Badge variant={order.status === "active" ? "default" : "secondary"}>{statusCopy[order.status]}</Badge></div><div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--table-divider)] pt-3"><span className="text-xs text-[var(--text-muted)]">{order.next_occurrence_at ? formatDate(order.next_occurrence_at) : "Sin ejecución pendiente"}</span><div className="flex flex-wrap justify-end gap-2"><Button type="button" size="sm" variant="ghost" onClick={() => setMaterialsFor(order)}><PackageMinus className="size-4" />Material</Button>{canViewMargin && <Button type="button" size="sm" variant="ghost" onClick={() => setMarginFor(order)}><ChartNoAxesCombined className="size-4" />Margen</Button>}<Button type="button" size="sm" variant="ghost" onClick={() => setEditing(order)}><Pencil className="size-4" />Editar</Button>{order.status === "active" && order.next_occurrence_at && <Button type="button" size="sm" variant="secondary" onClick={() => void generate(order)} disabled={generatingId === order.id}>Generar tarea</Button>}</div></div></div>}
             empty={<div><ClipboardList className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" /><p className="text-sm font-medium text-[var(--text-muted)]">Crea una orden para planificar el próximo trabajo.</p></div>}
         />
         <CreateWorkOrderDialog open={creating} onOpenChange={setCreating} locations={locations} contracts={contracts} onCreated={(workOrder) => setWorkOrders((current) => [workOrder, ...current])} />
         {editing && <EditWorkOrderDialog key={editing.id} workOrder={editing} open onOpenChange={(open) => !open && setEditing(null)} onUpdated={(workOrder) => setWorkOrders((current) => current.map((item) => item.id === workOrder.id ? workOrder : item))} />}
         {materialsFor && <WorkOrderMaterialsDialog key={materialsFor.id} workOrder={materialsFor} open onOpenChange={(open) => !open && setMaterialsFor(null)} />}
+        {marginFor && <MarginForecastDialog scopeType="work_order" scopeId={marginFor.id} scopeName={marginFor.title} canManage={canManageMargin} open onOpenChange={(open) => !open && setMarginFor(null)} />}
     </div>;
 }

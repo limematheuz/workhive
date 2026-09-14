@@ -54,6 +54,7 @@ from app.api.v1.sales_ledger import router as sales_ledger_router
 from app.api.v1.accounting_exports import router as accounting_exports_router
 from app.api.v1.fiscal_summary import router as fiscal_summary_router
 from app.api.v1.client_profitability import router as client_profitability_router
+from app.api.v1.margin_forecasts import router as margin_forecasts_router
 from app.api.v1.organization import router as organization_router
 from app.api.v1.organization_departments import (
     router as organization_departments_router,
@@ -153,6 +154,11 @@ api_router.include_router(
     client_profitability_router,
     prefix="/client-profitability",
     tags=["client-profitability"],
+)
+api_router.include_router(
+    margin_forecasts_router,
+    prefix="/margin-forecasts",
+    tags=["margin-forecasts"],
 )
 api_router.include_router(
     accounting_exports_router,
