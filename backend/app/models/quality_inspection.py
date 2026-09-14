@@ -48,6 +48,12 @@ class QualityInspection(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    client_acceptance = relationship(
+        "QualityInspectionClientAcceptance",
+        back_populates="inspection",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class QualityInspectionConformity(Base):
@@ -75,6 +81,45 @@ class QualityInspectionConformity(Base):
     signed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     inspection = relationship("QualityInspection", back_populates="conformity")
+    signed_by = relationship("User", foreign_keys=[signed_by_user_id])
+
+
+class QualityInspectionClientAcceptance(Base):
+    """Immutable portal acknowledgement of the completed inspection snapshot."""
+
+    __tablename__ = "quality_inspection_client_acceptances"
+    __table_args__ = (
+        UniqueConstraint(
+            "inspection_id", name="uq_quality_inspection_client_acceptance_inspection"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    inspection_id = Column(
+        Integer,
+        ForeignKey("quality_inspections.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    client_portal_grant_id = Column(
+        Integer,
+        ForeignKey("client_portal_grants.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    signed_by_user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    signer_name = Column(String(255), nullable=False)
+    signer_email = Column(String(320), nullable=False)
+    statement_version = Column(String(40), nullable=False)
+    content_digest = Column(String(64), nullable=False)
+    signed_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    inspection = relationship("QualityInspection", back_populates="client_acceptance")
+    client_portal_grant = relationship("ClientPortalGrant", foreign_keys=[client_portal_grant_id])
     signed_by = relationship("User", foreign_keys=[signed_by_user_id])
 
 

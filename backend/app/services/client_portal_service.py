@@ -5,6 +5,7 @@ from app.models.invoice import Invoice
 from app.models.quote import Quote
 from app.models.service_contract import ServiceContract
 from app.repositories import client_portal as client_portal_repo
+from app.services import quality_client_acceptance_service
 
 
 def _line(*, description: str, quantity: float, unit_price: float, subtotal: float, tax_rate: float | None = None, total: float | None = None) -> dict:
@@ -124,4 +125,7 @@ def overview(db, *, grant: ClientPortalGrant) -> dict:
         "invoices": [serialize_invoice(invoice) for invoice in client_portal_repo.list_invoices(db, grant=grant)],
         "quotes": [serialize_quote(quote) for quote in client_portal_repo.list_quotes(db, grant=grant)],
         "contracts": [serialize_contract(contract) for contract in client_portal_repo.list_contracts(db, grant=grant)],
+        "inspections": quality_client_acceptance_service.list_client_portal_inspections(
+            db, grant=grant
+        ),
     }

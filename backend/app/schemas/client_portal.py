@@ -129,8 +129,40 @@ class ClientPortalContractResponse(BaseModel):
     covered_locations: list[ClientPortalContractLocationResponse]
 
 
+class ClientPortalInspectionItemResponse(BaseModel):
+    title: str
+    status: str
+    points_awarded: int
+    max_points: int
+
+
+class ClientPortalInspectionAcceptanceCreate(BaseModel):
+    confirmed: bool
+    signer_name: str = Field(min_length=1, max_length=255)
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class ClientPortalInspectionAcceptanceResponse(BaseModel):
+    signer_name: str
+    statement_version: str
+    signed_at: datetime
+
+
+class ClientPortalInspectionResponse(BaseModel):
+    id: int
+    template_title: str
+    location_name: str
+    completed_at: datetime
+    score: int
+    max_score: int
+    items: list[ClientPortalInspectionItemResponse]
+    acceptance: ClientPortalInspectionAcceptanceResponse | None
+
+
 class ClientPortalOverviewResponse(BaseModel):
     workspace: ClientPortalWorkspaceResponse
     invoices: list[ClientPortalInvoiceResponse]
     quotes: list[ClientPortalQuoteResponse]
     contracts: list[ClientPortalContractResponse]
+    inspections: list[ClientPortalInspectionResponse]

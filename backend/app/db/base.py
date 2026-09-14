@@ -29,6 +29,7 @@ from app.models.quality_template import QualityInspectionTemplate, QualityInspec
 from app.models.quality_inspection import (
     QualityInspection,
     QualityInspectionConformity,
+    QualityInspectionClientAcceptance,
     QualityInspectionItem,
 )
 from app.models.quality_incident import QualityCorrectiveAction, QualityIncident

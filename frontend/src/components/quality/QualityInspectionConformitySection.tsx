@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getErrorMessage } from "@/lib/errors";
+import { formatSpanishDateTime } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import {
     QualityService,
@@ -19,13 +20,8 @@ type QualityInspectionConformitySectionProps = {
     onSigned: (inspection: QualityInspection) => void;
 };
 
-function formatSignedAt(value: string): string {
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return new Intl.DateTimeFormat("es-ES", {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(date);
+function SignedAt({ value }: { value: string }) {
+    return <>{formatSpanishDateTime(value)}</>;
 }
 
 export function QualityInspectionConformitySection({
@@ -61,7 +57,7 @@ export function QualityInspectionConformitySection({
                     <p className="text-sm font-semibold text-[var(--text-main)]">Conformidad interna</p>
                     {conformity ? (
                         <p className="mt-1 text-xs text-[var(--text-muted)]">
-                            Registrada por {conformity.signer_name} el {formatSignedAt(conformity.signed_at)}.
+                            Registrada por {conformity.signer_name} el <SignedAt value={conformity.signed_at} />.
                         </p>
                     ) : inspection.status !== "completed" ? (
                         <p className="mt-1 text-xs text-[var(--text-muted)]">
@@ -92,6 +88,14 @@ export function QualityInspectionConformitySection({
             )}
             {!conformity && inspection.status === "completed" && !canManage && (
                 <p className="text-xs text-[var(--text-muted)]">Necesitas permiso de gestión de calidad para registrarla.</p>
+            )}
+            {inspection.client_acceptance && (
+                <div className="flex items-start gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">
+                    <ShieldCheck className="mt-0.5 size-5 shrink-0 text-emerald-600" aria-hidden="true" />
+                    <p className="leading-6 text-[var(--text-main)]">
+                        Aceptación del cliente registrada por {inspection.client_acceptance.signer_name} el <SignedAt value={inspection.client_acceptance.signed_at} />.
+                    </p>
+                </div>
             )}
         </section>
     );

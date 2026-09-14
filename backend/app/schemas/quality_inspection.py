@@ -54,6 +54,15 @@ class QualityInspectionConformityResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class QualityInspectionClientAcceptanceResponse(BaseModel):
+    signer_name: str
+    signer_email: str
+    statement_version: str
+    signed_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class QualityInspectionItemResponse(BaseModel):
     id: int
     position: int
@@ -80,6 +89,7 @@ class QualityInspectionResponse(BaseModel):
     score: int
     max_score: int
     conformity: QualityInspectionConformityResponse | None
+    client_acceptance: QualityInspectionClientAcceptanceResponse | None
     items: list[QualityInspectionItemResponse]
     evidence: list[QualityEvidenceResponse]
 

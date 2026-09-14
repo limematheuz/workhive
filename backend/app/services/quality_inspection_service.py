@@ -15,6 +15,7 @@ from app.schemas.quality_inspection import (
     QualityInspectionCreate,
     QualityInspectionConformityCreate,
     QualityInspectionConformityResponse,
+    QualityInspectionClientAcceptanceResponse,
     QualityInspectionItemResponse,
     QualityInspectionResponse,
     QualityInspectionReview,
@@ -50,6 +51,13 @@ def _response(inspection: QualityInspection) -> QualityInspectionResponse:
         conformity=(
             QualityInspectionConformityResponse.model_validate(inspection.conformity)
             if inspection.conformity is not None
+            else None
+        ),
+        client_acceptance=(
+            QualityInspectionClientAcceptanceResponse.model_validate(
+                inspection.client_acceptance
+            )
+            if inspection.client_acceptance is not None
             else None
         ),
         items=[QualityInspectionItemResponse.model_validate(item) for item in inspection.items],

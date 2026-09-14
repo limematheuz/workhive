@@ -7,8 +7,11 @@ from app.models.client import Client
 from app.models.client_portal_grant import ClientPortalGrant
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership
+from app.models.audit_log import AuditLog
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
+from app.models.location import Location
+from app.models.quality_inspection import QualityInspection, QualityInspectionItem
 from app.models.quote import Quote
 from app.models.quote_item import QuoteItem
 from app.models.role import Role
@@ -85,6 +88,38 @@ def _grant(db, *, company: Company, customer: Client, user: User, admin: User) -
     db.add(grant)
     db.flush()
     return grant
+
+
+def _completed_inspection(db, *, company: Company, customer: Client, suffix: str) -> QualityInspection:
+    location = Location(
+        name=f"Location {suffix}",
+        address="Calle Cliente 3",
+        city="Madrid",
+        client_id=customer.id,
+        managing_company_id=company.id,
+        owner_company_id=company.id,
+    )
+    inspection = QualityInspection(
+        company_id=company.id,
+        location=location,
+        template_title=f"Inspección {suffix}",
+        status="completed",
+        notes="Nota interna que nunca debe salir al cliente",
+        completed_at=datetime.now(timezone.utc),
+    )
+    inspection.items = [
+        QualityInspectionItem(
+            position=0,
+            title="Acceso revisado",
+            guidance="Guía interna",
+            max_points=2,
+            status="passed",
+            points_awarded=2,
+        )
+    ]
+    db.add(inspection)
+    db.commit()
+    return inspection
 
 
 def test_client_portal_is_document_scoped_and_cannot_cross_workspaces(client, db):
@@ -286,3 +321,129 @@ def test_client_portal_invitation_creates_a_nonmember_and_accumulates_company_wo
     assert {(item["company_name"], item["client_name"]) for item in after_revocation.json()} == {
         (company_b.name, customer_b.name),
     }
+
+
+def test_client_portal_accepts_only_its_completed_inspection_with_a_snapshot(client, db):
+    company = _company(db, "QUALITY")
+    admin, _ = _internal_user(db, company=company, suffix="QUALITY")
+    customer = _client(db, company=company, suffix="QUALITY")
+    other_customer = _client(db, company=company, suffix="QUALITY-OTHER")
+    portal_user, headers = _portal_user(
+        db, email="quality-portal@example.com", suffix="QUALITY"
+    )
+    other_portal_user, other_headers = _portal_user(
+        db, email="quality-portal-other@example.com", suffix="QUALITY-OTHER"
+    )
+    grant = _grant(
+        db, company=company, customer=customer, user=portal_user, admin=admin
+    )
+    other_grant = _grant(
+        db,
+        company=company,
+        customer=other_customer,
+        user=other_portal_user,
+        admin=admin,
+    )
+    own = _completed_inspection(db, company=company, customer=customer, suffix="OWN")
+    other = _completed_inspection(
+        db, company=company, customer=other_customer, suffix="OTHER"
+    )
+
+    overview = client.get(
+        f"/api/v1/client-portal/workspaces/{grant.id}/overview", headers=headers
+    )
+    assert overview.status_code == 200, overview.text
+    inspections = overview.json()["inspections"]
+    assert [inspection["id"] for inspection in inspections] == [own.id]
+    assert inspections[0]["location_name"] == own.location.name
+    assert inspections[0]["items"] == [
+        {
+            "title": "Acceso revisado",
+            "status": "passed",
+            "points_awarded": 2,
+            "max_points": 2,
+        }
+    ]
+    assert "notes" not in inspections[0]
+    assert "guidance" not in inspections[0]["items"][0]
+
+    endpoint = f"/api/v1/client-portal/workspaces/{grant.id}/inspections/{own.id}/acceptance"
+    assert client.post(
+        endpoint,
+        headers=headers,
+        json={"confirmed": False, "signer_name": "Representante Cliente"},
+    ).status_code == 422
+    assert client.post(
+        f"/api/v1/client-portal/workspaces/{other_grant.id}/inspections/{own.id}/acceptance",
+        headers=headers,
+        json={"confirmed": True, "signer_name": "Representante Cliente"},
+    ).status_code == 403
+    assert client.post(
+        f"/api/v1/client-portal/workspaces/{grant.id}/inspections/{other.id}/acceptance",
+        headers=headers,
+        json={"confirmed": True, "signer_name": "Representante Cliente"},
+    ).status_code == 404
+
+    accepted = client.post(
+        endpoint,
+        headers=headers,
+        json={"confirmed": True, "signer_name": "Representante Cliente"},
+    )
+    assert accepted.status_code == 200, accepted.text
+    acceptance = accepted.json()["acceptance"]
+    assert acceptance["signer_name"] == "Representante Cliente"
+    assert acceptance["statement_version"] == "quality-client-acceptance-v1"
+    assert acceptance["signed_at"]
+    assert "signer_email" not in acceptance
+    assert client.post(
+        endpoint,
+        headers=headers,
+        json={"confirmed": True, "signer_name": "Representante Cliente"},
+    ).status_code == 409
+
+    stored = own.client_acceptance
+    db.refresh(own)
+    stored = own.client_acceptance
+    assert stored is not None
+    assert stored.client_portal_grant_id == grant.id
+    assert stored.signed_by_user_id == portal_user.id
+    assert stored.signer_email == portal_user.email
+    assert len(stored.content_digest) == 64
+    assert client.get(
+        f"/api/v1/client-portal/workspaces/{other_grant.id}/overview",
+        headers=other_headers,
+    ).json()["inspections"][0]["acceptance"] is None
+
+    audit_event = db.query(AuditLog).filter_by(
+        action="quality_inspection.client_accepted",
+        entity_id=str(own.id),
+    ).one()
+    assert audit_event.actor_user_id == portal_user.id
+    assert audit_event.details["client_id"] == customer.id
+
+
+def test_client_portal_keeps_documents_visible_when_quality_is_not_entitled(client, db):
+    company = _company(db, "QUALITY-DISABLED")
+    company.subscription_plan = "basic"
+    admin, _ = _internal_user(db, company=company, suffix="QUALITY-DISABLED")
+    customer = _client(db, company=company, suffix="QUALITY-DISABLED")
+    portal_user, headers = _portal_user(
+        db, email="quality-disabled@example.com", suffix="QUALITY-DISABLED"
+    )
+    grant = _grant(
+        db, company=company, customer=customer, user=portal_user, admin=admin
+    )
+    inspection = _completed_inspection(
+        db, company=company, customer=customer, suffix="QUALITY-DISABLED"
+    )
+
+    overview = client.get(
+        f"/api/v1/client-portal/workspaces/{grant.id}/overview", headers=headers
+    )
+    assert overview.status_code == 200, overview.text
+    assert overview.json()["inspections"] == []
+    assert client.post(
+        f"/api/v1/client-portal/workspaces/{grant.id}/inspections/{inspection.id}/acceptance",
+        headers=headers,
+        json={"confirmed": True, "signer_name": "Representante Cliente"},
+    ).status_code == 403

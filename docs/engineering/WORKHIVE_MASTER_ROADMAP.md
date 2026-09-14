@@ -374,6 +374,11 @@ como WorkHive Core solo cuando el caso real las exige.
   se registra una única confirmación inmutable, con persona, versión de texto
   y fecha, y exige permiso de gestión de la ubicación. No sustituye una firma
   legal. Faltan validación visual autenticada y publicación.
+- 🟡 La aceptación del cliente o su representante está lista localmente en el
+  portal autorizado: solo ve inspecciones cerradas de sus ubicaciones, no
+  notas ni evidencias internas, y registra una única aceptación con cuenta,
+  nombre, fecha, versión y huella del resumen revisado. No es una firma
+  electrónica cualificada. Faltan validación visual autenticada y publicación.
 - ⬜ Reclamaciones siguen sin iniciar.
 
 ### Fase 7 — Material, compras y activos

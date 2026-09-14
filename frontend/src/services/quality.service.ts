@@ -41,6 +41,13 @@ export type QualityInspectionConformity = {
     signed_at: string;
 };
 
+export type QualityInspectionClientAcceptance = {
+    signer_name: string;
+    signer_email: string;
+    statement_version: string;
+    signed_at: string;
+};
+
 export type QualityInspection = {
     id: number;
     location_id: number;
@@ -53,6 +60,7 @@ export type QualityInspection = {
     score: number;
     max_score: number;
     conformity: QualityInspectionConformity | null;
+    client_acceptance: QualityInspectionClientAcceptance | null;
     items: QualityInspectionItem[];
     evidence: QualityEvidence[];
 };

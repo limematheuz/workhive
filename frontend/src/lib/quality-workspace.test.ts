@@ -18,8 +18,10 @@ test("quality has a protected dedicated workspace in Operations", () => {
     assert.match(service, /addInspectionEvidence/);
     assert.match(service, /addIncidentEvidence/);
     assert.match(service, /signInspectionConformity/);
+    assert.match(service, /client_acceptance/);
     assert.match(evidenceSection, /resolveApiMediaUrl/);
     assert.match(conformitySection, /QualityService\.signInspectionConformity/);
+    assert.match(conformitySection, /Aceptación del cliente registrada/);
     assert.match(service, /compressImageForUpload/);
     assert.match(image, /MAX_IMAGE_UPLOAD_BYTES = 1 \* 1024 \* 1024/);
     assert.match(image, /IMAGE_UPLOAD_TARGET_BYTES = 850 \* 1024/);

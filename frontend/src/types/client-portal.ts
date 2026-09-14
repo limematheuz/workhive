@@ -68,11 +68,36 @@ export type ClientPortalContract = {
     covered_locations: ClientPortalContractLocation[];
 };
 
+export type ClientPortalInspectionItem = {
+    title: string;
+    status: "not_assessed" | "passed" | "failed" | string;
+    points_awarded: number;
+    max_points: number;
+};
+
+export type ClientPortalInspectionAcceptance = {
+    signer_name: string;
+    statement_version: string;
+    signed_at: string;
+};
+
+export type ClientPortalInspection = {
+    id: number;
+    template_title: string;
+    location_name: string;
+    completed_at: string;
+    score: number;
+    max_score: number;
+    items: ClientPortalInspectionItem[];
+    acceptance: ClientPortalInspectionAcceptance | null;
+};
+
 export type ClientPortalOverview = {
     workspace: ClientPortalWorkspace;
     invoices: ClientPortalInvoice[];
     quotes: ClientPortalQuote[];
     contracts: ClientPortalContract[];
+    inspections: ClientPortalInspection[];
 };
 
 export type ClientPortalInvitation = {
@@ -100,4 +125,9 @@ export type ClientPortalInvitationAcceptPayload = {
     accept_terms: boolean;
     accept_privacy: boolean;
     marketing_consent?: boolean;
+};
+
+export type ClientPortalInspectionAcceptancePayload = {
+    confirmed: boolean;
+    signer_name: string;
 };

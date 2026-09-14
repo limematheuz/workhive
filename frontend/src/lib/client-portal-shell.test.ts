@@ -9,6 +9,7 @@ test("client portal has an isolated documentary shell and multi-company workspac
     const sidebar = read("../components/dashboard/Sidebar.tsx");
     const navigation = read("../components/dashboard/sidebar-nav-config.tsx");
     const workspace = read("../components/client-portal/ClientPortalWorkspace.tsx");
+    const inspections = read("../components/client-portal/ClientPortalInspections.tsx");
     const service = read("../services/client-portal.service.ts");
     const acceptance = read("../app/(auth)/accept-client-portal-invitation/AcceptClientPortalInvitationClient.tsx");
     const api = read("../lib/api.ts");
@@ -19,9 +20,13 @@ test("client portal has an isolated documentary shell and multi-company workspac
     assert.match(sidebar, /isClientPortal \? "\/dashboard\/client\/profile"/);
     assert.match(navigation, /isClientPortal/);
     assert.match(workspace, /ClientPortalService\.getWorkspaces/);
+    assert.match(workspace, /ClientPortalInspections/);
     assert.match(workspace, /<Select/);
     assert.match(service, /\/client-portal\/workspaces/);
     assert.match(service, /downloadInvoice/);
+    assert.match(service, /acceptInspection/);
+    assert.match(inspections, /ClientPortalService\.acceptInspection/);
+    assert.doesNotMatch(inspections, /fetch\s*\(/);
     assert.match(acceptance, /resolveInvitationToken/);
     assert.match(acceptance, /ClientPortalService\.acceptInvitation/);
     assert.match(api, /\/api\/v1\/client-portal\/invitations\/accept/);

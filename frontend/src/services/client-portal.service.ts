@@ -1,6 +1,8 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import type {
     ClientPortalGrant,
+    ClientPortalInspection,
+    ClientPortalInspectionAcceptancePayload,
     ClientPortalInvitation,
     ClientPortalInvitationAcceptPayload,
     ClientPortalOverview,
@@ -24,6 +26,19 @@ export const ClientPortalService = {
         const response = await apiFetch(`/api/v1/client-portal/workspaces/${workspaceId}/invoices/${invoiceId}/pdf`, { method: "GET", cache: "no-store" });
         await assertApiResponseOk(response, "No se pudo descargar la factura");
         return response.blob();
+    },
+
+    acceptInspection: async (
+        workspaceId: number,
+        inspectionId: number,
+        payload: ClientPortalInspectionAcceptancePayload,
+    ): Promise<ClientPortalInspection> => {
+        const response = await apiFetch(
+            `/api/v1/client-portal/workspaces/${workspaceId}/inspections/${inspectionId}/acceptance`,
+            { method: "POST", body: JSON.stringify(payload) },
+        );
+        await assertApiResponseOk(response, "No se pudo registrar la aceptación");
+        return response.json();
     },
 
     getInvitations: async (clientId: number): Promise<ClientPortalInvitation[]> => {
