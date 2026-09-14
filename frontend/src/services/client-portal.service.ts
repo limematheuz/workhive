@@ -3,6 +3,8 @@ import type {
     ClientPortalGrant,
     ClientPortalInspection,
     ClientPortalInspectionAcceptancePayload,
+    ClientPortalComplaint,
+    ClientPortalComplaintPayload,
     ClientPortalInvitation,
     ClientPortalInvitationAcceptPayload,
     ClientPortalOverview,
@@ -38,6 +40,18 @@ export const ClientPortalService = {
             { method: "POST", body: JSON.stringify(payload) },
         );
         await assertApiResponseOk(response, "No se pudo registrar la aceptación");
+        return response.json();
+    },
+
+    createComplaint: async (
+        workspaceId: number,
+        payload: ClientPortalComplaintPayload,
+    ): Promise<ClientPortalComplaint> => {
+        const response = await apiFetch(
+            `/api/v1/client-portal/workspaces/${workspaceId}/complaints`,
+            { method: "POST", body: JSON.stringify(payload) },
+        );
+        await assertApiResponseOk(response, "No se pudo presentar la reclamación");
         return response.json();
     },
 

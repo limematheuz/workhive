@@ -72,9 +72,8 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
                     db, current_user, capability
                 )
                 for capability in (
-                    "quality.templates.read",
-                    "quality.inspections.read",
-                    "quality.incidents.read",
+                    "quality.templates.read", "quality.inspections.read",
+                    "quality.incidents.read", "quality.complaints.read",
                 )
             ),
             "can_manage_quality": any(
@@ -82,9 +81,8 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
                     db, current_user, capability
                 )
                 for capability in (
-                    "quality.templates.manage",
-                    "quality.inspections.manage",
-                    "quality.incidents.manage",
+                    "quality.templates.manage", "quality.inspections.manage",
+                    "quality.incidents.manage", "quality.complaints.manage",
                 )
             ),
             "can_manage_time": organization_authorization_service.has_capability(

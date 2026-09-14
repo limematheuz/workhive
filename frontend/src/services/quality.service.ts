@@ -89,6 +89,22 @@ export type QualityIncident = {
     evidence: QualityEvidence[];
 };
 
+export type QualityComplaint = {
+    id: number;
+    client_id: number;
+    location_id: number;
+    title: string;
+    description: string;
+    category: "service" | "billing" | "damage" | "other";
+    status: "submitted" | "in_review" | "resolved" | "closed";
+    source: "client_portal" | "internal";
+    internal_notes: string | null;
+    customer_response: string | null;
+    created_at: string;
+    updated_at: string;
+    resolved_at: string | null;
+};
+
 async function request<T>(path: string, init: RequestInit = {}, message = "No se pudo completar la acción de calidad."): Promise<T> {
     const response = await apiFetch(`/api/v1/quality${path}`, init);
     await assertApiResponseOk(response, message);
@@ -118,4 +134,7 @@ export const QualityService = {
     addIncidentEvidence: (incidentId: number, file: File, caption?: string) => uploadEvidence<QualityEvidence>(`/incidents/${incidentId}/evidence`, file, caption, "No se pudo guardar la foto de la incidencia."),
     createCorrectiveAction: (incidentId: number, payload: { title: string; description?: string; due_at?: string }) => request<QualityCorrectiveAction>(`/incidents/${incidentId}/actions`, { method: "POST", body: JSON.stringify(payload) }, "No se pudo crear la acción correctiva."),
     updateCorrectiveAction: (incidentId: number, actionId: number, payload: { title?: string; description?: string | null; due_at?: string | null; status?: QualityCorrectiveAction["status"] }) => request<QualityCorrectiveAction>(`/incidents/${incidentId}/actions/${actionId}`, { method: "PATCH", body: JSON.stringify(payload) }, "No se pudo actualizar la acción correctiva."),
+    getComplaints: () => request<QualityComplaint[]>("/complaints/", { cache: "no-store" }, "No se pudieron cargar las reclamaciones."),
+    createComplaint: (payload: { location_id: number; title: string; description: string; category: QualityComplaint["category"] }) => request<QualityComplaint>("/complaints/", { method: "POST", body: JSON.stringify(payload) }, "No se pudo registrar la reclamación."),
+    updateComplaint: (complaintId: number, payload: { status?: QualityComplaint["status"]; internal_notes?: string | null; customer_response?: string | null }) => request<QualityComplaint>(`/complaints/${complaintId}`, { method: "PATCH", body: JSON.stringify(payload) }, "No se pudo actualizar la reclamación."),
 };

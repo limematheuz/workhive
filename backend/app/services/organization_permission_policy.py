@@ -52,6 +52,8 @@ PERMISSION_RECOMMENDED_AUDIENCES: dict[str, tuple[str, ...]] = {
     "quality.inspections.manage": ("operations", "responsibles"),
     "quality.incidents.read": ("operations", "responsibles"),
     "quality.incidents.manage": ("operations", "responsibles"),
+    "quality.complaints.read": ("operations", "responsibles"),
+    "quality.complaints.manage": ("operations", "responsibles"),
 }
 
 

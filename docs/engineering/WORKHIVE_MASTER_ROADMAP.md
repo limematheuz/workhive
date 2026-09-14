@@ -379,7 +379,14 @@ como WorkHive Core solo cuando el caso real las exige.
   notas ni evidencias internas, y registra una única aceptación con cuenta,
   nombre, fecha, versión y huella del resumen revisado. No es una firma
   electrónica cualificada. Faltan validación visual autenticada y publicación.
-- ⬜ Reclamaciones siguen sin iniciar.
+- 🟡 Reclamaciones de cliente separadas de incidencias: el cliente puede abrir
+  expedientes solo para sus ubicaciones autorizadas desde su portal y consultar
+  el estado o la respuesta publicada; el equipo los tramita con permisos y
+  ámbitos por ubicación, conservando notas internas privadas. La creación,
+  resolución, auditoría, aislamiento entre cliente–empresa y no exposición de
+  notas internas están cubiertos localmente con migración, pruebas, typecheck,
+  lint, build y React Doctor; faltan validación visual autenticada y
+  publicación.
 
 ### Fase 7 — Material, compras y activos
 
@@ -457,8 +464,9 @@ como WorkHive Core solo cuando el caso real las exige.
   invitación de un solo uso y grant revocable por cliente–empresa, sin plaza ni
   membresía interna; una persona puede seleccionar solo sus espacios
   documentales concedidos. El portal expone únicamente presupuestos enviados,
-  contratos y facturas del cliente, con PDF protegido y sin costes, márgenes ni
-  notas privadas. Cubierto localmente con migración, permisos positivos,
+  contratos, facturas, inspecciones cerradas y reclamaciones de las ubicaciones
+  del cliente, con PDF protegido y sin costes, márgenes ni notas privadas.
+  Cubierto localmente con migración, permisos positivos,
   denegación, aislamiento entre clientes/empresas, tests de interfaz,
   typecheck, lint y build; pendiente de revisión visual autenticada para
   marcarlo como completado.

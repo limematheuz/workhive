@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.api.deps import ActiveClientPortal, ActiveClientPortalUser, ClientPortalPrincipal, get_db
 from app.models.user import User
 from app.schemas.client_portal import (
+    ClientPortalComplaintCreate,
+    ClientPortalComplaintResponse,
     ClientPortalInspectionAcceptanceCreate,
     ClientPortalInspectionResponse,
     ClientPortalOverviewResponse,
@@ -17,6 +19,7 @@ from app.services import (
     client_portal_service,
     invoice_service,
     quality_client_acceptance_service,
+    quality_complaint_service,
 )
 
 
@@ -74,6 +77,40 @@ def accept_client_portal_inspection(
         },
     )
     return inspection
+
+
+@router.post(
+    "/workspaces/{grant_id}/complaints",
+    response_model=ClientPortalComplaintResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_client_portal_complaint(
+    payload: ClientPortalComplaintCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    principal: ClientPortalPrincipal = ActiveClientPortal,
+):
+    complaint = quality_complaint_service.create_client_portal_complaint(
+        db,
+        grant=principal.grant,
+        current_user=principal.user,
+        payload=payload,
+    )
+    audit_service.record_event(
+        db,
+        actor=principal.user,
+        company_id=principal.grant.company_id,
+        action="quality_complaint.client_submitted",
+        entity_type="quality_complaint",
+        entity_id=complaint["id"],
+        request=request,
+        details={
+            "client_id": principal.grant.client_id,
+            "location_id": complaint["location_id"],
+            "category": complaint["category"],
+        },
+    )
+    return complaint
 
 
 @router.get("/workspaces/{grant_id}/invoices/{invoice_id}/pdf", response_class=Response)

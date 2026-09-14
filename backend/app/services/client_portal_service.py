@@ -1,11 +1,11 @@
-"""Read-only serializers for documents visible to one customer workspace."""
+"""Scoped serializers for the narrow, authenticated customer workspace."""
 
 from app.models.client_portal_grant import ClientPortalGrant
 from app.models.invoice import Invoice
 from app.models.quote import Quote
 from app.models.service_contract import ServiceContract
 from app.repositories import client_portal as client_portal_repo
-from app.services import quality_client_acceptance_service
+from app.services import quality_client_acceptance_service, quality_complaint_service
 
 
 def _line(*, description: str, quantity: float, unit_price: float, subtotal: float, tax_rate: float | None = None, total: float | None = None) -> dict:
@@ -126,6 +126,12 @@ def overview(db, *, grant: ClientPortalGrant) -> dict:
         "quotes": [serialize_quote(quote) for quote in client_portal_repo.list_quotes(db, grant=grant)],
         "contracts": [serialize_contract(contract) for contract in client_portal_repo.list_contracts(db, grant=grant)],
         "inspections": quality_client_acceptance_service.list_client_portal_inspections(
+            db, grant=grant
+        ),
+        "complaint_locations": quality_complaint_service.list_client_portal_locations(
+            db, grant=grant
+        ),
+        "complaints": quality_complaint_service.list_client_portal_complaints(
             db, grant=grant
         ),
     }

@@ -92,12 +92,40 @@ export type ClientPortalInspection = {
     acceptance: ClientPortalInspectionAcceptance | null;
 };
 
+export type ClientPortalComplaintLocation = {
+    id: number;
+    name: string;
+};
+
+export type ClientPortalComplaint = {
+    id: number;
+    location_id: number;
+    location_name: string;
+    title: string;
+    description: string;
+    category: "service" | "billing" | "damage" | "other";
+    status: "submitted" | "in_review" | "resolved" | "closed";
+    customer_response: string | null;
+    created_at: string;
+    updated_at: string;
+    resolved_at: string | null;
+};
+
+export type ClientPortalComplaintPayload = {
+    location_id: number;
+    title: string;
+    description: string;
+    category: ClientPortalComplaint["category"];
+};
+
 export type ClientPortalOverview = {
     workspace: ClientPortalWorkspace;
     invoices: ClientPortalInvoice[];
     quotes: ClientPortalQuote[];
     contracts: ClientPortalContract[];
     inspections: ClientPortalInspection[];
+    complaint_locations: ClientPortalComplaintLocation[];
+    complaints: ClientPortalComplaint[];
 };
 
 export type ClientPortalInvitation = {

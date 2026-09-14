@@ -1,6 +1,7 @@
 """Public contracts for the deliberately narrow customer portal."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
@@ -160,9 +161,46 @@ class ClientPortalInspectionResponse(BaseModel):
     acceptance: ClientPortalInspectionAcceptanceResponse | None
 
 
+class ClientPortalComplaintLocationResponse(BaseModel):
+    id: int
+    name: str
+
+
+class ClientPortalComplaintCreate(BaseModel):
+    location_id: int = Field(gt=0)
+    title: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=5_000)
+    category: Literal["service", "billing", "damage", "other"] = "service"
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    @field_validator("title", "description")
+    @classmethod
+    def normalize_text(cls, value: str) -> str:
+        if not value:
+            raise ValueError("Este campo no puede estar vacío")
+        return value
+
+
+class ClientPortalComplaintResponse(BaseModel):
+    id: int
+    location_id: int
+    location_name: str
+    title: str
+    description: str
+    category: Literal["service", "billing", "damage", "other"]
+    status: Literal["submitted", "in_review", "resolved", "closed"]
+    customer_response: str | None
+    created_at: datetime
+    updated_at: datetime
+    resolved_at: datetime | None
+
+
 class ClientPortalOverviewResponse(BaseModel):
     workspace: ClientPortalWorkspaceResponse
     invoices: list[ClientPortalInvoiceResponse]
     quotes: list[ClientPortalQuoteResponse]
     contracts: list[ClientPortalContractResponse]
     inspections: list[ClientPortalInspectionResponse]
+    complaint_locations: list[ClientPortalComplaintLocationResponse]
+    complaints: list[ClientPortalComplaintResponse]

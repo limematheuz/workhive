@@ -63,6 +63,8 @@ def _require_active_company_principal(
         "quality.inspections.manage": "features.quality",
         "quality.incidents.read": "features.quality",
         "quality.incidents.manage": "features.quality",
+        "quality.complaints.read": "features.quality",
+        "quality.complaints.manage": "features.quality",
     }.get(capability)
     if feature_code:
         require_feature(db, company, feature_code)

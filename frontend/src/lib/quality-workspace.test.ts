@@ -7,6 +7,7 @@ const sidebar = readFileSync(new URL("../components/dashboard/sidebar-nav-config
 const service = readFileSync(new URL("../services/quality.service.ts", import.meta.url), "utf8");
 const evidenceSection = readFileSync(new URL("../components/quality/QualityEvidenceSection.tsx", import.meta.url), "utf8");
 const conformitySection = readFileSync(new URL("../components/quality/QualityInspectionConformitySection.tsx", import.meta.url), "utf8");
+const complaintsSection = readFileSync(new URL("../components/quality/QualityComplaintsSection.tsx", import.meta.url), "utf8");
 const image = readFileSync(new URL("./image.ts", import.meta.url), "utf8");
 
 test("quality has a protected dedicated workspace in Operations", () => {
@@ -19,6 +20,9 @@ test("quality has a protected dedicated workspace in Operations", () => {
     assert.match(service, /addIncidentEvidence/);
     assert.match(service, /signInspectionConformity/);
     assert.match(service, /client_acceptance/);
+    assert.match(service, /getComplaints/);
+    assert.match(page, /QualityComplaintsSection/);
+    assert.match(complaintsSection, /QualityService\.updateComplaint/);
     assert.match(evidenceSection, /resolveApiMediaUrl/);
     assert.match(conformitySection, /QualityService\.signInspectionConformity/);
     assert.match(conformitySection, /Aceptación del cliente registrada/);
@@ -27,5 +31,6 @@ test("quality has a protected dedicated workspace in Operations", () => {
     assert.match(image, /IMAGE_UPLOAD_TARGET_BYTES = 850 \* 1024/);
     assert.doesNotMatch(evidenceSection, /\bfetch\s*\(/);
     assert.doesNotMatch(page, /\bfetch\s*\(/);
+    assert.doesNotMatch(complaintsSection, /\bfetch\s*\(/);
     assert.match(sidebar, /href: "\/dashboard\/quality", label: "Calidad"/);
 });
