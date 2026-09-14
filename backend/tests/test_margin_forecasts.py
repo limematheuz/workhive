@@ -2,7 +2,14 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.models.company import Company
-from app.models.inventory import InventoryMaterial, InventoryMovement, InventoryWarehouse
+from app.models.expense import Expense
+from app.models.inventory import (
+    InventoryMaterial,
+    InventoryMovement,
+    InventorySupplier,
+    InventoryWarehouse,
+)
+from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.task_item import TaskItem
@@ -142,8 +149,9 @@ def _seed_traced_actuals(db, company: Company, email: str, location_id: int, ord
         unit="unit",
         reorder_point=0,
     )
+    supplier = InventorySupplier(company_id=company.id, name="Proveedor de margen")
     warehouse = InventoryWarehouse(company_id=company.id, name="Almacén margen")
-    db.add_all([task, material, warehouse])
+    db.add_all([task, material, supplier, warehouse])
     db.flush()
     db.add(
         WorkSession(
@@ -166,6 +174,44 @@ def _seed_traced_actuals(db, company: Company, email: str, location_id: int, ord
             movement_type="issue",
             quantity=Decimal("3"),
             unit_cost=Decimal("5.00"),
+        )
+    )
+    db.add(
+        Expense(
+            company_id=company.id,
+            client_id=company.clients[0].id,
+            work_order_id=order_id,
+            expense_date=datetime(2026, 8, 1, tzinfo=timezone.utc),
+            category="subcontracting",
+            description="Refuerzo subcontratado",
+            base_amount=Decimal("50.00"),
+            tax_amount=Decimal("0"),
+            total_amount=Decimal("50.00"),
+        )
+    )
+    # A purchase can carry an operational reference in legacy data, but its
+    # fiscal expense must never enter the margin here: the material issue above
+    # is the sole recognised cost once stock is consumed.
+    purchase_expense = Expense(
+        company_id=company.id,
+        client_id=company.clients[0].id,
+        work_order_id=order_id,
+        expense_date=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        category="supplies",
+        description="Compra de material no duplicable",
+        base_amount=Decimal("40.00"),
+        tax_amount=Decimal("0"),
+        total_amount=Decimal("40.00"),
+    )
+    db.add(purchase_expense)
+    db.flush()
+    db.add(
+        InventoryPurchase(
+            company_id=company.id,
+            supplier_id=supplier.id,
+            expense_id=purchase_expense.id,
+            status="received",
+            supplier_name_snapshot=supplier.name,
         )
     )
     reversed_issue = InventoryMovement(
@@ -244,8 +290,9 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
         "actual_revenue_base_amount": "150.00",
         "actual_labor_cost_base_amount": "20.00",
         "actual_material_cost_base_amount": "15.00",
-        "actual_direct_cost_base_amount": "35.00",
-        "actual_margin_base_amount": "115.00",
+        "actual_expense_cost_base_amount": "50.00",
+        "actual_direct_cost_base_amount": "85.00",
+        "actual_margin_base_amount": "65.00",
         "direct_cost_variance_base_amount": None,
     }
 
@@ -256,7 +303,7 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
     )
     assert saved_contract.status_code == 200, saved_contract.text
     assert saved_contract.json()["planned_margin_base_amount"] == "250.00"
-    assert saved_contract.json()["direct_cost_variance_base_amount"] == "-45.00"
+    assert saved_contract.json()["direct_cost_variance_base_amount"] == "5.00"
 
     updated_contract = client.put(
         f"/api/v1/margin-forecasts/contracts/{contract['id']}",
@@ -274,8 +321,8 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
     assert order_forecast.status_code == 200, order_forecast.text
     assert order_forecast.json()["planned_revenue_base_amount"] is None
     assert order_forecast.json()["planned_margin_base_amount"] is None
-    assert order_forecast.json()["actual_direct_cost_base_amount"] == "35.00"
-    assert order_forecast.json()["direct_cost_variance_base_amount"] == "-25.00"
+    assert order_forecast.json()["actual_direct_cost_base_amount"] == "85.00"
+    assert order_forecast.json()["direct_cost_variance_base_amount"] == "25.00"
 
 
 def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db):
@@ -287,7 +334,7 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         tax_id="B10000072",
     )
     _set_profitability_plan(db, owner_email)
-    contract, _, _ = _create_contract_and_order(client, owner_headers)
+    contract, _, order = _create_contract_and_order(client, owner_headers)
     outsider_email = "margin-scope-outsider@workhive-margin.com"
     outsider_headers = _authenticated_company(
         client,
@@ -301,6 +348,63 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         f"/api/v1/margin-forecasts/contracts/{contract['id']}", headers=outsider_headers
     )
     assert hidden.status_code == 404
+
+    scoped = client.post(
+        "/api/v1/expenses/",
+        headers=owner_headers,
+        json={
+            "expense_date": "2026-08-10T00:00:00Z",
+            "service_contract_id": contract["id"],
+            "category": "subcontracting",
+            "description": "Refuerzo de contrato",
+            "base_amount": 30,
+            "tax_amount": 0,
+        },
+    )
+    assert scoped.status_code == 201, scoped.text
+    assert scoped.json()["service_contract_id"] == contract["id"]
+    assert scoped.json()["work_order_id"] is None
+
+    contract_margin = client.get(
+        f"/api/v1/margin-forecasts/contracts/{contract['id']}", headers=owner_headers
+    )
+    assert contract_margin.status_code == 200, contract_margin.text
+    assert contract_margin.json()["actual_expense_cost_base_amount"] == "30.00"
+    order_margin = client.get(
+        f"/api/v1/margin-forecasts/work-orders/{order['id']}", headers=owner_headers
+    )
+    assert order_margin.status_code == 200, order_margin.text
+    assert order_margin.json()["actual_expense_cost_base_amount"] == "0.00"
+
+    incompatible_scope = client.post(
+        "/api/v1/expenses/",
+        headers=owner_headers,
+        json={
+            "expense_date": "2026-08-10T00:00:00Z",
+            "service_contract_id": contract["id"],
+            "work_order_id": order["id"],
+            "category": "subcontracting",
+            "description": "Doble alcance",
+            "base_amount": 30,
+            "tax_amount": 0,
+        },
+    )
+    assert incompatible_scope.status_code == 422
+
+    foreign_scope = client.post(
+        "/api/v1/expenses/",
+        headers=outsider_headers,
+        json={
+            "expense_date": "2026-08-10T00:00:00Z",
+            "service_contract_id": contract["id"],
+            "category": "subcontracting",
+            "description": "Contrato ajeno",
+            "base_amount": 30,
+            "tax_amount": 0,
+        },
+    )
+    assert foreign_scope.status_code == 404
+
     invalid = client.put(
         f"/api/v1/margin-forecasts/contracts/{contract['id']}",
         json={"planned_direct_cost_amount": "-0.01"},

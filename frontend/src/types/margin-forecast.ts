@@ -19,6 +19,7 @@ export interface MarginForecast {
     actual_revenue_base_amount: number;
     actual_labor_cost_base_amount: number;
     actual_material_cost_base_amount: number;
+    actual_expense_cost_base_amount: number;
     actual_direct_cost_base_amount: number;
     actual_margin_base_amount: number;
     direct_cost_variance_base_amount: number | null;

@@ -94,7 +94,7 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent"><ChartNoAxesCombined className="size-4" aria-hidden="true" /></span>
                     <div>
                         <h3 className="text-sm font-semibold text-[var(--text-main)]">Margen previsto frente a trazado</h3>
-                        <p className="mt-1 text-xs text-[var(--text-muted)]">Solo factura de tareas, mano de obra con snapshot y material consumido sin reversión. Los gastos generales no se reparten.</p>
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">Solo factura de tareas, mano de obra con snapshot, material consumido y gastos vinculados explícitamente. Los gastos generales no se reparten.</p>
                     </div>
                 </div>
                 {!forecast.budget && <span className="rounded-full bg-[var(--alert-warning-bg)] px-2.5 py-1 text-[10px] font-semibold text-[var(--alert-warning-text)]">Falta presupuesto de coste</span>}
@@ -106,9 +106,10 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
                 <Metric label="Margen previsto" value={forecast.planned_margin_base_amount} tone={marginTone(forecast.planned_margin_base_amount)} />
                 <Metric label="Margen trazado" value={forecast.actual_margin_base_amount} tone={marginTone(forecast.actual_margin_base_amount)} />
             </div>
-            <div className="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+            <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Facturado trazado: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_revenue_base_amount)}</span></p>
-                <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Mano de obra: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_labor_cost_base_amount)}</span> · Material: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_material_cost_base_amount)}</span></p>
+                <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Mano de obra: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_labor_cost_base_amount)}</span></p>
+                <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Material: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_material_cost_base_amount)}</span> · Gastos directos: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_expense_cost_base_amount)}</span></p>
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Desviación de coste: <span className={`font-mono font-semibold ${marginTone(forecast.direct_cost_variance_base_amount) === "negative" ? "text-emerald-700 dark:text-emerald-300" : "text-[var(--text-main)]"}`}>{forecast.direct_cost_variance_base_amount === null ? "—" : formatCurrency(forecast.direct_cost_variance_base_amount)}</span></p>
             </div>
 

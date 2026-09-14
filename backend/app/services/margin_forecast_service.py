@@ -76,18 +76,23 @@ def _response(
     budget,
     planned_revenue: Decimal | None,
     work_order_ids: list[int],
+    service_contract_id: int | None,
     db: Session,
     company_id: int,
 ) -> MarginForecastResponse:
-    labor_cost, material_cost, actual_revenue = forecast_repo.actual_totals_for_work_orders(
+    labor_cost, material_cost, actual_revenue, direct_expense_cost = forecast_repo.actual_totals_for_work_orders(
         db,
         company_id=company_id,
         work_order_ids=work_order_ids,
+        service_contract_id=service_contract_id,
     )
     planned_cost = _money(budget.planned_direct_cost_amount) if budget else None
     actual_labor_cost = _money(labor_cost)
     actual_material_cost = _money(material_cost)
-    actual_direct_cost = _money(actual_labor_cost + actual_material_cost)
+    actual_expense_cost = _money(direct_expense_cost)
+    actual_direct_cost = _money(
+        actual_labor_cost + actual_material_cost + actual_expense_cost
+    )
     actual_revenue = _money(actual_revenue)
     return MarginForecastResponse(
         scope_type=scope_type,
@@ -108,6 +113,7 @@ def _response(
         actual_revenue_base_amount=actual_revenue,
         actual_labor_cost_base_amount=actual_labor_cost,
         actual_material_cost_base_amount=actual_material_cost,
+        actual_expense_cost_base_amount=actual_expense_cost,
         actual_direct_cost_base_amount=actual_direct_cost,
         actual_margin_base_amount=_money(actual_revenue - actual_direct_cost),
         direct_cost_variance_base_amount=(
@@ -134,6 +140,7 @@ def get_contract_margin_forecast(
         work_order_ids=forecast_repo.list_contract_work_order_ids(
             db, company_id=company_id, contract_id=contract.id
         ),
+        service_contract_id=contract.id,
         db=db,
         company_id=company_id,
     )
@@ -155,6 +162,7 @@ def get_work_order_margin_forecast(
         # order is not allocated a made-up share of that commercial amount.
         planned_revenue=None,
         work_order_ids=[work_order.id],
+        service_contract_id=None,
         db=db,
         company_id=company_id,
     )

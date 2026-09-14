@@ -33,6 +33,7 @@ class MarginForecastResponse(BaseModel):
     actual_revenue_base_amount: Decimal
     actual_labor_cost_base_amount: Decimal
     actual_material_cost_base_amount: Decimal
+    actual_expense_cost_base_amount: Decimal
     actual_direct_cost_base_amount: Decimal
     actual_margin_base_amount: Decimal
     direct_cost_variance_base_amount: Decimal | None

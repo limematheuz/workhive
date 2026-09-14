@@ -24,6 +24,8 @@ import {
 import { formatCurrency } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Client } from "@/types/client";
+import type { ServiceContract } from "@/types/service-contract";
+import type { WorkOrder } from "@/types/work-order";
 import { CATEGORY_OPTIONS, PAYMENT_METHOD_OPTIONS } from "./expense-options";
 
 type ExpenseFormDialogProps = {
@@ -36,6 +38,8 @@ type ExpenseFormDialogProps = {
     setKeepAdding: (value: boolean) => void;
     saving: boolean;
     clients: Client[];
+    contracts: ServiceContract[];
+    workOrders: WorkOrder[];
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
@@ -49,6 +53,8 @@ export function ExpenseFormDialog({
     setKeepAdding,
     saving,
     clients,
+    contracts,
+    workOrders,
     onSubmit,
 }: ExpenseFormDialogProps) {
     const { dict } = useDictionary();
@@ -57,6 +63,16 @@ export function ExpenseFormDialog({
     const taxRate = Number(form.tax_rate || 0);
     const calculatedTaxAmount = calculateExpenseTaxAmount(baseAmount, taxRate);
     const calculatedTotal = baseAmount + calculatedTaxAmount;
+    const operationalScope = form.operational_scope ?? "none";
+    const hasOperationalScope = operationalScope !== "none";
+
+    const selectOperationalScope = (value: string) => setForm({
+        ...form,
+        operational_scope: value as "none" | "contract" | "work_order",
+        service_contract_id: "",
+        work_order_id: "",
+        client_id: value === "none" ? form.client_id : "",
+    });
 
     const sidebar = (
         <section className="billing-surface overflow-hidden rounded-[24px]">
@@ -193,15 +209,68 @@ export function ExpenseFormDialog({
                         </DocumentFormField>
                     </div>
                     <DocumentFormField
+                        id="expense-operational-scope"
+                        label={text.operational_assignment}
+                        hint={text.operational_assignment_hint}
+                    >
+                        <DocumentFormSelect
+                            id="expense-operational-scope"
+                            value={operationalScope}
+                            onChange={(event) => selectOperationalScope(event.target.value)}
+                            aria-label={text.operational_assignment}
+                        >
+                            <option value="none">{text.operational_assignment_none}</option>
+                            <option value="contract">{text.operational_assignment_contract}</option>
+                            <option value="work_order">{text.operational_assignment_work_order}</option>
+                        </DocumentFormSelect>
+                    </DocumentFormField>
+                    {operationalScope === "contract" && <DocumentFormField
+                        id="expense-service-contract"
+                        label={text.operational_assignment_contract}
+                    >
+                        <DocumentFormSelect
+                            id="expense-service-contract"
+                            value={form.service_contract_id ?? ""}
+                            onChange={(event) => setForm({ ...form, service_contract_id: event.target.value })}
+                            aria-label={text.operational_assignment_contract}
+                            required
+                        >
+                            <option value="">{text.operational_assignment_select_contract}</option>
+                            {contracts.map((contract) => (
+                                <option key={contract.id} value={contract.id}>
+                                    {contract.contract_number} · {contract.title}
+                                </option>
+                            ))}
+                        </DocumentFormSelect>
+                    </DocumentFormField>}
+                    {operationalScope === "work_order" && <DocumentFormField
+                        id="expense-work-order"
+                        label={text.operational_assignment_work_order}
+                    >
+                        <DocumentFormSelect
+                            id="expense-work-order"
+                            value={form.work_order_id ?? ""}
+                            onChange={(event) => setForm({ ...form, work_order_id: event.target.value })}
+                            aria-label={text.operational_assignment_work_order}
+                            required
+                        >
+                            <option value="">{text.operational_assignment_select_work_order}</option>
+                            {workOrders.map((workOrder) => (
+                                <option key={workOrder.id} value={workOrder.id}>{workOrder.title}</option>
+                            ))}
+                        </DocumentFormSelect>
+                    </DocumentFormField>}
+                    <DocumentFormField
                         id="expense-client"
                         label={text.client_assignment}
-                        hint={text.client_assignment_hint}
+                        hint={hasOperationalScope ? text.operational_assignment_client_locked : text.client_assignment_hint}
                     >
                         <DocumentFormSelect
                             id="expense-client"
                             value={form.client_id}
                             onChange={(event) => setForm({ ...form, client_id: event.target.value })}
                             aria-label={text.client_assignment}
+                            disabled={hasOperationalScope}
                         >
                             <option value="">{text.client_assignment_none}</option>
                             {clients.map((client) => (

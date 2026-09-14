@@ -433,16 +433,20 @@ como WorkHive Core solo cuando el caso real las exige.
   UI local validados sin navegador; pendiente de revisión visual autenticada.
 - 🟡 Subcontrata: Gastos incorpora la categoría operativa `subcontracting`; al
   asignarla a un cliente ya entra como coste directo en la rentabilidad, con el
-  mismo IVA, pago, justificante y edición de Gastos. Se mantiene separada del
+  mismo IVA, pago, justificante y edición de Gastos. Puede imputarse además a
+  un contrato o a una orden (nunca a ambos): el backend confirma el cliente del
+  alcance y rechaza referencias de otra empresa. Se mantiene separada del
   inventario y no crea stock. Validada por tests y UI local sin navegador;
   pendiente de revisión visual autenticada.
 - 🟡 Margen previsto frente a real: hay presupuesto de coste explícito por
   contrato u orden, con la oferta aceptada como ingreso previsto del contrato
   y coste/ingreso trazado desde tareas facturadas, fichajes con snapshot y
-  material consumido no revertido. Los gastos generales —incluidos gastos solo
-  asignados a cliente— no se reparten ni se inventan. Backend, migración y UI
-  local en validación; falta revisión visual autenticada y decidir la
-  imputación explícita de subcontratas u otros gastos a contrato/orden.
+  material consumido no revertido. Incluye los gastos directamente vinculados
+  al contrato o a sus órdenes; las compras de inventario continúan fuera hasta
+  que se consume el stock, evitando doble conteo. Los gastos generales
+  —incluidos los solo asignados a cliente— no se reparten ni se inventan.
+  Backend, migración SQLite, UI local y regresiones de autorización validados
+  sin navegador; pendiente de revisión visual autenticada.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
   lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
   ubicación, servicio, equipo y trabajo.

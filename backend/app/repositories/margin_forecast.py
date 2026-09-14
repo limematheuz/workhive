@@ -1,13 +1,15 @@
 from collections.abc import Iterable
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models.inventory import InventoryMovement
+from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.margin_forecast import MarginForecast
+from app.models.expense import Expense
 from app.models.task_item import TaskItem
 from app.models.work_order import WorkOrder
 from app.models.work_session import WorkSession
@@ -78,10 +80,11 @@ def actual_totals_for_work_orders(
     *,
     company_id: int,
     work_order_ids: Iterable[int],
-) -> tuple[Decimal, Decimal, Decimal]:
+    service_contract_id: int | None = None,
+) -> tuple[Decimal, Decimal, Decimal, Decimal]:
     ids = tuple(sorted(set(work_order_ids)))
-    if not ids:
-        return Decimal("0"), Decimal("0"), Decimal("0")
+    if not ids and service_contract_id is None:
+        return Decimal("0"), Decimal("0"), Decimal("0"), Decimal("0")
 
     labor_cost = db.query(
         func.coalesce(func.sum(WorkSession.labor_cost_amount_snapshot), 0)
@@ -92,7 +95,7 @@ def actual_totals_for_work_orders(
         WorkSession.end_time.is_not(None),
         WorkSession.labor_cost_amount_snapshot.is_not(None),
         TaskItem.company_id == company_id,
-        TaskItem.work_order_id.in_(ids),
+        TaskItem.work_order_id.in_(ids) if ids else False,
     ).scalar()
 
     reversed_issue_ids = select(InventoryMovement.reversal_of_movement_id).where(
@@ -106,7 +109,7 @@ def actual_totals_for_work_orders(
     ).filter(
         InventoryMovement.company_id == company_id,
         InventoryMovement.movement_type == "issue",
-        InventoryMovement.work_order_id.in_(ids),
+        InventoryMovement.work_order_id.in_(ids) if ids else False,
         InventoryMovement.unit_cost.is_not(None),
         ~InventoryMovement.id.in_(reversed_issue_ids),
     ).scalar()
@@ -122,11 +125,28 @@ def actual_totals_for_work_orders(
         Invoice.is_active.is_(True),
         Invoice.status.in_(REPORTABLE_INVOICE_STATUSES),
         TaskItem.company_id == company_id,
-        TaskItem.work_order_id.in_(ids),
+        TaskItem.work_order_id.in_(ids) if ids else False,
+    ).scalar()
+
+    expense_scope_filters = []
+    if service_contract_id is not None:
+        expense_scope_filters.append(Expense.service_contract_id == service_contract_id)
+    if ids:
+        expense_scope_filters.append(Expense.work_order_id.in_(ids))
+    direct_expense_cost = db.query(
+        func.coalesce(func.sum(Expense.base_amount), 0)
+    ).outerjoin(
+        InventoryPurchase, InventoryPurchase.expense_id == Expense.id
+    ).filter(
+        Expense.company_id == company_id,
+        Expense.is_active.is_(True),
+        InventoryPurchase.id.is_(None),
+        or_(*expense_scope_filters),
     ).scalar()
 
     return (
         Decimal(str(labor_cost or 0)),
         Decimal(str(material_cost or 0)),
         Decimal(str(revenue or 0)),
+        Decimal(str(direct_expense_cost or 0)),
     )
