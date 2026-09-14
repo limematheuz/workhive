@@ -1,11 +1,11 @@
 import { apiFetch } from "@/lib/api"
-import { validateImageFile } from "@/lib/image"
+import { compressImageForUpload } from "@/lib/image"
 
 export const UploadService = {
     uploadFile: async (file: File, folder: string = "general"): Promise<{ url: string }> => {
-        validateImageFile(file)
+        const compressedFile = await compressImageForUpload(file)
         const formData = new FormData()
-        formData.append("file", file)
+        formData.append("file", compressedFile)
 
         const response = await apiFetch(`/api/v1/uploads/?folder=${folder}`, {
             method: "POST",

@@ -3,12 +3,18 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.quality_inspection import QualityInspection, QualityInspectionItem
+from app.models.quality_inspection import (
+    QualityInspection,
+    QualityInspectionConformity,
+    QualityInspectionItem,
+)
 from app.models.user import User
 from app.repositories import quality_inspection as inspection_repo
 from app.repositories import quality_template as template_repo
 from app.schemas.quality_inspection import (
     QualityInspectionCreate,
+    QualityInspectionConformityCreate,
+    QualityInspectionConformityResponse,
     QualityInspectionItemResponse,
     QualityInspectionResponse,
     QualityInspectionReview,
@@ -22,6 +28,7 @@ from app.services.user_scope import require_company_context
 
 READ_CAPABILITY = "quality.inspections.read"
 MANAGE_CAPABILITY = "quality.inspections.manage"
+CONFORMITY_STATEMENT_VERSION = "quality-conformity-v1"
 
 
 def _require_quality(company_id: int, db: Session) -> None:
@@ -40,6 +47,11 @@ def _response(inspection: QualityInspection) -> QualityInspectionResponse:
         completed_at=inspection.completed_at,
         score=sum(item.points_awarded for item in inspection.items),
         max_score=sum(item.max_points for item in inspection.items),
+        conformity=(
+            QualityInspectionConformityResponse.model_validate(inspection.conformity)
+            if inspection.conformity is not None
+            else None
+        ),
         items=[QualityInspectionItemResponse.model_validate(item) for item in inspection.items],
         evidence=[QualityEvidenceResponse.model_validate(item) for item in inspection.evidence],
     )
@@ -125,6 +137,47 @@ def create_inspection(
         for item in template.items
     ]
     db.add(inspection)
+    db.commit()
+    stored = inspection_repo.get_inspection(
+        db, company_id=company_id, inspection_id=inspection.id
+    )
+    return _response(stored or inspection)
+
+
+def sign_inspection_conformity(
+    db: Session,
+    current_user: User,
+    inspection_id: int,
+    payload: QualityInspectionConformityCreate,
+) -> QualityInspectionResponse:
+    company_id = require_company_context(current_user)
+    _require_quality(company_id, db)
+    inspection = inspection_repo.get_inspection(
+        db, company_id=company_id, inspection_id=inspection_id, for_update=True
+    )
+    if inspection is None:
+        raise HTTPException(status_code=404, detail="Inspección no encontrada")
+    _require_location_access(db, current_user, inspection.location_id, MANAGE_CAPABILITY)
+    if not payload.confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Debes confirmar la conformidad antes de firmar",
+        )
+    if inspection.status != "completed":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cierra la inspección antes de registrar la conformidad",
+        )
+    if inspection.conformity is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="La conformidad de esta inspección ya está registrada",
+        )
+    inspection.conformity = QualityInspectionConformity(
+        signed_by_user_id=current_user.id,
+        signer_name=current_user.full_name or current_user.email,
+        statement_version=CONFORMITY_STATEMENT_VERSION,
+    )
     db.commit()
     stored = inspection_repo.get_inspection(
         db, company_id=company_id, inspection_id=inspection.id

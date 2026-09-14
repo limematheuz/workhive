@@ -11,7 +11,7 @@ from app.repositories import quality_inspection as inspection_repo
 from app.schemas.quality_evidence import QualityEvidenceCreate, QualityEvidenceResponse
 from app.services import location_access_service
 from app.services.entitlement_service import require_company_feature
-from app.services.image_service import validate_image
+from app.services.image_service import MAX_IMAGE_BYTES, validate_image
 from app.services.storage_service import ObjectNotFoundError, build_media_key, get_object_storage
 from app.services.user_scope import require_company_context
 
@@ -22,7 +22,7 @@ INSPECTION_READ_CAPABILITY = "quality.inspections.read"
 INSPECTION_MANAGE_CAPABILITY = "quality.inspections.manage"
 INCIDENT_READ_CAPABILITY = "quality.incidents.read"
 INCIDENT_MANAGE_CAPABILITY = "quality.incidents.manage"
-MAX_QUALITY_EVIDENCE_BYTES = 1 * 1024 * 1024
+MAX_QUALITY_EVIDENCE_BYTES = MAX_IMAGE_BYTES
 
 
 def _require_quality(company_id: int, db: Session) -> None:

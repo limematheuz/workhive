@@ -12,6 +12,7 @@ def list_inspections(
     query = (
         db.query(QualityInspection)
         .options(
+            selectinload(QualityInspection.conformity),
             selectinload(QualityInspection.items),
             selectinload(QualityInspection.evidence),
         )
@@ -34,6 +35,7 @@ def get_inspection(
     query = (
         db.query(QualityInspection)
         .options(
+            selectinload(QualityInspection.conformity),
             selectinload(QualityInspection.items),
             selectinload(QualityInspection.evidence),
         )

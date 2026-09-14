@@ -85,8 +85,8 @@ def test_upload_rejects_payloads_over_the_image_limit(client):
         },
     )
 
-    assert response.status_code == 400
-    assert response.json()["detail"] == "Image must be 4MB or smaller"
+    assert response.status_code == 413
+    assert response.json()["detail"] == "La imagen no puede superar 1 MB"
 
 
 def test_upload_is_rate_limited(client, monkeypatch):

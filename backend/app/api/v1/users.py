@@ -185,8 +185,8 @@ def upload_user_photo(
     contents = file.file.read(MAX_IMAGE_BYTES + 1)
     if len(contents) > MAX_IMAGE_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Image exceeds the maximum allowed size of 4MB",
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="La imagen no puede superar 1 MB",
         )
     if db_user.company_id is None:
         raise HTTPException(

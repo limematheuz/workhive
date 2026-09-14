@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
+import { compressImageForUpload } from "@/lib/image";
 
 export type QualityTemplateItem = {
     id: number;
@@ -34,6 +35,12 @@ export type QualityEvidence = {
     created_at: string;
 };
 
+export type QualityInspectionConformity = {
+    signer_name: string;
+    statement_version: string;
+    signed_at: string;
+};
+
 export type QualityInspection = {
     id: number;
     location_id: number;
@@ -45,6 +52,7 @@ export type QualityInspection = {
     completed_at: string | null;
     score: number;
     max_score: number;
+    conformity: QualityInspectionConformity | null;
     items: QualityInspectionItem[];
     evidence: QualityEvidence[];
 };
@@ -80,8 +88,9 @@ async function request<T>(path: string, init: RequestInit = {}, message = "No se
 }
 
 async function uploadEvidence<T>(path: string, file: File, caption: string | undefined, message: string): Promise<T> {
+    const compressedFile = await compressImageForUpload(file);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", compressedFile);
     if (caption) formData.append("caption", caption);
     const response = await apiFetch(`/api/v1/quality${path}`, { method: "POST", body: formData });
     await assertApiResponseOk(response, message);
@@ -94,6 +103,7 @@ export const QualityService = {
     getInspections: () => request<QualityInspection[]>("/inspections/", { cache: "no-store" }, "No se pudieron cargar las inspecciones."),
     createInspection: (payload: { template_id: number; location_id: number; notes?: string }) => request<QualityInspection>("/inspections/", { method: "POST", body: JSON.stringify(payload) }, "No se pudo iniciar la inspección."),
     completeInspection: (inspectionId: number, payload: { notes?: string; items: Array<{ id: number; status: QualityInspectionItem["status"]; points_awarded: number; notes?: string }> }) => request<QualityInspection>(`/inspections/${inspectionId}/complete`, { method: "POST", body: JSON.stringify(payload) }, "No se pudo cerrar la inspección."),
+    signInspectionConformity: (inspectionId: number) => request<QualityInspection>(`/inspections/${inspectionId}/conformity`, { method: "POST", body: JSON.stringify({ confirmed: true }) }, "No se pudo registrar la conformidad."),
     addInspectionEvidence: (inspectionId: number, file: File, caption?: string) => uploadEvidence<QualityEvidence>(`/inspections/${inspectionId}/evidence`, file, caption, "No se pudo guardar la foto de la inspección."),
     getIncidents: () => request<QualityIncident[]>("/incidents/", { cache: "no-store" }, "No se pudieron cargar las incidencias."),
     createIncident: (payload: { location_id: number; title: string; description?: string; severity: QualityIncident["severity"]; inspection_id?: number; inspection_item_id?: number }) => request<QualityIncident>("/incidents/", { method: "POST", body: JSON.stringify(payload) }, "No se pudo registrar la incidencia."),

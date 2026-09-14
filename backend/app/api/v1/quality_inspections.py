@@ -5,6 +5,7 @@ from app.api.deps import ActiveUser, get_db
 from app.models.user import User
 from app.schemas.quality_inspection import (
     QualityInspectionCreate,
+    QualityInspectionConformityCreate,
     QualityInspectionResponse,
     QualityInspectionReview,
 )
@@ -79,6 +80,33 @@ def complete_quality_inspection(
         entity_id=inspection.id,
         request=request,
         details={"location_id": inspection.location_id, "score": inspection.score, "max_score": inspection.max_score},
+    )
+    return inspection
+
+
+@router.post("/{inspection_id}/conformity", response_model=QualityInspectionResponse)
+def sign_quality_inspection_conformity(
+    inspection_id: int,
+    payload: QualityInspectionConformityCreate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    inspection = quality_inspection_service.sign_inspection_conformity(
+        db, current_user, inspection_id, payload
+    )
+    audit_service.record_event(
+        db,
+        actor=current_user,
+        company_id=current_user.company_id,
+        action="quality_inspection.conformity_signed",
+        entity_type="quality_inspection",
+        entity_id=inspection.id,
+        request=request,
+        details={
+            "location_id": inspection.location_id,
+            "statement_version": inspection.conformity.statement_version if inspection.conformity else None,
+        },
     )
     return inspection
 

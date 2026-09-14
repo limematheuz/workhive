@@ -1,8 +1,7 @@
-const MAX_IMAGE_SIZE_BYTES = 4 * 1024 * 1024;
-export const MAX_QUALITY_EVIDENCE_BYTES = 1 * 1024 * 1024;
-export const QUALITY_EVIDENCE_TARGET_BYTES = 850 * 1024;
-const MAX_QUALITY_EVIDENCE_SOURCE_BYTES = 10 * 1024 * 1024;
-const QUALITY_EVIDENCE_MAX_DIMENSION = 1_920;
+export const MAX_IMAGE_UPLOAD_BYTES = 1 * 1024 * 1024;
+export const IMAGE_UPLOAD_TARGET_BYTES = 850 * 1024;
+const MAX_IMAGE_SOURCE_BYTES = 10 * 1024 * 1024;
+const IMAGE_UPLOAD_MAX_DIMENSION = 1_920;
 const COMPRESSION_QUALITIES = [0.82, 0.72, 0.62, 0.52];
 const MAX_COMPRESSION_RESIZES = 5;
 const ALLOWED_IMAGE_TYPES = new Set([
@@ -21,8 +20,8 @@ function validateSupportedImageType(file: File): void {
 
 export function validateImageFile(file: File): void {
     validateSupportedImageType(file);
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-        throw new Error("The image must be 4 MB or smaller.");
+    if (file.size > MAX_IMAGE_UPLOAD_BYTES) {
+        throw new Error("La imagen no puede superar 1 MB.");
     }
 }
 
@@ -65,15 +64,15 @@ function compressedFileName(file: File, type: string): string {
 }
 
 /**
- * Reencodes quality evidence in the browser before upload. The API still
- * enforces MAX_QUALITY_EVIDENCE_BYTES, so a modified client cannot bypass it.
+ * Reencodes image uploads in the browser before upload. The API still enforces
+ * MAX_IMAGE_UPLOAD_BYTES, so a modified client cannot bypass it.
  */
-export async function compressQualityEvidenceImage(file: File): Promise<File> {
+export async function compressImageForUpload(file: File): Promise<File> {
     validateSupportedImageType(file);
-    if (file.size > MAX_QUALITY_EVIDENCE_SOURCE_BYTES) {
+    if (file.size > MAX_IMAGE_SOURCE_BYTES) {
         throw new Error("La foto original no puede superar 10 MB.");
     }
-    if (file.size <= QUALITY_EVIDENCE_TARGET_BYTES) {
+    if (file.size <= IMAGE_UPLOAD_TARGET_BYTES) {
         return file;
     }
     if (file.type === "image/gif") {
@@ -84,7 +83,7 @@ export async function compressQualityEvidenceImage(file: File): Promise<File> {
 
     const image = await loadImage(file);
     const largestSide = Math.max(image.naturalWidth, image.naturalHeight);
-    let scale = Math.min(1, QUALITY_EVIDENCE_MAX_DIMENSION / largestSide);
+    let scale = Math.min(1, IMAGE_UPLOAD_MAX_DIMENSION / largestSide);
     let smallestBlob: Blob | undefined;
 
     for (let resizeAttempt = 0; resizeAttempt < MAX_COMPRESSION_RESIZES; resizeAttempt += 1) {
@@ -102,7 +101,7 @@ export async function compressQualityEvidenceImage(file: File): Promise<File> {
             if (!smallestBlob || blob.size < smallestBlob.size) {
                 smallestBlob = blob;
             }
-            if (blob.size <= QUALITY_EVIDENCE_TARGET_BYTES) {
+            if (blob.size <= IMAGE_UPLOAD_TARGET_BYTES) {
                 return new File([blob], compressedFileName(file, blob.type), {
                     type: blob.type,
                     lastModified: file.lastModified,
@@ -112,7 +111,7 @@ export async function compressQualityEvidenceImage(file: File): Promise<File> {
         scale *= 0.75;
     }
 
-    if (smallestBlob && smallestBlob.size <= MAX_QUALITY_EVIDENCE_BYTES) {
+    if (smallestBlob && smallestBlob.size <= MAX_IMAGE_UPLOAD_BYTES) {
         return new File([smallestBlob], compressedFileName(file, smallestBlob.type), {
             type: smallestBlob.type,
             lastModified: file.lastModified,

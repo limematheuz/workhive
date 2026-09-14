@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QualityEvidenceSection } from "@/components/quality/QualityEvidenceSection";
+import { QualityInspectionConformitySection } from "@/components/quality/QualityInspectionConformitySection";
 import { DataListTable } from "@/components/ui/data-list-table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -85,7 +86,43 @@ function ReviewInspectionDialog({ inspection, open, onOpenChange, canManage, onC
         }
     };
     if (!inspection) return null;
-    return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent compact className="max-w-2xl" confirmDiscard><DialogHeader><DialogTitle>{inspection.template_title}</DialogTitle><DialogDescription>{isEditable ? "Valora cada punto obligatorio antes de cerrar el control de calidad." : "Detalle y evidencia de la inspección."}</DialogDescription></DialogHeader><div className="grid max-h-[55vh] gap-3 overflow-y-auto py-2">{items.map((item, index) => <div key={item.id} className="grid gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] p-3 sm:grid-cols-[1fr_150px_90px]"><div><p className="text-sm font-semibold text-[var(--text-main)]">{item.title}{item.is_required ? " *" : ""}</p>{item.guidance && <p className="mt-1 text-xs text-[var(--text-muted)]">{item.guidance}</p>}</div><Select value={item.status} disabled={!isEditable} onValueChange={(value) => setItems((current) => current.map((valueItem, itemIndex) => itemIndex === index ? { ...valueItem, status: value as QualityInspection["items"][number]["status"], points_awarded: value === "passed" ? valueItem.max_points : 0 } : valueItem))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="not_assessed">Pendiente</SelectItem><SelectItem value="passed">Correcto</SelectItem><SelectItem value="failed">Fallido</SelectItem></SelectContent></Select><Input type="number" min="0" max={item.max_points} value={item.points_awarded} disabled={!isEditable} onChange={(event) => setItems((current) => current.map((valueItem, itemIndex) => itemIndex === index ? { ...valueItem, points_awarded: Number(event.target.value) } : valueItem))} aria-label={`Puntuación ${item.title}`} /></div>)}<QualityEvidenceSection subject="inspection" subjectId={inspection.id} evidence={inspection.evidence} canManage={canManage} onEvidenceAdded={onEvidenceAdded} /></div><DialogFooter><Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cerrar</Button>{isEditable && <Button type="button" onClick={() => void submit()} disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Cerrar inspección</Button>}</DialogFooter></DialogContent></Dialog>;
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent compact className="max-w-2xl" confirmDiscard>
+                <DialogHeader>
+                    <DialogTitle>{inspection.template_title}</DialogTitle>
+                    <DialogDescription>
+                        {isEditable ? "Valora cada punto obligatorio antes de cerrar el control de calidad." : "Detalle y evidencia de la inspección."}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid max-h-[55vh] gap-3 overflow-y-auto py-2">
+                    {items.map((item, index) => (
+                        <div key={item.id} className="grid gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] p-3 sm:grid-cols-[1fr_150px_90px]">
+                            <div>
+                                <p className="text-sm font-semibold text-[var(--text-main)]">{item.title}{item.is_required ? " *" : ""}</p>
+                                {item.guidance && <p className="mt-1 text-xs text-[var(--text-muted)]">{item.guidance}</p>}
+                            </div>
+                            <Select value={item.status} disabled={!isEditable} onValueChange={(value) => setItems((current) => current.map((valueItem, itemIndex) => itemIndex === index ? { ...valueItem, status: value as QualityInspection["items"][number]["status"], points_awarded: value === "passed" ? valueItem.max_points : 0 } : valueItem))}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="not_assessed">Pendiente</SelectItem>
+                                    <SelectItem value="passed">Correcto</SelectItem>
+                                    <SelectItem value="failed">Fallido</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Input type="number" min="0" max={item.max_points} value={item.points_awarded} disabled={!isEditable} onChange={(event) => setItems((current) => current.map((valueItem, itemIndex) => itemIndex === index ? { ...valueItem, points_awarded: Number(event.target.value) } : valueItem))} aria-label={`Puntuación ${item.title}`} />
+                        </div>
+                    ))}
+                    <QualityEvidenceSection subject="inspection" subjectId={inspection.id} evidence={inspection.evidence} canManage={canManage} onEvidenceAdded={onEvidenceAdded} />
+                    <QualityInspectionConformitySection inspection={inspection} canManage={canManage} onSigned={onCompleted} />
+                </div>
+                <DialogFooter>
+                    <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cerrar</Button>
+                    {isEditable && <Button type="button" onClick={() => void submit()} disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Cerrar inspección</Button>}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 function IncidentDialog({ open, onOpenChange, locations, onCreated }: { open: boolean; onOpenChange: (open: boolean) => void; locations: Location[]; onCreated: (incident: QualityIncident) => void }) {

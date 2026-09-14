@@ -42,6 +42,18 @@ class QualityInspectionReview(BaseModel):
         return value
 
 
+class QualityInspectionConformityCreate(BaseModel):
+    confirmed: bool
+
+
+class QualityInspectionConformityResponse(BaseModel):
+    signer_name: str
+    statement_version: str
+    signed_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class QualityInspectionItemResponse(BaseModel):
     id: int
     position: int
@@ -67,6 +79,7 @@ class QualityInspectionResponse(BaseModel):
     completed_at: datetime | None
     score: int
     max_score: int
+    conformity: QualityInspectionConformityResponse | None
     items: list[QualityInspectionItemResponse]
     evidence: list[QualityEvidenceResponse]
 

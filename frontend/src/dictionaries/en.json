@@ -2884,7 +2884,7 @@
     "attachments_subtitle": "View and add supporting photos for this service",
     "attachments_uploading": "Uploading file...",
     "attachments_upload_btn": "Take or upload photo",
-    "attachments_max_size": "Maximum size 4MB",
+    "attachments_max_size": "Optimised before upload (1 MB maximum)",
     "attachments_empty": "No attached photos",
     "btn_delete": "Delete",
     "comments_title": "Service Comments",

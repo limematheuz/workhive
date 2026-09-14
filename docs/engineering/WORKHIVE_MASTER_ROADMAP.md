@@ -366,9 +366,15 @@ como WorkHive Core solo cuando el caso real las exige.
   local; la cancelación está cubierta por la regresión backend.
 - 🟡 Fotos de evidencia privadas para inspecciones e incidencias están listas
   localmente: se almacenan por empresa y ubicación, se descargan solo por sus
-  rutas autorizadas y el cargador genérico las rechaza. Falta validación visual
-  autenticada y publicación.
-- ⬜ Firmas de conformidad y reclamaciones siguen sin iniciar.
+  rutas autorizadas y el cargador genérico las rechaza. Todas las cargas de
+  foto se comprimen en el navegador con objetivo de 850 KB y el servidor
+  impone un máximo uniforme de 1 MB. Falta validación visual autenticada y
+  publicación.
+- 🟡 La conformidad interna de una inspección cerrada está lista localmente:
+  se registra una única confirmación inmutable, con persona, versión de texto
+  y fecha, y exige permiso de gestión de la ubicación. No sustituye una firma
+  legal. Faltan validación visual autenticada y publicación.
+- ⬜ Reclamaciones siguen sin iniciar.
 
 ### Fase 7 — Material, compras y activos
 

@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
+import { compressImageForUpload } from "@/lib/image";
 import { buildWorkerInvitationPayload } from "@/lib/user-invitation";
 import { UserStatsResponse, WorkSession, TaskItem, User } from "@/types/user";
 
@@ -126,8 +127,9 @@ export const UserService = {
     },
 
     uploadUserPhoto: async (id: number, file: File): Promise<User> => {
+        const compressedFile = await compressImageForUpload(file);
         const formData = new FormData();
-        formData.append("file", file);
+        formData.append("file", compressedFile);
 
         const response = await apiFetch(`/api/v1/users/${id}/photo`, {
             method: "POST",

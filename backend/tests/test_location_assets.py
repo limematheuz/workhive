@@ -1,9 +1,20 @@
+from io import BytesIO
+
+from PIL import Image
+
 from app.models.location import Location
 from app.models.location_document import LocationDocument
+from app.services.image_service import MAX_IMAGE_BYTES
 from tests.test_location_workspace import _admin, _company, _headers
 
 
 PDF = b"%PDF-1.4\nlocation document\n%%EOF"
+
+
+def _webp() -> bytes:
+    output = BytesIO()
+    Image.new("RGB", (8, 8), color="blue").save(output, format="WEBP")
+    return output.getvalue()
 
 
 def _location(db, company, name="Centro de pruebas"):
@@ -128,6 +139,46 @@ def test_location_document_storage_uses_the_company_plan(client, db):
         files={"file": ("ampliado.pdf", allowed, "application/pdf")},
     )
     assert uploaded.status_code == 201, uploaded.text
+
+
+def test_location_document_rejects_images_over_one_megabyte(client, db):
+    company = _company(db, "TopImageAssets")
+    company.subscription_plan = "top"
+    db.commit()
+    admin = _admin(db, company)
+    location = _location(db, company)
+
+    response = client.post(
+        f"/api/v1/locations/{location.id}/documents",
+        headers=_headers(admin),
+        files={
+            "file": (
+                "foto-demasiado-grande.jpg",
+                b"\xff\xd8\xff" + b"x" * MAX_IMAGE_BYTES,
+                "image/jpeg",
+            )
+        },
+    )
+
+    assert response.status_code == 413
+    assert response.json()["detail"] == "La imagen no puede superar 1 MB"
+
+
+def test_location_document_accepts_valid_webp_images(client, db):
+    company = _company(db, "TopWebpAssets")
+    company.subscription_plan = "top"
+    db.commit()
+    admin = _admin(db, company)
+    location = _location(db, company)
+
+    response = client.post(
+        f"/api/v1/locations/{location.id}/documents",
+        headers=_headers(admin),
+        files={"file": ("foto.webp", _webp(), "image/webp")},
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["content_type"] == "image/webp"
 
 
 def test_location_assets_reject_other_company_and_manage_equipment(client, db):

@@ -13,6 +13,7 @@ import { DocumentFormField } from "@/components/billing/DocumentFormField";
 import { ProfileFormSection } from "@/components/profile/ProfileFormSection";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { compressImageForUpload } from "@/lib/image";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
 interface ProfileDetailsFormProps {
@@ -63,15 +64,10 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const maxInputSize = 10 * 1024 * 1024;
-        if (file.size > maxInputSize) {
-            toast.error(dict.profile.form.toast_size_error || "The image must be less than 10MB");
-            return;
-        }
-
         try {
             toast.loading(dict.profile.form.toast_compressing, { id: "photo-processing" });
-            const base64 = await compressImageToBase64(file);
+            const compressedFile = await compressImageForUpload(file);
+            const base64 = await compressImageToBase64(compressedFile);
             setProfilePhotoUrl(base64);
             toast.success(dict.profile.form.toast_compress_success, { id: "photo-processing" });
         } catch (error) {

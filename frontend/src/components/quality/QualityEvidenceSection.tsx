@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resolveApiMediaUrl } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-import { compressQualityEvidenceImage } from "@/lib/image";
 import { toast } from "@/lib/toast";
 import {
     QualityService,
@@ -40,10 +39,9 @@ export function QualityEvidenceSection({
     const upload = async (file: File) => {
         try {
             setUploading(true);
-            const compressedFile = await compressQualityEvidenceImage(file);
             const created = subject === "inspection"
-                ? await QualityService.addInspectionEvidence(subjectId, compressedFile, caption.trim() || undefined)
-                : await QualityService.addIncidentEvidence(subjectId, compressedFile, caption.trim() || undefined);
+                ? await QualityService.addInspectionEvidence(subjectId, file, caption.trim() || undefined)
+                : await QualityService.addIncidentEvidence(subjectId, file, caption.trim() || undefined);
             onEvidenceAdded(created);
             setCaption("");
             toast.success("Foto de evidencia añadida.");
