@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { resolveApiMediaUrl } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
-import { validateImageFile } from "@/lib/image";
+import { compressQualityEvidenceImage } from "@/lib/image";
 import { toast } from "@/lib/toast";
 import {
     QualityService,
@@ -39,11 +39,11 @@ export function QualityEvidenceSection({
 
     const upload = async (file: File) => {
         try {
-            validateImageFile(file);
             setUploading(true);
+            const compressedFile = await compressQualityEvidenceImage(file);
             const created = subject === "inspection"
-                ? await QualityService.addInspectionEvidence(subjectId, file, caption.trim() || undefined)
-                : await QualityService.addIncidentEvidence(subjectId, file, caption.trim() || undefined);
+                ? await QualityService.addInspectionEvidence(subjectId, compressedFile, caption.trim() || undefined)
+                : await QualityService.addIncidentEvidence(subjectId, compressedFile, caption.trim() || undefined);
             onEvidenceAdded(created);
             setCaption("");
             toast.success("Foto de evidencia añadida.");
@@ -62,6 +62,11 @@ export function QualityEvidenceSection({
                     <p className="mt-1 text-xs text-[var(--text-muted)]">
                         {evidence.length === 0 ? "Aún no hay fotos registradas." : `${evidence.length} foto${evidence.length === 1 ? "" : "s"} registrada${evidence.length === 1 ? "" : "s"}.`}
                     </p>
+                    {canManage && (
+                        <p className="mt-1 text-xs text-[var(--text-muted)]">
+                            Objetivo de compresión: 850 KB. El servidor no admite archivos de más de 1 MB.
+                        </p>
+                    )}
                 </div>
                 {canManage && (
                     <>

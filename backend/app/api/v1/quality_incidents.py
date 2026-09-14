@@ -13,7 +13,6 @@ from app.schemas.quality_incident import (
 )
 from app.schemas.quality_evidence import QualityEvidenceCreate, QualityEvidenceResponse
 from app.services import audit_service, quality_evidence_service, quality_incident_service
-from app.services.image_service import MAX_IMAGE_BYTES
 
 
 router = APIRouter()
@@ -80,7 +79,7 @@ def create_quality_incident_evidence(
         db,
         current_user,
         incident_id,
-        file.file.read(MAX_IMAGE_BYTES + 1),
+        file.file.read(quality_evidence_service.MAX_QUALITY_EVIDENCE_BYTES + 1),
         _evidence_payload(file, caption),
     )
     audit_service.record_event(

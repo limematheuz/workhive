@@ -22,6 +22,7 @@ INSPECTION_READ_CAPABILITY = "quality.inspections.read"
 INSPECTION_MANAGE_CAPABILITY = "quality.inspections.manage"
 INCIDENT_READ_CAPABILITY = "quality.incidents.read"
 INCIDENT_MANAGE_CAPABILITY = "quality.incidents.manage"
+MAX_QUALITY_EVIDENCE_BYTES = 1 * 1024 * 1024
 
 
 def _require_quality(company_id: int, db: Session) -> None:
@@ -74,6 +75,11 @@ def _store_evidence(
     inspection_id: int | None = None,
     incident_id: int | None = None,
 ) -> QualityEvidenceResponse:
+    if len(contents) > MAX_QUALITY_EVIDENCE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="La foto de evidencia no puede superar 1 MB",
+        )
     content_type, extension = validate_image(contents)
     storage_key = build_media_key(company_id, "quality-evidence", extension)
     storage = get_object_storage()

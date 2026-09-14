@@ -3,6 +3,7 @@ from io import BytesIO
 from PIL import Image
 
 from app.models.quality_evidence import QualityEvidence
+from app.services.quality_evidence_service import MAX_QUALITY_EVIDENCE_BYTES
 from tests.test_client_permission_authorization import (
     _assign_company_profile,
     _bootstrap_admin,
@@ -146,3 +147,24 @@ def test_quality_evidence_rejects_invalid_images(client, db):
         files={"file": ("falsa.png", b"not-an-image", "image/png")},
     )
     assert response.status_code == 400
+
+
+def test_quality_evidence_rejects_images_over_one_megabyte(client, db):
+    company = _company(db, "quality-evidence-too-large")
+    admin = _bootstrap_admin(db, company, "quality-evidence-too-large-admin")
+    location = _location(db, company, "Ubicación con evidencia demasiado grande")
+    inspection = _inspection(client, admin, location.id)
+
+    response = client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/evidence",
+        headers=_headers(admin),
+        files={
+            "file": (
+                "demasiado-grande.png",
+                b"x" * (MAX_QUALITY_EVIDENCE_BYTES + 1),
+                "image/png",
+            )
+        },
+    )
+    assert response.status_code == 413
+    assert response.json()["detail"] == "La foto de evidencia no puede superar 1 MB"
