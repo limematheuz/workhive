@@ -1,6 +1,9 @@
 import { Clock3, Home } from "lucide-react";
 
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/types/location";
 
@@ -26,41 +29,37 @@ export function ReservationFormMainFields({
                     {dict.reservations?.form?.property ||
                         "Propiedad"}
                 </Label>
-                <select
-                    required
+                <Select
                     aria-label={
                         dict.reservations?.form?.property ||
                         "Propiedad"
                     }
                     value={form.locationId}
-                    onChange={(event) => {
+                    onValueChange={(locationId) => {
                         const location = locations.find(
                             (item) =>
-                                item.id === Number(event.target.value)
+                                item.id === Number(locationId)
                         );
                         onFormChange({
                             ...form,
-                            locationId: event.target.value,
+                            locationId,
                             assignedUserId:
                                 location?.default_service_provider_id?.toString() ||
                                 "",
                         });
                     }}
-                    className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                 >
-                    <option value="" disabled>
-                        {dict.reservations?.form?.select_property ||
-                            "Selecciona una propiedad"}
-                    </option>
-                    {locations.map((location) => (
-                        <option
-                            key={location.id}
-                            value={location.id}
-                        >
-                            {location.name}
-                        </option>
-                    ))}
-                </select>
+                    <SelectTrigger>
+                        <SelectValue placeholder={dict.reservations?.form?.select_property || "Selecciona una propiedad"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {locations.map((location) => (
+                            <SelectItem key={location.id} value={String(location.id)}>
+                                {location.name}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -69,21 +68,19 @@ export function ReservationFormMainFields({
                         {dict.reservations?.form?.check_in ||
                             "Entrada"}
                     </Label>
-                    <input
-                        required
-                        type="datetime-local"
+                    <DateTimePicker
+                        id="reservation-check-in"
                         aria-label={
                             dict.reservations?.form?.check_in ||
                             "Entrada"
                         }
                         value={form.checkIn}
-                        onChange={(event) =>
+                        onValueChange={(checkIn) =>
                             onFormChange({
                                 ...form,
-                                checkIn: event.target.value,
+                                checkIn: checkIn ?? "",
                             })
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                     />
                 </div>
                 <div className="space-y-1">
@@ -92,29 +89,26 @@ export function ReservationFormMainFields({
                         {dict.reservations?.form?.check_out ||
                             "Salida"}
                     </Label>
-                    <input
-                        required
-                        type="datetime-local"
+                    <DateTimePicker
+                        id="reservation-check-out"
                         aria-label={
                             dict.reservations?.form?.check_out ||
                             "Salida"
                         }
                         value={form.checkOut}
-                        onChange={(event) => {
-                            const nextCheckOut =
-                                event.target.value;
+                        onValueChange={(nextCheckOut) => {
+                            const resolvedCheckOut = nextCheckOut ?? "";
                             onFormChange({
                                 ...form,
-                                checkOut: nextCheckOut,
+                                checkOut: resolvedCheckOut,
                                 cleaningScheduledAt:
                                     !form.cleaningScheduledAt ||
                                     form.cleaningScheduledAt ===
                                         form.checkOut
-                                        ? nextCheckOut
+                                        ? resolvedCheckOut
                                         : form.cleaningScheduledAt,
                             });
                         }}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                     />
                 </div>
             </div>
@@ -124,8 +118,7 @@ export function ReservationFormMainFields({
                         {dict.reservations?.form?.guests ||
                             "Huéspedes"}
                     </Label>
-                    <input
-                        required
+                    <Input
                         min="0"
                         type="number"
                         aria-label={
@@ -139,7 +132,6 @@ export function ReservationFormMainFields({
                                 guestCount: event.target.value,
                             })
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                     />
                 </div>
                 <div className="space-y-1">
@@ -147,33 +139,37 @@ export function ReservationFormMainFields({
                         {dict.reservations?.form?.stay_type ||
                             "Tipo de estancia"}
                     </Label>
-                    <select
+                    <Select
                         aria-label={
                             dict.reservations?.form?.stay_type ||
                             "Tipo de estancia"
                         }
                         value={form.stayType}
-                        onChange={(event) =>
+                        onValueChange={(stayType) =>
                             onFormChange({
                                 ...form,
-                                stayType: event.target.value,
+                                stayType,
                             })
                         }
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                     >
-                        <option value="guest">
+                        <SelectTrigger>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="guest">
                             {dict.reservations?.form
                                 ?.stay_type_guest || "Huéspedes"}
-                        </option>
-                        <option value="owner">
+                        </SelectItem>
+                        <SelectItem value="owner">
                             {dict.reservations?.form
                                 ?.stay_type_owner || "Propietario"}
-                        </option>
-                        <option value="block">
+                        </SelectItem>
+                        <SelectItem value="block">
                             {dict.reservations?.form
                                 ?.stay_type_block || "Bloqueo"}
-                        </option>
-                    </select>
+                        </SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
         </>

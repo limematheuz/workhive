@@ -1,4 +1,7 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Company } from "@/types/company";
 
@@ -19,23 +22,21 @@ export function ReservationFormCleaningSection({
 }: ReservationFormCleaningSectionProps) {
     return (
         <div className="space-y-2 border-t border-b border-[var(--border-soft)]/50 py-3 my-1">
-            <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] cursor-pointer select-none">
-                <input
-                    type="checkbox"
+            <Label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] cursor-pointer select-none">
+                <Checkbox
                     checked={form.cleaningRequired}
-                    onChange={(event) =>
+                    onCheckedChange={(checked) =>
                         onFormChange({
                             ...form,
                             cleaningRequired:
-                                event.target.checked,
+                                checked === true,
                         })
                     }
-                    className="w-4 h-4 rounded border-[var(--border-color)] bg-[var(--bg-card)] text-accent focus:ring-accent accent-accent cursor-pointer"
                 />
                 {dict.reservations?.form
                     ?.requires_checkout_cleaning ||
                     "Requiere limpieza de salida"}
-            </label>
+            </Label>
             {form.cleaningRequired && (
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div className="space-y-1">
@@ -44,9 +45,8 @@ export function ReservationFormCleaningSection({
                                 ?.cleaning_proposed_date ||
                                 "Fecha propuesta de limpieza"}
                         </Label>
-                        <input
-                            required
-                            type="datetime-local"
+                        <DateTimePicker
+                            id="reservation-cleaning-scheduled-at"
                             aria-label={
                                 dict.reservations?.form
                                     ?.cleaning_proposed_date ||
@@ -54,14 +54,12 @@ export function ReservationFormCleaningSection({
                             }
                             min={form.checkOut}
                             value={form.cleaningScheduledAt}
-                            onChange={(event) =>
+                            onValueChange={(cleaningScheduledAt) =>
                                 onFormChange({
                                     ...form,
-                                    cleaningScheduledAt:
-                                        event.target.value,
+                                    cleaningScheduledAt: cleaningScheduledAt ?? "",
                                 })
                             }
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold focus:border-accent/50 ui-motion"
                         />
                         <p className="text-xs font-medium leading-relaxed text-[var(--text-muted)]">
                             {dict.reservations?.form
@@ -75,38 +73,41 @@ export function ReservationFormCleaningSection({
                                 ?.assigned_cleaning_company ||
                                 "Empresa de limpieza asignada"}
                         </Label>
-                        <select
+                        <Select
                             aria-label={
                                 dict.reservations?.form
                                     ?.assigned_cleaning_company ||
                                 "Empresa de limpieza asignada"
                             }
-                            value={form.assignedUserId}
-                            onChange={(event) =>
+                            value={form.assignedUserId || "none"}
+                            onValueChange={(value) =>
                                 onFormChange({
                                     ...form,
-                                    assignedUserId:
-                                        event.target.value,
+                                    assignedUserId: value === "none" ? "" : value,
                                 })
                             }
-                            className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2.5 rounded-xl outline-none text-sm font-semibold cursor-pointer focus:border-accent/50 ui-motion"
                         >
-                            <option value="">
+                            <SelectTrigger>
+                                <SelectValue placeholder={dict.reservations?.form?.assigned_cleaning_company_internal || "Gestión interna / Sin proveedor externo"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                            <SelectItem value="none">
                                 {dict.reservations?.form
                                     ?.assigned_cleaning_company_internal ||
                                     "Gestión interna / Sin proveedor externo"}
-                            </option>
+                            </SelectItem>
                             {serviceProviders.map(
                                 (provider) => (
-                                    <option
+                                    <SelectItem
                                         key={provider.id}
-                                        value={provider.id}
+                                        value={String(provider.id)}
                                     >
                                         {provider.name}
-                                    </option>
+                                    </SelectItem>
                                 )
                             )}
-                        </select>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             )}

@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataListTable } from "@/components/ui/data-list-table";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,7 +78,7 @@ function NewLaborCostDialog({
             </DialogHeader>
             <div className="grid gap-4 py-2">
                 <div className="grid gap-2"><Label htmlFor="labor-cost-member">Persona</Label><Select value={membershipId} onValueChange={setMembershipId}><SelectTrigger id="labor-cost-member"><SelectValue placeholder="Selecciona una persona activa" /></SelectTrigger><SelectContent>{members.map((member) => <SelectItem key={member.id} value={String(member.id)}>{member.full_name || member.email}</SelectItem>)}</SelectContent></Select></div>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="grid gap-2"><Label htmlFor="labor-cost-hour">Coste interno por hora</Label><Input id="labor-cost-hour" inputMode="decimal" type="number" min="0" step="0.01" value={hourlyCost} onChange={(event) => setHourlyCost(event.target.value)} placeholder="0,00" /></div><div className="grid gap-2"><Label htmlFor="labor-cost-effective">Vigente desde</Label><Input id="labor-cost-effective" type="date" value={effectiveOn} onChange={(event) => setEffectiveOn(event.target.value)} /></div></div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2"><div className="grid gap-2"><Label htmlFor="labor-cost-hour">Coste interno por hora</Label><Input id="labor-cost-hour" inputMode="decimal" type="number" min="0" step="0.01" value={hourlyCost} onChange={(event) => setHourlyCost(event.target.value)} placeholder="0,00" /></div><div className="grid gap-2"><Label htmlFor="labor-cost-effective">Vigente desde</Label><DatePicker id="labor-cost-effective" value={effectiveOn} onValueChange={setEffectiveOn} /></div></div>
                 <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-xs leading-5 text-[var(--text-muted)]">Para cambiar un importe en el futuro, añade una nueva fecha de vigencia. Los trabajos ya cerrados conservarán su coste original.</p>
             </div>
             <DialogFooter><Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="button" onClick={() => void submit()} disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Guardar coste</Button></DialogFooter>

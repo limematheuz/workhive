@@ -1,6 +1,8 @@
 import { ArrowRight, Calendar, ClipboardCheck, MapPin, Users } from "lucide-react";
 
 import { InstructionList } from "@/components/ui/instruction-list";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
 import type { TaskPricingEditValues } from "@/lib/task-pricing";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/services/location.service";
@@ -100,8 +102,8 @@ export function TaskRequestReviewContent({
                     <div className="min-w-0 flex-1">
                         <label htmlFor="request-planning-date" className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">Fecha propuesta de limpieza</label>
                         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_7.5rem] gap-2">
-                            <input id="request-planning-date" type="date" value={planningDate} min={minPlanningDate} max={maxPlanningDate} onChange={(event) => onPlanningDateChange(event.target.value)} className="min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm font-bold text-[var(--text-main)] outline-none transition-colors focus:border-accent" />
-                            <input aria-label="Hora propuesta de limpieza" type="time" value={planningTime} onChange={(event) => onPlanningTimeChange(event.target.value)} className="min-w-0 rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] px-3 py-2.5 text-sm font-bold text-[var(--text-main)] outline-none transition-colors focus:border-accent" />
+                            <DatePicker id="request-planning-date" value={planningDate} min={minPlanningDate} max={maxPlanningDate} onValueChange={onPlanningDateChange} />
+                            <Input aria-label="Hora propuesta de limpieza" type="time" value={planningTime} onChange={(event) => onPlanningTimeChange(event.target.value)} />
                         </div>
                         <p className="mt-2 text-sm font-medium leading-relaxed text-[var(--text-muted)]">
                             La emisora propone esta fecha. Puedes ajustarla antes de aceptar{maxPlanningDate ? ", siempre antes de la próxima entrada." : "."}

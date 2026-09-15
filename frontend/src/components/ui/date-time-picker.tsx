@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { CalendarIcon, Clock3 } from "lucide-react";
+import { CalendarIcon, Clock3, X } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import type { Matcher } from "react-day-picker";
 
 import { Calendar } from "@/components/ui/calendar";
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
@@ -18,6 +19,10 @@ type DateTimePickerProps = {
     onValueChange: (value: string | null) => void;
     placeholder?: string;
     className?: string;
+    min?: string | null;
+    max?: string | null;
+    clearable?: boolean;
+    "aria-label"?: string;
 };
 
 const TIME_OPTIONS = Array.from({ length: 48 }, (_, index) => {
@@ -36,24 +41,54 @@ function formatDate(value: Date | undefined) {
     return format(value, "dd/MM/yyyy");
 }
 
-function toLocalIso(date: Date, time: string) {
+function toLocalDateTime(date: Date, time: string) {
     const [hours, minutes] = time.split(":").map(Number);
     const next = new Date(date);
     next.setHours(hours, minutes, 0, 0);
-    return next.toISOString();
+    return next;
 }
 
-export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/aaaa, hh:mm", className }: DateTimePickerProps) {
+function clampToBounds(date: Date, min?: string | null, max?: string | null): Date {
+    const minimum = parseDate(min ?? null);
+    const maximum = parseDate(max ?? null);
+    if (minimum && date < minimum) return minimum;
+    if (maximum && date > maximum) return maximum;
+    return date;
+}
+
+export function DateTimePicker({
+    id,
+    value,
+    onValueChange,
+    placeholder = "dd/mm/aaaa, hh:mm",
+    className,
+    min,
+    max,
+    clearable = false,
+    "aria-label": ariaLabel,
+}: DateTimePickerProps) {
     const selectedDate = parseDate(value);
     const [open, setOpen] = React.useState(false);
     const [month, setMonth] = React.useState<Date | undefined>(selectedDate);
     const time = selectedDate
         ? `${String(selectedDate.getHours()).padStart(2, "0")}:${String(selectedDate.getMinutes()).padStart(2, "0")}`
         : "09:00";
+    const disabled = React.useMemo<Matcher | undefined>(() => {
+        const before = parseDate(min ?? null);
+        const after = parseDate(max ?? null);
+        if (before && after) return { before, after };
+        if (before) return { before };
+        if (after) return { after };
+        return undefined;
+    }, [max, min]);
+
+    const applyDateTime = (date: Date, nextTime: string) => {
+        onValueChange(clampToBounds(toLocalDateTime(date, nextTime), min, max).toISOString());
+    };
 
     const selectDate = (date: Date | undefined) => {
         if (!date) return;
-        onValueChange(toLocalIso(date, time));
+        applyDateTime(date, time);
         setMonth(date);
         setOpen(false);
     };
@@ -67,9 +102,20 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
                     placeholder={placeholder}
                     readOnly
                     className="dialog-compact-control !border-0 !bg-transparent !shadow-none"
-                    aria-label="Fecha de seguimiento"
+                    aria-label={ariaLabel ?? "Fecha y hora"}
                 />
                 <InputGroupAddon align="inline-end">
+                    {clearable && value && (
+                        <InputGroupButton
+                            type="button"
+                            variant="ghost"
+                            size="icon-xs"
+                            aria-label="Borrar fecha y hora"
+                            onClick={() => onValueChange(null)}
+                        >
+                            <X />
+                        </InputGroupButton>
+                    )}
                     <Popover open={open} onOpenChange={setOpen}>
                         <PopoverTrigger asChild>
                             <InputGroupButton type="button" variant="ghost" size="icon-xs" aria-label="Abrir calendario">
@@ -84,6 +130,7 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
                                     month={month}
                                     onMonthChange={setMonth}
                                     onSelect={selectDate}
+                                    disabled={disabled}
                                     locale={es}
                                     weekStartsOn={1}
                                 />
@@ -92,7 +139,7 @@ export function DateTimePicker({ id, value, onValueChange, placeholder = "dd/mm/
                     </Popover>
                 </InputGroupAddon>
             </InputGroup>
-            <Select value={time} onValueChange={(nextTime) => selectedDate && onValueChange(toLocalIso(selectedDate, nextTime))}>
+            <Select value={time} onValueChange={(nextTime) => selectedDate && applyDateTime(selectedDate, nextTime)}>
                 <SelectTrigger className="h-10"><Clock3 className="size-4 text-[var(--text-muted)]" /><SelectValue placeholder="Hora" /></SelectTrigger>
                 <SelectContent>{TIME_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
             </Select>

@@ -65,12 +65,16 @@ como WorkHive Core solo cuando el caso real las exige.
 - 🟡 Las superficies nuevas y modificadas usan exclusivamente tokens semánticos
   de `globals.css` para estado, prioridad y alerta, además de los componentes
   locales basados en shadcn/ui. El margen operativo ya se ajustó a esta regla;
-  queda auditar y corregir los formularios heredados fuera de ese corte.
-- ⬜ Fechas heredadas: sustituir los controles nativos de fecha y fecha/hora
-  que siguen en Operación, Calidad, Costes laborales, Contratos, Gastos,
-  Compras y planes por los `DatePicker` y `DateTimePicker` compartidos de
-  Facturación. Los controles de solo hora se mantienen separados porque no
-  representan un calendario.
+  queda auditar y corregir los controles heredados fuera de ese corte.
+- 🟡 Fechas: todos los formularios usan los `DatePicker` y `DateTimePicker`
+  compartidos de Facturación; una regresión impide reintroducir controles
+  nativos de fecha o fecha/hora. Los límites mínimos/máximos y el borrado
+  opcional se mantienen en el componente común. Validado localmente con tests,
+  typecheck y lint; pendiente de revisión visual autenticada.
+- ⬜ Inputs y selectores heredados: auditar y sustituir los controles nativos
+  restantes por los componentes shadcn/ui locales, sin cambiar sus filtros,
+  valores ni permisos. Los controles de solo hora se mantienen separados porque
+  no representan un calendario.
 - ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. Pendiente de

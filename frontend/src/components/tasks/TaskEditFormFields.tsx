@@ -1,6 +1,8 @@
 "use client";
 
 import type { Dictionary } from "@/lib/dictionary-context";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
 import {
     assignTaskChecklistItem,
     toggleTaskChecklistItem,
@@ -171,22 +173,20 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         <label htmlFor="task-edit-date" className={taskFormLabelClass}>
                             {dict.tasks?.dialog?.date_label || "Planned date"}
                         </label>
-                        <input
+                        <DatePicker
                             id="task-edit-date"
-                            type="date"
                             value={editCreatedAt}
                             min={getDefaultTaskDate()}
                             max={maxPlanningDate}
-                            onChange={(event) => setEditCreatedAt(event.target.value)}
+                            onValueChange={setEditCreatedAt}
                             disabled={!managerEditable}
-                            className={`${taskFormControlClass} cursor-pointer`}
                         />
                     </div>
                     <div className="space-y-1.5">
                         <label htmlFor="task-edit-time" className={taskFormLabelClass}>
                             {dict.tasks?.dialog?.label_time || "Time"}
                         </label>
-                        <input
+                        <Input
                             id="task-edit-time"
                             type="time"
                             value={editPlanningTime}

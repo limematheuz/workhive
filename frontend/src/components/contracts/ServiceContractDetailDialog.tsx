@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
     Dialog,
     DialogClose,
@@ -350,8 +351,8 @@ function ServiceContractDetailDialogContent({
                             {contract.status === "active" && <CheckCircle2 className="size-5 text-accent" aria-label="Contrato activo" />}
                         </div>
                         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="space-y-1.5"><Label htmlFor="contract-start">Inicio</Label><Input id="contract-start" type="date" value={startsAt} disabled={!canManage || saving} onChange={(event) => setStartsAt(event.target.value)} /></div>
-                            <div className="space-y-1.5"><Label htmlFor="contract-end">Fin</Label><Input id="contract-end" type="date" value={endsAt} disabled={!canManage || saving} onChange={(event) => setEndsAt(event.target.value)} /></div>
+                            <div className="space-y-1.5"><Label htmlFor="contract-start">Inicio</Label><DatePicker id="contract-start" value={startsAt} disabled={!canManage || saving} onValueChange={setStartsAt} /></div>
+                            <div className="space-y-1.5"><Label htmlFor="contract-end">Fin</Label><DatePicker id="contract-end" value={endsAt} disabled={!canManage || saving} onValueChange={setEndsAt} /></div>
                             <div className="space-y-1.5"><Label>Renovación</Label><Select value={renewalMode} onValueChange={(value) => setRenewalMode(value as "manual" | "automatic")} disabled={!canManage || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Manual</SelectItem><SelectItem value="automatic">Automática</SelectItem></SelectContent></Select></div>
                             <div className="space-y-1.5"><Label htmlFor="contract-notice">Aviso previo (días)</Label><Input id="contract-notice" type="number" min="0" max="365" value={renewalNoticeDays} disabled={!canManage || saving} onChange={(event) => setRenewalNoticeDays(event.target.value)} /></div>
                             <div className="space-y-1.5"><Label htmlFor="contract-response">Respuesta SLA (horas)</Label><Input id="contract-response" type="number" min="0" max="720" value={responseTimeHours} disabled={!canManage || saving} onChange={(event) => setResponseTimeHours(event.target.value)} /></div>

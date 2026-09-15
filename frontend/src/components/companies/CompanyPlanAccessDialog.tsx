@@ -4,6 +4,7 @@ import { CalendarClock, Check, Loader2, ShieldCheck, SlidersHorizontal } from "l
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -109,7 +110,7 @@ function PlanTab({ controller }: { controller: Controller }) {
                 <div className="min-w-0 space-y-2"><Label htmlFor="company-plan">Plan</Label><Select value={planCode} onValueChange={(value) => setPlanCode(value as PlanCode)}><SelectTrigger id="company-plan"><SelectValue /></SelectTrigger><SelectContent>{selectablePlans.map((plan) => <SelectItem key={plan.code} value={plan.code}>{plan.label}</SelectItem>)}</SelectContent></Select></div>
                 <div className="min-w-0 space-y-2"><Label htmlFor="company-plan-status">Estado de acceso</Label><Select value={planStatus} onValueChange={(value) => setPlanStatus(value as "active" | "trialing")}><SelectTrigger id="company-plan-status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Activo</SelectItem><SelectItem value="trialing">Prueba</SelectItem></SelectContent></Select></div>
             </div>
-            {planStatus === "trialing" && <div className="max-w-sm space-y-2"><Label htmlFor="company-trial-end">Fin de la prueba</Label><Input id="company-trial-end" required type="date" value={trialEndsAt} onChange={(event) => setTrialEndsAt(event.target.value)} /></div>}
+            {planStatus === "trialing" && <div className="max-w-sm space-y-2"><Label htmlFor="company-trial-end">Fin de la prueba</Label><DatePicker id="company-trial-end" required value={trialEndsAt} onValueChange={setTrialEndsAt} /></div>}
             <div className="space-y-2"><Label htmlFor="company-plan-reason">Motivo del cambio</Label><Textarea id="company-plan-reason" required minLength={3} value={planReason} onChange={(event) => setPlanReason(event.target.value)} placeholder="Por ejemplo: suscripción anual firmada" /></div>
             <PlanSummary features={planFeatures} limits={planLimits} usage={access.usage} />
             <Button type="button" variant="outline" onClick={() => setActiveTab("custom")}><SlidersHorizontal className="h-4 w-4" />Personalizar funciones y capacidad</Button>
@@ -125,7 +126,7 @@ function CustomTab({ controller }: { controller: Controller }) {
         <form className="space-y-5" onSubmit={requestCustomizationSave}>
             <div className="flex flex-col gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 text-xs leading-relaxed text-[var(--text-muted)] sm:flex-row sm:items-start sm:justify-between"><p><span className="font-semibold text-[var(--text-main)]">Configuración a medida.</span> Parte del plan contratado y selecciona las funciones y capacidades exactas de esta empresa. Cada diferencia frente al plan queda registrada como una excepción comercial.</p><Button type="button" variant="outline" size="sm" className="shrink-0" disabled={!hasCustomizationChanges} onClick={resetCustomizationToPlan}>Restablecer al plan</Button></div>
             <EntitlementConfigurationEditor entitlements={access.base_entitlements} values={customValues} baseValues={baseValues} onChange={setCustomValue} idPrefix="company-customization" />
-            <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="custom-end">Fecha de finalización (opcional)</Label><Input id="custom-end" type="date" value={customEndsAt} onChange={(event) => setCustomEndsAt(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="custom-reason">Motivo comercial</Label><Input id="custom-reason" required minLength={3} value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Ampliación contratada" /></div></div>
+            <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="custom-end">Fecha de finalización (opcional)</Label><DatePicker id="custom-end" value={customEndsAt} onValueChange={setCustomEndsAt} /></div><div className="space-y-2"><Label htmlFor="custom-reason">Motivo comercial</Label><Input id="custom-reason" required minLength={3} value={customReason} onChange={(event) => setCustomReason(event.target.value)} placeholder="Ampliación contratada" /></div></div>
             <DialogFooter className="border-t border-[var(--border-soft)] pt-4"><Button type="button" variant="cancel" onClick={close}>Cancelar</Button><Button type="submit" disabled={submitting || customizationChanges.length === 0}>{submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <SlidersHorizontal className="h-4 w-4" />}Guardar configuración</Button></DialogFooter>
             <OverrideList overrides={access.overrides} />
         </form>

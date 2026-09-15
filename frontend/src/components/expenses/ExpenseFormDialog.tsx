@@ -14,6 +14,7 @@ import {
 import { DocumentFormField } from "@/components/billing/DocumentFormField";
 import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
@@ -140,12 +141,11 @@ export function ExpenseFormDialog({
                 <div className="flex w-full min-w-0 flex-col gap-4">
                     <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2">
                         <DocumentFormField id="expense-date" label={text.date}>
-                            <DocumentFormInput
+                            <DatePicker
                                 id="expense-date"
-                                type="date"
                                 required
                                 value={form.expense_date}
-                                onChange={(event) => setForm({ ...form, expense_date: event.target.value })}
+                                onValueChange={(expense_date) => setForm({ ...form, expense_date })}
                                 aria-label={text.date}
                             />
                         </DocumentFormField>

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
     LocationService,
@@ -192,15 +193,14 @@ export function LocationOperationalHistoryTab({ locationId, open }: LocationOper
                 </div>
                 <label className="block space-y-1.5">
                     <span className="text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Fecha</span>
-                    <input
-                        type="date"
+                    <DatePicker
+                        id="location-operational-history-date"
                         value={anchorDate}
-                        onChange={(event) => {
-                            setAnchorDate(event.target.value);
+                        onValueChange={(nextAnchorDate) => {
+                            setAnchorDate(nextAnchorDate);
                             resetPages();
                         }}
                         aria-label="Fecha del historial"
-                        className="h-10 w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-sm font-bold text-[var(--text-main)] outline-none focus:border-accent"
                     />
                 </label>
             </div>
