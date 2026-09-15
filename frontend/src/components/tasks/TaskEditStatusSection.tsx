@@ -3,6 +3,7 @@
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { TaskItem } from "@/services/task.service";
 import type { TaskPriority, TaskStatus } from "@/types/task";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
     taskFormControlClass,
     taskFormLabelClass,
@@ -49,36 +50,42 @@ export function TaskEditStatusSection({
                     <label htmlFor="task-edit-status" className={taskFormLabelClass}>
                         {dict.tasks?.dialog?.status_label || "Status"}
                     </label>
-                    <select
-                        id="task-edit-status"
+                    <Select
                         value={status}
-                        onChange={(event) => onStatusChange(event.target.value as TaskStatus)}
+                        onValueChange={(value) => onStatusChange(value as TaskStatus)}
                         disabled={!managerEditable}
-                        className={taskFormControlClass}
                     >
-                        <option value="pending">{dict.tasks?.dialog?.status_pending || "Pending"}</option>
-                        <option value="accepted">{dict.tech?.status_accepted || "Accepted"}</option>
-                        <option value="rejected">{dict.tech?.status_rejected || "Rejected"}</option>
-                        <option value="progress">{dict.tasks?.dialog?.status_progress || "In progress"}</option>
-                        <option value="review">{dict.tasks?.dialog?.status_review || "In review"}</option>
-                        <option value="completed">{dict.tasks?.dialog?.status_completed || "Completed"}</option>
-                    </select>
+                        <SelectTrigger id="task-edit-status" className={taskFormControlClass}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="pending">{dict.tasks?.dialog?.status_pending || "Pending"}</SelectItem>
+                            <SelectItem value="accepted">{dict.tech?.status_accepted || "Accepted"}</SelectItem>
+                            <SelectItem value="rejected">{dict.tech?.status_rejected || "Rejected"}</SelectItem>
+                            <SelectItem value="progress">{dict.tasks?.dialog?.status_progress || "In progress"}</SelectItem>
+                            <SelectItem value="review">{dict.tasks?.dialog?.status_review || "In review"}</SelectItem>
+                            <SelectItem value="completed">{dict.tasks?.dialog?.status_completed || "Completed"}</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="space-y-1.5">
                     <label htmlFor="task-edit-priority" className={taskFormLabelClass}>
                         {dict.tasks?.priority_label || "Priority"}
                     </label>
-                    <select
-                        id="task-edit-priority"
+                    <Select
                         value={priority}
-                        onChange={(event) => onPriorityChange(event.target.value as TaskPriority)}
+                        onValueChange={(value) => onPriorityChange(value as TaskPriority)}
                         disabled={!managerEditable || isReceiverCompany}
-                        className={taskFormControlClass}
                     >
-                        <option value="low">{dict.tasks?.priority_low || "Low"}</option>
-                        <option value="medium">{dict.tasks?.priority_medium || "Medium"}</option>
-                        <option value="high">{dict.tasks?.priority_high || "High"}</option>
-                    </select>
+                        <SelectTrigger id="task-edit-priority" className={taskFormControlClass}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="low">{dict.tasks?.priority_low || "Low"}</SelectItem>
+                            <SelectItem value="medium">{dict.tasks?.priority_medium || "Medium"}</SelectItem>
+                            <SelectItem value="high">{dict.tasks?.priority_high || "High"}</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 <div className="flex flex-col justify-end pb-1 text-2xs font-mono font-medium text-[var(--text-muted)]">
                     <div>

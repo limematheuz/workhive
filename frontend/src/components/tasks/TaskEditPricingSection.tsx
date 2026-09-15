@@ -3,6 +3,8 @@
 import type { Dictionary } from "@/lib/dictionary-context";
 import { formatHoursShort } from "@/lib/format-hours";
 import type { TaskPricingMode } from "@/domain/tasks/task-edit";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TASK_EDIT_UNIT_OPTIONS } from "./taskEditFormOptions";
 import {
     taskFormControlClass,
@@ -63,20 +65,23 @@ export function TaskPricingAgreementSection({
                     <label htmlFor="task-edit-pricing-mode" className={taskFormLabelClass}>
                         {dict.tasks?.dialog?.pricing_mode_label || "Billing mode"}
                     </label>
-                    <select
-                        id="task-edit-pricing-mode"
+                    <Select
                         value={pricingMode}
-                        onChange={(event) => onPricingModeChange(event.target.value as TaskPricingMode)}
+                        onValueChange={(value) => onPricingModeChange(value as TaskPricingMode)}
                         disabled={inputDisabled}
-                        className={taskFormControlClass}
                     >
-                        <option value="fixed">
-                            {dict.tasks?.dialog?.pricing_mode_fixed || "Fixed price"}
-                        </option>
-                        <option value="hourly">
-                            {dict.tasks?.dialog?.pricing_mode_hourly || "Hourly (person-hours)"}
-                        </option>
-                    </select>
+                        <SelectTrigger id="task-edit-pricing-mode" className={taskFormControlClass}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="fixed">
+                                {dict.tasks?.dialog?.pricing_mode_fixed || "Fixed price"}
+                            </SelectItem>
+                            <SelectItem value="hourly">
+                                {dict.tasks?.dialog?.pricing_mode_hourly || "Hourly (person-hours)"}
+                            </SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
                 {typeof snapshotSeconds === "number" && (
                     <div className="space-y-1.5">
@@ -96,7 +101,7 @@ export function TaskPricingAgreementSection({
                             ? (dict.tasks?.dialog?.hourly_rate_label || "Hourly rate (€/h)")
                             : (dict.tasks?.dialog?.price_label || "Price (€)")}
                     </label>
-                    <input
+                    <Input
                         id="task-edit-price"
                         type="number"
                         min={isHourly ? "0.01" : "0"}
@@ -114,7 +119,7 @@ export function TaskPricingAgreementSection({
                             ? (dict.tasks?.dialog?.hours_from_sessions_label || "Hours (from sessions)")
                             : (dict.tasks?.dialog?.quantity_label || "Quantity")}
                     </label>
-                    <input
+                    <Input
                         id="task-edit-quantity"
                         type="number"
                         step="0.1"
@@ -132,18 +137,20 @@ export function TaskPricingAgreementSection({
                     <label htmlFor="task-edit-unit" className={taskFormLabelClass}>
                         {dict.tasks?.dialog?.unit_label || "Unit"}
                     </label>
-                    <select
-                        id="task-edit-unit"
+                    <Select
                         value={isHourly ? "hour" : unit}
-                        onChange={(event) => onUnitChange(event.target.value)}
+                        onValueChange={onUnitChange}
                         disabled={inputDisabled || isHourly}
-                        required
-                        className={taskFormControlClass}
                     >
-                        {TASK_EDIT_UNIT_OPTIONS.map((option) => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger id="task-edit-unit" className={taskFormControlClass}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {TASK_EDIT_UNIT_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>{option}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
         </section>

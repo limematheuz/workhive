@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Reservation } from "@/types/reservation";
 import {
@@ -11,6 +12,8 @@ import {
     taskFormSectionHintClass,
     taskFormSectionTitleClass,
 } from "./taskFormLayout";
+
+const NO_RESERVATION_ID = "__workhive_no_reservation__";
 
 type TaskCreateReservationSectionProps = {
     dict: Dictionary;
@@ -53,43 +56,55 @@ export function TaskCreateReservationSection({
                         <label htmlFor="task-create-checkout-reservation" className={taskFormLabelClass}>
                             {dict.tasks?.create_dialog?.checkout_reservation || "Checkout reservation"}
                         </label>
-                        <select
-                            id="task-create-checkout-reservation"
-                            value={newCheckoutReservationId}
-                            onChange={(event) => setNewCheckoutReservationId(event.target.value)}
-                            aria-label={dict.tasks?.create_dialog?.checkout_reservation || "Checkout reservation"}
-                            className={taskFormControlClass}
+                        <Select
+                            value={newCheckoutReservationId || NO_RESERVATION_ID}
+                            onValueChange={(value) => setNewCheckoutReservationId(value === NO_RESERVATION_ID ? "" : value)}
                         >
-                            <option value="">
-                                {dict.tasks?.create_dialog?.no_checkout_reservation || "No checkout linked"}
-                            </option>
-                            {availableReservations.map(reservation => (
-                                <option key={reservation.id} value={reservation.id}>
-                                    Sale {new Date(reservation.check_out_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short", timeZone: "UTC" })} · {reservation.guest_count} huéspedes
-                                </option>
-                            ))}
-                        </select>
+                            <SelectTrigger
+                                id="task-create-checkout-reservation"
+                                aria-label={dict.tasks?.create_dialog?.checkout_reservation || "Checkout reservation"}
+                                className={taskFormControlClass}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={NO_RESERVATION_ID}>
+                                    {dict.tasks?.create_dialog?.no_checkout_reservation || "No checkout linked"}
+                                </SelectItem>
+                                {availableReservations.map(reservation => (
+                                    <SelectItem key={reservation.id} value={String(reservation.id)}>
+                                        Sale {new Date(reservation.check_out_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short", timeZone: "UTC" })} · {reservation.guest_count} huéspedes
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="space-y-1.5">
                         <label htmlFor="task-create-next-reservation" className={taskFormLabelClass}>
                             {dict.tasks?.create_dialog?.next_reservation || "Next check-in"}
                         </label>
-                        <select
-                            id="task-create-next-reservation"
-                            value={newNextReservationId}
-                            onChange={(event) => setNewNextReservationId(event.target.value)}
-                            aria-label={dict.tasks?.create_dialog?.next_reservation || "Next check-in"}
-                            className={taskFormControlClass}
+                        <Select
+                            value={newNextReservationId || NO_RESERVATION_ID}
+                            onValueChange={(value) => setNewNextReservationId(value === NO_RESERVATION_ID ? "" : value)}
                         >
-                            <option value="">
-                                {dict.tasks?.create_dialog?.no_next_reservation || "No next check-in"}
-                            </option>
-                            {availableReservations.map(reservation => (
-                                <option key={reservation.id} value={reservation.id}>
-                                    Entra {new Date(reservation.check_in_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short", timeZone: "UTC" })} · {reservation.guest_count} huéspedes
-                                </option>
-                            ))}
-                        </select>
+                            <SelectTrigger
+                                id="task-create-next-reservation"
+                                aria-label={dict.tasks?.create_dialog?.next_reservation || "Next check-in"}
+                                className={taskFormControlClass}
+                            >
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value={NO_RESERVATION_ID}>
+                                    {dict.tasks?.create_dialog?.no_next_reservation || "No next check-in"}
+                                </SelectItem>
+                                {availableReservations.map(reservation => (
+                                    <SelectItem key={reservation.id} value={String(reservation.id)}>
+                                        Entra {new Date(reservation.check_in_at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short", timeZone: "UTC" })} · {reservation.guest_count} huéspedes
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             )}
