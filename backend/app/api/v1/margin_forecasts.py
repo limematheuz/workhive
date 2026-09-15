@@ -5,11 +5,24 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveFinanceManager, ActiveFinanceReader, get_db
 from app.models.user import User
-from app.schemas.margin_forecast import MarginForecastResponse, MarginForecastUpsert
+from app.schemas.margin_forecast import (
+    LocationMarginResponse,
+    MarginForecastResponse,
+    MarginForecastUpsert,
+)
 from app.services import audit_service, margin_forecast_service
 
 
 router = APIRouter()
+
+
+@router.get("/locations/{location_id}", response_model=LocationMarginResponse)
+def read_location_margin(
+    location_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveFinanceReader,
+):
+    return margin_forecast_service.get_location_margin(db, current_user, location_id)
 
 
 @router.get("/contracts/{contract_id}", response_model=MarginForecastResponse)

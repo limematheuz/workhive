@@ -150,3 +150,71 @@ def actual_totals_for_work_orders(
         Decimal(str(revenue or 0)),
         Decimal(str(direct_expense_cost or 0)),
     )
+
+
+def actual_totals_for_location(
+    db: Session, *, company_id: int, location_id: int
+) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+    """Return only actual amounts that have an unambiguous location link.
+
+    Contract-level expenses are deliberately excluded: a contract may cover
+    several locations and this query must never manufacture a split. Inventory
+    uses the issuing work order because movements do not carry a location
+    snapshot of their own.
+    """
+    labor_cost = db.query(
+        func.coalesce(func.sum(WorkSession.labor_cost_amount_snapshot), 0)
+    ).filter(
+        WorkSession.labor_cost_company_id == company_id,
+        WorkSession.location_id == location_id,
+        WorkSession.end_time.is_not(None),
+        WorkSession.labor_cost_amount_snapshot.is_not(None),
+    ).scalar()
+
+    reversed_issue_ids = select(InventoryMovement.reversal_of_movement_id).where(
+        InventoryMovement.company_id == company_id,
+        InventoryMovement.reversal_of_movement_id.is_not(None),
+    )
+    material_cost = db.query(
+        func.coalesce(
+            func.sum(InventoryMovement.quantity * InventoryMovement.unit_cost), 0
+        )
+    ).join(WorkOrder, WorkOrder.id == InventoryMovement.work_order_id).filter(
+        InventoryMovement.company_id == company_id,
+        InventoryMovement.movement_type == "issue",
+        InventoryMovement.unit_cost.is_not(None),
+        WorkOrder.company_id == company_id,
+        WorkOrder.location_id == location_id,
+        ~InventoryMovement.id.in_(reversed_issue_ids),
+    ).scalar()
+
+    revenue = db.query(
+        func.coalesce(func.sum(InvoiceItem.subtotal), 0)
+    ).join(Invoice, Invoice.id == InvoiceItem.invoice_id).join(
+        TaskItem, TaskItem.id == InvoiceItem.task_item_id
+    ).filter(
+        Invoice.company_id == company_id,
+        Invoice.is_active.is_(True),
+        Invoice.status.in_(REPORTABLE_INVOICE_STATUSES),
+        TaskItem.company_id == company_id,
+        TaskItem.location_id == location_id,
+    ).scalar()
+
+    direct_expense_cost = db.query(
+        func.coalesce(func.sum(Expense.base_amount), 0)
+    ).join(WorkOrder, WorkOrder.id == Expense.work_order_id).outerjoin(
+        InventoryPurchase, InventoryPurchase.expense_id == Expense.id
+    ).filter(
+        Expense.company_id == company_id,
+        Expense.is_active.is_(True),
+        InventoryPurchase.id.is_(None),
+        WorkOrder.company_id == company_id,
+        WorkOrder.location_id == location_id,
+    ).scalar()
+
+    return (
+        Decimal(str(labor_cost or 0)),
+        Decimal(str(material_cost or 0)),
+        Decimal(str(revenue or 0)),
+        Decimal(str(direct_expense_cost or 0)),
+    )

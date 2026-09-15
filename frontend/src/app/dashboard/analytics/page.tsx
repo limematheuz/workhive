@@ -68,7 +68,9 @@ import { BankReconciliationSection } from "@/components/analytics/BankReconcilia
 import { OperationalMarginExplorer } from "@/components/analytics/OperationalMarginExplorer";
 import { ServiceContractService } from "@/services/service-contract.service";
 import { WorkOrderService } from "@/services/work-order.service";
+import { LocationService } from "@/services/location.service";
 import type { ServiceContract } from "@/types/service-contract";
+import type { Location } from "@/types/location";
 import type { WorkOrder } from "@/types/work-order";
 
 type AnalyticsTab = "finance" | "profitability" | "operational_margin" | "reconciliation" | "operations";
@@ -107,6 +109,7 @@ export default function FinanceAnalyticsPage() {
     const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
     const [marginContracts, setMarginContracts] = useState<ServiceContract[]>([]);
     const [marginWorkOrders, setMarginWorkOrders] = useState<WorkOrder[]>([]);
+    const [marginLocations, setMarginLocations] = useState<Location[]>([]);
     const [marginCatalogsLoading, setMarginCatalogsLoading] = useState(false);
 
     useEffect(() => {
@@ -182,14 +185,17 @@ export default function FinanceAnalyticsPage() {
         if (!canViewOperationalMargin || !canViewProfitability) return;
         try {
             setMarginCatalogsLoading(true);
-            const [contractsResult, workOrdersResult] = await Promise.allSettled([
+            const [contractsResult, workOrdersResult, locationsResult] = await Promise.allSettled([
                 ServiceContractService.getContracts(),
                 WorkOrderService.getWorkOrders(),
+                LocationService.getLocations(),
             ]);
             if (contractsResult.status === "rejected") throw contractsResult.reason;
             if (workOrdersResult.status === "rejected") throw workOrdersResult.reason;
+            if (locationsResult.status === "rejected") throw locationsResult.reason;
             setMarginContracts(contractsResult.value);
             setMarginWorkOrders(workOrdersResult.value);
+            setMarginLocations(locationsResult.value);
         } catch (error) {
             console.error("Error loading operational margin catalogs", error);
             toast.error(text.operational_margin_error_load);
@@ -391,6 +397,7 @@ export default function FinanceAnalyticsPage() {
                     <OperationalMarginExplorer
                         contracts={marginContracts}
                         workOrders={marginWorkOrders}
+                        locations={marginLocations}
                         loading={marginCatalogsLoading}
                         canManage={canManageAnalytics}
                         copy={text}

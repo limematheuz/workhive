@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.repositories import margin_forecast as forecast_repo
+from app.repositories import location as location_repo
 from app.repositories import service_contract as service_contract_repo
 from app.repositories import work_order as work_order_repo
 from app.schemas.margin_forecast import (
     MarginForecastBudgetResponse,
     MarginForecastResponse,
     MarginForecastUpsert,
+    LocationMarginResponse,
 )
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import require_capability
@@ -165,6 +167,38 @@ def get_work_order_margin_forecast(
         service_contract_id=None,
         db=db,
         company_id=company_id,
+    )
+
+
+def get_location_margin(
+    db: Session, current_user: User, location_id: int
+) -> LocationMarginResponse:
+    company_id = _require_read_access(db, current_user)
+    location = location_repo.get_location_by_id(db, location_id, company_id)
+    if location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ubicación no encontrada")
+    labor_cost, material_cost, actual_revenue, direct_expense_cost = (
+        forecast_repo.actual_totals_for_location(
+            db, company_id=company_id, location_id=location.id
+        )
+    )
+    actual_labor_cost = _money(labor_cost)
+    actual_material_cost = _money(material_cost)
+    actual_expense_cost = _money(direct_expense_cost)
+    actual_direct_cost = _money(
+        actual_labor_cost + actual_material_cost + actual_expense_cost
+    )
+    actual_revenue = _money(actual_revenue)
+    return LocationMarginResponse(
+        scope_type="location",
+        scope_id=location.id,
+        scope_name=location.name,
+        actual_revenue_base_amount=actual_revenue,
+        actual_labor_cost_base_amount=actual_labor_cost,
+        actual_material_cost_base_amount=actual_material_cost,
+        actual_expense_cost_base_amount=actual_expense_cost,
+        actual_direct_cost_base_amount=actual_direct_cost,
+        actual_margin_base_amount=_money(actual_revenue - actual_direct_cost),
     )
 
 

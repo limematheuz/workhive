@@ -29,3 +29,15 @@ export interface MarginForecastPayload {
     planned_direct_cost_amount: number;
     notes?: string | null;
 }
+
+export interface LocationMargin {
+    scope_type: "location";
+    scope_id: number;
+    scope_name: string;
+    actual_revenue_base_amount: number;
+    actual_labor_cost_base_amount: number;
+    actual_material_cost_base_amount: number;
+    actual_expense_cost_base_amount: number;
+    actual_direct_cost_base_amount: number;
+    actual_margin_base_amount: number;
+}

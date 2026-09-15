@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.models.company import Company
+from app.core.security import get_password_hash
 from app.models.expense import Expense
 from app.models.inventory import (
     InventoryMaterial,
@@ -12,9 +13,11 @@ from app.models.inventory import (
 from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
+from app.models.role import Role
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
+from app.services.organization_bootstrap_service import ensure_user_membership
 
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
 
@@ -275,6 +278,22 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
     contract, location, order = _create_contract_and_order(client, headers)
     _seed_traced_actuals(db, company, email, location["id"], order["id"])
 
+    location_margin = client.get(
+        f"/api/v1/margin-forecasts/locations/{location['id']}", headers=headers
+    )
+    assert location_margin.status_code == 200, location_margin.text
+    assert location_margin.json() == {
+        "scope_type": "location",
+        "scope_id": location["id"],
+        "scope_name": "Sede de margen",
+        "actual_revenue_base_amount": "150.00",
+        "actual_labor_cost_base_amount": "20.00",
+        "actual_material_cost_base_amount": "15.00",
+        "actual_expense_cost_base_amount": "50.00",
+        "actual_direct_cost_base_amount": "85.00",
+        "actual_margin_base_amount": "65.00",
+    }
+
     before_budget = client.get(
         f"/api/v1/margin-forecasts/contracts/{contract['id']}", headers=headers
     )
@@ -333,8 +352,8 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         name="Margen Scope Owner",
         tax_id="B10000072",
     )
-    _set_profitability_plan(db, owner_email)
-    contract, _, order = _create_contract_and_order(client, owner_headers)
+    company = _set_profitability_plan(db, owner_email)
+    contract, location, order = _create_contract_and_order(client, owner_headers)
     outsider_email = "margin-scope-outsider@workhive-margin.com"
     outsider_headers = _authenticated_company(
         client,
@@ -348,6 +367,33 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         f"/api/v1/margin-forecasts/contracts/{contract['id']}", headers=outsider_headers
     )
     assert hidden.status_code == 404
+    hidden_location = client.get(
+        f"/api/v1/margin-forecasts/locations/{location['id']}", headers=outsider_headers
+    )
+    assert hidden_location.status_code == 404
+
+    manager_role = db.query(Role).filter(Role.name == "manager").one()
+    manager = User(
+        email="margin-labor-denied@workhive-margin.com",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Margen sin costes laborales",
+        role_id=manager_role.id,
+        company_id=company.id,
+        is_active=True,
+    )
+    db.add(manager)
+    db.flush()
+    ensure_user_membership(db, manager)
+    db.commit()
+    manager_login = client.post(
+        "/api/v1/auth/login", data=login_form(manager.email, TEST_SECRET)
+    )
+    assert manager_login.status_code == 200, manager_login.text
+    manager_headers = {"Authorization": f"Bearer {manager_login.json()['access_token']}"}
+    no_labor_cost_access = client.get(
+        f"/api/v1/margin-forecasts/locations/{location['id']}", headers=manager_headers
+    )
+    assert no_labor_cost_access.status_code == 403
 
     scoped = client.post(
         "/api/v1/expenses/",
@@ -375,6 +421,11 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
     )
     assert order_margin.status_code == 200, order_margin.text
     assert order_margin.json()["actual_expense_cost_base_amount"] == "0.00"
+    location_margin = client.get(
+        f"/api/v1/margin-forecasts/locations/{location['id']}", headers=owner_headers
+    )
+    assert location_margin.status_code == 200, location_margin.text
+    assert location_margin.json()["actual_expense_cost_base_amount"] == "0.00"
 
     incompatible_scope = client.post(
         "/api/v1/expenses/",
