@@ -3,6 +3,7 @@ import type {
     MarginForecast,
     MarginForecastBudget,
     ServiceMargin,
+    TeamLaborCost,
 } from "../types/margin-forecast.ts";
 
 type ApiAmount = number | string;
@@ -114,5 +115,16 @@ export function normalizeServiceMargin(data: ApiServiceMargin): ServiceMargin {
         actual_labor_cost_base_amount: amount(data.actual_labor_cost_base_amount),
         known_direct_cost_base_amount: amount(data.known_direct_cost_base_amount),
         known_margin_base_amount: amount(data.known_margin_base_amount),
+    };
+}
+
+export type ApiTeamLaborCost = Omit<TeamLaborCost, "actual_labor_cost_base_amount"> & {
+    actual_labor_cost_base_amount: ApiAmount;
+};
+
+export function normalizeTeamLaborCost(data: ApiTeamLaborCost): TeamLaborCost {
+    return {
+        ...data,
+        actual_labor_cost_base_amount: amount(data.actual_labor_cost_base_amount),
     };
 }

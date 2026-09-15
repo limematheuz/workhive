@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 6 de septiembre de 2026.
+Actualizado: 15 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -62,6 +62,15 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Tabs: escritorio puede mostrarlas en fila; tablet y móvil siempre las
   compactan en el mismo selector desplegable, con la misma cantidad, orden y
   reglas de visibilidad de opciones que el escritorio.
+- 🟡 Las superficies nuevas y modificadas usan exclusivamente tokens semánticos
+  de `globals.css` para estado, prioridad y alerta, además de los componentes
+  locales basados en shadcn/ui. El margen operativo ya se ajustó a esta regla;
+  queda auditar y corregir los formularios heredados fuera de ese corte.
+- ⬜ Fechas heredadas: sustituir los controles nativos de fecha y fecha/hora
+  que siguen en Operación, Calidad, Costes laborales, Contratos, Gastos,
+  Compras y planes por los `DatePicker` y `DateTimePicker` compartidos de
+  Facturación. Los controles de solo hora se mantienen separados porque no
+  representan un calendario.
 - ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
@@ -460,9 +469,14 @@ como WorkHive Core solo cuando el caso real las exige.
   vinculadas a esa versión inmutable; material y gastos no se reparten mientras
   sigan vinculados solo a una orden o contrato. La pestaña exige los permisos
   financieros y de costes laborales y reutiliza el cálculo protegido del
-  backend. UI local y regresiones de frontend validadas sin navegador;
+  backend. UI local y regresiones de frontend validadas sin navegador. También
+  ofrece coste laboral trazado por equipo: cada fichaje cerrado congela
+  el equipo responsable de su ubicación y no se reescribe si cambian equipos o
+  asignaciones; solo suma sesiones con coste conocido y no inventa un margen
+  de equipo. Los fichajes históricos sin ese snapshot quedan sin equipo. UI
+  local, migración y regresiones de autorización validadas sin navegador;
   pendientes de revisión visual autenticada y de cortes homogéneos por
-  sociedad, delegación y equipo, además de la futura imputación explícita de
+  sociedad y delegación, además de la futura imputación explícita de
   material/gastos a una tarea.
 
 ### Fase 9 — Portales e integraciones

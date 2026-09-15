@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { ChartNoAxesCombined, Loader2 } from "lucide-react";
+import { ChartNoAxesCombined, CircleDollarSign, HandCoins, Loader2, ReceiptText } from "lucide-react";
 
+import { SummaryMetricCard, SummaryMetricGrid, type SummaryMetricTone } from "@/components/ui/summary-metric-card";
 import { getErrorMessage } from "@/lib/errors";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "@/lib/toast";
@@ -14,10 +15,8 @@ type ServiceMarginPanelProps = {
     copy: Record<string, string>;
 };
 
-function marginTone(value: number): string {
-    return value >= 0
-        ? "text-emerald-700 dark:text-emerald-300"
-        : "text-red-700 dark:text-red-300";
+function marginTone(value: number): SummaryMetricTone {
+    return value >= 0 ? "positive" : "negative";
 }
 
 export function ServiceMarginPanel({ serviceCatalogVersionId, copy }: ServiceMarginPanelProps) {
@@ -54,16 +53,12 @@ export function ServiceMarginPanel({ serviceCatalogVersionId, copy }: ServiceMar
                     <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.operational_margin_service_subtitle}</p>
                 </div>
             </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                <Metric label={copy.operational_margin_actual_revenue} value={margin.actual_revenue_base_amount} />
-                <Metric label={copy.operational_margin_actual_labor} value={margin.actual_labor_cost_base_amount} />
-                <Metric label={copy.operational_margin_service_known_cost} value={margin.known_direct_cost_base_amount} />
-                <Metric label={copy.operational_margin_service_known_margin} value={margin.known_margin_base_amount} tone={marginTone(margin.known_margin_base_amount)} />
-            </div>
+            <SummaryMetricGrid className="mt-4" desktopColumns={4} aria-label={copy.operational_margin_service_title}>
+                <SummaryMetricCard icon={ReceiptText} label={copy.operational_margin_actual_revenue} value={formatCurrency(margin.actual_revenue_base_amount)} />
+                <SummaryMetricCard icon={HandCoins} label={copy.operational_margin_actual_labor} value={formatCurrency(margin.actual_labor_cost_base_amount)} />
+                <SummaryMetricCard icon={CircleDollarSign} label={copy.operational_margin_service_known_cost} value={formatCurrency(margin.known_direct_cost_base_amount)} />
+                <SummaryMetricCard icon={ChartNoAxesCombined} label={copy.operational_margin_service_known_margin} value={formatCurrency(margin.known_margin_base_amount)} valueTone={marginTone(margin.known_margin_base_amount)} />
+            </SummaryMetricGrid>
         </section>
     );
-}
-
-function Metric({ label, value, tone = "text-[var(--text-main)]" }: { label: string; value: number; tone?: string }) {
-    return <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/45 p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{label}</p><p className={`mt-1 font-mono text-sm font-semibold ${tone}`}>{formatCurrency(value)}</p></div>;
 }

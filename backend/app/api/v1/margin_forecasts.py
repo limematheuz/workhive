@@ -11,11 +11,24 @@ from app.schemas.margin_forecast import (
     MarginForecastUpsert,
     ServiceMarginResponse,
     ServiceMarginScopeResponse,
+    TeamLaborCostResponse,
 )
-from app.services import audit_service, margin_forecast_service
+from app.services import (
+    audit_service,
+    margin_forecast_service,
+    team_labor_cost_reporting_service,
+)
 
 
 router = APIRouter()
+
+
+@router.get("/teams", response_model=list[TeamLaborCostResponse])
+def read_team_labor_costs(
+    db: Session = Depends(get_db),
+    current_user: User = ActiveFinanceReader,
+):
+    return team_labor_cost_reporting_service.list_team_labor_costs(db, current_user)
 
 
 @router.get("/services", response_model=list[ServiceMarginScopeResponse])

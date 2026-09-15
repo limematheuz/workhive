@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 from app.models.company import Company
+from app.models.company_membership import Team
 from app.core.security import get_password_hash
 from app.models.expense import Expense
 from app.models.inventory import (
@@ -19,6 +20,7 @@ from app.models.task_item import TaskItem
 from app.models.template_task import TemplateTask
 from app.models.user import User
 from app.models.work_session import WorkSession
+from app.models.location import Location
 from app.services.organization_bootstrap_service import ensure_user_membership
 
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
@@ -140,6 +142,12 @@ def _create_contract_and_order(client, headers):
 
 def _seed_traced_actuals(db, company: Company, email: str, location_id: int, order_id: int):
     user = db.query(User).filter(User.email == email).one()
+    team = Team(company_id=company.id, name="Equipo de margen", code="MARGEN")
+    db.add(team)
+    db.flush()
+    location = db.get(Location, location_id)
+    assert location is not None
+    location.team_id = team.id
     template = TemplateTask(
         company_id=company.id,
         name="Servicio de margen",
@@ -186,6 +194,9 @@ def _seed_traced_actuals(db, company: Company, email: str, location_id: int, ord
             labor_cost_company_id=company.id,
             labor_cost_rate_snapshot=Decimal("20.00"),
             labor_cost_amount_snapshot=Decimal("20.00"),
+            labor_cost_team_id=team.id,
+            labor_cost_team_name_snapshot=team.name,
+            labor_cost_team_snapshotted_at=datetime(2026, 8, 1, 10, tzinfo=timezone.utc),
         )
     )
     db.add(
@@ -284,7 +295,7 @@ def _seed_traced_actuals(db, company: Company, email: str, location_id: int, ord
         )
     )
     db.commit()
-    return service_version
+    return service_version, team
 
 
 def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(client, db):
@@ -297,7 +308,7 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
     )
     company = _set_profitability_plan(db, email)
     contract, location, order = _create_contract_and_order(client, headers)
-    service_version = _seed_traced_actuals(
+    service_version, team = _seed_traced_actuals(
         db, company, email, location["id"], order["id"]
     )
 
@@ -321,6 +332,16 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
         "known_direct_cost_base_amount": "20.00",
         "known_margin_base_amount": "130.00",
     }
+    team_costs = client.get("/api/v1/margin-forecasts/teams", headers=headers)
+    assert team_costs.status_code == 200, team_costs.text
+    assert team_costs.json() == [
+        {
+            "team_id": team.id,
+            "team_name": "Equipo de margen",
+            "work_session_count": 1,
+            "actual_labor_cost_base_amount": "20.00",
+        }
+    ]
 
     location_margin = client.get(
         f"/api/v1/margin-forecasts/locations/{location['id']}", headers=headers
@@ -398,6 +419,26 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
     )
     company = _set_profitability_plan(db, owner_email)
     contract, location, order = _create_contract_and_order(client, owner_headers)
+    owner_team = Team(company_id=company.id, name="Equipo aislado", code="AISLADO")
+    db.add(owner_team)
+    db.flush()
+    owner_location = db.get(Location, location["id"])
+    assert owner_location is not None
+    owner_location.team_id = owner_team.id
+    owner = db.query(User).filter(User.email == owner_email).one()
+    db.add(
+        WorkSession(
+            user_id=owner.id,
+            location_id=owner_location.id,
+            start_time=datetime(2026, 8, 1, 9, tzinfo=timezone.utc),
+            end_time=datetime(2026, 8, 1, 10, tzinfo=timezone.utc),
+            labor_cost_company_id=company.id,
+            labor_cost_amount_snapshot=Decimal("11.00"),
+            labor_cost_team_id=owner_team.id,
+            labor_cost_team_name_snapshot=owner_team.name,
+            labor_cost_team_snapshotted_at=datetime(2026, 8, 1, 10, tzinfo=timezone.utc),
+        )
+    )
     owner_template = TemplateTask(
         company_id=company.id,
         name="Servicio privado de margen",
@@ -437,6 +478,9 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         headers=outsider_headers,
     )
     assert hidden_service.status_code == 404
+    hidden_team_costs = client.get("/api/v1/margin-forecasts/teams", headers=outsider_headers)
+    assert hidden_team_costs.status_code == 200, hidden_team_costs.text
+    assert hidden_team_costs.json() == []
 
     manager_role = db.query(Role).filter(Role.name == "manager").one()
     manager = User(
@@ -461,6 +505,7 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
     )
     assert no_labor_cost_access.status_code == 403
     assert client.get("/api/v1/margin-forecasts/services", headers=manager_headers).status_code == 403
+    assert client.get("/api/v1/margin-forecasts/teams", headers=manager_headers).status_code == 403
 
     scoped = client.post(
         "/api/v1/expenses/",

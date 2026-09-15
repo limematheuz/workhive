@@ -8,6 +8,8 @@ export type SummaryMetricTrend = {
     comparisonDirection?: "higher" | "lower";
 };
 
+export type SummaryMetricTone = "default" | "positive" | "negative";
+
 type SummaryMetricGridProps = {
     children: ReactNode;
     /** Number of summary cards per row on wide screens. Mobile always uses two columns. */
@@ -41,6 +43,7 @@ type SummaryMetricCardProps = {
     value: string;
     description?: string;
     trend?: SummaryMetricTrend;
+    valueTone?: SummaryMetricTone;
     className?: string;
 };
 
@@ -50,8 +53,15 @@ export function SummaryMetricCard({
     value,
     description,
     trend,
+    valueTone = "default",
     className = "",
 }: SummaryMetricCardProps) {
+    const valueToneClassName = valueTone === "positive"
+        ? "text-[var(--status-active-text)]"
+        : valueTone === "negative"
+            ? "text-[var(--priority-high-text)]"
+            : "text-[var(--text-main)]";
+
     return (
         <article className={`billing-block rounded-[22px] p-4 ${className}`}>
             <div className="flex items-start justify-between gap-3">
@@ -62,7 +72,7 @@ export function SummaryMetricCard({
             </div>
             <div className="mt-3 min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] sm:text-[11px]">{label}</p>
-                <p className="mt-1 font-mono text-xl font-semibold leading-tight text-[var(--text-main)] sm:text-2xl">{value}</p>
+                <p className={`mt-1 font-mono text-xl font-semibold leading-tight ${valueToneClassName} sm:text-2xl`}>{value}</p>
                 {description ? <p className="mt-2 text-[11px] font-medium text-[var(--text-muted)] sm:text-xs">{description}</p> : null}
             </div>
         </article>
@@ -78,7 +88,7 @@ function SummaryMetricTrendBadge({ trend }: { trend: SummaryMetricTrend }) {
         ? "border border-accent/20 bg-accent/10 text-accent"
         : rounded > 0
             ? "border border-[var(--status-active-border)] bg-[var(--status-active-bg)] text-[var(--status-active-text)]"
-            : "border border-red-500/20 bg-red-500/10 text-red-600";
+            : "border border-[var(--priority-high-border)] bg-[var(--priority-high-bg)] text-[var(--priority-high-text)]";
 
     return (
         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${toneClassName}`}>

@@ -70,17 +70,18 @@ import { ServiceContractService } from "@/services/service-contract.service";
 import { WorkOrderService } from "@/services/work-order.service";
 import { LocationService } from "@/services/location.service";
 import { ServiceMarginService } from "@/services/service-margin.service";
+import { TeamLaborCostService } from "@/services/team-labor-cost.service";
 import type { ServiceContract } from "@/types/service-contract";
 import type { Location } from "@/types/location";
 import type { WorkOrder } from "@/types/work-order";
-import type { ServiceMarginScope } from "@/types/margin-forecast";
+import type { ServiceMarginScope, TeamLaborCost } from "@/types/margin-forecast";
 
 type AnalyticsTab = "finance" | "profitability" | "operational_margin" | "reconciliation" | "operations";
 
 const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 
 const FINANCE_LINES = [
-    { key: "revenue", color: "#047857", labelKey: "revenue", strokeOpacity: 0.82 },
+    { key: "revenue", color: "var(--status-active-text)", labelKey: "revenue", strokeOpacity: 0.82 },
     { key: "expenses", color: "var(--btn-cancel-hover-bg)", labelKey: "expenses", strokeOpacity: 0.98 },
     { key: "profit", color: "var(--brand-blue-bright)", labelKey: "profit", strokeOpacity: 0.98 },
 ] as const;
@@ -113,6 +114,7 @@ export default function FinanceAnalyticsPage() {
     const [marginWorkOrders, setMarginWorkOrders] = useState<WorkOrder[]>([]);
     const [marginLocations, setMarginLocations] = useState<Location[]>([]);
     const [marginServices, setMarginServices] = useState<ServiceMarginScope[]>([]);
+    const [marginTeamLaborCosts, setMarginTeamLaborCosts] = useState<TeamLaborCost[]>([]);
     const [marginCatalogsLoading, setMarginCatalogsLoading] = useState(false);
 
     useEffect(() => {
@@ -188,20 +190,23 @@ export default function FinanceAnalyticsPage() {
         if (!canViewOperationalMargin || !canViewProfitability) return;
         try {
             setMarginCatalogsLoading(true);
-            const [contractsResult, workOrdersResult, locationsResult, servicesResult] = await Promise.allSettled([
+            const [contractsResult, workOrdersResult, locationsResult, servicesResult, teamCostsResult] = await Promise.allSettled([
                 ServiceContractService.getContracts(),
                 WorkOrderService.getWorkOrders(),
                 LocationService.getLocations(),
                 ServiceMarginService.getScopes(),
+                TeamLaborCostService.getSummaries(),
             ]);
             if (contractsResult.status === "rejected") throw contractsResult.reason;
             if (workOrdersResult.status === "rejected") throw workOrdersResult.reason;
             if (locationsResult.status === "rejected") throw locationsResult.reason;
             if (servicesResult.status === "rejected") throw servicesResult.reason;
+            if (teamCostsResult.status === "rejected") throw teamCostsResult.reason;
             setMarginContracts(contractsResult.value);
             setMarginWorkOrders(workOrdersResult.value);
             setMarginLocations(locationsResult.value);
             setMarginServices(servicesResult.value);
+            setMarginTeamLaborCosts(teamCostsResult.value);
         } catch (error) {
             console.error("Error loading operational margin catalogs", error);
             toast.error(text.operational_margin_error_load);
@@ -405,6 +410,7 @@ export default function FinanceAnalyticsPage() {
                         workOrders={marginWorkOrders}
                         locations={marginLocations}
                         services={marginServices}
+                        teamLaborCosts={marginTeamLaborCosts}
                         loading={marginCatalogsLoading}
                         canManage={canManageAnalytics}
                         copy={text}

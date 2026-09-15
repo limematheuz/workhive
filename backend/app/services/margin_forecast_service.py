@@ -1,6 +1,6 @@
 """Scope-safe planned-versus-traced margin calculations."""
 
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -19,33 +19,14 @@ from app.schemas.margin_forecast import (
     ServiceMarginResponse,
     ServiceMarginScopeResponse,
 )
-from app.services.entitlement_service import require_company_feature
-from app.services.organization_authorization_service import require_capability
-from app.services.user_scope import require_company_context
+from app.services.margin_reporting_policy import (
+    money as _money,
+    require_margin_manage_access as _require_manage_access,
+    require_margin_read_access as _require_read_access,
+)
 
 
-MONEY = Decimal("0.01")
 ZERO = Decimal("0")
-
-
-def _money(value: Decimal | object) -> Decimal:
-    return Decimal(str(value or 0)).quantize(MONEY, rounding=ROUND_HALF_UP)
-
-
-def _require_read_access(db: Session, current_user: User) -> int:
-    company_id = require_company_context(current_user)
-    require_company_feature(db, company_id=company_id, code="features.profitability")
-    require_capability(db, current_user, "finance.read")
-    # A margin includes internal labour snapshots; never disclose them through
-    # the broader finance reader capability alone.
-    require_capability(db, current_user, "labor_costs.read")
-    return company_id
-
-
-def _require_manage_access(db: Session, current_user: User) -> int:
-    company_id = _require_read_access(db, current_user)
-    require_capability(db, current_user, "finance.manage")
-    return company_id
 
 
 def _contract_or_404(db: Session, company_id: int, contract_id: int):

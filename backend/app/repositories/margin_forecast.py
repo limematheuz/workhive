@@ -9,6 +9,7 @@ from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.margin_forecast import MarginForecast
+from app.models.company_membership import Team
 from app.models.service_catalog_version import ServiceCatalogVersion
 from app.models.template_task import TemplateTask
 from app.models.expense import Expense
@@ -281,3 +282,39 @@ def known_totals_for_service(
     ).scalar()
 
     return Decimal(str(labor_cost or 0)), Decimal(str(revenue or 0))
+
+
+def list_team_labor_cost_summaries(
+    db: Session, *, company_id: int
+) -> list[tuple[int, str, Decimal, int]]:
+    """Return closed labour costs grouped by their immutable team snapshot."""
+    rows = (
+        db.query(
+            WorkSession.labor_cost_team_id,
+            func.coalesce(
+                Team.name,
+                func.max(WorkSession.labor_cost_team_name_snapshot),
+            ),
+            func.coalesce(func.sum(WorkSession.labor_cost_amount_snapshot), 0),
+            func.count(WorkSession.id),
+        )
+        .outerjoin(
+            Team,
+            (Team.id == WorkSession.labor_cost_team_id)
+            & (Team.company_id == company_id),
+        )
+        .filter(
+            WorkSession.labor_cost_company_id == company_id,
+            WorkSession.end_time.is_not(None),
+            WorkSession.labor_cost_amount_snapshot.is_not(None),
+            WorkSession.labor_cost_team_id.is_not(None),
+            WorkSession.labor_cost_team_name_snapshot.is_not(None),
+        )
+        .group_by(WorkSession.labor_cost_team_id, Team.name)
+        .order_by(func.coalesce(Team.name, func.max(WorkSession.labor_cost_team_name_snapshot)).asc())
+        .all()
+    )
+    return [
+        (int(team_id), str(team_name), Decimal(str(total)), int(session_count))
+        for team_id, team_name, total, session_count in rows
+    ]

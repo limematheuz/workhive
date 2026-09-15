@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { ChartNoAxesCombined, Loader2, Save } from "lucide-react";
+import { ChartNoAxesCombined, CircleDollarSign, HandCoins, Loader2, ReceiptText, Save } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SummaryMetricCard, SummaryMetricGrid, type SummaryMetricTone } from "@/components/ui/summary-metric-card";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
@@ -20,16 +22,7 @@ type MarginForecastPanelProps = {
     className?: string;
 };
 
-function Metric({ label, value, tone = "default" }: { label: string; value: number | null; tone?: "default" | "positive" | "negative" }) {
-    const color = tone === "positive"
-        ? "text-emerald-700 dark:text-emerald-300"
-        : tone === "negative"
-            ? "text-red-700 dark:text-red-300"
-            : "text-[var(--text-main)]";
-    return <div className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/45 p-3"><p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">{label}</p><p className={`mt-1 font-mono text-sm font-semibold ${color}`}>{value === null ? "—" : formatCurrency(value)}</p></div>;
-}
-
-function marginTone(value: number | null): "default" | "positive" | "negative" {
+function marginTone(value: number | null): SummaryMetricTone {
     if (value === null) return "default";
     return value >= 0 ? "positive" : "negative";
 }
@@ -97,20 +90,20 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
                         <p className="mt-1 text-xs text-[var(--text-muted)]">Solo factura de tareas, mano de obra con snapshot, material consumido y gastos vinculados explícitamente. Los gastos generales no se reparten.</p>
                     </div>
                 </div>
-                {!forecast.budget && <span className="rounded-full bg-[var(--alert-warning-bg)] px-2.5 py-1 text-[10px] font-semibold text-[var(--alert-warning-text)]">Falta presupuesto de coste</span>}
+                {!forecast.budget && <Badge variant="outline" className="border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]">Falta presupuesto de coste</Badge>}
             </div>
 
-            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-                <Metric label="Ingreso previsto" value={forecast.planned_revenue_base_amount} />
-                <Metric label="Coste previsto" value={forecast.planned_direct_cost_base_amount} />
-                <Metric label="Margen previsto" value={forecast.planned_margin_base_amount} tone={marginTone(forecast.planned_margin_base_amount)} />
-                <Metric label="Margen trazado" value={forecast.actual_margin_base_amount} tone={marginTone(forecast.actual_margin_base_amount)} />
-            </div>
+            <SummaryMetricGrid className="mt-4" desktopColumns={4} aria-label={`Resumen de margen de ${scopeLabel}`}>
+                <SummaryMetricCard icon={ReceiptText} label="Ingreso previsto" value={forecast.planned_revenue_base_amount === null ? "—" : formatCurrency(forecast.planned_revenue_base_amount)} />
+                <SummaryMetricCard icon={CircleDollarSign} label="Coste previsto" value={forecast.planned_direct_cost_base_amount === null ? "—" : formatCurrency(forecast.planned_direct_cost_base_amount)} />
+                <SummaryMetricCard icon={ChartNoAxesCombined} label="Margen previsto" value={forecast.planned_margin_base_amount === null ? "—" : formatCurrency(forecast.planned_margin_base_amount)} valueTone={marginTone(forecast.planned_margin_base_amount)} />
+                <SummaryMetricCard icon={HandCoins} label="Margen trazado" value={formatCurrency(forecast.actual_margin_base_amount)} valueTone={marginTone(forecast.actual_margin_base_amount)} />
+            </SummaryMetricGrid>
             <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Facturado trazado: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_revenue_base_amount)}</span></p>
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Mano de obra: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_labor_cost_base_amount)}</span></p>
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Material: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_material_cost_base_amount)}</span> · Gastos directos: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_expense_cost_base_amount)}</span></p>
-                <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Desviación de coste: <span className={`font-mono font-semibold ${marginTone(forecast.direct_cost_variance_base_amount) === "negative" ? "text-emerald-700 dark:text-emerald-300" : "text-[var(--text-main)]"}`}>{forecast.direct_cost_variance_base_amount === null ? "—" : formatCurrency(forecast.direct_cost_variance_base_amount)}</span></p>
+                <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Desviación de coste: <span className={`font-mono font-semibold ${marginTone(forecast.direct_cost_variance_base_amount) === "negative" ? "text-[var(--status-active-text)]" : "text-[var(--text-main)]"}`}>{forecast.direct_cost_variance_base_amount === null ? "—" : formatCurrency(forecast.direct_cost_variance_base_amount)}</span></p>
             </div>
 
             {canManage && <div className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 p-3">

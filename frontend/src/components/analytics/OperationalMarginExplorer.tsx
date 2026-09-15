@@ -4,9 +4,10 @@ import * as React from "react";
 
 import { LocationMarginPanel } from "@/components/analytics/LocationMarginPanel";
 import { ServiceMarginPanel } from "@/components/analytics/ServiceMarginPanel";
+import { TeamLaborCostPanel } from "@/components/analytics/TeamLaborCostPanel";
 import { MarginForecastPanel } from "@/components/margin-forecast/MarginForecastPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { MarginForecastScopeType, ServiceMarginScope } from "@/types/margin-forecast";
+import type { MarginForecastScopeType, ServiceMarginScope, TeamLaborCost } from "@/types/margin-forecast";
 import type { Location } from "@/types/location";
 import type { ServiceContract } from "@/types/service-contract";
 import type { WorkOrder } from "@/types/work-order";
@@ -16,6 +17,7 @@ type OperationalMarginExplorerProps = {
     workOrders: WorkOrder[];
     locations: Location[];
     services: ServiceMarginScope[];
+    teamLaborCosts: TeamLaborCost[];
     loading: boolean;
     canManage: boolean;
     copy: Record<string, string>;
@@ -26,37 +28,45 @@ export function OperationalMarginExplorer({
     workOrders,
     locations,
     services,
+    teamLaborCosts,
     loading,
     canManage,
     copy,
 }: OperationalMarginExplorerProps) {
-    const [scopeType, setScopeType] = React.useState<MarginForecastScopeType | "location" | "service">("contract");
+    const [scopeType, setScopeType] = React.useState<MarginForecastScopeType | "location" | "service" | "team">("contract");
     const candidates = scopeType === "contract"
         ? contracts
         : scopeType === "work_order"
             ? workOrders
             : scopeType === "location"
                 ? locations
-                : services;
+                : scopeType === "service"
+                    ? services
+                    : teamLaborCosts.map((team) => ({ id: team.team_id, name: team.team_name }));
     const [scopeId, setScopeId] = React.useState<number | null>(null);
     const resolvedScopeId = scopeId !== null && candidates.some((candidate) => candidate.id === scopeId)
         ? scopeId
         : candidates[0]?.id ?? null;
 
     const changeScopeType = (value: string) => {
-        const nextScopeType = value as MarginForecastScopeType | "location" | "service";
+        const nextScopeType = value as MarginForecastScopeType | "location" | "service" | "team";
         const nextCandidates = nextScopeType === "contract"
             ? contracts
             : nextScopeType === "work_order"
                 ? workOrders
                 : nextScopeType === "location"
                     ? locations
-                    : services;
+                    : nextScopeType === "service"
+                        ? services
+                        : teamLaborCosts.map((team) => ({ id: team.team_id, name: team.team_name }));
         setScopeType(nextScopeType);
         setScopeId(nextCandidates[0]?.id ?? null);
     };
 
     const selectedScope = candidates.find((candidate) => candidate.id === resolvedScopeId) ?? null;
+    const selectedTeam = scopeType === "team" && resolvedScopeId !== null
+        ? teamLaborCosts.find((team) => team.team_id === resolvedScopeId) ?? null
+        : null;
 
     return (
         <section className="billing-surface rounded-[28px] p-5 sm:p-6">
@@ -75,6 +85,7 @@ export function OperationalMarginExplorer({
                             <SelectItem value="work_order">{copy.operational_margin_work_order}</SelectItem>
                             <SelectItem value="location">{copy.operational_margin_location}</SelectItem>
                             <SelectItem value="service">{copy.operational_margin_service}</SelectItem>
+                            <SelectItem value="team">{copy.operational_margin_team}</SelectItem>
                         </SelectContent>
                     </Select>
                     <Select
@@ -100,9 +111,13 @@ export function OperationalMarginExplorer({
                                     <SelectItem key={location.id} value={String(location.id)}>
                                         {location.name}
                                     </SelectItem>
-                                )) : services.map((service) => (
+                                )) : scopeType === "service" ? services.map((service) => (
                                     <SelectItem key={service.id} value={String(service.id)}>
                                         {service.name} · v{service.version}
+                                    </SelectItem>
+                                )) : teamLaborCosts.map((team) => (
+                                    <SelectItem key={team.team_id} value={String(team.team_id)}>
+                                        {team.team_name}
                                     </SelectItem>
                                 ))}
                         </SelectContent>
@@ -122,6 +137,11 @@ export function OperationalMarginExplorer({
                 <ServiceMarginPanel
                     key={`service-${resolvedScopeId}`}
                     serviceCatalogVersionId={resolvedScopeId}
+                    copy={copy}
+                />
+            ) : selectedScope && selectedTeam ? (
+                <TeamLaborCostPanel
+                    team={selectedTeam}
                     copy={copy}
                 />
             ) : selectedScope && resolvedScopeId !== null && (scopeType === "contract" || scopeType === "work_order") ? (

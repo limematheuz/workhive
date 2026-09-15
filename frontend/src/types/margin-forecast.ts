@@ -57,3 +57,10 @@ export interface ServiceMargin {
     known_direct_cost_base_amount: number;
     known_margin_base_amount: number;
 }
+
+export interface TeamLaborCost {
+    team_id: number;
+    team_name: string;
+    work_session_count: number;
+    actual_labor_cost_base_amount: number;
+}

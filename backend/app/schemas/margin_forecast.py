@@ -57,6 +57,15 @@ class ServiceMarginResponse(BaseModel):
     known_margin_base_amount: Decimal
 
 
+class TeamLaborCostResponse(BaseModel):
+    """Closed labour cost traced to the team responsible for a location."""
+
+    team_id: int
+    team_name: str
+    work_session_count: int
+    actual_labor_cost_base_amount: Decimal
+
+
 class LocationMarginResponse(BaseModel):
     """Read-only actual margin for one location without cost allocations."""
 
