@@ -448,8 +448,14 @@ como WorkHive Core solo cuando el caso real las exige.
   Backend, migración SQLite, UI local y regresiones de autorización validados
   sin navegador; pendiente de revisión visual autenticada.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
-  lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
-  ubicación, servicio, equipo y trabajo.
+  lectura. El corte operativo permite consultar el margen previsto frente al
+  real de un contrato o de una orden, sin repartir ingresos ni costes entre
+  alcances: solo muestra facturas de tareas, mano de obra con snapshot,
+  material consumido y gastos directos ya vinculados. La pestaña exige los
+  permisos financieros y de costes laborales y reutiliza el cálculo protegido
+  del backend. UI local y regresiones de frontend validadas sin navegador;
+  pendientes de revisión visual autenticada y de cortes homogéneos por
+  sociedad, delegación, ubicación, servicio y equipo.
 
 ### Fase 9 — Portales e integraciones
 

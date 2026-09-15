@@ -23,7 +23,7 @@ import {
     UsersRound,
 } from "lucide-react";
 
-import { canManageFinance, canViewFinance, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, canViewLaborCosts, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
@@ -65,8 +65,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { CustomerPaymentService } from "@/services/customer-payment.service";
 import { BankReconciliationSection } from "@/components/analytics/BankReconciliationSection";
+import { OperationalMarginExplorer } from "@/components/analytics/OperationalMarginExplorer";
+import { ServiceContractService } from "@/services/service-contract.service";
+import { WorkOrderService } from "@/services/work-order.service";
+import type { ServiceContract } from "@/types/service-contract";
+import type { WorkOrder } from "@/types/work-order";
 
-type AnalyticsTab = "finance" | "profitability" | "reconciliation" | "operations";
+type AnalyticsTab = "finance" | "profitability" | "operational_margin" | "reconciliation" | "operations";
 
 const PERIODS: FinancePeriod[] = ["day", "week", "month", "year"];
 
@@ -81,6 +86,7 @@ export default function FinanceAnalyticsPage() {
     const { user, loading: userLoading } = useUser();
     const canViewAnalytics = canViewFinance(user) && !isPlatformSuperadmin(user);
     const canManageAnalytics = canManageFinance(user) && !isPlatformSuperadmin(user);
+    const canViewOperationalMargin = canViewFinance(user) && canViewLaborCosts(user) && !isPlatformSuperadmin(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const text = dict.finance_analytics;
     const profileCharts = useProfile();
@@ -99,6 +105,9 @@ export default function FinanceAnalyticsPage() {
     const [profitability, setProfitability] = useState<ClientProfitability | null>(null);
     const [profitabilityLoading, setProfitabilityLoading] = useState(false);
     const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
+    const [marginContracts, setMarginContracts] = useState<ServiceContract[]>([]);
+    const [marginWorkOrders, setMarginWorkOrders] = useState<WorkOrder[]>([]);
+    const [marginCatalogsLoading, setMarginCatalogsLoading] = useState(false);
 
     useEffect(() => {
         if (userLoading || isPlatformSuperadmin(user) || !user?.company_id) return;
@@ -169,6 +178,26 @@ export default function FinanceAnalyticsPage() {
         }
     }, [canViewAnalytics, canViewProfitability, profitabilityPeriod, text.profitability_error_load]);
 
+    const loadOperationalMarginCatalogs = useCallback(async () => {
+        if (!canViewOperationalMargin || !canViewProfitability) return;
+        try {
+            setMarginCatalogsLoading(true);
+            const [contractsResult, workOrdersResult] = await Promise.allSettled([
+                ServiceContractService.getContracts(),
+                WorkOrderService.getWorkOrders(),
+            ]);
+            if (contractsResult.status === "rejected") throw contractsResult.reason;
+            if (workOrdersResult.status === "rejected") throw workOrdersResult.reason;
+            setMarginContracts(contractsResult.value);
+            setMarginWorkOrders(workOrdersResult.value);
+        } catch (error) {
+            console.error("Error loading operational margin catalogs", error);
+            toast.error(text.operational_margin_error_load);
+        } finally {
+            setMarginCatalogsLoading(false);
+        }
+    }, [canViewOperationalMargin, canViewProfitability, text.operational_margin_error_load]);
+
     useEffect(() => {
         if (userLoading) return;
         const timer = window.setTimeout(() => {
@@ -186,11 +215,22 @@ export default function FinanceAnalyticsPage() {
     }, [activeTab, canViewProfitability, loadProfitability, userLoading]);
 
     useEffect(() => {
-        if (!canViewProfitability && activeTab === "profitability") {
+        if (userLoading || activeTab !== "operational_margin") return;
+        const timer = window.setTimeout(() => {
+            void loadOperationalMarginCatalogs();
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [activeTab, loadOperationalMarginCatalogs, userLoading]);
+
+    useEffect(() => {
+        if (
+            (!canViewProfitability && activeTab === "profitability")
+            || (!(canViewProfitability && canViewOperationalMargin) && activeTab === "operational_margin")
+        ) {
             const timer = window.setTimeout(() => setActiveTab("finance"), 0);
             return () => window.clearTimeout(timer);
         }
-    }, [activeTab, canViewProfitability]);
+    }, [activeTab, canViewOperationalMargin, canViewProfitability]);
 
     const downloadAccountantPackage = useCallback(async () => {
         try {
@@ -261,6 +301,7 @@ export default function FinanceAnalyticsPage() {
                                 : [
                                     { id: "finance", label: text.tab_finance },
                                     ...(canViewProfitability ? [{ id: "profitability" as const, label: text.tab_profitability }] : []),
+                                    ...(canViewProfitability && canViewOperationalMargin ? [{ id: "operational_margin" as const, label: text.tab_operational_margin }] : []),
                                     { id: "reconciliation", label: text.tab_reconciliation },
                                     { id: "operations", label: text.tab_operations },
                                 ]}
@@ -345,6 +386,14 @@ export default function FinanceAnalyticsPage() {
                         loading={profitabilityLoading}
                         period={profitabilityPeriod}
                         setPeriod={setProfitabilityPeriod}
+                    />
+                ) : activeTab === "operational_margin" ? (
+                    <OperationalMarginExplorer
+                        contracts={marginContracts}
+                        workOrders={marginWorkOrders}
+                        loading={marginCatalogsLoading}
+                        canManage={canManageAnalytics}
+                        copy={text}
                     />
                 ) : activeTab === "reconciliation" ? (
                     <BankReconciliationSection copy={text} canManage={canManageAnalytics} />
