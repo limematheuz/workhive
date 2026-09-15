@@ -67,7 +67,12 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         Column("description", String(500), nullable=False),
         Column("is_active", Boolean, nullable=False),
     )
-    Table("work_sessions", metadata, Column("id", Integer, primary_key=True))
+    Table(
+        "work_sessions",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("end_time", String(64), nullable=True),
+    )
     Table(
         "notifications",
         metadata,
@@ -111,6 +116,10 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
     # revision. These are intentionally minimal because this test only
     # validates catalog backfill, but they must exist for that branch to run.
     Table("invoices", metadata, Column("id", Integer, primary_key=True))
+    # Expense attribution migrations evolve this established table later in
+    # the chain. It is minimal because catalog backfill is the behavior under
+    # test, but it must exist to model the historical schema accurately.
+    Table("expenses", metadata, Column("id", Integer, primary_key=True))
     # The explicit-permission migration evolves these pre-existing tables too.
     Table(
         "company_memberships", metadata,
