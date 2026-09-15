@@ -22,6 +22,10 @@ test("quality has a protected dedicated workspace in Operations", () => {
     assert.match(service, /client_acceptance/);
     assert.match(service, /getComplaints/);
     assert.match(page, /QualityComplaintsSection/);
+    assert.match(page, /key=\{`inspection-\$\{selectedInspection\?\.id \?\? "none"\}`\}/);
+    assert.match(page, /key=\{`incident-\$\{selectedIncident\?\.id \?\? "none"\}`\}/);
+    assert.doesNotMatch(page, /key=\{selectedInspection\?\.id \?\? "none"\}/);
+    assert.doesNotMatch(page, /key=\{selectedIncident\?\.id \?\? "none"\}/);
     assert.match(complaintsSection, /QualityService\.updateComplaint/);
     assert.match(evidenceSection, /resolveApiMediaUrl/);
     assert.match(conformitySection, /QualityService\.signInspectionConformity/);
