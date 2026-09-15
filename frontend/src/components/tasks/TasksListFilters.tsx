@@ -1,6 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
+import { CompactFilterSelect } from "@/components/ui/compact-filter-select";
 import { Input } from "@/components/ui/input";
 import {
     reservationFilterSearchClass,
@@ -72,71 +73,72 @@ export function TasksListFilters({
             </div>
 
             <div className="flex flex-wrap gap-2">
-                <select
+                <CompactFilterSelect
                     value={selectedLocationId}
-                    onChange={(e) => onSelectedLocationIdChange(e.target.value)}
+                    onValueChange={onSelectedLocationIdChange}
                     aria-label="Filtrar por ubicación"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="">{dict.tasks?.filter_all_locations || "All locations"}</option>
-                    {locations.map(l => (
-                        <option key={l.id} value={l.id.toString()}>{l.name}</option>
-                    ))}
-                </select>
+                    options={[
+                        { value: "", label: dict.tasks?.filter_all_locations || "All locations" },
+                        ...locations.map((location) => ({ value: location.id.toString(), label: location.name })),
+                    ]}
+                />
 
                 {isAdminOrManager ? (
-                    <select
+                    <CompactFilterSelect
                         value={selectedUserId}
-                        onChange={(e) => onSelectedUserIdChange(e.target.value)}
+                        onValueChange={onSelectedUserIdChange}
                         aria-label="Filtrar por operario"
                         className={reservationFilterSelectClass}
-                    >
-                        <option value="">{dict.tasks?.filter_all_operators || "All operators"}</option>
-                        {users.map(u => (
-                            <option key={u.id} value={u.id.toString()}>{u.full_name || u.email}</option>
-                        ))}
-                    </select>
+                        options={[
+                            { value: "", label: dict.tasks?.filter_all_operators || "All operators" },
+                            ...users.map((user) => ({ value: user.id.toString(), label: user.full_name || user.email })),
+                        ]}
+                    />
                 ) : (
                     <div className="inline-flex h-9 items-center rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.tasks?.filter_assigned_to_me || "Assigned to me"}
                     </div>
                 )}
 
-                <select
+                <CompactFilterSelect
                     value={selectedStatus}
-                    onChange={(e) => onSelectedStatusChange(e.target.value)}
+                    onValueChange={onSelectedStatusChange}
                     aria-label="Filtrar por estado"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="">{dict.tasks?.filter_all_statuses || "All statuses"}</option>
-                    <option value="pending">{dict.profile?.tables?.status_pending || "Pending"}</option>
-                    <option value="progress">{dict.tasks?.filter_in_progress || "In progress"}</option>
-                    <option value="review">{dict.tasks?.filter_in_review || "In review"}</option>
-                    <option value="completed">{dict.profile?.tables?.status_completed || "Completed"}</option>
-                </select>
+                    options={[
+                        { value: "", label: dict.tasks?.filter_all_statuses || "All statuses" },
+                        { value: "pending", label: dict.profile?.tables?.status_pending || "Pending" },
+                        { value: "progress", label: dict.tasks?.filter_in_progress || "In progress" },
+                        { value: "review", label: dict.tasks?.filter_in_review || "In review" },
+                        { value: "completed", label: dict.profile?.tables?.status_completed || "Completed" },
+                    ]}
+                />
 
-                <select
+                <CompactFilterSelect
                     value={selectedPriority}
-                    onChange={(e) => onSelectedPriorityChange(e.target.value)}
+                    onValueChange={onSelectedPriorityChange}
                     aria-label="Filtrar por prioridad"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="">{dict.tasks?.filter_all_priorities || "Todas las prioridades"}</option>
-                    <option value="high">{dict.tasks?.priority_high || "High"}</option>
-                    <option value="medium">{dict.tasks?.priority_medium || "Medium"}</option>
-                    <option value="low">{dict.tasks?.priority_low || "Low"}</option>
-                </select>
+                    options={[
+                        { value: "", label: dict.tasks?.filter_all_priorities || "Todas las prioridades" },
+                        { value: "high", label: dict.tasks?.priority_high || "High" },
+                        { value: "medium", label: dict.tasks?.priority_medium || "Medium" },
+                        { value: "low", label: dict.tasks?.priority_low || "Low" },
+                    ]}
+                />
 
-                <select
+                <CompactFilterSelect
                     value={dateScope}
-                    onChange={(event) => onDateScopeChange(event.target.value)}
+                    onValueChange={onDateScopeChange}
                     aria-label="Filtrar por fecha"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="ALL">{dict.tasks?.filter_all_dates || "Todas las fechas"}</option>
-                    <option value="UPCOMING">{dict.tasks?.filter_upcoming || "Próximas"}</option>
-                    <option value="PAST">{dict.tasks?.filter_past || "Fechas pasadas"}</option>
-                </select>
+                    options={[
+                        { value: "ALL", label: dict.tasks?.filter_all_dates || "Todas las fechas" },
+                        { value: "UPCOMING", label: dict.tasks?.filter_upcoming || "Próximas" },
+                        { value: "PAST", label: dict.tasks?.filter_past || "Fechas pasadas" },
+                    ]}
+                />
             </div>
         </div>
     );

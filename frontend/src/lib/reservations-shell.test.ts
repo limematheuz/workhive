@@ -27,7 +27,9 @@ test("reservations page shell uses billing surface without top accent pad", () =
     assert.match(filters, /from "@\/components\/ui\/input"/);
     assert.match(filters, /from "@\/components\/ui\/checkbox"/);
     assert.match(filters, /from "@\/components\/ui\/button"/);
+    assert.match(filters, /CompactFilterSelect/);
     assert.match(filters, /reservationFilterSelectClass/);
+    assert.doesNotMatch(filters, /<select\b/);
     assert.match(filters, /flex flex-wrap gap-2/);
     assert.match(filterStyles, /w-auto min-w-\[9\.5rem\]/);
     assert.doesNotMatch(filters, /xl:grid-cols-6/);
@@ -54,6 +56,8 @@ test("solicitudes tab reuses dense billing filter and card language", () => {
     assert.match(filters, /billing-block/);
     assert.match(filters, /reservation-filter-styles/);
     assert.match(filters, /from "@\/components\/ui\/input"/);
+    assert.match(filters, /CompactFilterSelect/);
+    assert.doesNotMatch(filters, /<select\b/);
     assert.match(filters, /flex flex-wrap gap-2/);
     assert.doesNotMatch(filters, /h-11 w-full/);
 

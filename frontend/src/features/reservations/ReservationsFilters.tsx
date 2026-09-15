@@ -4,6 +4,7 @@ import { ArrowUpRight, History, RotateCcw, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CompactFilterSelect } from "@/components/ui/compact-filter-select";
 import { Input } from "@/components/ui/input";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -72,144 +73,83 @@ export function ReservationsFilters({
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                    <select
+                    <CompactFilterSelect
                         value={filters.year}
-                        onChange={(event) => updateFilter("year", event.target.value)}
+                        onValueChange={(year) => updateFilter("year", year)}
                         aria-label="Filtrar por año"
                         className={reservationFilterSelectClass}
-                    >
-                        <option value="ALL">{dict.reservations?.filters?.all_years || "Todos los años"}</option>
-                        {years.map((year) => (
-                            <option key={year} value={year}>{year}</option>
-                        ))}
-                    </select>
-                    <select
+                        options={[
+                            { value: "ALL", label: dict.reservations?.filters?.all_years || "Todos los años" },
+                            ...years.map((year) => ({ value: String(year), label: String(year) })),
+                        ]}
+                    />
+                    <CompactFilterSelect
                         value={filters.month}
-                        onChange={(event) => updateFilter("month", event.target.value)}
+                        onValueChange={(month) => updateFilter("month", month)}
                         aria-label="Filtrar por mes"
                         className={reservationFilterSelectClass}
-                    >
-                        <option value="ALL">{dict.reservations?.filters?.all_months || "Todos los meses"}</option>
-                        {months.map((month) => (
-                            <option key={month} value={month}>
-                                {new Date(Date.UTC(2026, month - 1, 1)).toLocaleDateString(
+                        options={[
+                            { value: "ALL", label: dict.reservations?.filters?.all_months || "Todos los meses" },
+                            ...months.map((month) => ({
+                                value: String(month),
+                                label: new Date(Date.UTC(2026, month - 1, 1)).toLocaleDateString(
                                     dict.reservations?.filters?.all_months === "All months" ? "en-US" : "es-ES",
                                     { month: "long", timeZone: "UTC" },
-                                )}
-                            </option>
-                        ))}
-                    </select>
-                    <select
+                                ),
+                            })),
+                        ]}
+                    />
+                    <CompactFilterSelect
                         value={filters.location}
-                        onChange={(event) =>
-                            updateFilter("location", event.target.value)
-                        }
+                        onValueChange={(location) => updateFilter("location", location)}
                         aria-label="Filtrar por propiedad"
                         className={reservationFilterSelectClass}
-                    >
-                        <option value="ALL">
-                            {dict.reservations?.filters?.all_locations ||
-                                "Todas las propiedades"}
-                        </option>
-                        {locations.map((location) => (
-                            <option key={location.id} value={location.id}>
-                                {location.name}
-                            </option>
-                        ))}
-                    </select>
-                    <select
+                        options={[
+                            { value: "ALL", label: dict.reservations?.filters?.all_locations || "Todas las propiedades" },
+                            ...locations.map((location) => ({ value: String(location.id), label: location.name })),
+                        ]}
+                    />
+                    <CompactFilterSelect
                         value={filters.provider}
-                        onChange={(event) =>
-                            updateFilter("provider", event.target.value)
-                        }
+                        onValueChange={(provider) => updateFilter("provider", provider)}
                         aria-label="Filtrar por proveedor"
                         className={reservationFilterSelectClass}
-                    >
-                        <option value="ALL">
-                            {dict.reservations?.filters?.all_providers ||
-                                "Todos los proveedores"}
-                        </option>
-                        <option value="INTERNAL">
-                            {dict.reservations?.filters?.internal_management ||
-                                "Gestión interna"}
-                        </option>
-                        {providers.map((provider) => (
-                            <option key={provider.id} value={provider.id}>
-                                {provider.name}
-                            </option>
-                        ))}
-                    </select>
-                    <select
+                        options={[
+                            { value: "ALL", label: dict.reservations?.filters?.all_providers || "Todos los proveedores" },
+                            { value: "INTERNAL", label: dict.reservations?.filters?.internal_management || "Gestión interna" },
+                            ...providers.map((provider) => ({ value: String(provider.id), label: provider.name })),
+                        ]}
+                    />
+                    <CompactFilterSelect
                         value={filters.cleaning}
-                        onChange={(event) =>
-                            updateFilter("cleaning", event.target.value)
-                        }
+                        onValueChange={(cleaning) => updateFilter("cleaning", cleaning)}
                         aria-label="Filtrar por estado de limpieza"
                         className={reservationFilterSelectClass}
-                    >
-                        <option value="ALL">
-                            {dict.reservations?.filters?.any_cleaning ||
-                                "Cualquier estado de limpieza"}
-                        </option>
-                        <option value="UNASSIGNED">
-                            {dict.reservations?.filters?.unassigned_provider ||
-                                "Sin proveedor asignado"}
-                        </option>
-                        <option value="requested">
-                            {dict.reservations?.filters?.requested_cleaning ||
-                                "Solicitud pendiente"}
-                        </option>
-                        <option value="pending">
-                            {dict.reservations?.filters?.pending_cleaning ||
-                                "Aceptada / pendiente"}
-                        </option>
-                        <option value="progress">
-                            {dict.reservations?.filters?.progress_cleaning ||
-                                "En progreso"}
-                        </option>
-                        <option value="completed">
-                            {dict.reservations?.filters?.completed_cleaning ||
-                                "Completada"}
-                        </option>
-                        <option value="rejected">
-                            {dict.reservations?.filters?.rejected_cleaning ||
-                                "Limpieza rechazada"}
-                        </option>
-                        <option value="NO_CLEANING">
-                            {dict.reservations?.filters?.no_cleaning ||
-                                "Sin limpieza"}
-                        </option>
-                    </select>
+                        options={[
+                            { value: "ALL", label: dict.reservations?.filters?.any_cleaning || "Cualquier estado de limpieza" },
+                            { value: "UNASSIGNED", label: dict.reservations?.filters?.unassigned_provider || "Sin proveedor asignado" },
+                            { value: "requested", label: dict.reservations?.filters?.requested_cleaning || "Solicitud pendiente" },
+                            { value: "pending", label: dict.reservations?.filters?.pending_cleaning || "Aceptada / pendiente" },
+                            { value: "progress", label: dict.reservations?.filters?.progress_cleaning || "En progreso" },
+                            { value: "completed", label: dict.reservations?.filters?.completed_cleaning || "Completada" },
+                            { value: "rejected", label: dict.reservations?.filters?.rejected_cleaning || "Limpieza rechazada" },
+                            { value: "NO_CLEANING", label: dict.reservations?.filters?.no_cleaning || "Sin limpieza" },
+                        ]}
+                    />
                     {viewMode === "active" ? (
-                        <select
+                        <CompactFilterSelect
                             value={filters.date}
-                            onChange={(event) =>
-                                updateFilter("date", event.target.value)
-                            }
+                            onValueChange={(date) => updateFilter("date", date)}
                             aria-label="Filtrar por fecha"
                             className={reservationFilterSelectClass}
-                        >
-                            <option value="UPCOMING">
-                                {dict.reservations?.filters?.status_upcoming ||
-                                    "Próximas y activas"}
-                            </option>
-                            <option value="TODAY">
-                                {dict.reservations?.filters?.status_today ||
-                                    "Estancias de hoy"}
-                            </option>
-                            <option value="NEXT_7">
-                                {dict.reservations?.filters?.status_next_7 ||
-                                    "Entradas en 7 días"}
-                            </option>
-                            <option value="PAST">
-                                {dict.reservations?.filters?.status_past ||
-                                    "Histórico"}
-                            </option>
-                            <option value="ALL">
-                                {dict.reservations?.filters?.status_all_dates ||
-                                    "Todas las fechas"}
-                            </option>
-                        </select>
+                            options={[
+                                { value: "UPCOMING", label: dict.reservations?.filters?.status_upcoming || "Próximas y activas" },
+                                { value: "TODAY", label: dict.reservations?.filters?.status_today || "Estancias de hoy" },
+                                { value: "NEXT_7", label: dict.reservations?.filters?.status_next_7 || "Entradas en 7 días" },
+                                { value: "PAST", label: dict.reservations?.filters?.status_past || "Histórico" },
+                                { value: "ALL", label: dict.reservations?.filters?.status_all_dates || "Todas las fechas" },
+                            ]}
+                        />
                     ) : null}
                 </div>
 

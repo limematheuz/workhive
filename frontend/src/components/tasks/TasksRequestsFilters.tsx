@@ -2,6 +2,7 @@
 
 import { Search } from "lucide-react";
 
+import { CompactFilterSelect } from "@/components/ui/compact-filter-select";
 import { Input } from "@/components/ui/input";
 import {
     reservationFilterSearchClass,
@@ -47,39 +48,38 @@ export function TasksRequestsFilters({
                 />
             </div>
             <div className="flex flex-wrap gap-2">
-                <select
+                <CompactFilterSelect
                     value={locationFilter}
-                    onChange={(event) => onLocationFilterChange(event.target.value)}
+                    onValueChange={onLocationFilterChange}
                     aria-label="Filtrar por propiedad"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="ALL">Todas las propiedades</option>
-                    {requestLocations.map((location) => (
-                        <option key={location.id} value={location.id}>{location.name}</option>
-                    ))}
-                </select>
-                <select
+                    options={[
+                        { value: "ALL", label: "Todas las propiedades" },
+                        ...requestLocations.map((location) => ({ value: String(location.id), label: location.name })),
+                    ]}
+                />
+                <CompactFilterSelect
                     value={issuerFilter}
-                    onChange={(event) => onIssuerFilterChange(event.target.value)}
+                    onValueChange={onIssuerFilterChange}
                     aria-label="Filtrar por emisora"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="ALL">Todas las emisoras</option>
-                    {issuers.map(([id, name]) => (
-                        <option key={id} value={id}>{name}</option>
-                    ))}
-                </select>
-                <select
+                    options={[
+                        { value: "ALL", label: "Todas las emisoras" },
+                        ...issuers.map(([id, name]) => ({ value: String(id), label: name })),
+                    ]}
+                />
+                <CompactFilterSelect
                     value={dateFilter}
-                    onChange={(event) => onDateFilterChange(event.target.value)}
+                    onValueChange={onDateFilterChange}
                     aria-label="Filtrar por fecha"
                     className={reservationFilterSelectClass}
-                >
-                    <option value="ALL">Todas las fechas</option>
-                    <option value="TURNOVER">Cambio el mismo día</option>
-                    <option value="NEXT_7">Próximos 7 días</option>
-                    <option value="NO_NEXT">Sin próxima entrada</option>
-                </select>
+                    options={[
+                        { value: "ALL", label: "Todas las fechas" },
+                        { value: "TURNOVER", label: "Cambio el mismo día" },
+                        { value: "NEXT_7", label: "Próximos 7 días" },
+                        { value: "NO_NEXT", label: "Sin próxima entrada" },
+                    ]}
+                />
             </div>
         </div>
     );
