@@ -38,19 +38,19 @@ const taskZones = readFileSync(
 );
 
 
-test("React Doctor scans the full frontend and blocks every finding", () => {
+test("React Doctor blocks newly introduced findings without blocking historical debt", () => {
     assert.match(workflow, /^permissions:\n  contents: read$/m);
     assert.doesNotMatch(workflow, /pull-requests: write|issues: write|statuses: write/);
     assert.match(workflow, /uses: millionco\/react-doctor@v2/);
     assert.match(workflow, /directory: frontend/);
     assert.match(workflow, /blocking: warning/);
-    assert.match(workflow, /scope: full/);
+    assert.match(workflow, /scope: changed/);
     assert.match(workflow, /version: "0\.9\.12"/);
     assert.doesNotMatch(workflow, /continue-on-error/);
 });
 
 
-test("the local React Doctor command matches the blocking CI policy", () => {
+test("the local React Doctor command keeps the full diagnostic scan available", () => {
     assert.match(
         packageJson,
         /"doctor": "react-doctor \. --blocking warning --scope full"/,
