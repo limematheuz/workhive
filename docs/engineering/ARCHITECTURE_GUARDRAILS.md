@@ -5,6 +5,14 @@ separación de responsabilidades en un control de CI. No pretende que un
 contador de líneas pueda decidir si un diseño es bueno: las decisiones de
 dominio siguen requiriendo revisión humana.
 
+Para páginas, componentes y hooks de frontend, el tamaño no es un límite de
+diseño universal. Antes de implementar se debe identificar la responsabilidad,
+el estado que posee, su frontera de datos y las secciones de interfaz; cada una
+se extrae cuando pueda evolucionar o probarse de forma independiente. React
+Doctor bloquea regresiones nuevas de seguridad, accesibilidad, rendimiento y
+corrección. Sus avisos de tamaño de componente y de preferencia por reducer se
+mantienen como diagnóstico, no como sustituto de ese diseño previo.
+
 ## Límites que CI aplica
 
 - Un servicio nuevo de backend no puede superar 350 líneas.

@@ -12,7 +12,7 @@ from app.services.storage_service import (
     media_url,
 )
 
-MAX_IMAGE_BYTES = 4 * 1024 * 1024
+MAX_IMAGE_BYTES = 1 * 1024 * 1024
 MAX_IMAGE_WIDTH = 8_000
 MAX_IMAGE_HEIGHT = 8_000
 MAX_IMAGE_PIXELS = 40_000_000
@@ -42,8 +42,8 @@ def validate_image(contents: bytes) -> tuple[str, str]:
         )
     if len(contents) > MAX_IMAGE_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Image must be 4MB or smaller",
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="La imagen no puede superar 1 MB",
         )
 
     content_type = _detect_image_content_type(contents)

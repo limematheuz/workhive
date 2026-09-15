@@ -16,6 +16,7 @@ from app.schemas.location_assets import LocationEquipmentInput, LocationEquipmen
 from app.services.storage_service import ObjectNotFoundError, build_document_key, get_object_storage
 from app.services import location_service, organization_authorization_service
 from app.services import entitlement_service
+from app.services.image_service import MAX_IMAGE_BYTES, validate_image
 from app.services.user_scope import scoped_company_id
 
 
@@ -45,12 +46,24 @@ def _validated_document(
             detail="El documento supera el límite permitido por tu plan",
             headers={"X-WorkHive-Error-Code": "entitlement.quota_reached"},
         )
-    detected = next((value for value in _FILE_TYPES.items() if contents.startswith(value[1][1])), None)
+    detected = next(
+        (value for value in _FILE_TYPES.items() if contents.startswith(value[1][1])),
+        None,
+    )
+    if len(contents) >= 12 and contents.startswith(b"RIFF") and contents[8:12] == b"WEBP":
+        detected = ("image/webp", ("webp", b"RIFF"))
     if detected is None:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Only PDF, JPEG, and PNG documents are allowed")
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Only PDF, JPEG, PNG, and WEBP documents are allowed")
     detected_type, (extension, _) = detected
+    if detected_type.startswith("image/") and len(contents) > MAX_IMAGE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="La imagen no puede superar 1 MB",
+        )
     if content_type and content_type != detected_type:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Document content type does not match its file")
+    if detected_type.startswith("image/"):
+        validate_image(contents)
     return detected_type, extension
 
 

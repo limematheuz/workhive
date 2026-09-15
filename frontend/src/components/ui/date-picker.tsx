@@ -79,6 +79,11 @@ function DatePicker({
           onChange={(event) => {
             const nextValue = formatDateTyping(event.target.value)
             const nextDate = parseTypedDate(nextValue)
+            if (!nextValue) {
+              onValueChange("")
+              setInputState({ value: "", text: "" })
+              return
+            }
             setInputState({ value, text: nextValue })
             if (nextDate && isDateWithinBounds(nextDate, min, max)) {
               onValueChange(toIsoDate(nextDate))

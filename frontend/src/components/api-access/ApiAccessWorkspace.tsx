@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Copy, History, KeyRound, Loader2, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -13,11 +13,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
+import { canAdministerCompany, isPlatformSuperadmin } from "@/domain/access/roles";
+import { useUser } from "@/lib/user-context";
 import { ApiAccessKeyService } from "@/services/api-access-key.service";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import type { ApiAccessKey, ApiAccessKeyUsage, ApiAccessScope, CreatedApiAccessKey } from "@/types/api-access-key";
 
 const API_FEATURE_CODE = "features.api";
+type ApiFeatureAccess = "checking" | "enabled" | "denied";
 
 const dateTime = new Intl.DateTimeFormat("es-ES", {
     dateStyle: "medium",
@@ -40,36 +43,35 @@ function ApiKeyUsageHistory({ usage, loading }: { usage: ApiAccessKeyUsage[] | u
 }
 
 export function ApiAccessWorkspace() {
-    const [featureChecked, setFeatureChecked] = useState(false);
-    const [featureEnabled, setFeatureEnabled] = useState(false);
+    const { user, loading: userLoading } = useUser();
+    const [featureAccess, setFeatureAccess] = useState<ApiFeatureAccess>("checking");
+    const canManageApiAccess = canAdministerCompany(user)
+        && !isPlatformSuperadmin(user)
+        && user?.company_id != null;
 
     useEffect(() => {
+        if (userLoading || !canManageApiAccess) return;
         let active = true;
         void CompanyPlanAccessService.getCurrentEntitlements()
             .then((access) => {
                 if (!active) return;
                 const enabled = access.entitlements.some((item) => item.code === API_FEATURE_CODE && item.value === true);
-                setFeatureEnabled(enabled);
-                setFeatureChecked(true);
+                setFeatureAccess(enabled ? "enabled" : "denied");
             })
             .catch(() => {
                 if (!active) return;
-                setFeatureChecked(true);
+                setFeatureAccess("denied");
             });
         return () => { active = false; };
-    }, []);
+    }, [canManageApiAccess, userLoading]);
 
-    if (!featureChecked) {
+    if (userLoading || (canManageApiAccess && featureAccess === "checking")) {
         return <div className="flex min-h-64 items-center justify-center"><Loader2 className="size-6 animate-spin text-accent" /><span className="sr-only">Comprobando acceso API</span></div>;
     }
 
-    if (!featureEnabled) return <ApiAccessUnavailable />;
+    if (!canManageApiAccess || featureAccess !== "enabled") redirect("/dashboard");
 
     return <ApiAccessWorkspaceContent />;
-}
-
-function ApiAccessUnavailable() {
-    return <div className="mx-auto flex min-h-64 w-full max-w-2xl items-center px-[3%] py-8 md:p-8"><Card className="w-full"><CardContent className="space-y-4 py-10 text-center"><KeyRound className="mx-auto size-8 text-[var(--text-muted)]" aria-hidden="true" /><div><h1 className="font-semibold">Acceso API no disponible</h1><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[var(--text-muted)]">Esta función no está incluida en el plan actual de la empresa. Un administrador de plataforma puede habilitarla desde Plan y acceso.</p></div><Button asChild variant="outline"><Link href="/dashboard">Volver al resumen</Link></Button></CardContent></Card></div>;
 }
 
 function ApiAccessWorkspaceContent() {

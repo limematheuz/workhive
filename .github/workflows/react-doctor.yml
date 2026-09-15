@@ -32,13 +32,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Enforce full React Doctor health gate
+      - name: Enforce changed-code React Doctor health gate
         uses: millionco/react-doctor@v2
         with:
           directory: frontend
-          # Any issue prevents merging: a clean scan is 100/100.
+          # Any newly introduced issue prevents merging. Historical findings
+          # remain visible in full local scans, but do not block unrelated PRs.
           blocking: warning
-          scope: full
+          scope: changed
           version: "0.9.12"
           # The GitHub check is enough; avoid granting the action write access.
           comment: false

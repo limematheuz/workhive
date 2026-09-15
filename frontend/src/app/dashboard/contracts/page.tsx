@@ -8,7 +8,7 @@ import { ServiceContractDetailDialog } from "@/components/contracts/ServiceContr
 import { Badge } from "@/components/ui/badge"
 import { DataListTable } from "@/components/ui/data-list-table"
 import { PageHeader } from "@/components/ui/page-header"
-import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles"
+import { canManageFinance, canViewFinance, canViewLaborCosts, isPlatformSuperadmin } from "@/domain/access/roles"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
@@ -39,6 +39,7 @@ function ContractsPageContent() {
     const [detailOpen, setDetailOpen] = React.useState(false)
     const canViewContracts = canViewFinance(user) && !isPlatformSuperadmin(user)
     const canManageContracts = canManageFinance(user) && !isPlatformSuperadmin(user)
+    const canViewMargin = canViewLaborCosts(user) && canViewContracts
 
     if (!userLoading && (!user || !canViewContracts)) {
         redirect("/dashboard")
@@ -80,8 +81,11 @@ function ContractsPageContent() {
         if (loading || !Number.isSafeInteger(sourceQuoteId) || sourceQuoteId < 1) return
 
         const contract = contracts.find((item) => item.source_quote_id === sourceQuoteId)
-        if (contract) void openContract(contract)
+        const timer = window.setTimeout(() => {
+            if (contract) void openContract(contract)
+        }, 0)
         router.replace("/dashboard/contracts", { scroll: false })
+        return () => window.clearTimeout(timer)
     }, [contracts, loading, openContract, router, sourceQuoteId])
 
     const receiveContractUpdate = (updated: ServiceContract) => {
@@ -163,6 +167,7 @@ function ContractsPageContent() {
                 contract={selectedContract}
                 clientName={selectedContract ? contractClientName(selectedContract, clients) : ""}
                 canManage={canManageContracts}
+                canViewMargin={canViewMargin}
                 open={detailOpen}
                 onOpenChange={(open) => {
                     setDetailOpen(open)

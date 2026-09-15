@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { formatDate } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
-import { LocationService, type Location, type LocationDocumentLibraryItem } from "@/services/location.service";
+import { LocationService, type Location } from "@/services/location.service";
+import { LocationDocumentService, type LocationDocumentLibraryItem } from "@/services/location-document.service";
 
 const columns: DataListColumn[] = [
     { key: "document", label: "Documento", className: "w-[38%]" },
@@ -35,7 +36,7 @@ export default function DocumentsPage() {
         setLoading(true);
         try {
             const [nextDocuments, nextLocations] = await Promise.all([
-                LocationService.getDocumentLibrary(), LocationService.getLocations(),
+                LocationDocumentService.getDocumentLibrary(), LocationService.getLocations(),
             ]);
             setDocuments(nextDocuments);
             setLocations(nextLocations.filter((location) => location.can_manage_location));
@@ -60,7 +61,7 @@ export default function DocumentsPage() {
         if (!file || !selectedLocation) return;
         setUploading(true);
         try {
-            await LocationService.uploadDocument(selectedLocation.id, file);
+            await LocationDocumentService.uploadDocument(selectedLocation.id, file);
             toast.success("Documento subido.");
             await reload();
         } catch (error) {
@@ -75,7 +76,7 @@ export default function DocumentsPage() {
         if (!archiving) return;
         setUploading(true);
         try {
-            await LocationService.archiveDocument(archiving.location_id, archiving.id);
+            await LocationDocumentService.archiveDocument(archiving.location_id, archiving.id);
             setArchiving(null);
             toast.success("Documento archivado.");
             await reload();
@@ -99,7 +100,7 @@ export default function DocumentsPage() {
                     <SelectTrigger className="sm:w-72"><SelectValue placeholder="Selecciona ubicación para subir" /></SelectTrigger>
                     <SelectContent>{locations.map((location) => <SelectItem key={location.id} value={String(location.id)}>{location.name}</SelectItem>)}</SelectContent>
                 </Select>
-                <input ref={fileRef} className="sr-only" type="file" accept="application/pdf,image/jpeg,image/png" aria-label="Subir documento" onChange={(event) => void upload(event.target.files?.[0])} />
+                <input ref={fileRef} className="sr-only" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" aria-label="Subir documento" onChange={(event) => void upload(event.target.files?.[0])} />
                 <Button type="button" disabled={!selectedLocation || uploading} onClick={() => fileRef.current?.click()}><Paperclip className="size-4" />Subir documento</Button>
             </div>}
             empty={<p className="text-sm text-[var(--text-muted)]">No hay documentos. Selecciona una ubicación y sube el primero.</p>}
@@ -107,9 +108,9 @@ export default function DocumentsPage() {
                 <div key="document" className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{document.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{document.document_type} · {bytes(document.size_bytes)}</p></div>,
                 <span key="location" className="truncate text-sm text-[var(--text-main)]">{document.location_name}</span>,
                 <span key="date" className="text-sm text-[var(--text-muted)]">{formatDate(document.created_at)}</span>,
-                <div key="actions" className="flex justify-end gap-1"><a className="inline-flex h-8 items-center justify-center rounded-md px-2 text-sm font-medium hover:bg-muted" href={LocationService.documentDownloadUrl(document.location_id, document.id)}><Download className="mr-1 size-4" />Descargar</a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div>,
+                <div key="actions" className="flex justify-end gap-1"><a className="inline-flex h-8 items-center justify-center rounded-md px-2 text-sm font-medium hover:bg-muted" href={LocationDocumentService.documentDownloadUrl(document.location_id, document.id)}><Download className="mr-1 size-4" />Descargar</a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div>,
             ]}
-            renderCompactRow={(document) => <div className="flex min-w-0 items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{document.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{document.location_name} · {bytes(document.size_bytes)}</p></div><div className="flex shrink-0 gap-1"><a className="inline-flex size-8 items-center justify-center rounded-md hover:bg-muted" href={LocationService.documentDownloadUrl(document.location_id, document.id)} aria-label={`Descargar ${document.name}`}><Download className="size-4" /></a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div></div>}
+            renderCompactRow={(document) => <div className="flex min-w-0 items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{document.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{document.location_name} · {bytes(document.size_bytes)}</p></div><div className="flex shrink-0 gap-1"><a className="inline-flex size-8 items-center justify-center rounded-md hover:bg-muted" href={LocationDocumentService.documentDownloadUrl(document.location_id, document.id)} aria-label={`Descargar ${document.name}`}><Download className="size-4" /></a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div></div>}
         />
         <DeleteConfirmDialog open={Boolean(archiving)} onOpenChange={(open) => !open && setArchiving(null)} title="Archivar documento" description="Dejará de aparecer en los documentos operativos." confirmText="Archivar" cancelText="Cancelar" confirmVariant="soft-danger" isDeleting={uploading} onConfirm={() => void archive()} />
     </div>;

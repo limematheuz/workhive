@@ -27,6 +27,12 @@ class WorkSession(Base):
     labor_cost_membership_id = Column(Integer, nullable=True, index=True)
     labor_cost_rate_snapshot = Column(Numeric(10, 2), nullable=True)
     labor_cost_amount_snapshot = Column(Numeric(12, 2), nullable=True)
+    # A person can belong to several teams. The responsible team is therefore
+    # captured from the session location once it closes, instead of deriving it
+    # later from mutable membership or location assignments.
+    labor_cost_team_id = Column(Integer, nullable=True, index=True)
+    labor_cost_team_name_snapshot = Column(String(120), nullable=True)
+    labor_cost_team_snapshotted_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

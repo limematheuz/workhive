@@ -1,4 +1,15 @@
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import relationship
 
 from app.db.session import Base
@@ -6,10 +17,31 @@ from app.db.session import Base
 
 class Expense(Base):
     __tablename__ = "expenses"
+    __table_args__ = (
+        CheckConstraint(
+            "NOT (service_contract_id IS NOT NULL AND work_order_id IS NOT NULL)",
+            name="ck_expense_one_operational_scope",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False, index=True)
     client_id = Column(Integer, ForeignKey("clients.id"), nullable=True, index=True)
+    # Direct operational attribution is optional and mutually exclusive.  The
+    # client remains a snapshot-like reporting link, while these references
+    # make a cost eligible for the exact contract or work-order margin only.
+    service_contract_id = Column(
+        Integer,
+        ForeignKey("service_contracts.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    work_order_id = Column(
+        Integer,
+        ForeignKey("work_orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     created_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
 
     expense_date = Column(DateTime(timezone=True), nullable=False, index=True)

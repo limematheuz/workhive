@@ -1,5 +1,7 @@
 "use client";
 
+import { DatePicker } from "@/components/ui/date-picker";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/services/location.service";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
@@ -31,37 +33,36 @@ export function TaskCreateMainFields({
                 </p>
             </div>
             <div className="grid gap-4 sm:grid-cols-[minmax(0,1.7fr)_minmax(11rem,0.8fr)]">
-                <label className="block space-y-2" htmlFor="task-create-location">
+                <div className="block space-y-2">
                     <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.tasks?.create_dialog?.select_location || "Ubicación *"}
                     </span>
-                    <select
-                        id="task-create-location"
+                    <Select
                         value={newLocationId}
-                        onChange={(event) => setNewLocationId(event.target.value)}
-                        required
-                        className="h-11 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none ui-motion focus:border-accent focus:ring-1 focus:ring-accent"
+                        onValueChange={setNewLocationId}
                     >
-                        <option value="" disabled>Elige una ubicación</option>
-                        {ownLocations.map((location) => (
-                            <option key={location.id} value={location.id.toString()}>{location.name}</option>
-                        ))}
-                    </select>
-                </label>
+                        <SelectTrigger id="task-create-location" className="h-11 w-full text-sm font-semibold">
+                            <SelectValue placeholder="Elige una ubicación" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ownLocations.map((location) => (
+                                <SelectItem key={location.id} value={location.id.toString()}>{location.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
 
-                <label className="block space-y-2" htmlFor="task-create-date">
+                <div className="block space-y-2">
                     <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.tasks?.create_dialog?.date || "Fecha"}
                     </span>
-                    <input
+                    <DatePicker
                         id="task-create-date"
-                        type="date"
                         value={newCreatedAt}
                         min={getDefaultTaskDate()}
-                        onChange={(event) => setNewCreatedAt(event.target.value)}
-                        className="h-11 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none ui-motion focus:border-accent focus:ring-1 focus:ring-accent"
+                        onValueChange={setNewCreatedAt}
                     />
-                </label>
+                </div>
             </div>
         </section>
     );

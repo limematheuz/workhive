@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.quality_evidence import QualityEvidenceResponse
+
 
 IncidentSeverity = Literal["low", "medium", "high", "critical"]
 IncidentStatus = Literal["open", "in_progress", "resolved", "closed"]
@@ -97,5 +99,6 @@ class QualityIncidentResponse(BaseModel):
     created_at: datetime
     resolved_at: datetime | None
     corrective_actions: list[QualityCorrectiveActionResponse]
+    evidence: list[QualityEvidenceResponse]
 
     model_config = ConfigDict(from_attributes=True)

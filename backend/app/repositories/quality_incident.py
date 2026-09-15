@@ -11,7 +11,10 @@ def list_incidents(
 ) -> list[QualityIncident]:
     query = (
         db.query(QualityIncident)
-        .options(selectinload(QualityIncident.corrective_actions))
+        .options(
+            selectinload(QualityIncident.corrective_actions),
+            selectinload(QualityIncident.evidence),
+        )
         .filter(QualityIncident.company_id == company_id)
     )
     if location_ids is not None:
@@ -30,7 +33,10 @@ def get_incident(
 ) -> QualityIncident | None:
     query = (
         db.query(QualityIncident)
-        .options(selectinload(QualityIncident.corrective_actions))
+        .options(
+            selectinload(QualityIncident.corrective_actions),
+            selectinload(QualityIncident.evidence),
+        )
         .filter(QualityIncident.company_id == company_id, QualityIncident.id == incident_id)
     )
     if for_update and db.bind and db.bind.dialect.name == "postgresql":

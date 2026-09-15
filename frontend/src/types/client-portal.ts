@@ -68,11 +68,64 @@ export type ClientPortalContract = {
     covered_locations: ClientPortalContractLocation[];
 };
 
+export type ClientPortalInspectionItem = {
+    title: string;
+    status: "not_assessed" | "passed" | "failed" | string;
+    points_awarded: number;
+    max_points: number;
+};
+
+export type ClientPortalInspectionAcceptance = {
+    signer_name: string;
+    statement_version: string;
+    signed_at: string;
+};
+
+export type ClientPortalInspection = {
+    id: number;
+    template_title: string;
+    location_name: string;
+    completed_at: string;
+    score: number;
+    max_score: number;
+    items: ClientPortalInspectionItem[];
+    acceptance: ClientPortalInspectionAcceptance | null;
+};
+
+export type ClientPortalComplaintLocation = {
+    id: number;
+    name: string;
+};
+
+export type ClientPortalComplaint = {
+    id: number;
+    location_id: number;
+    location_name: string;
+    title: string;
+    description: string;
+    category: "service" | "billing" | "damage" | "other";
+    status: "submitted" | "in_review" | "resolved" | "closed";
+    customer_response: string | null;
+    created_at: string;
+    updated_at: string;
+    resolved_at: string | null;
+};
+
+export type ClientPortalComplaintPayload = {
+    location_id: number;
+    title: string;
+    description: string;
+    category: ClientPortalComplaint["category"];
+};
+
 export type ClientPortalOverview = {
     workspace: ClientPortalWorkspace;
     invoices: ClientPortalInvoice[];
     quotes: ClientPortalQuote[];
     contracts: ClientPortalContract[];
+    inspections: ClientPortalInspection[];
+    complaint_locations: ClientPortalComplaintLocation[];
+    complaints: ClientPortalComplaint[];
 };
 
 export type ClientPortalInvitation = {
@@ -100,4 +153,9 @@ export type ClientPortalInvitationAcceptPayload = {
     accept_terms: boolean;
     accept_privacy: boolean;
     marketing_consent?: boolean;
+};
+
+export type ClientPortalInspectionAcceptancePayload = {
+    confirmed: boolean;
+    signer_name: string;
 };

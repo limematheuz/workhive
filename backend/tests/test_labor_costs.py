@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from app.models.location import Location
 from app.models.audit_log import AuditLog
+from app.models.company_membership import Team
 from app.models.work_session import WorkSession
 from app.repositories import labor_cost as labor_cost_repo
 from app.services import organization_bootstrap_service
@@ -81,12 +82,16 @@ def test_labor_costs_are_admin_only_and_snapshot_closed_work(client, db):
     )
     assert reserved_profile.status_code == 409, reserved_profile.text
 
+    team = Team(company_id=company.id, name="Equipo Centro", code="CENTRO")
+    db.add(team)
+    db.flush()
     location = Location(
         name="Centro de coste",
         address="Calle de pruebas 1",
         city="Madrid",
         managing_company_id=company.id,
         owner_company_id=company.id,
+        team_id=team.id,
     )
     db.add(location)
     db.flush()
@@ -113,6 +118,15 @@ def test_labor_costs_are_admin_only_and_snapshot_closed_work(client, db):
     assert session.labor_cost_membership_id == worker_membership.id
     assert session.labor_cost_rate_snapshot == Decimal("25.00")
     assert session.labor_cost_amount_snapshot == Decimal("18.75")
+    assert session.labor_cost_team_id == team.id
+    assert session.labor_cost_team_name_snapshot == "Equipo Centro"
+    assert session.labor_cost_team_snapshotted_at is not None
+    assert session.labor_cost_team_snapshotted_at.replace(tzinfo=timezone.utc) == ended_at
+    team.name = "Equipo renombrado"
+    location.team_id = None
+    refresh_work_session_labor_cost(db, work_session=session, company_id=company.id)
+    assert session.labor_cost_team_id == team.id
+    assert session.labor_cost_team_name_snapshot == "Equipo Centro"
     assert not hasattr(session, "salary")
 
     summary = client.get("/api/v1/labor-costs/summary", headers=_headers(admin))

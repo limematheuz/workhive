@@ -72,9 +72,8 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
                     db, current_user, capability
                 )
                 for capability in (
-                    "quality.templates.read",
-                    "quality.inspections.read",
-                    "quality.incidents.read",
+                    "quality.templates.read", "quality.inspections.read",
+                    "quality.incidents.read", "quality.complaints.read",
                 )
             ),
             "can_manage_quality": any(
@@ -82,9 +81,8 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
                     db, current_user, capability
                 )
                 for capability in (
-                    "quality.templates.manage",
-                    "quality.inspections.manage",
-                    "quality.incidents.manage",
+                    "quality.templates.manage", "quality.inspections.manage",
+                    "quality.incidents.manage", "quality.complaints.manage",
                 )
             ),
             "can_manage_time": organization_authorization_service.has_capability(
@@ -185,8 +183,8 @@ def upload_user_photo(
     contents = file.file.read(MAX_IMAGE_BYTES + 1)
     if len(contents) > MAX_IMAGE_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail="Image exceeds the maximum allowed size of 4MB",
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail="La imagen no puede superar 1 MB",
         )
     if db_user.company_id is None:
         raise HTTPException(

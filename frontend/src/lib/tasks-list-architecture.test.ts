@@ -36,6 +36,8 @@ test("general task list uses compact billing rows without decorative top borders
 
     assert.match(filters, /billing-block/);
     assert.match(filters, /reservationFilterSelectClass|reservation-filter-styles/);
+    assert.match(filters, /CompactFilterSelect/);
+    assert.doesNotMatch(filters, /<select\b/);
     assert.match(filters, /flex flex-wrap gap-2/);
     assert.match(filters, /selectedPriority|filter_all_priorities/);
     assert.doesNotMatch(filters, /xl:grid-cols-6|2xl:grid-cols-6/);

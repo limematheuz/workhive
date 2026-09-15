@@ -2,6 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { CompactFilterSelect } from "@/components/ui/compact-filter-select";
 import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/types/location";
@@ -45,29 +46,27 @@ export function CalendarToolbar({
                 </h2>
             </div>
             <div className="flex flex-wrap gap-2">
-                <select
+                <CompactFilterSelect
                     value={locationFilter}
-                    onChange={(event) => onLocationFilterChange(event.target.value)}
+                    onValueChange={onLocationFilterChange}
                     aria-label={calendarDict.all_locations}
                     className="h-10 rounded-xl border border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] px-4 text-xs font-semibold text-[var(--text-main)] outline-none transition focus:border-[var(--accent-color)]"
-                >
-                    <option value="">{calendarDict.all_locations}</option>
-                    {locations.map((location) => (
-                        <option key={location.id} value={location.id}>{location.name}</option>
-                    ))}
-                </select>
+                    options={[
+                        { value: "", label: calendarDict.all_locations },
+                        ...locations.map((location) => ({ value: String(location.id), label: location.name })),
+                    ]}
+                />
                 {users.length > 1 && (
-                    <select
+                    <CompactFilterSelect
                         value={userFilter}
-                        onChange={(event) => onUserFilterChange(event.target.value)}
+                        onValueChange={onUserFilterChange}
                         aria-label={calendarDict.all_workers}
                         className="h-10 rounded-xl border border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] px-4 text-xs font-semibold text-[var(--text-main)] outline-none transition focus:border-[var(--accent-color)]"
-                    >
-                        <option value="">{calendarDict.all_workers}</option>
-                        {users.map((user) => (
-                            <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
-                        ))}
-                    </select>
+                        options={[
+                            { value: "", label: calendarDict.all_workers },
+                            ...users.map((user) => ({ value: String(user.id), label: user.full_name || user.email })),
+                        ]}
+                    />
                 )}
             </div>
         </div>

@@ -6,6 +6,7 @@ from tests.test_client_permission_authorization import (
     _user,
 )
 from tests.test_quality_templates import _location, _payload
+from app.models.audit_log import AuditLog
 
 
 TEMPLATE_READ = "quality.templates.read"
@@ -81,6 +82,95 @@ def test_inspection_snapshots_template_and_requires_required_points(client, db):
         headers=_headers(admin),
         json={"items": [{"id": inspection["items"][0]["id"], "status": "passed", "points_awarded": 3}]},
     ).status_code == 409
+
+
+def test_completed_inspection_has_one_private_internal_conformity(client, db):
+    company = _company(db, "inspection-conformity-owner")
+    other_company = _company(db, "inspection-conformity-other")
+    admin = _bootstrap_admin(db, company, "inspection-conformity-admin")
+    other_admin = _bootstrap_admin(db, other_company, "inspection-conformity-other-admin")
+    read_only_user = _user(db, company, "inspection-conformity-read-only", role_id=3)
+    location = _location(db, company, "Calidad con conformidad")
+    _assign_company_profile(
+        db,
+        company=company,
+        admin=admin,
+        user=read_only_user,
+        name="Lector de conformidad",
+        permission_codes={TEMPLATE_READ, INSPECTION_READ},
+        scope_type="location",
+        scope_id=location.id,
+    )
+    template = _template(client, admin, location.id)
+    created = client.post(
+        "/api/v1/quality/inspections/",
+        headers=_headers(admin),
+        json={"template_id": template["id"], "location_id": location.id},
+    )
+    assert created.status_code == 201, created.text
+    inspection = created.json()
+
+    assert client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/conformity",
+        headers=_headers(admin),
+        json={"confirmed": True},
+    ).status_code == 409
+
+    completed = client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/complete",
+        headers=_headers(admin),
+        json={
+            "items": [
+                {
+                    "id": item["id"],
+                    "status": "passed",
+                    "points_awarded": item["max_points"],
+                }
+                for item in inspection["items"]
+            ]
+        },
+    )
+    assert completed.status_code == 200, completed.text
+
+    assert client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/conformity",
+        headers=_headers(admin),
+        json={"confirmed": False},
+    ).status_code == 422
+    assert client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/conformity",
+        headers=_headers(read_only_user),
+        json={"confirmed": True},
+    ).status_code == 403
+
+    signed = client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/conformity",
+        headers=_headers(admin),
+        json={"confirmed": True},
+    )
+    assert signed.status_code == 200, signed.text
+    conformity = signed.json()["conformity"]
+    assert conformity["signer_name"] == admin.full_name
+    assert conformity["statement_version"] == "quality-conformity-v1"
+    assert conformity["signed_at"]
+
+    assert client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/conformity",
+        headers=_headers(admin),
+        json={"confirmed": True},
+    ).status_code == 409
+    assert client.post(
+        f"/api/v1/quality/inspections/{inspection['id']}/conformity",
+        headers=_headers(other_admin),
+        json={"confirmed": True},
+    ).status_code == 404
+
+    audit_event = db.query(AuditLog).filter_by(
+        action="quality_inspection.conformity_signed",
+        entity_id=str(inspection["id"]),
+    ).one()
+    assert audit_event.actor_user_id == admin.id
+    assert audit_event.details["location_id"] == location.id
 
 
 def test_inspection_scopes_and_cross_company_reads_are_denied(client, db):

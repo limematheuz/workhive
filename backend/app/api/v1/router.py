@@ -21,9 +21,7 @@ from app.api.v1.work_session_corrections import (
     router as work_session_corrections_router,
 )
 from app.api.v1.labor_costs import router as labor_costs_router
-from app.api.v1.quality_templates import router as quality_templates_router
-from app.api.v1.quality_inspections import router as quality_inspections_router
-from app.api.v1.quality_incidents import router as quality_incidents_router
+from app.api.v1.quality import register_quality_routes
 from app.api.v1.task_items import router as task_items_router
 from app.api.v1.task_item_read import router as task_item_read_router
 from app.api.v1.invoice import router as invoices_router
@@ -56,6 +54,7 @@ from app.api.v1.sales_ledger import router as sales_ledger_router
 from app.api.v1.accounting_exports import router as accounting_exports_router
 from app.api.v1.fiscal_summary import router as fiscal_summary_router
 from app.api.v1.client_profitability import router as client_profitability_router
+from app.api.v1.margin_forecasts import router as margin_forecasts_router
 from app.api.v1.organization import router as organization_router
 from app.api.v1.organization_departments import (
     router as organization_departments_router,
@@ -63,6 +62,7 @@ from app.api.v1.organization_departments import (
 from app.api.v1.organization_teams import router as organization_teams_router
 from app.api.v1.partner_portal import router as partner_portal_router
 from app.api.v1.client_portal import router as client_portal_router
+from app.api.v1.client_portal_access import router as client_portal_access_router
 from app.api.v1.api_access import register_api_access_routes
 
 api_router = APIRouter()
@@ -124,21 +124,7 @@ api_router.include_router(
     prefix="/labor-costs",
     tags=["labor-costs"],
 )
-api_router.include_router(
-    quality_templates_router,
-    prefix="/quality/templates",
-    tags=["quality-templates"],
-)
-api_router.include_router(
-    quality_inspections_router,
-    prefix="/quality/inspections",
-    tags=["quality-inspections"],
-)
-api_router.include_router(
-    quality_incidents_router,
-    prefix="/quality/incidents",
-    tags=["quality-incidents"],
-)
+register_quality_routes(api_router)
 api_router.include_router(task_item_read_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(task_items_router, prefix="/task-items", tags=["task-items"])
 api_router.include_router(
@@ -168,6 +154,11 @@ api_router.include_router(
     client_profitability_router,
     prefix="/client-profitability",
     tags=["client-profitability"],
+)
+api_router.include_router(
+    margin_forecasts_router,
+    prefix="/margin-forecasts",
+    tags=["margin-forecasts"],
 )
 api_router.include_router(
     accounting_exports_router,
@@ -238,6 +229,11 @@ api_router.include_router(
 )
 api_router.include_router(
     client_portal_router,
+    prefix="/client-portal",
+    tags=["client-portal"],
+)
+api_router.include_router(
+    client_portal_access_router,
     prefix="/client-portal",
     tags=["client-portal"],
 )

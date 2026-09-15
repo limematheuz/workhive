@@ -8,6 +8,11 @@ const currencyFormatter = new Intl.NumberFormat("es-ES", {
     currency: "EUR",
 })
 
+const spanishDateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "medium",
+    timeStyle: "short",
+})
+
 export function formatCurrency(amount: number): string {
     return currencyFormatter.format(amount)
 }
@@ -36,6 +41,11 @@ export function formatDateLong(dateStr: string | null | undefined, locale = "es-
     } catch {
         return dateStr ?? "-"
     }
+}
+
+export function formatSpanishDateTime(value: string): string {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : spanishDateTimeFormatter.format(date)
 }
 
 export function buildLocalDateTimeIso(dateValue: string, timeValue: string): string | null {

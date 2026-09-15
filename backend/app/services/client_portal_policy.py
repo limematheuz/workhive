@@ -1,4 +1,4 @@
-"""Authorization boundary for the document-only customer portal."""
+"""Authorization boundary for the narrow customer portal."""
 
 from datetime import datetime, timezone
 

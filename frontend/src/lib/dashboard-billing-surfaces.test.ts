@@ -46,7 +46,7 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     assert.match(analytics, /billing-block/);
     assert.match(analytics, /billing-surface/);
     assert.match(analytics, /Chart plot background stays on InteractiveLineChart/);
-    assert.match(analytics, /color: "#047857"/);
+    assert.match(analytics, /color: "var\(--status-active-text\)"/);
     assert.match(analytics, /comparisonDirection/);
     assert.match(analytics, /SummaryMetricCard/);
     assert.match(expenses, /SummaryMetricCard/);

@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class ExpenseBase(BaseModel):
     expense_date: datetime
     client_id: int | None = None
+    service_contract_id: int | None = Field(default=None, ge=1)
+    work_order_id: int | None = Field(default=None, ge=1)
     vendor: str | None = Field(default=None, max_length=160)
     category: str = Field(min_length=1, max_length=80)
     description: str = Field(min_length=1, max_length=255)
@@ -25,6 +27,8 @@ class ExpenseCreate(ExpenseBase):
 class ExpenseUpdate(BaseModel):
     expense_date: datetime | None = None
     client_id: int | None = None
+    service_contract_id: int | None = Field(default=None, ge=1)
+    work_order_id: int | None = Field(default=None, ge=1)
     vendor: str | None = Field(default=None, max_length=160)
     category: str | None = Field(default=None, min_length=1, max_length=80)
     description: str | None = Field(default=None, min_length=1, max_length=255)

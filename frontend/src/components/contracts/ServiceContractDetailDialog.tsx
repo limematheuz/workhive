@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { DatePicker } from "@/components/ui/date-picker"
 import {
     Dialog,
     DialogClose,
@@ -34,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
+import { MarginForecastPanel } from "@/components/margin-forecast/MarginForecastPanel"
 import { ServiceContractService } from "@/services/service-contract.service"
 import type { Location, LocationSpace } from "@/types/location"
 import type { ServiceContract, ServiceContractLocation } from "@/types/service-contract"
@@ -42,6 +44,7 @@ type ServiceContractDetailDialogProps = {
     contract: ServiceContract | null
     clientName: string
     canManage: boolean
+    canViewMargin: boolean
     open: boolean
     onOpenChange: (open: boolean) => void
     onContractUpdated: (contract: ServiceContract) => void
@@ -81,6 +84,7 @@ function ServiceContractDetailDialogContent({
     contract,
     clientName,
     canManage,
+    canViewMargin,
     open,
     onOpenChange,
     onContractUpdated,
@@ -332,6 +336,12 @@ function ServiceContractDetailDialogContent({
                         </div>
                     </section>
 
+                    {canViewMargin && <MarginForecastPanel
+                        scopeType="contract"
+                        scopeId={contract.id}
+                        canManage={canManage}
+                    />}
+
                     <section className="py-5">
                         <div className="flex items-center justify-between gap-3">
                             <div>
@@ -341,8 +351,8 @@ function ServiceContractDetailDialogContent({
                             {contract.status === "active" && <CheckCircle2 className="size-5 text-accent" aria-label="Contrato activo" />}
                         </div>
                         <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <div className="space-y-1.5"><Label htmlFor="contract-start">Inicio</Label><Input id="contract-start" type="date" value={startsAt} disabled={!canManage || saving} onChange={(event) => setStartsAt(event.target.value)} /></div>
-                            <div className="space-y-1.5"><Label htmlFor="contract-end">Fin</Label><Input id="contract-end" type="date" value={endsAt} disabled={!canManage || saving} onChange={(event) => setEndsAt(event.target.value)} /></div>
+                            <div className="space-y-1.5"><Label htmlFor="contract-start">Inicio</Label><DatePicker id="contract-start" value={startsAt} disabled={!canManage || saving} onValueChange={setStartsAt} /></div>
+                            <div className="space-y-1.5"><Label htmlFor="contract-end">Fin</Label><DatePicker id="contract-end" value={endsAt} disabled={!canManage || saving} onValueChange={setEndsAt} /></div>
                             <div className="space-y-1.5"><Label>Renovación</Label><Select value={renewalMode} onValueChange={(value) => setRenewalMode(value as "manual" | "automatic")} disabled={!canManage || saving}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="manual">Manual</SelectItem><SelectItem value="automatic">Automática</SelectItem></SelectContent></Select></div>
                             <div className="space-y-1.5"><Label htmlFor="contract-notice">Aviso previo (días)</Label><Input id="contract-notice" type="number" min="0" max="365" value={renewalNoticeDays} disabled={!canManage || saving} onChange={(event) => setRenewalNoticeDays(event.target.value)} /></div>
                             <div className="space-y-1.5"><Label htmlFor="contract-response">Respuesta SLA (horas)</Label><Input id="contract-response" type="number" min="0" max="720" value={responseTimeHours} disabled={!canManage || saving} onChange={(event) => setResponseTimeHours(event.target.value)} /></div>

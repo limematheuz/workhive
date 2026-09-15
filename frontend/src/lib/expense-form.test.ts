@@ -55,6 +55,9 @@ test("expense payload trims values, calculates tax and caps notes", () => {
     const form = {
         expense_date: "2026-07-16",
         client_id: "3",
+        operational_scope: "none",
+        service_contract_id: "",
+        work_order_id: "",
         vendor: "  Imprex  ",
         category: "supplies",
         description: "  Limpieza  ",
@@ -67,6 +70,8 @@ test("expense payload trims values, calculates tax and caps notes", () => {
     const payload = buildExpensePayload(form);
     assert.equal(payload.expense_date, "2026-07-16T00:00:00");
     assert.equal(payload.client_id, 3);
+    assert.equal(payload.service_contract_id, null);
+    assert.equal(payload.work_order_id, null);
     assert.equal(payload.vendor, "Imprex");
     assert.equal(payload.description, "Limpieza");
     assert.equal(payload.payment_method, "card");
@@ -80,6 +85,9 @@ test("expense payload normalizes empty optional fields to null", () => {
     const payload = buildExpensePayload({
         expense_date: "2026-07-16",
         client_id: "",
+        operational_scope: "none",
+        service_contract_id: "",
+        work_order_id: "",
         vendor: " ",
         category: "other",
         description: "Parking",
@@ -101,6 +109,9 @@ test("expense edit state infers tax rate and preserves editable fields", () => {
     assert.deepEqual(expenseToFormState(baseExpense), {
         expense_date: "2026-07-16",
         client_id: "3",
+        operational_scope: "none",
+        service_contract_id: "",
+        work_order_id: "",
         vendor: "Imprex",
         category: "supplies",
         description: "Limpieza",
@@ -109,6 +120,26 @@ test("expense edit state infers tax rate and preserves editable fields", () => {
         tax_rate: "0.21",
         notes: "  Nota visible  ",
     });
+});
+
+test("expense payload keeps exactly one direct operational scope", () => {
+    const payload = buildExpensePayload({
+        expense_date: "2026-07-16",
+        client_id: "",
+        operational_scope: "work_order",
+        service_contract_id: "7",
+        work_order_id: "9",
+        vendor: "Proveedor externo",
+        category: "subcontracting",
+        description: "Refuerzo de turno",
+        payment_method: "bank_transfer",
+        base_amount: "80",
+        tax_rate: "0.21",
+        notes: "",
+    });
+
+    assert.equal(payload.service_contract_id, null);
+    assert.equal(payload.work_order_id, 9);
 });
 
 test("expense filters search across vendor category description and payment method", () => {

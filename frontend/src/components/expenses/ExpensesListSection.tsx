@@ -52,6 +52,11 @@ export function ExpensesListSection({
             onClick: () => onDelete(expense),
         },
     ];
+    const operationalScopeLabel = (expense: Expense) => expense.service_contract_id
+        ? `${text.operational_assignment_contract} #${expense.service_contract_id}`
+        : expense.work_order_id
+            ? `${text.operational_assignment_work_order} #${expense.work_order_id}`
+            : null;
 
     return (
         <DataListTable
@@ -129,6 +134,7 @@ export function ExpensesListSection({
                                 <p className="truncate text-xs text-[var(--text-muted)]">{expense.vendor || text.no_vendor}</p>
                                 <ExpenseNotesTooltip label={text.notes} notes={getExpenseNotes(expense)} />
                             </div>
+                            {operationalScopeLabel(expense) && <p className="mt-1 truncate text-xs font-medium text-accent">{operationalScopeLabel(expense)}</p>}
                         </div>
                         <div className="flex shrink-0 items-start gap-2">
                             <span className="text-sm font-semibold text-[var(--text-main)]">{formatCurrency(expense.total_amount)}</span>
@@ -147,7 +153,10 @@ export function ExpensesListSection({
                 <>
                     <span className="text-sm font-semibold text-[var(--text-main)]">{formatExpenseDate(expense.expense_date)}</span>
                     <span className="flex min-w-0 items-center gap-2">
-                        <span className="truncate font-semibold text-[var(--text-main)]">{expense.description}</span>
+                        <span className="min-w-0">
+                            <span className="block truncate font-semibold text-[var(--text-main)]">{expense.description}</span>
+                            {operationalScopeLabel(expense) && <span className="block truncate text-xs font-medium text-accent">{operationalScopeLabel(expense)}</span>}
+                        </span>
                         <ExpenseNotesTooltip label={text.notes} notes={getExpenseNotes(expense)} />
                     </span>
                     <span className="min-w-0 truncate text-sm text-[var(--text-muted)]">{expense.vendor || text.no_vendor}</span>

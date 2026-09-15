@@ -21,7 +21,11 @@ import {
 import { useUser } from "@/lib/user-context";
 import { ExpenseService } from "@/services/expense.service";
 import { ClientService } from "@/services/client.service";
+import { ServiceContractService } from "@/services/service-contract.service";
+import { WorkOrderService } from "@/services/work-order.service";
 import type { Client } from "@/types/client";
+import type { ServiceContract } from "@/types/service-contract";
+import type { WorkOrder } from "@/types/work-order";
 import type { Expense, ExpensePayload } from "@/types/expense";
 import { toast } from "@/lib/toast";
 import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend";
@@ -45,6 +49,8 @@ export default function ExpensesPage() {
 
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
+    const [contracts, setContracts] = useState<ServiceContract[]>([]);
+    const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState("");
@@ -59,9 +65,11 @@ export default function ExpensesPage() {
         if (!canViewExpenses) return;
         try {
             setLoading(true);
-            const [expenseResult, clientResult] = await Promise.allSettled([
+            const [expenseResult, clientResult, contractResult, workOrderResult] = await Promise.allSettled([
                 ExpenseService.getExpenses({ limit: 250 }),
                 ClientService.getClients(null),
+                ServiceContractService.getContracts(),
+                WorkOrderService.getWorkOrders(),
             ]);
             if (expenseResult.status === "rejected") {
                 throw expenseResult.reason;
@@ -75,6 +83,8 @@ export default function ExpensesPage() {
                 console.error("Error loading expense client catalog", clientResult.reason);
                 setClients([]);
             }
+            setContracts(contractResult.status === "fulfilled" ? contractResult.value : []);
+            setWorkOrders(workOrderResult.status === "fulfilled" ? workOrderResult.value : []);
         } catch (error) {
             console.error("Error loading expenses", error);
             toast.error(text.error_load);
@@ -223,6 +233,8 @@ export default function ExpensesPage() {
                     setKeepAdding={setKeepAdding}
                     saving={saving}
                     clients={clients}
+                    contracts={contracts}
+                    workOrders={workOrders}
                     onSubmit={(event) => void handleSubmit(event)}
                 />}
             </div>

@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 6 de septiembre de 2026.
+Actualizado: 15 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -62,6 +62,23 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Tabs: escritorio puede mostrarlas en fila; tablet y móvil siempre las
   compactan en el mismo selector desplegable, con la misma cantidad, orden y
   reglas de visibilidad de opciones que el escritorio.
+- 🟡 Las superficies nuevas y modificadas usan exclusivamente tokens semánticos
+  de `globals.css` para estado, prioridad y alerta, además de los componentes
+  locales basados en shadcn/ui. El margen operativo ya se ajustó a esta regla;
+  queda auditar y corregir los controles heredados fuera de ese corte.
+- 🟡 Fechas: todos los formularios usan los `DatePicker` y `DateTimePicker`
+  compartidos de Facturación; una regresión impide reintroducir controles
+  nativos de fecha o fecha/hora. Los límites mínimos/máximos y el borrado
+  opcional se mantienen en el componente común. Validado localmente con tests,
+  typecheck y lint; pendiente de revisión visual autenticada.
+- 🟡 Inputs y selectores heredados: los filtros de Operación (reservas, tareas
+  propias y solicitudes) ya usan un selector shadcn/ui compacto compartido, y
+  los editores de tareas usan `Input`/`Select` locales para precio, cantidad,
+  estado, prioridad, unidad y reservas opcionales, y los filtros de calendario
+  también usan los controles compartidos. Se preservan valores vacíos, filtros,
+  validaciones y permisos. Queda auditar y sustituir los controles nativos
+  restantes. Los controles de solo hora se mantienen separados porque no
+  representan un calendario.
 - ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
@@ -364,7 +381,29 @@ como WorkHive Core solo cuando el caso real las exige.
   en `v1.6.1`. La UI de plantillas, inspecciones, puntuación, incidencias y
   creación o cierre de acciones correctivas está validada con E2E autenticada
   local; la cancelación está cubierta por la regresión backend.
-- ⬜ Fotos, firmas y reclamaciones siguen sin iniciar.
+- 🟡 Fotos de evidencia privadas para inspecciones e incidencias están listas
+  localmente: se almacenan por empresa y ubicación, se descargan solo por sus
+  rutas autorizadas y el cargador genérico las rechaza. Todas las cargas de
+  foto se comprimen en el navegador con objetivo de 850 KB y el servidor
+  impone un máximo uniforme de 1 MB. Falta validación visual autenticada y
+  publicación.
+- 🟡 La conformidad interna de una inspección cerrada está lista localmente:
+  se registra una única confirmación inmutable, con persona, versión de texto
+  y fecha, y exige permiso de gestión de la ubicación. No sustituye una firma
+  legal. Faltan validación visual autenticada y publicación.
+- 🟡 La aceptación del cliente o su representante está lista localmente en el
+  portal autorizado: solo ve inspecciones cerradas de sus ubicaciones, no
+  notas ni evidencias internas, y registra una única aceptación con cuenta,
+  nombre, fecha, versión y huella del resumen revisado. No es una firma
+  electrónica cualificada. Faltan validación visual autenticada y publicación.
+- 🟡 Reclamaciones de cliente separadas de incidencias: el cliente puede abrir
+  expedientes solo para sus ubicaciones autorizadas desde su portal y consultar
+  el estado o la respuesta publicada; el equipo los tramita con permisos y
+  ámbitos por ubicación, conservando notas internas privadas. La creación,
+  resolución, auditoría, aislamiento entre cliente–empresa y no exposición de
+  notas internas están cubiertos localmente con migración, pruebas, typecheck,
+  lint, build y React Doctor; faltan validación visual autenticada y
+  publicación.
 
 ### Fase 7 — Material, compras y activos
 
@@ -411,15 +450,42 @@ como WorkHive Core solo cuando el caso real las exige.
   UI local validados sin navegador; pendiente de revisión visual autenticada.
 - 🟡 Subcontrata: Gastos incorpora la categoría operativa `subcontracting`; al
   asignarla a un cliente ya entra como coste directo en la rentabilidad, con el
-  mismo IVA, pago, justificante y edición de Gastos. Se mantiene separada del
+  mismo IVA, pago, justificante y edición de Gastos. Puede imputarse además a
+  un contrato o a una orden (nunca a ambos): el backend confirma el cliente del
+  alcance y rechaza referencias de otra empresa. Se mantiene separada del
   inventario y no crea stock. Validada por tests y UI local sin navegador;
   pendiente de revisión visual autenticada.
-- ⬜ Margen previsto frente a real: necesita un presupuesto de coste explícito
-  por contrato u orden antes de comparar, sin repartir gastos generales ni
-  fabricar estimaciones globales.
+- 🟡 Margen previsto frente a real: hay presupuesto de coste explícito por
+  contrato u orden, con la oferta aceptada como ingreso previsto del contrato
+  y coste/ingreso trazado desde tareas facturadas, fichajes con snapshot y
+  material consumido no revertido. Incluye los gastos directamente vinculados
+  al contrato o a sus órdenes; las compras de inventario continúan fuera hasta
+  que se consume el stock, evitando doble conteo. Los gastos generales
+  —incluidos los solo asignados a cliente— no se reparten ni se inventan.
+  Backend, migración SQLite, UI local y regresiones de autorización validados
+  sin navegador; pendiente de revisión visual autenticada.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
-  lectura; faltan cortes homogéneos por sociedad, delegación, contrato,
-  ubicación, servicio, equipo y trabajo.
+  lectura. El corte operativo permite consultar el margen previsto frente al
+  real de un contrato o de una orden, sin repartir ingresos ni costes entre
+  alcances: solo muestra facturas de tareas, mano de obra con snapshot,
+  material consumido y gastos directos ya vinculados. También ofrece el margen
+  real por ubicación: reconoce únicamente tareas facturadas, sesiones
+  registradas allí, material consumido por sus órdenes y gastos directos de
+  esas órdenes; no reparte gastos generales, compras de inventario ni importes
+  de contratos compartidos. También permite el margen conocido por versión de
+  servicio: incluye solo facturas de tareas y mano de obra con snapshot
+  vinculadas a esa versión inmutable; material y gastos no se reparten mientras
+  sigan vinculados solo a una orden o contrato. La pestaña exige los permisos
+  financieros y de costes laborales y reutiliza el cálculo protegido del
+  backend. UI local y regresiones de frontend validadas sin navegador. También
+  ofrece coste laboral trazado por equipo: cada fichaje cerrado congela
+  el equipo responsable de su ubicación y no se reescribe si cambian equipos o
+  asignaciones; solo suma sesiones con coste conocido y no inventa un margen
+  de equipo. Los fichajes históricos sin ese snapshot quedan sin equipo. UI
+  local, migración y regresiones de autorización validadas sin navegador;
+  pendientes de revisión visual autenticada y de cortes homogéneos por
+  sociedad y delegación, además de la futura imputación explícita de
+  material/gastos a una tarea.
 
 ### Fase 9 — Portales e integraciones
 
@@ -442,8 +508,9 @@ como WorkHive Core solo cuando el caso real las exige.
   invitación de un solo uso y grant revocable por cliente–empresa, sin plaza ni
   membresía interna; una persona puede seleccionar solo sus espacios
   documentales concedidos. El portal expone únicamente presupuestos enviados,
-  contratos y facturas del cliente, con PDF protegido y sin costes, márgenes ni
-  notas privadas. Cubierto localmente con migración, permisos positivos,
+  contratos, facturas, inspecciones cerradas y reclamaciones de las ubicaciones
+  del cliente, con PDF protegido y sin costes, márgenes ni notas privadas.
+  Cubierto localmente con migración, permisos positivos,
   denegación, aislamiento entre clientes/empresas, tests de interfaz,
   typecheck, lint y build; pendiente de revisión visual autenticada para
   marcarlo como completado.

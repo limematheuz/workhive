@@ -4,6 +4,9 @@ import type { Expense, ExpensePayload } from "../types/expense.ts";
 export const DEFAULT_EXPENSE_FORM = {
     expense_date: "",
     client_id: "",
+    operational_scope: "none" as ExpenseOperationalScope,
+    service_contract_id: "",
+    work_order_id: "",
     vendor: "",
     category: "operations",
     description: "",
@@ -13,7 +16,16 @@ export const DEFAULT_EXPENSE_FORM = {
     notes: "",
 };
 
-export type ExpenseFormState = typeof DEFAULT_EXPENSE_FORM;
+export type ExpenseOperationalScope = "none" | "contract" | "work_order";
+
+export type ExpenseFormState = Omit<
+    typeof DEFAULT_EXPENSE_FORM,
+    "operational_scope" | "service_contract_id" | "work_order_id"
+> & {
+    operational_scope?: ExpenseOperationalScope;
+    service_contract_id?: string;
+    work_order_id?: string;
+};
 
 const EXPENSE_DATE_FORMATTER = new Intl.DateTimeFormat("es-ES", {
     day: "2-digit",
@@ -58,6 +70,12 @@ export function buildExpensePayload(form: ExpenseFormState): ExpensePayload {
     return {
         expense_date: dateToApi(form.expense_date),
         client_id: form.client_id ? Number(form.client_id) : null,
+        service_contract_id: form.operational_scope === "contract" && form.service_contract_id
+            ? Number(form.service_contract_id)
+            : null,
+        work_order_id: form.operational_scope === "work_order" && form.work_order_id
+            ? Number(form.work_order_id)
+            : null,
         vendor: form.vendor.trim() || null,
         category: form.category,
         description: form.description.trim(),
@@ -92,9 +110,17 @@ export function filterExpenses(
 }
 
 export function expenseToFormState(expense: Expense): ExpenseFormState {
+    const operationalScope: ExpenseOperationalScope = expense.service_contract_id
+        ? "contract"
+        : expense.work_order_id
+            ? "work_order"
+            : "none";
     return {
         expense_date: dateFromApi(expense.expense_date),
         client_id: expense.client_id?.toString() || "",
+        operational_scope: operationalScope,
+        service_contract_id: expense.service_contract_id?.toString() || "",
+        work_order_id: expense.work_order_id?.toString() || "",
         vendor: expense.vendor || "",
         category: expense.category,
         description: expense.description,
