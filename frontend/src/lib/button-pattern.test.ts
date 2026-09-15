@@ -23,6 +23,8 @@ test("calendar controls use the shared button sizes and semantic variants", () =
     const ownership = read("../components/calendar/CalendarOwnershipRequests.tsx");
 
     assert.match(toolbar, /className="h-10 rounded-xl/);
+    assert.match(toolbar, /CompactFilterSelect/);
+    assert.doesNotMatch(toolbar, /<select\b/);
     assert.match(toolbar, /size="icon"/);
     assert.match(controls, /variant="secondary"/);
     assert.match(controls, /variant="dangerSoft"/);

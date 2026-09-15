@@ -17,7 +17,9 @@ import { useOperationsCalendar } from "@/hooks/useOperationsCalendar";
 import { CalendarKanbanCard } from "./CalendarKanbanCard";
 import { TaskEditModal } from "@/components/tasks/TaskEditModal";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { isExternalTaskForCompany } from "@/lib/task-display";
 import { useTaskWorkSummaries } from "@/hooks/useTaskWorkSummaries";
 
@@ -52,9 +54,9 @@ export function OperationsCalendar({
             id: "pending" as const,
             title: state.dict.tasks.kanban?.col_pending || "Pendientes",
             icon: TriangleAlert,
-            tone: "text-orange-600",
-            badge: "bg-orange-500 text-white font-extrabold shadow-xs",
-            ring: "border-orange-500/35 bg-orange-500/5",
+            tone: "text-[var(--alert-warning-text)]",
+            badge: "bg-[var(--alert-warning-text)] text-[var(--text-inverse)] font-extrabold shadow-xs",
+            ring: "border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)]",
             tasks: state.columnsTasks.pending,
             empty: state.dict.tasks.kanban?.no_pending || "Sin tareas pendientes",
         },
@@ -93,7 +95,7 @@ export function OperationsCalendar({
             <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr_0.8fr] gap-3 bg-[var(--bg-secondary)] border border-[var(--border-soft)] rounded-2xl p-3">
                 <div className="relative">
                     <Search className="absolute left-3.5 top-3 w-4 h-4 text-[var(--text-muted)]" />
-                    <input
+                    <Input
                         type="text"
                         placeholder={state.dict.tasks.kanban?.search_placeholder || "Buscar tarea por título o descripción..."}
                         value={state.searchQuery}
@@ -104,36 +106,48 @@ export function OperationsCalendar({
 
                 <div className="relative">
                     <UserIcon className="absolute left-3.5 top-3.5 w-3.5 h-3.5 text-[var(--text-muted)]" />
-                    <select
+                    <Select
                         value={state.selectedUserId}
-                        onChange={(e) => state.setSelectedUserId(e.target.value)}
-                        aria-label={state.dict.tasks.kanban?.all_operators || "Todos los operarios"}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/40 transition-colors"
+                        onValueChange={state.setSelectedUserId}
                     >
-                        <option value="ALL">{state.dict.tasks.kanban?.all_operators || "Todos los operarios"}</option>
-                        {users.map(u => (
-                            <option key={u.id} value={u.id.toString()}>
-                                {u.full_name || u.email}
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger
+                            aria-label={state.dict.tasks.kanban?.all_operators || "Todos los operarios"}
+                            className="h-10 w-full border-[var(--border-soft)] bg-[var(--bg-tertiary)] py-2.5 pl-10 pr-4 text-xs text-[var(--text-main)] focus:border-accent/40"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">{state.dict.tasks.kanban?.all_operators || "Todos los operarios"}</SelectItem>
+                            {users.map((user) => (
+                                <SelectItem key={user.id} value={user.id.toString()}>
+                                    {user.full_name || user.email}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 <div className="relative">
                     <MapPin className="absolute left-3.5 top-3.5 w-3.5 h-3.5 text-[var(--text-muted)]" />
-                    <select
+                    <Select
                         value={state.selectedLocationId}
-                        onChange={(e) => state.setSelectedLocationId(e.target.value)}
-                        aria-label={state.dict.tasks.kanban?.all_locations || "Todas las ubicaciones"}
-                        className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-10 pr-4 py-2.5 text-xs text-[var(--text-main)] outline-none focus:border-accent/40 transition-colors"
+                        onValueChange={state.setSelectedLocationId}
                     >
-                        <option value="ALL">{state.dict.tasks.kanban?.all_locations || "Todas las ubicaciones"}</option>
-                        {locations.map(loc => (
-                            <option key={loc.id} value={loc.id.toString()}>
-                                {loc.name}
-                            </option>
-                        ))}
-                    </select>
+                        <SelectTrigger
+                            aria-label={state.dict.tasks.kanban?.all_locations || "Todas las ubicaciones"}
+                            className="h-10 w-full border-[var(--border-soft)] bg-[var(--bg-tertiary)] py-2.5 pl-10 pr-4 text-xs text-[var(--text-main)] focus:border-accent/40"
+                        >
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="ALL">{state.dict.tasks.kanban?.all_locations || "Todas las ubicaciones"}</SelectItem>
+                            {locations.map((location) => (
+                                <SelectItem key={location.id} value={location.id.toString()}>
+                                    {location.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
             </div>
 

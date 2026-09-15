@@ -74,10 +74,11 @@ como WorkHive Core solo cuando el caso real las exige.
 - 🟡 Inputs y selectores heredados: los filtros de Operación (reservas, tareas
   propias y solicitudes) ya usan un selector shadcn/ui compacto compartido, y
   los editores de tareas usan `Input`/`Select` locales para precio, cantidad,
-  estado, prioridad, unidad y reservas opcionales. Se preservan valores vacíos,
-  filtros, validaciones y permisos. Queda auditar y sustituir los controles
-  nativos restantes. Los controles de solo hora se mantienen separados porque
-  no representan un calendario.
+  estado, prioridad, unidad y reservas opcionales, y los filtros de calendario
+  también usan los controles compartidos. Se preservan valores vacíos, filtros,
+  validaciones y permisos. Queda auditar y sustituir los controles nativos
+  restantes. Los controles de solo hora se mantienen separados porque no
+  representan un calendario.
 - ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
