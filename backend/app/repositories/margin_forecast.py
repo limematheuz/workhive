@@ -9,6 +9,8 @@ from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.margin_forecast import MarginForecast
+from app.models.service_catalog_version import ServiceCatalogVersion
+from app.models.template_task import TemplateTask
 from app.models.expense import Expense
 from app.models.task_item import TaskItem
 from app.models.work_order import WorkOrder
@@ -58,6 +60,33 @@ def list_contract_work_order_ids(
         )
         .all()
     ]
+
+
+def list_service_margin_scopes(
+    db: Session, *, company_id: int
+) -> list[ServiceCatalogVersion]:
+    """List immutable service revisions owned by one company."""
+    return (
+        db.query(ServiceCatalogVersion)
+        .join(TemplateTask, TemplateTask.id == ServiceCatalogVersion.template_task_id)
+        .filter(TemplateTask.company_id == company_id)
+        .order_by(ServiceCatalogVersion.name.asc(), ServiceCatalogVersion.version.desc())
+        .all()
+    )
+
+
+def get_service_margin_scope(
+    db: Session, *, company_id: int, service_catalog_version_id: int
+) -> ServiceCatalogVersion | None:
+    return (
+        db.query(ServiceCatalogVersion)
+        .join(TemplateTask, TemplateTask.id == ServiceCatalogVersion.template_task_id)
+        .filter(
+            TemplateTask.company_id == company_id,
+            ServiceCatalogVersion.id == service_catalog_version_id,
+        )
+        .one_or_none()
+    )
 
 
 def create_forecast(db: Session, **values) -> MarginForecast:
@@ -218,3 +247,37 @@ def actual_totals_for_location(
         Decimal(str(revenue or 0)),
         Decimal(str(direct_expense_cost or 0)),
     )
+
+
+def known_totals_for_service(
+    db: Session, *, company_id: int, service_catalog_version_id: int
+) -> tuple[Decimal, Decimal]:
+    """Return the exact revenue and labour traced to one service revision.
+
+    Inventory movements and expenses currently point at an order or contract,
+    not at an individual task/service. They are intentionally excluded here:
+    guessing their split would make a service margin unreliable.
+    """
+    labor_cost = db.query(
+        func.coalesce(func.sum(WorkSession.labor_cost_amount_snapshot), 0)
+    ).join(TaskItem, TaskItem.id == WorkSession.task_item_id).filter(
+        WorkSession.labor_cost_company_id == company_id,
+        WorkSession.end_time.is_not(None),
+        WorkSession.labor_cost_amount_snapshot.is_not(None),
+        TaskItem.company_id == company_id,
+        TaskItem.service_catalog_version_id == service_catalog_version_id,
+    ).scalar()
+
+    revenue = db.query(
+        func.coalesce(func.sum(InvoiceItem.subtotal), 0)
+    ).join(Invoice, Invoice.id == InvoiceItem.invoice_id).join(
+        TaskItem, TaskItem.id == InvoiceItem.task_item_id
+    ).filter(
+        Invoice.company_id == company_id,
+        Invoice.is_active.is_(True),
+        Invoice.status.in_(REPORTABLE_INVOICE_STATUSES),
+        TaskItem.company_id == company_id,
+        TaskItem.service_catalog_version_id == service_catalog_version_id,
+    ).scalar()
+
+    return Decimal(str(labor_cost or 0)), Decimal(str(revenue or 0))

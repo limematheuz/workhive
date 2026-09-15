@@ -9,11 +9,32 @@ from app.schemas.margin_forecast import (
     LocationMarginResponse,
     MarginForecastResponse,
     MarginForecastUpsert,
+    ServiceMarginResponse,
+    ServiceMarginScopeResponse,
 )
 from app.services import audit_service, margin_forecast_service
 
 
 router = APIRouter()
+
+
+@router.get("/services", response_model=list[ServiceMarginScopeResponse])
+def read_service_margin_scopes(
+    db: Session = Depends(get_db),
+    current_user: User = ActiveFinanceReader,
+):
+    return margin_forecast_service.list_service_margin_scopes(db, current_user)
+
+
+@router.get("/services/{service_catalog_version_id}", response_model=ServiceMarginResponse)
+def read_service_margin(
+    service_catalog_version_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveFinanceReader,
+):
+    return margin_forecast_service.get_service_margin(
+        db, current_user, service_catalog_version_id
+    )
 
 
 @router.get("/locations/{location_id}", response_model=LocationMarginResponse)

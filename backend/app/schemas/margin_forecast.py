@@ -39,6 +39,24 @@ class MarginForecastResponse(BaseModel):
     direct_cost_variance_base_amount: Decimal | None
 
 
+class ServiceMarginScopeResponse(BaseModel):
+    id: int
+    name: str
+    version: int
+
+
+class ServiceMarginResponse(BaseModel):
+    """Known, task-traced margin for an immutable service revision."""
+
+    scope_type: Literal["service"]
+    scope_id: int
+    scope_name: str
+    actual_revenue_base_amount: Decimal
+    actual_labor_cost_base_amount: Decimal
+    known_direct_cost_base_amount: Decimal
+    known_margin_base_amount: Decimal
+
+
 class LocationMarginResponse(BaseModel):
     """Read-only actual margin for one location without cost allocations."""
 

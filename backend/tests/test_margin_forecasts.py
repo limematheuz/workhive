@@ -14,7 +14,9 @@ from app.models.inventory_purchase import InventoryPurchase
 from app.models.invoice import Invoice
 from app.models.invoice_item import InvoiceItem
 from app.models.role import Role
+from app.models.service_catalog_version import ServiceCatalogVersion
 from app.models.task_item import TaskItem
+from app.models.template_task import TemplateTask
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.services.organization_bootstrap_service import ensure_user_membership
@@ -138,10 +140,28 @@ def _create_contract_and_order(client, headers):
 
 def _seed_traced_actuals(db, company: Company, email: str, location_id: int, order_id: int):
     user = db.query(User).filter(User.email == email).one()
+    template = TemplateTask(
+        company_id=company.id,
+        name="Servicio de margen",
+        unit="service",
+        catalog_version=1,
+    )
+    db.add(template)
+    db.flush()
+    service_version = ServiceCatalogVersion(
+        template_task_id=template.id,
+        version=1,
+        name=template.name,
+        unit=template.unit,
+        pricing_mode="fixed",
+    )
+    db.add(service_version)
+    db.flush()
     task = TaskItem(
         company_id=company.id,
         location_id=location_id,
         work_order_id=order_id,
+        service_catalog_version_id=service_version.id,
         title="Ejecución facturable",
         unit="service",
     )
@@ -264,6 +284,7 @@ def _seed_traced_actuals(db, company: Company, email: str, location_id: int, ord
         )
     )
     db.commit()
+    return service_version
 
 
 def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(client, db):
@@ -276,7 +297,30 @@ def test_explicit_contract_and_order_cost_budgets_compare_only_traced_actuals(cl
     )
     company = _set_profitability_plan(db, email)
     contract, location, order = _create_contract_and_order(client, headers)
-    _seed_traced_actuals(db, company, email, location["id"], order["id"])
+    service_version = _seed_traced_actuals(
+        db, company, email, location["id"], order["id"]
+    )
+
+    service_scopes = client.get("/api/v1/margin-forecasts/services", headers=headers)
+    assert service_scopes.status_code == 200, service_scopes.text
+    assert service_scopes.json() == [
+        {"id": service_version.id, "name": "Servicio de margen", "version": 1}
+    ]
+    service_margin = client.get(
+        f"/api/v1/margin-forecasts/services/{service_version.id}", headers=headers
+    )
+    assert service_margin.status_code == 200, service_margin.text
+    # The material and subcontractor cost belong to the whole order. Neither
+    # is silently split across this service instance.
+    assert service_margin.json() == {
+        "scope_type": "service",
+        "scope_id": service_version.id,
+        "scope_name": "Servicio de margen · v1",
+        "actual_revenue_base_amount": "150.00",
+        "actual_labor_cost_base_amount": "20.00",
+        "known_direct_cost_base_amount": "20.00",
+        "known_margin_base_amount": "130.00",
+    }
 
     location_margin = client.get(
         f"/api/v1/margin-forecasts/locations/{location['id']}", headers=headers
@@ -354,6 +398,23 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
     )
     company = _set_profitability_plan(db, owner_email)
     contract, location, order = _create_contract_and_order(client, owner_headers)
+    owner_template = TemplateTask(
+        company_id=company.id,
+        name="Servicio privado de margen",
+        unit="service",
+        catalog_version=1,
+    )
+    db.add(owner_template)
+    db.flush()
+    owner_service = ServiceCatalogVersion(
+        template_task_id=owner_template.id,
+        version=1,
+        name=owner_template.name,
+        unit=owner_template.unit,
+        pricing_mode="fixed",
+    )
+    db.add(owner_service)
+    db.commit()
     outsider_email = "margin-scope-outsider@workhive-margin.com"
     outsider_headers = _authenticated_company(
         client,
@@ -371,6 +432,11 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         f"/api/v1/margin-forecasts/locations/{location['id']}", headers=outsider_headers
     )
     assert hidden_location.status_code == 404
+    hidden_service = client.get(
+        f"/api/v1/margin-forecasts/services/{owner_service.id}",
+        headers=outsider_headers,
+    )
+    assert hidden_service.status_code == 404
 
     manager_role = db.query(Role).filter(Role.name == "manager").one()
     manager = User(
@@ -394,6 +460,7 @@ def test_margin_forecast_is_tenant_scoped_and_rejects_invalid_budgets(client, db
         f"/api/v1/margin-forecasts/locations/{location['id']}", headers=manager_headers
     )
     assert no_labor_cost_access.status_code == 403
+    assert client.get("/api/v1/margin-forecasts/services", headers=manager_headers).status_code == 403
 
     scoped = client.post(
         "/api/v1/expenses/",

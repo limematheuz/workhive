@@ -16,6 +16,8 @@ from app.schemas.margin_forecast import (
     MarginForecastResponse,
     MarginForecastUpsert,
     LocationMarginResponse,
+    ServiceMarginResponse,
+    ServiceMarginScopeResponse,
 )
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import require_capability
@@ -199,6 +201,51 @@ def get_location_margin(
         actual_expense_cost_base_amount=actual_expense_cost,
         actual_direct_cost_base_amount=actual_direct_cost,
         actual_margin_base_amount=_money(actual_revenue - actual_direct_cost),
+    )
+
+
+def list_service_margin_scopes(
+    db: Session, current_user: User
+) -> list[ServiceMarginScopeResponse]:
+    company_id = _require_read_access(db, current_user)
+    return [
+        ServiceMarginScopeResponse(
+            id=service.id,
+            name=service.name,
+            version=service.version,
+        )
+        for service in forecast_repo.list_service_margin_scopes(
+            db, company_id=company_id
+        )
+    ]
+
+
+def get_service_margin(
+    db: Session, current_user: User, service_catalog_version_id: int
+) -> ServiceMarginResponse:
+    company_id = _require_read_access(db, current_user)
+    service = forecast_repo.get_service_margin_scope(
+        db,
+        company_id=company_id,
+        service_catalog_version_id=service_catalog_version_id,
+    )
+    if service is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Servicio no encontrado")
+    labor_cost, actual_revenue = forecast_repo.known_totals_for_service(
+        db,
+        company_id=company_id,
+        service_catalog_version_id=service.id,
+    )
+    actual_labor_cost = _money(labor_cost)
+    actual_revenue = _money(actual_revenue)
+    return ServiceMarginResponse(
+        scope_type="service",
+        scope_id=service.id,
+        scope_name=f"{service.name} · v{service.version}",
+        actual_revenue_base_amount=actual_revenue,
+        actual_labor_cost_base_amount=actual_labor_cost,
+        known_direct_cost_base_amount=actual_labor_cost,
+        known_margin_base_amount=_money(actual_revenue - actual_labor_cost),
     )
 
 

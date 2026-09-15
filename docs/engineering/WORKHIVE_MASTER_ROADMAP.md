@@ -455,11 +455,15 @@ como WorkHive Core solo cuando el caso real las exige.
   real por ubicación: reconoce únicamente tareas facturadas, sesiones
   registradas allí, material consumido por sus órdenes y gastos directos de
   esas órdenes; no reparte gastos generales, compras de inventario ni importes
-  de contratos compartidos. La pestaña exige los permisos financieros y de
-  costes laborales y reutiliza el cálculo protegido del backend. UI local y
-  regresiones de frontend validadas sin navegador; pendientes de revisión
-  visual autenticada y de cortes homogéneos por sociedad, delegación, servicio
-  y equipo.
+  de contratos compartidos. También permite el margen conocido por versión de
+  servicio: incluye solo facturas de tareas y mano de obra con snapshot
+  vinculadas a esa versión inmutable; material y gastos no se reparten mientras
+  sigan vinculados solo a una orden o contrato. La pestaña exige los permisos
+  financieros y de costes laborales y reutiliza el cálculo protegido del
+  backend. UI local y regresiones de frontend validadas sin navegador;
+  pendientes de revisión visual autenticada y de cortes homogéneos por
+  sociedad, delegación y equipo, además de la futura imputación explícita de
+  material/gastos a una tarea.
 
 ### Fase 9 — Portales e integraciones
 

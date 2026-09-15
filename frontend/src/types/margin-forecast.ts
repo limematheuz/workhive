@@ -41,3 +41,19 @@ export interface LocationMargin {
     actual_direct_cost_base_amount: number;
     actual_margin_base_amount: number;
 }
+
+export interface ServiceMarginScope {
+    id: number;
+    name: string;
+    version: number;
+}
+
+export interface ServiceMargin {
+    scope_type: "service";
+    scope_id: number;
+    scope_name: string;
+    actual_revenue_base_amount: number;
+    actual_labor_cost_base_amount: number;
+    known_direct_cost_base_amount: number;
+    known_margin_base_amount: number;
+}

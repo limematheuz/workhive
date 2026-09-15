@@ -1,4 +1,9 @@
-import type { LocationMargin, MarginForecast, MarginForecastBudget } from "../types/margin-forecast.ts";
+import type {
+    LocationMargin,
+    MarginForecast,
+    MarginForecastBudget,
+    ServiceMargin,
+} from "../types/margin-forecast.ts";
 
 type ApiAmount = number | string;
 
@@ -86,5 +91,28 @@ export function normalizeLocationMargin(data: ApiLocationMargin): LocationMargin
         actual_expense_cost_base_amount: amount(data.actual_expense_cost_base_amount),
         actual_direct_cost_base_amount: amount(data.actual_direct_cost_base_amount),
         actual_margin_base_amount: amount(data.actual_margin_base_amount),
+    };
+}
+
+export type ApiServiceMargin = Omit<
+    ServiceMargin,
+    | "actual_revenue_base_amount"
+    | "actual_labor_cost_base_amount"
+    | "known_direct_cost_base_amount"
+    | "known_margin_base_amount"
+> & {
+    actual_revenue_base_amount: ApiAmount;
+    actual_labor_cost_base_amount: ApiAmount;
+    known_direct_cost_base_amount: ApiAmount;
+    known_margin_base_amount: ApiAmount;
+};
+
+export function normalizeServiceMargin(data: ApiServiceMargin): ServiceMargin {
+    return {
+        ...data,
+        actual_revenue_base_amount: amount(data.actual_revenue_base_amount),
+        actual_labor_cost_base_amount: amount(data.actual_labor_cost_base_amount),
+        known_direct_cost_base_amount: amount(data.known_direct_cost_base_amount),
+        known_margin_base_amount: amount(data.known_margin_base_amount),
     };
 }

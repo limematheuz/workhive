@@ -18,6 +18,14 @@ const locationMarginService = readFileSync(
     new URL("../services/location-margin.service.ts", import.meta.url),
     "utf8",
 );
+const serviceMarginPanel = readFileSync(
+    new URL("../components/analytics/ServiceMarginPanel.tsx", import.meta.url),
+    "utf8",
+);
+const serviceMarginService = readFileSync(
+    new URL("../services/service-margin.service.ts", import.meta.url),
+    "utf8",
+);
 
 test("operational margin reuses the protected scope forecast and only accepts a selected scope", () => {
     assert.match(explorer, /MarginForecastPanel/);
@@ -27,6 +35,8 @@ test("operational margin reuses the protected scope forecast and only accepts a 
     assert.match(explorer, /WorkOrder/);
     assert.match(explorer, /LocationMarginPanel/);
     assert.match(explorer, /value="location"/);
+    assert.match(explorer, /ServiceMarginPanel/);
+    assert.match(explorer, /value="service"/);
     assert.doesNotMatch(explorer, /apiFetch\(/);
 });
 
@@ -37,7 +47,11 @@ test("analytics only offers operational margin to users allowed to view labour c
     assert.match(analyticsPage, /ServiceContractService\.getContracts/);
     assert.match(analyticsPage, /WorkOrderService\.getWorkOrders/);
     assert.match(analyticsPage, /LocationService\.getLocations/);
+    assert.match(analyticsPage, /ServiceMarginService\.getScopes/);
     assert.match(locationMarginPanel, /LocationMarginService\.get/);
     assert.match(locationMarginService, /margin-forecasts\/locations/);
+    assert.match(serviceMarginPanel, /ServiceMarginService\.get/);
+    assert.match(serviceMarginService, /margin-forecasts\/services/);
     assert.doesNotMatch(locationMarginPanel, /apiFetch\(/);
+    assert.doesNotMatch(serviceMarginPanel, /apiFetch\(/);
 });
