@@ -1,0 +1,13 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "ignore": {
+    "files": [
+      ".next-e2e/**",
+      "playwright-report/**"
+    ]
+  },
+  "rules": {
+    "react-doctor/no-giant-component": "off",
+    "react-doctor/prefer-useReducer": "off"
+  }
+}
