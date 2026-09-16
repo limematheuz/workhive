@@ -6,8 +6,6 @@ how a platform-managed subscription transition is normalized.
 """
 
 from collections.abc import Iterable
-from datetime import datetime, timezone
-
 from fastapi import HTTPException, status
 
 from app.models.user import User
@@ -22,7 +20,7 @@ _ACCESS_FIELDS = frozenset(
         "trial_ends_at",
     }
 )
-_SESSION_INVALIDATING_FIELDS = _ACCESS_FIELDS | {"is_active"}
+_SESSION_INVALIDATING_FIELDS = frozenset({"is_active"})
 
 
 def require_company_access(
@@ -45,8 +43,13 @@ def require_company_update_permissions(
     current_user: User,
     changed_fields: Iterable[str],
 ) -> None:
-    """Keep platform-only company activation and subscription fields protected."""
+    """Keep access mutations inside their dedicated commercial workflow."""
     fields = set(changed_fields)
+    if fields & _ACCESS_FIELDS:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Use the platform plan and access workflow to change company access",
+        )
     if is_platform_superadmin(current_user):
         return
     if "is_active" in fields:
@@ -54,51 +57,6 @@ def require_company_update_permissions(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only a WorkHive superadmin can change company activation",
         )
-    if fields & _ACCESS_FIELDS:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only a WorkHive superadmin can change company access",
-        )
-
-
-def normalize_platform_subscription_update(
-    update_payload: dict,
-    *,
-    platform_superadmin: bool,
-    now: datetime | None = None,
-) -> dict:
-    """Return the canonical access state for an explicitly changed plan."""
-    if not platform_superadmin or "subscription_plan" not in update_payload:
-        return update_payload
-
-    normalized_payload = update_payload.copy()
-    plan = normalized_payload["subscription_plan"]
-    if plan == "trial":
-        normalized_payload.update(
-            subscription_plan="top",
-            subscription_status="trialing",
-            trial_started_at=now or datetime.now(timezone.utc),
-        )
-    elif plan == "none":
-        normalized_payload.update(
-            subscription_status="inactive",
-            trial_started_at=None,
-            trial_ends_at=None,
-        )
-    else:
-        legacy_plan_map = {
-            "free": "basic",
-            "business": "medium",
-            "pro": "top",
-            "lifetime": "top",
-        }
-        normalized_payload["subscription_plan"] = legacy_plan_map.get(plan, plan)
-        normalized_payload.update(
-            subscription_status="active",
-            trial_started_at=None,
-            trial_ends_at=None,
-        )
-    return normalized_payload
 
 
 def requires_session_revocation(changed_fields: Iterable[str]) -> bool:

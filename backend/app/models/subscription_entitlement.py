@@ -166,6 +166,22 @@ class CompanySubscription(Base):
             "ended_at IS NULL OR ended_at >= started_at",
             name="ck_company_subscription_dates",
         ),
+        CheckConstraint(
+            "(commercial_billing_interval IS NULL AND commercial_amount_cents IS NULL AND commercial_currency IS NULL AND commercial_tax_behavior IS NULL AND commercial_terms_effective_at IS NULL) OR (commercial_billing_interval IS NOT NULL AND commercial_amount_cents IS NOT NULL AND commercial_currency IS NOT NULL AND commercial_tax_behavior IS NOT NULL AND commercial_terms_effective_at IS NOT NULL)",
+            name="ck_company_subscription_commercial_terms_complete",
+        ),
+        CheckConstraint(
+            "commercial_billing_interval IS NULL OR commercial_billing_interval IN ('monthly', 'annual')",
+            name="ck_company_subscription_commercial_interval",
+        ),
+        CheckConstraint(
+            "commercial_amount_cents IS NULL OR commercial_amount_cents >= 0",
+            name="ck_company_subscription_commercial_amount",
+        ),
+        CheckConstraint(
+            "commercial_tax_behavior IS NULL OR commercial_tax_behavior IN ('exclusive', 'inclusive')",
+            name="ck_company_subscription_commercial_tax",
+        ),
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -190,6 +206,14 @@ class CompanySubscription(Base):
     billing_provider = Column(String(50), nullable=True)
     billing_customer_id = Column(String(100), nullable=True, index=True)
     billing_subscription_id = Column(String(100), nullable=True, index=True)
+    # These values are a snapshot of the agreed commercial terms.  They are
+    # deliberately nullable because historical subscription rows cannot be
+    # retroactively priced from today's mutable catalogue.
+    commercial_billing_interval = Column(String(20), nullable=True)
+    commercial_amount_cents = Column(Integer, nullable=True)
+    commercial_currency = Column(String(3), nullable=True)
+    commercial_tax_behavior = Column(String(20), nullable=True)
+    commercial_terms_effective_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

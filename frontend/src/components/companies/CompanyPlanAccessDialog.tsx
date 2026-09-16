@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { CompanyPlanAccess, Entitlement, PlanCode } from "@/services/company-plan-access.service";
 import type { Company } from "@/services/company.service";
 import { CommercialChangeConfirmationDialog } from "./CommercialChangeConfirmationDialog";
+import { CommercialTermsFields } from "./CommercialTermsFields";
 import { EntitlementConfigurationEditor } from "./EntitlementConfigurationEditor";
 import { auditLabel, dateForInput, useCompanyPlanAccessDialog } from "./useCompanyPlanAccessDialog";
 
@@ -101,7 +102,7 @@ function DialogBody({ controller }: { controller: Controller }) {
 }
 
 function PlanTab({ controller }: { controller: Controller }) {
-    const { access, close, planChanges, planCode, planFeatures, planLimits, planReason, planStatus, requestPlanSave, selectablePlans, setActiveTab, setPlanCode, setPlanReason, setPlanStatus, setTrialEndsAt, submitting, trialEndsAt } = controller;
+    const { access, close, commercialTerms, planChanges, planCode, planFeatures, planLimits, planReason, planStatus, requestPlanSave, selectablePlans, setActiveTab, setCommercialTerms, setPlanCode, setPlanReason, setPlanStatus, setTrialEndsAt, submitting, trialEndsAt } = controller;
     if (!access) return null;
     return (
         <form className="space-y-5" onSubmit={requestPlanSave}>
@@ -111,6 +112,7 @@ function PlanTab({ controller }: { controller: Controller }) {
                 <div className="min-w-0 space-y-2"><Label htmlFor="company-plan-status">Estado de acceso</Label><Select value={planStatus} onValueChange={(value) => setPlanStatus(value as "active" | "trialing")}><SelectTrigger id="company-plan-status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Activo</SelectItem><SelectItem value="trialing">Prueba</SelectItem></SelectContent></Select></div>
             </div>
             {planStatus === "trialing" && <div className="max-w-sm space-y-2"><Label htmlFor="company-trial-end">Fin de la prueba</Label><DatePicker id="company-trial-end" required value={trialEndsAt} onValueChange={setTrialEndsAt} /></div>}
+            {planStatus === "active" && <CommercialTermsFields idPrefix="company-commercial-terms" value={commercialTerms} onChange={setCommercialTerms} />}
             <div className="space-y-2"><Label htmlFor="company-plan-reason">Motivo del cambio</Label><Textarea id="company-plan-reason" required minLength={3} value={planReason} onChange={(event) => setPlanReason(event.target.value)} placeholder="Por ejemplo: suscripción anual firmada" /></div>
             <PlanSummary features={planFeatures} limits={planLimits} usage={access.usage} />
             <Button type="button" variant="outline" onClick={() => setActiveTab("custom")}><SlidersHorizontal className="h-4 w-4" />Personalizar funciones y capacidad</Button>
@@ -143,5 +145,6 @@ function OverrideList({ overrides }: { overrides: CompanyPlanAccess["overrides"]
 }
 
 function AuditList({ audit, subscription }: { audit: CompanyPlanAccess["audit"]; subscription: CompanyPlanAccess["subscription"] }) {
-    return <section className="space-y-2"><div className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 p-3"><p className="text-sm font-semibold text-[var(--text-main)]">Configuración actual</p><p className="mt-1 text-sm text-[var(--text-muted)]">{subscription.plan_label}{subscription.plan_version ? ` · versión ${subscription.plan_version}` : ""} · {subscription.status === "trialing" ? "Prueba" : "Activo"}</p></div>{audit.length === 0 ? <p className="text-sm text-[var(--text-muted)]">Todavía no hay cambios manuales registrados. Este panel muestra sólo operaciones reales: aparecerán aquí al cambiar el plan o al guardar una configuración personalizada, con su motivo.</p> : audit.map((entry) => <article key={entry.id} className="rounded-xl border border-[var(--border-soft)] p-3"><div className="flex items-center justify-between gap-3"><p className="font-medium text-[var(--text-main)]">{auditLabel(entry.action)}</p><time className="shrink-0 text-xs text-[var(--text-muted)]">{dateForInput(entry.created_at)}</time></div>{entry.reason && <p className="mt-1 text-sm text-[var(--text-muted)]">{entry.reason}</p>}</article>)}</section>;
+    const terms = subscription.commercial_terms;
+    return <section className="space-y-2"><div className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/40 p-3"><p className="text-sm font-semibold text-[var(--text-main)]">Configuración actual</p><p className="mt-1 text-sm text-[var(--text-muted)]">{subscription.plan_label}{subscription.plan_version ? ` · versión ${subscription.plan_version}` : ""} · {subscription.status === "trialing" ? "Prueba" : "Activo"}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{terms ? `Contrato: ${(terms.amount_cents / 100).toFixed(2)} ${terms.currency} · ${terms.billing_interval === "annual" ? "anual" : "mensual"} · efectivo desde ${dateForInput(terms.effective_at)}` : "Contrato: condiciones económicas aún no registradas"}</p></div>{audit.length === 0 ? <p className="text-sm text-[var(--text-muted)]">Todavía no hay cambios manuales registrados. Este panel muestra sólo operaciones reales: aparecerán aquí al cambiar el plan o al guardar una configuración personalizada, con su motivo.</p> : audit.map((entry) => <article key={entry.id} className="rounded-xl border border-[var(--border-soft)] p-3"><div className="flex items-center justify-between gap-3"><p className="font-medium text-[var(--text-main)]">{auditLabel(entry.action)}</p><time className="shrink-0 text-xs text-[var(--text-muted)]">{dateForInput(entry.created_at)}</time></div>{entry.reason && <p className="mt-1 text-sm text-[var(--text-muted)]">{entry.reason}</p>}</article>)}</section>;
 }

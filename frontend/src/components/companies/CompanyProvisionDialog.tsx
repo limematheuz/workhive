@@ -20,6 +20,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { CommercialTermsFields } from "./CommercialTermsFields";
+import type { CommercialTermsFormValue } from "@/lib/commercial-terms";
 
 export type ProvisionPlanCode = "trial" | "basic" | "medium" | "top" | "mega" | "custom";
 
@@ -34,6 +36,7 @@ export type CompanyProvisionData = {
     owner_access_code: string;
     subscription_plan: ProvisionPlanCode;
     trial_days: string;
+    commercial_terms: CommercialTermsFormValue;
 };
 
 type CompanyProvisionDialogProps = {
@@ -150,6 +153,7 @@ export function CompanyProvisionDialog({
                                     />
                                 )}
                             </div>
+                            {!isTrial && <CommercialTermsFields idPrefix="provision-commercial-terms" value={provisionData.commercial_terms} onChange={(commercial_terms) => setProvisionData({ ...provisionData, commercial_terms })} />}
                             <p className="flex gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-xs leading-relaxed text-[var(--text-muted)]">
                                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" aria-hidden="true" />
                                 {isTrial

@@ -1,5 +1,6 @@
 """Synchronize subscription history and auditable company-specific exceptions."""
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
@@ -10,6 +11,7 @@ from app.models.subscription_entitlement import (
     CompanyEntitlementOverride,
     CompanySubscription,
     EntitlementChangeAudit,
+    PlanPrice,
 )
 from app.repositories import subscription_entitlement as entitlement_repo
 from app.services.entitlement_catalog import (
@@ -31,6 +33,114 @@ def _billing_provider(company: Company) -> str | None:
     )
 
 
+@dataclass(frozen=True)
+class CommercialSubscriptionTerms:
+    """The immutable agreed price for one subscription record."""
+
+    billing_interval: str
+    amount_cents: int
+    currency: str
+    tax_behavior: str
+    effective_at: datetime
+
+
+def commercial_terms_from_price(
+    price: PlanPrice,
+    *,
+    effective_at: datetime,
+) -> CommercialSubscriptionTerms:
+    """Copy a versioned catalogue price into a paid subscription snapshot."""
+    return CommercialSubscriptionTerms(
+        billing_interval=price.billing_interval,
+        amount_cents=price.amount_cents,
+        currency=price.currency.upper(),
+        tax_behavior=price.tax_behavior,
+        effective_at=_as_utc(effective_at),
+    )
+
+
+def _as_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _validated_commercial_terms(
+    terms: CommercialSubscriptionTerms,
+) -> CommercialSubscriptionTerms:
+    billing_interval = terms.billing_interval.strip()
+    currency = terms.currency.strip().upper()
+    tax_behavior = terms.tax_behavior.strip()
+    if billing_interval not in {"monthly", "annual"}:
+        raise ValueError("Commercial billing interval is invalid")
+    if terms.amount_cents < 0:
+        raise ValueError("Commercial amount cannot be negative")
+    if len(currency) != 3 or not currency.isalpha():
+        raise ValueError("Commercial currency must be a three-letter ISO code")
+    if currency != "EUR":
+        raise ValueError("WorkHive commercial terms currently support EUR only")
+    if tax_behavior not in {"exclusive", "inclusive"}:
+        raise ValueError("Commercial tax behavior is invalid")
+    return CommercialSubscriptionTerms(
+        billing_interval=billing_interval,
+        amount_cents=terms.amount_cents,
+        currency=currency,
+        tax_behavior=tax_behavior,
+        effective_at=_as_utc(terms.effective_at),
+    )
+
+
+def subscription_commercial_terms(
+    subscription: CompanySubscription | None,
+) -> CommercialSubscriptionTerms | None:
+    """Read a complete snapshot without guessing missing legacy values."""
+    if subscription is None:
+        return None
+    values = (
+        subscription.commercial_billing_interval,
+        subscription.commercial_amount_cents,
+        subscription.commercial_currency,
+        subscription.commercial_tax_behavior,
+        subscription.commercial_terms_effective_at,
+    )
+    if any(value is None for value in values):
+        return None
+    return CommercialSubscriptionTerms(
+        billing_interval=str(subscription.commercial_billing_interval),
+        amount_cents=int(subscription.commercial_amount_cents),
+        currency=str(subscription.commercial_currency),
+        tax_behavior=str(subscription.commercial_tax_behavior),
+        effective_at=_as_utc(subscription.commercial_terms_effective_at),
+    )
+
+
+def _terms_audit_value(
+    terms: CommercialSubscriptionTerms | None,
+) -> dict[str, object] | None:
+    if terms is None:
+        return None
+    return {
+        "billing_interval": terms.billing_interval,
+        "amount_cents": terms.amount_cents,
+        "currency": terms.currency,
+        "tax_behavior": terms.tax_behavior,
+        "effective_at": terms.effective_at.isoformat(),
+    }
+
+
+def _apply_commercial_terms(
+    subscription: CompanySubscription,
+    terms: CommercialSubscriptionTerms | None,
+) -> None:
+    if terms is None:
+        return
+    subscription.commercial_billing_interval = terms.billing_interval
+    subscription.commercial_amount_cents = terms.amount_cents
+    subscription.commercial_currency = terms.currency
+    subscription.commercial_tax_behavior = terms.tax_behavior
+    subscription.commercial_terms_effective_at = terms.effective_at
+
+
 def synchronize_company_subscription(
     db: Session,
     company: Company,
@@ -40,8 +150,14 @@ def synchronize_company_subscription(
     now: datetime | None = None,
     audit_action: str = "subscription.synchronized",
     plan_id: int | None = None,
+    commercial_terms: CommercialSubscriptionTerms | None = None,
 ) -> CompanySubscription:
     current_time = now or _utcnow()
+    normalized_terms = (
+        _validated_commercial_terms(commercial_terms)
+        if commercial_terms is not None
+        else None
+    )
     plan = (
         entitlement_repo.get_plan_by_id(db, plan_id=plan_id)
         if plan_id is not None
@@ -61,11 +177,23 @@ def synchronize_company_subscription(
             "trial_ends_at": current.trial_ends_at.isoformat()
             if current and current.trial_ends_at
             else None,
+            "commercial_terms": _terms_audit_value(
+                subscription_commercial_terms(current)
+            ),
         }
         if current
         else None
     )
-    if current and current.plan_id == plan.id and current.ended_at is None:
+    current_terms = subscription_commercial_terms(current)
+    requires_new_snapshot = (
+        normalized_terms is not None and normalized_terms != current_terms
+    )
+    if (
+        current
+        and current.plan_id == plan.id
+        and current.ended_at is None
+        and not requires_new_snapshot
+    ):
         subscription = current
         subscription.status = company.subscription_status
         subscription.trial_ends_at = company.trial_ends_at
@@ -88,6 +216,7 @@ def synchronize_company_subscription(
             billing_customer_id=company.stripe_customer_id,
             billing_subscription_id=company.stripe_subscription_id,
         )
+        _apply_commercial_terms(subscription, normalized_terms)
         db.add(subscription)
         db.flush()
     after = {
@@ -96,6 +225,9 @@ def synchronize_company_subscription(
         "trial_ends_at": subscription.trial_ends_at.isoformat()
         if subscription.trial_ends_at
         else None,
+        "commercial_terms": _terms_audit_value(
+            subscription_commercial_terms(subscription)
+        ),
     }
     if before != after:
         db.add(

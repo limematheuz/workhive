@@ -27,6 +27,7 @@ from app.services import (
     privacy_service,
 )
 from app.services.entitlement_catalog import plan_label
+from app.services.plan_pricing_service import require_price_for_interval
 
 
 logger = logging.getLogger(__name__)
@@ -124,6 +125,7 @@ def activate_paid_purchase(
             status_code=status.HTTP_409_CONFLICT,
             detail="The purchased plan is no longer available",
         )
+    purchased_price = require_price_for_interval(plan, purchase.billing_interval)
     admin_role = role_repo.get_role_by_name(db, "admin")
     if admin_role is None:
         raise HTTPException(
@@ -169,6 +171,10 @@ def activate_paid_purchase(
             actor_user_id=owner.id,
             now=now,
             plan_id=plan.id,
+            commercial_terms=company_entitlement_service.commercial_terms_from_price(
+                purchased_price,
+                effective_at=now,
+            ),
         )
         privacy_service.record_registration_acknowledgements(
             db,

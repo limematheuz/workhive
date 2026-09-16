@@ -29,6 +29,7 @@ export type CompanyPlanAccess = {
         plan_version: number | null;
         status: string;
         trial_ends_at: string | null;
+        commercial_terms: CommercialTerms | null;
     };
     entitlements: Entitlement[];
     base_entitlements: Entitlement[];
@@ -62,10 +63,43 @@ export type CurrentCompanyEntitlements = {
     entitlements: Entitlement[];
 };
 
+export type CommercialPlanOverview = {
+    code: PlanCode;
+    label: string;
+    active_subscriptions: number;
+    trial_subscriptions: number;
+    payment_attention_subscriptions: number;
+    inactive_subscriptions: number;
+    contracted_mrr_cents: number;
+    subscriptions_without_commercial_terms: number;
+};
+
+export type CommercialOverview = {
+    active_subscriptions: number;
+    trial_subscriptions: number;
+    payment_attention_subscriptions: number;
+    upgrades_last_30_days: number;
+    downgrades_last_30_days: number;
+    churned_last_30_days: number;
+    revenue_measurement_available: boolean;
+    contracted_mrr_cents: number;
+    active_subscriptions_without_commercial_terms: number;
+    plans: CommercialPlanOverview[];
+};
+
+export type CommercialTerms = {
+    billing_interval: "monthly" | "annual";
+    amount_cents: number;
+    currency: string;
+    tax_behavior: "exclusive" | "inclusive";
+    effective_at: string;
+};
+
 export type CompanyPlanAccessUpdate = {
     plan_code: PlanCode;
     status: PlanStatus;
     trial_ends_at?: string | null;
+    commercial_terms?: CommercialTerms;
     reason: string;
 };
 
@@ -95,6 +129,17 @@ export type PlanCatalogUpdateInput = {
 };
 
 export const CompanyPlanAccessService = {
+    getCommercialOverview: async (): Promise<CommercialOverview> => {
+        const response = await apiFetch("/api/v1/companies/commercial-overview", {
+            method: "GET",
+            cache: "no-store",
+        });
+        if (!response.ok) {
+            throw new Error(await extractErrorMessage(response, "No se ha podido cargar el resumen comercial"));
+        }
+        return response.json();
+    },
+
     getCurrentEntitlements: async (): Promise<CurrentCompanyEntitlements> => {
         const response = await apiFetch("/api/v1/companies/current/entitlements", {
             method: "GET",
