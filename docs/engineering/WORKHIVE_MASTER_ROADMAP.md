@@ -38,13 +38,12 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ## 2. Estado de publicación
 
-- ✅ Producción: `v1.6.1` (`c3da6be`), publicada desde `main` con imágenes
+- ✅ Producción: `v1.6.5` (`095aa9f`), publicada desde `main` con imágenes
   inmutables en ECR y despliegue SSM verificado. Backend, frontend, React
   Doctor, SAST, secretos y GitGuardian terminaron correctamente.
-- ✅ `main` local y `origin/main` están alineadas en `3a0c034`; incluye la
-  preparación versionada de mantenimiento seguro del host, observabilidad y
-  migración de cuenta AWS. La asociación semanal, agente CloudWatch y alarma
-  se aplican en AWS como paso operativo separado.
+- ✅ `main` local y `origin/main` están alineadas en `095aa9f`; incluye las
+  fases operativas y financieras recientes. La asociación semanal, agente
+  CloudWatch y alarma se aplican en AWS como paso operativo separado.
 - ✅ Seguimiento comercial y la paginación de Facturas y Presupuestos están
   publicados; el cambio inicial fue `07e0e83`.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
@@ -371,8 +370,14 @@ como WorkHive Core solo cuando el caso real las exige.
   ejecutables trazables sin alterar tareas existentes. Publicado en `v1.6.1`;
   la UI permite crear, replanificar, pausar, reactivar y generar ejecuciones,
   validado con E2E autenticada local.
-- ⬜ Previsión de personas/minutos, pausas, GPS final, correcciones justificadas,
-  aprobaciones, partes y coste laboral.
+- 🟡 Previsión de personas/minutos, pausas auditables, GPS final,
+  correcciones justificadas con aprobación, partes de trabajo y coste laboral:
+  las órdenes conservan la previsión; los fichajes restan pausas y registran
+  coordenadas finales; las correcciones son revisables y no alteran tiempo ya
+  facturado; los partes están separados de la tarea y el coste queda congelado
+  al cerrar la sesión. Publicado en `v1.6.5` y validado con 45 regresiones
+  backend y 15 pruebas frontend focalizadas; pendiente de revisión visual
+  autenticada para cerrar la fase.
 
 ### Fase 6 — Calidad e incidencias
 
@@ -540,6 +545,25 @@ como WorkHive Core solo cuando el caso real las exige.
   Cubierto localmente con migración, idempotencia y pruebas de destinatarios;
   pendiente de validación operativa en el despliegue y de ampliar las
   aprobaciones de negocio antes de marcarlo como completado.
+
+### Fase 10 — Gobierno comercial de plataforma
+
+- 🟡 Resumen comercial para superadmin: muestra suscripciones activas, pruebas,
+  cobros a revisar, upgrades, downgrades, bajas y distribución por plan desde
+  el historial de suscripciones y auditorías. Es solo lectura, no es accesible
+  para administradores de empresa y no mezcla finanzas de clientes con la
+  suscripción de WorkHive. Pendiente de validación visual autenticada tras el
+  despliegue.
+- ✅ Términos comerciales inmutables por suscripción: toda activación pagada
+  nueva, ya sea provisión de plataforma, cambio manual de plan o compra
+  confirmada, guarda importe, EUR, intervalo, tratamiento de IVA y fecha
+  efectiva en un snapshot. Un cambio de condiciones cierra el registro previo
+  y abre otro; el historial manual sin condiciones sigue siendo desconocido y
+  queda excluido. El MRR es contractual, no ingreso cobrado: normaliza anual a
+  mensual y nunca mezcla monedas sin tipo de cambio inmutable. La ruta genérica
+  de empresa no puede eludir este flujo. Cubierto localmente con migración,
+  autorización positiva/negativa, compra, provisión, histórico y regresiones;
+  pendiente de validación visual autenticada tras el despliegue.
 
 ## 6. Puerta de salida obligatoria para cada fase
 

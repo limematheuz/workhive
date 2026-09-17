@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
+
 from app.core.security import get_password_hash
 from app.models.company import Company
+from app.models.subscription_entitlement import CompanySubscription
 from app.models.user import User
 from credentials import TEST_SECRET, login_form, with_owner_credential
 
@@ -175,3 +178,52 @@ def test_company_scoped_superadmin_cannot_use_platform_company_panel(
         ).status_code
         == 403
     )
+
+
+def test_platform_provisioned_paid_company_records_commercial_terms(client, db):
+    platform = User(
+        email="commercial-provision-superadmin@workhive.test",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Commercial provision superadmin",
+        role_id=4,
+        company_id=None,
+        is_active=True,
+    )
+    db.add(platform)
+    db.commit()
+
+    response = client.post(
+        "/api/v1/companies/provision",
+        headers=_headers(client, platform.email),
+        json=with_owner_credential(
+            {
+                "name": "Contracted company",
+                "tax_id": "B10000004",
+                "address": "Contract street 1",
+                "phone": "600000004",
+                "email": "contracted-company@example.com",
+                "owner_full_name": "Contracted owner",
+                "owner_email": "contracted-owner@example.com",
+                "subscription_plan": "medium",
+                "commercial_terms": {
+                    "billing_interval": "annual",
+                    "amount_cents": 60000,
+                    "currency": "EUR",
+                    "tax_behavior": "exclusive",
+                    "effective_at": datetime.now(timezone.utc).isoformat(),
+                },
+            }
+        ),
+    )
+
+    assert response.status_code == 201, response.text
+    subscription = (
+        db.query(CompanySubscription)
+        .filter(
+            CompanySubscription.company_id == response.json()["id"],
+            CompanySubscription.ended_at.is_(None),
+        )
+        .one()
+    )
+    assert subscription.commercial_billing_interval == "annual"
+    assert subscription.commercial_amount_cents == 60000

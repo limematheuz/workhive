@@ -2,6 +2,12 @@ import { useEffect, useMemo, useReducer, useState, type FormEvent } from "react"
 
 import { toast } from "@/lib/toast";
 import {
+    commercialTermsFormValue,
+    commercialTermsPayload,
+    emptyCommercialTerms,
+    type CommercialTermsFormValue,
+} from "@/lib/commercial-terms";
+import {
     CompanyPlanAccessService,
     type CompanyPlanAccess,
     type Entitlement,
@@ -25,6 +31,7 @@ type State = {
     planCode: PlanCode;
     planStatus: "active" | "trialing";
     trialEndsAt: string;
+    commercialTerms: CommercialTermsFormValue;
     planReason: string;
     customValues: EntitlementValues;
     customEndsAt: string;
@@ -40,6 +47,7 @@ type Action =
     | { type: "plan-code"; value: PlanCode }
     | { type: "plan-status"; value: "active" | "trialing" }
     | { type: "trial-ends-at"; value: string }
+    | { type: "commercial-terms"; value: CommercialTermsFormValue }
     | { type: "plan-reason"; value: string }
     | { type: "custom-value"; code: string; value: boolean | number }
     | { type: "custom-ends-at"; value: string }
@@ -56,6 +64,7 @@ const INITIAL_STATE: State = {
     planCode: "top",
     planStatus: "active",
     trialEndsAt: "",
+    commercialTerms: emptyCommercialTerms(),
     planReason: "",
     customValues: {},
     customEndsAt: "",
@@ -100,6 +109,7 @@ function reducer(state: State, action: Action): State {
             planCode: action.access.subscription.plan_code,
             planStatus: action.access.subscription.status === "trialing" ? "trialing" : "active",
             trialEndsAt: dateForInput(action.access.subscription.trial_ends_at),
+            commercialTerms: commercialTermsFormValue(action.access.subscription.commercial_terms),
             customValues: valuesFromEntitlements(action.access.entitlements),
             customEndsAt: sharedCustomizationEndDate(action.access.overrides),
         };
@@ -109,6 +119,7 @@ function reducer(state: State, action: Action): State {
         case "plan-code": return { ...state, planCode: action.value };
         case "plan-status": return { ...state, planStatus: action.value };
         case "trial-ends-at": return { ...state, trialEndsAt: action.value };
+        case "commercial-terms": return { ...state, commercialTerms: action.value };
         case "plan-reason": return { ...state, planReason: action.value };
         case "custom-value": return { ...state, customValues: { ...state.customValues, [action.code]: action.value } };
         case "custom-ends-at": return { ...state, customEndsAt: action.value };
@@ -117,6 +128,7 @@ function reducer(state: State, action: Action): State {
             ...state,
             access: action.access,
             planReason: "",
+            commercialTerms: commercialTermsFormValue(action.access.subscription.commercial_terms),
             customValues: valuesFromEntitlements(action.access.entitlements),
         };
         case "override-updated": return {
@@ -150,7 +162,7 @@ export function useCompanyPlanAccessDialog({
 }) {
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const [confirmation, setConfirmation] = useState<"plan" | "custom" | null>(null);
-    const { access, catalogue, customEndsAt, customReason, customValues, planCode, planReason, planStatus, trialEndsAt } = state;
+    const { access, catalogue, commercialTerms, customEndsAt, customReason, customValues, planCode, planReason, planStatus, trialEndsAt } = state;
     const selectedPlan = useMemo(() => catalogue.find((plan) => plan.code === planCode) || null, [catalogue, planCode]);
     const baseValues = useMemo(() => valuesFromEntitlements(access?.base_entitlements || []), [access?.base_entitlements]);
     const currentValues = useMemo(() => valuesFromEntitlements(access?.entitlements || []), [access?.entitlements]);
@@ -176,8 +188,34 @@ export function useCompanyPlanAccessDialog({
             label: "Fin de la prueba", previous: currentTrialEnd || "Sin fecha", next: trialEndsAt || "Sin fecha",
             isReduction: Boolean(currentTrialEnd && !trialEndsAt),
         });
+        if (planStatus === "active") {
+            const nextTerms = commercialTermsPayload(commercialTerms);
+            const currentTerms = access.subscription.commercial_terms;
+            if (!currentTerms) {
+                changes.push({
+                    label: "Condiciones comerciales",
+                    previous: "Sin registrar",
+                    next: nextTerms ? "Contrato registrado" : "Pendiente de completar",
+                });
+            } else if (
+                nextTerms
+                && (
+                    nextTerms.billing_interval !== currentTerms.billing_interval
+                    || nextTerms.amount_cents !== currentTerms.amount_cents
+                    || nextTerms.currency !== currentTerms.currency
+                    || nextTerms.tax_behavior !== currentTerms.tax_behavior
+                    || nextTerms.effective_at !== currentTerms.effective_at
+                )
+            ) {
+                changes.push({
+                    label: "Condiciones comerciales",
+                    previous: `${currentTerms.amount_cents / 100} ${currentTerms.currency} · ${currentTerms.billing_interval === "annual" ? "anual" : "mensual"}`,
+                    next: `${nextTerms.amount_cents / 100} ${nextTerms.currency} · ${nextTerms.billing_interval === "annual" ? "anual" : "mensual"}`,
+                });
+            }
+        }
         return [...changes, ...entitlementChanges(access.entitlements, currentValues, nextPlanValues)];
-    }, [access, currentValues, nextPlanValues, planCode, planStatus, selectedPlan, trialEndsAt]);
+    }, [access, commercialTerms, currentValues, nextPlanValues, planCode, planStatus, selectedPlan, trialEndsAt]);
     const customizationChanges = useMemo<CommercialChange[]>(() => {
         if (!access) return [];
         const changes = entitlementChanges(access.entitlements, currentValues, customValues);
@@ -211,11 +249,17 @@ export function useCompanyPlanAccessDialog({
 
     const savePlan = async () => {
         if (!company) return;
+        const nextTerms = planStatus === "active" ? commercialTermsPayload(commercialTerms) : null;
+        if (planStatus === "active" && !nextTerms) {
+            toast.error("Completa el importe, la moneda y la fecha efectiva del acuerdo");
+            return;
+        }
         try {
             dispatch({ type: "submitting", value: true });
             const updated = await CompanyPlanAccessService.update(company.id, {
                 plan_code: planCode, status: planStatus,
                 trial_ends_at: planStatus === "trialing" ? toIsoEndOfDay(trialEndsAt) : null,
+                ...(nextTerms ? { commercial_terms: nextTerms } : {}),
                 reason: planReason,
             });
             dispatch({ type: "plan-updated", access: updated });
@@ -289,7 +333,12 @@ export function useCompanyPlanAccessDialog({
         close: () => onOpenChange(false),
         dismissConfirmation: () => setConfirmation(null),
         setActiveTab: (value: CompanyPlanAccessTab) => dispatch({ type: "tab", value }),
-        setPlanCode: (value: PlanCode) => dispatch({ type: "plan-code", value }),
+        setPlanCode: (value: PlanCode) => {
+            dispatch({ type: "plan-code", value });
+            if (value !== access?.subscription.plan_code) {
+                dispatch({ type: "commercial-terms", value: emptyCommercialTerms() });
+            }
+        },
         setPlanStatus: (value: "active" | "trialing") => {
             dispatch({ type: "plan-status", value });
             if (value === "trialing") {
@@ -298,6 +347,7 @@ export function useCompanyPlanAccessDialog({
             }
         },
         setTrialEndsAt: (value: string) => dispatch({ type: "trial-ends-at", value }),
+        setCommercialTerms: (value: CommercialTermsFormValue) => dispatch({ type: "commercial-terms", value }),
         setPlanReason: (value: string) => dispatch({ type: "plan-reason", value }),
         setCustomValue: (code: string, value: boolean | number) => dispatch({ type: "custom-value", code, value }),
         setCustomEndsAt: (value: string) => dispatch({ type: "custom-ends-at", value }),

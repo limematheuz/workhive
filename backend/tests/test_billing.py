@@ -11,6 +11,7 @@ from app.core.config import settings
 from app.core.security import get_password_hash
 from app.models.company import Company
 from app.models.company_purchase_intent import CompanyPurchaseIntent
+from app.models.subscription_entitlement import CompanySubscription
 from app.models.user import User
 from app.models.stripe_webhook_event import StripeWebhookEvent
 from app.services import (
@@ -91,7 +92,12 @@ def test_stripe_webhook_updates_company_subscription(db, monkeypatch):
                 "metadata": {
                     "company_id": str(company.id),
                     "plan": "business",
+                    "billing_interval": "monthly",
+                    "commercial_amount_cents": "6900",
+                    "commercial_currency": "EUR",
+                    "commercial_tax_behavior": "exclusive",
                 },
+                "start_date": int(time.time()) - 60,
             }
         },
     }
@@ -111,6 +117,17 @@ def test_stripe_webhook_updates_company_subscription(db, monkeypatch):
     assert company.stripe_customer_id == "cus_123"
     assert company.stripe_subscription_id == "sub_123"
     assert company.is_active is True
+    subscription = (
+        db.query(CompanySubscription)
+        .filter(
+            CompanySubscription.company_id == company.id,
+            CompanySubscription.ended_at.is_(None),
+        )
+        .one()
+    )
+    assert subscription.commercial_billing_interval == "monthly"
+    assert subscription.commercial_amount_cents == 6900
+    assert subscription.commercial_currency == "EUR"
     assert db.query(StripeWebhookEvent).count() == 1
 
     repeated_event_type = billing_service.process_webhook(
@@ -233,6 +250,8 @@ def test_checkout_and_portal_flows_without_real_stripe(db, monkeypatch):
     assert captured["customer"] == "cus_hosted"
     assert "customer_email" not in captured
     assert captured["metadata[plan]"] == "medium"
+    assert captured["subscription_data[metadata][commercial_amount_cents]"] == "6900"
+    assert captured["subscription_data[metadata][commercial_currency]"] == "EUR"
     assert (
         billing_service.create_customer_portal(company)
         == "https://billing.stripe.com/test-portal"
@@ -407,6 +426,19 @@ def test_paid_company_purchase_activates_only_after_stripe_confirms_payment(
     assert company.subscription_status == "active"
     assert company.stripe_customer_id == "cus_paid_activation"
     assert company.stripe_subscription_id == "sub_paid_activation"
+    subscription = (
+        db.query(CompanySubscription)
+        .filter(
+            CompanySubscription.company_id == company.id,
+            CompanySubscription.ended_at.is_(None),
+        )
+        .one()
+    )
+    assert subscription.commercial_billing_interval == "monthly"
+    assert subscription.commercial_amount_cents == 2900
+    assert subscription.commercial_currency == "EUR"
+    assert subscription.commercial_tax_behavior == "exclusive"
+    assert subscription.commercial_terms_effective_at is not None
     owner = db.query(User).filter(User.company_id == company.id).one()
     assert owner.email == "new-owner@workhive.com"
     assert owner.role.name == "admin"
@@ -586,6 +618,7 @@ def test_enterprise_checkout_uses_the_canonical_plan_metadata(db, monkeypatch):
     assert captured["customer_email"] == "enterprise-billing@example.com"
     assert captured["metadata[plan]"] == "mega"
     assert captured["subscription_data[metadata][plan]"] == "mega"
+    assert captured["subscription_data[metadata][commercial_amount_cents]"] == "24900"
 
 
 def test_lifetime_checkout_uses_payment_mode(db, monkeypatch):

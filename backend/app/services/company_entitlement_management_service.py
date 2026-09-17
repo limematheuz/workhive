@@ -19,10 +19,15 @@ from app.schemas.company_entitlement_management import (
     CompanyPlanAccessResponse,
     CompanyPlanAccessUpdate,
     CompanySubscriptionAccessResponse,
+    CommercialSubscriptionTermsResponse,
     CurrentCompanyEntitlementsResponse,
     EntitlementAuditResponse,
 )
-from app.services import company_entitlement_service, entitlement_service
+from app.services import (
+    company_entitlement_service,
+    company_plan_access_update_service,
+    entitlement_service,
+)
 from app.services.company_entitlement_safety_service import (
     override_value,
     reject_capacity_below_current_usage,
@@ -37,7 +42,6 @@ from app.services.entitlement_catalog import (
 from app.services.entitlement_management_support import (
     current_plan_values,
     entitlement_response,
-    entitlement_value_from_row,
     utcnow,
     validate_entitlement_values,
 )
@@ -89,6 +93,12 @@ def get_company_plan_access(
     overrides = entitlement_repo.list_active_overrides(
         db, company_id=company.id, now=now
     )
+    current_subscription = entitlement_repo.get_latest_company_subscription(
+        db, company_id=company.id
+    )
+    commercial_terms = company_entitlement_service.subscription_commercial_terms(
+        current_subscription
+    )
     overridden_codes = {override.code for override in overrides}
     return CompanyPlanAccessResponse(
         company_id=company.id,
@@ -98,6 +108,17 @@ def get_company_plan_access(
             plan_version=plan_version,
             status=company.subscription_status,
             trial_ends_at=company.trial_ends_at,
+            commercial_terms=(
+                CommercialSubscriptionTermsResponse(
+                    billing_interval=commercial_terms.billing_interval,
+                    amount_cents=commercial_terms.amount_cents,
+                    currency=commercial_terms.currency,
+                    tax_behavior=commercial_terms.tax_behavior,
+                    effective_at=commercial_terms.effective_at,
+                )
+                if commercial_terms is not None
+                else None
+            ),
         ),
         entitlements=[
             entitlement_response(
@@ -148,56 +169,17 @@ def update_company_plan_access(
     update: CompanyPlanAccessUpdate,
     current_user: User,
 ) -> CompanyPlanAccessResponse:
-    require_platform_superadmin(current_user)
-    company = _lock_company(db, company_id=company_id)
-    now = utcnow()
-    if update.status == "trialing" and update.trial_ends_at <= now:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="La fecha de finalización de la prueba debe ser futura",
-        )
-    target_plan = entitlement_repo.get_active_plan(db, code=update.plan_code)
-    if target_plan is None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="El catálogo de planes de WorkHive no está instalado",
-        )
-    target_values = {
-        item.code: entitlement_value_from_row(item) for item in target_plan.entitlements
-    }
-    active_overrides = entitlement_repo.list_active_overrides(
-        db, company_id=company.id, now=now
-    )
-    reject_capacity_below_current_usage(
+    resolved_company_id = company_plan_access_update_service.update_company_plan_access(
         db,
-        company_id=company.id,
-        values=values_with_active_overrides(target_values, active_overrides),
+        company_id=company_id,
+        update=update,
+        current_user=current_user,
     )
-    if any(override.ends_at is not None for override in active_overrides):
-        reject_capacity_below_current_usage(
-            db,
-            company_id=company.id,
-            values=values_with_active_overrides(
-                target_values, active_overrides, include_temporary=False
-            ),
-            when="La fecha de finalización de una excepción activa",
-        )
-    company.subscription_plan = update.plan_code
-    company.subscription_status = update.status
-    company.trial_started_at = now if update.status == "trialing" else None
-    company.trial_ends_at = update.trial_ends_at
-    db.add(company)
-    company_entitlement_service.synchronize_company_subscription(
+    return get_company_plan_access(
         db,
-        company,
-        reason=update.reason,
-        actor_user_id=current_user.id,
-        now=now,
-        audit_action="subscription.manually_changed",
+        company_id=resolved_company_id,
+        current_user=current_user,
     )
-    user_repo.revoke_company_sessions(db, company_id=company.id)
-    db.commit()
-    return get_company_plan_access(db, company_id=company.id, current_user=current_user)
 
 
 def create_company_entitlement_override(

@@ -164,6 +164,13 @@ def test_superadmin_can_provision_an_enterprise_plan(client, db):
                 "owner_email": "owner@enterprise-cleaning.com",
                 "subscription_plan": "mega",
                 "trial_days": None,
+                "commercial_terms": {
+                    "billing_interval": "monthly",
+                    "amount_cents": 9900,
+                    "currency": "EUR",
+                    "tax_behavior": "exclusive",
+                    "effective_at": datetime.now(timezone.utc).isoformat(),
+                },
             }
         ),
     )
@@ -215,14 +222,18 @@ def test_superadmin_can_revoke_subscription_access_and_sessions(client, db):
     assert owner_login.status_code == 200
     owner_headers = {"Authorization": f"Bearer {owner_login.json()['access_token']}"}
 
-    revoke = client.patch(
-        f"/api/v1/companies/{company_id}",
+    revoke = client.put(
+        f"/api/v1/companies/{company_id}/plan-access",
         headers=super_headers,
-        json={"subscription_plan": "none", "subscription_status": "inactive"},
+        json={
+            "plan_code": "top",
+            "status": "inactive",
+            "reason": "Subscription cancelled by platform administrator",
+        },
     )
     assert revoke.status_code == 200
-    assert revoke.json()["subscription_plan"] == "none"
-    assert revoke.json()["subscription_status"] == "inactive"
+    assert revoke.json()["subscription"]["plan_code"] == "top"
+    assert revoke.json()["subscription"]["status"] == "inactive"
 
     old_session = client.get("/api/v1/users/me", headers=owner_headers)
     assert old_session.status_code == 401

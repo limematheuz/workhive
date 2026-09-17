@@ -5,6 +5,7 @@ from app.models.company import Company
 from app.models.company_membership import CompanyMembership
 from app.models.subscription_entitlement import (
     EntitlementChangeAudit,
+    CompanySubscription,
     PlanCatalogAudit,
     PlanPrice,
     SubscriptionPlan,
@@ -54,6 +55,21 @@ def _company(db) -> Company:
     return company
 
 
+def _commercial_terms(
+    *,
+    amount_cents: int = 2900,
+    billing_interval: str = "monthly",
+    effective_at: datetime | None = None,
+) -> dict[str, object]:
+    return {
+        "billing_interval": billing_interval,
+        "amount_cents": amount_cents,
+        "currency": "EUR",
+        "tax_behavior": "exclusive",
+        "effective_at": (effective_at or datetime.now(timezone.utc)).isoformat(),
+    }
+
+
 def _add_active_worker(db, company: Company, index: int) -> None:
     worker = User(
         email=f"plan-worker-{index}@workhive.test",
@@ -96,7 +112,12 @@ def test_only_platform_superadmin_can_read_or_change_plan_access(client, db):
     write = client.put(
         f"/api/v1/companies/{company.id}/plan-access",
         headers=headers,
-        json={"plan_code": "medium", "status": "active", "reason": "Not allowed"},
+        json={
+            "plan_code": "medium",
+            "status": "active",
+            "commercial_terms": _commercial_terms(amount_cents=6900),
+            "reason": "Not allowed",
+        },
     )
 
     assert read.status_code == 403
@@ -108,6 +129,123 @@ def test_only_platform_superadmin_can_read_or_change_plan_access(client, db):
         item["code"] == "features.invoices" and item["value"] is True
         for item in current.json()["entitlements"]
     )
+
+
+def test_generic_company_update_cannot_bypass_commercial_terms_workflow(client, db):
+    company = _company(db)
+    headers = _platform_headers(client, db)
+
+    response = client.patch(
+        f"/api/v1/companies/{company.id}",
+        headers=headers,
+        json={"subscription_plan": "medium"},
+    )
+
+    assert response.status_code == 403
+    assert "plan and access workflow" in response.json()["detail"]
+
+
+def test_commercial_overview_is_platform_only_and_uses_lifecycle_facts(client, db):
+    first = _company(db)
+    headers = _platform_headers(client, db)
+
+    second = Company(
+        name="Commercial active company",
+        tax_id="PLAN-COMMERCIAL-2",
+        address="Plan Street 2",
+        phone="600000102",
+        email="commercial-active@example.test",
+        subscription_plan="top",
+        subscription_status="active",
+    )
+    attention = Company(
+        name="Commercial attention company",
+        tax_id="PLAN-COMMERCIAL-3",
+        address="Plan Street 3",
+        phone="600000103",
+        email="commercial-attention@example.test",
+        subscription_plan="medium",
+        subscription_status="past_due",
+    )
+    db.add_all([second, attention])
+    db.flush()
+    company_entitlement_service.synchronize_company_subscription(
+        db, second, reason="test.setup"
+    )
+    company_entitlement_service.synchronize_company_subscription(
+        db, attention, reason="test.setup"
+    )
+    db.commit()
+
+    downgraded = client.put(
+        f"/api/v1/companies/{first.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "basic",
+            "status": "active",
+            "commercial_terms": _commercial_terms(amount_cents=2900),
+            "reason": "Commercial plan downgrade",
+        },
+    )
+    assert downgraded.status_code == 200, downgraded.text
+    upgraded = client.put(
+        f"/api/v1/companies/{second.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "mega",
+            "status": "active",
+            "commercial_terms": _commercial_terms(amount_cents=24900),
+            "reason": "Commercial plan upgrade",
+        },
+    )
+    assert upgraded.status_code == 200, upgraded.text
+    cancelled = client.put(
+        f"/api/v1/companies/{second.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "mega",
+            "status": "canceled",
+            "reason": "Commercial cancellation",
+        },
+    )
+    assert cancelled.status_code == 200, cancelled.text
+
+    overview = client.get("/api/v1/companies/commercial-overview", headers=headers)
+    assert overview.status_code == 200, overview.text
+    payload = overview.json()
+    assert payload["active_subscriptions"] == 1
+    assert payload["trial_subscriptions"] == 0
+    assert payload["payment_attention_subscriptions"] == 1
+    assert payload["upgrades_last_30_days"] == 1
+    assert payload["downgrades_last_30_days"] == 1
+    assert payload["churned_last_30_days"] == 1
+    assert payload["revenue_measurement_available"] is True
+    assert payload["contracted_mrr_cents"] == 2900
+    assert payload["active_subscriptions_without_commercial_terms"] == 0
+    plans = {item["code"]: item for item in payload["plans"]}
+    assert plans["basic"]["active_subscriptions"] == 1
+    assert plans["basic"]["contracted_mrr_cents"] == 2900
+    assert plans["medium"]["payment_attention_subscriptions"] == 1
+    assert plans["mega"]["inactive_subscriptions"] == 1
+
+    company_user = User(
+        email="commercial-company-admin@workhive.test",
+        hashed_password=get_password_hash(TEST_SECRET),
+        full_name="Commercial company administrator",
+        role_id=1,
+        company_id=first.id,
+        is_active=True,
+    )
+    db.add(company_user)
+    db.commit()
+    login = client.post(
+        "/api/v1/auth/login", data=login_form(company_user.email, TEST_SECRET)
+    )
+    denied = client.get(
+        "/api/v1/companies/commercial-overview",
+        headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+    )
+    assert denied.status_code == 403
 
 
 def test_platform_superadmin_changes_plan_and_creates_audited_exception(client, db):
@@ -137,12 +275,22 @@ def test_platform_superadmin_changes_plan_and_creates_audited_exception(client, 
         json={
             "plan_code": "medium",
             "status": "active",
+            "commercial_terms": _commercial_terms(
+                amount_cents=70800,
+                billing_interval="annual",
+            ),
             "reason": "Signed annual medium subscription",
         },
     )
     assert change.status_code == 200
     assert change.json()["subscription"]["plan_code"] == "medium"
     assert change.json()["subscription"]["status"] == "active"
+    commercial_terms = change.json()["subscription"]["commercial_terms"]
+    assert commercial_terms["billing_interval"] == "annual"
+    assert commercial_terms["amount_cents"] == 70800
+    assert commercial_terms["currency"] == "EUR"
+    assert commercial_terms["tax_behavior"] == "exclusive"
+    assert commercial_terms["effective_at"]
     assert any(
         item["label"] == "Catálogo de servicios" and item["value"] is True
         for item in change.json()["entitlements"]
@@ -192,6 +340,142 @@ def test_platform_superadmin_changes_plan_and_creates_audited_exception(client, 
         .count()
         == 1
     )
+
+
+def test_paid_terms_are_immutable_and_legacy_subscriptions_stay_out_of_mrr(client, db):
+    company = _company(db)
+    headers = _platform_headers(client, db)
+    effective_at = datetime.now(timezone.utc) - timedelta(days=2)
+
+    first_terms = _commercial_terms(
+        amount_cents=70800,
+        billing_interval="annual",
+        effective_at=effective_at,
+    )
+    first_change = client.put(
+        f"/api/v1/companies/{company.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "medium",
+            "status": "active",
+            "commercial_terms": first_terms,
+            "reason": "Initial annual agreement",
+        },
+    )
+
+    assert first_change.status_code == 200, first_change.text
+    first_subscription = (
+        db.query(CompanySubscription)
+        .filter(
+            CompanySubscription.company_id == company.id,
+            CompanySubscription.ended_at.is_(None),
+        )
+        .one()
+    )
+    assert first_subscription.commercial_amount_cents == 70800
+    assert first_subscription.commercial_billing_interval == "annual"
+
+    second_change = client.put(
+        f"/api/v1/companies/{company.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "medium",
+            "status": "active",
+            "commercial_terms": _commercial_terms(
+                amount_cents=60000,
+                billing_interval="annual",
+                effective_at=effective_at,
+            ),
+            "reason": "Signed renewal with negotiated price",
+        },
+    )
+
+    assert second_change.status_code == 200, second_change.text
+    db.refresh(first_subscription)
+    assert first_subscription.ended_at is not None
+    assert first_subscription.commercial_amount_cents == 70800
+    current_subscription = (
+        db.query(CompanySubscription)
+        .filter(
+            CompanySubscription.company_id == company.id,
+            CompanySubscription.ended_at.is_(None),
+        )
+        .one()
+    )
+    assert current_subscription.id != first_subscription.id
+    assert current_subscription.commercial_amount_cents == 60000
+
+    legacy = Company(
+        name="Historic agreement without terms",
+        tax_id="PLAN-LEGACY-1",
+        address="Plan Street 4",
+        phone="600000104",
+        email="commercial-legacy@example.test",
+        subscription_plan="basic",
+        subscription_status="active",
+    )
+    db.add(legacy)
+    db.flush()
+    company_entitlement_service.synchronize_company_subscription(
+        db, legacy, reason="test.legacy_setup"
+    )
+    db.commit()
+
+    overview = client.get("/api/v1/companies/commercial-overview", headers=headers)
+
+    assert overview.status_code == 200, overview.text
+    payload = overview.json()
+    assert payload["contracted_mrr_cents"] == 5000
+    assert payload["active_subscriptions_without_commercial_terms"] == 1
+    plans = {item["code"]: item for item in payload["plans"]}
+    assert plans["medium"]["contracted_mrr_cents"] == 5000
+    assert plans["basic"]["subscriptions_without_commercial_terms"] == 1
+
+
+def test_active_plan_requires_terms_but_trials_do_not_accept_them(client, db):
+    company = _company(db)
+    headers = _platform_headers(client, db)
+
+    missing_terms = client.put(
+        f"/api/v1/companies/{company.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "medium",
+            "status": "active",
+            "reason": "Missing commercial agreement",
+        },
+    )
+    trial_with_terms = client.put(
+        f"/api/v1/companies/{company.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "top",
+            "status": "trialing",
+            "trial_ends_at": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat(),
+            "commercial_terms": _commercial_terms(),
+            "reason": "Invalid paid trial",
+        },
+    )
+    unsupported_currency = client.put(
+        f"/api/v1/companies/{company.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "medium",
+            "status": "active",
+            "commercial_terms": {
+                **_commercial_terms(amount_cents=6900),
+                "currency": "USD",
+            },
+            "reason": "Unsupported currency agreement",
+        },
+    )
+
+    assert missing_terms.status_code == 422
+    assert "require commercial terms" in str(missing_terms.json()["detail"])
+    assert trial_with_terms.status_code == 422
+    assert "cannot have paid commercial terms" in str(trial_with_terms.json()["detail"])
+    assert unsupported_currency.status_code == 422
+    assert "support EUR only" in str(unsupported_currency.json()["detail"])
 
 
 def test_trial_access_is_always_the_top_plan(client, db):
@@ -376,6 +660,7 @@ def test_platform_superadmin_cannot_reduce_capacity_below_current_usage(client, 
         json={
             "plan_code": "basic",
             "status": "active",
+            "commercial_terms": _commercial_terms(amount_cents=2900),
             "reason": "Attempt to downgrade below current workforce",
         },
     )

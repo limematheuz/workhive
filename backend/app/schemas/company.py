@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator
+from pydantic import BaseModel, EmailStr, ConfigDict, Field, field_validator, model_validator
 
 from app.core.banking import normalize_swift_bic
 from app.schemas.location_access import LocationAccessInput
@@ -12,6 +12,7 @@ from app.schemas.location_workspace import (
     LocationSpaceInput,
 )
 from app.schemas.user import validate_user_password
+from app.schemas.subscription_terms import CommercialSubscriptionTermsInput
 
 
 OperatingModel = Literal["service_provider", "property_manager", "hybrid"]
@@ -64,11 +65,21 @@ class CompanyProvisionCreate(BaseModel):
     # subscription management.
     subscription_plan: ProvisionPlanCode = "trial"
     trial_days: int | None = Field(default=14, ge=1, le=365)
+    commercial_terms: CommercialSubscriptionTermsInput | None = None
 
     @field_validator("owner_password")
     @classmethod
     def validate_owner_password(cls, value: str) -> str:
         return validate_user_password(value)
+
+    @model_validator(mode="after")
+    def validate_commercial_terms(self):
+        if self.subscription_plan == "trial":
+            if self.commercial_terms is not None:
+                raise ValueError("Trials cannot have paid commercial terms")
+        elif self.commercial_terms is None:
+            raise ValueError("Paid company provisioning requires commercial terms")
+        return self
 
 
 class CompanyUpdate(BaseModel):

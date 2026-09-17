@@ -2,6 +2,7 @@ import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { Company, CompanyExpense } from "@/types/company";
 import type { CompanyMember } from "@/components/companies/company-members";
 import type { CompanyOnboardingInput } from "@/domain/onboarding/cleaning-onboarding";
+import type { CommercialTermsPayload } from "@/lib/commercial-terms";
 
 export type { Company };
 
@@ -17,6 +18,7 @@ export interface CompanyProvisionData {
     owner_access_code: string;
     subscription_plan?: "trial" | "basic" | "medium" | "top" | "mega" | "custom";
     trial_days?: number | null;
+    commercial_terms?: CommercialTermsPayload;
 }
 
 export interface CompanyPage {

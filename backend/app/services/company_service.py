@@ -169,6 +169,14 @@ def provision_company(
     now = datetime.now(timezone.utc)
     is_trial = provision_data.subscription_plan == "trial"
     trial_days = provision_data.trial_days or 14
+    if (
+        provision_data.commercial_terms is not None
+        and provision_data.commercial_terms.effective_at > now
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="La fecha efectiva de las condiciones comerciales no puede ser futura",
+        )
     # "Trial" is not a product plan.  Every trial uses Top and only its status
     # and end date make it a trial.  This is the same representation used by
     # the entitlement resolver and the platform plan-management screen.
@@ -207,6 +215,17 @@ def provision_company(
             reason="company.provisioned",
             actor_user_id=current_user.id,
             now=now,
+            commercial_terms=(
+                company_entitlement_service.CommercialSubscriptionTerms(
+                    billing_interval=provision_data.commercial_terms.billing_interval,
+                    amount_cents=provision_data.commercial_terms.amount_cents,
+                    currency=provision_data.commercial_terms.currency,
+                    tax_behavior=provision_data.commercial_terms.tax_behavior,
+                    effective_at=provision_data.commercial_terms.effective_at,
+                )
+                if provision_data.commercial_terms is not None
+                else None
+            ),
         )
         db.commit()
         db.refresh(company)
@@ -243,35 +262,13 @@ def update_company(
                 detail="Tax ID already exists in another company",
             )
 
-    update_payload = company_update.model_dump(exclude_unset=True)
-    update_payload = (
-        company_update_policy_service.normalize_platform_subscription_update(
-            update_payload,
-            platform_superadmin=is_platform_superadmin(current_user),
-        )
-    )
     should_revoke_company_sessions = (
         company_update_policy_service.requires_session_revocation(
             company_update.model_fields_set
         )
     )
 
-    normalized_update = CompanyUpdate.model_validate(update_payload)
-    updated_company = company_repo.update_company(db, db_company, normalized_update)
-    if {
-        "subscription_plan",
-        "subscription_status",
-        "trial_started_at",
-        "trial_ends_at",
-    } & set(company_update.model_fields_set):
-        company_entitlement_service.synchronize_company_subscription(
-            db,
-            updated_company,
-            reason="company.subscription_updated",
-            actor_user_id=current_user.id,
-        )
-        db.commit()
-        db.refresh(updated_company)
+    updated_company = company_repo.update_company(db, db_company, company_update)
     if should_revoke_company_sessions:
         (
             db.query(User)

@@ -137,6 +137,24 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         metadata,
         Column("id", Integer, primary_key=True),
     )
+    # Commercial-term migration evolves the pre-existing subscription history.
+    # The fixture does not use it, but a real database at this revision has it.
+    Table(
+        "company_subscriptions",
+        metadata,
+        Column("id", Integer, primary_key=True),
+        Column("company_id", Integer, nullable=False),
+        Column("plan_id", Integer, nullable=False),
+        Column("status", String(30), nullable=False),
+        Column("started_at", String(64), nullable=False),
+        Column("ended_at", String(64), nullable=True),
+        Column("trial_ends_at", String(64), nullable=True),
+        Column("billing_provider", String(50), nullable=True),
+        Column("billing_customer_id", String(100), nullable=True),
+        Column("billing_subscription_id", String(100), nullable=True),
+        Column("created_at", String(64), nullable=False),
+        Column("updated_at", String(64), nullable=False),
+    )
     alembic_version = Table(
         "alembic_version",
         metadata,

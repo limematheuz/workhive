@@ -104,6 +104,45 @@ def get_latest_company_subscription(
     )
 
 
+def list_current_company_subscriptions(db: Session) -> list[CompanySubscription]:
+    """Return one currently effective subscription record per company.
+
+    Synchronization closes the prior record before opening a new plan record,
+    while a status transition remains on the current record.  `ended_at IS NULL`
+    therefore represents the current commercial state without deriving it from
+    mutable company fields.
+    """
+    return (
+        db.query(CompanySubscription)
+        .options(joinedload(CompanySubscription.plan))
+        .filter(CompanySubscription.ended_at.is_(None))
+        .order_by(CompanySubscription.plan_id.asc(), CompanySubscription.id.asc())
+        .all()
+    )
+
+
+def list_recent_subscription_audit(
+    db: Session,
+    *,
+    since: datetime,
+    limit: int = 500,
+) -> list[EntitlementChangeAudit]:
+    """Read bounded lifecycle history for platform reporting only."""
+    return (
+        db.query(EntitlementChangeAudit)
+        .filter(
+            EntitlementChangeAudit.action.like("subscription.%"),
+            EntitlementChangeAudit.created_at >= since,
+        )
+        .order_by(
+            EntitlementChangeAudit.created_at.desc(),
+            EntitlementChangeAudit.id.desc(),
+        )
+        .limit(limit)
+        .all()
+    )
+
+
 def lock_company(db: Session, *, company_id: int) -> Company | None:
     """Serialize each quota decision with the protected write on PostgreSQL."""
     return db.query(Company).filter(Company.id == company_id).with_for_update().first()

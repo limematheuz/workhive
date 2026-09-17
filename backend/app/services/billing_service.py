@@ -2,7 +2,6 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -20,6 +19,7 @@ from app.services import (
     company_purchase_activation_service,
     company_purchase_checkout_service,
     company_purchase_service,
+    stripe_subscription_terms_service,
 )
 from app.services.entitlement_catalog import legacy_plan_code
 from app.services.plan_pricing_service import require_price_for_interval
@@ -85,7 +85,7 @@ def create_checkout_session(
             status_code=status.HTTP_409_CONFLICT,
             detail="The requested plan is not currently available",
         )
-    require_price_for_interval(active_plan, billing_interval)
+    selected_price = require_price_for_interval(active_plan, billing_interval)
     price_id = (
         settings.STRIPE_LIFETIME_PRICE_ID
         if is_legacy_lifetime
@@ -119,6 +119,15 @@ def create_checkout_session(
         payload["subscription_data[metadata][company_id]"] = str(company.id)
         payload["subscription_data[metadata][plan]"] = canonical_plan
         payload["subscription_data[metadata][billing_interval]"] = billing_interval
+        payload["subscription_data[metadata][commercial_amount_cents]"] = str(
+            selected_price.amount_cents
+        )
+        payload["subscription_data[metadata][commercial_currency]"] = (
+            selected_price.currency
+        )
+        payload["subscription_data[metadata][commercial_tax_behavior]"] = (
+            selected_price.tax_behavior
+        )
     session = _stripe_post("/checkout/sessions", payload)
     checkout_url = session.get("url")
     if not checkout_url:
@@ -233,15 +242,6 @@ def _company_from_stripe_object(
     return None
 
 
-def _datetime_from_unix(timestamp: Any) -> datetime | None:
-    if not timestamp:
-        return None
-    try:
-        return datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
-    except (TypeError, ValueError, OSError):
-        return None
-
-
 def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
     if not settings.BILLING_ENABLED:
         raise HTTPException(
@@ -318,7 +318,9 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
             metadata.get("plan", company.subscription_plan)
         )
         company.subscription_status = stripe_object.get("status", "inactive")
-        company.trial_ends_at = _datetime_from_unix(stripe_object.get("trial_end"))
+        company.trial_ends_at = stripe_subscription_terms_service.datetime_from_unix(
+            stripe_object.get("trial_end")
+        )
         if event_type == "customer.subscription.deleted":
             company.subscription_status = "canceled"
     elif event_type == "invoice.paid":
@@ -329,11 +331,17 @@ def process_webhook(db: Session, payload: bytes, signature_header: str) -> str:
         db.commit()
         return event_type
 
+    commercial_terms = (
+        stripe_subscription_terms_service.commercial_terms_from_subscription(stripe_object)
+        if event_type.startswith("customer.subscription.")
+        else None
+    )
     db.add(company)
     company_entitlement_service.synchronize_company_subscription(
         db,
         company,
         reason=f"stripe.{event_type}",
+        commercial_terms=commercial_terms,
     )
     db.commit()
     return event_type

@@ -3,6 +3,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.subscription_terms import (
+    CommercialSubscriptionTermsInput,
+    CommercialSubscriptionTermsResponse,
+)
+
 
 PlanCode = Literal["basic", "medium", "top", "mega", "custom"]
 PlanStatus = Literal[
@@ -24,6 +29,7 @@ class CompanyPlanAccessUpdate(BaseModel):
     plan_code: PlanCode
     status: PlanStatus
     trial_ends_at: datetime | None = None
+    commercial_terms: CommercialSubscriptionTermsInput | None = None
     reason: str = Field(min_length=3, max_length=500)
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
@@ -44,8 +50,14 @@ class CompanyPlanAccessUpdate(BaseModel):
                 raise ValueError("Trials always use the Top plan")
             if self.trial_ends_at is None:
                 raise ValueError("A trial end date is required")
+            if self.commercial_terms is not None:
+                raise ValueError("Trials cannot have paid commercial terms")
         elif self.trial_ends_at is not None:
             raise ValueError("Only trial access can have a trial end date")
+        elif self.status == "active" and self.commercial_terms is None:
+            raise ValueError("Active subscriptions require commercial terms")
+        elif self.status != "active" and self.commercial_terms is not None:
+            raise ValueError("Only active subscriptions can record commercial terms")
         return self
 
 
@@ -141,6 +153,7 @@ class CompanySubscriptionAccessResponse(BaseModel):
     plan_version: int | None = None
     status: PlanStatus
     trial_ends_at: datetime | None = None
+    commercial_terms: CommercialSubscriptionTermsResponse | None = None
 
 
 class CompanyEntitlementOverrideResponse(BaseModel):
@@ -182,3 +195,31 @@ class CompanyPlanAccessResponse(BaseModel):
 
 class CurrentCompanyEntitlementsResponse(BaseModel):
     entitlements: list[EntitlementResponse]
+
+
+class CommercialPlanOverviewResponse(BaseModel):
+    """Current subscription lifecycle counts grouped by effective plan."""
+
+    code: PlanCode
+    label: str
+    active_subscriptions: int
+    trial_subscriptions: int
+    payment_attention_subscriptions: int
+    inactive_subscriptions: int
+    contracted_mrr_cents: int
+    subscriptions_without_commercial_terms: int
+
+
+class CommercialOverviewResponse(BaseModel):
+    """Platform-only lifecycle metrics, deliberately separate from tenant finance."""
+
+    active_subscriptions: int
+    trial_subscriptions: int
+    payment_attention_subscriptions: int
+    upgrades_last_30_days: int
+    downgrades_last_30_days: int
+    churned_last_30_days: int
+    revenue_measurement_available: bool
+    contracted_mrr_cents: int
+    active_subscriptions_without_commercial_terms: int
+    plans: list[CommercialPlanOverviewResponse]

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
+import { commercialTermsPayload, emptyCommercialTerms } from "@/lib/commercial-terms";
 import type { PopoverOption } from "@/components/ui/action-popover";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
@@ -47,6 +48,7 @@ const EMPTY_PROVISION: CompanyProvisionData = {
     owner_access_code: "",
     subscription_plan: "trial",
     trial_days: "14",
+    commercial_terms: emptyCommercialTerms(),
 };
 
 function useCompaniesAdminController() {
@@ -111,6 +113,13 @@ function useCompaniesAdminController() {
 
     const handleProvisionSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const commercialTerms = provisionData.subscription_plan === "trial"
+            ? undefined
+            : commercialTermsPayload(provisionData.commercial_terms);
+        if (provisionData.subscription_plan !== "trial" && !commercialTerms) {
+            toast.error("Completa el importe, la moneda y la fecha efectiva del acuerdo");
+            return;
+        }
         try {
             setSubmitting(true);
             await CompanyService.provisionCompany({
@@ -119,6 +128,7 @@ function useCompaniesAdminController() {
                 trial_days: provisionData.subscription_plan === "trial"
                     ? Number(provisionData.trial_days || 14)
                     : null,
+                commercial_terms: commercialTerms ?? undefined,
             });
             setCompanyPage(1);
             await fetchCompanies(1, companyPageSize);

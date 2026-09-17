@@ -9,6 +9,7 @@ from app.schemas.company_entitlement_management import (
     CompanyEntitlementOverrideCreate,
     CompanyEntitlementCustomizationUpdate,
     CompanyEntitlementOverrideResponse,
+    CommercialOverviewResponse,
     CurrentCompanyEntitlementsResponse,
     CompanyPlanAccessResponse,
     CompanyPlanAccessUpdate,
@@ -16,12 +17,21 @@ from app.schemas.company_entitlement_management import (
     PlanCatalogResponse,
 )
 from app.services import (
+    commercial_reporting_service,
     company_entitlement_management_service,
     plan_catalog_management_service,
 )
 
 
 router = APIRouter()
+
+
+@router.get("/commercial-overview", response_model=CommercialOverviewResponse)
+def read_commercial_overview(
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    return commercial_reporting_service.get_commercial_overview(db, current_user)
 
 
 @router.get("/plans/catalog", response_model=list[PlanCatalogResponse])

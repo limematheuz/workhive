@@ -4,6 +4,7 @@ import { startTransition, useCallback, useEffect, useMemo, useState } from "reac
 import { Building2, Loader2 } from "lucide-react";
 
 import { SuperadminActivityPanels } from "@/components/dashboard/superadmin/SuperadminActivityPanels";
+import { CommercialOverviewPanel } from "@/components/dashboard/superadmin/CommercialOverviewPanel";
 import { SuperadminNavCards } from "@/components/dashboard/superadmin/SuperadminNavCards";
 import { SuperadminStatsCards } from "@/components/dashboard/superadmin/SuperadminStatsCards";
 import { PageHeader } from "@/components/ui/page-header";
@@ -15,6 +16,7 @@ import {
     type SuperadminDashboardStats,
 } from "@/lib/superadmin-dashboard-stats";
 import { CompanyService, type Company } from "@/services/company.service";
+import { CompanyPlanAccessService, type CommercialOverview } from "@/services/company-plan-access.service";
 import { RoleService, type Role } from "@/services/role.service";
 import {
     TrialRequestService,
@@ -38,6 +40,7 @@ export function SuperadminDashboard() {
 
     const [companies, setCompanies] = useState<Company[]>([]);
     const [trialRequests, setTrialRequests] = useState<TrialRequest[]>([]);
+    const [commercialOverview, setCommercialOverview] = useState<CommercialOverview | null>(null);
     const [stats, setStats] = useState<SuperadminDashboardStats>(EMPTY_STATS);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -45,16 +48,18 @@ export function SuperadminDashboard() {
     const loadHubData = useCallback(async () => {
         try {
             setError(null);
-            const [fetchedCompanies, fetchedUsers, fetchedRoles, fetchedTrials] =
+            const [fetchedCompanies, fetchedUsers, fetchedRoles, fetchedTrials, fetchedCommercialOverview] =
                 await Promise.all([
                     CompanyService.getCompanies().catch(() => [] as Company[]),
                     UserService.getUsers(0, 500).catch(() => [] as User[]),
                     RoleService.getRoles().catch(() => [] as Role[]),
                     TrialRequestService.list().catch(() => [] as TrialRequest[]),
+                    CompanyPlanAccessService.getCommercialOverview().catch(() => null),
                 ]);
 
             setCompanies(fetchedCompanies);
             setTrialRequests(fetchedTrials);
+            setCommercialOverview(fetchedCommercialOverview);
             setStats(
                 buildSuperadminDashboardStats({
                     companies: fetchedCompanies,
@@ -112,6 +117,7 @@ export function SuperadminDashboard() {
                             ) : null}
 
                             <SuperadminStatsCards stats={stats} loading={loading} />
+                            <CommercialOverviewPanel overview={commercialOverview} loading={loading} />
                             <SuperadminNavCards />
                             <SuperadminActivityPanels
                                 companies={companyPreview}
