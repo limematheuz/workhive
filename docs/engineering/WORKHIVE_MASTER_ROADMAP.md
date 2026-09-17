@@ -38,12 +38,13 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ## 2. Estado de publicación
 
-- ✅ Producción: `v1.6.5` (`095aa9f`), publicada desde `main` con imágenes
+- ✅ Producción: `v1.6.6` (`ee738b3`), publicada desde `main` con imágenes
   inmutables en ECR y despliegue SSM verificado. Backend, frontend, React
   Doctor, SAST, secretos y GitGuardian terminaron correctamente.
-- ✅ `main` local y `origin/main` están alineadas en `095aa9f`; incluye las
-  fases operativas y financieras recientes. La asociación semanal, agente
-  CloudWatch y alarma se aplican en AWS como paso operativo separado.
+- ✅ `main` local y `origin/main` están alineadas en `ee738b3`; incluye las
+  fases operativas, financieras y el gobierno comercial de plataforma. La
+  asociación semanal, agente CloudWatch y alarma se aplican en AWS como paso
+  operativo separado.
 - ✅ Seguimiento comercial y la paginación de Facturas y Presupuestos están
   publicados; el cambio inicial fue `07e0e83`.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
@@ -552,8 +553,8 @@ como WorkHive Core solo cuando el caso real las exige.
   cobros a revisar, upgrades, downgrades, bajas y distribución por plan desde
   el historial de suscripciones y auditorías. Es solo lectura, no es accesible
   para administradores de empresa y no mezcla finanzas de clientes con la
-  suscripción de WorkHive. Pendiente de validación visual autenticada tras el
-  despliegue.
+  suscripción de WorkHive. Publicado en `v1.6.6`; pendiente de validación
+  visual autenticada tras el despliegue.
 - ✅ Términos comerciales inmutables por suscripción: toda activación pagada
   nueva, ya sea provisión de plataforma, cambio manual de plan o compra
   confirmada, guarda importe, EUR, intervalo, tratamiento de IVA y fecha
@@ -563,7 +564,8 @@ como WorkHive Core solo cuando el caso real las exige.
   mensual y nunca mezcla monedas sin tipo de cambio inmutable. La ruta genérica
   de empresa no puede eludir este flujo. Cubierto localmente con migración,
   autorización positiva/negativa, compra, provisión, histórico y regresiones;
-  pendiente de validación visual autenticada tras el despliegue.
+  publicado en `v1.6.6` y pendiente de validación visual autenticada tras el
+  despliegue.
 
 ## 6. Puerta de salida obligatoria para cada fase
 
