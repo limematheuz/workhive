@@ -57,6 +57,25 @@ def _certificate_path(company_id: int) -> Path:
     return _certificate_root() / str(company_id) / "certificate.p12"
 
 
+def validate_certificate_contents(contents: bytes, password: str) -> None:
+    """Reject malformed or unusable PKCS#12 data before it reaches storage."""
+    try:
+        private_key, certificate, _ = pkcs12.load_key_and_certificates(
+            contents,
+            password.encode("utf-8"),
+        )
+    except ValueError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The certificate password is invalid or the file is not PKCS#12",
+        ) from error
+    if private_key is None or certificate is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="The PKCS#12 file has no private key or certificate",
+        )
+
+
 def get_or_create_settings(
     db: Session,
     company_id: int,
@@ -116,21 +135,7 @@ def store_certificate(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="The certificate file is too large",
         )
-    try:
-        private_key, certificate, _ = pkcs12.load_key_and_certificates(
-            contents,
-            password.encode("utf-8"),
-        )
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="The certificate password is invalid or the file is not PKCS#12",
-        ) from error
-    if private_key is None or certificate is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="The PKCS#12 file has no private key or certificate",
-        )
+    validate_certificate_contents(contents, password)
 
     fiscal_settings = get_or_create_settings(db, company_id)
     previous_key = fiscal_settings.certificate_storage_key

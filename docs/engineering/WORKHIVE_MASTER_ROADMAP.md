@@ -223,12 +223,19 @@ como WorkHive Core solo cuando el caso real las exige.
 - ⬜ Empresa demo Enterprise con departamentos, perfiles y datos anonimizados.
 - ⬜ Inventario definitivo de compatibilidades API y de datos a migrar.
 - ⬜ Catálogo único revisado de módulos, permisos y clases de plaza.
-- ⬜ Endurecer el almacenamiento documental: las imágenes ya admiten objeto S3,
-  pero PDF, Facturae y certificados aún usan rutas de filesystem. Migrarlos a
-  claves opacas de almacenamiento de objetos cifrado, con metadatos y hashes
-  en la base de datos, migración aditiva, retención y copias verificables.
-  `backend/storage` actual es solo dato local ignorado por Git, no una fuente
-  de verdad ni un lugar para secretos.
+- 🟡 Endurecer el almacenamiento documental: los PDFs, Facturae y certificados
+  fiscales por empresa nuevos ya usan claves opacas de objeto con tipo, tamaño
+  y hash. Una migración manual por empresa
+  (`backend/scripts/migrate_legacy_documents.py`) inspecciona primero,
+  verifica contenido y hash, copia y vuelve a leer el objeto antes de retirar
+  solo la ruta heredada de la base; el fichero origen no se borra. Está
+  cubierta localmente para PDF, XML y PKCS#12, incluido el rechazo de un hash
+  alterado. El certificado global de firma Facturae sigue siendo un secreto de
+  despliegue y exige una decisión de gestor de secretos, no una copia a la
+  base. Falta ejecutar la migración controlada sobre datos reales y confirmar
+  la retención/versionado y copia verificable del bucket de producción.
+  `backend/storage` es solo dato local ignorado por Git, no una fuente de
+  verdad ni un lugar para secretos.
 
 ### Fase 1 — Fundación Enterprise
 
