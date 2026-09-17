@@ -4,10 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.company import Company
-from app.models.subscription_entitlement import (
-    CompanyEntitlementOverride,
-    EntitlementChangeAudit,
-)
+from app.models.subscription_entitlement import CompanyEntitlementOverride
 from app.models.user import User
 from app.repositories import subscription_entitlement as entitlement_repo
 from app.repositories import user as user_repo
@@ -24,6 +21,7 @@ from app.schemas.company_entitlement_management import (
     EntitlementAuditResponse,
 )
 from app.services import (
+    company_customization_service,
     company_entitlement_service,
     company_plan_access_update_service,
     entitlement_service,
@@ -43,7 +41,6 @@ from app.services.entitlement_management_support import (
     current_plan_values,
     entitlement_response,
     utcnow,
-    validate_entitlement_values,
 )
 from app.services.user_scope import require_company_context, require_platform_superadmin
 
@@ -191,6 +188,10 @@ def create_company_entitlement_override(
 ) -> CompanyEntitlementOverrideResponse:
     require_platform_superadmin(current_user)
     company = _lock_company(db, company_id=company_id)
+    company_customization_service.require_active_customization_contract(
+        db,
+        company=company,
+    )
     value: EntitlementValue = (
         override_data.boolean_value
         if override_data.boolean_value is not None
@@ -245,73 +246,19 @@ def replace_company_entitlement_customization(
     update: CompanyEntitlementCustomizationUpdate,
     current_user: User,
 ) -> CompanyPlanAccessResponse:
-    require_platform_superadmin(current_user)
-    company = _lock_company(db, company_id=company_id)
-    try:
-        values = validate_entitlement_values(update.entitlements)
-    except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(error),
-        ) from error
-
-    now = utcnow()
-    if update.ends_at and update.ends_at <= now:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="La fecha de finalización de la configuración personalizada debe ser futura",
-        )
-    base_values, _ = current_plan_values(db, company)
-    current_overrides = entitlement_repo.list_active_overrides(
-        db, company_id=company.id, now=now
-    )
-    previous_values = {item.code: override_value(item) for item in current_overrides}
-    reject_capacity_below_current_usage(
-        db, company_id=company.id, values=values
-    )
-    if update.ends_at is not None:
-        reject_capacity_below_current_usage(
+    resolved_company_id = (
+        company_customization_service.replace_company_entitlement_customization(
             db,
-            company_id=company.id,
-            values=base_values,
-            when="La fecha de finalización de esta configuración personalizada",
-        )
-    for prior in current_overrides:
-        prior.ends_at = now
-        db.add(prior)
-
-    changed_values = {
-        code: value for code, value in values.items() if value != base_values[code]
-    }
-    for code, value in changed_values.items():
-        expects_boolean = code.startswith("features.")
-        db.add(
-            CompanyEntitlementOverride(
-                company_id=company.id,
-                code=code,
-                value_type="boolean" if expects_boolean else "integer",
-                boolean_value=value if expects_boolean else None,
-                integer_value=value if not expects_boolean else None,
-                reason=update.reason,
-                starts_at=now,
-                ends_at=update.ends_at,
-                configured_by_user_id=current_user.id,
-            )
-        )
-    db.flush()
-    db.add(
-        EntitlementChangeAudit(
-            company_id=company.id,
-            actor_user_id=current_user.id,
-            action="entitlement.customization_replaced",
-            reason=update.reason,
-            previous_value=previous_values,
-            next_value=changed_values,
+            company_id=company_id,
+            update=update,
+            current_user=current_user,
         )
     )
-    user_repo.revoke_company_sessions(db, company_id=company.id)
-    db.commit()
-    return get_company_plan_access(db, company_id=company.id, current_user=current_user)
+    return get_company_plan_access(
+        db,
+        company_id=resolved_company_id,
+        current_user=current_user,
+    )
 
 
 def _override_response(

@@ -70,6 +70,21 @@ def _commercial_terms(
     }
 
 
+def _activate_company(client, company: Company, headers: dict[str, str]) -> dict:
+    response = client.put(
+        f"/api/v1/companies/{company.id}/plan-access",
+        headers=headers,
+        json={
+            "plan_code": "top",
+            "status": "active",
+            "commercial_terms": _commercial_terms(amount_cents=9900),
+            "reason": "Signed commercial agreement",
+        },
+    )
+    assert response.status_code == 200, response.text
+    return response.json()
+
+
 def _add_active_worker(db, company: Company, index: int) -> None:
     worker = User(
         email=f"plan-worker-{index}@workhive.test",
@@ -517,6 +532,7 @@ def test_custom_access_is_a_company_configuration_not_a_standard_subscription(cl
 def test_invalid_custom_access_is_reported_as_a_validation_error(client, db):
     company = _company(db)
     headers = _platform_headers(client, db)
+    _activate_company(client, company, headers)
 
     invalid = client.post(
         f"/api/v1/companies/{company.id}/plan-access/overrides",
@@ -604,9 +620,7 @@ def test_platform_superadmin_publishes_a_new_plan_version_without_changing_old_s
 def test_platform_superadmin_replaces_a_company_custom_configuration_atomically(client, db):
     company = _company(db)
     headers = _platform_headers(client, db)
-    before = client.get(
-        f"/api/v1/companies/{company.id}/plan-access", headers=headers
-    ).json()
+    before = _activate_company(client, company, headers)
 
     saved = client.put(
         f"/api/v1/companies/{company.id}/plan-access/customization",
@@ -653,6 +667,7 @@ def test_platform_superadmin_cannot_reduce_capacity_below_current_usage(client, 
         _add_active_worker(db, company, index)
     db.commit()
     headers = _platform_headers(client, db)
+    _activate_company(client, company, headers)
 
     plan_change = client.put(
         f"/api/v1/companies/{company.id}/plan-access",
@@ -699,3 +714,89 @@ def test_platform_superadmin_cannot_reduce_capacity_below_current_usage(client, 
 
     assert override.status_code == 409
     assert override.headers["X-WorkHive-Error-Code"] == "entitlement.capacity_below_current_usage"
+
+
+def test_customization_requires_an_active_subscription_and_a_contract_snapshot(client, db):
+    company = _company(db)
+    headers = _platform_headers(client, db)
+    before = client.get(
+        f"/api/v1/companies/{company.id}/plan-access", headers=headers
+    ).json()
+    customization = {
+        "reason": "Contractual expansion",
+        "entitlements": _entitlement_payload(
+            before["base_entitlements"], changes={"features.api": True}
+        ),
+    }
+
+    blocked_trial = client.put(
+        f"/api/v1/companies/{company.id}/plan-access/customization",
+        headers=headers,
+        json={**customization, "commercial_terms": _commercial_terms()},
+    )
+    assert blocked_trial.status_code == 409
+    assert "suscripción activa" in blocked_trial.json()["detail"]
+
+    blocked_trial_override = client.post(
+        f"/api/v1/companies/{company.id}/plan-access/overrides",
+        headers=headers,
+        json={
+            "code": "features.inventory",
+            "boolean_value": True,
+            "reason": "Trial customization bypass",
+        },
+    )
+    assert blocked_trial_override.status_code == 409
+    assert "suscripción activa" in blocked_trial_override.json()["detail"]
+
+    company.subscription_status = "active"
+    company.trial_started_at = None
+    company.trial_ends_at = None
+    db.add(company)
+    db.commit()
+
+    missing_terms = client.put(
+        f"/api/v1/companies/{company.id}/plan-access/customization",
+        headers=headers,
+        json=customization,
+    )
+    assert missing_terms.status_code == 422
+    assert "condiciones comerciales" in missing_terms.json()["detail"]
+
+    missing_terms_override = client.post(
+        f"/api/v1/companies/{company.id}/plan-access/overrides",
+        headers=headers,
+        json={
+            "code": "features.inventory",
+            "boolean_value": True,
+            "reason": "Unsigned customization bypass",
+        },
+    )
+    assert missing_terms_override.status_code == 422
+    assert "condiciones comerciales" in missing_terms_override.json()["detail"]
+
+    saved = client.put(
+        f"/api/v1/companies/{company.id}/plan-access/customization",
+        headers=headers,
+        json={
+            **customization,
+            "commercial_terms": _commercial_terms(amount_cents=14900),
+        },
+    )
+    assert saved.status_code == 200
+    assert saved.json()["subscription"]["commercial_terms"]["amount_cents"] == 14900
+    assert any(
+        item["action"] == "subscription.customization_terms_changed"
+        for item in saved.json()["audit"]
+    )
+
+    contracted_override = client.post(
+        f"/api/v1/companies/{company.id}/plan-access/overrides",
+        headers=headers,
+        json={
+            "code": "features.inventory",
+            "boolean_value": True,
+            "reason": "Signed inventory extension",
+        },
+    )
+    assert contracted_override.status_code == 201

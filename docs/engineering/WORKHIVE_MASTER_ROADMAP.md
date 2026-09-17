@@ -97,9 +97,15 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Las plazas internas y los accesos externos se cuentan por límites
   distintos. Una gestoría aceptada consume `limits.accountant_portals`, nunca
   una plaza interna; una invitación pendiente no reserva ninguno de los dos.
-- ⬜ Definir la política comercial de ampliaciones y funcionalidades Custom.
-- ⬜ Construir el panel comercial de superadmin: MRR, activas, impagos,
-  upgrades, churn e ingresos por plan.
+- 🟡 Política de ampliaciones y funcionalidades Custom: parte siempre de un
+  plan estándar activo; no es una compra automática ni puede ampliar una
+  prueba. El superadmin debe registrar o reutilizar un snapshot de condiciones
+  comerciales, y cada sustitución o excepción queda auditada con motivo y
+  vencimiento opcional. Cubierto localmente con autorización positiva y
+  negativa; pendiente de publicación y de validación visual autenticada.
+- 🟡 Panel comercial de superadmin: MRR, activas, impagos, upgrades, churn e
+  ingresos por plan. Publicado en `v1.6.6`; pendiente de validación visual
+  autenticada tras el despliegue.
 
 ### Nombres de relación comercial
 

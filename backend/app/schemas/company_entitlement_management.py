@@ -104,6 +104,7 @@ class CompanyEntitlementCustomizationUpdate(BaseModel):
     entitlements: list[EntitlementValueUpdate] = Field(min_length=1)
     reason: str = Field(min_length=3, max_length=500)
     ends_at: datetime | None = None
+    commercial_terms: CommercialSubscriptionTermsInput | None = None
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 

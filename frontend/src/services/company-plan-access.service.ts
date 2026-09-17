@@ -121,6 +121,7 @@ export type CompanyEntitlementCustomizationInput = {
     entitlements: EntitlementValueInput[];
     reason: string;
     ends_at?: string | null;
+    commercial_terms?: CommercialTerms;
 };
 
 export type PlanCatalogUpdateInput = {
