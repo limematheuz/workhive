@@ -20,6 +20,7 @@ from app.services.storage_service import (
     build_document_key,
     get_object_storage,
 )
+from app.services import facturae_signing_credentials_service
 
 
 logger = logging.getLogger(__name__)
@@ -30,11 +31,8 @@ def _storage_root() -> Path:
 
 
 def facturae_readiness(invoice: Invoice | None = None) -> dict:
-    certificate_path = settings.facturae_certificate_path
-    certificate_configured = bool(
-        certificate_path
-        and settings.facturae_certificate_password
-        and Path(certificate_path).expanduser().is_file()
+    certificate_configured = (
+        facturae_signing_credentials_service.signing_certificate_is_configured()
     )
     missing_fields: list[str] = []
     if invoice:
@@ -77,9 +75,7 @@ def generate_facturae(
     )
     if not invoice:
         raise HTTPException(status_code=404, detail="Invoice not found")
-    certificate_path = settings.facturae_certificate_path
-    certificate_password = settings.facturae_certificate_password
-    if sign and (not certificate_path or not certificate_password):
+    if sign and not facturae_signing_credentials_service.signing_certificate_is_configured():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Facturae signing certificate is not configured",
@@ -87,12 +83,21 @@ def generate_facturae(
     try:
         xml = build_facturae_xml(invoice)
         if sign:
-            xml = sign_facturae_xml(
-                xml,
-                certificate_path=certificate_path,
-                certificate_password=certificate_password,
-            )
+            with facturae_signing_credentials_service.facturae_signing_credentials() as (
+                certificate_path,
+                certificate_password,
+            ):
+                xml = sign_facturae_xml(
+                    xml,
+                    certificate_path=certificate_path,
+                    certificate_password=certificate_password,
+                )
             validate_facturae_xml(xml)
+    except facturae_signing_credentials_service.FacturaeSigningCredentialsError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Facturae signing certificate is unavailable",
+        ) from exc
     except (
         ValueError,
         OSError,

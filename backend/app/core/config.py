@@ -117,6 +117,8 @@ class Settings(BaseSettings):
     S3_SECRET_ACCESS_KEY: str | None = None
     FACTURAE_CERTIFICATE_PATH: str | None = None
     FACTURAE_CERTIFICATE_PASSWORD: str | None = None
+    FACTURAE_CERTIFICATE_SECRET_ID: str | None = None
+    FACTURAE_CERTIFICATE_SECRET_REGION: str | None = None
 
     GOOGLE_CALENDAR_ENABLED: bool = False
     GOOGLE_CALENDAR_CLIENT_ID: str | None = None
@@ -198,6 +200,14 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_settings(self) -> "Settings":
+        if self.FACTURAE_CERTIFICATE_SECRET_ID and (
+            self.FACTURAE_CERTIFICATE_PATH
+            or self.FACTURAE_CERTIFICATE_PASSWORD
+        ):
+            raise ValueError(
+                "Facturae must use either a secret reference or a filesystem certificate"
+            )
+
         if not self.is_production:
             return self
 

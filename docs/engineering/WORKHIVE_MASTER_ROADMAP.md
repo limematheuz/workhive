@@ -230,10 +230,20 @@ como WorkHive Core solo cuando el caso real las exige.
   verifica contenido y hash, copia y vuelve a leer el objeto antes de retirar
   solo la ruta heredada de la base; el fichero origen no se borra. Está
   cubierta localmente para PDF, XML y PKCS#12, incluido el rechazo de un hash
-  alterado. El certificado global de firma Facturae sigue siendo un secreto de
-  despliegue y exige una decisión de gestor de secretos, no una copia a la
-  base. Falta ejecutar la migración controlada sobre datos reales y confirmar
-  la retención/versionado y copia verificable del bucket de producción.
+  alterado. El certificado global de firma Facturae ya admite AWS Secrets
+  Manager mediante una referencia de configuración: lee un JSON con
+  `pkcs12_base64` y `password`, materializa el PKCS#12 con permisos `0600` solo
+  mientras firma y conserva el archivo como compatibilidad local. Las rutas
+  ambiguas (secreto y archivo a la vez) se rechazan y un fallo del gestor
+  devuelve un `503` genérico sin filtrar material sensible. Falta crear el
+  secreto real, limitar el rol de producción a `secretsmanager:GetSecretValue`
+  sobre ese secreto, ejecutar la migración controlada sobre datos reales y
+  confirmar la retención/versionado y copia verificable del bucket de
+  producción. La separación entre el bucket de documentos y el bucket de
+  backups, junto con sus controles de acceso, versionado, ciclo de vida y
+  validación, está preparada en
+  `docs/operations/PRODUCTION_DOCUMENT_STORAGE_RUNBOOK.md`; sigue pendiente
+  aplicarla y verificarla en AWS.
   `backend/storage` es solo dato local ignorado por Git, no una fuente de
   verdad ni un lugar para secretos.
 

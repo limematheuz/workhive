@@ -21,6 +21,9 @@ from app.schemas.invoice_item import (
     RectificationInvoiceItemCreate,
 )
 from app.services import facturae_service, invoice_service
+from app.services.facturae_signing_credentials_service import (
+    FacturaeSigningCredentialsError,
+)
 from tests.test_reservations import _company
 
 
@@ -179,6 +182,45 @@ def test_facturae_is_stored_as_an_object_without_a_project_path(db):
 
     _, resolved = facturae_service.resolve_facturae(db, company.id, issued.id)
     assert resolved.contents == generated.contents
+
+
+def test_facturae_secret_failure_returns_a_safe_service_unavailable(db, monkeypatch):
+    company = _company(db, "Facturae Secret Issuer SL", "A87654321")
+    client = _billing_client(db, company, legal_number="B87654321")
+    company.postal_code = "17001"
+    company.city = "Girona"
+    company.province = "Girona"
+    client.province = "Girona"
+    db.commit()
+    draft = invoice_service.create_invoice_draft(
+        db, company.id, _draft_payload(client.id)
+    )
+    issued = invoice_service.issue_invoice(db, company.id, draft.id)
+
+    def unavailable_credentials():
+        raise FacturaeSigningCredentialsError("provider request failed")
+
+    monkeypatch.setattr(
+        facturae_service.facturae_signing_credentials_service,
+        "signing_certificate_is_configured",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        facturae_service.facturae_signing_credentials_service,
+        "facturae_signing_credentials",
+        unavailable_credentials,
+    )
+
+    with pytest.raises(HTTPException) as error:
+        facturae_service.generate_facturae(
+            db,
+            company.id,
+            issued.id,
+            sign=True,
+        )
+
+    assert error.value.status_code == 503
+    assert error.value.detail == "Facturae signing certificate is unavailable"
 
 
 def test_only_rectification_lines_can_use_negative_prices():
