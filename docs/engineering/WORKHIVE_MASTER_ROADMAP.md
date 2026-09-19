@@ -220,7 +220,13 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Decididos componentes shadcn, responsive, aislamiento por empresa, planes
   y aplazamiento de Stripe.
 - ✅ Se definió que Seguimiento comercial no es presupuesto ni factura.
-- ⬜ Empresa demo Enterprise con departamentos, perfiles y datos anonimizados.
+- 🟡 Empresa demo Enterprise: `backend/scripts/seed_demo.py` solo reconstruye
+  una SQLite explícita dentro de `backend/storage/demo`, nunca la base normal
+  ni producción. Crea plan Enterprise (`mega`) activo con términos comerciales
+  ficticios, departamentos, equipos, perfiles con scopes, usuarios y dos
+  ubicaciones; los correos usan `.invalid` y no hay datos de clientes reales.
+  Está cubierta por regresiones de aislamiento y de coherencia; falta ejecutarla
+  y validarla visualmente en el entorno local de demostración.
 - ⬜ Inventario definitivo de compatibilidades API y de datos a migrar.
 - ⬜ Catálogo único revisado de módulos, permisos y clases de plaza.
 - 🟡 Endurecer el almacenamiento documental: los PDFs, Facturae y certificados
