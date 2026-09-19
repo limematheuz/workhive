@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 15 de septiembre de 2026.
+Actualizado: 19 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -234,7 +234,12 @@ como WorkHive Core solo cuando el caso real las exige.
   documentos. Un test obliga a revisar el inventario al registrar un prefijo
   nuevo. Antes de retirar cualquier compatibilidad sigue siendo obligatoria la
   comprobación de pendientes y un backfill controlado en el entorno objetivo.
-- ⬜ Catálogo único revisado de módulos, permisos y clases de plaza.
+- ✅ Catálogo único revisado de módulos, permisos y clases de plaza:
+  `docs/engineering/MODULE_PERMISSION_SEAT_CATALOG.md` separa módulos de
+  plan, permisos y scopes, plazas internas y grants externos; define qué
+  recibe realmente un administrador y evita que un módulo `coming_soon` se
+  venda por figurar en un plan técnico. Un test obliga a documentar cada
+  entitlement, cuota, permiso base y permiso reservado nuevo.
 - 🟡 Endurecer el almacenamiento documental: los PDFs, Facturae y certificados
   fiscales por empresa nuevos ya usan claves opacas de objeto con tipo, tamaño
   y hash. Una migración manual por empresa
