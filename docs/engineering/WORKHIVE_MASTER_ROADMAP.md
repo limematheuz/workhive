@@ -227,7 +227,13 @@ como WorkHive Core solo cuando el caso real las exige.
   ubicaciones; los correos usan `.invalid` y no hay datos de clientes reales.
   Está cubierta por regresiones de aislamiento y de coherencia; falta ejecutarla
   y validarla visualmente en el entorno local de demostración.
-- ⬜ Inventario definitivo de compatibilidades API y de datos a migrar.
+- ✅ Inventario definitivo de compatibilidades API y de datos a migrar:
+  `docs/engineering/API_AND_DATA_COMPATIBILITY_INVENTORY.md` delimita la
+  superficie `/api/v1`, la API pública con clave, los clientes web y las
+  transiciones de plan, membresías, accesos externos, contactos, reservas y
+  documentos. Un test obliga a revisar el inventario al registrar un prefijo
+  nuevo. Antes de retirar cualquier compatibilidad sigue siendo obligatoria la
+  comprobación de pendientes y un backfill controlado en el entorno objetivo.
 - ⬜ Catálogo único revisado de módulos, permisos y clases de plaza.
 - 🟡 Endurecer el almacenamiento documental: los PDFs, Facturae y certificados
   fiscales por empresa nuevos ya usan claves opacas de objeto con tipo, tamaño
