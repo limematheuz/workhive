@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Check, ChevronDown, UsersRound } from "lucide-react";
 
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getEffectiveLocationTemplate } from "@/domain/locations/location-template";
 import type { Dictionary } from "@/lib/dictionary-context";
 import {
@@ -76,19 +78,14 @@ export function TaskCreateHouseTemplateList({
                 </div>
                 <label className="mt-3 block shrink-0 sm:mt-0 sm:w-52" htmlFor="task-create-default-assignee">
                     <span className="sr-only">Asignar todos los pasos a</span>
-                    <select
-                        id="task-create-default-assignee"
-                        value={defaultAssigneeId}
+                    <Select
+                        value={defaultAssigneeId || "none"}
                         disabled={!useHouseChecklist}
-                        onChange={(event) => setDefaultAssigneeId(event.target.value)}
-                        className="h-10 w-full cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs font-bold text-[var(--text-main)] outline-none focus:border-accent disabled:cursor-not-allowed"
+                        onValueChange={(value) => setDefaultAssigneeId(value === "none" ? "" : value)}
                     >
-                        <option value="">Sin asignar por defecto</option>
-                        <option value={ALL_WORKERS_VALUE}>Todo el equipo</option>
-                        {users.map((user) => (
-                            <option key={user.id} value={user.id.toString()}>{user.full_name || user.email}</option>
-                        ))}
-                    </select>
+                        <SelectTrigger id="task-create-default-assignee" className="h-10 w-full text-xs font-bold"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="none">Sin asignar por defecto</SelectItem><SelectItem value={ALL_WORKERS_VALUE}>Todo el equipo</SelectItem>{users.map((user) => <SelectItem key={user.id} value={user.id.toString()}>{user.full_name || user.email}</SelectItem>)}</SelectContent>
+                    </Select>
                 </label>
             </div>
 
@@ -205,7 +202,7 @@ export function TaskCreateHouseTemplateList({
                                         <span className="mb-1 block text-[9px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
                                             {dict.tasks?.create_dialog?.task_price || "Tarifa"}
                                         </span>
-                                        <input
+                                        <Input
                                             type="text"
                                             inputMode="decimal"
                                             pattern="[0-9]*[.,]?[0-9]*"
@@ -213,7 +210,7 @@ export function TaskCreateHouseTemplateList({
                                             value={pricingValues.price}
                                             onChange={(event) => updatePricing({ price: event.target.value })}
                                             aria-label={`${dict.tasks?.create_dialog?.task_price || "Tarifa"}: ${effective.name}`}
-                                            className="dialog-compact-control h-9 w-24 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-center text-sm font-bold text-[var(--text-main)] shadow-sm outline-none focus:border-accent sm:w-28"
+                                            className="dialog-compact-control h-9 w-24 px-3 text-center text-sm font-bold sm:w-28"
                                         />
                                     </label>
                                     <span className="pb-2 text-xs font-semibold text-[var(--text-muted)]">
@@ -231,21 +228,16 @@ export function TaskCreateHouseTemplateList({
                                             <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]/40" />
                                             <span className="truncate text-xs font-medium text-[var(--text-main)]">{item.text}</span>
                                         </div>
-                                        <select
+                                        <Select
                                             value={fixedChecklistAssignments[`${houseTemplate.template_task_id}-${item.index}`] || "unassigned"}
-                                            onChange={(event) => setFixedChecklistAssignments((current) => ({
+                                            onValueChange={(value) => setFixedChecklistAssignments((current) => ({
                                                 ...current,
-                                                [`${houseTemplate.template_task_id}-${item.index}`]: event.target.value,
+                                                [`${houseTemplate.template_task_id}-${item.index}`]: value,
                                             }))}
-                                            aria-label={`Asignar trabajador: ${item.text}`}
-                                            className="max-w-[140px] shrink-0 cursor-pointer rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] px-2.5 py-1 text-[10px] text-[var(--text-main)] outline-none"
                                         >
-                                            <option value="unassigned">-- Sin asignar --</option>
-                                            <option value={ALL_WORKERS_VALUE}>{dict.tasks?.create_dialog?.assignee_all || "Todos los trabajadores"}</option>
-                                            {users.map((user) => (
-                                                <option key={user.id} value={user.id.toString()}>{user.full_name || user.email}</option>
-                                            ))}
-                                        </select>
+                                            <SelectTrigger aria-label={`Asignar trabajador: ${item.text}`} className="h-8 max-w-[140px] shrink-0 rounded-full px-2.5 text-[10px]"><SelectValue /></SelectTrigger>
+                                            <SelectContent><SelectItem value="unassigned">-- Sin asignar --</SelectItem><SelectItem value={ALL_WORKERS_VALUE}>{dict.tasks?.create_dialog?.assignee_all || "Todos los trabajadores"}</SelectItem>{users.map((user) => <SelectItem key={user.id} value={user.id.toString()}>{user.full_name || user.email}</SelectItem>)}</SelectContent>
+                                        </Select>
                                     </div>
                                 ))}
                             </div>

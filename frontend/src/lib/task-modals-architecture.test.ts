@@ -155,6 +155,9 @@ test("task creation exposes compact per-job pricing controls and keeps defaults 
     assert.match(createList, /\["fixed", "hourly"\] as const/);
     assert.match(createList, /aria-pressed=\{active\}/);
     assert.match(createList, /dialog-compact-control/);
+    assert.match(createList, /from "@\/components\/ui\/input"/);
+    assert.match(createList, /from "@\/components\/ui\/select"/);
+    assert.doesNotMatch(createList, /<input|<select/);
     assert.match(createList, /flex items-end gap-2 md:ml-auto/);
     assert.match(createList, /data-price-input/);
     assert.match(crud, /resolveTaskCreationPricing/);
@@ -205,6 +208,12 @@ test("monetary inputs keep numeric validation without native increment buttons",
 
     const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
     assert.match(createList, /type="text"\s+inputMode="decimal"/);
+
+    const checklistSection = read("../components/tasks/TaskCreateHouseChecklistSection.tsx");
+    assert.match(checklistSection, /from "@\/components\/ui\/checkbox"/);
+    assert.match(checklistSection, /from "@\/components\/ui\/input"/);
+    assert.match(checklistSection, /from "@\/components\/ui\/select"/);
+    assert.doesNotMatch(checklistSection, /<input|<select/);
 });
 
 test("location history uses shared form controls", () => {

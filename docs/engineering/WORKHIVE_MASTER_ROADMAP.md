@@ -85,7 +85,8 @@ como WorkHive Core solo cuando el caso real las exige.
   `Select` canónico. Los filtros de año de Resumen fiscal y Libro de ventas, y
   los controles de configuración de Facturae, también reutilizan las
   primitivas canónicas; el editor de checklist de tareas también las usa para
-  asignaciones masivas e individuales. Se preservan valores vacíos, filtros,
+  asignaciones masivas e individuales y la creación de tareas para checklist,
+  plantilla, asignación y precio. Se preservan valores vacíos, filtros,
   validaciones y permisos. Queda auditar y sustituir los controles nativos
   restantes. Los controles de solo hora se mantienen separados porque no
   representan un calendario.
