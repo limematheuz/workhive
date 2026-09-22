@@ -37,11 +37,14 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     assert.match(register, /billing-block/);
     assert.match(register, /href="\/subscription"/);
     assert.match(forgot, /AuthShell/);
+    assert.match(forgot, /from "@\/components\/ui\/input"/);
+    assert.doesNotMatch(forgot, /<input\b/);
     assert.match(subscription, /AuthShell/);
     assert.match(checkout, /AuthShell/);
     assert.match(contact, /AuthShell/);
     assert.match(contactForm, /billing-surface/);
     assert.match(contactForm, /from "@\/components\/ui\/input"/);
+    assert.match(contactForm, /from "@\/components\/ui\/textarea"/);
     assert.match(contactForm, /from "@\/components\/ui\/label"/);
     assert.match(contactForm, /AUTH_FIELD_CLASS/);
     assert.match(contactAside, /billing-block/);
@@ -50,6 +53,7 @@ test("auth marketing pages share AuthShell glass chrome", () => {
     assert.doesNotMatch(subscription, /animate-pulse/);
     assert.doesNotMatch(register, /\bbg-white\b/);
     assert.doesNotMatch(contactForm, /\bbg-white\b/);
+    assert.doesNotMatch(contactForm, /<textarea\b/);
     assert.doesNotMatch(contactAside, /\bbg-white\b/);
     assert.doesNotMatch(contactAside, /glass-sheet-bg/);
 });
@@ -132,4 +136,18 @@ test("register and contact stay mobile-first with tinted surfaces", () => {
     assert.match(contactForm, /h-12 w-full rounded-2xl/);
     assert.match(contactForm, /AUTH_FIELD_CLASS/);
     assert.match(read("../components/auth/auth-ui.ts"), /text-base/);
+});
+
+test("public password and client portal forms use shared controls and semantic error tokens", () => {
+    const reset = read("../app/(auth)/reset-password/page.tsx");
+    const clientPortal = read("../app/(auth)/accept-client-portal-invitation/AcceptClientPortalInvitationClient.tsx");
+
+    assert.match(reset, /from "@\/components\/ui\/input"/);
+    assert.match(reset, /from "@\/components\/ui\/label"/);
+    assert.match(reset, /from "@\/components\/ui\/button"/);
+    assert.doesNotMatch(reset, /<(?:input|button)\b/);
+    assert.doesNotMatch(reset, /red-\d/);
+    assert.match(clientPortal, /from "@\/components\/ui\/checkbox"/);
+    assert.match(clientPortal, /<Checkbox/);
+    assert.doesNotMatch(clientPortal, /<input\b/);
 });

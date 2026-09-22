@@ -91,9 +91,11 @@ como WorkHive Core solo cuando el caso real las exige.
   comentarios, adjuntos y propiedades ya usa las primitivas canónicas, sin
   lecturas directas del DOM al guardar propiedades. Ya no quedan `<select>`
   nativos en código de producto; los selectores de archivo se mantienen como
-  una capacidad obligatoria del navegador, envueltos por `Input`. Se preservan
-  valores vacíos, filtros, validaciones y permisos. Queda auditar y sustituir
-  los `input` y `textarea` visuales heredados fuera de esos cortes. Los
+  una capacidad obligatoria del navegador, envueltos por `Input`. Los
+  formularios públicos de recuperación, contacto y aceptación del portal de
+  cliente también usan `Input`, `Textarea` y `Checkbox` compartidos. Se
+  preservan valores vacíos, filtros, validaciones y permisos. Queda auditar y
+  sustituir los `input` y `textarea` visuales heredados fuera de esos cortes. Los
   controles de solo hora se mantienen separados porque no representan un
   calendario.
 - 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ChangeEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/services/auth.service";
@@ -15,6 +15,8 @@ import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { AUTH_FIELD_CLASS, AUTH_LABEL_CLASS, authAlertClass } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -98,11 +100,11 @@ export default function ForgotPasswordPage() {
                         </div>
 
                         <div>
-                            <label htmlFor="forgot-password-email" className={AUTH_LABEL_CLASS}>
+                            <Label htmlFor="forgot-password-email" className={AUTH_LABEL_CLASS}>
                                 {t.email_label}
-                            </label>
+                            </Label>
                             <div className="relative">
-                                <input
+                                <Input
                                     id="forgot-password-email"
                                     type="email"
                                     name="recovery_email"
@@ -112,7 +114,7 @@ export default function ForgotPasswordPage() {
                                     placeholder={t.email_placeholder}
                                     required
                                     value={email}
-                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                                    onChange={(e) => setEmail(e.target.value)}
                                 />
                                 <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                             </div>
