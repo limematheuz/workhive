@@ -17,6 +17,7 @@ import { MapPin, Home, Share2 } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { POLL_INTERVALS } from "@/lib/polling";
 
@@ -164,8 +165,7 @@ export default function LocationsPage() {
         return list;
     }, [locations, user, ownerFilter]);
 
-    const filterSelectClass =
-        "h-9 w-auto min-w-[11rem] max-w-full cursor-pointer rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-xs font-semibold uppercase tracking-wider text-[var(--text-main)] outline-none ui-motion focus:border-accent/50";
+    const filterSelectTriggerClass = "h-9 w-auto min-w-[11rem] max-w-full text-xs font-semibold uppercase tracking-wider";
 
     return (
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
@@ -196,33 +196,39 @@ export default function LocationsPage() {
 
                     <div className="billing-block inline-flex max-w-full items-center rounded-xl px-2 py-1.5">
                         {activeTab === "own" ? (
-                            <select
-                                aria-label={dict.locations?.filter?.all_clients || "Todos los clientes"}
-                                value={selectedClientId}
-                                onChange={(e) => setSelectedClientId(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
-                                className={filterSelectClass}
+                            <Select
+                                value={String(selectedClientId)}
+                                onValueChange={(value) => setSelectedClientId(value === "ALL" ? "ALL" : parseInt(value))}
                             >
-                                <option value="ALL">{dict.locations?.filter?.all_clients || "Todos los clientes"}</option>
-                                {clients.map((c) => (
-                                    <option key={c.id} value={c.id}>
-                                        {c.name}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger aria-label={dict.locations?.filter?.all_clients || "Todos los clientes"} className={filterSelectTriggerClass}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">{dict.locations?.filter?.all_clients || "Todos los clientes"}</SelectItem>
+                                    {clients.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         ) : (
-                            <select
-                                aria-label="Todos los colaboradores"
-                                value={ownerFilter}
-                                onChange={(e) => setOwnerFilter(e.target.value === "ALL" ? "ALL" : parseInt(e.target.value))}
-                                className={filterSelectClass}
+                            <Select
+                                value={String(ownerFilter)}
+                                onValueChange={(value) => setOwnerFilter(value === "ALL" ? "ALL" : parseInt(value))}
                             >
-                                <option value="ALL">Todos los colaboradores</option>
-                                {collaborators.map((collab) => (
-                                    <option key={collab.id} value={collab.id}>
-                                        {collab.name}
-                                    </option>
-                                ))}
-                            </select>
+                                <SelectTrigger aria-label="Todos los colaboradores" className={filterSelectTriggerClass}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="ALL">Todos los colaboradores</SelectItem>
+                                    {collaborators.map((collab) => (
+                                        <SelectItem key={collab.id} value={String(collab.id)}>
+                                            {collab.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         )}
                     </div>
 
@@ -243,7 +249,6 @@ export default function LocationsPage() {
                 onOpenChange={setEditSheetOpen}
                 onLocationUpdated={loadLocations}
             />
-
             <DeleteConfirmDialog
                 open={deleteDialogOpen}
                 onOpenChange={(open) => {

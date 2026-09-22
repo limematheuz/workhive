@@ -204,3 +204,14 @@ test("monetary inputs keep numeric validation without native increment buttons",
     const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
     assert.match(createList, /type="text"\s+inputMode="decimal"/);
 });
+
+test("location history uses shared form controls", () => {
+    const history = read("../components/locations/LocationHistoryTab.tsx");
+
+    assert.match(history, /from "@\/components\/ui\/input"/);
+    assert.match(history, /from "@\/components\/ui\/select"/);
+    assert.match(history, /<SelectTrigger aria-label="Asignar a un trabajador de tu equipo"/);
+    assert.match(history, /<SelectTrigger aria-label="Filtrar por estado"/);
+    assert.doesNotMatch(history, /<select|<input/);
+    assert.doesNotMatch(history, /bg-black|hover:bg-neutral-800/);
+});

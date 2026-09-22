@@ -5,6 +5,8 @@ import { Plus, Loader2, Check, Lock, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cleanChecklistDescription } from "@/lib/format";
 import { ChecklistStepsEditor } from "@/components/tasks/ChecklistStepsEditor";
 import { LocationOperationalHistoryTab } from "./LocationOperationalHistoryTab";
@@ -98,11 +100,12 @@ export function LocationHistoryTab({
                         </div>
                     ) : !showCreateForm ? (
                         <Button
+                            variant="secondary"
                             onClick={() => {
                                 setAssignedUserId("");
                                 setShowCreateForm(true);
                             }}
-                            className="w-full bg-[var(--bg-secondary)] hover:bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-2 ui-motion border-none cursor-pointer"
+                            className="w-full"
                         >
                             <Plus className="w-4 h-4" />
                             Crear trabajo puntual
@@ -126,13 +129,13 @@ export function LocationHistoryTab({
 
                             <div className="space-y-1">
                                 <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">{dict.locations?.sheet?.job_title_label || "Título del Trabajo *"}</Label>
-                                <input
+                                <Input
                                     type="text"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
                                     placeholder={dict.locations?.sheet?.job_title_placeholder || "ej: Planchado de sábanas o lavado extra"}
                                     required
-                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent"
+                                    className="h-9 text-xs"
                                 />
                             </div>
 
@@ -147,65 +150,66 @@ export function LocationHistoryTab({
 
                             <div className="space-y-1">
                                 <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">Asignar a un trabajador de tu equipo</Label>
-                                <select
+                                <Select
                                     value={assignedUserId}
-                                    onChange={(e) => setAssignedUserId(e.target.value)}
-                                    required
-                                    aria-label="Asignar a un trabajador de tu equipo"
-                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent"
+                                    onValueChange={setAssignedUserId}
                                 >
-                                    <option value="" disabled>
-                                        Selecciona un trabajador
-                                    </option>
-                                    {users.map(u => (
-                                        <option key={u.id} value={u.id.toString()}>
+                                    <SelectTrigger aria-label="Asignar a un trabajador de tu equipo" aria-required="true" className="h-9 text-xs">
+                                        <SelectValue placeholder="Selecciona un trabajador" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {users.map(u => (
+                                            <SelectItem key={u.id} value={u.id.toString()}>
                                             {u.full_name || u.email}
-                                        </option>
-                                    ))}
-                                </select>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1">
                                     <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">{dict.locations?.sheet?.price_label || "Precio (€)"}</Label>
-                                    <input
+                                    <Input
                                         type="number"
                                         step="0.01"
                                         data-price-input
                                         value={price}
                                         onChange={(e) => setPrice(e.target.value)}
                                         placeholder={dict.locations?.sheet?.price_placeholder || "0.00"}
-                                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent"
+                                        inputMode="decimal"
+                                        className="h-9 text-xs"
                                     />
                                 </div>
                                 <div className="space-y-1">
                                     <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">{dict.locations?.sheet?.quantity_label || "Cantidad"}</Label>
-                                    <input
+                                    <Input
                                         type="number"
                                         step="0.1"
                                         value={quantity}
                                         onChange={(e) => setQuantity(e.target.value)}
                                         placeholder={dict.locations?.sheet?.quantity_placeholder || "1.0"}
-                                        className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent"
+                                        inputMode="decimal"
+                                        className="h-9 text-xs"
                                     />
                                 </div>
                             </div>
 
                             <div className="space-y-1">
                                 <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">{dict.locations?.sheet?.unit_label || "Unidad"}</Label>
-                                <input
+                                <Input
                                     type="text"
                                     value={unit}
                                     onChange={(e) => setUnit(e.target.value)}
                                     placeholder={dict.locations?.sheet?.unit_placeholder || "hora, unidad, servicio..."}
-                                    className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent"
+                                    className="h-9 text-xs"
                                 />
                             </div>
 
                             <Button
                                 type="submit"
                                 disabled={submitting}
-                                className="w-full bg-black text-white hover:bg-neutral-800 rounded-xl py-2 text-xs font-semibold flex items-center justify-center gap-2 border-none cursor-pointer"
+                                className="w-full"
                             >
                                 {submitting ? (
                                     <>
@@ -231,16 +235,13 @@ export function LocationHistoryTab({
                 <div className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
                         <h4 className="text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Trabajos activos</h4>
-                        <select
+                        <Select
                             value={statusFilter}
-                            onChange={e => setStatusFilter(e.target.value)}
-                            aria-label="Filtrar por estado"
-                            className="h-9 text-xs bg-[var(--bg-secondary)] border border-[var(--border-soft)] rounded-xl px-2.5 outline-none text-[var(--text-main)]"
+                            onValueChange={setStatusFilter}
                         >
-                            <option value="ALL">Trabajos activos</option>
-                            <option value="pending">{dict.clients?.details?.status_pending || "Pendientes"}</option>
-                            <option value="progress">{dict.clients?.details?.status_in_progress || "En curso"}</option>
-                        </select>
+                            <SelectTrigger aria-label="Filtrar por estado" className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="ALL">Trabajos activos</SelectItem><SelectItem value="pending">{dict.clients?.details?.status_pending || "Pendientes"}</SelectItem><SelectItem value="progress">{dict.clients?.details?.status_in_progress || "En curso"}</SelectItem></SelectContent>
+                        </Select>
                     </div>
 
                     {filteredTasks.length === 0 ? (
