@@ -34,6 +34,9 @@ test("the location workspace uses shadcn tabs as four visible steps and keeps su
     assert.match(featuresStep, /Características/);
     assert.match(spacesStep, /Espacios y tareas/);
     assert.match(spacesStep, /Sugerir espacios/);
+    assert.match(spacesStep, /from "@\/components\/ui\/select"/);
+    assert.match(spacesStep, /<SelectTrigger aria-label="Tipo de espacio">/);
+    assert.doesNotMatch(spacesStep, /<select/);
     assert.match(form, /WORKSPACE_STEPS/);
     assert.match(form, /TabsList/);
     assert.match(form, /TabsTrigger/);
