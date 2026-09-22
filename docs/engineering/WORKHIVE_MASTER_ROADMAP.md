@@ -78,10 +78,11 @@ como WorkHive Core solo cuando el caso real las exige.
   los editores de tareas usan `Input`/`Select` locales para precio, cantidad,
   estado, prioridad, unidad y reservas opcionales, y los filtros de calendario
   también usan los controles compartidos. Ubicaciones ya usa esos controles en
-  sus filtros, alta de espacios, espacio padre e historial de trabajo; se
-  preservan valores vacíos, filtros, validaciones y permisos. Queda auditar y
-  sustituir los controles nativos restantes. Los controles de solo hora se
-  mantienen separados porque no representan un calendario.
+  sus filtros, alta de espacios, espacio padre e historial de trabajo, y
+  Gastos usa `Input`, `Select` y el mismo `DatePicker` de Facturas para sus
+  filtros. Se preservan valores vacíos, filtros, validaciones y permisos.
+  Queda auditar y sustituir los controles nativos restantes. Los controles de
+  solo hora se mantienen separados porque no representan un calendario.
 - 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. El componente

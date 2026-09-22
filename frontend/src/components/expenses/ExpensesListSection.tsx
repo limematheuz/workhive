@@ -4,6 +4,9 @@ import { Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { DataListTable } from "@/components/ui/data-list-table";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatExpenseDate, getExpenseNotes } from "@/lib/expense-form";
 import { formatCurrency } from "@/lib/format";
@@ -73,7 +76,7 @@ export function ExpensesListSection({
                     <label className="relative block w-full sm:max-w-xs">
                         <span className="sr-only">{text.search}</span>
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
-                        <input
+                        <Input
                             value={search}
                             onChange={(event) => onSearchChange(event.target.value)}
                             aria-label={text.search}
@@ -83,28 +86,29 @@ export function ExpensesListSection({
                     </label>
                     <label className="block sm:w-56">
                         <span className="sr-only">{text.all_categories}</span>
-                        <select
-                            value={categoryFilter}
-                            onChange={(event) => onCategoryFilterChange(event.target.value)}
-                            aria-label={text.all_categories}
-                            className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        <Select
+                            value={categoryFilter || "__all-categories__"}
+                            onValueChange={(value) => onCategoryFilterChange(value === "__all-categories__" ? "" : value)}
                         >
-                            <option value="">{text.all_categories}</option>
-                            {CATEGORY_OPTIONS.map((category) => (
-                                <option key={category} value={category}>
+                            <SelectTrigger aria-label={text.all_categories} className="h-11 w-full"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__all-categories__">{text.all_categories}</SelectItem>
+                                {CATEGORY_OPTIONS.map((category) => (
+                                    <SelectItem key={category} value={category}>
                                     {text.categories[category as keyof typeof text.categories] || category}
-                                </option>
-                            ))}
-                        </select>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </label>
                     <label className="block sm:w-44">
                         <span className="sr-only">{text.month}</span>
-                        <input
-                            type="month"
-                            value={month}
-                            onChange={(event) => onMonthChange(event.target.value)}
+                        <DatePicker
+                            id="expenses-month-filter"
+                            value={month ? `${month}-01` : ""}
+                            onValueChange={(value) => onMonthChange(value ? value.slice(0, 7) : "")}
                             aria-label={text.month}
-                            className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                            className="h-11 w-full rounded-xl text-sm font-semibold"
                         />
                     </label>
                 </div>
