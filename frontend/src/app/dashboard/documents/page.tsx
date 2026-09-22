@@ -6,6 +6,7 @@ import { Archive, Download, FileText, Paperclip } from "lucide-react";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatDate } from "@/lib/format";
@@ -100,7 +101,7 @@ export default function DocumentsPage() {
                     <SelectTrigger className="sm:w-72"><SelectValue placeholder="Selecciona ubicación para subir" /></SelectTrigger>
                     <SelectContent>{locations.map((location) => <SelectItem key={location.id} value={String(location.id)}>{location.name}</SelectItem>)}</SelectContent>
                 </Select>
-                <input ref={fileRef} className="sr-only" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" aria-label="Subir documento" onChange={(event) => void upload(event.target.files?.[0])} />
+                <Input ref={fileRef} className="sr-only" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" aria-label="Subir documento" onChange={(event) => void upload(event.target.files?.[0])} />
                 <Button type="button" disabled={!selectedLocation || uploading} onClick={() => fileRef.current?.click()}><Paperclip className="size-4" />Subir documento</Button>
             </div>}
             empty={<p className="text-sm text-[var(--text-muted)]">No hay documentos. Selecciona una ubicación y sube el primero.</p>}

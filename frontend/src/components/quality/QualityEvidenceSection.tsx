@@ -68,7 +68,7 @@ export function QualityEvidenceSection({
                 </div>
                 {canManage && (
                     <>
-                        <input
+                        <Input
                             ref={inputRef}
                             className="sr-only"
                             type="file"

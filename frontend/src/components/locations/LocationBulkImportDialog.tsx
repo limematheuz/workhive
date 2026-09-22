@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Download, FileSpreadsheet, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     Dialog,
     DialogContent,
@@ -115,7 +116,7 @@ export function LocationBulkImportDialog({ onImported }: LocationBulkImportDialo
                         <Button type="button" variant="default" size="sm" onClick={() => fileInputRef.current?.click()}>
                             <FileSpreadsheet className="h-3.5 w-3.5" /> Seleccionar CSV
                         </Button>
-                        <input ref={fileInputRef} type="file" accept=".csv,text/csv" aria-label="Archivo CSV de ubicaciones" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
+                        <Input ref={fileInputRef} type="file" accept=".csv,text/csv" aria-label="Archivo CSV de ubicaciones" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0])} />
                         {csvContent && <span className="self-center text-xs text-[var(--text-muted)]">Archivo cargado</span>}
                     </div>
 

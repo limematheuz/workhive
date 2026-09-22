@@ -5,6 +5,7 @@ import { AlertCircle, FileSpreadsheet, Loader2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { useDictionary } from "@/lib/dictionary-context";
 import type { SalesLedgerCsvPreview } from "@/services/sales-ledger.service";
 
@@ -63,7 +64,7 @@ export function SalesLedgerImportDialog({ open, busy, onOpenChange, onPreview, o
                             <span className="mt-1 block text-xs text-[var(--text-muted)]">{copy.ledger_csv_columns}</span>
                         </span>
                         <Upload className="size-5 shrink-0 text-accent" />
-                        <input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0] ?? null)} />
+                        <Input type="file" accept=".csv,text/csv" className="sr-only" onChange={(event) => void selectFile(event.target.files?.[0] ?? null)} />
                     </label>
 
                     {previewing && <p className="flex items-center gap-2 text-sm text-[var(--text-muted)]"><Loader2 className="size-4 animate-spin" />{copy.ledger_validating_csv}</p>}

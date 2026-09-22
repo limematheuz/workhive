@@ -100,7 +100,7 @@ export function FiscalSettingsConfigureDialog({
                     </div>
 
                     <label className="block rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] p-5 transition hover:border-[var(--border-color)]">
-                        <input
+                        <Input
                             type="file"
                             accept=".p12,.pfx,application/x-pkcs12"
                             onChange={onCertificateFile}

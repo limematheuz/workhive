@@ -3,6 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Upload, FileText, Loader2 } from "lucide-react";
 import { UploadService } from "@/services/upload.service";
 import { resolveApiMediaUrl } from "@/lib/api";
@@ -73,13 +74,13 @@ export function SignatureUpload({
                         </span>
                     </div>
                 )}
-                <input
+                <Input
                     type="file"
                     accept="image/*"
                     aria-label={dict.invoices?.upload_signature || "Subir firma"}
                     onChange={handleSignatureUpload}
                     disabled={uploading}
-                    className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    className="absolute inset-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
                 />
             </div>
         </div>

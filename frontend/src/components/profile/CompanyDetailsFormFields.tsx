@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Building2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
     DocumentFormInput,
     DocumentFormTextarea,
@@ -241,12 +242,12 @@ export function CompanyDetailsFormFields({
                                 </span>
                             </div>
                         )}
-                        <input
+                        <Input
                             type="file"
                             aria-label="Upload company logo"
                             accept="image/*"
                             onChange={onLogoChange}
-                            className="absolute inset-0 cursor-pointer opacity-0"
+                            className="absolute inset-0 size-full cursor-pointer opacity-0"
                         />
                     </div>
                 </ProfileFormSection>
