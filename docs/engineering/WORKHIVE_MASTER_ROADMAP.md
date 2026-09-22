@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 19 de septiembre de 2026.
+Actualizado: 22 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -61,7 +61,9 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Métricas: dos columnas en móvil; una tarjeta impar no se estira.
 - ✅ Tabs: escritorio puede mostrarlas en fila; tablet y móvil siempre las
   compactan en el mismo selector desplegable, con la misma cantidad, orden y
-  reglas de visibilidad de opciones que el escritorio.
+  reglas de visibilidad de opciones que el escritorio. `PremiumTabs` aplica la
+  regla a cualquier número de pestañas y tiene regresiones para impedir volver
+  al umbral antiguo de más de cuatro.
 - 🟡 Las superficies nuevas y modificadas usan exclusivamente tokens semánticos
   de `globals.css` para estado, prioridad y alerta, además de los componentes
   locales basados en shadcn/ui. El margen operativo ya se ajustó a esta regla;

@@ -37,10 +37,10 @@ test("client portal has an isolated documentary shell and multi-company workspac
     assert.match(api, /\/api\/v1\/client-portal\/invitations\/accept/);
 });
 
-test("tabs with more than four items use the same picker on tablet and mobile", () => {
+test("every tab set uses the same picker on tablet and mobile", () => {
     const tabs = read("../components/ui/premium-tabs.tsx");
 
-    assert.match(tabs, /tabs\.length > 4/);
-    assert.match(tabs, /lg:hidden/);
-    assert.match(tabs, /hidden lg:flex/);
+    assert.doesNotMatch(tabs, /tabs\.length > 4/);
+    assert.match(tabs, /<div className="mb-4 lg:hidden">/);
+    assert.match(tabs, /hidden h-auto[\s\S]*lg:flex/);
 });
