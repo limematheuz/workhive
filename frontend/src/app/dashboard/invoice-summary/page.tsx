@@ -9,7 +9,9 @@ import { SalesLedgerRecordDialog } from "@/components/invoices/SalesLedgerRecord
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary, type Dictionary } from "@/lib/dictionary-context";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -206,12 +208,12 @@ export default function InvoiceSummaryPage() {
                         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
                             <label className="relative min-w-0 flex-1">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
-                                <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.ledger_search_placeholder} className="h-10 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] py-2 pl-9 pr-3 text-sm text-[var(--text-main)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-accent" />
+                                <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder={copy.ledger_search_placeholder} className="h-10 w-full py-2 pl-9 pr-3 text-sm" />
                             </label>
-                            <select value={year} onChange={(event) => setYear(event.target.value)} aria-label={copy.ledger_all_years} className="h-10 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm text-[var(--text-main)] outline-none transition-colors focus:border-accent">
-                                <option value="">{copy.ledger_all_years}</option>
-                                {years.map((availableYear) => <option key={availableYear} value={availableYear}>{availableYear}</option>)}
-                            </select>
+                            <Select value={year || "all"} onValueChange={(value) => setYear(value === "all" ? "" : value)}>
+                                <SelectTrigger aria-label={copy.ledger_all_years} className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="all">{copy.ledger_all_years}</SelectItem>{years.map((availableYear) => <SelectItem key={availableYear} value={availableYear}>{availableYear}</SelectItem>)}</SelectContent>
+                            </Select>
                             <div className="flex flex-wrap gap-2">
                                 <Button type="button" variant="outline" size="sm" onClick={() => downloadCsv(SALES_LEDGER_CSV_TEMPLATE, "plantilla-libro-ventas.csv")}><FileSpreadsheet />{copy.ledger_csv_template}</Button>
                                 {canManageSummary && <Button type="button" variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}><Upload />{copy.ledger_import_csv}</Button>}

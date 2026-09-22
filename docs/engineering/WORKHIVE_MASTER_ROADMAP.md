@@ -82,7 +82,9 @@ como WorkHive Core solo cuando el caso real las exige.
   Gastos usa `Input`, `Select` y el mismo `DatePicker` de Facturas para sus
   filtros. El envoltorio heredado `DocumentFormSelect`, que generaba un control
   nativo, fue retirado: Gastos, usuarios, colaboradores e invitaciones usan el
-  `Select` canónico. Se preservan valores vacíos, filtros, validaciones y
+  `Select` canónico. Los filtros de año de Resumen fiscal y Libro de ventas, y
+  los controles de configuración de Facturae, también reutilizan las
+  primitivas canónicas. Se preservan valores vacíos, filtros, validaciones y
   permisos. Queda auditar y sustituir los controles nativos restantes. Los
   controles de solo hora se mantienen separados porque no representan un
   calendario.

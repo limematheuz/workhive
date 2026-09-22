@@ -6,6 +6,7 @@ import test from "node:test";
 const root = resolve(import.meta.dirname, "..");
 const page = readFileSync(resolve(root, "app/dashboard/fiscal-calendar/page.tsx"), "utf8");
 const sidebar = readFileSync(resolve(root, "components/dashboard/sidebar-nav-config.tsx"), "utf8");
+const fiscalSettingsDialog = readFileSync(resolve(root, "components/invoices/FiscalSettingsConfigureDialog.tsx"), "utf8");
 
 test("fiscal calendar is finance-manager scoped and saves explicit obligations", () => {
     assert.match(page, /canManageFinance\(user\) && !isPlatformSuperadmin\(user\)/);
@@ -22,4 +23,12 @@ test("fiscal calendar reuses dashboard navigation and surfaces official-date gui
     assert.match(page, /official_notice/);
     assert.match(page, /AEAT_CALENDAR_URL/);
     assert.match(page, /https:\/\/sede\.agenciatributaria\.gob\.es\/Sede\/calendario-contribuyente\.html/);
+});
+
+test("Facturae settings use shared checkbox and select controls", () => {
+    assert.match(fiscalSettingsDialog, /from "@\/components\/ui\/checkbox"/);
+    assert.match(fiscalSettingsDialog, /from "@\/components\/ui\/select"/);
+    assert.match(fiscalSettingsDialog, /<Checkbox/);
+    assert.match(fiscalSettingsDialog, /<SelectTrigger aria-label=\{text\.environmentAriaLabel\}/);
+    assert.doesNotMatch(fiscalSettingsDialog, /<input\s+type="checkbox"|<select/);
 });

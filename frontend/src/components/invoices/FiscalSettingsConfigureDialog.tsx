@@ -13,6 +13,8 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyFiscalSettings } from "@/services/fiscal-settings.service";
 
 import { FiscalSettingsText } from "./fiscalSettingsText";
@@ -74,31 +76,27 @@ export function FiscalSettingsConfigureDialog({
 
                     <div className="grid gap-3 sm:grid-cols-2">
                         <label className="flex min-h-11 items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-4 text-sm font-black text-[var(--text-main)]">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 checked={settings.company_enabled}
                                 disabled={isSaving}
-                                onChange={(event) =>
-                                    void onUpdate({ enabled: event.target.checked })
+                                onCheckedChange={(checked) =>
+                                    void onUpdate({ enabled: checked === true })
                                 }
-                                className="h-4 w-4 accent-[var(--accent-color)]"
                             />
                             {text.activateCompany}
                         </label>
-                        <select
+                        <Select
                             value={settings.environment}
                             disabled={isSaving}
-                            aria-label={text.environmentAriaLabel}
-                            onChange={(event) =>
+                            onValueChange={(value) =>
                                 void onUpdate({
-                                    environment: event.target.value as "test" | "production",
+                                    environment: value as "test" | "production",
                                 })
                             }
-                            className="h-11 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-4 text-sm font-black text-[var(--text-main)] outline-none focus:border-accent"
                         >
-                            <option value="test">{text.testOption}</option>
-                            <option value="production">{text.productionOption}</option>
-                        </select>
+                            <SelectTrigger aria-label={text.environmentAriaLabel} className="h-11 rounded-2xl px-4 text-sm font-black"><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="test">{text.testOption}</SelectItem><SelectItem value="production">{text.productionOption}</SelectItem></SelectContent>
+                        </Select>
                     </div>
 
                     <label className="block rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] p-5 transition hover:border-[var(--border-color)]">
