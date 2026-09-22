@@ -1,4 +1,6 @@
-import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { TaskChecklistItem } from "@/lib/task-checklist";
 import type { User } from "@/types/user";
@@ -20,6 +22,8 @@ export function TaskChecklistEditor({
     onAssign,
     onAssignAll,
 }: TaskChecklistEditorProps) {
+    const [assignAllValue, setAssignAllValue] = useState("select");
+
     return (
         <div className="overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/10 font-sans">
             <div className="flex items-center justify-between gap-3 border-b border-[var(--border-soft)] px-4 py-3">
@@ -28,19 +32,16 @@ export function TaskChecklistEditor({
                     <p className="mt-0.5 text-2xs text-[var(--text-muted)]">Asigna todo de una vez o ajusta una excepción.</p>
                 </div>
                 {canEdit && onAssignAll && (
-                    <select
-                        aria-label="Asignar todos los pasos"
-                        defaultValue=""
-                        onChange={(event) => {
-                            if (event.target.value) onAssignAll(event.target.value);
-                            event.target.value = "";
+                    <Select
+                        value={assignAllValue}
+                        onValueChange={(value) => {
+                            if (value !== "select") onAssignAll(value);
+                            setAssignAllValue("select");
                         }}
-                        className="h-9 max-w-44 cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-2 text-xs font-bold text-[var(--text-main)] outline-none focus:border-accent"
                     >
-                        <option value="">Asignar todos…</option>
-                        <option value="unassigned">Quitar asignación</option>
-                        {users.map((user) => <option key={user.id} value={user.id.toString()}>{user.full_name || user.email}</option>)}
-                    </select>
+                        <SelectTrigger aria-label="Asignar todos los pasos" className="h-9 max-w-44 text-xs font-bold"><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="select">Asignar todos…</SelectItem><SelectItem value="unassigned">Quitar asignación</SelectItem>{users.map((user) => <SelectItem key={user.id} value={user.id.toString()}>{user.full_name || user.email}</SelectItem>)}</SelectContent>
+                    </Select>
                 )}
             </div>
             <div className="divide-y divide-[var(--border-soft)] px-4">
@@ -82,25 +83,18 @@ export function TaskChecklistEditor({
                         </div>
 
                         {canEdit ? (
-                            <div className="relative shrink-0" onClick={(event) => event.stopPropagation()}>
-                                <select
-                                    value={
-                                        item.assignedUserId?.toString() || "unassigned"
-                                    }
-                                    onChange={(event) =>
-                                        onAssign(item.index, event.target.value)
-                                    }
-                                    aria-label={`Asignar trabajador: ${item.text}`}
-                                    className="h-9 w-44 cursor-pointer appearance-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 pr-8 text-left text-xs font-semibold text-[var(--text-main)] outline-none ui-motion hover:bg-[var(--bg-secondary)] focus:border-accent"
+                            <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
+                                <Select
+                                    value={item.assignedUserId?.toString() || "unassigned"}
+                                    onValueChange={(value) => onAssign(item.index, value)}
                                 >
-                                    <option value="unassigned">Sin asignar</option>
-                                    {users.map((user) => (
-                                        <option key={user.id} value={user.id.toString()}>
+                                    <SelectTrigger aria-label={`Asignar trabajador: ${item.text}`} className="h-9 w-44 text-left text-xs font-semibold"><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="unassigned">Sin asignar</SelectItem>{users.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
                                             {user.full_name || user.email}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+                                        </SelectItem>
+                                    ))}</SelectContent>
+                                </Select>
                             </div>
                         ) : (
                             item.assignedUserId && (

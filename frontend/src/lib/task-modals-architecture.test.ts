@@ -27,7 +27,9 @@ test("task dialogs share glass chrome and keep compact checklist controls", () =
     assert.match(createModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(templateModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(requestReview, /taskDialogFooterClass|taskDialogChrome/);
-    assert.match(checklistEditor, /appearance-none/);
+    assert.match(checklistEditor, /from "@\/components\/ui\/select"/);
+    assert.match(checklistEditor, /<SelectTrigger aria-label="Asignar todos los pasos"/);
+    assert.doesNotMatch(checklistEditor, /<select|appearance-none|ChevronDown/);
     assert.doesNotMatch(checklistEditor, /UserRound/);
     assert.match(globals, /dialog-compact-control/);
     assert.match(globals, /dialog-glass/);
