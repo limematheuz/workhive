@@ -3,7 +3,7 @@
 import { ArrowRightLeft, Loader2, ShieldCheck, Users, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DocumentFormSelect } from "@/components/billing/DocumentFormControls";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { useState } from "react";
@@ -105,16 +105,13 @@ export function ActiveCollaboratorsPanel({
                     <>
                         {collaborations.length > 1 && (
                             <div className="flex justify-end">
-                                <DocumentFormSelect
-                                    aria-label={dict.collaborations.relationship}
+                                <Select
                                     value={partnerTypeFilter}
-                                    onChange={(event) => setPartnerTypeFilter(event.target.value as PartnerTypeFilter)}
-                                    className="h-10 w-auto min-w-48 py-0"
+                                    onValueChange={(value) => setPartnerTypeFilter(value as PartnerTypeFilter)}
                                 >
-                                    <option value="all">{dict.collaborations.all}</option>
-                                    <option value="service_provider">{dict.collaborations.service_provider}</option>
-                                    <option value="property_manager">{dict.collaborations.property_manager}</option>
-                                </DocumentFormSelect>
+                                    <SelectTrigger aria-label={dict.collaborations.relationship} className="h-10 w-auto min-w-48 py-0"><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="all">{dict.collaborations.all}</SelectItem><SelectItem value="service_provider">{dict.collaborations.service_provider}</SelectItem><SelectItem value="property_manager">{dict.collaborations.property_manager}</SelectItem></SelectContent>
+                                </Select>
                             </div>
                         )}
                         {visibleCollaborations.length === 0 ? (

@@ -6,10 +6,8 @@ import { Building2, Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-    DocumentFormSelect,
-    documentControlClassName,
-} from "@/components/billing/DocumentFormControls";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { documentControlClassName } from "@/components/billing/DocumentFormControls";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { useDictionary } from "@/lib/dictionary-context";
 
@@ -68,14 +66,13 @@ export function CompanyEmailInvitationForm({
                 </div>
                 <div className="min-w-0 space-y-1.5">
                     <Label htmlFor="company-invitation-role" className="text-xs text-[var(--text-muted)]">{dict.collaborations.relationship}</Label>
-                    <DocumentFormSelect
-                        id="company-invitation-role"
+                    <Select
                         value={roleType}
-                        onChange={(event) => onRoleTypeChange(event.target.value as typeof roleType)}
+                        onValueChange={(value) => onRoleTypeChange(value as typeof roleType)}
                     >
-                        <option value="service_provider">{dict.collaborations.service_provider}</option>
-                        <option value="property_manager">{dict.collaborations.property_manager}</option>
-                    </DocumentFormSelect>
+                        <SelectTrigger id="company-invitation-role" className={documentControlClassName}><SelectValue /></SelectTrigger>
+                        <SelectContent><SelectItem value="service_provider">{dict.collaborations.service_provider}</SelectItem><SelectItem value="property_manager">{dict.collaborations.property_manager}</SelectItem></SelectContent>
+                    </Select>
                 </div>
                 <Button type="submit" disabled={sending || loading || !email.trim()} className={PAGE_ACTION_BUTTON_PRIMARY}>
                     {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building2 className="h-4 w-4" />}

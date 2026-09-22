@@ -41,7 +41,9 @@ test("organization separates internal people, external access, and partner compa
     assert.doesNotMatch(sidebar, /\/dashboard\/users/);
     assert.doesNotMatch(sidebar, /Equipo y empresa/);
     assert.match(workerDialog, /Input/);
-    assert.match(workerDialog, /DocumentFormSelect/);
+    assert.match(workerDialog, /from "@\/components\/ui\/select"/);
+    assert.match(workerDialog, /<SelectTrigger/);
+    assert.doesNotMatch(workerDialog, /DocumentFormSelect|<select/);
     assert.match(en, /"collaborations"/);
     assert.match(es, /"collaborations"/);
     assert.match(service, /inviteCompanyByEmail/);

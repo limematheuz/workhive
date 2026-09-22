@@ -7,7 +7,6 @@ import { TaxRateSelect } from "@/components/billing/BillingSelectors";
 import { DocumentFormDialog } from "@/components/billing/DocumentFormDialog";
 import {
     DocumentFormInput,
-    DocumentFormSelect,
     DocumentFormTextarea,
     documentControlClassName,
 } from "@/components/billing/DocumentFormControls";
@@ -16,6 +15,7 @@ import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     calculateExpenseTaxAmount,
@@ -66,6 +66,8 @@ export function ExpenseFormDialog({
     const calculatedTotal = baseAmount + calculatedTaxAmount;
     const operationalScope = form.operational_scope ?? "none";
     const hasOperationalScope = operationalScope !== "none";
+    const missingOperationalTarget = (operationalScope === "contract" && !form.service_contract_id)
+        || (operationalScope === "work_order" && !form.work_order_id);
 
     const selectOperationalScope = (value: string) => setForm({
         ...form,
@@ -128,7 +130,7 @@ export function ExpenseFormDialog({
             submitLabel={editing ? text.save_changes : text.add_expense}
             submittingLabel={dict.quotes?.saving || "Guardando..."}
             submitting={saving}
-            submitDisabled={saving}
+            submitDisabled={saving || missingOperationalTarget}
             onCancel={() => onOpenChange(false)}
             sidebar={sidebar}
             contentClassName="sm:max-w-[min(56rem,calc(100vw-2rem))]"
@@ -179,33 +181,30 @@ export function ExpenseFormDialog({
                 <div className="flex w-full min-w-0 flex-col gap-4">
                     <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2">
                         <DocumentFormField id="expense-category" label={text.category}>
-                            <DocumentFormSelect
-                                id="expense-category"
+                            <Select
                                 value={form.category}
-                                onChange={(event) => setForm({ ...form, category: event.target.value })}
-                                aria-label={text.category}
+                                onValueChange={(value) => setForm({ ...form, category: value })}
                             >
-                                {CATEGORY_OPTIONS.map((category) => (
-                                    <option key={category} value={category}>
+                                <SelectTrigger id="expense-category" aria-label={text.category} className={documentControlClassName}><SelectValue /></SelectTrigger>
+                                <SelectContent>{CATEGORY_OPTIONS.map((category) => (
+                                    <SelectItem key={category} value={category}>
                                         {text.categories[category as keyof typeof text.categories] || category}
-                                    </option>
-                                ))}
-                            </DocumentFormSelect>
+                                    </SelectItem>
+                                ))}</SelectContent>
+                            </Select>
                         </DocumentFormField>
                         <DocumentFormField id="expense-payment" label={text.payment_method}>
-                            <DocumentFormSelect
-                                id="expense-payment"
-                                value={form.payment_method}
-                                onChange={(event) => setForm({ ...form, payment_method: event.target.value })}
-                                aria-label={text.payment_method}
+                            <Select
+                                value={form.payment_method || "none"}
+                                onValueChange={(value) => setForm({ ...form, payment_method: value === "none" ? "" : value })}
                             >
-                                <option value="">{text.payment_method_placeholder}</option>
-                                {PAYMENT_METHOD_OPTIONS.map((method) => (
-                                    <option key={method} value={method}>
+                                <SelectTrigger id="expense-payment" aria-label={text.payment_method} className={documentControlClassName}><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="none">{text.payment_method_placeholder}</SelectItem>{PAYMENT_METHOD_OPTIONS.map((method) => (
+                                    <SelectItem key={method} value={method}>
                                         {text.payment_methods[method as keyof typeof text.payment_methods] || method}
-                                    </option>
-                                ))}
-                            </DocumentFormSelect>
+                                    </SelectItem>
+                                ))}</SelectContent>
+                            </Select>
                         </DocumentFormField>
                     </div>
                     <DocumentFormField
@@ -213,72 +212,59 @@ export function ExpenseFormDialog({
                         label={text.operational_assignment}
                         hint={text.operational_assignment_hint}
                     >
-                        <DocumentFormSelect
-                            id="expense-operational-scope"
+                        <Select
                             value={operationalScope}
-                            onChange={(event) => selectOperationalScope(event.target.value)}
-                            aria-label={text.operational_assignment}
+                            onValueChange={selectOperationalScope}
                         >
-                            <option value="none">{text.operational_assignment_none}</option>
-                            <option value="contract">{text.operational_assignment_contract}</option>
-                            <option value="work_order">{text.operational_assignment_work_order}</option>
-                        </DocumentFormSelect>
+                            <SelectTrigger id="expense-operational-scope" aria-label={text.operational_assignment} className={documentControlClassName}><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="none">{text.operational_assignment_none}</SelectItem><SelectItem value="contract">{text.operational_assignment_contract}</SelectItem><SelectItem value="work_order">{text.operational_assignment_work_order}</SelectItem></SelectContent>
+                        </Select>
                     </DocumentFormField>
                     {operationalScope === "contract" && <DocumentFormField
                         id="expense-service-contract"
                         label={text.operational_assignment_contract}
                     >
-                        <DocumentFormSelect
-                            id="expense-service-contract"
-                            value={form.service_contract_id ?? ""}
-                            onChange={(event) => setForm({ ...form, service_contract_id: event.target.value })}
-                            aria-label={text.operational_assignment_contract}
-                            required
+                        <Select
+                            value={form.service_contract_id ? String(form.service_contract_id) : "none"}
+                            onValueChange={(value) => setForm({ ...form, service_contract_id: value === "none" ? "" : value })}
                         >
-                            <option value="">{text.operational_assignment_select_contract}</option>
-                            {contracts.map((contract) => (
-                                <option key={contract.id} value={contract.id}>
+                            <SelectTrigger id="expense-service-contract" aria-label={text.operational_assignment_contract} aria-required="true" className={documentControlClassName}><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="none">{text.operational_assignment_select_contract}</SelectItem>{contracts.map((contract) => (
+                                <SelectItem key={contract.id} value={String(contract.id)}>
                                     {contract.contract_number} · {contract.title}
-                                </option>
-                            ))}
-                        </DocumentFormSelect>
+                                </SelectItem>
+                            ))}</SelectContent>
+                        </Select>
                     </DocumentFormField>}
                     {operationalScope === "work_order" && <DocumentFormField
                         id="expense-work-order"
                         label={text.operational_assignment_work_order}
                     >
-                        <DocumentFormSelect
-                            id="expense-work-order"
-                            value={form.work_order_id ?? ""}
-                            onChange={(event) => setForm({ ...form, work_order_id: event.target.value })}
-                            aria-label={text.operational_assignment_work_order}
-                            required
+                        <Select
+                            value={form.work_order_id ? String(form.work_order_id) : "none"}
+                            onValueChange={(value) => setForm({ ...form, work_order_id: value === "none" ? "" : value })}
                         >
-                            <option value="">{text.operational_assignment_select_work_order}</option>
-                            {workOrders.map((workOrder) => (
-                                <option key={workOrder.id} value={workOrder.id}>{workOrder.title}</option>
-                            ))}
-                        </DocumentFormSelect>
+                            <SelectTrigger id="expense-work-order" aria-label={text.operational_assignment_work_order} aria-required="true" className={documentControlClassName}><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="none">{text.operational_assignment_select_work_order}</SelectItem>{workOrders.map((workOrder) => <SelectItem key={workOrder.id} value={String(workOrder.id)}>{workOrder.title}</SelectItem>)}</SelectContent>
+                        </Select>
                     </DocumentFormField>}
                     <DocumentFormField
                         id="expense-client"
                         label={text.client_assignment}
                         hint={hasOperationalScope ? text.operational_assignment_client_locked : text.client_assignment_hint}
                     >
-                        <DocumentFormSelect
-                            id="expense-client"
-                            value={form.client_id}
-                            onChange={(event) => setForm({ ...form, client_id: event.target.value })}
-                            aria-label={text.client_assignment}
+                        <Select
+                            value={form.client_id || "none"}
+                            onValueChange={(value) => setForm({ ...form, client_id: value === "none" ? "" : value })}
                             disabled={hasOperationalScope}
                         >
-                            <option value="">{text.client_assignment_none}</option>
-                            {clients.map((client) => (
-                                <option key={client.id} value={client.id}>
+                            <SelectTrigger id="expense-client" aria-label={text.client_assignment} className={documentControlClassName}><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="none">{text.client_assignment_none}</SelectItem>{clients.map((client) => (
+                                <SelectItem key={client.id} value={String(client.id)}>
                                     {client.name}{client.is_active ? "" : ` (${text.client_inactive})`}
-                                </option>
-                            ))}
-                        </DocumentFormSelect>
+                                </SelectItem>
+                            ))}</SelectContent>
+                        </Select>
                     </DocumentFormField>
                     <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2">
                         <DocumentFormField id="expense-base" label={text.base_amount}>

@@ -4,7 +4,6 @@ import type { ComponentProps } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { formControlSurfaceClassName } from "@/components/ui/control-styles";
 import { cn } from "@/lib/utils";
 
 /** Dialog-friendly control sizing; global dialog CSS still supplies surface colors. */
@@ -16,19 +15,6 @@ export function DocumentFormInput({
     ...props
 }: ComponentProps<typeof Input>) {
     return <Input className={cn(documentControlClassName, className)} {...props} />;
-}
-
-export function DocumentFormSelect({
-    className,
-    ...props
-}: ComponentProps<"select">) {
-    return (
-        <select
-            data-slot="select"
-            className={cn(formControlSurfaceClassName, documentControlClassName, "appearance-auto", className)}
-            {...props}
-        />
-    );
 }
 
 export function DocumentFormTextarea({

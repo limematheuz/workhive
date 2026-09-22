@@ -3,10 +3,7 @@
 import { startTransition, useEffect, useState } from "react";
 import { CheckCircle2, Loader2, UserPlus } from "lucide-react";
 
-import {
-    DocumentFormSelect,
-    documentControlClassName,
-} from "@/components/billing/DocumentFormControls";
+import { documentControlClassName } from "@/components/billing/DocumentFormControls";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -17,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type { Role } from "@/services/role.service";
@@ -172,18 +170,13 @@ export function UserCreateDialog({
                         </div>
                         {showRoleSelector && <div className="space-y-2">
                             <Label htmlFor="cRoleId" className="text-[var(--text-main)]">{labels.role}</Label>
-                            <DocumentFormSelect
-                                id="cRoleId"
-                                aria-label={labels.role}
+                            <Select
                                 value={form.roleId}
-                                required
-                                onChange={(e) => setForm((current) => ({ ...current, roleId: e.target.value }))}
-                                className={documentControlClassName}
+                                onValueChange={(value) => setForm((current) => ({ ...current, roleId: value }))}
                             >
-                                {roles.map((r) => (
-                                    <option key={r.id} value={r.id}>{getRoleText(r.name, roleLabels)}</option>
-                                ))}
-                            </DocumentFormSelect>
+                                <SelectTrigger id="cRoleId" aria-label={labels.role} aria-required="true" className={documentControlClassName}><SelectValue placeholder={labels.role} /></SelectTrigger>
+                                <SelectContent>{roles.map((r) => <SelectItem key={r.id} value={String(r.id)}>{getRoleText(r.name, roleLabels)}</SelectItem>)}</SelectContent>
+                            </Select>
                         </div>}
                     </div>
 

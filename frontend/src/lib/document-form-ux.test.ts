@@ -134,6 +134,7 @@ test("invoice creation composes editable controls from local shadcn primitives",
     assert.match(additionalInfo, /dialog-compact-control/);
     assert.match(documentControls, /from "@\/components\/ui\/textarea"/);
     assert.doesNotMatch(documentControls, /<textarea\b/);
+    assert.doesNotMatch(documentControls, /DocumentFormSelect|<select\b/);
     assert.match(source("../components/billing/BillingPartyCard.tsx"), /partyInputClassName/);
     assert.match(source("../components/billing/BillingPartyCard.tsx"), /from "@\/components\/ui\/button"/);
     assert.match(source("../components/billing/BillingPartyCard.tsx"), /from "@\/components\/ui\/label"/);
@@ -302,6 +303,10 @@ test("expense create and edit share DocumentFormDialog shell with fixed footer a
     assert.match(expenseForm, /DocumentFormSection/);
     assert.match(expenseForm, /DocumentFormField/);
     assert.match(expenseForm, /DocumentFormInput/);
+    assert.match(expenseForm, /from "@\/components\/ui\/select"/);
+    assert.match(expenseForm, /<SelectTrigger/);
+    assert.doesNotMatch(expenseForm, /DocumentFormSelect|<select\b/);
+    assert.match(expenseForm, /missingOperationalTarget/);
     assert.match(expenseForm, /from "@\/components\/ui\/checkbox"/);
     assert.match(expenseForm, /footerStart=\{footerExtra\}/);
     assert.match(expenseForm, /keep_adding/);
