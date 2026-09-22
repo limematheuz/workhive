@@ -36,11 +36,11 @@ const dateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
 });
 
 function DateTimeText({ value }: { value: string }) {
-    const [formattedValue, setFormattedValue] = React.useState<string | null>(null);
-
-    React.useEffect(() => {
-        setFormattedValue(dateTimeFormatter.format(new Date(value)));
-    }, [value]);
+    const formattedValue = React.useSyncExternalStore(
+        () => () => {},
+        () => dateTimeFormatter.format(new Date(value)),
+        () => null,
+    );
 
     return <>{formattedValue ?? "…"}</>;
 }

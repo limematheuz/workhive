@@ -26,7 +26,7 @@ type ClientPortalAccessTabProps = {
 function AccessStatus({ status }: { status: string }) {
     const active = status === "active";
     const pending = status === "pending";
-    return <Badge className={active ? "border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-700" : pending ? "border border-accent/20 bg-accent/10 text-[10px] font-semibold uppercase tracking-wide text-accent" : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"}>{status}</Badge>;
+    return <Badge className={active ? "border border-[var(--status-active-border)] bg-[var(--status-active-bg)] text-[10px] font-semibold uppercase tracking-wide text-[var(--status-active-text)]" : pending ? "border border-accent/20 bg-accent/10 text-[10px] font-semibold uppercase tracking-wide text-accent" : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"}>{status}</Badge>;
 }
 
 export function ClientPortalAccessTab({ clientId, clientName }: ClientPortalAccessTabProps) {
@@ -52,7 +52,10 @@ export function ClientPortalAccessTab({ clientId, clientName }: ClientPortalAcce
         }
     }, [clientId]);
 
-    useEffect(() => { void load(); }, [load]);
+    useEffect(() => {
+        const timer = window.setTimeout(() => void load(), 0);
+        return () => window.clearTimeout(timer);
+    }, [load]);
 
     const invite = async () => {
         const normalizedEmail = email.trim();
