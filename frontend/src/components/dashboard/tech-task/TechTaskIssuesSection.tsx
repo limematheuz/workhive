@@ -5,6 +5,10 @@ import Image from "next/image";
 import { ShieldAlert, ChevronUp, ChevronDown, Plus, X, Camera } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useDictionary } from "@/lib/dictionary-context";
 
 interface IssueElement {
@@ -60,7 +64,7 @@ export function TechTaskIssuesSection({
                 className="flex w-full cursor-pointer items-center justify-between border-none px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
             >
                 <div className="flex items-center gap-3">
-                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]">
                         <ShieldAlert className="h-4 w-4" />
                     </span>
                     <span className="text-xs font-semibold text-[var(--text-main)]">
@@ -120,10 +124,10 @@ export function TechTaskIssuesSection({
                                                 "py-2 px-1 text-[10px] font-black uppercase rounded-xl border text-center ui-motion cursor-pointer",
                                                 newIssueType === type
                                                     ? type === "mantenimiento"
-                                                        ? "bg-red-500/10 border-red-500/30 text-red-600"
+                                                        ? "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)]"
                                                         : type === "limpieza"
                                                         ? "bg-accent/10 border-accent/30 text-accent"
-                                                        : "bg-purple-500/10 border-purple-500/30 text-purple-600"
+                                                        : "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]"
                                                     : "bg-[var(--bg-primary)]/40 border-[var(--border-color)] text-[var(--text-muted)] hover:bg-[var(--bg-primary)]"
                                             )}
                                         >
@@ -140,51 +144,54 @@ export function TechTaskIssuesSection({
 
                             {/* Element selector */}
                             <div className="space-y-1">
-                                <label className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider block">
+                                <Label className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider">
                                     {dict.tech.issues_select_element}
-                                </label>
-                                <select
+                                </Label>
+                                <Select
                                     value={newIssueElement}
-                                    onChange={(e) => setNewIssueElement(e.target.value)}
-                                    aria-label={dict.tech.issues_select_element}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent transition-colors"
+                                    onValueChange={setNewIssueElement}
                                 >
+                                    <SelectTrigger aria-label={dict.tech.issues_select_element} className="h-10 text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
                                     {issueElements.map((el) => (
-                                        <option key={el.value} value={el.value}>
+                                        <SelectItem key={el.value} value={el.value}>
                                             {el.label}
-                                        </option>
+                                        </SelectItem>
                                     ))}
-                                </select>
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             {/* Title */}
                             <div className="space-y-1">
-                                <label htmlFor="tech-issue-title" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider block">
+                                <Label htmlFor="tech-issue-title" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider">
                                     {dict.tech.issues_title_label}
-                                </label>
-                                <input
+                                </Label>
+                                <Input
                                     id="tech-issue-title"
                                     type="text"
                                     value={newIssueTitle}
                                     onChange={(e) => setNewIssueTitle(e.target.value)}
                                     placeholder={dict.tech?.issues_title_placeholder || "e.g. Faucet leaking"}
                                     required
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent transition-colors"
+                                    className="h-9 text-xs"
                                 />
                             </div>
 
                             {/* Description */}
                             <div className="space-y-1">
-                                <label htmlFor="tech-issue-description" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider block">
+                                <Label htmlFor="tech-issue-description" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider">
                                     {dict.tech.issues_desc_label}
-                                </label>
-                                <textarea
+                                </Label>
+                                <Textarea
                                     id="tech-issue-description"
                                     value={newIssueDescription}
                                     onChange={(e) => setNewIssueDescription(e.target.value)}
                                     placeholder={dict.tech?.issues_desc_placeholder || "Provide details about the issue..."}
                                     rows={3}
-                                    className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2.5 text-xs outline-none focus:border-accent transition-colors resize-none"
+                                    className="min-h-20 resize-none text-xs"
                                 />
                             </div>
 
@@ -197,7 +204,7 @@ export function TechTaskIssuesSection({
                                     <label className="surface-control-btn flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-colors text-xs font-semibold">
                                         <Camera className="w-4 h-4 text-accent" />
                                         <span>{dict.tech?.issues_photo_btn || "Take photo / Attach"}</span>
-                                        <input
+                                        <Input
                                             type="file"
                                             accept="image/*"
                                             onChange={onFileChange}
@@ -205,7 +212,7 @@ export function TechTaskIssuesSection({
                                         />
                                     </label>
                                     {newIssuePhoto && (
-                                        <div className="relative w-12 h-12 rounded-lg border border-[var(--border-soft)] overflow-hidden bg-black/5">
+                                        <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-[var(--border-soft)] bg-[var(--bg-tertiary)]">
                                             <Image
                                                 src={newIssuePhoto}
                                                 alt=""
@@ -218,7 +225,7 @@ export function TechTaskIssuesSection({
                                                 type="button"
                                                 onClick={() => setNewIssuePhoto("")}
                                                 aria-label={dict.tech.btn_delete}
-                                                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 border-none cursor-pointer flex items-center justify-center w-4 h-4"
+                                                className="absolute -right-1 -top-1 flex size-4 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--btn-cancel-hover-bg)] p-0.5 text-[var(--btn-cancel-hover-text)]"
                                             >
                                                 <X className="w-3 h-3" />
                                             </button>

@@ -3,6 +3,7 @@
 import React from "react";
 import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Dialog,
     DialogContent,
@@ -43,13 +44,13 @@ export function TechTaskCommentsDialog({
                 </DialogHeader>
 
                 <form onSubmit={onAddComment} className="mt-4 flex flex-col gap-3">
-                    <textarea
+                    <Textarea
                         value={newCommentText}
                         onChange={(e) => setNewCommentText(e.target.value)}
                         placeholder={dict.tech.comments_placeholder}
                         required
                         rows={3}
-                        className="w-full resize-none rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
+                        className="min-h-20 resize-none text-xs"
                     />
                     <Button
                         type="submit"

@@ -3,6 +3,9 @@
 import React from "react";
 import { MapPin, ChevronUp, ChevronDown, X, Bed, Bath, ChefHat, Sun, Car } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Location } from "@/types/location";
 import { PropertyFeatures } from "./utils";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -17,6 +20,114 @@ interface TechTaskPropertySectionProps {
     setIsEditingFeatures: (editing: boolean) => void;
     canEditLocationDetails: boolean;
     onSaveFeatures: (features: PropertyFeatures) => Promise<void>;
+}
+
+type PropertyFeaturesDraft = {
+    rooms: string;
+    bathrooms: string;
+    kitchens: string;
+    hasTerrace: "true" | "false";
+    hasGarage: "true" | "false";
+};
+
+function TechTaskPropertyFeaturesEditor({
+    dict,
+    features,
+    onCancel,
+    onSaveFeatures,
+}: {
+    dict: ReturnType<typeof useDictionary>["dict"];
+    features: PropertyFeatures;
+    onCancel: () => void;
+    onSaveFeatures: (features: PropertyFeatures) => Promise<void>;
+}) {
+    const [draft, setDraft] = React.useState<PropertyFeaturesDraft>(() => ({
+        rooms: String(features.rooms),
+        bathrooms: String(features.bathrooms),
+        kitchens: String(features.kitchens),
+        hasTerrace: String(features.hasTerrace) as "true" | "false",
+        hasGarage: String(features.hasGarage) as "true" | "false",
+    }));
+
+    const save = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        await onSaveFeatures({
+            rooms: Math.max(0, Number(draft.rooms) || 0),
+            bathrooms: Math.max(0, Number(draft.bathrooms) || 0),
+            kitchens: Math.max(0, Number(draft.kitchens) || 0),
+            hasTerrace: draft.hasTerrace === "true",
+            hasGarage: draft.hasGarage === "true",
+        });
+    };
+
+    return (
+        <form data-tech-features-editor onSubmit={save} className="space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 text-xs shadow-sm">
+            <div className="flex items-center justify-between border-b border-[var(--border-soft)] pb-2">
+                <h4 className="text-2xs font-black uppercase text-[var(--text-main)]">
+                    {dict.tech.property_edit}
+                </h4>
+                <Button type="button" variant="ghost" size="icon" onClick={onCancel} aria-label={dict.tech.btn_cancel}>
+                    <X className="size-4" />
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+                <PropertyNumberInput id="tech-rooms" label={dict.tech.property_rooms} value={draft.rooms} onValueChange={(rooms) => setDraft((current) => ({ ...current, rooms }))} disabled />
+                <PropertyNumberInput id="tech-bathrooms" label={dict.tech.property_bathrooms} value={draft.bathrooms} onValueChange={(bathrooms) => setDraft((current) => ({ ...current, bathrooms }))} required />
+                <PropertyNumberInput id="tech-kitchens" label={dict.tech.property_kitchens} value={draft.kitchens} onValueChange={(kitchens) => setDraft((current) => ({ ...current, kitchens }))} required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <PropertyBooleanSelect id="tech-terrace" label={dict.tech.property_terrace} value={draft.hasTerrace} onValueChange={(hasTerrace) => setDraft((current) => ({ ...current, hasTerrace }))} yesLabel={dict.tech.yes_label} noLabel={dict.tech.no_label} />
+                <PropertyBooleanSelect id="tech-garage" label={dict.tech.property_garage} value={draft.hasGarage} onValueChange={(hasGarage) => setDraft((current) => ({ ...current, hasGarage }))} yesLabel={dict.tech.yes_label} noLabel={dict.tech.no_label} />
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-[var(--border-soft)] pt-2">
+                <Button type="button" variant="outline" onClick={onCancel} className="h-9 px-4 text-xs">
+                    {dict.tech.btn_cancel}
+                </Button>
+                <Button type="submit" className="h-9 px-4 text-xs">
+                    {dict.tech.btn_save}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
+function PropertyNumberInput({
+    id,
+    label,
+    value,
+    onValueChange,
+    disabled = false,
+    required = false,
+}: {
+    id: string;
+    label: string;
+    value: string;
+    onValueChange: (value: string) => void;
+    disabled?: boolean;
+    required?: boolean;
+}) {
+    return <div className="space-y-1"><Label htmlFor={id} className="text-[9px] font-black uppercase tracking-wider text-[var(--text-muted)]">{label}</Label><Input id={id} type="number" min={0} inputMode="numeric" value={value} onChange={(event) => onValueChange(event.target.value)} disabled={disabled} required={required} className="h-9 text-xs" /></div>;
+}
+
+function PropertyBooleanSelect({
+    id,
+    label,
+    value,
+    onValueChange,
+    yesLabel,
+    noLabel,
+}: {
+    id: string;
+    label: string;
+    value: "true" | "false";
+    onValueChange: (value: "true" | "false") => void;
+    yesLabel: string;
+    noLabel: string;
+}) {
+    return <div className="space-y-1"><Label htmlFor={id} className="text-[9px] font-black uppercase tracking-wider text-[var(--text-muted)]">{label}</Label><Select value={value} onValueChange={(next) => onValueChange(next as "true" | "false")}><SelectTrigger id={id} className="h-9 text-xs"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="true">{yesLabel}</SelectItem><SelectItem value="false">{noLabel}</SelectItem></SelectContent></Select></div>;
 }
 
 export function TechTaskPropertySection({
@@ -51,132 +162,13 @@ export function TechTaskPropertySection({
             {expanded && (
                 <div className="space-y-4 border-t border-[var(--border-soft)] px-3.5 py-3.5">
                     {isEditingFeatures ? (
-                        <div data-tech-features-editor className="bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-4 space-y-4 shadow-sm text-xs">
-                            <div className="flex justify-between items-center border-b border-[var(--border-soft)] pb-2">
-                                <h4 className="font-black uppercase text-[var(--text-main)] text-2xs">
-                                    {dict.tech.property_edit}
-                                </h4>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsEditingFeatures(false)}
-                                    aria-label={dict.tech.btn_cancel}
-                                    className="surface-control-btn p-1 rounded-full cursor-pointer flex items-center justify-center ui-motion"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1">
-                                    <label htmlFor="tech-rooms" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider">
-                                        {dict.tech.property_rooms}
-                                    </label>
-                                    <input
-                                        id="tech-rooms"
-                                        type="number"
-                                        name="rooms"
-                                        aria-label={dict.tech.property_rooms}
-                                        defaultValue={features.rooms}
-                                        min={0}
-                                        disabled
-                                        className="w-full cursor-not-allowed bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-muted)] rounded-xl px-3 py-2 text-xs opacity-70"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label htmlFor="tech-bathrooms" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider">
-                                        {dict.tech.property_bathrooms}
-                                    </label>
-                                    <input
-                                        id="tech-bathrooms"
-                                        type="number"
-                                        name="bathrooms"
-                                        aria-label={dict.tech.property_bathrooms}
-                                        defaultValue={features.bathrooms}
-                                        min={0}
-                                        required
-                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent"
-                                    />
-                                </div>
-                                <div className="space-y-1">
-                                    <label htmlFor="tech-kitchens" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider">
-                                        {dict.tech.property_kitchens}
-                                    </label>
-                                    <input
-                                        id="tech-kitchens"
-                                        type="number"
-                                        name="kitchens"
-                                        aria-label={dict.tech.property_kitchens}
-                                        defaultValue={features.kitchens}
-                                        min={0}
-                                        required
-                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label htmlFor="tech-terrace" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider block">
-                                        {dict.tech.property_terrace}
-                                    </label>
-                                    <select
-                                        id="tech-terrace"
-                                        name="hasTerrace"
-                                        aria-label={dict.tech.property_terrace}
-                                        defaultValue={features.hasTerrace ? "true" : "false"}
-                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent"
-                                    >
-                                        <option value="true">{dict.tech.yes_label}</option>
-                                        <option value="false">{dict.tech.no_label}</option>
-                                    </select>
-                                </div>
-                                <div className="space-y-1">
-                                    <label htmlFor="tech-garage" className="text-[9px] uppercase font-black text-[var(--text-muted)] tracking-wider block">
-                                        {dict.tech.property_garage}
-                                    </label>
-                                    <select
-                                        id="tech-garage"
-                                        name="hasGarage"
-                                        aria-label={dict.tech.property_garage}
-                                        defaultValue={features.hasGarage ? "true" : "false"}
-                                        className="w-full bg-[var(--bg-primary)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-2 text-xs outline-none focus:border-accent"
-                                    >
-                                        <option value="true">{dict.tech.yes_label}</option>
-                                        <option value="false">{dict.tech.no_label}</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-soft)]">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => setIsEditingFeatures(false)}
-                                    className="text-xs h-9 rounded-xl px-4 border border-[var(--border-color)]"
-                                >
-                                    {dict.tech.btn_cancel}
-                                </Button>
-                                <Button
-                                    type="button"
-                                    onClick={(e) => {
-                                        const root = (e.currentTarget as HTMLElement).closest("[data-tech-features-editor]");
-                                        if (!root) return;
-                                        const get = (name: string) =>
-                                            (root.querySelector(`[name="${name}"]`) as HTMLInputElement | HTMLSelectElement | null)?.value;
-                                        void onSaveFeatures({
-                                            rooms: Number(get("rooms")),
-                                            bathrooms: Number(get("bathrooms")),
-                                            kitchens: Number(get("kitchens")),
-                                            hasTerrace: get("hasTerrace") === "true",
-                                            hasGarage: get("hasGarage") === "true",
-                                        });
-                                    }}
-                                    className="bg-accent hover:bg-accent-light text-white font-bold text-xs h-9 rounded-xl px-4 border-none cursor-pointer"
-                                >
-                                    {dict.tech.btn_save}
-                                </Button>
-                            </div>
-                        </div>
+                        <TechTaskPropertyFeaturesEditor
+                            key={JSON.stringify(features)}
+                            dict={dict}
+                            features={features}
+                            onCancel={() => setIsEditingFeatures(false)}
+                            onSaveFeatures={onSaveFeatures}
+                        />
                     ) : (
                         <div className="space-y-4">
                             {/* Features grid */}

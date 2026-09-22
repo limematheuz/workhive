@@ -57,7 +57,7 @@ interface UseTechTaskChecklistReturn {
     persistChecklistNote: (itemId: string, note: string) => Promise<void>;
     handleChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     handleResetChecklist: () => Promise<void>;
-    handleAddChecklistItem: (e: React.FormEvent) => Promise<void>;
+    handleAddChecklistItem: (question: string, assigneeId: number) => Promise<boolean>;
     getCategoryForItem: (question: string) => "General" | "Baño" | "Cocina";
 }
 
@@ -417,17 +417,12 @@ export function useTechTaskChecklist({
         }
     };
 
-    const handleAddChecklistItem = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const form = e.currentTarget as HTMLFormElement;
-        const formData = new FormData(form);
-        const question = formData.get("question") as string;
-        const assigneeId = Number(formData.get("assignee_id"));
+    const handleAddChecklistItem = async (question: string, assigneeId: number): Promise<boolean> => {
         const assignee = availableAssignees.find(user => user.id === assigneeId);
-        if (!question.trim()) return;
+        if (!question.trim()) return false;
         if (!assignee) {
             toast.error("Selecciona quién realizará este trabajo extra.");
-            return;
+            return false;
         }
 
         try {
@@ -438,11 +433,12 @@ export function useTechTaskChecklist({
             await TaskService.updateTaskItem(task.id, { description: newDescription });
             toast.success(dict.tech.toast_checklist_item_added || "Elemento añadido");
             onStatusUpdate();
+            return true;
         } catch (error) {
             console.error("Error adding checklist item in backend", error);
             toast.error("Error al añadir");
+            return false;
         }
-        form.reset();
     };
 
     return {

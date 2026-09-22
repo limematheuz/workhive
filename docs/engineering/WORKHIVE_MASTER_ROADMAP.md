@@ -66,8 +66,9 @@ como WorkHive Core solo cuando el caso real las exige.
   al umbral antiguo de más de cuatro.
 - 🟡 Las superficies nuevas y modificadas usan exclusivamente tokens semánticos
   de `globals.css` para estado, prioridad y alerta, además de los componentes
-  locales basados en shadcn/ui. El margen operativo ya se ajustó a esta regla;
-  queda auditar y corregir los controles heredados fuera de ese corte.
+  locales basados en shadcn/ui. El margen operativo y las pantallas técnicas
+  de checklist, incidencias y propiedades ya se ajustaron a esta regla; queda
+  auditar y corregir los controles heredados fuera de esos cortes.
 - 🟡 Fechas: todos los formularios usan los `DatePicker` y `DateTimePicker`
   compartidos de Facturación; una regresión impide reintroducir controles
   nativos de fecha o fecha/hora. Los límites mínimos/máximos y el borrado
@@ -86,10 +87,15 @@ como WorkHive Core solo cuando el caso real las exige.
   los controles de configuración de Facturae, también reutilizan las
   primitivas canónicas; el editor de checklist de tareas también las usa para
   asignaciones masivas e individuales y la creación de tareas para checklist,
-  plantilla, asignación y precio. Se preservan valores vacíos, filtros,
-  validaciones y permisos. Queda auditar y sustituir los controles nativos
-  restantes. Los controles de solo hora se mantienen separados porque no
-  representan un calendario.
+  plantilla, asignación y precio. El espacio técnico de checklist, incidencias,
+  comentarios, adjuntos y propiedades ya usa las primitivas canónicas, sin
+  lecturas directas del DOM al guardar propiedades. Ya no quedan `<select>`
+  nativos en código de producto; los selectores de archivo se mantienen como
+  una capacidad obligatoria del navegador, envueltos por `Input`. Se preservan
+  valores vacíos, filtros, validaciones y permisos. Queda auditar y sustituir
+  los `input` y `textarea` visuales heredados fuera de esos cortes. Los
+  controles de solo hora se mantienen separados porque no representan un
+  calendario.
 - 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. El componente
