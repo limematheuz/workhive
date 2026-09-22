@@ -81,10 +81,11 @@ como WorkHive Core solo cuando el caso real las exige.
   validaciones y permisos. Queda auditar y sustituir los controles nativos
   restantes. Los controles de solo hora se mantienen separados porque no
   representan un calendario.
-- ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
+- 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
-  rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
-  validación visual final.
+  rutas, filtros de rol y entitlements existentes se conservan. El componente
+  compartido y sus regresiones de navegación, capas móviles y portales están
+  validados localmente; falta la validación visual autenticada final.
 
 ### Planes, límites y seguridad comercial
 
