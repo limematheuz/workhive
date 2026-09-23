@@ -241,20 +241,23 @@ export function LocationTemplatesTab({
                                                 </label>
                                                 </div>
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                <button
+                                                <Button
                                                     type="button"
+                                                    size="xs"
                                                     onClick={() => handleUpdateTemplate(ht.template_task_id)}
-                                                    className="h-9 rounded-xl bg-accent px-3.5 py-1 text-xs font-bold text-white hover:bg-[var(--accent-light-color)] border-none cursor-pointer"
+                                                    className="h-9 px-3.5 py-1 text-xs font-bold"
                                                 >
                                                     {dict.locations?.form?.price_save || "Save"}
-                                                </button>
-                                                <button
+                                                </Button>
+                                                <Button
                                                     type="button"
+                                                    variant="cancel"
+                                                    size="xs"
                                                     onClick={() => setEditingTemplateId?.(null)}
-                                                    className="h-9 rounded-xl px-3 py-1 text-xs font-semibold text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] border-none cursor-pointer"
+                                                    className="h-9 px-3 py-1 text-xs font-semibold"
                                                 >
                                                     {dict.locations?.form?.price_cancel || "Cancel"}
-                                                </button>
+                                                </Button>
                                                 </div>
                                             </div>
                                         ) : (
@@ -263,7 +266,9 @@ export function LocationTemplatesTab({
                                                     {priceText}
                                                 </span>
                                                 {!readOnly && (
-                                                    <button type="button"
+                                                    <Button type="button"
+                                                        variant="link"
+                                                        size="xs"
                                                         onClick={() => {
                                                             setEditingTemplateId?.(ht.template_task_id);
                                                             setEditingTemplateValues({
@@ -273,26 +278,28 @@ export function LocationTemplatesTab({
                                                                 price: ht.custom_price?.toString() || "",
                                                             });
                                                         }}
-                                                        className="inline-flex items-center gap-1 text-[10px] text-accent hover:underline font-bold uppercase tracking-wider cursor-pointer"
+                                                        className="h-auto px-0 py-0 text-[10px] font-bold uppercase tracking-wider"
                                                     >
                                                         <Pencil className="h-3 w-3" />
                                                         {dict.locations?.form?.fixed_task_edit || "Edit fixed task"}
-                                                    </button>
+                                                    </Button>
                                                 )}
                                             </div>
                                         )}
                                     </div>
 
                                     {!readOnly && !isEditing && (
-                                        <button type="button"
+                                        <Button type="button"
+                                            variant="dangerSoft"
+                                            size="xs"
                                             onClick={() => setTemplateToUnlink(ht.template_task_id)}
-                                            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[var(--btn-cancel-border)] px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-bg)] ui-motion cursor-pointer self-start"
+                                            className="shrink-0 self-start px-2.5 py-2 text-[10px] font-bold uppercase tracking-wide"
                                             title={dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}
                                             aria-label={dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}
                                         >
                                             <Trash2 className="w-4 h-4" />
                                             <span>{dict.locations?.sheet?.unlink_tooltip || "Remove from this property"}</span>
-                                        </button>
+                                        </Button>
                                     )}
                                 </div>
                             );
