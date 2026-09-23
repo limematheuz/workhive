@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import type { PrivacyRequest } from "@/services/privacy.service";
 
 type Decision = "complete" | "reject";
@@ -114,11 +115,11 @@ export function PrivacyResolutionDialog({
                     <label htmlFor="privacy-resolution-notes" className="text-xs font-black uppercase tracking-[0.14em] text-[var(--text-muted)]">
                         {isSpanish ? "Mensaje para la persona" : "Message for the person"}
                     </label>
-                    <textarea
+                    <Textarea
                         id="privacy-resolution-notes"
                         value={notes}
                         onChange={(event) => onNotesChange(event.target.value)}
-                        className="min-h-28 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-tertiary)] p-3 text-sm outline-none ui-motion focus:border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-soft)]"
+                        className="min-h-28 w-full rounded-xl bg-[var(--bg-tertiary)] p-3 text-sm ui-motion focus:border-[var(--border-color)] focus:ring-2 focus:ring-[var(--border-soft)]"
                         placeholder={isSpanish ? "Ej.: Hemos verificado tu solicitud. Conservaremos únicamente los registros fiscales exigidos por ley." : "E.g. We verified your request. We will retain only legally required fiscal records."}
                     />
                 </div>

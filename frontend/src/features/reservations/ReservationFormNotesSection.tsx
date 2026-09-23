@@ -1,4 +1,5 @@
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 import type { ReservationFormState } from "./types";
@@ -23,7 +24,7 @@ export function ReservationFormNotesSection({
                     : dict.reservations?.form?.notes_internal ||
                       "Notas internas"}
             </Label>
-            <textarea
+            <Textarea
                 rows={3}
                 aria-label={
                     form.assignedUserId
@@ -41,7 +42,7 @@ export function ReservationFormNotesSection({
                         notes: event.target.value,
                     })
                 }
-                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] text-[var(--text-main)] px-3 py-2 rounded-xl outline-none text-sm font-medium focus:border-accent/50 resize-none ui-motion"
+                className="w-full resize-none rounded-xl bg-[var(--bg-tertiary)] px-3 py-2 text-sm font-medium text-[var(--text-main)] ui-motion focus:border-accent/50"
             />
             <p className="text-xs font-medium leading-relaxed text-[var(--text-muted)]">
                 {form.assignedUserId

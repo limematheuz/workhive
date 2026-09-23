@@ -3,6 +3,7 @@
 import type { Dictionary } from "@/lib/dictionary-context";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
     assignTaskChecklistItem,
     toggleTaskChecklistItem,
@@ -153,7 +154,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         <label htmlFor="task-edit-title" className={taskFormLabelClass}>
                             {dict.tasks?.dialog?.title_label || "Title"}
                         </label>
-                        <input
+                        <Input
                             id="task-edit-title"
                             value={editTitle}
                             onChange={(event) => setEditTitle(event.target.value)}
@@ -218,7 +219,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         onAssignAll={assignWorkerToAllItems}
                     />
                 ) : (
-                    <textarea
+                    <Textarea
                         id="task-edit-checklist"
                         value={editDescription}
                         onChange={(event) => setEditDescription(event.target.value)}
@@ -241,7 +242,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         <label htmlFor="task-edit-notes" className={taskFormLabelClass}>
                             {dict.tasks?.create_dialog?.internal_notes || "Internal notes"}
                         </label>
-                        <textarea
+                        <Textarea
                             id="task-edit-notes"
                             value={editNotes}
                             onChange={(event) => setEditNotes(event.target.value)}

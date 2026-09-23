@@ -1,6 +1,7 @@
 import { Camera, ChevronRight, FileText, MapPin, ShieldAlert, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatTaskReportDate } from "@/features/task-reports/task-report-format";
 import { getTaskReportCategory } from "@/features/task-reports/task-report-center";
 import type { TaskReport } from "@/services/task-report.service";
@@ -38,13 +39,12 @@ export function TaskReportCard({
                 }`}
             >
                 {selectionMode && (
-                    <input
-                        type="checkbox"
+                    <Checkbox
                         checked={selected}
-                        onChange={() => onToggleSelect(report.id)}
+                        onCheckedChange={() => onToggleSelect(report.id)}
                         onClick={event => event.stopPropagation()}
                         aria-label={heading}
-                        className="h-4 w-4 shrink-0 accent-[var(--brand-blue)]"
+                        className="h-4 w-4 shrink-0"
                     />
                 )}
                 <button

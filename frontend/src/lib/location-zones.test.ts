@@ -35,7 +35,9 @@ test("spaces are optional in configuration and task creation", () => {
     assert.doesNotMatch(spacesTab, /<select/);
     assert.match(taskZones, /Selecciona solo los espacios/);
     assert.match(taskZones, /Tareas sugeridas/);
-    assert.match(taskZones, /type="checkbox"/);
+    assert.match(taskZones, /from "@\/components\/ui\/checkbox"/);
+    assert.match(taskZones, /<Checkbox/);
+    assert.doesNotMatch(taskZones, /<input\b/);
     assert.match(taskZones, /selectedZoneIds/);
 });
 

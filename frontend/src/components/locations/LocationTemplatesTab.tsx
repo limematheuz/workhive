@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ListChecks, Loader2, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type {
@@ -108,14 +109,13 @@ export function LocationTemplatesTab({
                                     return (
                                         <div key={template.id} className="grid gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 sm:grid-cols-[minmax(0,1fr)_10rem] sm:items-center">
                                             <label htmlFor={`location-template-${template.id}`} className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                                                <input
+                                                <Checkbox
                                                     id={`location-template-${template.id}`}
-                                                    type="checkbox"
                                                     checked={selected}
-                                                    onChange={() => setSelectedGlobalTemplateIds(ids => selected
+                                                    onCheckedChange={() => setSelectedGlobalTemplateIds(ids => selected
                                                         ? ids.filter(id => id !== template.id)
                                                         : [...ids, template.id])}
-                                                    className="h-4 w-4 accent-accent"
+                                                    className="h-4 w-4"
                                                 />
                                                 <span className="min-w-0 flex-1">
                                                     <span className="block truncate text-sm font-bold text-[var(--text-main)]">{template.name}</span>
@@ -203,7 +203,7 @@ export function LocationTemplatesTab({
                                         )}
                                         {isEditing ? (
                                             <div className="space-y-2">
-                                                <input
+                                                <Input
                                                     value={editingTemplateValues.name}
                                                     onChange={event => setEditingTemplateValues(values => ({ ...values, name: event.target.value }))}
                                                     placeholder={tmpl?.name}
@@ -220,7 +220,7 @@ export function LocationTemplatesTab({
                                                 <div className="grid grid-cols-2 gap-2">
                                                 <label className="space-y-1">
                                                     <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Precio (€)</span>
-                                                    <input
+                                                    <Input
                                                         type="number"
                                                         step="0.01"
                                                         data-price-input
@@ -232,7 +232,7 @@ export function LocationTemplatesTab({
                                                 </label>
                                                 <label className="space-y-1">
                                                     <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">Unidad</span>
-                                                    <input
+                                                    <Input
                                                         value={editingTemplateValues.unit}
                                                         onChange={event => setEditingTemplateValues(values => ({ ...values, unit: event.target.value }))}
                                                         placeholder={tmpl?.unit || "servicio"}

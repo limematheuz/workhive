@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 22 de septiembre de 2026.
+Actualizado: 23 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -54,8 +54,9 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ### UI, accesibilidad y responsive
 
-- ✅ Componentes comunes: `Dialog`, `Button`, `Input`, `Select`, `Checkbox`,
-  `DatePicker`, `Table`, `Card`, `Pagination` y `PremiumTabs`.
+- ✅ Componentes comunes: `Dialog`, `Button`, `Input`, `Textarea`, `Select`,
+  `Checkbox`, `Switch`, `DatePicker`, `Table`, `Card`, `Pagination` y
+  `PremiumTabs`.
 - ✅ Diálogos con cabecera y pie translúcidos, sin blanco sólido.
 - ✅ Listas de negocio: tabla shadcn en escritorio y tarjetas shadcn en móvil.
 - ✅ Métricas: dos columnas en móvil; una tarjeta impar no se estira.
@@ -93,11 +94,16 @@ como WorkHive Core solo cuando el caso real las exige.
   nativos en código de producto; todos los selectores de archivo se mantienen
   como una capacidad obligatoria del navegador, envueltos por `Input`. Los
   formularios públicos de recuperación, contacto y aceptación del portal de
-  cliente también usan `Input`, `Textarea` y `Checkbox` compartidos. Se
-  preservan valores vacíos, filtros, validaciones y permisos. Queda auditar y
-  sustituir los `input` y `textarea` visuales heredados fuera de esos cortes. Los
-  controles de solo hora se mantienen separados porque no representan un
-  calendario.
+  cliente también usan `Input`, `Textarea` y `Checkbox` compartidos. El último
+  corte sustituye los campos heredados de calendario fiscal, correo de factura,
+  plantillas y espacios de ubicación, edición de tareas, reservas, privacidad,
+  informes técnicos y la integración de calendario; el interruptor de esta
+  última usa ahora `Switch`. Ya no quedan `<input>`, `<textarea>` ni `<select>`
+  visuales en código de producto fuera de las primitivas que los implementan.
+  Se preservan valores vacíos, filtros, validaciones y permisos. Los controles
+  de solo hora se mantienen separados porque no representan un calendario.
+  Validado localmente con regresiones; queda la revisión visual autenticada para
+  cerrar el punto.
 - 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. El componente

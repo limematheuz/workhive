@@ -25,6 +25,12 @@ test("fiscal calendar reuses dashboard navigation and surfaces official-date gui
     assert.match(page, /https:\/\/sede\.agenciatributaria\.gob\.es\/Sede\/calendario-contribuyente\.html/);
 });
 
+test("fiscal calendar uses the shared form controls for preferences", () => {
+    assert.match(page, /from "@\/components\/ui\/input"/);
+    assert.match(page, /<Input[\s\S]+inputMode="numeric"/);
+    assert.doesNotMatch(page, /<input\b/);
+});
+
 test("Facturae settings use shared checkbox and select controls", () => {
     assert.match(fiscalSettingsDialog, /from "@\/components\/ui\/checkbox"/);
     assert.match(fiscalSettingsDialog, /from "@\/components\/ui\/select"/);

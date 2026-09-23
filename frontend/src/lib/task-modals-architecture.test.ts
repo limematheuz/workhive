@@ -128,7 +128,23 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
     assert.match(fields, /title_label/);
     assert.match(fields, /onAssignAll/);
+    assert.match(fields, /from "@\/components\/ui\/input"/);
+    assert.match(fields, /from "@\/components\/ui\/textarea"/);
+    assert.doesNotMatch(fields, /<input\b|<textarea\b/);
     assert.doesNotMatch(fields, /calendarAssigneeName/);
+});
+
+test("task template and zone editors use shared form controls", () => {
+    const checklistSteps = read("../components/tasks/ChecklistStepsEditor.tsx");
+    const locationTemplates = read("../components/locations/LocationTemplatesTab.tsx");
+    const taskZones = read("../components/tasks/TaskCreateZonesSection.tsx");
+
+    for (const source of [checklistSteps, locationTemplates, taskZones]) {
+        assert.doesNotMatch(source, /<input\b|<textarea\b/);
+    }
+    assert.match(checklistSteps, /from "@\/components\/ui\/input"/);
+    assert.match(locationTemplates, /from "@\/components\/ui\/checkbox"/);
+    assert.match(taskZones, /from "@\/components\/ui\/checkbox"/);
 });
 
 test("tasks page forwards pricing state required by the task edit modal", () => {

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { MapPinned } from "lucide-react";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     getLocationZoneTypeLabel,
 } from "@/domain/locations/location-zone";
@@ -95,11 +96,10 @@ export function TaskCreateZonesSection({
                                 }`}
                             >
                                 <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                                    <input
-                                        type="checkbox"
+                                    <Checkbox
                                         checked={selected}
-                                        onChange={() => toggleZone(zone.id)}
-                                        className="h-4 w-4 accent-accent"
+                                        onCheckedChange={() => toggleZone(zone.id)}
+                                        className="h-4 w-4"
                                     />
                                 <span className="min-w-0">
                                     <span className="block truncate text-xs font-bold text-[var(--text-main)]">{zone.name}</span>
@@ -111,11 +111,10 @@ export function TaskCreateZonesSection({
                                         <p className="text-2xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">Tareas sugeridas</p>
                                         {zone.tasks.map((task) => task.id && (
                                             <label key={task.id} className="flex cursor-pointer items-center gap-2 text-xs text-[var(--text-main)]">
-                                                <input
-                                                    type="checkbox"
+                                                <Checkbox
                                                     checked={selectedSpaceTaskTemplateIdSet.has(task.id)}
-                                                    onChange={() => toggleSuggestedTask(zone.id, task.id as number)}
-                                                    className="h-3.5 w-3.5 accent-accent"
+                                                    onCheckedChange={() => toggleSuggestedTask(zone.id, task.id as number)}
+                                                    className="h-3.5 w-3.5"
                                                 />
                                                 <span className="min-w-0 flex-1 truncate">{task.title}</span>
                                                 {task.estimated_minutes && <span className="text-2xs text-[var(--text-muted)]">{task.estimated_minutes} min</span>}

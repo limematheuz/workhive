@@ -7,6 +7,7 @@ import { Building2, CalendarClock, FileText, MapPin, Pencil, Trash2, UserRound }
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { getTaskReportCategory, getTaskReportMediaHref } from "@/features/task-reports/task-report-center";
 import { formatTaskReportDate } from "@/features/task-reports/task-report-format";
 import {
@@ -235,11 +236,11 @@ function ReportEditForm({
                 <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
                     {copy.description_label}
                 </span>
-                <textarea
+                <Textarea
                     value={description}
                     onChange={event => setDescription(event.target.value)}
                     rows={4}
-                    className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                    className="w-full rounded-xl bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-main)] focus-visible:ring-2 focus-visible:ring-accent/40"
                 />
             </label>
             {error && <p className="text-sm text-[var(--btn-cancel-text)]">{error}</p>}
