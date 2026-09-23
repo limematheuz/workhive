@@ -38,6 +38,7 @@ test("report center reuses the application visual system and keeps details in a 
     assert.match(page, /layout="fit"/);
     assert.match(page, /paginateItems|TASK_REPORT_PAGE_SIZE/);
     assert.match(page, /components\/ui\/input/);
+    assert.match(page, /components\/ui\/button/);
     assert.match(page, /scrollbar-width:none/);
     assert.match(premiumTabs, /layout\?:\s*"scroll"\s*\|\s*"fit"/);
     assert.match(premiumTabs, /layout\s*=\s*"fit"/);
@@ -48,9 +49,12 @@ test("report center reuses the application visual system and keeps details in a 
     assert.match(premiumTabs, /overflow-hidden/);
     assert.match(reportCard, /components\/ui\/badge/);
     assert.match(reportCard, /components\/ui\/checkbox/);
+    assert.match(reportDialog, /components\/ui\/button/);
     assert.match(reportDialog, /components\/ui\/textarea/);
     assert.doesNotMatch(reportCard, /<input\b/);
     assert.doesNotMatch(reportDialog, /<textarea\b/);
+    assert.doesNotMatch(page, /<button\b/);
+    assert.doesNotMatch(reportDialog, /<button\b/);
     assert.match(reportDialog, /components\/ui\/dialog/);
     assert.match(reportDialog, /h-36/);
     assert.match(reportDialog, /scrollbar-width:none/);

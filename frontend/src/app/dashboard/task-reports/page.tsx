@@ -4,6 +4,7 @@ import { startTransition, useEffect, useEffectEvent, useMemo, useState } from "r
 import { Camera, CheckSquare, FileText, Search, ShieldAlert, Trash2 } from "lucide-react";
 
 import { NOTIFICATIONS_UPDATED_EVENT } from "@/components/dashboard/notifications/notification-utils";
+import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -20,10 +21,6 @@ import {
 } from "@/features/task-reports/task-report-center";
 import {
     reportActionCluster,
-    reportDangerBtn,
-    reportNeutralBtn,
-    reportPrimaryBtn,
-    reportSoftAccentBtn,
 } from "@/features/task-reports/task-report-action-styles";
 import {
     areAllVisibleReportsSelected,
@@ -164,40 +161,47 @@ export default function TaskReportsPage() {
                     actions={(
                         canManage && selectionMode ? (
                             <div className={reportActionCluster}>
-                                <button
+                                <Button
                                     type="button"
-                                    className={allPageSelected ? reportPrimaryBtn : reportSoftAccentBtn}
+                                    variant={allPageSelected ? "default" : "select"}
+                                    size="xs"
+                                    className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                                     onClick={() => setSelectedIds(withVisibleReportsSelection(selectedIds, pageIds, !allPageSelected))}
                                 >
                                     <CheckSquare className="h-3.5 w-3.5" />
                                     {copy.select_all_visible}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
-                                    className={reportNeutralBtn}
+                                    variant="cancel"
+                                    size="xs"
+                                    className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                                     onClick={exitSelectionMode}
                                 >
                                     {copy.cancel_selection}
-                                </button>
-                                <button
+                                </Button>
+                                <Button
                                     type="button"
+                                    variant="dangerSoft"
+                                    size="xs"
                                     disabled={selectedIds.size === 0}
-                                    className={reportDangerBtn}
+                                    className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                                     onClick={() => setPendingDelete("bulk")}
                                 >
                                     <Trash2 className="h-3.5 w-3.5" />
                                     {copy.delete_selected}
-                                </button>
+                                </Button>
                             </div>
                         ) : canManage ? (
-                            <button
+                            <Button
                                 type="button"
-                                className={reportPrimaryBtn}
+                                size="xs"
+                                className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                                 onClick={() => setSelectionMode(true)}
                             >
                                 <CheckSquare className="h-3.5 w-3.5" />
                                 {copy.select}
-                            </button>
+                            </Button>
                         ) : null
                     )}
                 />
@@ -279,25 +283,29 @@ export default function TaskReportsPage() {
                                 .replace("{total}", String(filtered.length))}
                         </p>
                         <div className="flex items-center gap-1">
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
+                                size="xs"
                                 disabled={safePage === 1}
                                 onClick={() => setPage(current => Math.max(current - 1, 1))}
-                                className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-1.5 font-bold ui-motion hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="px-3 py-1.5 font-bold"
                             >
                                 {copy.prev_page}
-                            </button>
+                            </Button>
                             <span className="px-2 font-black text-[var(--text-main)]">
                                 {safePage}/{totalPages}
                             </span>
-                            <button
+                            <Button
                                 type="button"
+                                variant="outline"
+                                size="xs"
                                 disabled={safePage === totalPages}
                                 onClick={() => setPage(current => Math.min(current + 1, totalPages))}
-                                className="cursor-pointer rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-1.5 font-bold ui-motion hover:bg-[var(--bg-secondary)] disabled:cursor-not-allowed disabled:opacity-40"
+                                className="px-3 py-1.5 font-bold"
                             >
                                 {copy.next_page}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 )}

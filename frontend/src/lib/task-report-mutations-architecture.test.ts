@@ -24,15 +24,15 @@ test("report center page supports selection bulk delete and detail edit delete",
 
     assert.match(selection, /toggleSelectedReportId/);
     assert.match(selection, /withVisibleReportsSelection/);
-    assert.match(styles, /bg-accent/);
-    assert.match(styles, /font-black uppercase tracking-wider/);
-    assert.match(styles, /btn-cancel-bg/);
     assert.match(styles, /reportActionCluster|bg-\[var\(--bg-primary\)\]\/40/);
     assert.match(page, /TaskReportService\.bulkDelete/);
     assert.match(page, /DeleteConfirmDialog/);
     assert.match(page, /selectedIds|selectedReportIds/);
-    assert.match(page, /reportPrimaryBtn|reportNeutralBtn|reportDangerBtn|reportSoftAccentBtn/);
     assert.match(page, /reportActionCluster/);
+    assert.match(page, /components\/ui\/button/);
+    assert.match(dialog, /components\/ui\/button/);
+    assert.doesNotMatch(page, /<button\b/);
+    assert.doesNotMatch(dialog, /<button\b/);
     assert.match(card, /selected|onToggleSelect|checkbox/i);
     assert.match(dialog, /TaskReportService\.update|onSave|onEdit/i);
     assert.match(dialog, /onDelete|TaskReportService\.delete/i);
