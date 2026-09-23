@@ -157,6 +157,14 @@ test("tasks page forwards pricing state required by the task edit modal", () => 
     assert.match(tasksPage, /setEditPricingMode: crud\.setEditPricingMode/);
 });
 
+test("task pagination uses the shared button primitive", () => {
+    const pagination = read("../components/tasks/TasksListPagination.tsx");
+
+    assert.match(pagination, /from "@\/components\/ui\/button"/);
+    assert.match(pagination, /variant=\{safeCurrentPage === p \? "default" : "outline"\}/);
+    assert.doesNotMatch(pagination, /<button\b/);
+});
+
 test("task creation exposes compact per-job pricing controls and keeps defaults in the domain helper", () => {
     const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
     const crud = read("../hooks/useTaskCrud.ts");
