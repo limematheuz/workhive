@@ -7,6 +7,7 @@ import { User } from "@/types/user";
 import { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
 import { Reservation } from "@/types/reservation";
 import type { Dictionary } from "@/lib/dictionary-context";
+import { Button } from "@/components/ui/button";
 import {
     Dialog,
     DialogContent,
@@ -24,11 +25,9 @@ import type { LocationZone } from "@/services/location.service";
 import {
     taskDialogBodyClass,
     taskDialogContentClass,
-    taskDialogDangerBtnClass,
     taskDialogFooterClass,
     taskDialogHeaderClass,
     taskDialogOverlayClass,
-    taskDialogPrimaryBtnClass,
 } from "./taskDialogChrome";
 
 interface TaskCreateModalProps {
@@ -211,17 +210,18 @@ export function TaskCreateModal({
                     </div>
 
                     <div className={`${taskDialogFooterClass} justify-end`}>
-                        <button
+                        <Button
                             type="button"
+                            variant="cancel"
+                            size="sm"
                             onClick={() => setCreateOpen(false)}
-                            className={taskDialogDangerBtnClass}
                         >
                             {dict.tasks?.create_dialog?.cancel || "Cancel"}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
+                            size="sm"
                             disabled={saving}
-                            className={taskDialogPrimaryBtnClass}
                         >
                             {saving ? (
                                 <>
@@ -231,7 +231,7 @@ export function TaskCreateModal({
                             ) : (
                                 dict.tasks?.create_dialog?.register_jobs || "Register Work"
                             )}
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </DialogContent>

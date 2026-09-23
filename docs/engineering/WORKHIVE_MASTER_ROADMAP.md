@@ -106,8 +106,8 @@ como WorkHive Core solo cuando el caso real las exige.
   cerrar el punto.
 - 🟡 Botones heredados: Ubicaciones, Gastos y el centro de Informes técnicos ya
   sustituyen por `Button` las acciones ordinarias —alta, selección, edición,
-  borrado, paginación, tipo de local, horario de acceso, habitaciones,
-  servicios fijados y notas—, incluyendo acciones destructivas con el token
+  borrado, paginación, creación, revisión, tipo de local, horario de acceso,
+  habitaciones, servicios fijados y notas—, incluyendo acciones destructivas con el token
   semántico `dangerSoft`. Se preservan los controles de selección con
   `aria-pressed`, los nombres accesibles de los botones de icono y los botones
   compuestos que abren una tarjeta completa. Queda completar la misma auditoría

@@ -27,6 +27,10 @@ test("task dialogs share glass chrome and keep compact checklist controls", () =
     assert.match(createModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(templateModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(requestReview, /taskDialogFooterClass|taskDialogChrome/);
+    for (const source of [createModal, requestReview]) {
+        assert.match(source, /from "@\/components\/ui\/button"/);
+        assert.doesNotMatch(source, /<button\b/);
+    }
     assert.match(checklistEditor, /from "@\/components\/ui\/select"/);
     assert.match(checklistEditor, /<SelectTrigger aria-label="Asignar todos los pasos"/);
     assert.doesNotMatch(checklistEditor, /<select|appearance-none|ChevronDown/);
@@ -124,7 +128,9 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.match(fields, /TaskChecklistEditor/);
     assert.match(form, /overflow-y-auto/);
     assert.match(actions, /canDuplicateTask/);
-    assert.match(actions, /taskDialogPrimaryBtnClass|btn-primary/);
+    assert.match(actions, /from "@\/components\/ui\/button"/);
+    assert.match(actions, /variant="dangerSoft"/);
+    assert.doesNotMatch(actions, /<button\b/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
     assert.match(fields, /title_label/);
     assert.match(fields, /onAssignAll/);
