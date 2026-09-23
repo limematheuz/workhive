@@ -3,6 +3,7 @@
 import { Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
+import { Button } from "@/components/ui/button";
 import { DataListTable } from "@/components/ui/data-list-table";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
@@ -192,15 +193,17 @@ function ExpenseNotesTooltip({
 
     return (
         <span className="group/note relative inline-flex shrink-0">
-            <button
+            <Button
                 type="button"
+                variant="secondary"
+                size="icon-xs"
                 title={notes}
                 aria-label={`${label}: ${notes}`}
                 onClick={(event) => event.stopPropagation()}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition hover:bg-[var(--btn-secondary-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                className="h-7 w-7 rounded-full"
             >
                 <StickyNote className="h-3.5 w-3.5" />
-            </button>
+            </Button>
             <span className="pointer-events-none absolute bottom-full left-0 z-[10090] mb-2 hidden w-72 max-w-[70vw] rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-3 text-left text-xs font-semibold leading-relaxed text-[var(--text-main)] shadow-xl group-hover/note:block group-focus-within/note:block">
                 <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                     {label}

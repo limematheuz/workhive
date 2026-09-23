@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { ExpenseFormDialog } from "@/components/expenses/ExpenseFormDialog";
 import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
@@ -195,14 +196,14 @@ export default function ExpensesPage() {
                     title={text.title}
                     subtitle={text.subtitle}
                     actions={canManageExpenses ? (
-                        <button
+                        <Button
                             type="button"
                             onClick={openCreateForm}
                             className={PAGE_ACTION_BUTTON_PRIMARY}
                         >
                             <Plus className="h-4 w-4" />
                             {text.add_expense}
-                        </button>
+                        </Button>
                     ) : undefined}
                 />
                 <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} />

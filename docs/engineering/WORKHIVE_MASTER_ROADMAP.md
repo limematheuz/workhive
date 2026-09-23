@@ -104,14 +104,14 @@ como WorkHive Core solo cuando el caso real las exige.
   de solo hora se mantienen separados porque no representan un calendario.
   Validado localmente con regresiones; queda la revisión visual autenticada para
   cerrar el punto.
-- 🟡 Botones heredados: Ubicaciones y el centro de Informes técnicos ya
-  sustituyen por `Button` las acciones ordinarias —selección, edición,
-  borrado, paginación, tipo de local, horario de acceso, habitaciones y
-  servicios fijados—, incluyendo acciones destructivas con el token semántico
-  `dangerSoft`. Se preservan los controles de selección con `aria-pressed`,
-  los nombres accesibles de los botones de icono y los botones compuestos que
-  abren una tarjeta completa. Queda completar la misma auditoría por los demás
-  dominios y la revisión visual autenticada.
+- 🟡 Botones heredados: Ubicaciones, Gastos y el centro de Informes técnicos ya
+  sustituyen por `Button` las acciones ordinarias —alta, selección, edición,
+  borrado, paginación, tipo de local, horario de acceso, habitaciones,
+  servicios fijados y notas—, incluyendo acciones destructivas con el token
+  semántico `dangerSoft`. Se preservan los controles de selección con
+  `aria-pressed`, los nombres accesibles de los botones de icono y los botones
+  compuestos que abren una tarjeta completa. Queda completar la misma auditoría
+  por los demás dominios y la revisión visual autenticada.
 - 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
   rutas, filtros de rol y entitlements existentes se conservan. El componente

@@ -49,8 +49,9 @@ test("shared DataListTable powers the remaining generic data lists", () => {
     assert.match(expenses, /from "@\/components\/ui\/input"/);
     assert.match(expenses, /from "@\/components\/ui\/select"/);
     assert.match(expenses, /from "@\/components\/ui\/date-picker"/);
+    assert.match(expenses, /from "@\/components\/ui\/button"/);
     assert.match(expenses, /<DatePicker/);
-    assert.doesNotMatch(expenses, /<input|<select|type="month"/);
+    assert.doesNotMatch(expenses, /<input|<select|<button|type="month"/);
 
     assert.match(templates, /ActionPopover/);
     assert.match(templates, /toolbar=/);
