@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 23 de septiembre de 2026.
+Actualizado: 25 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -401,6 +401,10 @@ como WorkHive Core solo cuando el caso real las exige.
 
 - ✅ Ubicaciones, perfiles operativos, zonas y acceso protegido ya existen.
 - ✅ La interfaz de Ubicaciones y el acceso rápido desde Clientes existen.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 21 regresiones
+  backend de ubicación, activos, zonas y contratos, y 598 pruebas frontend,
+  todas correctas. No sustituye la revisión visual autenticada en producción,
+  que sigue siendo la condición pendiente para cerrar esta fase.
 - 🟡 Contactos operativos por ubicación: cada local puede tener varias personas
   para operaciones, acceso, calidad o emergencias, con un contacto principal;
   no se confunden con los contactos comerciales o de facturación de la cuenta.
