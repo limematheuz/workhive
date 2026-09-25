@@ -41,10 +41,11 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Producción: `v1.6.6` (`ee738b3`), publicada desde `main` con imágenes
   inmutables en ECR y despliegue SSM verificado. Backend, frontend, React
   Doctor, SAST, secretos y GitGuardian terminaron correctamente.
-- ✅ `main` local y `origin/main` están alineadas en `ee738b3`; incluye las
-  fases operativas, financieras y el gobierno comercial de plataforma. La
-  asociación semanal, agente CloudWatch y alarma se aplican en AWS como paso
-  operativo separado.
+- 🟡 `main` local contiene trabajo posterior a `origin/main`, todavía no
+  publicado. Las fases operativas, financieras y el gobierno comercial que se
+  describen abajo deben conservar este estado local hasta completar su revisión
+  visual autenticada y una publicación explícita. La asociación semanal,
+  agente CloudWatch y alarma se aplican en AWS como paso operativo separado.
 - ✅ Seguimiento comercial y la paginación de Facturas y Presupuestos están
   publicados; el cambio inicial fue `07e0e83`.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
