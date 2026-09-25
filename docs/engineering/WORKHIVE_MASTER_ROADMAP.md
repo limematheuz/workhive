@@ -495,6 +495,10 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 7 — Material, compras y activos
 
 - ✅ Gastos básicos existen.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 8 regresiones
+  backend de inventario, compras y consumo por orden, y 598 pruebas frontend,
+  todas correctas. No sustituye la revisión visual autenticada ni la
+  publicación necesarias para cerrar esta fase.
 - 🟡 Base de inventario: proveedores, catálogo de material, almacenes,
   movimientos inmutables y saldo calculado por almacén. Cubierta con migración
   reversible, permisos por empresa, aislamiento, regresiones y recorrido API
