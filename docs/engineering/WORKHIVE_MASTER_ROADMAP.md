@@ -585,6 +585,11 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 9 — Portales e integraciones
 
 - ✅ Colaboración externa y Google Calendar existen de forma parcial.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 52 regresiones
+  backend de grants externos, portales, API pública, idempotencia y avisos, y
+  598 pruebas frontend, todas correctas. No sustituye la revisión visual
+  autenticada, el contrato de integración real ni la publicación necesarios
+  para cerrar esta fase.
 - ✅ Base de portal de gestoría: acceso externo por empresa, revocable y de
   solo lectura financiera, sin plaza ni membresía interna.
 - ✅ Portal de inmobiliaria existente: acceso patrocinado revocable, sin plaza
