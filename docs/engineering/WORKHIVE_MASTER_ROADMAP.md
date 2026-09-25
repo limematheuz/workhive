@@ -522,6 +522,10 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 8 — Cobros, margen y analítica
 
 - ✅ Facturación, registros fiscales y resúmenes financieros básicos existen.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 14 regresiones
+  backend de cobros, conciliación, rentabilidad, previsiones y recordatorios,
+  y 598 pruebas frontend, todas correctas. No sustituye la revisión visual
+  autenticada ni la publicación necesarias para cerrar esta fase.
 - 🟡 Cobros: recibos de cliente inmutables con reparto entre facturas, saldo no
   aplicado y anulación auditable; actualizan el estado de cobro sin alterar el
   registro fiscal ni el IVA. Validado por API y UI local; pendiente de revisión
