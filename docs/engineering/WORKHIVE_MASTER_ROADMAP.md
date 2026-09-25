@@ -200,8 +200,10 @@ como WorkHive Core solo cuando el caso real las exige.
   entre pasos y completa la aceptación segura con datos legales, credenciales
   e inicio de sesión restringido al portal. Validada con E2E autenticada local
   en `v1.6.1`; no se ha convertido ningún dato existente de forma automática.
-- ⬜ Diseñar el portal de cliente y el selector de varias empresas para una
-  persona externa; cada uno con política propia y sin heredar perfiles internos.
+- 🟡 Portal de cliente y selector de varias empresas para una persona externa:
+  ya están implementados localmente con política propia, grants revocables y
+  sin heredar perfiles internos. Su alcance y pruebas se detallan en Fase 9;
+  falta revisión visual autenticada y publicación para cerrarlo.
 
 ### Stripe
 
