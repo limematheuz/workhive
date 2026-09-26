@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 25 de septiembre de 2026.
+Actualizado: 26 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -643,6 +643,10 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ### Fase 10 — Gobierno comercial de plataforma
 
+- 🟡 Revalidación técnica local completada el 26 de septiembre: 34 regresiones
+  backend de acceso de plataforma, panel comercial y términos de suscripción,
+  y 598 pruebas frontend, todas correctas. No sustituye la revisión visual
+  autenticada posterior al despliegue.
 - 🟡 Resumen comercial para superadmin: muestra suscripciones activas, pruebas,
   cobros a revisar, upgrades, downgrades, bajas y distribución por plan desde
   el historial de suscripciones y auditorías. Es solo lectura, no es accesible
