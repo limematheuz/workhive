@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 15 de septiembre de 2026.
+Actualizado: 26 de septiembre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -41,10 +41,11 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Producción: `v1.6.6` (`ee738b3`), publicada desde `main` con imágenes
   inmutables en ECR y despliegue SSM verificado. Backend, frontend, React
   Doctor, SAST, secretos y GitGuardian terminaron correctamente.
-- ✅ `main` local y `origin/main` están alineadas en `ee738b3`; incluye las
-  fases operativas, financieras y el gobierno comercial de plataforma. La
-  asociación semanal, agente CloudWatch y alarma se aplican en AWS como paso
-  operativo separado.
+- 🟡 `main` local contiene trabajo posterior a `origin/main`, todavía no
+  publicado. Las fases operativas, financieras y el gobierno comercial que se
+  describen abajo deben conservar este estado local hasta completar su revisión
+  visual autenticada y una publicación explícita. La asociación semanal,
+  agente CloudWatch y alarma se aplican en AWS como paso operativo separado.
 - ✅ Seguimiento comercial y la paginación de Facturas y Presupuestos están
   publicados; el cambio inicial fue `07e0e83`.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
@@ -54,18 +55,22 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ### UI, accesibilidad y responsive
 
-- ✅ Componentes comunes: `Dialog`, `Button`, `Input`, `Select`, `Checkbox`,
-  `DatePicker`, `Table`, `Card`, `Pagination` y `PremiumTabs`.
+- ✅ Componentes comunes: `Dialog`, `Button`, `Input`, `Textarea`, `Select`,
+  `Checkbox`, `Switch`, `DatePicker`, `Table`, `Card`, `Pagination` y
+  `PremiumTabs`.
 - ✅ Diálogos con cabecera y pie translúcidos, sin blanco sólido.
 - ✅ Listas de negocio: tabla shadcn en escritorio y tarjetas shadcn en móvil.
 - ✅ Métricas: dos columnas en móvil; una tarjeta impar no se estira.
 - ✅ Tabs: escritorio puede mostrarlas en fila; tablet y móvil siempre las
   compactan en el mismo selector desplegable, con la misma cantidad, orden y
-  reglas de visibilidad de opciones que el escritorio.
+  reglas de visibilidad de opciones que el escritorio. `PremiumTabs` aplica la
+  regla a cualquier número de pestañas y tiene regresiones para impedir volver
+  al umbral antiguo de más de cuatro.
 - 🟡 Las superficies nuevas y modificadas usan exclusivamente tokens semánticos
   de `globals.css` para estado, prioridad y alerta, además de los componentes
-  locales basados en shadcn/ui. El margen operativo ya se ajustó a esta regla;
-  queda auditar y corregir los controles heredados fuera de ese corte.
+  locales basados en shadcn/ui. El margen operativo y las pantallas técnicas
+  de checklist, incidencias y propiedades ya se ajustaron a esta regla; queda
+  auditar y corregir los controles heredados fuera de esos cortes.
 - 🟡 Fechas: todos los formularios usan los `DatePicker` y `DateTimePicker`
   compartidos de Facturación; una regresión impide reintroducir controles
   nativos de fecha o fecha/hora. Los límites mínimos/máximos y el borrado
@@ -75,14 +80,44 @@ como WorkHive Core solo cuando el caso real las exige.
   propias y solicitudes) ya usan un selector shadcn/ui compacto compartido, y
   los editores de tareas usan `Input`/`Select` locales para precio, cantidad,
   estado, prioridad, unidad y reservas opcionales, y los filtros de calendario
-  también usan los controles compartidos. Se preservan valores vacíos, filtros,
-  validaciones y permisos. Queda auditar y sustituir los controles nativos
-  restantes. Los controles de solo hora se mantienen separados porque no
-  representan un calendario.
-- ⬜ Navegación unificada: sidebar shadcn responsive con rail de escritorio,
+  también usan los controles compartidos. Ubicaciones ya usa esos controles en
+  sus filtros, alta de espacios, espacio padre e historial de trabajo, y
+  Gastos usa `Input`, `Select` y el mismo `DatePicker` de Facturas para sus
+  filtros. El envoltorio heredado `DocumentFormSelect`, que generaba un control
+  nativo, fue retirado: Gastos, usuarios, colaboradores e invitaciones usan el
+  `Select` canónico. Los filtros de año de Resumen fiscal y Libro de ventas, y
+  los controles de configuración de Facturae, también reutilizan las
+  primitivas canónicas; el editor de checklist de tareas también las usa para
+  asignaciones masivas e individuales y la creación de tareas para checklist,
+  plantilla, asignación y precio. El espacio técnico de checklist, incidencias,
+  comentarios, adjuntos y propiedades ya usa las primitivas canónicas, sin
+  lecturas directas del DOM al guardar propiedades. Ya no quedan `<select>`
+  nativos en código de producto; todos los selectores de archivo se mantienen
+  como una capacidad obligatoria del navegador, envueltos por `Input`. Los
+  formularios públicos de recuperación, contacto y aceptación del portal de
+  cliente también usan `Input`, `Textarea` y `Checkbox` compartidos. El último
+  corte sustituye los campos heredados de calendario fiscal, correo de factura,
+  plantillas y espacios de ubicación, edición de tareas, reservas, privacidad,
+  informes técnicos y la integración de calendario; el interruptor de esta
+  última usa ahora `Switch`. Ya no quedan `<input>`, `<textarea>` ni `<select>`
+  visuales en código de producto fuera de las primitivas que los implementan.
+  Se preservan valores vacíos, filtros, validaciones y permisos. Los controles
+  de solo hora se mantienen separados porque no representan un calendario.
+  Validado localmente con regresiones; queda la revisión visual autenticada para
+  cerrar el punto.
+- 🟡 Botones heredados: Ubicaciones, Gastos y el centro de Informes técnicos ya
+  sustituyen por `Button` las acciones ordinarias —alta, selección, edición,
+  borrado, paginación, creación, revisión, tipo de local, horario de acceso,
+  habitaciones, servicios fijados y notas—, incluyendo acciones destructivas con el token
+  semántico `dangerSoft`. Se preservan los controles de selección con
+  `aria-pressed`, los nombres accesibles de los botones de icono y los botones
+  compuestos que abren una tarjeta completa. Queda completar la misma auditoría
+  por los demás dominios y la revisión visual autenticada.
+- 🟡 Navegación unificada: sidebar shadcn responsive con rail de escritorio,
   Sheet móvil, grupos de dominio compactos, perfil en el pie y tooltips; las
-  rutas, filtros de rol y entitlements existentes se conservan. Pendiente de
-  validación visual final.
+  rutas, filtros de rol y entitlements existentes se conservan. El componente
+  compartido y sus regresiones de navegación, capas móviles y portales están
+  validados localmente; falta la validación visual autenticada final.
 
 ### Planes, límites y seguridad comercial
 
@@ -97,9 +132,15 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Las plazas internas y los accesos externos se cuentan por límites
   distintos. Una gestoría aceptada consume `limits.accountant_portals`, nunca
   una plaza interna; una invitación pendiente no reserva ninguno de los dos.
-- ⬜ Definir la política comercial de ampliaciones y funcionalidades Custom.
-- ⬜ Construir el panel comercial de superadmin: MRR, activas, impagos,
-  upgrades, churn e ingresos por plan.
+- 🟡 Política de ampliaciones y funcionalidades Custom: parte siempre de un
+  plan estándar activo; no es una compra automática ni puede ampliar una
+  prueba. El superadmin debe registrar o reutilizar un snapshot de condiciones
+  comerciales, y cada sustitución o excepción queda auditada con motivo y
+  vencimiento opcional. Cubierto localmente con autorización positiva y
+  negativa; pendiente de publicación y de validación visual autenticada.
+- 🟡 Panel comercial de superadmin: MRR, activas, impagos, upgrades, churn e
+  ingresos por plan. Publicado en `v1.6.6`; pendiente de validación visual
+  autenticada tras el despliegue.
 
 ### Nombres de relación comercial
 
@@ -159,8 +200,10 @@ como WorkHive Core solo cuando el caso real las exige.
   entre pasos y completa la aceptación segura con datos legales, credenciales
   e inicio de sesión restringido al portal. Validada con E2E autenticada local
   en `v1.6.1`; no se ha convertido ningún dato existente de forma automática.
-- ⬜ Diseñar el portal de cliente y el selector de varias empresas para una
-  persona externa; cada uno con política propia y sin heredar perfiles internos.
+- 🟡 Portal de cliente y selector de varias empresas para una persona externa:
+  ya están implementados localmente con política propia, grants revocables y
+  sin heredar perfiles internos. Su alcance y pruebas se detallan en Fase 9;
+  falta revisión visual autenticada y publicación para cerrarlo.
 
 ### Stripe
 
@@ -214,15 +257,49 @@ como WorkHive Core solo cuando el caso real las exige.
 - ✅ Decididos componentes shadcn, responsive, aislamiento por empresa, planes
   y aplazamiento de Stripe.
 - ✅ Se definió que Seguimiento comercial no es presupuesto ni factura.
-- ⬜ Empresa demo Enterprise con departamentos, perfiles y datos anonimizados.
-- ⬜ Inventario definitivo de compatibilidades API y de datos a migrar.
-- ⬜ Catálogo único revisado de módulos, permisos y clases de plaza.
-- ⬜ Endurecer el almacenamiento documental: las imágenes ya admiten objeto S3,
-  pero PDF, Facturae y certificados aún usan rutas de filesystem. Migrarlos a
-  claves opacas de almacenamiento de objetos cifrado, con metadatos y hashes
-  en la base de datos, migración aditiva, retención y copias verificables.
-  `backend/storage` actual es solo dato local ignorado por Git, no una fuente
-  de verdad ni un lugar para secretos.
+- 🟡 Empresa demo Enterprise: `backend/scripts/seed_demo.py` solo reconstruye
+  una SQLite explícita dentro de `backend/storage/demo`, nunca la base normal
+  ni producción. Crea plan Enterprise (`mega`) activo con términos comerciales
+  ficticios, departamentos, equipos, perfiles con scopes, usuarios y dos
+  ubicaciones; los correos usan `.invalid` y no hay datos de clientes reales.
+  Está cubierta por regresiones de aislamiento y de coherencia; falta ejecutarla
+  y validarla visualmente en el entorno local de demostración.
+- ✅ Inventario definitivo de compatibilidades API y de datos a migrar:
+  `docs/engineering/API_AND_DATA_COMPATIBILITY_INVENTORY.md` delimita la
+  superficie `/api/v1`, la API pública con clave, los clientes web y las
+  transiciones de plan, membresías, accesos externos, contactos, reservas y
+  documentos. Un test obliga a revisar el inventario al registrar un prefijo
+  nuevo. Antes de retirar cualquier compatibilidad sigue siendo obligatoria la
+  comprobación de pendientes y un backfill controlado en el entorno objetivo.
+- ✅ Catálogo único revisado de módulos, permisos y clases de plaza:
+  `docs/engineering/MODULE_PERMISSION_SEAT_CATALOG.md` separa módulos de
+  plan, permisos y scopes, plazas internas y grants externos; define qué
+  recibe realmente un administrador y evita que un módulo `coming_soon` se
+  venda por figurar en un plan técnico. Un test obliga a documentar cada
+  entitlement, cuota, permiso base y permiso reservado nuevo.
+- 🟡 Endurecer el almacenamiento documental: los PDFs, Facturae y certificados
+  fiscales por empresa nuevos ya usan claves opacas de objeto con tipo, tamaño
+  y hash. Una migración manual por empresa
+  (`backend/scripts/migrate_legacy_documents.py`) inspecciona primero,
+  verifica contenido y hash, copia y vuelve a leer el objeto antes de retirar
+  solo la ruta heredada de la base; el fichero origen no se borra. Está
+  cubierta localmente para PDF, XML y PKCS#12, incluido el rechazo de un hash
+  alterado. El certificado global de firma Facturae ya admite AWS Secrets
+  Manager mediante una referencia de configuración: lee un JSON con
+  `pkcs12_base64` y `password`, materializa el PKCS#12 con permisos `0600` solo
+  mientras firma y conserva el archivo como compatibilidad local. Las rutas
+  ambiguas (secreto y archivo a la vez) se rechazan y un fallo del gestor
+  devuelve un `503` genérico sin filtrar material sensible. Falta crear el
+  secreto real, limitar el rol de producción a `secretsmanager:GetSecretValue`
+  sobre ese secreto, ejecutar la migración controlada sobre datos reales y
+  confirmar la retención/versionado y copia verificable del bucket de
+  producción. La separación entre el bucket de documentos y el bucket de
+  backups, junto con sus controles de acceso, versionado, ciclo de vida y
+  validación, está preparada en
+  `docs/operations/PRODUCTION_DOCUMENT_STORAGE_RUNBOOK.md`; sigue pendiente
+  aplicarla y verificarla en AWS.
+  `backend/storage` es solo dato local ignorado por Git, no una fuente de
+  verdad ni un lugar para secretos.
 
 ### Fase 1 — Fundación Enterprise
 
@@ -327,6 +404,10 @@ como WorkHive Core solo cuando el caso real las exige.
 
 - ✅ Ubicaciones, perfiles operativos, zonas y acceso protegido ya existen.
 - ✅ La interfaz de Ubicaciones y el acceso rápido desde Clientes existen.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 21 regresiones
+  backend de ubicación, activos, zonas y contratos, y 598 pruebas frontend,
+  todas correctas. No sustituye la revisión visual autenticada en producción,
+  que sigue siendo la condición pendiente para cerrar esta fase.
 - 🟡 Contactos operativos por ubicación: cada local puede tener varias personas
   para operaciones, acceso, calidad o emergencias, con un contacto principal;
   no se confunden con los contactos comerciales o de facturación de la cuenta.
@@ -414,6 +495,10 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 7 — Material, compras y activos
 
 - ✅ Gastos básicos existen.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 8 regresiones
+  backend de inventario, compras y consumo por orden, y 598 pruebas frontend,
+  todas correctas. No sustituye la revisión visual autenticada ni la
+  publicación necesarias para cerrar esta fase.
 - 🟡 Base de inventario: proveedores, catálogo de material, almacenes,
   movimientos inmutables y saldo calculado por almacén. Cubierta con migración
   reversible, permisos por empresa, aislamiento, regresiones y recorrido API
@@ -437,6 +522,10 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 8 — Cobros, margen y analítica
 
 - ✅ Facturación, registros fiscales y resúmenes financieros básicos existen.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 14 regresiones
+  backend de cobros, conciliación, rentabilidad, previsiones y recordatorios,
+  y 598 pruebas frontend, todas correctas. No sustituye la revisión visual
+  autenticada ni la publicación necesarias para cerrar esta fase.
 - 🟡 Cobros: recibos de cliente inmutables con reparto entre facturas, saldo no
   aplicado y anulación auditable; actualizan el estado de cobro sin alterar el
   registro fiscal ni el IVA. Validado por API y UI local; pendiente de revisión
@@ -496,6 +585,11 @@ como WorkHive Core solo cuando el caso real las exige.
 ### Fase 9 — Portales e integraciones
 
 - ✅ Colaboración externa y Google Calendar existen de forma parcial.
+- 🟡 Revalidación técnica local completada el 25 de septiembre: 52 regresiones
+  backend de grants externos, portales, API pública, idempotencia y avisos, y
+  598 pruebas frontend, todas correctas. No sustituye la revisión visual
+  autenticada, el contrato de integración real ni la publicación necesarios
+  para cerrar esta fase.
 - ✅ Base de portal de gestoría: acceso externo por empresa, revocable y de
   solo lectura financiera, sin plaza ni membresía interna.
 - ✅ Portal de inmobiliaria existente: acceso patrocinado revocable, sin plaza
@@ -549,6 +643,10 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ### Fase 10 — Gobierno comercial de plataforma
 
+- 🟡 Revalidación técnica local completada el 26 de septiembre: 34 regresiones
+  backend de acceso de plataforma, panel comercial y términos de suscripción,
+  y 598 pruebas frontend, todas correctas. No sustituye la revisión visual
+  autenticada posterior al despliegue.
 - 🟡 Resumen comercial para superadmin: muestra suscripciones activas, pruebas,
   cobros a revisar, upgrades, downgrades, bajas y distribución por plan desde
   el historial de suscripciones y auditorías. Es solo lectura, no es accesible

@@ -13,6 +13,10 @@ test("locations page uses billing surfaces and a compact filter chip", () => {
     assert.match(page, /billing-surface/);
     assert.match(page, /PageHeader/);
     assert.match(page, /PremiumTabs/);
+    assert.match(page, /from "@\/components\/ui\/select"/);
+    assert.match(page, /<SelectTrigger aria-label=\{dict\.locations\?\.filter\?\.all_clients/);
+    assert.match(page, /<SelectTrigger aria-label="Todos los colaboradores"/);
+    assert.doesNotMatch(page, /<select/);
     assert.match(page, /CreateLocationSheet/);
     assert.match(page, /DeleteConfirmDialog/);
     assert.match(page, /billing-block inline-flex/);

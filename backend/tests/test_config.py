@@ -139,3 +139,11 @@ def test_explicit_null_pool_setting_is_respected():
 
 def test_blank_optional_null_pool_setting_is_treated_as_unset():
     assert production_settings(DATABASE_USE_NULL_POOL="").use_null_pool is False
+
+
+def test_facturae_signing_source_rejects_ambiguous_secret_and_filesystem_settings():
+    with pytest.raises(ValidationError, match="either a secret reference"):
+        production_settings(
+            FACTURAE_CERTIFICATE_SECRET_ID="workhive/production/facturae",
+            FACTURAE_CERTIFICATE_PATH="/run/secrets/facturae.p12",
+        )

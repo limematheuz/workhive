@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/services/auth.service";
@@ -17,6 +17,9 @@ import { Eye, EyeOff, KeyRound, CheckCircle2, AlertTriangle, ArrowLeft } from "l
 import { toast } from "sonner";
 import { isStrongPassword } from "@/lib/password-strength";
 import { PasswordStrengthChecklist } from "@/components/auth/PasswordStrengthChecklist";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 function ResetPasswordContent() {
     const router = useRouter();
@@ -132,10 +135,10 @@ function ResetPasswordContent() {
                             </div>
 
                             {!token && (
-                                <div className="p-4 rounded-2xl border border-red-500/30 bg-red-500/5 flex gap-3">
-                                    <AlertTriangle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                                <div className="flex gap-3 rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-4">
+                                    <AlertTriangle className="mt-0.5 size-5 shrink-0 text-[var(--btn-cancel-text)]" />
                                     <div className="text-xs space-y-1">
-                                        <p className="font-bold text-red-400">
+                                        <p className="font-bold text-[var(--btn-cancel-text)]">
                                             {locale === "es" ? "Enlace de recuperación inválido" : "Invalid recovery link"}
                                         </p>
                                         <p className="text-[var(--text-muted)] leading-relaxed">
@@ -150,62 +153,66 @@ function ResetPasswordContent() {
                             {token && (
                                 <>
                                     <div>
-                                        <label htmlFor="new-password" className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                                        <Label htmlFor="new-password" className="mb-2 block text-sm font-medium text-[var(--text-muted)]">
                                             {locale === "es" ? "Nueva contraseña" : "New Password"}
-                                        </label>
+                                        </Label>
                                         <div className="relative">
-                                            <input
+                                            <Input
                                                 id="new-password"
                                                 type={showPassword ? "text" : "password"}
-                                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-11 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
+                                                className="h-12 pl-11 pr-12"
                                                 placeholder={t.password_placeholder}
                                                 autoComplete="new-password"
                                                 required
                                                 value={password}
-                                                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                                                onChange={(e) =>
                                                     setPassword(e.target.value)
                                                 }
                                             />
                                             <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={() => setShowPassword(!showPassword)}
                                                 aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-1 flex items-center justify-center"
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)]"
                                             >
                                                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
 
                                     <PasswordStrengthChecklist password={password} locale={locale} />
 
                                     <div>
-                                        <label htmlFor="confirm-new-password" className="block text-sm font-medium text-[var(--text-muted)] mb-2">
+                                        <Label htmlFor="confirm-new-password" className="mb-2 block text-sm font-medium text-[var(--text-muted)]">
                                             {locale === "es" ? "Confirmar nueva contraseña" : "Confirm New Password"}
-                                        </label>
+                                        </Label>
                                         <div className="relative">
-                                            <input
+                                            <Input
                                                 id="confirm-new-password"
                                                 type={showConfirmPassword ? "text" : "password"}
-                                                className="w-full bg-[var(--bg-tertiary)] border border-[var(--border-soft)] rounded-xl pl-11 pr-12 py-3 text-[var(--text-main)] placeholder-[var(--text-muted)] focus:outline-none focus:border-accent/50 focus:bg-[var(--bg-secondary)] ui-motion"
+                                                className="h-12 pl-11 pr-12"
                                                 placeholder={t.password_placeholder}
                                                 autoComplete="new-password"
                                                 required
                                                 value={confirmPassword}
-                                                onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                                                onChange={(e) =>
                                                     setConfirmPassword(e.target.value)
                                                 }
                                             />
                                             <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--text-muted)]" />
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="ghost"
+                                                size="icon"
                                                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                                 aria-label={showConfirmPassword ? "Ocultar confirmación" : "Mostrar confirmación"}
-                                                className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)] transition-colors focus:outline-none bg-transparent border-none cursor-pointer p-1 flex items-center justify-center"
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-main)]"
                                             >
                                                 {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 </>
@@ -213,9 +220,9 @@ function ResetPasswordContent() {
 
                             {alertMsg.text !== "" && (
                                 <div
-                                    className={`py-3 px-4 rounded-xl border text-sm text-center font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] ui-motion ${
+                                    className={`rounded-xl border px-4 py-3 text-center text-sm font-medium shadow-[0_0_15px_rgba(0,0,0,0.1)] ui-motion ${
                                         alertMsg.type === "error"
-                                            ? "border-red-500/50 text-red-400 bg-red-500/10 shadow-red-500/20"
+                                            ? "border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)]"
                                             : "border-accent/50 text-accent bg-accent/10 shadow-accent/20"
                                     }`}
                                 >
@@ -223,15 +230,15 @@ function ResetPasswordContent() {
                                 </div>
                             )}
 
-                            <button
+                            <Button
                                 type="submit"
                                 disabled={submitting || !token || !isStrongPassword(password)}
-                                className="w-full bg-[var(--text-main)] text-[var(--bg-primary)] font-semibold rounded-xl py-3 hover:opacity-90 ui-motion mt-4 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)] disabled:opacity-50 cursor-pointer"
+                                className="mt-4 w-full"
                             >
                                 {submitting
                                     ? (locale === "es" ? "Guardando..." : "Saving...")
                                     : (locale === "es" ? "Restablecer contraseña" : "Reset Password")}
-                            </button>
+                            </Button>
                         </form>
                     )}
                 </div>

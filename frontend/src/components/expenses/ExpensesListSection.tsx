@@ -3,7 +3,11 @@
 import { Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
+import { Button } from "@/components/ui/button";
 import { DataListTable } from "@/components/ui/data-list-table";
+import { DatePicker } from "@/components/ui/date-picker";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatExpenseDate, getExpenseNotes } from "@/lib/expense-form";
 import { formatCurrency } from "@/lib/format";
@@ -73,7 +77,7 @@ export function ExpensesListSection({
                     <label className="relative block w-full sm:max-w-xs">
                         <span className="sr-only">{text.search}</span>
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
-                        <input
+                        <Input
                             value={search}
                             onChange={(event) => onSearchChange(event.target.value)}
                             aria-label={text.search}
@@ -83,28 +87,29 @@ export function ExpensesListSection({
                     </label>
                     <label className="block sm:w-56">
                         <span className="sr-only">{text.all_categories}</span>
-                        <select
-                            value={categoryFilter}
-                            onChange={(event) => onCategoryFilterChange(event.target.value)}
-                            aria-label={text.all_categories}
-                            className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                        <Select
+                            value={categoryFilter || "__all-categories__"}
+                            onValueChange={(value) => onCategoryFilterChange(value === "__all-categories__" ? "" : value)}
                         >
-                            <option value="">{text.all_categories}</option>
-                            {CATEGORY_OPTIONS.map((category) => (
-                                <option key={category} value={category}>
+                            <SelectTrigger aria-label={text.all_categories} className="h-11 w-full"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="__all-categories__">{text.all_categories}</SelectItem>
+                                {CATEGORY_OPTIONS.map((category) => (
+                                    <SelectItem key={category} value={category}>
                                     {text.categories[category as keyof typeof text.categories] || category}
-                                </option>
-                            ))}
-                        </select>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </label>
                     <label className="block sm:w-44">
                         <span className="sr-only">{text.month}</span>
-                        <input
-                            type="month"
-                            value={month}
-                            onChange={(event) => onMonthChange(event.target.value)}
+                        <DatePicker
+                            id="expenses-month-filter"
+                            value={month ? `${month}-01` : ""}
+                            onValueChange={(value) => onMonthChange(value ? value.slice(0, 7) : "")}
                             aria-label={text.month}
-                            className="h-11 w-full rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-sm font-semibold text-[var(--text-main)] outline-none transition focus:border-accent"
+                            className="h-11 w-full rounded-xl text-sm font-semibold"
                         />
                     </label>
                 </div>
@@ -188,15 +193,17 @@ function ExpenseNotesTooltip({
 
     return (
         <span className="group/note relative inline-flex shrink-0">
-            <button
+            <Button
                 type="button"
+                variant="secondary"
+                size="icon-xs"
                 title={notes}
                 aria-label={`${label}: ${notes}`}
                 onClick={(event) => event.stopPropagation()}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] transition hover:bg-[var(--btn-secondary-hover-bg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                className="h-7 w-7 rounded-full"
             >
                 <StickyNote className="h-3.5 w-3.5" />
-            </button>
+            </Button>
             <span className="pointer-events-none absolute bottom-full left-0 z-[10090] mb-2 hidden w-72 max-w-[70vw] rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)] p-3 text-left text-xs font-semibold leading-relaxed text-[var(--text-main)] shadow-xl group-hover/note:block group-focus-within/note:block">
                 <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                     {label}

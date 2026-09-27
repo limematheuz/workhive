@@ -13,8 +13,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { User } from "@/types/user";
 import {
     Dialog,
@@ -52,7 +55,7 @@ interface TechTaskChecklistDialogProps {
     onPersistNote: (itemId: string, note: string) => Promise<void>;
     onChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     onResetChecklist: () => Promise<void>;
-    onAddChecklistItem: (e: React.FormEvent) => Promise<void>;
+    onAddChecklistItem: (question: string, assigneeId: number) => Promise<boolean>;
 }
 
 const CATEGORIES = ["General", "Baño", "Cocina"] as const;
@@ -126,6 +129,17 @@ function TechTaskChecklistDialogContent({
     goToFirstPending,
     progress,
 }: TechTaskChecklistDialogProps & ReturnType<typeof useTechTaskChecklistDialogState>) {
+    const [newChecklistQuestion, setNewChecklistQuestion] = React.useState("");
+    const [newChecklistAssigneeId, setNewChecklistAssigneeId] = React.useState("");
+
+    const addChecklistItem = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        const added = await onAddChecklistItem(newChecklistQuestion, Number(newChecklistAssigneeId));
+        if (!added) return;
+        setNewChecklistQuestion("");
+        setNewChecklistAssigneeId("");
+    };
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -215,28 +229,31 @@ function TechTaskChecklistDialogContent({
                                 <ChevronDown className="h-4 w-4 text-[var(--text-muted)] transition-transform group-open:rotate-180" />
                             </summary>
                             <form
-                                onSubmit={onAddChecklistItem}
+                                onSubmit={addChecklistItem}
                                 className="grid gap-2 border-t border-[var(--border-soft)] p-3.5 sm:grid-cols-[1fr_11rem_auto]"
                             >
-                                <input
+                                <Label htmlFor="new-checklist-question" className="sr-only">
+                                    {dict.tech.checklist_item_placeholder}
+                                </Label>
+                                <Input
+                                    id="new-checklist-question"
                                     type="text"
-                                    name="question"
+                                    value={newChecklistQuestion}
+                                    onChange={event => setNewChecklistQuestion(event.target.value)}
                                     placeholder={dict.tech.checklist_item_placeholder}
                                     required
-                                    className="min-h-10 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs text-[var(--text-main)] outline-none focus:border-accent"
+                                    className="h-10 text-xs"
                                 />
-                                <select
-                                    name="assignee_id"
-                                    defaultValue=""
-                                    required
-                                    aria-label={dict.tech.assign_to_placeholder}
-                                    className="min-h-10 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-xs text-[var(--text-main)] outline-none focus:border-accent"
-                                >
-                                    <option value="" disabled>{dict.tech.assign_to_placeholder}</option>
+                                <Select value={newChecklistAssigneeId} onValueChange={setNewChecklistAssigneeId}>
+                                    <SelectTrigger aria-label={dict.tech.assign_to_placeholder} className="h-10 text-xs">
+                                        <SelectValue placeholder={dict.tech.assign_to_placeholder} />
+                                    </SelectTrigger>
+                                    <SelectContent>
                                     {availableAssignees.map(user => (
-                                        <option key={user.id} value={user.id}>{user.full_name || user.email}</option>
+                                        <SelectItem key={user.id} value={String(user.id)}>{user.full_name || user.email}</SelectItem>
                                     ))}
-                                </select>
+                                    </SelectContent>
+                                </Select>
                                 <Button
                                     type="submit"
                                     className="min-h-10 border-none bg-accent px-4 text-xs font-semibold text-white shadow-sm hover:bg-accent-light hover:shadow-sm"
@@ -443,7 +460,7 @@ function ChecklistRequirementItem({
                     />
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                    <input
+                    <Input
                         id={photoInputId}
                         type="file"
                         accept="image/*"
@@ -477,14 +494,14 @@ function ChecklistRequirementItem({
                     >
                         {dict.tech.ops_notes_label}
                     </Label>
-                    <textarea
+                    <Textarea
                         id={`tech-checklist-note-${item.id}`}
                         value={item.note}
                         onChange={event => onNoteChange(item.id, event.target.value)}
                         onBlur={event => onPersistNote(item.id, event.target.value)}
                         placeholder={dict.tech.notes_placeholder}
                         rows={2}
-                        className="w-full resize-none rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 py-2 text-xs font-medium text-[var(--text-main)] outline-none focus:border-accent"
+                        className="min-h-16 resize-none text-xs"
                     />
                 </div>
             )}
@@ -512,7 +529,7 @@ function ChecklistAnswerButton({
                 "min-h-8 min-w-14 rounded-lg border-none px-3 text-[11px] font-semibold shadow-sm transition-colors",
                 active
                     ? danger
-                        ? "bg-red-600 text-white"
+                        ? "bg-[var(--btn-cancel-hover-bg)] text-[var(--btn-cancel-hover-text)]"
                         : "bg-accent text-white"
                     : "bg-[var(--bg-secondary)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]/80",
             )}

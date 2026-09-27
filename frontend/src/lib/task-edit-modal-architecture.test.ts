@@ -28,6 +28,8 @@ test("task edit modal keeps a denser report-like chrome without footer close", (
     assert.match(modal, /DialogContent/);
     assert.match(form, /overflow-y-auto/);
     assert.match(chrome, /dialog-glass|taskDialogPrimaryBtnClass/);
-    assert.match(actions, /taskDialogPrimaryBtnClass|btn-primary/);
+    assert.match(actions, /from "@\/components\/ui\/button"/);
+    assert.match(actions, /<Button/);
+    assert.doesNotMatch(actions, /<button\b/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
 });

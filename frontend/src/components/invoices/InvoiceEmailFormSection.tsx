@@ -1,6 +1,8 @@
 import type { KeyboardEvent } from "react";
 import { FileText, Paperclip } from "lucide-react";
 
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { InvoiceEmailChip } from "./InvoiceEmailChip";
 import { InvoiceEmailRecipientField } from "./InvoiceEmailRecipientField";
 import type { EmailSuggestion } from "./invoice-email-utils";
@@ -141,7 +143,7 @@ export function InvoiceEmailFormSection({
                                 tone="muted"
                             />
                         ))}
-                        <input
+                        <Input
                             type="email"
                             id="document-email-cc"
                             name="document-email-cc"
@@ -152,7 +154,7 @@ export function InvoiceEmailFormSection({
                             onKeyDown={onCopyKeyDown}
                             onBlur={onCopyBlur}
                             placeholder={copyRecipients.length ? "" : invoiceText.email_cc_placeholder}
-                            className="invoice-email-token-input min-w-[12rem] flex-1 bg-transparent px-1 py-1.5 text-sm text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)]"
+                            className="invoice-email-token-input h-auto min-w-[12rem] flex-1 border-0 bg-transparent px-1 py-1.5 text-sm text-[var(--text-main)] shadow-none placeholder:text-[var(--text-muted)]"
                         />
                     </div>
                 </div>
@@ -161,7 +163,7 @@ export function InvoiceEmailFormSection({
                     <span className="text-xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {invoiceText.email_subject_label}
                     </span>
-                    <input
+                    <Input
                         value={subject}
                         onChange={(event) => onSubjectChange(event.target.value)}
                         maxLength={200}
@@ -171,12 +173,12 @@ export function InvoiceEmailFormSection({
                 </div>
             </div>
 
-            <textarea
+            <Textarea
                 value={message}
                 onChange={(event) => onMessageChange(event.target.value)}
                 maxLength={2000}
                 aria-label="Mensaje"
-                className="invoice-email-message-field h-64 w-full resize-y border-0 border-t border-[var(--border-soft)] bg-[var(--bg-card)] px-5 py-5 text-sm leading-7 text-[var(--text-main)] outline-none placeholder:text-[var(--text-muted)] lg:h-72"
+                className="invoice-email-message-field h-64 w-full resize-y rounded-none border-0 border-t border-[var(--border-soft)] bg-[var(--bg-card)] px-5 py-5 text-sm leading-7 text-[var(--text-main)] shadow-none placeholder:text-[var(--text-muted)] lg:h-72"
             />
 
             <div className="border-t border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 px-4 py-3.5 sm:px-5">

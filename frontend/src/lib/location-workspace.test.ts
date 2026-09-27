@@ -34,6 +34,9 @@ test("the location workspace uses shadcn tabs as four visible steps and keeps su
     assert.match(featuresStep, /Características/);
     assert.match(spacesStep, /Espacios y tareas/);
     assert.match(spacesStep, /Sugerir espacios/);
+    assert.match(spacesStep, /from "@\/components\/ui\/select"/);
+    assert.match(spacesStep, /<SelectTrigger aria-label="Tipo de espacio">/);
+    assert.doesNotMatch(spacesStep, /<select/);
     assert.match(form, /WORKSPACE_STEPS/);
     assert.match(form, /TabsList/);
     assert.match(form, /TabsTrigger/);
@@ -57,8 +60,25 @@ test("the location workspace uses shadcn tabs as four visible steps and keeps su
     assert.match(infoStep, /Un equipo asignado determina su departamento/);
     assert.match(infoStep, /<SelectTrigger id="location-workspace-department">/);
     assert.match(infoStep, /<SelectTrigger id="location-workspace-team">/);
+    assert.match(infoStep, /from "@\/components\/ui\/button"/);
+    assert.match(typeStep, /from "@\/components\/ui\/button"/);
+    assert.match(typeStep, /aria-pressed=\{selected\}/);
+    assert.doesNotMatch(infoStep, /<button\b/);
+    assert.doesNotMatch(typeStep, /<button\b/);
     assert.doesNotMatch(featuresStep, /Phone/);
     assert.doesNotMatch(featuresStep, /className="pl-9"/);
+});
+
+test("location room and catalog actions reuse the shared button primitive", () => {
+    const rooms = read("../components/locations/LocationFormRoomsSection.tsx");
+    const templates = read("../components/locations/LocationTemplatesTab.tsx");
+
+    for (const source of [rooms, templates]) {
+        assert.match(source, /from "@\/components\/ui\/button"/);
+        assert.doesNotMatch(source, /<button\b/);
+    }
+    assert.match(rooms, /variant="dangerSoft"/);
+    assert.match(templates, /variant="dangerSoft"/);
 });
 
 test("location contacts are operational, scoped to the site, and separate from account contacts", () => {

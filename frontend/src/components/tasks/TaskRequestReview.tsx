@@ -1,6 +1,7 @@
 import { Check, Loader2, X } from "lucide-react";
 import { useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { buildLocalDateTimeIso } from "@/lib/format";
 import {
@@ -14,9 +15,7 @@ import { getDefaultTaskDate } from "@/domain/tasks/task-create";
 import { toTaskPlanningDateInput } from "@/domain/tasks/task-schedule";
 
 import {
-    taskDialogDangerBtnClass,
     taskDialogFooterClass,
-    taskDialogPrimaryBtnClass,
 } from "./taskDialogChrome";
 import { TaskRequestReviewContent } from "./TaskRequestReviewContent";
 
@@ -112,13 +111,13 @@ export function TaskRequestReview({
             {isAdminOrManager && (
                 <div className={`${taskDialogFooterClass} justify-end`}>
                     {!hasValidPricing && <p className="mr-auto text-xs font-semibold text-amber-700 dark:text-amber-300">Indica el precio acordado antes de aceptar.</p>}
-                    <button type="button" disabled={isSaving || !hasValidPricing} onClick={() => void rejectRequest()} className={`${taskDialogDangerBtnClass} flex-1 sm:flex-none`}>
+                    <Button type="button" variant="dangerSoft" disabled={isSaving || !hasValidPricing} onClick={() => void rejectRequest()} className="flex-1 sm:flex-none">
                         <X className="h-4 w-4" />
                         Rechazar
-                    </button>
-                    <button type="button" disabled={isSaving || !hasValidPricing} onClick={() => void acceptRequest()} className={`${taskDialogPrimaryBtnClass} flex-1 sm:flex-none`}>
+                    </Button>
+                    <Button type="button" disabled={isSaving || !hasValidPricing} onClick={() => void acceptRequest()} className="flex-1 sm:flex-none">
                         {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" />Procesando...</> : <><Check className="h-4 w-4 stroke-[3px]" />Aceptar</>}
-                    </button>
+                    </Button>
                 </div>
             )}
         </div>

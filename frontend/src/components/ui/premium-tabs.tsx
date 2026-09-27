@@ -21,7 +21,7 @@ interface PremiumTabsProps<T extends string> {
     className?: string;
     /** `fit` keeps every tab visible without horizontal scroll (mobile-safe). Default for ≤4 tabs. */
     layout?: "scroll" | "fit";
-    /** Accessible label for the mobile section picker. */
+    /** Accessible label for the tablet and mobile section picker. */
     mobileLabel?: string;
 }
 
@@ -34,11 +34,10 @@ export function PremiumTabs<T extends string>({
     mobileLabel = "Seleccionar sección",
 }: PremiumTabsProps<T>) {
     const fit = layout === "fit";
-    const usesMobileSelect = tabs.length > 4;
 
     return (
         <Tabs value={activeTab} onValueChange={(id) => onChange(id as T)}>
-        {usesMobileSelect && <div className="mb-4 lg:hidden">
+        <div className="mb-4 lg:hidden">
             <Select value={activeTab} onValueChange={(id) => onChange(id as T)}>
                 <SelectTrigger aria-label={mobileLabel} className="h-11 rounded-2xl bg-[var(--bg-primary)]/45 font-semibold text-[var(--text-main)]">
                     <SelectValue />
@@ -58,9 +57,9 @@ export function PremiumTabs<T extends string>({
                     })}
                 </SelectContent>
             </Select>
-        </div>}
+        </div>
         <TabsList
-            className={`${usesMobileSelect ? "hidden lg:flex" : "flex"} h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 ${
+            className={`hidden h-auto w-full gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1 lg:flex ${
                 fit
                     ? "overflow-hidden"
                     : "snap-x overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
@@ -100,19 +99,19 @@ export function PremiumTabs<T extends string>({
                                 className={`relative inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-black leading-none text-white shadow-sm ${
                                     tab.badgeTone === "info"
                                         ? "bg-accent shadow-accent/30"
-                                        : "bg-red-500 shadow-red-500/30"
+                                        : "bg-[var(--btn-cancel-hover-bg)] shadow-[var(--btn-cancel-bg)]"
                                 }`}
                             >
                                 <span className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-60 ${
-                                    tab.badgeTone === "info" ? "bg-accent/70" : "bg-red-400"
+                                    tab.badgeTone === "info" ? "bg-accent/70" : "bg-[var(--btn-cancel-hover-bg)]"
                                 }`} />
                                 <span className="relative">{tab.badge > 99 ? "99+" : tab.badge}</span>
                             </span>
                         )}
                         {tab.attention && !tab.badge && (
                             <span className="relative flex h-2.5 w-2.5">
-                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
-                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+                                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--btn-cancel-hover-bg)] opacity-60" />
+                                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--btn-cancel-hover-bg)]" />
                             </span>
                         )}
                     </TabsTrigger>

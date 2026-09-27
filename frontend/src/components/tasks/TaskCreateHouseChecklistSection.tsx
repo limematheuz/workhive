@@ -2,6 +2,9 @@
 
 import React, { useState } from "react";
 import { ListTodo, Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
 import type { User } from "@/types/user";
@@ -89,12 +92,10 @@ export function TaskCreateHouseChecklistSection({
                     )}
                     {visibleHouseTemplates.length > 0 && (
                         <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 id="toggleChecklist"
                                 checked={useHouseChecklist}
-                                onChange={(e) => setUseHouseChecklist(e.target.checked)}
-                                className="w-3.5 h-3.5 rounded border-[var(--border-color)] bg-[var(--bg-card)] text-accent focus:ring-accent accent-accent cursor-pointer animate-none"
+                                onCheckedChange={(checked) => setUseHouseChecklist(checked === true)}
                             />
                             <label htmlFor="toggleChecklist" className="text-2xs font-bold uppercase text-[var(--text-muted)] cursor-pointer">
                                 {dict.tasks?.create_dialog?.create_checklist || "Create checklist"}
@@ -143,27 +144,24 @@ export function TaskCreateHouseChecklistSection({
                             <label htmlFor="task-create-template" className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
                                 {dict.locations?.sheet?.select_template_label || "Select the Default Task *"}
                             </label>
-                            <select
-                                id="task-create-template"
-                                value={selectedTmplId}
-                                onChange={(e) => setSelectedTmplId(e.target.value)}
-                                aria-label={dict.locations?.sheet?.select_template_label || "Select the Default Task *"}
-                                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent h-9 cursor-pointer"
+                            <Select
+                                value={selectedTmplId || "none"}
+                                onValueChange={(value) => setSelectedTmplId(value === "none" ? "" : value)}
                             >
-                                <option value="">{dict.locations?.sheet?.choose_template || "-- Choose from catalog --"}</option>
-                                {availableTemplates.map(gt => (
-                                    <option key={gt.id} value={gt.id.toString()}>
+                                <SelectTrigger id="task-create-template" aria-label={dict.locations?.sheet?.select_template_label || "Select the Default Task *"} className="h-9 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent><SelectItem value="none">{dict.locations?.sheet?.choose_template || "-- Choose from catalog --"}</SelectItem>{availableTemplates.map(gt => (
+                                    <SelectItem key={gt.id} value={gt.id.toString()}>
                                         {gt.name} ({gt.default_price || 0} €)
-                                    </option>
-                                ))}
-                            </select>
+                                    </SelectItem>
+                                ))}</SelectContent>
+                            </Select>
                         </div>
 
                         <div className="space-y-1">
                             <label htmlFor="task-create-special-price" className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
                                 {dict.locations?.sheet?.special_price_label || "Special Price (Optional)"}
                             </label>
-                            <input
+                            <Input
                                 id="task-create-special-price"
                                 type="number"
                                 step="0.01"
@@ -171,7 +169,8 @@ export function TaskCreateHouseChecklistSection({
                                 value={customPriceVal}
                                 onChange={(e) => setCustomPriceVal(e.target.value)}
                                 placeholder="Base price"
-                                className="w-full bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-main)] rounded-xl px-3 py-1.5 text-xs outline-none focus:border-accent h-9"
+                                inputMode="decimal"
+                                className="h-9 text-xs"
                             />
                         </div>
 

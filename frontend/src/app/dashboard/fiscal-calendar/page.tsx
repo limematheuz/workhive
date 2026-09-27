@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { canManageFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -168,9 +169,9 @@ export default function FiscalCalendarPage() {
                                 {text.reminder_label}
                             </span>
                             <span className="mt-1.5 flex items-center gap-2">
-                                <input
+                                <Input
                                     aria-label={text.reminder_label}
-                                    className="w-12 bg-transparent text-center text-base font-bold text-[var(--text-main)] outline-none"
+                                    className="h-auto w-12 border-0 bg-transparent px-0 text-center text-base font-bold text-[var(--text-main)] shadow-none"
                                     inputMode="numeric"
                                     maxLength={2}
                                     value={reminderDays}

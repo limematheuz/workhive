@@ -19,9 +19,3 @@ export const taskDialogChipBtnClass =
 
 export const taskDialogPrimaryBtnClass =
     `${taskDialogChipBtnClass} border border-transparent bg-[var(--btn-primary-bg)] text-[var(--btn-primary-text)] shadow-sm hover:bg-[var(--btn-primary-hover-bg)]`;
-
-export const taskDialogSecondaryBtnClass =
-    `${taskDialogChipBtnClass} border border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)] hover:bg-[var(--btn-secondary-hover-bg)]`;
-
-export const taskDialogDangerBtnClass =
-    `${taskDialogChipBtnClass} border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] text-[var(--btn-cancel-text)] hover:bg-[var(--btn-cancel-hover-bg)] hover:text-[var(--btn-cancel-hover-text)] hover:border-transparent`;

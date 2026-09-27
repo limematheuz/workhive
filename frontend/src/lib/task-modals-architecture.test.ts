@@ -27,7 +27,13 @@ test("task dialogs share glass chrome and keep compact checklist controls", () =
     assert.match(createModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(templateModal, /taskDialogContentClass|taskDialogChrome/);
     assert.match(requestReview, /taskDialogFooterClass|taskDialogChrome/);
-    assert.match(checklistEditor, /appearance-none/);
+    for (const source of [createModal, requestReview]) {
+        assert.match(source, /from "@\/components\/ui\/button"/);
+        assert.doesNotMatch(source, /<button\b/);
+    }
+    assert.match(checklistEditor, /from "@\/components\/ui\/select"/);
+    assert.match(checklistEditor, /<SelectTrigger aria-label="Asignar todos los pasos"/);
+    assert.doesNotMatch(checklistEditor, /<select|appearance-none|ChevronDown/);
     assert.doesNotMatch(checklistEditor, /UserRound/);
     assert.match(globals, /dialog-compact-control/);
     assert.match(globals, /dialog-glass/);
@@ -122,11 +128,29 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.match(fields, /TaskChecklistEditor/);
     assert.match(form, /overflow-y-auto/);
     assert.match(actions, /canDuplicateTask/);
-    assert.match(actions, /taskDialogPrimaryBtnClass|btn-primary/);
+    assert.match(actions, /from "@\/components\/ui\/button"/);
+    assert.match(actions, /variant="dangerSoft"/);
+    assert.doesNotMatch(actions, /<button\b/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
     assert.match(fields, /title_label/);
     assert.match(fields, /onAssignAll/);
+    assert.match(fields, /from "@\/components\/ui\/input"/);
+    assert.match(fields, /from "@\/components\/ui\/textarea"/);
+    assert.doesNotMatch(fields, /<input\b|<textarea\b/);
     assert.doesNotMatch(fields, /calendarAssigneeName/);
+});
+
+test("task template and zone editors use shared form controls", () => {
+    const checklistSteps = read("../components/tasks/ChecklistStepsEditor.tsx");
+    const locationTemplates = read("../components/locations/LocationTemplatesTab.tsx");
+    const taskZones = read("../components/tasks/TaskCreateZonesSection.tsx");
+
+    for (const source of [checklistSteps, locationTemplates, taskZones]) {
+        assert.doesNotMatch(source, /<input\b|<textarea\b/);
+    }
+    assert.match(checklistSteps, /from "@\/components\/ui\/input"/);
+    assert.match(locationTemplates, /from "@\/components\/ui\/checkbox"/);
+    assert.match(taskZones, /from "@\/components\/ui\/checkbox"/);
 });
 
 test("tasks page forwards pricing state required by the task edit modal", () => {
@@ -137,6 +161,14 @@ test("tasks page forwards pricing state required by the task edit modal", () => 
     assert.match(formModals, /setEditPricingMode: \(val: TaskPricingMode\) => void/);
     assert.match(tasksPage, /editPricingMode: crud\.editPricingMode/);
     assert.match(tasksPage, /setEditPricingMode: crud\.setEditPricingMode/);
+});
+
+test("task pagination uses the shared button primitive", () => {
+    const pagination = read("../components/tasks/TasksListPagination.tsx");
+
+    assert.match(pagination, /from "@\/components\/ui\/button"/);
+    assert.match(pagination, /variant=\{safeCurrentPage === p \? "default" : "outline"\}/);
+    assert.doesNotMatch(pagination, /<button\b/);
 });
 
 test("task creation exposes compact per-job pricing controls and keeps defaults in the domain helper", () => {
@@ -153,6 +185,9 @@ test("task creation exposes compact per-job pricing controls and keeps defaults 
     assert.match(createList, /\["fixed", "hourly"\] as const/);
     assert.match(createList, /aria-pressed=\{active\}/);
     assert.match(createList, /dialog-compact-control/);
+    assert.match(createList, /from "@\/components\/ui\/input"/);
+    assert.match(createList, /from "@\/components\/ui\/select"/);
+    assert.doesNotMatch(createList, /<input|<select/);
     assert.match(createList, /flex items-end gap-2 md:ml-auto/);
     assert.match(createList, /data-price-input/);
     assert.match(crud, /resolveTaskCreationPricing/);
@@ -203,4 +238,21 @@ test("monetary inputs keep numeric validation without native increment buttons",
 
     const createList = read("../components/tasks/TaskCreateHouseTemplateList.tsx");
     assert.match(createList, /type="text"\s+inputMode="decimal"/);
+
+    const checklistSection = read("../components/tasks/TaskCreateHouseChecklistSection.tsx");
+    assert.match(checklistSection, /from "@\/components\/ui\/checkbox"/);
+    assert.match(checklistSection, /from "@\/components\/ui\/input"/);
+    assert.match(checklistSection, /from "@\/components\/ui\/select"/);
+    assert.doesNotMatch(checklistSection, /<input|<select/);
+});
+
+test("location history uses shared form controls", () => {
+    const history = read("../components/locations/LocationHistoryTab.tsx");
+
+    assert.match(history, /from "@\/components\/ui\/input"/);
+    assert.match(history, /from "@\/components\/ui\/select"/);
+    assert.match(history, /<SelectTrigger aria-label="Asignar a un trabajador de tu equipo"/);
+    assert.match(history, /<SelectTrigger aria-label="Filtrar por estado"/);
+    assert.doesNotMatch(history, /<select|<input/);
+    assert.doesNotMatch(history, /bg-black|hover:bg-neutral-800/);
 });

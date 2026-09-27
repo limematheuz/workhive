@@ -5,6 +5,7 @@ import { GripVertical, ListChecks, MapPinned, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { LocationService } from "@/services/location.service";
@@ -133,8 +134,8 @@ export function LocationSpacesTab({ locationId, open, canManage }: LocationSpace
 
             {canManage && <div className="grid gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:grid-cols-[1fr_10rem_11rem_auto]">
                 <Input value={spaceName} onChange={(event) => setSpaceName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); void addSpace(); } }} placeholder="Ej.: Baño 1" maxLength={100} />
-                <select value={spaceType} aria-label="Tipo de espacio" onChange={(event) => setSpaceType(event.target.value)} className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-sm text-[var(--text-main)]"><option value="other">Otro</option><option value="bathroom">Baño</option><option value="office">Despacho</option><option value="kitchen">Cocina</option><option value="common_area">Zona común</option></select>
-                <select value={parentSpaceId} onChange={(event) => setParentSpaceId(event.target.value)} aria-label="Espacio padre" className="h-10 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)] px-3 text-sm text-[var(--text-main)]"><option value="">Sin espacio padre</option>{spaces.map((space) => space.id && <option key={space.id} value={space.id}>{space.name}</option>)}</select>
+                <Select value={spaceType} onValueChange={setSpaceType}><SelectTrigger aria-label="Tipo de espacio"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="other">Otro</SelectItem><SelectItem value="bathroom">Baño</SelectItem><SelectItem value="office">Despacho</SelectItem><SelectItem value="kitchen">Cocina</SelectItem><SelectItem value="common_area">Zona común</SelectItem></SelectContent></Select>
+                <Select value={parentSpaceId || "none"} onValueChange={(value) => setParentSpaceId(value === "none" ? "" : value)}><SelectTrigger aria-label="Espacio padre"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sin espacio padre</SelectItem>{spaces.flatMap((space) => space.id ? [<SelectItem key={space.id} value={String(space.id)}>{space.name}</SelectItem>] : [])}</SelectContent></Select>
                 <Button type="button" onClick={() => void addSpace()} disabled={saving || !spaceName.trim()}><Plus className="h-3.5 w-3.5" /> Añadir</Button>
             </div>}
 

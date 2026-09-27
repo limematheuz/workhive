@@ -16,7 +16,11 @@ import {
 } from "@/services/company-plan-access.service";
 import type { Company } from "@/services/company.service";
 import type { EntitlementValues } from "./EntitlementConfigurationEditor";
-import { entitlementChanges, type CommercialChange } from "./commercial-change-utils";
+import {
+    commercialTermsChanges,
+    entitlementChanges,
+    type CommercialChange,
+} from "./commercial-change-utils";
 
 export type CompanyPlanAccessTab = "plan" | "custom" | "history";
 
@@ -146,6 +150,7 @@ export function auditLabel(action: string): string {
         "subscription.manually_changed": "Plan actualizado",
         "entitlement.override_set": "Acceso personalizado actualizado",
         "entitlement.customization_replaced": "Configuración personalizada actualizada",
+        "subscription.customization_terms_changed": "Condiciones comerciales personalizadas actualizadas",
         "subscription.synchronized": "Plan sincronizado",
     };
     return labels[action] || "Plan y acceso actualizados";
@@ -189,42 +194,26 @@ export function useCompanyPlanAccessDialog({
             isReduction: Boolean(currentTrialEnd && !trialEndsAt),
         });
         if (planStatus === "active") {
-            const nextTerms = commercialTermsPayload(commercialTerms);
-            const currentTerms = access.subscription.commercial_terms;
-            if (!currentTerms) {
-                changes.push({
-                    label: "Condiciones comerciales",
-                    previous: "Sin registrar",
-                    next: nextTerms ? "Contrato registrado" : "Pendiente de completar",
-                });
-            } else if (
-                nextTerms
-                && (
-                    nextTerms.billing_interval !== currentTerms.billing_interval
-                    || nextTerms.amount_cents !== currentTerms.amount_cents
-                    || nextTerms.currency !== currentTerms.currency
-                    || nextTerms.tax_behavior !== currentTerms.tax_behavior
-                    || nextTerms.effective_at !== currentTerms.effective_at
-                )
-            ) {
-                changes.push({
-                    label: "Condiciones comerciales",
-                    previous: `${currentTerms.amount_cents / 100} ${currentTerms.currency} · ${currentTerms.billing_interval === "annual" ? "anual" : "mensual"}`,
-                    next: `${nextTerms.amount_cents / 100} ${nextTerms.currency} · ${nextTerms.billing_interval === "annual" ? "anual" : "mensual"}`,
-                });
-            }
+            changes.push(...commercialTermsChanges(
+                access.subscription.commercial_terms,
+                commercialTermsPayload(commercialTerms),
+            ));
         }
         return [...changes, ...entitlementChanges(access.entitlements, currentValues, nextPlanValues)];
     }, [access, commercialTerms, currentValues, nextPlanValues, planCode, planStatus, selectedPlan, trialEndsAt]);
     const customizationChanges = useMemo<CommercialChange[]>(() => {
         if (!access) return [];
         const changes = entitlementChanges(access.entitlements, currentValues, customValues);
+        changes.push(...commercialTermsChanges(
+            access.subscription.commercial_terms,
+            commercialTermsPayload(commercialTerms),
+        ));
         if (currentCustomizationEnd !== customEndsAt) changes.push({
             label: "Fin de la configuración", previous: currentCustomizationEnd || "Sin fecha", next: customEndsAt || "Sin fecha",
             isReduction: Boolean(currentCustomizationEnd && !customEndsAt),
         });
         return changes;
-    }, [access, currentCustomizationEnd, currentValues, customEndsAt, customValues]);
+    }, [access, commercialTerms, currentCustomizationEnd, currentValues, customEndsAt, customValues]);
 
     useEffect(() => {
         if (!company) return;
@@ -273,6 +262,11 @@ export function useCompanyPlanAccessDialog({
 
     const saveCustomization = async () => {
         if (!company || !access) return;
+        const nextTerms = commercialTermsPayload(commercialTerms);
+        if (!nextTerms) {
+            toast.error("Completa las condiciones comerciales antes de guardar una ampliación");
+            return;
+        }
         try {
             dispatch({ type: "submitting", value: true });
             const updated = await CompanyPlanAccessService.replaceCustomization(company.id, {
@@ -280,7 +274,9 @@ export function useCompanyPlanAccessDialog({
                     code: item.code,
                     ...(item.value_type === "boolean" ? { boolean_value: customValues[item.code] === true } : { integer_value: Number(customValues[item.code] ?? 0) }),
                 })),
-                ends_at: toIsoEndOfDay(customEndsAt), reason: customReason,
+                ends_at: toIsoEndOfDay(customEndsAt),
+                commercial_terms: nextTerms,
+                reason: customReason,
             });
             dispatch({ type: "override-updated", access: updated });
             onUpdated(updated);

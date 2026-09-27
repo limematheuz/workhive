@@ -6,6 +6,7 @@ import { User } from "@/types/user";
 import { UserService } from "@/services/user.service";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { DocumentFormInput } from "@/components/billing/DocumentFormControls";
@@ -156,7 +157,7 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
                                 <span className="mt-0.5 text-2xs font-medium text-[var(--text-muted)]">
                                     {dict.profile.form.photo_hint}
                                 </span>
-                                <input
+                                <Input
                                     type="file"
                                     accept="image/jpeg,image/png,image/webp,image/gif"
                                     onChange={handleProfilePhotoChange}

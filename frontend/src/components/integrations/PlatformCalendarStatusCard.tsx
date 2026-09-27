@@ -12,6 +12,7 @@ import type { ComponentType } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { DataListTable } from "@/components/ui/data-list-table";
+import { Switch } from "@/components/ui/switch";
 import type { PlatformCalendarStatus } from "@/services/calendar.service";
 import type { PlatformCalendarLabels } from "./PlatformCalendarOverview";
 
@@ -121,7 +122,12 @@ export function PlatformCalendarStatusCard({
                 <div className="billing-block flex flex-col justify-between rounded-[18px] border border-[var(--border-soft)] p-3.5">
                     <div className="flex items-start justify-between gap-3">
                         <div className="flex min-w-0 gap-2.5"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" /><div><p className="text-sm font-semibold text-[var(--text-main)]">{labels.global_control}</p><p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{labels.company_toggle}</p></div></div>
-                        <label className="relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer items-center"><input type="checkbox" role="switch" aria-label={labels.company_toggle} aria-checked={status.company_connections_enabled} checked={status.company_connections_enabled} disabled={saving} onChange={(event) => onToggle(event.target.checked)} className="peer sr-only" /><span className="absolute inset-0 rounded-full border border-[var(--border-soft)] bg-[var(--bg-secondary)] transition-colors peer-checked:border-accent peer-checked:bg-accent peer-disabled:cursor-not-allowed peer-disabled:opacity-50" /><span className="absolute left-0.5 h-5 w-5 rounded-full bg-[var(--bg-card-solid)] shadow-sm transition-transform peer-checked:translate-x-5" /></label>
+                        <Switch
+                            aria-label={labels.company_toggle}
+                            checked={status.company_connections_enabled}
+                            disabled={saving}
+                            onCheckedChange={onToggle}
+                        />
                     </div>
                     <div className="mt-4 flex items-center justify-between border-t border-[var(--border-soft)] pt-3 text-xs"><span className="text-[var(--text-muted)]">{labels.company_access}</span><span className="font-semibold text-[var(--text-main)]">{status.company_connections_enabled ? labels.enabled : labels.disabled}</span></div>
                 </div>

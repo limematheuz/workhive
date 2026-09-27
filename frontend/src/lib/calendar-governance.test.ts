@@ -26,7 +26,9 @@ test("platform calendar panel is superadmin-scoped and never reads secrets", () 
     assert.doesNotMatch(calendarUi, /emerald-|amber-/);
     assert.match(calendarUi, /<Button/);
     assert.match(calendarUi, /<Badge/);
-    assert.match(calendarUi, /role="switch"/);
+    assert.match(statusCard, /from "@\/components\/ui\/switch"/);
+    assert.match(statusCard, /<Switch/);
+    assert.doesNotMatch(statusCard, /<input\b/);
     assert.doesNotMatch(`${page}\n${calendarUi}`, /client_secret|encryption_key|access_token/i);
     assert.doesNotMatch(service, /client_secret|encryption_key|access_token/i);
 });

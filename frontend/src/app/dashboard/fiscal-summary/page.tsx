@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { PageHeader } from "@/components/ui/page-header";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -102,16 +103,10 @@ export default function FiscalSummaryPage() {
                     title={text.title}
                     subtitle={text.subtitle}
                     actions={(
-                        <label className="flex h-10 items-center gap-2 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card-solid)] px-3 text-xs font-semibold text-[var(--text-main)]">
-                            <span className="sr-only">{text.year}</span>
-                            <select
-                                value={year}
-                                onChange={(event) => setYear(Number(event.target.value))}
-                                className="min-w-20 bg-transparent text-sm font-semibold outline-none"
-                            >
-                                {yearOptions.map((option) => <option key={option} value={option}>{option}</option>)}
-                            </select>
-                        </label>
+                        <Select value={String(year)} onValueChange={(value) => setYear(Number(value))}>
+                            <SelectTrigger aria-label={text.year} className="h-10 min-w-20 text-sm font-semibold"><SelectValue /></SelectTrigger>
+                            <SelectContent>{yearOptions.map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}</SelectContent>
+                        </Select>
                     )}
                 />
 

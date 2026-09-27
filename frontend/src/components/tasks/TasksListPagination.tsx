@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 interface TasksListPaginationProps {
@@ -32,14 +33,16 @@ export function TasksListPagination({
                 {dict.tasks?.pagination_info || "Showing"} {(safeCurrentPage - 1) * itemsPerPage + 1} - {Math.min(safeCurrentPage * itemsPerPage, totalItems)} of {totalItems} {dict.tasks?.pagination_tasks || "tasks"}
             </div>
             <div className="flex items-center gap-1">
-                <button
+                <Button
                     type="button"
+                    variant="outline"
+                    size="xs"
                     disabled={safeCurrentPage === 1}
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed ui-motion cursor-pointer font-bold"
+                    className="px-3 py-1.5 font-bold"
                 >
                     {dict.tasks?.prev_page || "Previous"}
-                </button>
+                </Button>
 
                 {pageNumbers.map((p, idx) => {
                     if (p === "...") {
@@ -48,29 +51,29 @@ export function TasksListPagination({
                         return <span key={ellipsisKey} className="px-1.5 text-[var(--text-muted)]">...</span>;
                     }
                     return (
-                        <button
+                        <Button
                             key={p}
                             type="button"
+                            variant={safeCurrentPage === p ? "default" : "outline"}
+                            size="xs"
                             onClick={() => setCurrentPage(p as number)}
-                            className={`px-3 py-1.5 rounded-xl border ui-motion cursor-pointer font-bold ${
-                                safeCurrentPage === p
-                                    ? "bg-accent border-accent text-white animate-none"
-                                    : "bg-[var(--bg-card)] border-[var(--border-color)] text-[var(--text-main)] hover:bg-[var(--bg-secondary)]"
-                            }`}
+                            className="px-3 py-1.5 font-bold"
                         >
                             {p}
-                        </button>
+                        </Button>
                     );
                 })}
 
-                <button
+                <Button
                     type="button"
+                    variant="outline"
+                    size="xs"
                     disabled={safeCurrentPage === totalPages}
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    className="px-3 py-1.5 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl hover:bg-[var(--bg-secondary)] disabled:opacity-40 disabled:cursor-not-allowed ui-motion cursor-pointer font-bold"
+                    className="px-3 py-1.5 font-bold"
                 >
                     {dict.tasks?.next_page || "Next"}
-                </button>
+                </Button>
             </div>
         </div>
     );

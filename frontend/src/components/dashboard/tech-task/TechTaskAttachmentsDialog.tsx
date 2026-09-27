@@ -10,6 +10,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useDictionary } from "@/lib/dictionary-context";
+import { Input } from "@/components/ui/input";
 
 interface TechTaskAttachmentsDialogProps {
     open: boolean;
@@ -41,7 +42,7 @@ export function TechTaskAttachmentsDialog({
 
                 <div className="mt-4">
                     <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-6 transition-colors duration-200 hover:border-accent/50">
-                        <input
+                        <Input
                             type="file"
                             accept="image/*"
                             onChange={onUploadAttachment}

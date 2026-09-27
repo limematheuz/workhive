@@ -12,6 +12,9 @@ test("fiscal summary uses the shared data-list architecture and server-side sour
     assert.match(page, /DataListTable/);
     assert.match(page, /canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/);
     assert.match(page, /FiscalSummaryService\.getSummary/);
+    assert.match(page, /from "@\/components\/ui\/select"/);
+    assert.match(page, /<SelectTrigger aria-label=\{text\.year\}/);
+    assert.doesNotMatch(page, /<select/);
     assert.doesNotMatch(page, /InvoiceService|getAllInvoices|ExpenseService|getAllExpenses/);
     assert.match(service, /assertApiResponseOk/);
     assert.match(service, /\/api\/v1\/fiscal-summary/);

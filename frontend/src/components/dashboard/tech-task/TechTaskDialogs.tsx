@@ -33,7 +33,7 @@ type TechTaskDialogsProps = {
     onPersistNote: (itemId: string, note: string) => Promise<void>;
     onChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     onResetChecklist: () => Promise<void>;
-    onAddChecklistItem: (e: React.FormEvent) => Promise<void>;
+    onAddChecklistItem: (question: string, assigneeId: number) => Promise<boolean>;
     uploadingAttachment: boolean;
     onUploadAttachment: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     newCommentText: string;

@@ -56,8 +56,10 @@ test("partner companies have their own operational workspace", () => {
     assert.match(active, /billing-surface/);
     assert.match(active, /billing-block/);
     assert.match(active, /from "@\/components\/ui\/badge"/);
+    assert.match(active, /from "@\/components\/ui\/select"/);
     assert.match(active, /variant="dangerSoft"/);
-    assert.match(active, /DocumentFormSelect/);
+    assert.match(active, /<SelectTrigger/);
+    assert.doesNotMatch(active, /DocumentFormSelect|<select/);
     assert.doesNotMatch(active, /PremiumTabs/);
     assert.doesNotMatch(active, /min-h-\[170px\]/);
     assert.doesNotMatch(active, /btn-cancel-muted/);

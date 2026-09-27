@@ -1,6 +1,6 @@
 alembic==1.14.1
 annotated-types==0.7.0
-anyio==4.13.0
+anyio==4.14.2
 bcrypt==5.0.0
 boto3==1.42.70
 certifi==2026.2.25

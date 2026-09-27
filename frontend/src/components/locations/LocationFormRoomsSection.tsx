@@ -64,14 +64,16 @@ export function LocationFormRoomsSection({
                                         <span className="text-3xs font-black uppercase bg-accent/10 text-accent px-2 py-0.5 rounded-md">
                                             {dict.locations.form.rooms_capacity.replace("{count}", roomCap.toString())}
                                         </span>
-                                        <button
+                                        <Button
                                             type="button"
+                                            variant="dangerSoft"
+                                            size="icon-xs"
                                             aria-label={dict.locations.form.rooms_remove}
                                             onClick={() => onRemoveRoom(room.id)}
-                                            className="text-red-500 hover:text-red-700 font-bold text-sm bg-transparent hover:bg-red-500/10 w-6 h-6 flex items-center justify-center rounded-lg transition-colors border-0 cursor-pointer"
+                                            className="h-6 w-6 text-sm font-bold"
                                         >
                                             &times;
-                                        </button>
+                                        </Button>
                                     </div>
                                 </div>
 
@@ -79,69 +81,81 @@ export function LocationFormRoomsSection({
                                     <div className="flex flex-col items-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
                                         <span className="text-[10px] font-bold text-[var(--text-muted)] mb-1">{dict.locations.form.rooms_double}</span>
                                         <div className="flex items-center gap-1.5">
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="icon-xs"
                                                 aria-label={dict.locations.form.rooms_decrease.replace("{type}", dict.locations.form.rooms_double)}
                                                 onClick={() => onUpdateBedCount(index, "double_beds", -1)}
-                                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                                                className="h-5 w-5 rounded-md text-xs"
                                             >
                                                 -
-                                            </button>
+                                            </Button>
                                             <span className="text-xs font-bold text-[var(--text-main)] w-4 text-center">{room.double_beds}</span>
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="icon-xs"
                                                 aria-label={dict.locations.form.rooms_increase.replace("{type}", dict.locations.form.rooms_double)}
                                                 onClick={() => onUpdateBedCount(index, "double_beds", 1)}
-                                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                                                className="h-5 w-5 rounded-md text-xs"
                                             >
                                                 +
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col items-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
                                         <span className="text-[10px] font-bold text-[var(--text-muted)] mb-1">{dict.locations.form.rooms_single}</span>
                                         <div className="flex items-center gap-1.5">
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="icon-xs"
                                                 aria-label={dict.locations.form.rooms_decrease.replace("{type}", dict.locations.form.rooms_single)}
                                                 onClick={() => onUpdateBedCount(index, "single_beds", -1)}
-                                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                                                className="h-5 w-5 rounded-md text-xs"
                                             >
                                                 -
-                                            </button>
+                                            </Button>
                                             <span className="text-xs font-bold text-[var(--text-main)] w-4 text-center">{room.single_beds}</span>
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="icon-xs"
                                                 aria-label={dict.locations.form.rooms_increase.replace("{type}", dict.locations.form.rooms_single)}
                                                 onClick={() => onUpdateBedCount(index, "single_beds", 1)}
-                                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                                                className="h-5 w-5 rounded-md text-xs"
                                             >
                                                 +
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col items-center p-2 bg-[var(--bg-tertiary)] rounded-lg">
                                         <span className="text-[10px] font-bold text-[var(--text-muted)] mb-1">{dict.locations.form.rooms_bunk}</span>
                                         <div className="flex items-center gap-1.5">
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="icon-xs"
                                                 aria-label={dict.locations.form.rooms_decrease.replace("{type}", dict.locations.form.rooms_bunk)}
                                                 onClick={() => onUpdateBedCount(index, "bunk_beds", -1)}
-                                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                                                className="h-5 w-5 rounded-md text-xs"
                                             >
                                                 -
-                                            </button>
+                                            </Button>
                                             <span className="text-xs font-bold text-[var(--text-main)] w-4 text-center">{room.bunk_beds}</span>
-                                            <button
+                                            <Button
                                                 type="button"
+                                                variant="outline"
+                                                size="icon-xs"
                                                 aria-label={dict.locations.form.rooms_increase.replace("{type}", dict.locations.form.rooms_bunk)}
                                                 onClick={() => onUpdateBedCount(index, "bunk_beds", 1)}
-                                                className="w-5 h-5 flex items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-soft)] text-xs text-[var(--text-main)] hover:bg-[var(--border-soft)]"
+                                                className="h-5 w-5 rounded-md text-xs"
                                             >
                                                 +
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 </div>

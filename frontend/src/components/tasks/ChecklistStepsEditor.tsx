@@ -3,6 +3,7 @@
 import React from "react";
 import { ListTodo, Plus, Trash2 } from "lucide-react";
 
+import { Input } from "@/components/ui/input";
 import { createEditableLineKey } from "@/lib/editable-line-key";
 import {
     parseChecklistStepTexts,
@@ -91,7 +92,7 @@ export function ChecklistStepsEditor({
                             <label className="sr-only" htmlFor={`checklist-step-${step.id}`}>
                                 {label} {index + 1}
                             </label>
-                            <input
+                            <Input
                                 id={`checklist-step-${step.id}`}
                                 type="text"
                                 value={step.text}

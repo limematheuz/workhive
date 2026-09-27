@@ -22,3 +22,28 @@ test("task editors reuse local shadcn inputs and selects", () => {
     assert.match(reservations, /NO_RESERVATION_ID/);
     assert.match(reservations, /value === NO_RESERVATION_ID \? "" : value/);
 });
+
+test("tech task forms use shared controls and keep native file selection behind Input", () => {
+    const checklist = source("../components/dashboard/tech-task/TechTaskChecklistDialog.tsx");
+    const issues = source("../components/dashboard/tech-task/TechTaskIssuesSection.tsx");
+    const property = source("../components/dashboard/tech-task/TechTaskPropertySection.tsx");
+    const comments = source("../components/dashboard/tech-task/TechTaskCommentsDialog.tsx");
+    const attachments = source("../components/dashboard/tech-task/TechTaskAttachmentsDialog.tsx");
+
+    for (const control of [checklist, issues, property]) {
+        assert.match(control, /from "@\/components\/ui\/input"/);
+        assert.match(control, /from "@\/components\/ui\/select"/);
+        assert.match(control, /<SelectTrigger/);
+        assert.doesNotMatch(control, /<(?:input|select|textarea)\b/);
+    }
+
+    for (const control of [comments, attachments]) {
+        assert.match(control, /from "@\/components\/ui\/(?:input|textarea)"/);
+        assert.doesNotMatch(control, /<(?:input|textarea)\b/);
+    }
+
+    assert.match(checklist, /onAddChecklistItem\(newChecklistQuestion, Number\(newChecklistAssigneeId\)\)/);
+    assert.match(property, /onSubmit=\{save\}/);
+    assert.doesNotMatch(property, /querySelector|data-tech-features-editor.*closest/);
+    assert.doesNotMatch(issues, /(?:amber|red|purple)-/);
+});

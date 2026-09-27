@@ -20,7 +20,9 @@ test("platform calendar overview uses billing surfaces and DataListTable", () =>
     assert.match(calendarUi, /billing-block/);
     assert.match(calendarUi, /DataListTable/);
     assert.match(overview, /PageHeader/);
-    assert.match(calendarUi, /role="switch"/);
+    assert.match(statusCard, /from "@\/components\/ui\/switch"/);
+    assert.match(statusCard, /<Switch/);
+    assert.doesNotMatch(statusCard, /<input\b/);
     assert.match(calendarUi, /<Button/);
     assert.match(calendarUi, /<Badge/);
     assert.doesNotMatch(statusCard, /<StatusBadge\s+\{\.\.\.item\}\s*\/>/);

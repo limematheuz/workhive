@@ -5,16 +5,14 @@ import Image from "next/image";
 import { Building2, CalendarClock, FileText, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { getTaskReportCategory, getTaskReportMediaHref } from "@/features/task-reports/task-report-center";
 import { formatTaskReportDate } from "@/features/task-reports/task-report-format";
 import {
     reportActionCluster,
-    reportDangerBtn,
-    reportNeutralBtn,
-    reportPrimaryBtn,
-    reportSoftAccentBtn,
 } from "@/features/task-reports/task-report-action-styles";
 import { canEditTaskReportContent } from "@/features/task-reports/task-report-selection";
 import type { TaskReport, TaskReportUpdate } from "@/services/task-report.service";
@@ -140,24 +138,28 @@ export function TaskReportDetailDialog({
                         {!editing && (
                             <div className={`${reportActionCluster} w-full sm:w-auto`}>
                                 {canManage && editable && (
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="select"
+                                        size="xs"
                                         onClick={() => setEditingReportId(report.id)}
-                                        className={reportSoftAccentBtn}
+                                        className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                                     >
                                         <Pencil className="h-3.5 w-3.5" />
                                         {copy.edit}
-                                    </button>
+                                    </Button>
                                 )}
                                 {canManage && (
-                                    <button
+                                    <Button
                                         type="button"
+                                        variant="dangerSoft"
+                                        size="xs"
                                         onClick={() => onDelete(report)}
-                                        className={reportDangerBtn}
+                                        className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                         {copy.delete}
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
                         )}
@@ -235,26 +237,27 @@ function ReportEditForm({
                 <span className="text-[11px] font-bold uppercase tracking-wide text-[var(--text-muted)]">
                     {copy.description_label}
                 </span>
-                <textarea
+                <Textarea
                     value={description}
                     onChange={event => setDescription(event.target.value)}
                     rows={4}
-                    className="w-full rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-main)] outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+                    className="w-full rounded-xl bg-[var(--bg-secondary)] px-3 py-2 text-sm text-[var(--text-main)] focus-visible:ring-2 focus-visible:ring-accent/40"
                 />
             </label>
             {error && <p className="text-sm text-[var(--btn-cancel-text)]">{error}</p>}
             <div className={`${reportActionCluster} w-full sm:w-auto`}>
-                <button type="button" disabled={saving} onClick={onCancel} className={reportNeutralBtn}>
+                <Button type="button" variant="cancel" size="xs" disabled={saving} onClick={onCancel} className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider">
                     {copy.cancel}
-                </button>
-                <button
+                </Button>
+                <Button
                     type="button"
+                    size="xs"
                     disabled={saving}
                     onClick={() => { void handleSave(); }}
-                    className={reportPrimaryBtn}
+                    className="h-8 px-3.5 text-[9px] font-black uppercase tracking-wider"
                 >
                     {copy.save}
-                </button>
+                </Button>
             </div>
         </div>
     );

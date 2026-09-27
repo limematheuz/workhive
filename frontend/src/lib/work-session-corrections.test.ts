@@ -16,6 +16,8 @@ test("time corrections keep requests and approvals in a dedicated scoped workspa
     assert.match(page, /DataListTable/);
     assert.match(page, /DateTimePicker/);
     assert.match(page, /Solicitar corrección/);
+    assert.match(page, /useSyncExternalStore/);
+    assert.doesNotMatch(page, /setFormattedValue/);
     assert.match(page, /Solo se muestran las peticiones de las ubicaciones incluidas en tu permiso/);
     assert.match(page, /canManageTime\(user\)/);
     assert.match(sidebar, /flags\.canManageTime/);
