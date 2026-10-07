@@ -59,13 +59,20 @@ test("dashboard and sidebar keep task refreshes separate from other domains", ()
 });
 
 test("the event stream reconnects after a temporary proxy failure", () => {
-    const source = readFileSync(
+    const hookSource = readFileSync(
         new URL("../hooks/useRealtimeEvents.ts", import.meta.url),
         "utf8",
     );
+    const transportSource = readFileSync(
+        new URL("./realtime-events.ts", import.meta.url),
+        "utf8",
+    );
 
-    assert.match(source, /INITIAL_RECONNECT_DELAY_MS = 1_000/);
-    assert.match(source, /nextSource\.close\(\)/);
-    assert.match(source, /window\.setTimeout/);
-    assert.match(source, /openStream\(\)/);
+    assert.match(hookSource, /return subscribeToRealtimeEvents/);
+    assert.match(transportSource, /INITIAL_RECONNECT_DELAY_MS = 1_000/);
+    assert.match(transportSource, /nextSource\.close\(\)/);
+    assert.match(transportSource, /nextSource\.removeEventListener\("ready"/);
+    assert.match(transportSource, /nextSource\.removeEventListener\("error"/);
+    assert.match(transportSource, /window\.setTimeout/);
+    assert.match(transportSource, /openStream\(\)/);
 });
