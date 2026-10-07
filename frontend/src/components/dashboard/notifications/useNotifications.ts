@@ -8,6 +8,7 @@ import { ReservationService } from "@/services/reservation.service";
 import { PrivacyRequest, PrivacyService } from "@/services/privacy.service";
 import { Reservation } from "@/types/reservation";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { getUserTaskStatus, getUserChecklistItems, parseInstructionContent } from "@/lib/format";
 import {
@@ -70,13 +71,11 @@ export function useNotifications({
     const [persistentNotifications, setPersistentNotifications] = useState<PersistentNotification[]>([]);
     const [pendingTaskAcknowledgements] = useState(() => new Set<number>());
 
-    const loadNotifications = useCallback(async () => {
+    const loadTaskNotifications = useCallback(async () => {
         if (!enabled || !userId) return;
 
         const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
-        const canReadCompanyPrivacy = isCompanyAdminRole(roleName);
-
-        const [tasks, requestedTasks, rejectedTasks, locations, reservations, arrivals, privacy, persistent] = await Promise.all([
+        const [tasks, requestedTasks, rejectedTasks] = await Promise.all([
             TaskService.getTaskItems({ userId }).catch(() => [] as TaskItem[]),
             isManagerOrAdmin
                 ? TaskService.getTaskItems({ status: "requested" }).catch(() => [] as TaskItem[])
@@ -84,17 +83,6 @@ export function useNotifications({
             isManagerOrAdmin
                 ? TaskService.getTaskItems({ status: "rejected" }).catch(() => [] as TaskItem[])
                 : Promise.resolve([] as TaskItem[]),
-            LocationService.getLocations().catch(() => [] as Location[]),
-            isManagerOrAdmin
-                ? ReservationService.getReservations().catch(() => [] as Reservation[])
-                : Promise.resolve([] as Reservation[]),
-            isManagerOrAdmin
-                ? ReservationService.getUpcomingArrivals(3).catch(() => [] as Reservation[])
-                : Promise.resolve([] as Reservation[]),
-            canReadCompanyPrivacy
-                ? PrivacyService.listCompanyRequests().catch(() => [] as PrivacyRequest[])
-                : Promise.resolve([] as PrivacyRequest[]),
-            NotificationService.listUnread().catch(() => [] as PersistentNotification[]),
         ]);
 
         const mergedTasksMap = new Map<number, TaskItem>();
@@ -107,21 +95,72 @@ export function useNotifications({
                 (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
             )
         );
-        setNotificationLocations(locations);
+        setNotificationReferenceTime(Date.now());
+    }, [enabled, roleName, userId]);
+
+    const loadLocationNotifications = useCallback(async () => {
+        if (!enabled || !userId) return;
+        setNotificationLocations(await LocationService.getLocations().catch(() => [] as Location[]));
+    }, [enabled, userId]);
+
+    const loadReservationNotifications = useCallback(async () => {
+        if (!enabled || !userId) return;
+
+        if (!isCompanyTaskManagerRole(roleName)) {
+            setNotificationReservations([]);
+            setUpcomingArrivals([]);
+            return;
+        }
+
+        const [reservations, arrivals] = await Promise.all([
+            ReservationService.getReservations().catch(() => [] as Reservation[]),
+            ReservationService.getUpcomingArrivals(3).catch(() => [] as Reservation[]),
+        ]);
         setNotificationReservations(
             [...reservations].sort(
                 (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
             )
         );
         setUpcomingArrivals(arrivals);
-        setPrivacyRequests(privacy);
+        setNotificationReferenceTime(Date.now());
+    }, [enabled, roleName, userId]);
+
+    const loadPrivacyNotifications = useCallback(async () => {
+        if (!enabled || !userId) return;
+
+        if (!isCompanyAdminRole(roleName)) {
+            setPrivacyRequests([]);
+            return;
+        }
+        setPrivacyRequests(await PrivacyService.listCompanyRequests().catch(() => [] as PrivacyRequest[]));
+    }, [enabled, roleName, userId]);
+
+    const loadPersistentNotifications = useCallback(async () => {
+        if (!enabled || !userId) return;
+
+        const persistent = await NotificationService.listUnread().catch(() => [] as PersistentNotification[]);
         setPersistentNotifications(persistent.filter((notification) => !(
             notification.entity_type === "task_item"
             && typeof notification.entity_id === "number"
             && pendingTaskAcknowledgements.has(notification.entity_id)
         )));
-        setNotificationReferenceTime(Date.now());
-    }, [enabled, pendingTaskAcknowledgements, roleName, userId]);
+    }, [enabled, pendingTaskAcknowledgements, userId]);
+
+    const loadNotifications = useCallback(async () => {
+        await Promise.all([
+            loadTaskNotifications(),
+            loadLocationNotifications(),
+            loadReservationNotifications(),
+            loadPrivacyNotifications(),
+            loadPersistentNotifications(),
+        ]);
+    }, [
+        loadLocationNotifications,
+        loadPersistentNotifications,
+        loadPrivacyNotifications,
+        loadReservationNotifications,
+        loadTaskNotifications,
+    ]);
 
     useEffect(() => {
         if (!enabled || !userId) return;
@@ -134,7 +173,26 @@ export function useNotifications({
     useBackgroundPolling(
         enabled ? loadNotifications : () => undefined,
         POLL_INTERVALS.notifications,
+        POLL_INTERVALS.realtimeSafety,
     );
+    useRealtimeInvalidation(
+        ["tasks"],
+        () => {
+            void loadTaskNotifications();
+        },
+    );
+    useRealtimeInvalidation(["locations"], () => {
+        void loadLocationNotifications();
+    });
+    useRealtimeInvalidation(["reservations"], () => {
+        void loadReservationNotifications();
+    });
+    useRealtimeInvalidation(["privacy"], () => {
+        void loadPrivacyNotifications();
+    });
+    useRealtimeInvalidation(["notifications"], () => {
+        void loadPersistentNotifications();
+    });
 
     useEffect(() => {
         if (!userId) return;

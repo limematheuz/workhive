@@ -18,6 +18,7 @@ import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant
 import { canAccessPartnerPortalDashboardPath } from "@/domain/access/partner-portal-dashboard";
 import { canAccessClientPortalDashboardPath } from "@/domain/access/client-portal-dashboard";
 import { NoWorkspaceAccount } from "@/components/dashboard/NoWorkspaceAccount";
+import { useRealtimeEvents } from "@/hooks/useRealtimeEvents";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
     return (
@@ -37,6 +38,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const isExternalPortal = isExternalPortalRole(user?.role?.name);
     const isPartnerPortal = isPartnerPortalRole(user?.role?.name);
     const isClientPortal = isClientPortalRole(user?.role?.name);
+    useRealtimeEvents(Boolean(user) && !isExternalPortal && !isPartnerPortal && !isClientPortal);
 
     // Check if onboarding should be shown
     useEffect(() => {

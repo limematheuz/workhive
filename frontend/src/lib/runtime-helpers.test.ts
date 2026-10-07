@@ -11,11 +11,12 @@ import {
     getCurrentWorkStartLocation,
 } from "./work-start-location.ts";
 
-test("poll intervals stay fast and positive for live dashboard surfaces", () => {
-    assert.equal(POLL_INTERVALS.dashboard, 1_000);
-    assert.equal(POLL_INTERVALS.tasks, 1_000);
-    assert.equal(POLL_INTERVALS.notifications, 1_000);
-    assert.equal(POLL_INTERVALS.sidebarTaskCount, 10_000);
+test("polling stays fast when the real-time channel reconnects", () => {
+    assert.equal(POLL_INTERVALS.dashboard, 5_000);
+    assert.equal(POLL_INTERVALS.tasks, 5_000);
+    assert.equal(POLL_INTERVALS.notifications, 5_000);
+    assert.equal(POLL_INTERVALS.sidebarTaskCount, 5_000);
+    assert.equal(POLL_INTERVALS.realtimeSafety, 60_000);
     Object.values(POLL_INTERVALS).forEach((interval) => {
         assert.equal(Number.isInteger(interval), true);
         assert.equal(interval > 0, true);

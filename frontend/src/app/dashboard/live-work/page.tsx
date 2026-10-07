@@ -7,6 +7,7 @@ import { useUser } from "@/lib/user-context";
 import { WorkSessionService } from "@/services/work-session.service";
 import type { ActiveCompanySession } from "@/types/user";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
@@ -66,7 +67,11 @@ export default function LiveWorkPage() {
     useBackgroundPolling(
         () => loadSessions(false),
         POLL_INTERVALS.liveWork,
+        POLL_INTERVALS.realtimeSafety,
     );
+    useRealtimeInvalidation(["live-work", "tasks"], () => {
+        void loadSessions(false);
+    });
 
     const scopedSessions = useMemo(
         () => sessions.filter(session => session.visibility_scope === activeScope),

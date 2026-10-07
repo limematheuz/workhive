@@ -8,6 +8,7 @@ import { SentCompanyInvitationsPanel } from "@/components/collaborations/SentCom
 import { SentSponsoredPartnerInvitationsPanel } from "@/components/collaborations/SentSponsoredPartnerInvitationsPanel";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { useDictionary } from "@/lib/dictionary-context";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { useUser } from "@/lib/user-context";
@@ -82,7 +83,14 @@ export function CollaborationManagementPanel({
         const timeoutId = window.setTimeout(() => void loadData(), 0);
         return () => window.clearTimeout(timeoutId);
     }, [loadData, refreshKey]);
-    useBackgroundPolling(loadData, POLL_INTERVALS.collaborations);
+    useBackgroundPolling(
+        loadData,
+        POLL_INTERVALS.collaborations,
+        POLL_INTERVALS.realtimeSafety,
+    );
+    useRealtimeInvalidation(["collaborations"], () => {
+        void loadData();
+    });
 
     const handleUnlink = async () => {
         if (!unlinkTarget) return;

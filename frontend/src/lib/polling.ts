@@ -1,14 +1,17 @@
 export const POLL_INTERVALS = {
-    calendar: 1_000,
-    dashboard: 1_000,
-    liveWork: 1_000,
-    locations: 1_000,
-    notifications: 1_000,
-    privacy: 1_000,
-    reservations: 1_000,
-    sidebar: 1_000,
-    sidebarTaskCount: 10_000,
-    tasks: 1_000,
-    collaborations: 1_000,
+    // Used only while the SSE broker reconnects. Normal updates arrive as
+    // invalidations immediately and need no full-list polling.
+    calendar: 5_000,
+    dashboard: 5_000,
+    liveWork: 3_000,
+    locations: 5_000,
+    notifications: 5_000,
+    privacy: 5_000,
+    reservations: 5_000,
+    sidebar: 5_000,
+    sidebarTaskCount: 5_000,
+    tasks: 5_000,
+    collaborations: 5_000,
     clients: 10_000,
+    realtimeSafety: 60_000,
 } as const;

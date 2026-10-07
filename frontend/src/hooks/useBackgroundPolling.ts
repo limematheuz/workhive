@@ -1,12 +1,27 @@
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { hasActiveMutations } from "@/lib/api";
+import {
+    REALTIME_CONNECTION_STATE_EVENT,
+    getRealtimeConnectionState,
+} from "@/lib/realtime-events";
 
 export function useBackgroundPolling(
     callback: () => Promise<void> | void,
-    delay: number
+    fallbackDelay: number,
+    realtimeSafetyDelay = fallbackDelay,
 ) {
     const isRunning = useRef(false);
     const runCallback = useEffectEvent(callback);
+    const [realtimeConnected, setRealtimeConnected] = useState(getRealtimeConnectionState);
+    const delay = realtimeConnected ? realtimeSafetyDelay : fallbackDelay;
+
+    useEffect(() => {
+        const updateConnectionState = (event: Event) => {
+            setRealtimeConnected((event as CustomEvent<boolean>).detail === true);
+        };
+        window.addEventListener(REALTIME_CONNECTION_STATE_EVENT, updateConnectionState);
+        return () => window.removeEventListener(REALTIME_CONNECTION_STATE_EVENT, updateConnectionState);
+    }, []);
 
     useEffect(() => {
         let isActive = true;

@@ -10,6 +10,7 @@ import { TaskItem, TaskService } from "@/services/task.service";
 import { UserService } from "@/services/user.service";
 import { User } from "@/types/user";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import {
     canViewCompanyCalendar,
@@ -54,7 +55,14 @@ export default function CalendarPage() {
         return () => window.clearTimeout(initialLoad);
     }, [loadData]);
 
-    useBackgroundPolling(loadData, POLL_INTERVALS.calendar);
+    useBackgroundPolling(
+        loadData,
+        POLL_INTERVALS.calendar,
+        POLL_INTERVALS.realtimeSafety,
+    );
+    useRealtimeInvalidation(["calendar", "locations", "reservations", "tasks"], () => {
+        void loadData();
+    });
 
     if (loading) {
         return (

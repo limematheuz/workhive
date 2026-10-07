@@ -36,6 +36,7 @@ import type {
     ReservationViewMode,
 } from "@/features/reservations/types";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { usePlanningFeatureAccess } from "@/features/reservations/usePlanningFeatureAccess";
 import { useReservationRequests } from "@/features/reservations/useReservationRequests";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -152,7 +153,11 @@ function ReservationsPageContent() {
     useBackgroundPolling(
         () => (hasPlanningAccess ? loadData(true) : undefined),
         POLL_INTERVALS.reservations,
+        POLL_INTERVALS.realtimeSafety,
     );
+    useRealtimeInvalidation(["calendar", "reservations", "tasks"], () => {
+        if (hasPlanningAccess) void loadData(true);
+    });
 
     const locationMap = useMemo(
         () => new Map(locations.map((location) => [location.id, location])),

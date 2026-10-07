@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 
 const getOwnerCompanyId = (location: Location) =>
@@ -91,7 +92,10 @@ export default function LocationsPage() {
 
     useBackgroundPolling(async () => {
         await Promise.all([loadInitialData(), loadLocations()]);
-    }, POLL_INTERVALS.locations);
+    }, POLL_INTERVALS.locations, POLL_INTERVALS.realtimeSafety);
+    useRealtimeInvalidation(["clients", "collaborations", "locations", "tasks"], () => {
+        void Promise.all([loadInitialData(), loadLocations()]);
+    });
 
     const handleEdit = (location: Location) => {
         setEditingLocation(location);

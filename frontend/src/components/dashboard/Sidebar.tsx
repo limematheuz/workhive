@@ -8,6 +8,7 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { TaskService } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
@@ -99,9 +100,16 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     useEffect(() => { startTransition(() => { void refreshPending(); void refreshTasks(); void refreshReports(); }); }, [refreshPending, refreshReports, refreshTasks]);
     useEffect(() => { const refresh = () => void refreshReports(); window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); }, [refreshReports]);
     useEffect(() => { const refresh = () => void refreshTasks(); window.addEventListener("workhive:tasks-changed", refresh); window.addEventListener("workhive:session-changed", refresh); return () => { window.removeEventListener("workhive:tasks-changed", refresh); window.removeEventListener("workhive:session-changed", refresh); }; }, [refreshTasks]);
-    useBackgroundPolling(refreshPending, POLL_INTERVALS.sidebar);
-    useBackgroundPolling(refreshTasks, POLL_INTERVALS.sidebarTaskCount);
-    useBackgroundPolling(refreshReports, POLL_INTERVALS.sidebar);
+    useBackgroundPolling(refreshPending, POLL_INTERVALS.sidebar, POLL_INTERVALS.realtimeSafety);
+    useBackgroundPolling(refreshTasks, POLL_INTERVALS.sidebarTaskCount, POLL_INTERVALS.realtimeSafety);
+    useBackgroundPolling(refreshReports, POLL_INTERVALS.sidebar, POLL_INTERVALS.realtimeSafety);
+    useRealtimeInvalidation(["tasks", "sidebar"], () => {
+        void refreshPending();
+        void refreshTasks();
+    });
+    useRealtimeInvalidation(["notifications"], () => {
+        void refreshReports();
+    });
 
     const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewQuality: canViewQuality(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, isClientPortal, userIsPlatformSuperadmin, enabledFeatures });
     const expanded = state === "expanded";
