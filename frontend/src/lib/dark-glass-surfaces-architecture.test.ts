@@ -4,7 +4,7 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("companies admin surfaces use billing shells without changing dashboard backlight", () => {
+test("companies admin surfaces use billing shells and keep the dashboard glow static", () => {
     const list = read("../components/companies/CompaniesListSection.tsx");
     const members = read("../components/companies/CompanyMembersPanel.tsx");
     const trials = read("../components/companies/TrialRequestsPanel.tsx");
@@ -20,8 +20,11 @@ test("companies admin surfaces use billing shells without changing dashboard bac
     assert.match(globals, /\.surface-glass-card/);
     assert.match(globals, /--surface-card-bg:\s*rgba\(44,\s*44,\s*48,\s*0\.88\)/);
 
-    // Ambient shell glow must remain untouched.
-    assert.match(globals, /\.dashboard-shell-backlight\s*\{[\s\S]*?opacity:\s*0\.34/);
+    // Ambient shell glow keeps its visual depth without a continuously composited filter.
+    const backlightBlock = globals.match(/\.dashboard-shell-backlight\s*\{[^}]+\}/)?.[0] ?? "";
+    assert.match(backlightBlock, /opacity:\s*0\.3/);
+    assert.doesNotMatch(backlightBlock, /filter:/);
+    assert.doesNotMatch(backlightBlock, /animation:/);
     assert.match(
         globals,
         /\.dashboard-shell-backlight\s*\{[\s\S]*?radial-gradient\(circle at 48% 86%/,

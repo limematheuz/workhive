@@ -137,6 +137,24 @@ pip install -r requirements-dev.txt
 ./dev.sh
 ```
 
+### Atajo local opcional para el backend
+
+`./dev.sh` es el comando canónico: aplica las migraciones pendientes y después
+inicia la API en `http://127.0.0.1:8000`. Si usas una función local de zsh como
+`workhiveup`, debe activar el entorno y delegar en ese script, nunca iniciar
+Uvicorn directamente:
+
+```zsh
+workhiveup() {
+  cd /ruta/a/workhive/backend || return
+  source .venv/bin/activate
+  ./dev.sh
+}
+```
+
+Guarda la función en tu configuración local de zsh. Abre una terminal nueva —o
+recarga esa configuración— antes de usar `workhiveup`.
+
 En otra terminal:
 
 ```bash
@@ -292,6 +310,24 @@ source .venv/bin/activate
 pip install -r requirements-dev.txt
 ./dev.sh
 ```
+
+### Optional local backend shortcut
+
+`./dev.sh` is the canonical command: it applies pending migrations and then
+starts the API at `http://127.0.0.1:8000`. If you use a local zsh helper such
+as `workhiveup`, it must activate the environment and delegate to that script,
+never start Uvicorn directly:
+
+```zsh
+workhiveup() {
+  cd /path/to/workhive/backend || return
+  source .venv/bin/activate
+  ./dev.sh
+}
+```
+
+Save the function in your local zsh configuration. Open a new terminal —or
+reload that configuration— before using `workhiveup`.
 
 In another terminal:
 

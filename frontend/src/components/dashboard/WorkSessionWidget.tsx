@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState, useEffect, useEffectEvent, useRef } from "react"
+import { startTransition, useState, useEffect, useEffectEvent, useRef, useCallback } from "react"
 import { WorkSessionService, WorkSession } from "@/services/work-session.service"
 import { LocationService, Location } from "@/services/location.service"
 import { TaskService } from "@/services/task.service"
@@ -11,6 +11,8 @@ import { toast } from "@/lib/toast"
 import { getUserTaskStatus, isTaskAssignedToUser } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { POLL_INTERVALS } from "@/lib/polling"
+import { useBackgroundPolling } from "@/hooks/useBackgroundPolling"
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents"
 import { WorkSessionDesktopCard } from "./work-session/WorkSessionDesktopCard"
 import { WorkSessionMobileBar } from "./work-session/WorkSessionMobileBar"
 import { WorkSessionStopWarningDialog } from "./work-session/WorkSessionStopWarningDialog"
@@ -104,48 +106,55 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         }
     }, [user])
 
+    const refreshAvailableTasks = useCallback(async () => {
+        if (!user) return
+
+        try {
+            const userTasks = await TaskService.getTaskItems({
+                userId: user.id
+            }).catch(() => [])
+            const allowedLocationIds = new Set(allLocations.map(location => location.id))
+            const nextTasks = userTasks.filter(task => {
+                const personalStatus = getUserTaskStatus(task, user.id)
+                return (
+                    ["pending", "accepted", "progress"].includes(personalStatus)
+                    && ["accepted", "progress", "review"].includes(task.status)
+                    && isTaskAssignedToUser(task, user.id)
+                    && allowedLocationIds.has(task.location_id)
+                )
+            })
+
+            setAvailableTasks(nextTasks)
+        } catch (error) {
+            console.error("Error refreshing available work assignments", error)
+        }
+    }, [allLocations, user])
+
     useEffect(() => {
-        let cancelled = false
-
-        const refreshAvailableTasks = async () => {
-            if (!user) return
-
-            try {
-                const userTasks = await TaskService.getTaskItems({
-                    userId: user.id
-                }).catch(() => [])
-                const allowedLocationIds = new Set(allLocations.map(location => location.id))
-                const nextTasks = userTasks.filter(task => {
-                    const personalStatus = getUserTaskStatus(task, user.id)
-                    return (
-                        ["pending", "accepted", "progress"].includes(personalStatus)
-                        && ["accepted", "progress", "review"].includes(task.status)
-                        && isTaskAssignedToUser(task, user.id)
-                        && allowedLocationIds.has(task.location_id)
-                    )
-                })
-
-                if (!cancelled) setAvailableTasks(nextTasks)
-            } catch (error) {
-                console.error("Error refreshing available work assignments", error)
-            }
-        }
-
         if (user && !loading) {
-            void refreshAvailableTasks()
-            const intervalId = window.setInterval(refreshAvailableTasks, POLL_INTERVALS.tasks)
-            window.addEventListener("workhive:tasks-changed", refreshAvailableTasks)
+            const initialRefreshId = window.setTimeout(() => {
+                void refreshAvailableTasks()
+            }, 0)
+            const handleTasksChanged = () => {
+                void refreshAvailableTasks()
+            }
+            window.addEventListener("workhive:tasks-changed", handleTasksChanged)
             return () => {
-                cancelled = true
-                window.clearInterval(intervalId)
-                window.removeEventListener("workhive:tasks-changed", refreshAvailableTasks)
+                window.clearTimeout(initialRefreshId)
+                window.removeEventListener("workhive:tasks-changed", handleTasksChanged)
             }
         }
 
-        return () => {
-            cancelled = true
-        }
-    }, [user, allLocations, loading])
+        return undefined
+    }, [user, loading, refreshAvailableTasks])
+    useBackgroundPolling(
+        refreshAvailableTasks,
+        POLL_INTERVALS.tasks,
+        POLL_INTERVALS.realtimeSafety,
+    )
+    useRealtimeInvalidation(["tasks"], () => {
+        void refreshAvailableTasks()
+    })
 
     const handleSessionChanged = useEffectEvent(async () => {
         try {
@@ -168,7 +177,7 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         }
     }, [])
 
-    const checkCancelledTasks = useEffectEvent(async () => {
+    const checkCancelledTasks = useCallback(async () => {
         if (!activeSession || !user) return
         try {
             const userTasks = await TaskService.getTaskItems({ userId: user.id }).catch(() => [])
@@ -199,16 +208,16 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         } catch (error) {
             console.error("Error polling for cancelled tasks", error)
         }
+    }, [activeSession, dict.work_sessions, monitoredTaskIds, user])
+
+    useBackgroundPolling(
+        checkCancelledTasks,
+        POLL_INTERVALS.notifications,
+        POLL_INTERVALS.realtimeSafety,
+    )
+    useRealtimeInvalidation(["tasks"], () => {
+        void checkCancelledTasks()
     })
-
-    useEffect(() => {
-        if (!activeSession || !user || monitoredTaskIds.length === 0) return
-
-        const interval = setInterval(() => {
-            void checkCancelledTasks()
-        }, POLL_INTERVALS.notifications)
-        return () => clearInterval(interval)
-    }, [activeSession, user, monitoredTaskIds])
 
     useEffect(() => {
         if (activeSession) {

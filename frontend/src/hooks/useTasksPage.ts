@@ -19,6 +19,7 @@ import { TemplateTaskService } from "@/services/template.service";
 import type { TemplateTask } from "@/types/template";
 
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import {
     canManageCompanyTasks,
@@ -153,7 +154,14 @@ export function useTasksPage() {
         loadTasksEvent();
     }, [selectedStatus, selectedLocationId, selectedUserId, activeTab, currentUser]);
 
-    useBackgroundPolling(() => loadTasks(true), POLL_INTERVALS.tasks);
+    useBackgroundPolling(
+        () => loadTasks(true),
+        POLL_INTERVALS.tasks,
+        POLL_INTERVALS.realtimeSafety,
+    );
+    useRealtimeInvalidation(["tasks"], () => {
+        void loadTasks(true);
+    });
 
     const canManageReservationsForLocation = (locationId: number) => {
         const location = locations.find((item) => item.id === locationId);

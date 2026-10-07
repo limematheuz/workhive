@@ -23,7 +23,7 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.match(globals, /--z-header:\s*20/);
     assert.match(globals, /--dialog-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.72\)/);
     assert.match(globals, /--glass-blur-strong:\s*140px/);
-    assert.match(globals, /--glass-overlay-blur:\s*80px/);
+    assert.match(globals, /--glass-overlay-blur:\s*28px/);
     assert.match(globals, /--dialog-surface-blur:\s*48px/);
     assert.match(globals, /--glass-sheet-bg:\s*rgba\(28,\s*28,\s*32,\s*0\.72\)/);
     assert.match(globals, /--glass-overlay-bg:\s*rgba\(4,\s*6,\s*12,\s*0\.55\)/);
@@ -44,10 +44,13 @@ test("dark visibility tokens live in globals and drive glass surfaces", () => {
     assert.match(globals, /\.surface-popover[\s\S]*opacity:\s*1/);
     assert.match(globals, /\.glass-panel[\s\S]*var\(--glass-panel-bg\)/);
 
-    // Backlight ambient glow must remain untouched by this work.
+    // Backlight keeps ambient depth without permanently animating or filtering the shell.
     const backlightBlock = globals.match(/\.dashboard-shell-backlight\s*\{[^}]+\}/)?.[0] ?? "";
-    assert.match(backlightBlock, /opacity:\s*0\.34/);
+    assert.match(backlightBlock, /opacity:\s*0\.3/);
     assert.doesNotMatch(backlightBlock, /--glass-/);
+    assert.doesNotMatch(backlightBlock, /filter:/);
+    assert.doesNotMatch(backlightBlock, /animation:/);
+    assert.doesNotMatch(globals, /dashboard-shell-backlight-drift/);
 
     // Dead legacy utilities should stay removed.
     assert.doesNotMatch(globals, /\.glass-card\s*\{/);

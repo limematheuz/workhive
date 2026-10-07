@@ -11,6 +11,8 @@ import {
 } from "@/lib/work-start-location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { POLL_INTERVALS } from "@/lib/polling";
+import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 
 interface UseTechTaskWorkSessionParams {
     taskId: number;
@@ -49,32 +51,32 @@ export function useTechTaskWorkSession({
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [updatingStatus, setUpdatingStatus] = useState(false);
 
-    // Poll task work summary every 15s
-    useEffect(() => {
-        let cancelled = false;
-        const loadWorkSummary = async () => {
-            try {
-                const summary = await WorkSessionService.getTaskDetailedSummary(taskId);
-                if (!cancelled) {
-                    setTaskWorkSeconds(summary.total_seconds);
-                    setActiveWorkers(summary.active_workers);
-                    setWorkers(summary.workers);
-                }
-            } catch {
-                if (!cancelled) {
-                    setTaskWorkSeconds(0);
-                    setActiveWorkers(0);
-                    setWorkers([]);
-                }
-            }
-        };
-        void loadWorkSummary();
-        const interval = window.setInterval(loadWorkSummary, POLL_INTERVALS.liveWork);
-        return () => {
-            cancelled = true;
-            window.clearInterval(interval);
-        };
+    const loadWorkSummary = useCallback(async () => {
+        try {
+            const summary = await WorkSessionService.getTaskDetailedSummary(taskId);
+            setTaskWorkSeconds(summary.total_seconds);
+            setActiveWorkers(summary.active_workers);
+            setWorkers(summary.workers);
+        } catch {
+            setTaskWorkSeconds(0);
+            setActiveWorkers(0);
+            setWorkers([]);
+        }
     }, [taskId]);
+
+    useEffect(() => {
+        startTransition(() => {
+            void loadWorkSummary();
+        });
+    }, [loadWorkSummary]);
+    useBackgroundPolling(
+        loadWorkSummary,
+        POLL_INTERVALS.liveWork,
+        POLL_INTERVALS.realtimeSafety,
+    );
+    useRealtimeInvalidation(["live-work", "tasks"], () => {
+        void loadWorkSummary();
+    });
 
     // Active session management
     const refreshActiveSession = useCallback(async () => {

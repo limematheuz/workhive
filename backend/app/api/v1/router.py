@@ -49,6 +49,7 @@ from app.api.v1.privacy import router as privacy_router
 from app.api.v1.traffic import router as traffic_router
 from app.api.v1.user_invitations import router as user_invitations_router
 from app.api.v1.notifications import router as notifications_router
+from app.api.v1.realtime import router as realtime_router
 from app.api.v1.task_reports import router as task_reports_router
 from app.api.v1.sales_ledger import router as sales_ledger_router
 from app.api.v1.accounting_exports import router as accounting_exports_router
@@ -133,6 +134,7 @@ api_router.include_router(
 api_router.include_router(
     notifications_router, prefix="/notifications", tags=["notifications"]
 )
+api_router.include_router(realtime_router, prefix="/realtime", tags=["realtime"])
 api_router.include_router(invoices_router, prefix="/invoices", tags=["invoices"])
 api_router.include_router(
     customer_payments_router,

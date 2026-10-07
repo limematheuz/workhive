@@ -1,6 +1,6 @@
 "use client";
 
-import React, { startTransition, useCallback, useEffect, useState, Suspense } from "react";
+import React, { startTransition, useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { TechDashboard } from "@/components/dashboard/TechDashboard";
 import { SuperadminDashboard } from "@/components/dashboard/superadmin/SuperadminDashboard";
@@ -10,6 +10,7 @@ import { useUser } from "@/lib/user-context";
 import { LocationService, Location } from "@/services/location.service";
 import { TaskService, TaskItem } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
 
@@ -29,6 +30,11 @@ function DashboardOverviewContent() {
     const [error, setError] = useState<string | null>(null);
     const [showGuidedTour, setShowGuidedTour] = useState<boolean>(false);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
+    const locationsRef = useRef<Location[]>([]);
+
+    useEffect(() => {
+        locationsRef.current = locations;
+    }, [locations]);
 
     const loadDashboardData = useCallback(async (silent = false) => {
         if (!user) return;
@@ -76,6 +82,41 @@ function DashboardOverviewContent() {
         }
     }, [dict.dashboard.error_load_data, user]);
 
+    const loadDashboardTasks = useCallback(async () => {
+        if (!user || (user.role?.name === "superadmin" && !user.company_id)) return;
+
+        try {
+            const fetchedTasks = await TaskService.getAllTaskItems();
+            const knownLocationIds = new Set(locationsRef.current.map((location) => location.id));
+            const missingLocationIds = Array.from(new Set(
+                fetchedTasks.flatMap((task) => (
+                    knownLocationIds.has(task.location_id) ? [] : [task.location_id]
+                )),
+            ));
+            const missingLocations = (
+                await Promise.all(missingLocationIds.map((locationId) => (
+                    LocationService.getLocation(locationId).catch(() => null)
+                )))
+            ).filter((location): location is Location => Boolean(location));
+
+            setTasks(fetchedTasks);
+            if (missingLocations.length > 0) {
+                setLocations((current) => mergeLocations(current, missingLocations));
+            }
+        } catch (err) {
+            console.error("Error refreshing dashboard tasks", err);
+        }
+    }, [user]);
+
+    const loadDashboardLocations = useCallback(async () => {
+        if (!user || (user.role?.name === "superadmin" && !user.company_id)) return;
+        try {
+            setLocations(await LocationService.getLocations());
+        } catch (err) {
+            console.error("Error refreshing dashboard locations", err);
+        }
+    }, [user]);
+
     useEffect(() => {
         if (user) {
             startTransition(() => {
@@ -87,7 +128,18 @@ function DashboardOverviewContent() {
     useBackgroundPolling(
         () => userIsPlatformSuperadmin ? Promise.resolve() : loadDashboardData(true),
         POLL_INTERVALS.dashboard,
+        POLL_INTERVALS.realtimeSafety,
     );
+    useRealtimeInvalidation(["tasks"], () => {
+        if (!userIsPlatformSuperadmin) void loadDashboardTasks();
+    });
+    useRealtimeInvalidation(["locations"], () => {
+        if (!userIsPlatformSuperadmin) void loadDashboardLocations();
+    });
+    // Older API workers can still emit this broad topic during a rolling deploy.
+    useRealtimeInvalidation(["dashboard"], () => {
+        if (!userIsPlatformSuperadmin) void loadDashboardData(true);
+    });
 
     useEffect(() => {
         const checkTour = () => {

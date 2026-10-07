@@ -14,6 +14,7 @@ import {
     PrivacyService,
 } from "@/services/privacy.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import { PAGE_ACTION_BUTTON_BASE, PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 
@@ -66,7 +67,11 @@ export function PrivacyControls({
     useBackgroundPolling(
         () => loadPrivacyRequests(true),
         POLL_INTERVALS.privacy,
+        POLL_INTERVALS.realtimeSafety,
     );
+    useRealtimeInvalidation(["privacy"], () => {
+        void loadPrivacyRequests(true);
+    });
 
     const exportData = async () => {
         setWorking("export");

@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { canViewFinance } from "@/domain/access/roles";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     buildClientWorkspace,
@@ -218,7 +219,14 @@ export default function ClientsPage() {
         return () => window.clearTimeout(timeoutId);
     }, [loadClients, user, userLoading]);
 
-    useBackgroundPolling(loadClients, POLL_INTERVALS.clients);
+    useBackgroundPolling(
+        loadClients,
+        POLL_INTERVALS.clients,
+        POLL_INTERVALS.realtimeSafety,
+    );
+    useRealtimeInvalidation(["clients", "locations", "tasks"], () => {
+        void loadClients();
+    });
 
     const workspace = useMemo(
         () => buildClientWorkspace({ clients, locations, tasks, invoices, referenceDate: workspaceReferenceDate }),
