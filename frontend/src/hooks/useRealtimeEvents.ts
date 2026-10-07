@@ -7,13 +7,11 @@ import {
     type RealtimeTopic,
     isRealtimeTopic,
     setRealtimeConnectionState,
+    subscribeToRealtimeEvents,
 } from "@/lib/realtime-events";
 
 type InvalidationPayload = { topics?: unknown };
 type ConnectionPayload = { realtime?: unknown };
-
-const INITIAL_RECONNECT_DELAY_MS = 1_000;
-const MAX_RECONNECT_DELAY_MS = 5_000;
 
 function parseTopics(event: MessageEvent<string>): RealtimeTopic[] {
     try {
@@ -43,34 +41,14 @@ export function useRealtimeEvents(enabled: boolean): void {
             return;
         }
 
-        let disposed = false;
-        let source: EventSource | null = null;
-        let reconnectTimer: number | null = null;
-        let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
-
-        const reconnect = () => {
-            setRealtimeConnectionState(false);
-            if (disposed || reconnectTimer !== null) return;
-            reconnectTimer = window.setTimeout(() => {
-                reconnectTimer = null;
-                reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
-                openStream();
-            }, reconnectDelay);
-        };
-
-        const openStream = () => {
-            if (disposed) return;
-
-            const nextSource = new EventSource("/api/v1/realtime/events", { withCredentials: true });
-            source = nextSource;
-            const handleReady = (event: MessageEvent<string>) => {
-                reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+        return subscribeToRealtimeEvents({
+            onReady: (event) => {
                 setRealtimeConnectionState(parseConnectionState(event));
-            };
-            const handleConnection = (event: MessageEvent<string>) => {
+            },
+            onConnection: (event) => {
                 setRealtimeConnectionState(parseConnectionState(event));
-            };
-            const handleInvalidation = (event: MessageEvent<string>) => {
+            },
+            onInvalidation: (event) => {
                 const topics = parseTopics(event);
                 if (topics.length > 0) {
                     window.dispatchEvent(new CustomEvent<ReadonlyArray<RealtimeTopic>>(
@@ -78,27 +56,8 @@ export function useRealtimeEvents(enabled: boolean): void {
                         { detail: topics },
                     ));
                 }
-            };
-            const handleError = () => {
-                nextSource.close();
-                if (source === nextSource) source = null;
-                reconnect();
-            };
-
-            nextSource.addEventListener("ready", handleReady as EventListener);
-            nextSource.addEventListener("connection", handleConnection as EventListener);
-            nextSource.addEventListener("invalidate", handleInvalidation as EventListener);
-            nextSource.addEventListener("error", handleError);
-        };
-
-        openStream();
-
-        return () => {
-            disposed = true;
-            if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
-            source?.close();
-            setRealtimeConnectionState(false);
-        };
+            },
+        });
     }, [enabled]);
 }
 
