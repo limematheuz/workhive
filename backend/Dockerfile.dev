@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PATH=/opt/venv/bin:$PATH
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xmlsec1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && adduser --disabled-password --gecos "" appuser
+
+WORKDIR /app
+
+COPY requirements.txt requirements-dev.txt ./
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --no-cache-dir -r requirements-dev.txt \
+    && (sha256sum requirements.txt requirements-dev.txt | sha256sum | cut -d ' ' -f 1) > /opt/venv/.requirements.sha256 \
+    && mkdir -p /data \
+    && chown -R appuser:appuser /opt/venv /data
+
+COPY docker-entrypoint.dev.sh /usr/local/bin/
+RUN chmod 0555 /usr/local/bin/docker-entrypoint.dev.sh
+
+USER appuser
+
+EXPOSE 8000
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.dev.sh"]

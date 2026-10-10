@@ -13,33 +13,6 @@
 WorkHive reúne ubicaciones, reservas, tareas, equipos, jornadas, presupuestos
 y facturas en un mismo espacio de trabajo.
 
-```mermaid
-flowchart LR
-    classDef operation fill:#1f6feb,color:#fff,stroke:#1a5fb4,stroke-width:2px
-    classDef team fill:#238636,color:#fff,stroke:#1a6b2c,stroke-width:2px
-    classDef business fill:#8250df,color:#fff,stroke:#6639ba,stroke-width:2px
-
-    subgraph OP[Operación]
-        R[Reserva] --> T[Tarea]
-        T --> C[Checklist]
-        T --> J[Jornada]
-    end
-
-    subgraph EQ[Equipo]
-        U[Usuario] --> T
-        U --> J
-    end
-
-    subgraph GE[Gestión]
-        T --> P[Presupuesto]
-        P --> F[Factura]
-    end
-
-    class R,T,C operation
-    class U,J team
-    class P,F business
-```
-
 ## Todo el flujo, conectado
 
 | Área | Qué permite |
@@ -69,113 +42,102 @@ flowchart LR
 frontend/          Interfaz web y pruebas de frontend
 backend/           API, dominio, persistencia y pruebas de backend
 test_contracts/    Contratos compartidos que validan reglas backend/frontend
-docker-compose.yml Servicios locales de la aplicación
+docker-compose.dev.yml Desarrollo local reproducible
+docker-compose.yml Producción (Caddy, HTTPS y variables productivas)
 ```
 
 ## Arquitectura de código
 
-```mermaid
-flowchart TB
-    UI[Next.js · interfaz] --> API[FastAPI · rutas]
-    API --> S[Servicios · reglas de negocio]
-    S --> R[Repositorios · acceso a datos]
-    R --> DB[(PostgreSQL)]
-
-    classDef edge fill:#0969da,color:#fff,stroke:#0550ae,stroke-width:2px
-    classDef core fill:#8250df,color:#fff,stroke:#6639ba,stroke-width:2px
-    classDef data fill:#238636,color:#fff,stroke:#1a6b2c,stroke-width:2px
-    class UI,API edge
-    class S,R core
-    class DB data
-```
-
 Las rutas validan peticiones, los servicios aplican reglas y permisos, y los
 repositorios concentran acceso a datos.
 
-## Arranque local
+## Desarrollo local
 
-Clona el repositorio y crea los archivos de entorno solo para tu ordenador.
-Git nunca copia `.env` reales, credenciales, datos de producción ni accesos AWS.
+La entrada diaria de desarrollo es `./dev`. Necesita Git, Docker Compose, un
+`backend/.env` privado y una PostgreSQL local de desarrollo ya autorizada. No
+instales ni actives Node, pnpm, Python, un virtualenv o funciones de shell en el
+host. El script delega en Docker Compose, espera a que backend y frontend estén
+sanos y deja la terminal libre; es un atajo portable para macOS, Linux y WSL2.
+También inicia `workhive_postgres` si está parado, sin recrearlo ni modificar su
+volumen `workhive_pgdata`.
 
 ```bash
 git clone https://github.com/limematheuz/workhive.git
 cd workhive
-
-# Si usas nvm, instala/activa la versión de Node fijada por el proyecto.
-nvm install
-nvm use
-
-cp .env.example .env
 cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
+# Configura DATABASE_URL y SECRET_KEY exclusivamente para tu entorno local.
+./dev --build
 ```
 
-Antes de arrancar, configura únicamente estos valores locales:
+Git no incluye credenciales ni datos de desarrollo. Antes del primer arranque,
+cada persona debe usar una PostgreSQL de desarrollo propia y autorizada, nunca
+una base de producción. Por defecto el script espera que su contenedor se llame
+`workhive_postgres`; si se llama de otro modo, se usa
+`WORKHIVE_DATABASE_CONTAINER=nombre ./dev`. El `DATABASE_URL` de
+`backend/.env` sigue siendo la fuente de verdad para la conexión.
 
-- En `.env`, elige un `POSTGRES_PASSWORD` local.
-- En `backend/.env`, haz que `DATABASE_URL` use esa misma contraseña local.
-- En `backend/.env`, sustituye `SECRET_KEY` por un valor local nuevo:
+En el trabajo diario basta con `./dev`: inicia backend y frontend a la vez. Usa
+`./dev --build` después de cambiar un Dockerfile o las dependencias. Para
+inspeccionar un problema puntualmente, usa
+`docker compose -f docker-compose.dev.yml logs -f`; los health checks ya no
+llenan la terminal durante el desarrollo normal.
+
+Para apagar backend y frontend sin borrar datos ni dependencias locales:
 
 ```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
+./stop
 ```
 
-Email, Stripe, Google Calendar, VeriFactu, AWS, ECR, S3 y los valores de
-producción son opcionales para desarrollo local. Sus funciones están
-desactivadas por defecto en los archivos ejemplo. Nunca copies credenciales de
-producción a la máquina de otra persona ni a un entorno de presentación.
+El primer inicio construye las dependencias y ejecuta Alembic sobre tu base de
+desarrollo existente antes de iniciar la API. `backend/.env` debe contener su
+`DATABASE_URL`; la pila no crea otra PostgreSQL ni usuarios de ejemplo. Cuando
+los health checks estén sanos, abre
+`http://localhost:3000`; la API y su documentación de desarrollo están en
+`http://localhost:8000` y `http://localhost:8000/docs`. Los cambios en
+`backend/` y `frontend/` se recargan sin reinstalar dependencias. La pila de
+desarrollo solo publica `localhost:3000` y `localhost:8000`; PostgreSQL conserva
+la configuración de puerto que ya tuviera tu contenedor local.
 
-Arranca una base PostgreSQL local vacía y aplica las mismas migraciones:
+El Compose conserva las credenciales de tu `backend/.env` fuera de Git y usa la
+PostgreSQL local ya configurada allí. Stripe, AWS, correo, Google Calendar y
+VeriFactu se desactivan durante este arranque. Sus dependencias y media viven en
+volúmenes Docker locales y `./stop` los conserva; no hace falta escribir el
+comando largo de Docker Compose.
 
-```bash
-docker compose up -d db
+`docker-compose.yml` no es una alternativa para desarrollo: describe la ruta
+de producción con Caddy, HTTPS y variables productivas obligatorias.
 
-cd backend
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-./dev.sh
-```
+### Soporte de la ruta oficial
 
-### Atajo local opcional para el backend
+Esta ruta está soportada en macOS moderno con Docker Desktop, Windows 10/11 con
+WSL2 y Docker Desktop, y Linux de 64 bits con Docker Engine y Docker Compose
+v2, siempre que la PostgreSQL de desarrollo ya configurada en `backend/.env`
+esté accesible en el puerto local indicado. No se promete compatibilidad con
+instalaciones de Docker antiguas, Windows sin WSL2 ni máquinas donde Docker no
+pueda ejecutar contenedores Linux.
 
-`./dev.sh` es el comando canónico: aplica las migraciones pendientes y después
-inicia la API en `http://127.0.0.1:8000`. Si usas una función local de zsh como
-`workhiveup`, debe activar el entorno y delegar en ese script, nunca iniciar
-Uvicorn directamente:
+### Desarrollo nativo avanzado
 
-```zsh
-workhiveup() {
-  cd /ruta/a/workhive/backend || return
-  source .venv/bin/activate
-  ./dev.sh
-}
-```
-
-Guarda la función en tu configuración local de zsh. Abre una terminal nueva —o
-recarga esa configuración— antes de usar `workhiveup`.
-
-En otra terminal:
-
-```bash
-cd frontend
-corepack enable
-pnpm install --frozen-lockfile
-pnpm dev
-```
-
-Cada desarrollador tiene una base de datos independiente. Para una presentación
-usa datos demo ficticios; nunca compartas backups de producción ni datos de
-clientes.
+El desarrollo nativo sigue disponible para quien necesite depurar fuera de
+contenedores, pero no es el camino de equipo. Requiere gestionar una PostgreSQL
+propia, Python `3.12.13`, Node 22 y pnpm `11.19.0` mediante Corepack, además de
+configurar los `.env` locales. Después se usan `backend/dev.sh` y `pnpm dev` en
+`frontend/`. `workhiveup` es un atajo personal de zsh y no forma parte del flujo
+documentado ni soportado.
 
 ## Calidad
 
+Con el entorno de desarrollo en marcha, ejecuta las comprobaciones sin instalar
+Node ni Python en el host:
+
 ```bash
-cd backend && ./.venv/bin/pytest -q
+./test-backend
 
-cd frontend && pnpm test && pnpm typecheck && pnpm lint
+docker compose -f docker-compose.dev.yml exec frontend pnpm test
+docker compose -f docker-compose.dev.yml exec frontend pnpm typecheck
+docker compose -f docker-compose.dev.yml exec frontend pnpm lint
 
-cd .. && pnpm test:architecture
+docker compose -f docker-compose.dev.yml exec frontend pnpm --dir /workspace test:architecture
 ```
 
 Consulta las [guardas de arquitectura](docs/engineering/ARCHITECTURE_GUARDRAILS.md)
@@ -260,7 +222,7 @@ and invoices together in one workspace.
 - **Frontend:** Next.js + TypeScript (`frontend/`)
 - **Backend:** FastAPI + Python (`backend/`)
 - **Data:** PostgreSQL
-- **Containers:** Docker Compose (`docker-compose.yml`)
+- **Containers:** Docker Compose (`docker-compose.dev.yml` for local development)
 - **Shared contracts:** backend/frontend rules (`test_contracts/`)
 
 Routes validate transport input, services enforce business rules and
@@ -268,87 +230,92 @@ permissions, and repositories centralize data access.
 
 ### Local development
 
-Clone the repository and create local-only environment files. Git never copies
-real `.env` files, credentials, production database data, or AWS access.
+`./dev` is the daily development entry point. It needs Git, Docker Compose, a
+private `backend/.env`, and an already authorized local development PostgreSQL
+instance. Do not install or activate host Node, pnpm, Python, virtual
+environments, or shell helpers. The script delegates to Docker Compose, waits
+until backend and frontend are healthy, and leaves the terminal free; it is a
+portable shortcut for macOS, Linux, and WSL2. It also starts
+`workhive_postgres` if it is stopped, without recreating it or changing its
+`workhive_pgdata` volume.
 
 ```bash
 git clone https://github.com/limematheuz/workhive.git
 cd workhive
-
-# If you use nvm, install/use the Node line fixed by the repository.
-nvm install
-nvm use
-
-cp .env.example .env
 cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env.local
+# Set DATABASE_URL and SECRET_KEY exclusively for your local environment.
+./dev --build
 ```
 
-Set only these local values before starting:
+Git does not include development credentials or data. Before the first start,
+each developer must use their own authorized development PostgreSQL, never a
+production database. By default the script expects its container to be named
+`workhive_postgres`; with another name, run
+`WORKHIVE_DATABASE_CONTAINER=name ./dev`. `backend/.env` remains the source of
+truth for `DATABASE_URL`.
 
-- In `.env`, choose a local `POSTGRES_PASSWORD`.
-- In `backend/.env`, make `DATABASE_URL` use that same local password.
-- In `backend/.env`, replace `SECRET_KEY` with a newly generated local value:
+For daily work, run only `./dev`: it starts backend and frontend together. Use
+`./dev --build` after changing a Dockerfile or dependencies. To inspect a
+problem on demand, run
+`docker compose -f docker-compose.dev.yml logs -f`; health checks no longer
+fill the terminal during normal development.
+
+To stop backend and frontend without deleting local data or dependencies:
 
 ```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
+./stop
 ```
 
-Email, Stripe, Google Calendar, VeriFactu, AWS, ECR, S3, and production values
-are optional for local development. Their features are disabled by default in
-the example files. Never copy production credentials into another person's
-machine or into a presentation environment.
+The first start builds dependencies and runs Alembic against your existing
+development database before starting the API. `backend/.env` must contain its
+`DATABASE_URL`; the stack does not create another PostgreSQL instance or demo
+users. Once the health checks are healthy, open
+`http://localhost:3000`; the API and development documentation are available
+at `http://localhost:8000` and `http://localhost:8000/docs`. Changes under
+`backend/` and `frontend/` reload without reinstalling dependencies. The
+development stack publishes only `localhost:3000` and `localhost:8000`;
+PostgreSQL keeps whatever port configuration the existing local container had.
 
-Start an empty local PostgreSQL database and apply the same schema migrations:
+The development Compose keeps your `backend/.env` credentials outside Git and
+uses the existing local PostgreSQL configured there. Stripe, AWS, email, Google
+Calendar, and VeriFactu are disabled for this start. Docker named volumes retain
+local media and dependencies when the environment is stopped; `./stop` handles
+that without typing the longer Docker Compose command.
 
-```bash
-docker compose up -d db
+`docker-compose.yml` is not a development alternative: it describes the
+production route with Caddy, HTTPS, and required production variables.
 
-cd backend
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements-dev.txt
-./dev.sh
-```
+### Official-path support
 
-### Optional local backend shortcut
+This path is supported on current macOS with Docker Desktop, Windows 10/11 with
+WSL2 and Docker Desktop, and 64-bit Linux with Docker Engine and Docker Compose
+v2, provided the development PostgreSQL already configured in `backend/.env` is
+reachable at its configured local port. It does not promise compatibility with
+legacy Docker installations, Windows without WSL2, or machines unable to run
+Linux containers.
 
-`./dev.sh` is the canonical command: it applies pending migrations and then
-starts the API at `http://127.0.0.1:8000`. If you use a local zsh helper such
-as `workhiveup`, it must activate the environment and delegate to that script,
-never start Uvicorn directly:
+### Advanced native development
 
-```zsh
-workhiveup() {
-  cd /path/to/workhive/backend || return
-  source .venv/bin/activate
-  ./dev.sh
-}
-```
-
-Save the function in your local zsh configuration. Open a new terminal —or
-reload that configuration— before using `workhiveup`.
-
-In another terminal:
-
-```bash
-cd frontend
-corepack enable
-pnpm install --frozen-lockfile
-pnpm dev
-```
-
-Each developer has an independent local database. Use fictional demo data for
-presentations; do not distribute production backups or customer data.
+Native development remains available when debugging outside containers is
+needed, but it is not the team path. It requires a developer-managed PostgreSQL
+instance, Python `3.12.13`, Node 22, and pnpm `11.19.0` through Corepack, plus
+local `.env` configuration. Then use `backend/dev.sh` and `pnpm dev` from
+`frontend/`. `workhiveup` is a personal zsh shortcut and is not part of the
+documented or supported workflow.
 
 ### Quality checks
 
+With the development environment running, run the checks without installing
+Node or Python on the host:
+
 ```bash
-cd backend && ./.venv/bin/pytest -q
+./test-backend
 
-cd frontend && pnpm test && pnpm typecheck && pnpm lint
+docker compose -f docker-compose.dev.yml exec frontend pnpm test
+docker compose -f docker-compose.dev.yml exec frontend pnpm typecheck
+docker compose -f docker-compose.dev.yml exec frontend pnpm lint
 
-cd .. && pnpm test:architecture
+docker compose -f docker-compose.dev.yml exec frontend pnpm --dir /workspace test:architecture
 ```
 
 See the [architecture guardrails](docs/engineering/ARCHITECTURE_GUARDRAILS.md)

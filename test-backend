@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+set -eu
+
+# Run backend tests with their isolated SQLite configuration, never against the
+# developer's PostgreSQL database or development-only feature overrides.
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$project_dir"
+
+exec docker compose -f docker-compose.dev.yml exec -T \
+    -e DATABASE_URL=sqlite:// \
+    -e ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED=true \
+    -e TRIAL_EXPIRY_REMINDERS_ENABLED=true \
+    -e PAYMENT_REMINDERS_ENABLED=true \
+    -e FISCAL_CALENDAR_REMINDERS_ENABLED=true \
+    backend pytest -q -p no:cacheprovider "$@"
