@@ -6,6 +6,7 @@ set -eu
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$project_dir"
 
+export COMPOSE_IGNORE_ORPHANS=1
 exec docker compose -f docker-compose.dev.yml exec -T \
     -e DATABASE_URL=sqlite:// \
     -e ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED=true \

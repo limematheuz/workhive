@@ -100,9 +100,13 @@ la configuración de puerto que ya tuviera tu contenedor local.
 
 El Compose conserva las credenciales de tu `backend/.env` fuera de Git y usa la
 PostgreSQL local ya configurada allí. Stripe, AWS, correo, Google Calendar y
-VeriFactu se desactivan durante este arranque. Sus dependencias y media viven en
-volúmenes Docker locales y `./stop` los conserva; no hace falta escribir el
-comando largo de Docker Compose.
+VeriFactu se desactivan durante este arranque. Docker Desktop muestra todo bajo
+un único grupo `workhive`: `workhive_pgdata` es la base de datos existente;
+`workhive_backend_data` conserva los medios locales; y
+`workhive_frontend_node_modules` y `workhive_frontend_next` son cachés
+recreables. `./stop` solo retira backend y frontend; no borra ninguno de esos
+volúmenes ni toca PostgreSQL. No hace falta escribir el comando largo de Docker
+Compose.
 
 `docker-compose.yml` no es una alternativa para desarrollo: describe la ruta
 de producción con Caddy, HTTPS y variables productivas obligatorias.
@@ -278,9 +282,12 @@ PostgreSQL keeps whatever port configuration the existing local container had.
 
 The development Compose keeps your `backend/.env` credentials outside Git and
 uses the existing local PostgreSQL configured there. Stripe, AWS, email, Google
-Calendar, and VeriFactu are disabled for this start. Docker named volumes retain
-local media and dependencies when the environment is stopped; `./stop` handles
-that without typing the longer Docker Compose command.
+Calendar, and VeriFactu are disabled for this start. Docker Desktop shows one
+`workhive` group: `workhive_pgdata` is the existing database;
+`workhive_backend_data` retains local media; and
+`workhive_frontend_node_modules` and `workhive_frontend_next` are recreable
+caches. `./stop` removes only backend and frontend; it deletes none of those
+volumes and never touches PostgreSQL. No long Docker Compose command is needed.
 
 `docker-compose.yml` is not a development alternative: it describes the
 production route with Caddy, HTTPS, and required production variables.
