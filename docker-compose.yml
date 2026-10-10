@@ -20,7 +20,7 @@ services:
     build:
       context: ./backend
       args:
-        APP_VERSION: ${APP_VERSION:-1.7.0}
+        APP_VERSION: ${APP_VERSION:-1.7.1}
         GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     environment:
@@ -140,7 +140,7 @@ services:
         NEXT_PUBLIC_SUPPORT_EMAIL: ${NEXT_PUBLIC_SUPPORT_EMAIL:-}
         NEXT_PUBLIC_SUPPORT_PHONE: ${NEXT_PUBLIC_SUPPORT_PHONE:-}
         NEXT_PUBLIC_BUSINESS_LOCATION: ${NEXT_PUBLIC_BUSINESS_LOCATION:-}
-        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-1.7.0}
+        NEXT_PUBLIC_APP_VERSION: ${APP_VERSION:-1.7.1}
         NEXT_PUBLIC_GIT_SHA: ${GIT_SHA:-unknown}
     restart: unless-stopped
     environment:
