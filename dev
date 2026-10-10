@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+set -eu
+
+# Short, quiet entry point for the local Docker Compose development stack.
+project_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+cd "$project_dir"
+
+database_container="${WORKHIVE_DATABASE_CONTAINER:-workhive_postgres}"
+if ! docker container inspect "$database_container" >/dev/null 2>&1; then
+    printf 'Required development PostgreSQL container not found: %s\n' "$database_container" >&2
+    exit 1
+fi
+if [ "$(docker container inspect --format '{{.State.Running}}' "$database_container")" != "true" ]; then
+    docker start "$database_container" >/dev/null
+fi
+
+exec docker compose -f docker-compose.dev.yml up -d --wait "$@"

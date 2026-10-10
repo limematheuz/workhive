@@ -1,7 +1,7 @@
 {
   "name": "workhive-release-tools",
   "private": true,
-  "packageManager": "pnpm@10.30.3",
+  "packageManager": "pnpm@11.19.0",
   "scripts": {
     "clean:cache": "node scripts/clean-caches.mjs",
     "test:clean:cache": "node --test scripts/clean-caches.test.mjs",
