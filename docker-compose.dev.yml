@@ -1,6 +1,8 @@
 # Local development only. Production uses docker-compose.yml together with
 # docker-compose.production.yml and must never be started with this file.
-name: workhive-dev
+# Reuse the legacy WorkHive Compose project so Docker Desktop shows the local
+# database and the application services in one `workhive` group.
+name: workhive
 
 services:
   backend:
@@ -40,7 +42,6 @@ services:
     working_dir: /workspace/backend
     volumes:
       - ./:/workspace:ro
-      - backend_venv:/opt/venv
       - backend_data:/data
     healthcheck:
       test:
@@ -88,7 +89,11 @@ services:
       start_period: 20s
 
 volumes:
-  backend_venv:
+  # These names make their role visible in Docker Desktop. They are distinct
+  # from the existing workhive_pgdata volume, which belongs to PostgreSQL.
   backend_data:
+    name: workhive_backend_data
   frontend_node_modules:
+    name: workhive_frontend_node_modules
   frontend_next:
+    name: workhive_frontend_next

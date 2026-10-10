@@ -14,4 +14,7 @@ if [ "$(docker container inspect --format '{{.State.Running}}' "$database_contai
     docker start "$database_container" >/dev/null
 fi
 
+# The database is intentionally managed by the pre-existing `workhive`
+# project, not by this application-only Compose file.
+export COMPOSE_IGNORE_ORPHANS=1
 exec docker compose -f docker-compose.dev.yml up -d --wait "$@"

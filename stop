@@ -1,8 +1,11 @@
 #!/usr/bin/env sh
 set -eu
 
-# Stop the local application services while preserving development volumes.
+# Stop and remove only the local application services. The pre-existing
+# workhive_postgres container and its workhive_pgdata volume are never part of
+# this command.
 project_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 cd "$project_dir"
 
-exec docker compose -f docker-compose.dev.yml down "$@"
+export COMPOSE_IGNORE_ORPHANS=1
+exec docker compose -f docker-compose.dev.yml rm --force --stop backend frontend "$@"
