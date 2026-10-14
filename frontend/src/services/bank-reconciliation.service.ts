@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 
 export type BankStatementEntryStatus = "unmatched" | "matched";
 
@@ -54,6 +54,7 @@ export const BankReconciliationService = {
     getEntries: async (entryStatus?: BankStatementEntryStatus): Promise<BankStatementEntry[]> => {
         const suffix = entryStatus ? `?entry_status=${entryStatus}` : "";
         const response = await apiFetch(`/api/v1/bank-reconciliation/entries${suffix}`);
+        await assertApiResponseOk(response, "No se pudieron cargar los apuntes bancarios");
         return response.json();
     },
 
@@ -62,6 +63,7 @@ export const BankReconciliationService = {
             method: "POST",
             body: JSON.stringify(payload),
         });
+        await assertApiResponseOk(response, "No se pudo registrar el apunte bancario");
         return response.json();
     },
 
@@ -70,6 +72,7 @@ export const BankReconciliationService = {
             method: "POST",
             body: JSON.stringify({ customer_payment_id: customerPaymentId }),
         });
+        await assertApiResponseOk(response, "No se pudo conciliar el apunte bancario");
         return response.json();
     },
 
@@ -78,6 +81,7 @@ export const BankReconciliationService = {
             method: "POST",
             body: JSON.stringify({ reason }),
         });
+        await assertApiResponseOk(response, "No se pudo deshacer la conciliación");
         return response.json();
     },
 };
