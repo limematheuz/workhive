@@ -17,6 +17,8 @@ test("work orders have an independent operational service and page", () => {
     assert.match(page, /DataListTable/);
     assert.match(page, /Nueva orden/);
     assert.match(page, /Generar tarea/);
+    assert.match(page, /workOrder\.next_occurrence_at \?\? workOrder\.scheduled_start_at/);
+    assert.match(page, /next_occurrence_at: new Date\(draft\.scheduledStart\)\.toISOString\(\)/);
     assert.match(page, /WorkOrderMaterialsDialog/);
     assert.match(sidebar, /"\/dashboard\/work-orders"/);
 });

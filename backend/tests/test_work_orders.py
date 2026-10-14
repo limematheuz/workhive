@@ -87,6 +87,24 @@ def test_recurring_work_order_creates_traceable_task_instances(client, db):
     assert task.work_order_id == work_order["id"]
     assert task.scheduled_start_at == datetime(2026, 10, 1, 9, 0)
 
+    rescheduled = client.patch(
+        f"/api/v1/work-orders/{work_order['id']}",
+        headers=owner_headers,
+        json={"next_occurrence_at": "2026-10-20T09:00:00+00:00"},
+    )
+    assert rescheduled.status_code == 200, rescheduled.text
+    assert rescheduled.json()["scheduled_start_at"].startswith("2026-10-01T09:00:00")
+    assert rescheduled.json()["next_occurrence_at"].startswith("2026-10-20T09:00:00")
+
+    rescheduled_generation = client.post(
+        f"/api/v1/work-orders/{work_order['id']}/generate", headers=owner_headers
+    )
+    assert rescheduled_generation.status_code == 200, rescheduled_generation.text
+    assert rescheduled_generation.json()["work_order"]["next_occurrence_at"].startswith("2026-11-03T09:00:00")
+    rescheduled_task = db.get(TaskItem, rescheduled_generation.json()["task_item_id"])
+    assert rescheduled_task is not None
+    assert rescheduled_task.scheduled_start_at == datetime(2026, 10, 20, 9, 0)
+
 
 def test_one_off_work_order_stays_separate_until_it_generates_a_task(client, db):
     headers = _authenticated_company(
@@ -111,6 +129,12 @@ def test_one_off_work_order_stays_separate_until_it_generates_a_task(client, db)
     assert created.status_code == 201, created.text
     work_order = created.json()
     assert db.query(TaskItem).count() == 0
+
+    assert client.patch(
+        f"/api/v1/work-orders/{work_order['id']}",
+        headers=headers,
+        json={"next_occurrence_at": "2026-10-03T09:00:00+00:00"},
+    ).status_code == 422
 
     generated = client.post(
         f"/api/v1/work-orders/{work_order['id']}/generate", headers=headers

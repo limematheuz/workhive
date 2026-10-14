@@ -57,6 +57,7 @@ class WorkOrderUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=10_000)
     status: WorkOrderStatus | None = None
     scheduled_start_at: datetime | None = None
+    next_occurrence_at: datetime | None = None
     recurrence_unit: RecurrenceUnit | None = None
     recurrence_interval: int | None = Field(default=None, ge=1, le=52)
     recurrence_ends_at: datetime | None = None

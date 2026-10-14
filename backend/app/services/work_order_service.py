@@ -174,6 +174,23 @@ def update_work_order(
     )
     if work_order.order_type == "recurring":
         require_company_feature(db, company_id=company_id, code="features.recurrence")
+    if "next_occurrence_at" in updates:
+        if work_order.order_type != "recurring":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Solo las órdenes recurrentes pueden replanificar la próxima ejecución",
+            )
+        next_occurrence = updates["next_occurrence_at"]
+        if next_occurrence is None:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Una orden recurrente necesita una próxima ejecución",
+            )
+        if next_end is not None and next_occurrence > next_end:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="La próxima ejecución no puede ser posterior al final de la recurrencia",
+            )
     for key, value in updates.items():
         setattr(work_order, key, value)
     if should_reschedule:
