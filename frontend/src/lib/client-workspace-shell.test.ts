@@ -75,6 +75,11 @@ test("every client data table uses shadcn Table on desktop and Card on mobile", 
     }
 });
 
+test("mobile client cards retain an accessible path to the client detail", () => {
+    assert.match(table, /<Button type="button" variant="outline" size="sm" className="w-full" onClick=\{\(\) => onDetails\(row\.client\)\}>/);
+    assert.match(table, /workspace\.view_client\.replace\("\{name\}", row\.client\.name\)/);
+});
+
 test("client email opens the in-app composer instead of an external mail client", () => {
     assert.match(overview, /DocumentEmailDialog/);
     assert.match(overview, /ClientService\.sendClientEmail/);
