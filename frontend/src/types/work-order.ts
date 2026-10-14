@@ -41,6 +41,7 @@ export type WorkOrderUpdate = {
     description?: string | null;
     status?: WorkOrderStatus;
     scheduled_start_at?: string;
+    next_occurrence_at?: string;
     recurrence_unit?: RecurrenceUnit;
     recurrence_interval?: number;
     recurrence_ends_at?: string | null;

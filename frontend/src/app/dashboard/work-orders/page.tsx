@@ -164,7 +164,11 @@ function createWorkOrderUpdateDraft(workOrder: WorkOrder): WorkOrderUpdateDraft 
         title: workOrder.title,
         description: workOrder.description ?? "",
         status: workOrder.status,
-        scheduledStart: toDateTimeInput(new Date(workOrder.scheduled_start_at)),
+        scheduledStart: toDateTimeInput(new Date(
+            workOrder.order_type === "recurring"
+                ? workOrder.next_occurrence_at ?? workOrder.scheduled_start_at
+                : workOrder.scheduled_start_at,
+        )),
         recurrenceUnit: workOrder.recurrence_unit ?? "weekly",
         recurrenceInterval: String(workOrder.recurrence_interval ?? 1),
         recurrenceEndsAt: workOrder.recurrence_ends_at ? toDateTimeInput(new Date(workOrder.recurrence_ends_at)) : "",
@@ -192,14 +196,14 @@ function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated }: {
             title: draft.title.trim(),
             description: draft.description.trim() || null,
             status: draft.status,
-            scheduled_start_at: new Date(draft.scheduledStart).toISOString(),
             estimated_people: draft.estimatedPeople ? Number(draft.estimatedPeople) : null,
             estimated_minutes: draft.estimatedMinutes ? Number(draft.estimatedMinutes) : null,
             ...(workOrder.order_type === "recurring" ? {
+                next_occurrence_at: new Date(draft.scheduledStart).toISOString(),
                 recurrence_unit: draft.recurrenceUnit,
                 recurrence_interval: Number(draft.recurrenceInterval),
                 recurrence_ends_at: draft.recurrenceEndsAt ? new Date(draft.recurrenceEndsAt).toISOString() : null,
-            } : {}),
+            } : { scheduled_start_at: new Date(draft.scheduledStart).toISOString() }),
         };
         setSaving(true);
         try {
