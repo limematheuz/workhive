@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 
+from sqlalchemy import event
+
 from app.models.bank_reconciliation import BankReconciliation
+from app.repositories import bank_reconciliation as bank_reconciliation_repo
 from tests.test_customer_payments import _client, _invoice, _payment_payload
 from tests.test_location_workspace import _admin, _company, _headers
 
@@ -83,6 +86,44 @@ def test_bank_entry_matches_receipt_and_requires_explicit_unmatch_before_void(
         json={"reason": "El banco rechazó el cargo"},
     )
     assert voided.status_code == 200, voided.text
+
+
+def test_active_reconciliation_lock_lookup_does_not_join_nullable_payment(client, db):
+    company = _company(db, "BankReconciliationLockOwner")
+    admin = _admin(db, company)
+    customer = _client(db, company, "Cliente bloqueo conciliación")
+    invoice = _invoice(db, company, customer, number="INV-BANK-LOCK")
+    payment = _payment(client, admin, customer.id, invoice.id)
+    entry = client.post(
+        "/api/v1/bank-reconciliation/entries",
+        headers=_headers(admin),
+        json=_entry_payload(external_id="BANK-ENTRY-LOCK"),
+    )
+    assert entry.status_code == 201, entry.text
+    matched = client.post(
+        f"/api/v1/bank-reconciliation/entries/{entry.json()['id']}/match",
+        headers=_headers(admin),
+        json={"customer_payment_id": payment["id"]},
+    )
+    assert matched.status_code == 200, matched.text
+
+    statements: list[str] = []
+
+    def capture_statement(_connection, _cursor, statement, _parameters, _context, _executemany):
+        if "FROM bank_reconciliations" in statement:
+            statements.append(statement)
+
+    event.listen(db.bind, "before_cursor_execute", capture_statement)
+    try:
+        reconciliation = bank_reconciliation_repo.get_active_reconciliation(
+            db, entry_id=entry.json()["id"], for_update=True
+        )
+    finally:
+        event.remove(db.bind, "before_cursor_execute", capture_statement)
+
+    assert reconciliation is not None
+    assert statements
+    assert all("JOIN customer_payments" not in statement.upper() for statement in statements)
 
 
 def test_bank_reconciliation_rejects_cross_tenant_reused_or_mismatched_receipts(
