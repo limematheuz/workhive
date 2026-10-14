@@ -14,6 +14,7 @@ import {
 
 import { ActionPopover } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -174,6 +175,7 @@ export function ClientsTable({
                                     <span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.locationCount}</b> {workspace.locations.toLowerCase()}</span>
                                     <span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.taskCount}</b> {workspace.jobs.toLowerCase()}</span>
                                 </div>
+                                <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => onDetails(row.client)}>{workspace.view_client.replace("{name}", row.client.name)}</Button>
                             </CardContent>
                         </Card>
                     ))}
