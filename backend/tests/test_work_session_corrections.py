@@ -3,12 +3,15 @@ from decimal import Decimal
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import event
 
 from app.models.location import Location
 from app.models.labor_cost_rate import LaborCostRate
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
+from app.repositories import work_session as work_session_repo
+from app.repositories import work_session_correction as correction_repo
 from app.schemas.work_session_correction import (
     WorkSessionCorrectionCreate,
     WorkSessionCorrectionReview,
@@ -164,6 +167,64 @@ def test_worker_cannot_duplicate_or_approve_own_pending_correction(db):
             WorkSessionCorrectionReview(decision="approved"),
         )
     assert self_review.value.status_code == 403
+
+
+def test_locked_session_lookup_does_not_join_nullable_location(db):
+    company = _company(db, "Correcciones con bloqueo")
+    worker = _user(db, company, "worker-lock-corrections@example.com", role_id=3)
+    session = _closed_session(db, worker=worker, company=company)
+    statements: list[str] = []
+
+    def capture_statement(_connection, _cursor, statement, _parameters, _context, _executemany):
+        if "FROM work_sessions" in statement:
+            statements.append(statement)
+
+    event.listen(db.bind, "before_cursor_execute", capture_statement)
+    try:
+        locked = work_session_repo.get_work_session_by_id(
+            db,
+            session.id,
+            worker.id,
+            for_update=True,
+        )
+    finally:
+        event.remove(db.bind, "before_cursor_execute", capture_statement)
+
+    assert locked is not None
+    assert statements
+    assert all("JOIN locations" not in statement.upper() for statement in statements)
+
+
+def test_locked_correction_lookup_does_not_join_nullable_relationships(db):
+    company = _company(db, "Correcciones bloqueadas")
+    worker = _user(db, company, "worker-locked-correction@example.com", role_id=3)
+    session = _closed_session(db, worker=worker, company=company)
+    correction = work_session_correction_service.request_correction(
+        db,
+        worker,
+        session.id,
+        _request_data(session),
+    )
+    statements: list[str] = []
+
+    def capture_statement(_connection, _cursor, statement, _parameters, _context, _executemany):
+        if "FROM work_session_corrections" in statement:
+            statements.append(statement)
+
+    event.listen(db.bind, "before_cursor_execute", capture_statement)
+    try:
+        locked = correction_repo.get_correction(
+            db,
+            company_id=company.id,
+            correction_id=correction.id,
+            for_update=True,
+        )
+    finally:
+        event.remove(db.bind, "before_cursor_execute", capture_statement)
+
+    assert locked is not None
+    assert statements
+    assert all("JOIN" not in statement.upper() for statement in statements)
 
 
 def test_corrections_are_isolated_and_invoiced_time_is_immutable(db):
