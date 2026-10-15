@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.work_session import WorkSession
 from app.models.work_session_correction import WorkSessionCorrection
@@ -11,12 +11,27 @@ def get_correction(
     correction_id: int,
     for_update: bool = False,
 ) -> WorkSessionCorrection | None:
+    relationship_loaders = (
+        (
+            selectinload(WorkSessionCorrection.requested_by),
+            selectinload(WorkSessionCorrection.work_session).selectinload(
+                WorkSession.location
+            ),
+        )
+        if for_update
+        else (
+            joinedload(WorkSessionCorrection.requested_by),
+            joinedload(WorkSessionCorrection.work_session).joinedload(
+                WorkSession.location
+            ),
+        )
+    )
     query = (
         db.query(WorkSessionCorrection)
-        .options(
-            joinedload(WorkSessionCorrection.requested_by),
-            joinedload(WorkSessionCorrection.work_session).joinedload(WorkSession.location),
-        )
+        # PostgreSQL cannot lock the nullable sides of the outer joins emitted
+        # by joinedload().  Review mutates only the correction and session, so
+        # lock the correction row and load presentation relationships separately.
+        .options(*relationship_loaders)
         .filter(
             WorkSessionCorrection.company_id == company_id,
             WorkSessionCorrection.id == correction_id,
