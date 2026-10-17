@@ -72,6 +72,7 @@ def test_quality_evidence_is_private_to_its_inspection_or_incident(client, db):
     inspection_media = client.get(inspection_evidence["media_url"], headers=_headers(admin))
     assert inspection_media.status_code == 200
     assert inspection_media.headers["content-type"] == "image/png"
+    assert "no-store" in inspection_media.headers["cache-control"]
     assert inspection_media.content == _png()
 
     incident_upload = client.post(
@@ -86,7 +87,9 @@ def test_quality_evidence_is_private_to_its_inspection_or_incident(client, db):
     )
     assert incident_read.status_code == 200, incident_read.text
     assert incident_read.json()["evidence"] == [incident_evidence]
-    assert client.get(incident_evidence["media_url"], headers=_headers(admin)).status_code == 200
+    incident_media = client.get(incident_evidence["media_url"], headers=_headers(admin))
+    assert incident_media.status_code == 200
+    assert "no-store" in incident_media.headers["cache-control"]
 
 
 def test_quality_evidence_fails_closed_to_location_and_generic_media_access(client, db):
