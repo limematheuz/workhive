@@ -284,6 +284,7 @@ def test_checklist_notes_and_photos_are_atomic_and_media_is_cross_tenant_authori
     )
     assert allowed_media.status_code == 200
     assert allowed_media.headers["content-type"] == "image/png"
+    assert "no-store" in allowed_media.headers["cache-control"]
     assert client.get(
         f"/api/v1/task-reports/{report_id}/media",
         headers=_headers(users["unrelated_admin"]),

@@ -66,6 +66,7 @@ def test_uploaded_media_is_private_to_the_company(client):
     assert owner_read.status_code == 200
     assert owner_read.content == _png()
     assert owner_read.headers["content-type"] == "image/png"
+    assert "no-store" in owner_read.headers["cache-control"]
 
     cross_company_read = client.get(url, headers=other_headers)
     assert cross_company_read.status_code == 404

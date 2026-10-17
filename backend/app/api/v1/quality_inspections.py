@@ -157,5 +157,5 @@ def read_quality_inspection_evidence_media(
     return Response(
         content=stored.contents,
         media_type=stored.content_type,
-        headers={"Cache-Control": "private, max-age=3600"},
+        headers={"Cache-Control": "private, no-store"},
     )

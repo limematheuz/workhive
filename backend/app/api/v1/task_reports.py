@@ -101,5 +101,5 @@ async def read_task_report_media(
     return Response(
         content=stored.contents,
         media_type=stored.content_type,
-        headers={"Cache-Control": "private, max-age=3600"},
+        headers={"Cache-Control": "private, no-store"},
     )
