@@ -1164,7 +1164,7 @@
     "register_worker_title": "I am an employee or technician",
     "register_worker_desc": "Ask your company administrator to invite you from their control panel. Only they can grant access to their workspace.",
     "register_company_title": "I want to create my company",
-    "register_company_desc": "Choose a plan, complete secure payment, and we will create your workspace when Stripe confirms it.",
+    "register_company_desc": "Explore the available plans and choose the purchase option that best suits your company.",
     "see_plans": "See plans",
     "contact_cta": "Contact",
     "forgot_title": "Recover access",
@@ -1202,7 +1202,7 @@
   },
   "subscription": {
     "plans_title": "Plans that grow with your company",
-    "plans_subtitle": "Choose a standard plan and create your workspace after secure payment.",
+    "plans_subtitle": "Compare features, capacity and prices to choose your company's plan.",
     "plans_loading": "Loading available plans…",
     "plans_error": "The current plans could not be loaded.",
     "retry": "Try again",
