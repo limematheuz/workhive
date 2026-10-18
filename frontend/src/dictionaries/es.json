@@ -1164,7 +1164,7 @@
     "register_worker_title": "Soy trabajador u operario",
     "register_worker_desc": "Pide a tu administrador que te invite desde el panel de la empresa. Solo ellos pueden darte acceso a su espacio.",
     "register_company_title": "Quiero crear mi empresa",
-    "register_company_desc": "Elige un plan, completa el pago seguro y crearemos tu espacio de trabajo cuando Stripe lo confirme.",
+    "register_company_desc": "Consulta los planes disponibles y elige la opción de contratación que mejor encaje con tu empresa.",
     "see_plans": "Ver planes",
     "contact_cta": "Contactar",
     "forgot_title": "Recuperar acceso",
@@ -1202,7 +1202,7 @@
   },
   "subscription": {
     "plans_title": "Planes que crecen con tu empresa",
-    "plans_subtitle": "Elige un plan estándar y crea tu espacio de trabajo después del pago seguro.",
+    "plans_subtitle": "Compara funciones, capacidad y precios para elegir el plan de tu empresa.",
     "plans_loading": "Cargando los planes disponibles…",
     "plans_error": "No se han podido cargar los planes actuales.",
     "retry": "Reintentar",
