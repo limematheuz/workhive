@@ -16,6 +16,7 @@ import { ContactInfoAside } from "@/components/contact/ContactInfoAside";
 import { ArrowLeft } from "lucide-react";
 import { contactService } from "@/services/contact.service";
 import { TrialRequestService } from "@/services/trial-request.service";
+import { getContactSubmissionErrorMessage } from "@/lib/contact-submission-error";
 import { toast } from "sonner";
 
 function ContactPageContent() {
@@ -111,12 +112,7 @@ function ContactPageContent() {
                       : "Message sent successfully",
             );
         } catch (submissionError) {
-            const message =
-                submissionError instanceof Error
-                    ? submissionError.message
-                    : locale === "es"
-                      ? "No se pudo enviar el mensaje"
-                      : "The message could not be sent";
+            const message = getContactSubmissionErrorMessage(submissionError, locale);
             setError(message);
             toast.error(message);
         } finally {
