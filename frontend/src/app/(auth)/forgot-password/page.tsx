@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authService } from "@/services/auth.service";
 import {
-    getAuthErrorMessage,
     getAuthFormMessages,
     preparePasswordResetEmail,
 } from "@/lib/auth-forms";
+import { getPasswordRecoveryErrorMessage } from "@/lib/password-recovery-error";
 import { useDictionary } from "@/lib/dictionary-context";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
@@ -47,10 +47,7 @@ export default function ForgotPasswordPage() {
             setEmail(prepared.email);
             setSubmitted(true);
         } catch (err: unknown) {
-            const message = getAuthErrorMessage(
-                err,
-                locale === "es" ? "No se pudo procesar la solicitud." : "Error processing request",
-            );
+            const message = getPasswordRecoveryErrorMessage(err, locale);
             setAlertMsg({ type: "error", text: message });
             toast.error(message);
         } finally {

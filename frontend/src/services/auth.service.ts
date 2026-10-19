@@ -84,10 +84,7 @@ export const authService = {
             body: JSON.stringify({ email: email }),
         });
 
-        if (!response.ok) {
-            const errorMsg = await extractErrorMessage(response, "No se pudo procesar la solicitud de recuperación");
-            throw new Error(errorMsg);
-        }
+        await assertApiResponseOk(response, "No se pudo procesar la solicitud de recuperación");
     },
 
     resetPassword: async (token: string, newPassword: string): Promise<void> => {
