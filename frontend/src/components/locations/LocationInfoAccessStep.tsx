@@ -15,6 +15,7 @@ const WEEKDAYS = [
 export function LocationInfoAccessStep({
     clients,
     showClientAssignment = true,
+    requirePostalCode = false,
     name,
     address,
     city,
@@ -74,7 +75,7 @@ export function LocationInfoAccessStep({
         <div className="space-y-6">
             <div>
                 <h3 className="text-lg font-bold text-[var(--text-main)]">1. Información y acceso</h3>
-                <p className="mt-1 text-sm text-[var(--text-muted)]">Empieza por los datos básicos. Solo nombre, dirección y ciudad son obligatorios.</p>
+                <p className="mt-1 text-sm text-[var(--text-muted)]">{requirePostalCode ? "Empieza por los datos básicos. Nombre, dirección, ciudad y código postal son obligatorios." : "Empieza por los datos básicos. Solo nombre, dirección y ciudad son obligatorios."}</p>
             </div>
             <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)] p-4 sm:p-5">
                 <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]"><Building2 className="h-4 w-4 text-accent" /> Información de la ubicación</div>
@@ -83,7 +84,7 @@ export function LocationInfoAccessStep({
                     {showClientAssignment && <div className="space-y-1.5"><Label htmlFor="location-workspace-client">Cliente</Label><Select value={clientId || "none"} onValueChange={(value) => setClientId(value === "none" ? "" : value)}><SelectTrigger id="location-workspace-client"><SelectValue placeholder="Sin cliente vinculado" /></SelectTrigger><SelectContent><SelectItem value="none">Sin cliente vinculado</SelectItem>{clients.map((client) => <SelectItem key={client.id} value={String(client.id)}>{client.name}</SelectItem>)}</SelectContent></Select></div>}
                     <div className="space-y-1.5 lg:col-span-2"><Label htmlFor="location-workspace-address">Dirección *</Label><Input id="location-workspace-address" value={address} onChange={(event) => setAddress(event.target.value)} placeholder="Calle, número, código postal, ciudad" /></div>
                     <div className="space-y-1.5"><Label htmlFor="location-workspace-city">Ciudad *</Label><Input id="location-workspace-city" value={city} onChange={(event) => setCity(event.target.value)} placeholder="Ej.: Barcelona" /></div>
-                    <div className="space-y-1.5"><Label htmlFor="location-workspace-postal-code">Código postal</Label><Input id="location-workspace-postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} placeholder="Ej.: 08018" /></div>
+                    <div className="space-y-1.5"><Label htmlFor="location-workspace-postal-code">Código postal{requirePostalCode ? " *" : ""}</Label><Input id="location-workspace-postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value)} aria-required={requirePostalCode} placeholder="Ej.: 08018" /></div>
                 </div>
             </section>
 
