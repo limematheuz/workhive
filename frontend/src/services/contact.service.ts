@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 
 export type ContactMessage = {
     name: string;
@@ -14,13 +14,6 @@ export const contactService = {
             method: "POST",
             body: JSON.stringify(message),
         });
-        if (!response.ok) {
-            throw new Error(
-                await extractErrorMessage(
-                    response,
-                    "No se pudo enviar el mensaje"
-                )
-            );
-        }
+        await assertApiResponseOk(response, "No se pudo enviar el mensaje");
     },
 };

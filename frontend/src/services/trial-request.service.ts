@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 
 export type TrialRequest = {
     id: number;
@@ -48,9 +48,7 @@ export const TrialRequestService = {
             method: "POST",
             body: JSON.stringify(data),
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "No se pudo solicitar la prueba"));
-        }
+        await assertApiResponseOk(response, "No se pudo solicitar la prueba");
     },
 
     verify: async (token: string): Promise<{ status: string }> => {
