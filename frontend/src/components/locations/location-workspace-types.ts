@@ -40,6 +40,7 @@ export type LocationAccessDraft = Omit<
 export interface LocationInfoAccessStepProps {
     clients: Client[];
     showClientAssignment?: boolean;
+    requirePostalCode?: boolean;
     name: string;
     address: string;
     city: string;
