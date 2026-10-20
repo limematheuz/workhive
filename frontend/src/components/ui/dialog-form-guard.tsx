@@ -13,6 +13,15 @@ const GuardContext = React.createContext<{
     register: (guard: CloseGuard) => () => void;
     dismiss: () => void;
 } | null>(null);
+const ResetDirtyContext = React.createContext<() => void>(() => {});
+
+export function DialogFormGuardResetProvider({ reset, children }: React.PropsWithChildren<{ reset: () => void }>) {
+    return <ResetDirtyContext.Provider value={reset}>{children}</ResetDirtyContext.Provider>;
+}
+
+export function useDialogFormGuardReset() {
+    return React.useContext(ResetDirtyContext);
+}
 
 /** Radix dismissals are guarded; a parent's successful-save close is not. */
 export function GuardedDialogRoot({ open, defaultOpen = false, onOpenChange, ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
@@ -47,6 +56,7 @@ export function useDialogFormGuard(enabled: boolean) {
     const dirty = React.useRef(false);
     const pendingClose = React.useRef<(() => void) | null>(null);
     const [confirming, setConfirming] = React.useState(false);
+    const resetDirty = React.useCallback(() => { dirty.current = false; }, []);
 
     React.useEffect(() => {
         if (!context || !enabled) return;
@@ -91,5 +101,5 @@ export function useDialogFormGuard(enabled: boolean) {
         </AlertDialogContent>
     </AlertDialog>;
 
-    return { markFieldChange, markControlChange, confirmation };
+    return { markFieldChange, markControlChange, confirmation, resetDirty };
 }
