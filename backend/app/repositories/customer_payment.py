@@ -75,6 +75,30 @@ def allocated_amount_for_invoice(db: Session, *, invoice_id: int) -> Decimal:
     return Decimal(str(amount or 0))
 
 
+def allocated_amounts_for_invoices(
+    db: Session, *, company_id: int, invoice_ids: list[int]
+) -> dict[int, Decimal]:
+    if not invoice_ids:
+        return {}
+    rows = (
+        db.query(
+            CustomerPaymentAllocation.invoice_id,
+            func.sum(CustomerPaymentAllocation.amount),
+        )
+        .join(CustomerPayment, CustomerPayment.id == CustomerPaymentAllocation.payment_id)
+        .join(Invoice, Invoice.id == CustomerPaymentAllocation.invoice_id)
+        .filter(
+            Invoice.company_id == company_id,
+            CustomerPayment.company_id == company_id,
+            CustomerPayment.status == "received",
+            CustomerPaymentAllocation.invoice_id.in_(sorted(set(invoice_ids))),
+        )
+        .group_by(CustomerPaymentAllocation.invoice_id)
+        .all()
+    )
+    return {invoice_id: Decimal(str(amount)) for invoice_id, amount in rows}
+
+
 def create_payment(db: Session, **values) -> CustomerPayment:
     payment = CustomerPayment(**values)
     db.add(payment)

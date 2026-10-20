@@ -1807,7 +1807,7 @@
     "stats_pending": "Pendiente",
     "stats_overdue": "Vencido",
     "stats_invoices_count": "{count} facturas",
-    "stats_paid_count": "{count} pagadas",
+    "stats_paid_count": "{count} pagadas por completo",
     "stats_open_count": "{count} abiertas",
     "stats_overdue_count": "{count} vencidas",
     "summary_nav": "Resumen",

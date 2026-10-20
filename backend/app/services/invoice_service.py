@@ -11,6 +11,7 @@ from app.models.client import Client
 from app.models.invoice import Invoice
 from app.models.task_item import TaskItem
 from app.repositories import client as client_repo
+from app.repositories import customer_payment as customer_payment_repo
 from app.repositories import invoice as invoice_repo
 from app.repositories import invoice_item as invoice_item_repo
 from app.schemas.invoice import (
@@ -68,9 +69,15 @@ def get_invoices(
     limit: int = 100,
 ) -> list[Invoice]:
     _require_invoices_feature(db, company_id)
-    return invoice_repo.get_invoices(
+    invoices = invoice_repo.get_invoices(
         db, company_id, client_id, invoice_status, skip, limit
     )
+    collected = customer_payment_repo.allocated_amounts_for_invoices(
+        db, company_id=company_id, invoice_ids=[invoice.id for invoice in invoices]
+    )
+    for invoice in invoices:
+        invoice.collected_amount = collected.get(invoice.id, Decimal("0"))
+    return invoices
 
 
 def get_invoice(db: Session, company_id: int, invoice_id: int) -> Invoice:
