@@ -4,7 +4,6 @@ import { startTransition, useCallback, useEffect, useRef, useState } from "react
 
 import { type InvoiceableTask } from "@/components/invoices/InvoiceableJobsSection";
 import {
-    computeInvoiceStats,
     computeStatusCounts,
     filterInvoiceableTasks,
     filterVisibleInvoices,
@@ -14,6 +13,7 @@ import {
     mergeInvoiceableTasksIfChanged,
 } from "@/components/invoices/invoice-page-utils";
 import { getInvoiceStatusText } from "@/components/invoices/invoice-status-utils";
+import { computeInvoiceStats } from "@/components/invoices/invoice-stats";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend";
 import { toast } from "@/lib/toast";

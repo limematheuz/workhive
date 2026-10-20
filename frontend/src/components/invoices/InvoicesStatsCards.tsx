@@ -10,6 +10,7 @@ export type InvoiceStats = {
     totalCount: number;
     totalAmount: number;
     paidAmount: number;
+    openCount: number;
     openAmount: number;
     overdueAmount: number;
 };
@@ -51,7 +52,7 @@ export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, 
             value: formatCurrency(stats.openAmount),
             detail: labels.stats_open_count.replace(
                 "{count}",
-                ((statusCounts.draft || 0) + (statusCounts.issued || 0)).toString(),
+                stats.openCount.toString(),
             ),
             icon: Clock3,
             trend: previousStats ? getMetricTrend(stats.openAmount, previousStats.openAmount, "lower") : undefined,

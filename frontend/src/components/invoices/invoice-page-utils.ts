@@ -110,20 +110,6 @@ export const filterVisibleInvoices = (
     });
 };
 
-export const computeInvoiceStats = (invoices: Invoice[]) => ({
-    totalCount: invoices.length,
-    totalAmount: invoices.reduce((sum, invoice) => sum + invoice.total_amount, 0),
-    paidAmount: invoices
-        .filter((invoice) => invoice.status === "paid")
-        .reduce((sum, invoice) => sum + invoice.total_amount, 0),
-    openAmount: invoices
-        .filter((invoice) => ["draft", "issued", "partially_paid", "overdue"].includes(invoice.status))
-        .reduce((sum, invoice) => sum + invoice.total_amount, 0),
-    overdueAmount: invoices
-        .filter((invoice) => invoice.status === "overdue")
-        .reduce((sum, invoice) => sum + invoice.total_amount, 0),
-});
-
 export const computeStatusCounts = (invoices: Invoice[]) =>
     invoices.reduce<Record<string, number>>((acc, invoice) => {
         acc[invoice.status] = (acc[invoice.status] || 0) + 1;
