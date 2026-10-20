@@ -94,6 +94,10 @@ class InvoiceResponse(InvoiceBase):
     updated_at: datetime
 
 
+class InvoiceListResponse(InvoiceResponse):
+    collected_amount: float
+
+
 class RectificationCreate(BaseModel):
     """Schema to create a rectifying invoice (credit note).
     Complies with VAT Law Art. 80 and RD 1619/2012 (Spanish regulations).

@@ -31,6 +31,7 @@ export interface Invoice {
     base_amount: number;
     tax_amount: number;
     total_amount: number;
+    collected_amount?: number;
     is_rectification: boolean;
     original_invoice_id?: number | null;
     invoice_hash?: string | null;

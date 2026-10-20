@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
+from sqlalchemy import event
+
 from app.models.client import Client
 from app.models.invoice import Invoice
 from tests.test_location_workspace import _admin, _company, _headers
@@ -72,6 +74,20 @@ def test_customer_payment_tracks_partial_and_full_collection(client, db):
     db.refresh(invoice)
     assert invoice.status == "partially_paid"
     assert invoice.paid_at is None
+    statements = []
+
+    def capture_statement(_connection, _cursor, statement, _parameters, _context, _executemany):
+        if statement.lstrip().lower().startswith("select") and "customer_payment_allocations" in statement:
+            statements.append(statement)
+
+    event.listen(db.bind, "before_cursor_execute", capture_statement)
+    try:
+        listed = client.get("/api/v1/invoices/", headers=_headers(admin))
+    finally:
+        event.remove(db.bind, "before_cursor_execute", capture_statement)
+    assert listed.status_code == 200, listed.text
+    assert listed.json()[0]["collected_amount"] == 40.0
+    assert len(statements) == 1, "The invoice list must batch collection totals in one query"
 
     second = client.post(
         "/api/v1/customer-payments/",
@@ -86,6 +102,9 @@ def test_customer_payment_tracks_partial_and_full_collection(client, db):
     db.refresh(invoice)
     assert invoice.status == "paid"
     assert invoice.paid_at is not None
+    listed = client.get("/api/v1/invoices/", headers=_headers(admin))
+    assert listed.status_code == 200, listed.text
+    assert listed.json()[0]["collected_amount"] == 100.0
 
     payments = client.get("/api/v1/customer-payments/", headers=_headers(admin))
     assert payments.status_code == 200, payments.text
@@ -130,6 +149,12 @@ def test_customer_payment_can_split_and_void_without_losing_the_audit_trail(clie
     db.refresh(first_invoice)
     db.refresh(second_invoice)
     assert (first_invoice.status, second_invoice.status) == ("issued", "issued")
+    listed = client.get("/api/v1/invoices/", headers=_headers(admin))
+    assert listed.status_code == 200, listed.text
+    assert {item["invoice_number"]: item["collected_amount"] for item in listed.json()} == {
+        "INV-SPLIT-01": 0.0,
+        "INV-SPLIT-02": 0.0,
+    }
 
     repeated = client.post(
         f"/api/v1/customer-payments/{receipt.json()['id']}/void",

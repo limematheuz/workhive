@@ -1807,7 +1807,7 @@
     "stats_pending": "Pending",
     "stats_overdue": "Overdue",
     "stats_invoices_count": "{count} invoices",
-    "stats_paid_count": "{count} paid",
+    "stats_paid_count": "{count} paid in full",
     "stats_open_count": "{count} open",
     "stats_overdue_count": "{count} overdue",
     "summary_nav": "Summary",

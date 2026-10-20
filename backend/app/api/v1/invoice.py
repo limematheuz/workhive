@@ -12,6 +12,7 @@ from app.schemas.invoice import (
     InvoiceCreate,
     InvoiceDraftCreate,
     InvoiceEmailRequest,
+    InvoiceListResponse,
     InvoiceResponse,
     InvoiceUpdate,
     RectificationCreate,
@@ -34,7 +35,7 @@ from app.core.rate_limit import enforce_rate_limit
 router = APIRouter()
 
 
-@router.get("/", response_model=list[InvoiceResponse])
+@router.get("/", response_model=list[InvoiceListResponse])
 async def read_invoices(
     client_id: int | None = None,
     invoice_status: str | None = None,
