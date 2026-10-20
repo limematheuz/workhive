@@ -13,8 +13,6 @@ from reportlab.lib.enums import TA_RIGHT
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import mm
-from reportlab.graphics.barcode.qr import QrCodeWidget
-from reportlab.graphics.shapes import Drawing
 from reportlab.platypus import (
     KeepTogether,
     Paragraph,
@@ -26,6 +24,7 @@ from reportlab.platypus import (
 
 from app.core.config import settings
 from app.models.invoice import Invoice
+from app.services.invoice_pdf_qr import tax_qr_block
 from app.services.storage_service import (
     build_document_key,
     get_object_storage,
@@ -101,17 +100,6 @@ def _party_block(title: str, snapshot: dict | None) -> list:
     ]
 
 
-def _qr_drawing(value: str) -> Drawing:
-    size = 35 * mm
-    widget = QrCodeWidget(value, barLevel="M")
-    x1, y1, x2, y2 = widget.getBounds()
-    width = x2 - x1
-    height = y2 - y1
-    drawing = Drawing(size, size, transform=[size / width, 0, 0, size / height, 0, 0])
-    drawing.add(widget)
-    return drawing
-
-
 def _build_pdf(invoice: Invoice, destination: Path) -> None:
     styles = getSampleStyleSheet()
     styles.add(
@@ -156,43 +144,7 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
     )
     story: list = []
     if invoice.qr_url:
-        qr_caption = Paragraph(
-            "<b>QR tributario:</b>",
-            ParagraphStyle(
-                "QrCaption",
-                parent=styles["BodySmall"],
-                alignment=1,
-                fontSize=8,
-                leading=10,
-            ),
-        )
-        verifactu_caption = Paragraph(
-            "<b>VERI*FACTU</b><br/>"
-            "Factura verificable en la sede electrónica de la AEAT",
-            ParagraphStyle(
-                "VerifactuCaption",
-                parent=styles["BodySmall"],
-                alignment=1,
-                fontSize=7,
-                leading=9,
-            ),
-        )
-        qr_block = Table(
-            [[qr_caption], [_qr_drawing(invoice.qr_url)], [verifactu_caption]],
-            colWidths=[47 * mm],
-            hAlign="CENTER",
-        )
-        qr_block.setStyle(
-            TableStyle(
-                [
-                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                    ("TOPPADDING", (0, 0), (-1, -1), 1 * mm),
-                    ("BOTTOMPADDING", (0, 0), (-1, -1), 1 * mm),
-                ]
-            )
-        )
-        story.extend([qr_block, Spacer(1, 5 * mm)])
+        story.extend([tax_qr_block(invoice, styles["BodySmall"]), Spacer(1, 5 * mm)])
 
     invoice_label = getattr(invoice, "document_label", None) or (
         "FACTURA RECTIFICATIVA" if invoice.is_rectification else "FACTURA"
