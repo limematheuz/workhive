@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleDollarSign, Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { canOfferCustomerPayment } from "@/components/invoices/invoice-payment-eligibility";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -134,7 +135,7 @@ export function CustomerPaymentSection({ invoice, canManage, onChanged }: Custom
     return <section className="mt-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/35 p-4 print:hidden">
         <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3"><span className="rounded-xl bg-[var(--btn-secondary-bg)] p-2 text-[var(--btn-secondary-text)]"><CircleDollarSign className="size-4" /></span><div><h3 className="text-sm font-semibold text-[var(--text-main)]">Cobros</h3><p className="mt-0.5 text-xs text-[var(--text-muted)]">Asignado: {formatCurrency(allocated)} · Pendiente: {formatCurrency(remaining)}</p></div></div>
-            {canManage && remaining > 0 && !invoice.is_rectification ? <Button type="button" onClick={openForm} className="h-9 rounded-xl text-xs"><Plus className="size-3.5" />Registrar cobro</Button> : null}
+            {canOfferCustomerPayment(invoice, canManage, remaining) ? <Button type="button" onClick={openForm} className="h-9 rounded-xl text-xs"><Plus className="size-3.5" />Registrar cobro</Button> : null}
         </div>
         {loading ? <div className="flex items-center gap-2 py-4 text-xs text-[var(--text-muted)]"><Loader2 className="size-4 animate-spin" />Cargando cobros…</div> : invoicePayments.length === 0 ? <p className="py-4 text-xs text-[var(--text-muted)]">Todavía no hay cobros asignados a esta factura.</p> : <div className="mt-4 space-y-2">{invoicePayments.map((payment) => {
             const applied = payment.allocations.filter((allocation) => allocation.invoice_id === invoice.id).reduce((total, allocation) => total + Number(allocation.amount), 0);
