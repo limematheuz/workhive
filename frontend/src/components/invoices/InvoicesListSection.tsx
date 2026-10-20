@@ -13,13 +13,13 @@ type InvoicesListSectionProps = {
     invoices: Invoice[]; loading: boolean; loadingLabel: string; emptyLabel: string;
     getClientName: (clientId: number) => string;
     getStatusText: (status: Invoice["status"]) => string;
-    onOpenInvoice: (invoiceId: number) => void;
+    onOpenInvoice: (invoiceId: number, intent?: "view" | "edit") => void;
     labels: { rectification: string; issue_date: string; due_date: string; client: string; total: string; status: string; actions: string };
     canManage: boolean;
 };
 
-function getInvoiceActions(invoice: Invoice, onOpenInvoice: (invoiceId: number) => void, canManage: boolean) {
-    return [{ label: "Ver detalle", icon: Eye, onClick: () => onOpenInvoice(invoice.id) }, ...(canManage && invoice.status === "draft" ? [{ label: "Editar", icon: Edit3, onClick: () => onOpenInvoice(invoice.id), variant: "edit" as const }] : [])];
+function getInvoiceActions(invoice: Invoice, onOpenInvoice: (invoiceId: number, intent?: "view" | "edit") => void, canManage: boolean) {
+    return [{ label: "Ver detalle", icon: Eye, onClick: () => onOpenInvoice(invoice.id) }, ...(canManage && invoice.status === "draft" ? [{ label: "Editar", icon: Edit3, onClick: () => onOpenInvoice(invoice.id, "edit"), variant: "edit" as const }] : [])];
 }
 
 export function InvoicesListSection({ invoices, loading, loadingLabel, emptyLabel, getClientName, getStatusText, onOpenInvoice, labels, canManage }: InvoicesListSectionProps) {

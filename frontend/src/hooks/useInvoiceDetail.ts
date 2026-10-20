@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { startTransition, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { redirect } from "next/navigation";
 
 import {
@@ -190,7 +190,7 @@ function translateIssueError(message: string): string {
     return `No puedes emitir la factura. Falta: ${missing.join(", ")}.`;
 }
 
-export function useInvoiceDetail(invoiceId: number) {
+export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
     const { dict, locale } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const canViewInvoice = canViewFinance(user);
@@ -202,6 +202,7 @@ export function useInvoiceDetail(invoiceId: number) {
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [isRectificationOpen, setIsRectificationOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const initialEditPendingRef = useRef(initialEdit);
     const [editingInvoiceNumber, setEditingInvoiceNumber] = useState("");
     const [editingIssueDate, setEditingIssueDate] = useState("");
     const [editingDueDate, setEditingDueDate] = useState("");
@@ -460,9 +461,11 @@ export function useInvoiceDetail(invoiceId: number) {
     const openEditFromQueryEvent = useEffectEvent(() => {
         if (!canManageInvoice || !invoice || invoice.status !== "draft" || isEditMode) return;
         const queryParams = new URLSearchParams(window.location.search);
-        if (queryParams.get("edit") !== "true") return;
+        const editFromQuery = queryParams.get("edit") === "true";
+        if (!initialEditPendingRef.current && !editFromQuery) return;
+        initialEditPendingRef.current = false;
         handleEnterEditMode();
-        window.history.replaceState(null, "", `/dashboard/invoices/${invoice.id}`);
+        if (editFromQuery) window.history.replaceState(null, "", `/dashboard/invoices/${invoice.id}`);
     });
 
     useEffect(() => {

@@ -428,7 +428,6 @@ def _replace_draft_invoice_items(
             task = validated_tasks[item_data.task_item_id]
             item_data = apply_task_amounts_to_invoice_item(task, item_data)
             task.is_invoiced = True
-            db.add(task)
         invoice_item_repo.create_invoice_item(db, invoice.id, item_data)
 
 

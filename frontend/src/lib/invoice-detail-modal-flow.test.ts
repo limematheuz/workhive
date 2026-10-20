@@ -12,7 +12,8 @@ test("invoices open their detail in a modal with a fixed action header", () => {
     const quoteSheet = read("../components/quotes/QuoteDetailSheet.tsx");
 
     assert.match(workspace, /const \[selectedInvoiceId, setSelectedInvoiceId\]/);
-    assert.match(page, /onOpenInvoice: setSelectedInvoiceId/);
+    assert.match(page, /onOpenInvoice: openInvoice/);
+    assert.match(page, /initialEdit=\{selectedInvoiceIntent === "edit"\}/);
     assert.match(page, /function InvoiceDetailDialog/);
     assert.match(page, /<Dialog open=\{invoiceId !== null\}/);
     assert.doesNotMatch(page, /router\.push\(`\/dashboard\/invoices/);

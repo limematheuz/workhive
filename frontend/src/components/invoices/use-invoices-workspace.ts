@@ -60,6 +60,15 @@ export function useInvoicesWorkspace() {
     const [jobDateFrom, setJobDateFrom] = useState("");
     const [jobDateTo, setJobDateTo] = useState("");
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+    const [selectedInvoiceIntent, setSelectedInvoiceIntent] = useState<"view" | "edit">("view");
+    const openInvoice = (invoiceId: number, intent: "view" | "edit" = "view") => {
+        setSelectedInvoiceId(invoiceId);
+        setSelectedInvoiceIntent(intent);
+    };
+    const closeInvoice = () => {
+        setSelectedInvoiceId(null);
+        setSelectedInvoiceIntent("view");
+    };
     const canViewInvoices = canViewFinance(user);
     const canManageInvoices = canManageFinance(user);
 
@@ -198,6 +207,9 @@ export function useInvoicesWorkspace() {
         resetCreateForm,
         resetInvoiceFilters,
         selectedInvoiceId,
+        selectedInvoiceIntent,
+        openInvoice,
+        closeInvoice,
         selectedClientId,
         selectedJobIds,
         selectedJobs,
@@ -213,7 +225,6 @@ export function useInvoicesWorkspace() {
         setJobSearch,
         setMonth,
         setSelectedClientId,
-        setSelectedInvoiceId,
         setSelectedJobIds,
         setSelectedStatus,
         statusCounts,

@@ -13,11 +13,12 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type InvoiceDetailDialogProps = {
     invoiceId: number | null
+    initialEdit: boolean
     onClose: () => void
     onInvoiceChanged: () => void
 }
 
-function InvoiceDetailDialog({ invoiceId, onClose, onInvoiceChanged }: InvoiceDetailDialogProps) {
+function InvoiceDetailDialog({ invoiceId, initialEdit, onClose, onInvoiceChanged }: InvoiceDetailDialogProps) {
     return (
         <Dialog open={invoiceId !== null} onOpenChange={(open) => {
             if (!open) onClose()
@@ -27,6 +28,7 @@ function InvoiceDetailDialog({ invoiceId, onClose, onInvoiceChanged }: InvoiceDe
                 {invoiceId !== null && (
                     <InvoiceDetailView
                         invoiceId={invoiceId}
+                        initialEdit={initialEdit}
                         embedded
                         onChanged={onInvoiceChanged}
                     />
@@ -42,11 +44,11 @@ export default function InvoicesPage() {
         activeView, clients, collaboratorOptions, createSheet, dict, filteredInvoiceableTasks,
         getClientName, getStatusText, handleJobFilterChange, handleToggleJob, invoiceSearch,
         invoiceStats, canManageInvoices, canViewInvoices, jobDateFrom, jobDateTo, jobInvoiceFilter, jobPartyFilter, jobSearch,
-        loadInvoiceableTasks, loadInvoices, loading, loadingJobs, month, openCreateSheet,
-        previousInvoiceStats, resetCreateForm, resetInvoiceFilters, selectedClientId, selectedInvoiceId,
+        loadInvoiceableTasks, loadInvoices, loading, loadingJobs, month, openCreateSheet, openInvoice, closeInvoice,
+        previousInvoiceStats, resetCreateForm, resetInvoiceFilters, selectedClientId, selectedInvoiceId, selectedInvoiceIntent,
         selectedJobIds, selectedJobs, selectedJobsClientId, selectedStatus, setActiveView,
         setCreateSheet, setInvoiceSearch, setJobDateFrom, setJobDateTo, setJobInvoiceFilter,
-        setJobPartyFilter, setJobSearch, setMonth, setSelectedClientId, setSelectedInvoiceId,
+        setJobPartyFilter, setJobSearch, setMonth, setSelectedClientId,
         setSelectedJobIds, setSelectedStatus, statusCounts, user, userLoading, visibleInvoices,
     } = workspace;
 
@@ -126,7 +128,7 @@ export default function InvoicesPage() {
                         emptyLabel: dict.invoices.empty,
                         getClientName,
                         getStatusText,
-                        onOpenInvoice: setSelectedInvoiceId,
+                        onOpenInvoice: openInvoice,
                         canManage: canManageInvoices,
                         labels: dict.invoices,
                     }}
@@ -154,8 +156,9 @@ export default function InvoicesPage() {
 
                 <InvoiceDetailDialog
                     invoiceId={selectedInvoiceId}
+                    initialEdit={selectedInvoiceIntent === "edit"}
                     onClose={() => {
-                        setSelectedInvoiceId(null)
+                        closeInvoice()
                         void loadInvoices()
                     }}
                     onInvoiceChanged={() => void loadInvoices()}

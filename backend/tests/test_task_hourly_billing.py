@@ -5,8 +5,9 @@ import pytest
 from fastapi import HTTPException
 
 from app.models.task_item import TaskItem
+from app.models.invoice_item import InvoiceItem
 from app.models.work_session import WorkSession
-from app.schemas.invoice import InvoiceDraftCreate
+from app.schemas.invoice import InvoiceDraftCreate, InvoiceUpdate
 from app.schemas.invoice_item import InvoiceItemCreate
 from app.schemas.task_item import TaskItemUpdate
 from app.services import invoice_service, task_billing_service, task_item_service
@@ -208,6 +209,42 @@ def test_fixed_price_tasks_ignore_hours_for_invoice_amount(db):
     item = invoice.items[0]
     assert float(item.quantity) == 2.0
     assert float(item.unit_price) == 165.0
+
+
+def test_editing_task_linked_draft_keeps_one_line_and_billing_link(db):
+    company, admin, task = _hourly_task_with_sessions(db, seconds_by_user=[3600])
+    task.pricing_mode = "fixed"
+    task.price = 20.0
+    task.quantity = 1
+    task.unit = "service"
+    db.commit()
+    task_item_service.update_task_item(db, admin, task.id, TaskItemUpdate(status="completed"))
+    db.refresh(task)
+
+    draft = invoice_service.create_invoice_draft(
+        db,
+        company.id,
+        InvoiceDraftCreate(
+            client_id=task.location.client_id,
+            issue_date=datetime.now(timezone.utc),
+            items=[InvoiceItemCreate(description="Limpieza", unit_price=20, task_item_id=task.id)],
+        ),
+    )
+
+    updated = invoice_service.update_invoice(
+        db,
+        company.id,
+        draft.id,
+        InvoiceUpdate(
+            custom_issuer_info="QA Emisor\nNIF/CIF: B00000000\nDirección: Calle QA 1",
+            items=[InvoiceItemCreate(description="Limpieza", unit_price=20, task_item_id=task.id)],
+        ),
+    )
+
+    assert "B00000000" in updated.custom_issuer_info
+    assert db.query(InvoiceItem).filter(InvoiceItem.invoice_id == draft.id).count() == 1
+    db.refresh(task)
+    assert task.is_invoiced is True
 
 
 def test_hourly_invoice_requires_a_positive_hourly_rate(db):
