@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { canOfferCustomerPayment } from "../components/invoices/invoice-payment-eligibility.ts";
+import { canOfferCustomerPayment, getCollectibleRemaining } from "../components/invoices/invoice-payment-eligibility.ts";
 
 test("customer payment action matches the backend's payable invoice states", () => {
     for (const status of ["issued", "overdue", "partially_paid"] as const) {
@@ -17,4 +17,12 @@ test("customer payment action also requires permission, balance, and a normal in
     assert.equal(canOfferCustomerPayment(invoice, false, 1), false);
     assert.equal(canOfferCustomerPayment(invoice, true, 0), false);
     assert.equal(canOfferCustomerPayment({ ...invoice, is_rectification: true }, true, 1), false);
+});
+
+test("only payable invoices show a collectible balance", () => {
+    for (const status of ["draft", "paid", "cancelled", "rectified"] as const) {
+        assert.equal(getCollectibleRemaining({ status, total_amount: 1.21, is_rectification: false }, 0), 0);
+    }
+    assert.equal(getCollectibleRemaining({ status: "issued", total_amount: 1.21, is_rectification: false }, 0.5), 0.71);
+    assert.equal(getCollectibleRemaining({ status: "issued", total_amount: -1.21, is_rectification: true }, 0), 0);
 });

@@ -140,6 +140,8 @@ def test_full_rectification_preserves_original_and_matches_negative_total(db):
     assert original.status == "rectified"
     assert rectification.status == "issued"
     assert rectification.invoice_number.startswith("R-")
+    assert rectification.notes == f"Factura original {original.invoice_number}"
+    assert rectification.items[0].description == original.items[0].description
     assert rectification.total_amount == -original.total_amount
     assert rectification.base_amount == -original.base_amount
     assert rectification.tax_amount == -original.tax_amount
