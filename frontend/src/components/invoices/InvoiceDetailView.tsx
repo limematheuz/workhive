@@ -15,11 +15,12 @@ import { formatInvoiceNumber } from "@/lib/format";
 
 type InvoiceDetailViewProps = {
     invoiceId: number;
+    initialEdit?: boolean;
     embedded?: boolean;
     onChanged?: () => void;
 };
 
-export function InvoiceDetailView({ invoiceId, embedded = false, onChanged }: InvoiceDetailViewProps) {
+export function InvoiceDetailView({ invoiceId, initialEdit = false, embedded = false, onChanged }: InvoiceDetailViewProps) {
     const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
     const {
         dict, user, userLoading, invoice, client, company, loading, updatingStatus,
@@ -38,7 +39,7 @@ export function InvoiceDetailView({ invoiceId, embedded = false, onChanged }: In
         recipientPostalCode, recipientCity, recipientCountry, recipientEmail, issuerTaxId,
         issuerAddress, recipientTaxId, recipientAddress,
         canManageInvoice, canViewInvoice,
-    } = useInvoiceDetail(invoiceId);
+    } = useInvoiceDetail(invoiceId, initialEdit);
 
     if (userLoading || loading) {
         return <div className="flex min-h-64 flex-col items-center justify-center gap-3 py-20"><Loader2 className="h-8 w-8 animate-spin text-accent" /><span className="text-xs text-[var(--text-muted)]">{dict.dashboard.invoices_details_loading || "Cargando detalles de factura..."}</span></div>;
