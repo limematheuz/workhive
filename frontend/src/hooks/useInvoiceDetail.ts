@@ -24,6 +24,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { formatDateLong } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
+import { useDialogFormGuardReset } from "@/components/ui/dialog-form-guard";
 import { canManageFinance, canViewFinance } from "@/domain/access/roles";
 import { Client, ClientService } from "@/services/client.service";
 import { Company, CompanyService } from "@/services/company.service";
@@ -191,6 +192,7 @@ function translateIssueError(message: string): string {
 }
 
 export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
+    const resetDialogDirty = useDialogFormGuardReset();
     const { dict, locale } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const canViewInvoice = canViewFinance(user);
@@ -598,6 +600,7 @@ export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
                 })),
             };
             await InvoiceService.updateInvoice(invoice.id, headerPayload);
+            resetDialogDirty();
             toast.success("Borrador actualizado correctamente");
             setIsEditMode(false);
             setEditingInvoiceNumber("");

@@ -6,7 +6,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { GuardedDialogRoot, useDialogFormGuard } from "./dialog-form-guard"
+import { DialogFormGuardResetProvider, GuardedDialogRoot, useDialogFormGuard } from "./dialog-form-guard"
 
 function Dialog({
   ...props
@@ -77,7 +77,7 @@ function DialogContentSession({
   onPointerUpCapture,
   ...props
 }: DialogContentProps) {
-  const { markFieldChange, markControlChange, confirmation } = useDialogFormGuard(confirmDiscard)
+  const { markFieldChange, markControlChange, confirmation, resetDirty } = useDialogFormGuard(confirmDiscard)
 
   return (
     <>
@@ -106,7 +106,7 @@ function DialogContentSession({
         }}
         {...props}
       >
-        {children}
+        <DialogFormGuardResetProvider reset={resetDirty}>{children}</DialogFormGuardResetProvider>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
