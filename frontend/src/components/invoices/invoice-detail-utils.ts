@@ -85,6 +85,12 @@ export function getInvoiceStatusMeta(status: string, dict: Dictionary) {
             className: "border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_35%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_8%,transparent)] text-[var(--btn-cancel-hover-bg)]",
         };
     }
+    if (status === "rectified") {
+        return {
+            label: dict.invoices.status_rectified || "Rectificada",
+            className: "border-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_35%,transparent)] bg-[color-mix(in_srgb,var(--btn-cancel-hover-bg)_8%,transparent)] text-[var(--btn-cancel-hover-bg)]",
+        };
+    }
     return {
         label: status,
         className: "border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]",

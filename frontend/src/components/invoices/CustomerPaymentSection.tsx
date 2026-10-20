@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { CircleDollarSign, Loader2, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { canOfferCustomerPayment } from "@/components/invoices/invoice-payment-eligibility";
+import { canOfferCustomerPayment, getCollectibleRemaining } from "@/components/invoices/invoice-payment-eligibility";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,7 @@ export function CustomerPaymentSection({ invoice, canManage, onChanged }: Custom
                 .reduce((allocationTotal, allocation) => allocationTotal + Number(allocation.amount), 0), 0),
         [invoice.id, invoicePayments],
     );
-    const remaining = Math.max(0, Number(invoice.total_amount) - allocated);
+    const remaining = getCollectibleRemaining(invoice, allocated);
 
     const openForm = () => {
         const remainder = remaining.toFixed(2);

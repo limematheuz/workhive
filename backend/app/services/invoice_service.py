@@ -582,9 +582,7 @@ def create_rectification_invoice(
 
     generated_path = None
     try:
-        notes = (
-            f"Rectification of invoice {original.invoice_number}. Reason: {data.reason}"
-        )
+        notes = f"Factura original {original.invoice_number}"
         if data.notes:
             notes = f"{notes}\n{data.notes}"
         rectification = Invoice(
@@ -616,7 +614,7 @@ def create_rectification_invoice(
                 rectification.id,
                 RectificationInvoiceItemCreate(
                     task_item_id=None,
-                    description=f"Rectification: {original_item.description}",
+                    description=original_item.description,
                     quantity=float(original_item.quantity),
                     unit_price=-float(original_item.unit_price),
                     tax_rate=float(original_item.tax_rate),

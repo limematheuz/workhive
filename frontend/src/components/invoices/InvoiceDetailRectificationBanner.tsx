@@ -20,7 +20,7 @@ export function InvoiceDetailRectificationBanner({ dict, invoice }: InvoiceDetai
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>
                     <strong>{dict.invoices.rectification_badge}:</strong>{" "}
-                    {dict.invoices.rectified_by} {dict.invoices.rectification_original_label}{" "}
+                    {dict.invoices.rectification_original_label}{" "}
                     <span className="font-mono font-semibold">#{invoice.original_invoice_id}</span>
                 </span>
             </div>
