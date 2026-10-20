@@ -55,6 +55,14 @@ def _details_without_repeated_name(name: str, details: str | None) -> str:
     return "<br/>".join(_text(line) for line in lines)
 
 
+def _quote_dates_text(quote: Quote) -> str:
+    issued_on = quote.created_at.strftime("%d/%m/%Y") if quote.created_at else "-"
+    dates = f"Fecha: {issued_on}"
+    if quote.valid_until:
+        dates += f"<br/>Válido hasta: {quote.valid_until.strftime('%d/%m/%Y')}"
+    return dates
+
+
 def _company_details(quote: Quote) -> str:
     company = quote.company
     if not company:
@@ -189,9 +197,6 @@ def generate_quote_email_pdf(quote: Quote) -> Path:
         if quote.client and quote.client.name
         else (quote.custom_recipient_info or "Cliente").strip().split("\n", 1)[0]
     )
-    issued_on = quote.created_at.strftime("%d/%m/%Y") if quote.created_at else "-"
-    valid_until = quote.valid_until.strftime("%d/%m/%Y") if quote.valid_until else "Sin caducidad"
-
     logo = _company_logo(quote)
     brand_cell = [
         logo if logo else Paragraph(issuer_name, ParagraphStyle(
@@ -211,7 +216,7 @@ def generate_quote_email_pdf(quote: Quote) -> Path:
         )),
         Paragraph(_text(quote.quote_number), styles["QuoteMetaNumber"]),
         Spacer(1, 1.2 * mm),
-        Paragraph(f"Fecha: {issued_on}<br/>Válido hasta: {valid_until}", styles["QuoteMeta"]),
+        Paragraph(_quote_dates_text(quote), styles["QuoteMeta"]),
     ]
     header = Table([[brand_cell, meta_cell]], colWidths=[113 * mm, 69 * mm])
     header.setStyle(TableStyle([

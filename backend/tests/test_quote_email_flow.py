@@ -1,5 +1,8 @@
+from datetime import datetime, timezone
+from types import SimpleNamespace
+
 from app.models.invoice_email_contact import InvoiceEmailContact
-from app.services.quote_pdf import _details_without_repeated_name
+from app.services.quote_pdf import _details_without_repeated_name, _quote_dates_text
 from credentials import CREDENTIAL_FIELD, TEST_SECRET, login_form
 
 
@@ -348,3 +351,15 @@ def test_quote_party_details_do_not_repeat_the_party_name():
 
     assert "TAS Girona" not in details
     assert "NIF/CIF: B55370720" in details
+
+
+def test_quote_pdf_only_states_an_explicit_expiration_date():
+    issued_at = datetime(2026, 10, 20, tzinfo=timezone.utc)
+    quote = SimpleNamespace(created_at=issued_at, valid_until=None)
+
+    assert _quote_dates_text(quote) == "Fecha: 20/10/2026"
+
+    quote.valid_until = datetime(2026, 11, 4, tzinfo=timezone.utc)
+    assert _quote_dates_text(quote) == (
+        "Fecha: 20/10/2026<br/>Válido hasta: 04/11/2026"
+    )
