@@ -13,6 +13,9 @@ export type SalesLedgerEntry = {
     tax_amount: number;
     total_amount: number;
     payment_status: SalesLedgerPaymentStatus;
+    invoice_status?: string | null;
+    is_rectification?: boolean | null;
+    collected_amount?: number | null;
     is_editable: boolean;
     created_at?: string | null;
     updated_at?: string | null;

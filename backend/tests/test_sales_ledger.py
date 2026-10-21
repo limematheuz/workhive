@@ -1,9 +1,12 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
+from sqlalchemy import event
+
 from app.core.security import create_access_token
 from app.models.client import Client
 from app.models.company import Company
+from app.models.customer_payment import CustomerPayment, CustomerPaymentAllocation
 from app.models.invoice import Invoice
 from app.models.user import User
 
@@ -94,11 +97,101 @@ def test_sales_ledger_includes_issued_invoices_as_read_only_automatic_rows(clien
     assert payload[0]["base_amount"] == 100.0
     assert payload[0]["tax_amount"] == 21.0
     assert payload[0]["total_amount"] == 121.0
+    assert payload[0]["invoice_status"] == "issued"
+    assert payload[0]["collected_amount"] == 0.0
     assert all(
         isinstance(payload[0][field], (int, float))
         for field in ("base_amount", "tax_amount", "total_amount")
     )
     assert payload[0]["is_editable"] is False
+
+
+def test_sales_ledger_reports_partial_cash_and_rectifications_without_cross_tenant_receipts(client, db):
+    company = _company(db, "CASH")
+    other_company = _company(db, "CASH-OTHER")
+    headers = _headers(db, company, 1, "admin-cash")
+    _headers(db, other_company, 1, "admin-cash-other")
+    partial = _issued_invoice(db, company)
+    rectified = Invoice(
+        company_id=company.id,
+        client_id=partial.client_id,
+        invoice_number="INV-2026-0043",
+        issue_date=partial.issue_date,
+        status="rectified",
+        base_amount=Decimal("100.00"),
+        tax_amount=Decimal("21.00"),
+        total_amount=Decimal("121.00"),
+    )
+    credit = Invoice(
+        company_id=company.id,
+        client_id=partial.client_id,
+        invoice_number="R-2026-0043",
+        issue_date=partial.issue_date,
+        status="issued",
+        is_rectification=True,
+        original_invoice=rectified,
+        base_amount=Decimal("-100.00"),
+        tax_amount=Decimal("-21.00"),
+        total_amount=Decimal("-121.00"),
+    )
+    db.add_all([rectified, credit])
+    db.flush()
+    partial.status = "partially_paid"
+    for invoice, amount in ((partial, "40.00"), (rectified, "50.00")):
+        receipt = CustomerPayment(
+            company_id=company.id,
+            client_id=invoice.client_id,
+            received_at=partial.issue_date,
+            amount=Decimal(amount),
+            status="received",
+        )
+        db.add(receipt)
+        db.flush()
+        db.add(CustomerPaymentAllocation(payment_id=receipt.id, invoice_id=invoice.id, amount=Decimal(amount)))
+    voided_receipt = CustomerPayment(
+        company_id=company.id,
+        client_id=partial.client_id,
+        received_at=partial.issue_date,
+        amount=Decimal("11.00"),
+        status="voided",
+    )
+    db.add(voided_receipt)
+    db.flush()
+    db.add(CustomerPaymentAllocation(payment_id=voided_receipt.id, invoice_id=partial.id, amount=Decimal("11.00")))
+    other_invoice = _issued_invoice(db, other_company)
+    other_receipt = CustomerPayment(
+        company_id=other_company.id,
+        client_id=other_invoice.client_id,
+        received_at=other_invoice.issue_date,
+        amount=Decimal("99.00"),
+        status="received",
+    )
+    db.add(other_receipt)
+    db.flush()
+    db.add(CustomerPaymentAllocation(payment_id=other_receipt.id, invoice_id=other_invoice.id, amount=Decimal("99.00")))
+    db.commit()
+
+    allocation_queries = []
+
+    def capture_allocations(_connection, _cursor, statement, _parameters, _context, _executemany):
+        if statement.lstrip().lower().startswith("select") and "customer_payment_allocations" in statement:
+            allocation_queries.append(statement)
+
+    event.listen(db.bind, "before_cursor_execute", capture_allocations)
+    try:
+        response = client.get("/api/v1/sales-ledger/", headers=headers)
+    finally:
+        event.remove(db.bind, "before_cursor_execute", capture_allocations)
+    assert response.status_code == 200, response.text
+    entries = {entry["document_number"]: entry for entry in response.json()}
+    assert set(entries) == {partial.invoice_number, rectified.invoice_number, credit.invoice_number}
+    assert entries[partial.invoice_number]["invoice_status"] == "partially_paid"
+    assert entries[partial.invoice_number]["collected_amount"] == 40.0
+    assert entries[rectified.invoice_number]["invoice_status"] == "rectified"
+    assert entries[rectified.invoice_number]["collected_amount"] == 50.0
+    assert entries[credit.invoice_number]["is_rectification"] is True
+    assert entries[credit.invoice_number]["collected_amount"] == 0.0
+    assert len(allocation_queries) == 1
 
 
 def test_manual_history_is_calculated_editable_and_isolated_per_company(client, db):
@@ -117,6 +210,8 @@ def test_manual_history_is_calculated_editable_and_isolated_per_company(client, 
     record = created.json()
     assert record["source_type"] == "manual"
     assert record["total_amount"] == 530.71
+    assert record["invoice_status"] is None
+    assert record["collected_amount"] is None
     assert record["is_editable"] is True
 
     updated = client.patch(
