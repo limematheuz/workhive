@@ -1,5 +1,18 @@
 import type { Invoice } from "@/types/invoice";
 
+const ALLOWED_TRANSITIONS: Record<Invoice["status"], string[]> = {
+    draft: ["issued", "cancelled"],
+    issued: ["overdue"],
+    partially_paid: [],
+    paid: [],
+    cancelled: [],
+    overdue: [],
+    rectified: [],
+};
+
+export const getInvoiceNextStates = (invoice: Pick<Invoice, "status" | "is_rectification">): string[] =>
+    invoice.is_rectification ? [] : ALLOWED_TRANSITIONS[invoice.status];
+
 export const getStatusBadgeClass = (status: Invoice["status"]) => {
     switch (status) {
         case "paid":

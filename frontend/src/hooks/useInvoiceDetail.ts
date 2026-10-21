@@ -25,6 +25,7 @@ import { formatDateLong } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import { useDialogFormGuardReset } from "@/components/ui/dialog-form-guard";
+import { getInvoiceNextStates } from "@/components/invoices/invoice-status-utils";
 import { canManageFinance, canViewFinance } from "@/domain/access/roles";
 import { Client, ClientService } from "@/services/client.service";
 import { Company, CompanyService } from "@/services/company.service";
@@ -60,16 +61,6 @@ const EMPTY_BILLING_PARTY_FIELDS: BillingPartyFields = {
     email: "",
     bank: "",
     swiftBic: "",
-};
-
-const ALLOWED_TRANSITIONS: Record<string, string[]> = {
-    draft: ["issued", "cancelled"],
-    issued: ["overdue"],
-    partially_paid: [],
-    paid: [],
-    cancelled: [],
-    overdue: [],
-    rectified: [],
 };
 
 const missingValue = (value: unknown) => {
@@ -754,7 +745,7 @@ export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
         draftFiscalPreview,
         formatDate: (value: string | null | undefined) => formatDateLong(value, locale === "en" ? "en-US" : "es-ES"),
         locale,
-        nextStates: invoice ? ALLOWED_TRANSITIONS[invoice.status] || [] : [],
+        nextStates: invoice ? getInvoiceNextStates(invoice) : [],
         ...invoiceParties,
     };
 }

@@ -53,6 +53,12 @@ def apply_issued_status_transition(
             detail="Issued invoice details are immutable",
         )
 
+    if invoice.status == "issued" and requested_status == "overdue" and invoice.is_rectification:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A rectification invoice cannot be marked overdue",
+        )
+
     allowed = {
         "issued": {"overdue"},
         "overdue": set(),
