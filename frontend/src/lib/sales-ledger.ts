@@ -23,9 +23,29 @@ export type SalesLedgerTotals = {
     pending: number;
 };
 
+export type SalesLedgerCollectionState = "paid" | "partial" | "pending" | "rectified" | "credit_note";
+
+export function getSalesLedgerCollectionState(entry: SalesLedgerEntry): SalesLedgerCollectionState {
+    if (entry.source_type === "invoice") {
+        if (entry.is_rectification) return "credit_note";
+        if (entry.invoice_status === "rectified") return "rectified";
+        if (entry.invoice_status === "paid") return "paid";
+        if ((entry.collected_amount ?? 0) > 0) return "partial";
+    }
+    return entry.payment_status === "paid" ? "paid" : "pending";
+}
+
+const CSV_COLLECTION_LABELS: Record<SalesLedgerCollectionState, string> = {
+    paid: "Pagada",
+    partial: "Parcialmente cobrada",
+    pending: "Pendiente",
+    rectified: "Rectificada",
+    credit_note: "Rectificativa",
+};
+
 function csvCell(value: string | number): string {
     const raw = String(value);
-    const text = typeof value === "string" && /^[=+@-]/.test(raw) ? `'${raw}` : raw;
+    const text = typeof value === "string" && /^[=+@-]/.test(raw) && !/^-\d+,\d{2}$/.test(raw) ? `'${raw}` : raw;
     return /[",\n;]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 
@@ -58,7 +78,12 @@ export function summarizeSalesLedger(entries: SalesLedgerEntry[]): SalesLedgerTo
         totals.base += entry.base_amount;
         totals.tax += entry.tax_amount;
         totals.total += entry.total_amount;
-        if (entry.payment_status === "paid") totals.paid += entry.total_amount;
+        if (entry.source_type === "invoice" && typeof entry.collected_amount === "number") {
+            totals.paid += entry.collected_amount;
+            if (!entry.is_rectification && ["issued", "partially_paid", "overdue"].includes(entry.invoice_status ?? "")) {
+                totals.pending += Math.max(0, entry.total_amount - entry.collected_amount);
+            }
+        } else if (entry.payment_status === "paid") totals.paid += entry.total_amount;
         else totals.pending += entry.total_amount;
         return totals;
     }, { base: 0, tax: 0, total: 0, paid: 0, pending: 0 });
@@ -74,7 +99,7 @@ export function buildSalesLedgerCsv(entries: SalesLedgerEntry[]): string {
             moneyForCsv(entry.total_amount),
             moneyForCsv(entry.base_amount),
             moneyForCsv(entry.tax_amount),
-            entry.payment_status === "paid" ? "Pagada" : "Pendiente",
+            CSV_COLLECTION_LABELS[getSalesLedgerCollectionState(entry)],
         ].map(csvCell).join(";")),
     ].join("\n");
 }

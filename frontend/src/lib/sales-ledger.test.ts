@@ -5,6 +5,7 @@ import {
     buildSalesLedgerCsv,
     filterSalesLedgerEntries,
     getSalesLedgerYears,
+    getSalesLedgerCollectionState,
     parseMoneyInput,
     SALES_LEDGER_CSV_TEMPLATE,
     summarizeSalesLedger,
@@ -51,6 +52,26 @@ test("sales ledger totals preserve paid and pending fiscal amounts", () => {
         filterSalesLedgerEntries(entries, { year: "2025", search: "histórico" }).map((entry) => entry.source_id),
         [1],
     );
+});
+
+test("sales ledger separates real receipts from collectible balance after rectification", () => {
+    const partial = { ...entries[1], invoice_status: "partially_paid", collected_amount: 40, is_rectification: false };
+    const rectified = { ...entries[1], source_id: 3, document_number: "INV-2026-0002", invoice_status: "rectified", collected_amount: 20, is_rectification: false };
+    const credit = { ...entries[1], source_id: 4, document_number: "R-2026-0002", invoice_status: "issued", collected_amount: 0, is_rectification: true, base_amount: -80, tax_amount: -16.8, total_amount: -96.8 };
+    const rows = [entries[0], partial, rectified, credit];
+
+    assert.deepEqual(summarizeSalesLedger(rows), {
+        base: 180,
+        tax: 37.8,
+        total: 217.8,
+        paid: 181,
+        pending: 56.8,
+    });
+    assert.equal(getSalesLedgerCollectionState(partial), "partial");
+    assert.equal(getSalesLedgerCollectionState(rectified), "rectified");
+    assert.equal(getSalesLedgerCollectionState(credit), "credit_note");
+    assert.match(buildSalesLedgerCsv(rows), /INV-2026-0001;10\/02\/2026;Cliente actual;"96,80";"80,00";"16,80";Parcialmente cobrada/);
+    assert.match(buildSalesLedgerCsv(rows), /R-2026-0002;10\/02\/2026;Cliente actual;"-96,80";"-80,00";"-16,80";Rectificativa/);
 });
 
 test("sales ledger CSV uses the documented template and escapes cells", () => {

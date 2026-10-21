@@ -19,6 +19,7 @@ import { getPercentageChange } from "@/lib/metric-trend";
 import {
     buildSalesLedgerCsv,
     filterSalesLedgerEntries,
+    getSalesLedgerCollectionState,
     getSalesLedgerYears,
     SALES_LEDGER_CSV_TEMPLATE,
     summarizeSalesLedger,
@@ -271,8 +272,15 @@ function LedgerCompactRow({ entry, copy, onEdit, canManage }: { entry: SalesLedg
 }
 
 function PaymentBadge({ entry, copy }: { entry: SalesLedgerEntry; copy: InvoiceCopy }) {
-    const paid = entry.payment_status === "paid";
-    return <span className={`w-fit rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase ${paid ? "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]" : "border-[var(--border-color)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}`}>{paid ? copy.ledger_status_paid : copy.ledger_status_pending}</span>;
+    const state = getSalesLedgerCollectionState(entry);
+    const label = {
+        paid: copy.ledger_status_paid,
+        partial: copy.ledger_status_partial,
+        pending: copy.ledger_status_pending,
+        rectified: copy.ledger_status_rectified,
+        credit_note: copy.ledger_status_credit_note,
+    }[state];
+    return <span className={`w-fit rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase ${state === "paid" || state === "partial" ? "border-[var(--btn-secondary-border)] bg-[var(--btn-secondary-bg)] text-[var(--btn-secondary-text)]" : "border-[var(--border-color)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}`}>{label}</span>;
 }
 
 function SummaryLoading({ label }: { label: string }) {

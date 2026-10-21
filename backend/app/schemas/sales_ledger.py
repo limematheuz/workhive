@@ -70,14 +70,17 @@ class SalesLedgerEntryResponse(BaseModel):
     tax_amount: Decimal
     total_amount: Decimal
     payment_status: PaymentStatus
+    invoice_status: str | None = None
+    is_rectification: bool | None = None
+    collected_amount: Decimal | None = None
     is_editable: bool
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
-    @field_serializer("base_amount", "tax_amount", "total_amount", when_used="json")
-    def serialize_money_as_number(self, value: Decimal) -> float:
+    @field_serializer("base_amount", "tax_amount", "total_amount", "collected_amount", when_used="json")
+    def serialize_money_as_number(self, value: Decimal | None) -> float | None:
         """Keep the API contract aligned with the frontend's numeric totals."""
-        return float(value)
+        return float(value) if value is not None else None
 
 
 class SalesLedgerCsvError(BaseModel):

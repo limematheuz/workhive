@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.models.invoice import Invoice
 from app.models.sales_ledger_record import SalesLedgerRecord
 from app.repositories import invoice as invoice_repo
+from app.repositories import customer_payment as customer_payment_repo
 from app.repositories import sales_ledger as sales_ledger_repo
 from app.schemas.sales_ledger import (
     SalesLedgerCsvError,
@@ -65,7 +66,7 @@ def _invoice_client_name(invoice: Invoice) -> str:
     return snapshot.get("name") or (invoice.client.name if invoice.client else "Cliente")
 
 
-def _to_invoice_entry(invoice: Invoice) -> SalesLedgerEntryResponse:
+def _to_invoice_entry(invoice: Invoice, collected_amount: Decimal) -> SalesLedgerEntryResponse:
     return SalesLedgerEntryResponse(
         source_type="invoice",
         source_id=invoice.id,
@@ -76,6 +77,9 @@ def _to_invoice_entry(invoice: Invoice) -> SalesLedgerEntryResponse:
         tax_amount=invoice.tax_amount,
         total_amount=invoice.total_amount,
         payment_status=_payment_status_for_invoice(invoice),
+        invoice_status=invoice.status,
+        is_rectification=bool(invoice.is_rectification),
+        collected_amount=collected_amount,
         is_editable=False,
         created_at=invoice.created_at,
         updated_at=invoice.updated_at,
@@ -113,7 +117,10 @@ def list_entries(
         for invoice in invoice_repo.get_invoices(db, company_id, skip=0, limit=500)
         if invoice.status in REPORTABLE_INVOICE_STATUSES
     ]
-    entries = [_to_invoice_entry(invoice) for invoice in invoices]
+    collected = customer_payment_repo.allocated_amounts_for_invoices(
+        db, company_id=company_id, invoice_ids=[invoice.id for invoice in invoices]
+    )
+    entries = [_to_invoice_entry(invoice, collected.get(invoice.id, Decimal("0.00"))) for invoice in invoices]
     entries.extend(_to_manual_entry(record) for record in sales_ledger_repo.get_manual_records(db, company_id))
 
     if year is not None:
