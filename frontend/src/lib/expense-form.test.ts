@@ -169,6 +169,11 @@ test("expense list distinguishes an empty company from filters without matches",
     assert.match(list, /hasAnyExpenses \? text\.empty_filtered : text\.empty/);
 });
 
+test("expense desktop actions have enough visible table space to open their menu", () => {
+    const list = readFileSync(new URL("../components/expenses/ExpensesListSection.tsx", import.meta.url), "utf8");
+    assert.match(list, /key: "actions", label: <span className="sr-only">\{text\.actions\}<\/span>, className: "w-16 overflow-visible"/);
+});
+
 test("scoped expense does not claim to be general before client attribution is saved", () => {
     const dialog = readFileSync(new URL("../components/expenses/ExpenseFormDialog.tsx", import.meta.url), "utf8");
     assert.match(dialog, /hasOperationalScope \? text\.client_assignment_automatic : text\.client_assignment_none/);

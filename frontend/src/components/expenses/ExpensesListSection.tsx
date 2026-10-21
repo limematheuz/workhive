@@ -124,7 +124,7 @@ export function ExpensesListSection({
                 { key: "base", label: text.base_short, className: "text-right" },
                 { key: "tax", label: text.tax_short, className: "text-right" },
                 { key: "total", label: text.total, className: "text-right" },
-                { key: "actions", label: text.actions, className: "sr-only" },
+                { key: "actions", label: <span className="sr-only">{text.actions}</span>, className: "w-16 overflow-visible" },
             ]}
             empty={(
                 <>
