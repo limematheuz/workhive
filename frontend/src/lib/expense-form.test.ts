@@ -169,6 +169,11 @@ test("expense list distinguishes an empty company from filters without matches",
     assert.match(list, /hasAnyExpenses \? text\.empty_filtered : text\.empty/);
 });
 
+test("scoped expense does not claim to be general before client attribution is saved", () => {
+    const dialog = readFileSync(new URL("../components/expenses/ExpenseFormDialog.tsx", import.meta.url), "utf8");
+    assert.match(dialog, /hasOperationalScope \? text\.client_assignment_automatic : text\.client_assignment_none/);
+});
+
 test("expense categories expose subcontracting without changing its client attribution", () => {
     assert.ok(CATEGORY_OPTIONS.includes("subcontracting"));
     const payload = buildExpensePayload({

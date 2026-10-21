@@ -259,7 +259,7 @@ export function ExpenseFormDialog({
                             disabled={hasOperationalScope}
                         >
                             <SelectTrigger id="expense-client" aria-label={text.client_assignment} className={documentControlClassName}><SelectValue /></SelectTrigger>
-                            <SelectContent><SelectItem value="none">{text.client_assignment_none}</SelectItem>{clients.map((client) => (
+                            <SelectContent><SelectItem value="none">{hasOperationalScope ? text.client_assignment_automatic : text.client_assignment_none}</SelectItem>{clients.map((client) => (
                                 <SelectItem key={client.id} value={String(client.id)}>
                                     {client.name}{client.is_active ? "" : ` (${text.client_inactive})`}
                                 </SelectItem>
