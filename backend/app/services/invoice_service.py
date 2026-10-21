@@ -600,7 +600,6 @@ def create_rectification_invoice(
             discount=original.discount,
             equivalence_surcharge=original.equivalence_surcharge,
             retention=original.retention,
-            terms=original.terms,
             shipping_address=original.shipping_address,
             custom_issuer_info=original.custom_issuer_info,
             custom_recipient_info=original.custom_recipient_info,

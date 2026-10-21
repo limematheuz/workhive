@@ -124,7 +124,11 @@ def test_full_rectification_preserves_original_and_matches_negative_total(db):
     draft = invoice_service.create_invoice_draft(
         db, company.id, _draft_payload(client.id)
     )
+    draft.terms = "El pago se debe realizar en un plazo de 15 días"
+    db.commit()
     original = invoice_service.issue_invoice(db, company.id, draft.id)
+    original_pdf_hash = original.pdf_sha256
+    _, original_document = invoice_service.get_invoice_pdf(db, company.id, original.id)
 
     rectification = invoice_service.create_rectification_invoice(
         db,
@@ -141,6 +145,11 @@ def test_full_rectification_preserves_original_and_matches_negative_total(db):
     assert rectification.status == "issued"
     assert rectification.invoice_number.startswith("R-")
     assert rectification.notes == f"Factura original {original.invoice_number}"
+    assert original.terms == "El pago se debe realizar en un plazo de 15 días"
+    assert rectification.terms is None
+    assert original.pdf_sha256 == original_pdf_hash
+    _, preserved_document = invoice_service.get_invoice_pdf(db, company.id, original.id)
+    assert preserved_document.contents == original_document.contents
     assert rectification.items[0].description == original.items[0].description
     assert rectification.total_amount == -original.total_amount
     assert rectification.base_amount == -original.base_amount
