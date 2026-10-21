@@ -193,6 +193,7 @@
     "client_assignment": "Assign to client",
     "client_assignment_hint": "Optional. Only assigned expenses are used to calculate that client's margin.",
     "client_assignment_none": "General expense (no client)",
+    "client_assignment_automatic": "Client will be assigned when saved",
     "operational_assignment": "Direct operational attribution",
     "operational_assignment_hint": "Optional. Link the cost to a contract or work order; it is never allocated automatically.",
     "operational_assignment_none": "No contract or work order",

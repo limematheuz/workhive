@@ -193,6 +193,7 @@
     "client_assignment": "Imputar a cliente",
     "client_assignment_hint": "Opcional. Solo los gastos asignados se usan para calcular el margen de ese cliente.",
     "client_assignment_none": "Gasto general (sin cliente)",
+    "client_assignment_automatic": "Se asignará el cliente al guardar",
     "operational_assignment": "Imputación operativa directa",
     "operational_assignment_hint": "Opcional. Vincula el coste a un contrato o una orden; no se reparte automáticamente.",
     "operational_assignment_none": "Sin contrato ni orden",
