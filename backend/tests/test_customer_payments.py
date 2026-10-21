@@ -164,6 +164,50 @@ def test_customer_payment_can_split_and_void_without_losing_the_audit_trail(clie
     assert repeated.status_code == 409
 
 
+def test_voiding_receipt_does_not_reopen_a_rectified_invoice(client, db):
+    company = _company(db, "PaymentsRectified")
+    admin = _admin(db, company)
+    customer = _client(db, company, "Cliente rectificado")
+    invoice = _invoice(db, company, customer, number="INV-RECTIFIED-01")
+
+    receipt = client.post(
+        "/api/v1/customer-payments/",
+        headers=_headers(admin),
+        json=_payment_payload(
+            customer.id,
+            "40.00",
+            [{"invoice_id": invoice.id, "amount": "40.00"}],
+        ),
+    )
+    assert receipt.status_code == 201, receipt.text
+    db.refresh(invoice)
+    assert invoice.status == "partially_paid"
+
+    invoice.status = "rectified"
+    db.commit()
+
+    voided = client.post(
+        f"/api/v1/customer-payments/{receipt.json()['id']}/void",
+        headers=_headers(admin),
+        json={"reason": "El recibo QA era ficticio"},
+    )
+    assert voided.status_code == 200, voided.text
+    db.refresh(invoice)
+    assert invoice.status == "rectified"
+    assert voided.json()["status"] == "voided"
+
+    rejected = client.post(
+        "/api/v1/customer-payments/",
+        headers=_headers(admin),
+        json=_payment_payload(
+            customer.id,
+            "10.00",
+            [{"invoice_id": invoice.id, "amount": "10.00"}],
+        ),
+    )
+    assert rejected.status_code == 409
+
+
 def test_customer_payment_rejects_foreign_or_overallocated_invoices(client, db):
     owner = _company(db, "PaymentsTenantOwner")
     other = _company(db, "PaymentsTenantOther")
