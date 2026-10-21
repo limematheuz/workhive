@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { canManageFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
-    buildFiscalCalendarDeadlines,
+    buildUpcomingFiscalDeadlines,
     getFiscalDeadlineStatus,
     type FiscalDeadline,
 } from "@/lib/fiscal-calendar";
@@ -81,7 +81,7 @@ export default function FiscalCalendarPage() {
 
     const deadlines = useMemo(
         () => settings
-            ? buildFiscalCalendarDeadlines(new Date().getFullYear(), toCalendarPreferences(settings))
+            ? buildUpcomingFiscalDeadlines(new Date(), toCalendarPreferences(settings))
             : [],
         [settings],
     );
