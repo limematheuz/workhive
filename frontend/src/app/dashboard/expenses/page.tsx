@@ -210,6 +210,7 @@ export default function ExpensesPage() {
 
                 <ExpensesListSection
                     expenses={filteredExpenses}
+                    hasAnyExpenses={expenses.length > 0}
                     search={search}
                     onSearchChange={setSearch}
                     categoryFilter={categoryFilter}

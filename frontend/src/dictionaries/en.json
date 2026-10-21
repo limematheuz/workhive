@@ -220,6 +220,7 @@
     "all_categories": "All categories",
     "no_vendor": "No vendor",
     "empty": "No expenses recorded yet.",
+    "empty_filtered": "No expenses match the selected filters.",
     "created": "Expense created",
     "updated": "Expense updated",
     "deleted": "Expense deleted",

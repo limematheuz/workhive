@@ -220,6 +220,7 @@
     "all_categories": "Todas las categorías",
     "no_vendor": "Sin proveedor",
     "empty": "Todavía no hay gastos registrados.",
+    "empty_filtered": "No hay gastos que coincidan con los filtros.",
     "created": "Gasto creado",
     "updated": "Gasto actualizado",
     "deleted": "Gasto eliminado",
