@@ -152,6 +152,17 @@ def test_full_rectification_preserves_original_and_matches_negative_total(db):
     _, document = invoice_service.get_invoice_pdf(db, company.id, rectification.id)
     assert document.contents.startswith(b"%PDF-")
 
+    with pytest.raises(HTTPException) as error:
+        invoice_service.update_invoice(
+            db,
+            company.id,
+            rectification.id,
+            InvoiceUpdate(status="overdue"),
+        )
+    assert error.value.status_code == 400
+    db.refresh(rectification)
+    assert rectification.status == "issued"
+
 
 def test_facturae_is_stored_as_an_object_without_a_project_path(db):
     company = _company(db, "Facturae Issuer SL", "A87654320")

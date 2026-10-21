@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-import { getInvoiceStatusText } from "../components/invoices/invoice-status-utils.ts";
+import { getInvoiceNextStates, getInvoiceStatusText } from "../components/invoices/invoice-status-utils.ts";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -29,4 +29,11 @@ test("rectification banner identifies its original without calling it rectified 
 test("invoice payment section displays the collectible balance, not historical face value", () => {
     const section = read("../components/invoices/CustomerPaymentSection.tsx");
     assert.match(section, /getCollectibleRemaining\(invoice, allocated\)/);
+});
+
+test("a credit note has no overdue action, while a normal issued invoice keeps it", () => {
+    assert.deepEqual(getInvoiceNextStates({ status: "issued", is_rectification: true }), []);
+    assert.deepEqual(getInvoiceNextStates({ status: "issued", is_rectification: false }), ["overdue"]);
+    assert.deepEqual(getInvoiceNextStates({ status: "draft", is_rectification: false }), ["issued", "cancelled"]);
+    assert.match(read("../hooks/useInvoiceDetail.ts"), /getInvoiceNextStates\(invoice\)/);
 });

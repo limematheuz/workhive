@@ -85,3 +85,31 @@ def test_paid_invoice_cannot_transition_again():
         )
 
     assert error.value.status_code == 400
+
+
+def test_rectification_cannot_be_marked_overdue():
+    invoice = SimpleNamespace(status="issued", is_rectification=True, paid_at=None)
+
+    with pytest.raises(HTTPException) as error:
+        invoice_update_policy_service.apply_issued_status_transition(
+            invoice,
+            {"status": "overdue"},
+            replacement_items=None,
+            requested_status="overdue",
+        )
+
+    assert error.value.status_code == 400
+    assert invoice.status == "issued"
+
+
+def test_normal_issued_invoice_can_be_marked_overdue():
+    invoice = SimpleNamespace(status="issued", is_rectification=False, paid_at=None)
+
+    invoice_update_policy_service.apply_issued_status_transition(
+        invoice,
+        {"status": "overdue"},
+        replacement_items=None,
+        requested_status="overdue",
+    )
+
+    assert invoice.status == "issued"
