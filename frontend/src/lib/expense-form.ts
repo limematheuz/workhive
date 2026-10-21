@@ -82,7 +82,6 @@ export function buildExpensePayload(form: ExpenseFormState): ExpensePayload {
         payment_method: form.payment_method.trim() || null,
         base_amount: baseAmount,
         tax_amount: calculateExpenseTaxAmount(baseAmount, taxRate),
-        receipt_url: null,
         notes: form.notes.trim().slice(0, 500) || null,
     };
 }
