@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import type { Expense, ExpensePayload } from "@/types/expense";
 import { collectPaginated } from "@/lib/pagination";
 
@@ -27,9 +27,7 @@ export const ExpenseService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error fetching expenses"));
-        }
+        await assertApiResponseOk(response, "Error fetching expenses");
         return await response.json();
     },
 
@@ -42,9 +40,7 @@ export const ExpenseService = {
             method: "POST",
             body: JSON.stringify(data),
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error creating expense"));
-        }
+        await assertApiResponseOk(response, "Error creating expense");
         return await response.json();
     },
 
@@ -53,9 +49,7 @@ export const ExpenseService = {
             method: "PATCH",
             body: JSON.stringify(data),
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error updating expense"));
-        }
+        await assertApiResponseOk(response, "Error updating expense");
         return await response.json();
     },
 
@@ -63,8 +57,6 @@ export const ExpenseService = {
         const response = await apiFetch(`/api/v1/expenses/${id}`, {
             method: "DELETE",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error deleting expense"));
-        }
+        await assertApiResponseOk(response, "Error deleting expense");
     },
 };

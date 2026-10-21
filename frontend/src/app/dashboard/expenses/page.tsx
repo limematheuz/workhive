@@ -17,6 +17,7 @@ import {
     DEFAULT_EXPENSE_FORM,
     expenseToFormState,
     filterExpenses,
+    getExpenseSaveFeedback,
     type ExpenseFormState,
 } from "@/lib/expense-form";
 import { useUser } from "@/lib/user-context";
@@ -163,7 +164,7 @@ export default function ExpensesPage() {
             await loadExpenses();
         } catch (error) {
             console.error("Error saving expense", error);
-            toast.error(text.error_save);
+            toast.error(getExpenseSaveFeedback(error, text.error_save));
         } finally {
             setSaving(false);
         }

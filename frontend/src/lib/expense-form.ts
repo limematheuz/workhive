@@ -91,6 +91,13 @@ export function getExpenseNotes(expense: Pick<Expense, "notes">): string {
     return expense.notes?.trim() || "";
 }
 
+export function getExpenseSaveFeedback(error: unknown, fallback: string): string {
+    if (error instanceof Error && "status" in error && error.status === 409 && error.message.trim()) {
+        return error.message;
+    }
+    return fallback;
+}
+
 export function filterExpenses(
     expenses: Expense[],
     search: string,

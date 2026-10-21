@@ -151,9 +151,10 @@ export function ExpenseFormDialog({
                                 aria-label={text.date}
                             />
                         </DocumentFormField>
-                        <DocumentFormField id="expense-vendor" label={text.vendor}>
+                        <DocumentFormField id="expense-vendor" label={text.vendor} hint={text.vendor_limit}>
                             <DocumentFormInput
                                 id="expense-vendor"
+                                maxLength={160}
                                 value={form.vendor}
                                 onChange={(event) => setForm({ ...form, vendor: event.target.value })}
                                 aria-label={text.vendor}
@@ -161,9 +162,10 @@ export function ExpenseFormDialog({
                             />
                         </DocumentFormField>
                     </div>
-                    <DocumentFormField id="expense-description" label={text.description}>
+                    <DocumentFormField id="expense-description" label={text.description} hint={text.description_limit}>
                         <DocumentFormInput
                             id="expense-description"
+                            maxLength={255}
                             required
                             value={form.description}
                             onChange={(event) => setForm({ ...form, description: event.target.value })}
