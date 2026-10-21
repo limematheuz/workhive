@@ -53,7 +53,7 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     assert.match(fiscalSummary, /SummaryMetricCard/);
     assert.match(ledgerSummary, /SummaryMetricCard/);
     assert.doesNotMatch(ledgerSummary, /function SummaryMetric\(/);
-    assert.match(metricCard, /const TrendIcon = rounded > 0 \? ArrowUpRight : rounded < 0 \? ArrowDownRight : Minus/);
+    assert.match(metricCard, /const TrendIcon = value > 0 \? ArrowUpRight : value < 0 \? ArrowDownRight : Minus/);
     assert.match(metricCard, /size-10 shrink-0 items-center justify-center rounded-xl bg-\[var\(--brand-blue-soft\)\] text-accent/);
     assert.match(globals, /--status-active-text: #047857/);
 
