@@ -11,6 +11,7 @@ import {
     filterExpenses,
     formatExpenseDate,
     getExpenseNotes,
+    getExpenseSaveFeedback,
     inferExpenseTaxRate,
     toExpenseAmount,
     type ExpenseFormState,
@@ -201,4 +202,20 @@ test("expense notes tooltip receives trimmed notes only when present", () => {
     assert.equal(getExpenseNotes(baseExpense), "Nota visible");
     assert.equal(getExpenseNotes({ notes: "   " }), "");
     assert.equal(getExpenseNotes({ notes: null }), "");
+});
+
+test("expense save feedback explains business conflicts without exposing unexpected errors", () => {
+    const conflict = Object.assign(new Error("Corrige la compra para conservar el stock coherente."), { status: 409 });
+    const validation = Object.assign(new Error("description: String should have at most 255 characters"), { status: 422 });
+    assert.equal(getExpenseSaveFeedback(conflict, "No se pudo guardar"), conflict.message);
+    assert.equal(getExpenseSaveFeedback(validation, "No se pudo guardar"), "No se pudo guardar");
+    assert.equal(getExpenseSaveFeedback(new Error("fetch failed"), "No se pudo guardar"), "No se pudo guardar");
+
+    const dialog = readFileSync(new URL("../components/expenses/ExpenseFormDialog.tsx", import.meta.url), "utf8");
+    const service = readFileSync(new URL("../services/expense.service.ts", import.meta.url), "utf8");
+    const page = readFileSync(new URL("../app/dashboard/expenses/page.tsx", import.meta.url), "utf8");
+    assert.match(dialog, /id="expense-vendor"[\s\S]*?maxLength=\{160\}/);
+    assert.match(dialog, /id="expense-description"[\s\S]*?maxLength=\{255\}/);
+    assert.match(service, /assertApiResponseOk\(response, "Error creating expense"\)/);
+    assert.match(page, /getExpenseSaveFeedback\(error, text\.error_save\)/);
 });
