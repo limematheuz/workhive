@@ -17,6 +17,16 @@ export function getMetricTrend(
     return value === null ? undefined : { value, comparisonDirection };
 }
 
+export function getTrendBadgePresentation(
+    change: number,
+    comparisonDirection: "higher" | "lower" = "higher",
+): { value: number; tone: "positive" | "negative" | "neutral" } {
+    const value = Math.round(change * 10) / 10 || 0;
+    if (value === 0) return { value, tone: "neutral" };
+    const favorable = comparisonDirection === "higher" ? value > 0 : value < 0;
+    return { value, tone: favorable ? "positive" : "negative" };
+}
+
 export function getMonthKey(value: string | Date): string | null {
     const date = typeof value === "string" ? new Date(value) : value;
     if (Number.isNaN(date.getTime())) return null;

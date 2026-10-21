@@ -2,6 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-rea
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { getTrendBadgePresentation } from "@/lib/metric-trend";
 
 export type SummaryMetricTrend = {
     value: number;
@@ -81,19 +82,18 @@ export function SummaryMetricCard({
 
 function SummaryMetricTrendBadge({ trend }: { trend: SummaryMetricTrend }) {
     const comparisonDirection = trend.comparisonDirection ?? "higher";
-    const impact = comparisonDirection === "higher" ? trend.value : -trend.value;
-    const rounded = Math.round(impact * 10) / 10;
-    const TrendIcon = rounded > 0 ? ArrowUpRight : rounded < 0 ? ArrowDownRight : Minus;
-    const toneClassName = rounded === 0
+    const { value, tone } = getTrendBadgePresentation(trend.value, comparisonDirection);
+    const TrendIcon = value > 0 ? ArrowUpRight : value < 0 ? ArrowDownRight : Minus;
+    const toneClassName = tone === "neutral"
         ? "border border-accent/20 bg-accent/10 text-accent"
-        : rounded > 0
+        : tone === "positive"
             ? "border border-[var(--status-active-border)] bg-[var(--status-active-bg)] text-[var(--status-active-text)]"
             : "border border-[var(--priority-high-border)] bg-[var(--priority-high-bg)] text-[var(--priority-high-text)]";
 
     return (
         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ${toneClassName}`}>
             <TrendIcon className="h-3 w-3" aria-hidden="true" />
-            {rounded > 0 ? "+" : ""}{rounded.toFixed(1)}%
+            {value > 0 ? "+" : ""}{value.toFixed(1)}%
         </span>
     );
 }
