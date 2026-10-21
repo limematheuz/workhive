@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import {
@@ -159,6 +160,13 @@ test("expense filters search across vendor category description and payment meth
     assert.deepEqual(filterExpenses(expenses, "taxi", "").map((item) => item.id), [2]);
     assert.deepEqual(filterExpenses(expenses, "bank", "").map((item) => item.id), [2]);
     assert.deepEqual(filterExpenses(expenses, "", "supplies").map((item) => item.id), [1]);
+});
+
+test("expense list distinguishes an empty company from filters without matches", () => {
+    const page = readFileSync(new URL("../app/dashboard/expenses/page.tsx", import.meta.url), "utf8");
+    const list = readFileSync(new URL("../components/expenses/ExpensesListSection.tsx", import.meta.url), "utf8");
+    assert.match(page, /hasAnyExpenses=\{expenses\.length > 0\}/);
+    assert.match(list, /hasAnyExpenses \? text\.empty_filtered : text\.empty/);
 });
 
 test("expense categories expose subcontracting without changing its client attribution", () => {

@@ -16,6 +16,7 @@ import { CATEGORY_OPTIONS } from "./expense-options";
 
 type ExpensesListSectionProps = {
     expenses: Expense[];
+    hasAnyExpenses: boolean;
     search: string;
     onSearchChange: (value: string) => void;
     categoryFilter: string;
@@ -29,6 +30,7 @@ type ExpensesListSectionProps = {
 
 export function ExpensesListSection({
     expenses,
+    hasAnyExpenses,
     search,
     onSearchChange,
     categoryFilter,
@@ -127,7 +129,7 @@ export function ExpensesListSection({
             empty={(
                 <>
                     <Receipt className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
-                    <p className="mt-3 text-sm text-[var(--text-muted)]">{text.empty}</p>
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{hasAnyExpenses ? text.empty_filtered : text.empty}</p>
                 </>
             )}
             renderCompactRow={(expense) => (
