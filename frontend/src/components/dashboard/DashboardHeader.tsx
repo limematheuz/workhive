@@ -13,6 +13,7 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/fiscal-summary") ? dict.fiscal_summary.title
         : pathname.includes("/dashboard/analytics") ? dict.finance_analytics.eyebrow
         : pathname.includes("/dashboard/fiscal-calendar") ? dict.fiscal_calendar.title
+        : pathname.includes("/dashboard/labor-costs") ? "Costes laborales"
         : pathname.includes("/dashboard/expenses") ? dict.expenses.title
         : pathname.includes("/dashboard/traffic") ? (dict.traffic?.title || "Tráfico")
         : pathname.includes("/dashboard/profile") ? dict.dashboard.profile

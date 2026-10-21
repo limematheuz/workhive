@@ -14,3 +14,8 @@ test("labour costs remain a separate admin-only workspace", () => {
     assert.match(sidebar, /flags\.canViewLaborCosts/);
     assert.match(sidebar, /href: "\/dashboard\/labor-costs"/);
 });
+
+test("labour costs retain their own title in the global dashboard header", () => {
+    const header = source("../components/dashboard/DashboardHeader.tsx");
+    assert.match(header, /pathname\.includes\("\/dashboard\/labor-costs"\) \? "Costes laborales"/);
+});
