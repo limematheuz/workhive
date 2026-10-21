@@ -33,8 +33,8 @@ export const ExpenseService = {
         return await response.json();
     },
 
-    getAllExpenses: async (): Promise<Expense[]> => collectPaginated(
-        (skip, limit) => ExpenseService.getExpenses({ skip, limit }),
+    getAllExpenses: async (filters: Omit<ExpenseFilters, "skip" | "limit"> = {}): Promise<Expense[]> => collectPaginated(
+        (skip, limit) => ExpenseService.getExpenses({ ...filters, skip, limit }),
     ),
 
     createExpense: async (data: ExpensePayload): Promise<Expense> => {

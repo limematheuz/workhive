@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useEffectEvent, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState, type FormEvent } from "react";
 import { Loader2, Plus, Wallet } from "lucide-react";
 import { redirect } from "next/navigation";
 
@@ -30,6 +30,7 @@ import type { WorkOrder } from "@/types/work-order";
 import type { Expense, ExpensePayload } from "@/types/expense";
 import { toast } from "@/lib/toast";
 import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend";
+import { getExpenseComparisonRange } from "@/lib/expense-period";
 
 function summarizeExpenses(expenses: Expense[]) {
     return expenses.reduce(
@@ -61,17 +62,20 @@ export default function ExpensesPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [keepAdding, setKeepAdding] = useState(true);
     const [form, setForm] = useState<ExpenseFormState>(DEFAULT_EXPENSE_FORM);
+    const loadRequestRef = useRef(0);
 
     const loadExpenses = useCallback(async () => {
         if (!canViewExpenses) return;
+        const requestId = ++loadRequestRef.current;
         try {
             setLoading(true);
             const [expenseResult, clientResult, contractResult, workOrderResult] = await Promise.allSettled([
-                ExpenseService.getExpenses({ limit: 250 }),
+                ExpenseService.getAllExpenses(getExpenseComparisonRange(month)),
                 ClientService.getClients(null),
                 ServiceContractService.getContracts(),
                 WorkOrderService.getWorkOrders(),
             ]);
+            if (requestId !== loadRequestRef.current) return;
             if (expenseResult.status === "rejected") {
                 throw expenseResult.reason;
             }
@@ -87,12 +91,14 @@ export default function ExpensesPage() {
             setContracts(contractResult.status === "fulfilled" ? contractResult.value : []);
             setWorkOrders(workOrderResult.status === "fulfilled" ? workOrderResult.value : []);
         } catch (error) {
-            console.error("Error loading expenses", error);
-            toast.error(text.error_load);
+            if (requestId === loadRequestRef.current) {
+                console.error("Error loading expenses", error);
+                toast.error(text.error_load);
+            }
         } finally {
-            setLoading(false);
+            setLoading((current) => requestId === loadRequestRef.current ? false : current);
         }
-    }, [canViewExpenses, text.error_load]);
+    }, [canViewExpenses, month, text.error_load]);
 
     const loadExpensesEvent = useEffectEvent(loadExpenses);
 
@@ -101,7 +107,7 @@ export default function ExpensesPage() {
         queueMicrotask(() => {
             void loadExpensesEvent();
         });
-    }, [userLoading]);
+    }, [userLoading, month]);
 
     const filteredExpenses = useMemo(() => {
         return filterExpenses(expenses.filter((expense) => getMonthKey(expense.expense_date) === month), search, categoryFilter);
