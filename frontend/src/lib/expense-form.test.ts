@@ -79,7 +79,7 @@ test("expense payload trims values, calculates tax and caps notes", () => {
     assert.equal(payload.payment_method, "card");
     assert.equal(payload.base_amount, 134);
     assert.equal(payload.tax_amount, 28.14);
-    assert.equal(payload.receipt_url, null);
+    assert.equal(Object.hasOwn(payload, "receipt_url"), false, "editing must not clear a receipt hidden from the form");
     assert.equal(payload.notes?.length, 500);
 });
 
