@@ -96,6 +96,23 @@ export function buildFiscalCalendarDeadlines(
         );
 }
 
+export function buildUpcomingFiscalDeadlines(
+    now: Date,
+    preferences: FiscalCalendarPreferences,
+): FiscalDeadline[] {
+    const calendarYear = now.getFullYear();
+    const today = formatIsoDate(dateAtNoonUtc(calendarYear, now.getMonth() + 1, now.getDate()));
+    const enabledModels = Number(preferences.quarterlyVatEnabled)
+        + Number(preferences.quarterlyWithholdingEnabled);
+
+    return [
+        ...buildFiscalCalendarDeadlines(calendarYear, preferences),
+        ...buildFiscalCalendarDeadlines(calendarYear + 1, preferences),
+    ]
+        .filter((deadline) => deadline.dueDate >= today)
+        .slice(0, enabledModels * 4);
+}
+
 export function getFiscalDeadlineStatus(
     deadline: FiscalDeadline,
     now = new Date(),

@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     buildFiscalCalendarDeadlines,
+    buildUpcomingFiscalDeadlines,
     buildQuarterlyFiscalDeadlines,
     getFiscalDeadlineStatus,
 } from "./fiscal-calendar.ts";
@@ -56,6 +57,36 @@ test("fiscal calendar keeps the prior tax year's T4 payable in January", () => {
             ["303", "T3 2027", "2027-10-20"],
         ],
     );
+});
+
+test("shows the next four payable quarters after the current year's last due date", () => {
+    const deadlines = buildUpcomingFiscalDeadlines(new Date("2026-10-21T12:00:00"), {
+        quarterlyVatEnabled: true,
+        quarterlyWithholdingEnabled: false,
+        reminderDays: 7,
+    });
+
+    assert.deepEqual(
+        deadlines.map((deadline) => [deadline.periodLabel, deadline.dueDate]),
+        [
+            ["T4 2026", "2027-01-30"],
+            ["T1 2027", "2027-04-20"],
+            ["T2 2027", "2027-07-20"],
+            ["T3 2027", "2027-10-20"],
+        ],
+    );
+});
+
+test("includes a due date today and keeps the two enabled models separate", () => {
+    const deadlines = buildUpcomingFiscalDeadlines(new Date("2026-10-20T12:00:00"), {
+        quarterlyVatEnabled: true,
+        quarterlyWithholdingEnabled: true,
+        reminderDays: 7,
+    });
+
+    assert.equal(deadlines.length, 8);
+    assert.deepEqual(deadlines.slice(0, 2).map((deadline) => deadline.model), ["303", "111"]);
+    assert.ok(deadlines.every((deadline) => deadline.dueDate >= "2026-10-20"));
 });
 
 test("marks deadlines as planned, upcoming, or overdue without changing their date", () => {
