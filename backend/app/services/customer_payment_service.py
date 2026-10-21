@@ -59,6 +59,8 @@ def _get_payment_or_404(
 
 
 def _sync_invoice_collection_status(db: Session, invoice) -> None:
+    if invoice.status == "rectified":
+        return
     allocated = _money(
         customer_payment_repo.allocated_amount_for_invoice(db, invoice_id=invoice.id)
     )
