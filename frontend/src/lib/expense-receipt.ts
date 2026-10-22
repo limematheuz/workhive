@@ -12,3 +12,15 @@ export function validateExpenseReceiptFile(file: File): "empty" | "too_large" | 
     if (!RECEIPT_TYPES.has(file.type)) return "invalid_type";
     return null;
 }
+
+export function isExpectedReceiptRejection(error: unknown): error is Error & { status: number } {
+    return error instanceof Error
+        && "status" in error
+        && typeof error.status === "number"
+        && error.status >= 400
+        && error.status < 500;
+}
+
+export function getExpenseReceiptFeedback(error: unknown, fallback: string): string {
+    return isExpectedReceiptRejection(error) && error.message.trim() ? error.message : fallback;
+}
