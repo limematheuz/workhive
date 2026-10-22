@@ -1614,7 +1614,7 @@
       "label_location": "Location",
       "label_checkout": "Checkout",
       "label_guests": "Guests",
-      "label_time": "Time",
+      "label_time": "Time (optional)",
       "unassigned_option": "-- Unassigned --",
       "select_operator_placeholder": "-- Select an operator --",
       "btn_delete": "Delete",

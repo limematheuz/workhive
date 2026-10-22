@@ -14,6 +14,9 @@ import {
     getOverviewTabForDate,
     isTaskPlanningDateChangeToPast,
     isTaskPlanningDateBeforeToday,
+    isTaskDateOnlyValue,
+    toTaskPlanningDateInput,
+    toTaskPlanningTimeInput,
 } from "../domain/tasks/task-schedule.ts";
 import type { Reservation } from "../types/reservation.ts";
 import type { User } from "../types/user.ts";
@@ -54,12 +57,20 @@ test("turnover on same day becomes high priority", () => {
     assert.equal(schedule.priority, "high");
 });
 
-test("planned local date stays in today across negative UTC offsets", () => {
+test("date-only task stays on the selected day without inventing a start hour", () => {
     const localMorning = new Date(2026, 6, 13, 9, 0, 0);
     const plannedAt = buildTaskPlanningDate("2026-07-13");
 
     assert.equal(getDefaultTaskDate(localMorning), "2026-07-13");
-    assert.equal(new Date(plannedAt || "").getHours(), 23);
+    assert.equal(plannedAt, "2026-07-13T00:00:00.000Z");
+    assert.equal(isTaskDateOnlyValue(plannedAt), true);
+    assert.equal(isTaskDateOnlyValue("2026-07-13T00:00:00+00:00"), true);
+    assert.equal(isTaskDateOnlyValue(new Date(2026, 6, 13, 23, 59, 59, 999).toISOString()), true);
+    assert.equal(isTaskDateOnlyValue(new Date(2026, 6, 13, 23, 59).toISOString()), false);
+    assert.equal(isTaskDateOnlyValue(new Date(2026, 6, 13, 10, 59, 59, 999).toISOString()), false);
+    assert.equal(toTaskPlanningDateInput(plannedAt), "2026-07-13");
+    assert.equal(toTaskPlanningTimeInput(plannedAt), "");
+    assert.equal(toTaskPlanningTimeInput("2026-07-13T09:30:00.000Z") !== "", true);
     assert.equal(getOverviewTabForDate(plannedAt, localMorning), "hoy");
     assert.equal(
         getOverviewTabForDate("2026-07-13T00:00:00.000Z", localMorning),

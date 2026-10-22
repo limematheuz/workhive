@@ -9,7 +9,7 @@ import type {
 import type { EventResizeDoneArg } from "@fullcalendar/interaction";
 import { CloudOff, ShieldAlert } from "lucide-react";
 
-import { getTaskCalendarRange } from "@/lib/company-calendar";
+import { formatLocalCalendarDay, getTaskCalendarRange } from "@/lib/company-calendar";
 import { useDictionary } from "@/lib/dictionary-context";
 import { isTaskAssignedToUser } from "@/lib/format";
 import { toast } from "@/lib/toast";
@@ -168,8 +168,10 @@ export function CompanyCalendar({
         const end = event.end || new Date(start.getTime() + 60 * 60 * 1000);
         try {
             await TaskService.updateTaskItem(taskId, {
-                scheduled_start_at: start.toISOString(),
-                due_at: end.toISOString(),
+                scheduled_start_at: event.allDay
+                    ? `${formatLocalCalendarDay(start)}T00:00:00.000Z`
+                    : start.toISOString(),
+                due_at: event.allDay ? null : end.toISOString(),
             });
             toast.success(calendarDict.task_rescheduled);
             await onTasksChanged();

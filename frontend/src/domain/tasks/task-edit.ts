@@ -16,6 +16,7 @@ import {
     toTaskPlanningDateInput,
     toTaskPlanningTimeInput,
 } from "./task-schedule";
+import { buildTaskPlanningDate } from "./task-create";
 
 export type { TaskPricingMode } from "@/lib/task-pricing";
 
@@ -57,6 +58,9 @@ export function taskToEditValues(task: TaskItem): TaskEditValues {
 }
 
 export function buildScheduledStartAt(values: TaskEditValues): string | null {
+    if (!values.planningTime) {
+        return buildTaskPlanningDate(values.planningDate) || null;
+    }
     return buildLocalDateTimeIso(values.planningDate, values.planningTime);
 }
 

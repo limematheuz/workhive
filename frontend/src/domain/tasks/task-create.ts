@@ -22,24 +22,22 @@ export function buildTaskPlanningDate(value: string): string | undefined {
     const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (!match) return undefined;
     const [, year, month, day] = match;
-    const localNoon = new Date(
+    const localDate = new Date(
         Number(year),
         Number(month) - 1,
         Number(day),
-        23,
-        59,
-        59,
-        999,
+        12,
     );
     if (
-        Number.isNaN(localNoon.getTime())
-        || localNoon.getFullYear() !== Number(year)
-        || localNoon.getMonth() !== Number(month) - 1
-        || localNoon.getDate() !== Number(day)
+        Number.isNaN(localDate.getTime())
+        || localDate.getFullYear() !== Number(year)
+        || localDate.getMonth() !== Number(month) - 1
+        || localDate.getDate() !== Number(day)
     ) {
         return undefined;
     }
-    return localNoon.toISOString();
+    // UTC midnight is the existing date-only marker understood by task views.
+    return `${value}T00:00:00.000Z`;
 }
 
 export function getTaskAssigneeId(userId: string): number | null {

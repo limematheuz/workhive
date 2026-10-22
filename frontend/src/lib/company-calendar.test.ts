@@ -44,6 +44,38 @@ test("task calendar range keeps exact start and due time", () => {
     assert.equal(range?.start.toISOString(), "2026-06-15T08:15:00.000Z");
     assert.equal(range?.end.toISOString(), "2026-06-15T10:45:00.000Z");
     assert.equal(getTaskCalendarDurationMinutes(task), 150);
+    assert.equal(range?.allDay, false);
+});
+
+test("date-only task occupies one local calendar day, not a midnight time slot", () => {
+    const task = {
+        scheduled_start_at: "2026-10-22T00:00:00+00:00",
+        due_at: null,
+    } as TaskItem;
+
+    const range = getTaskCalendarRange(task);
+
+    assert.equal(range?.allDay, true);
+    assert.deepEqual(
+        [range?.start.getFullYear(), range?.start.getMonth(), range?.start.getDate(), range?.start.getHours()],
+        [2026, 9, 22, 0],
+    );
+    assert.deepEqual(
+        [range?.end.getFullYear(), range?.end.getMonth(), range?.end.getDate(), range?.end.getHours()],
+        [2026, 9, 23, 0],
+    );
+});
+
+test("unedited legacy date-only sentinel also occupies a full day", () => {
+    const oldMarker = new Date(2026, 9, 22, 23, 59, 59, 999).toISOString();
+    const task = { scheduled_start_at: oldMarker, due_at: null } as TaskItem;
+    const range = getTaskCalendarRange(task);
+
+    assert.equal(range?.allDay, true);
+    assert.deepEqual(
+        [range?.start.getFullYear(), range?.start.getMonth(), range?.start.getDate()],
+        [2026, 9, 22],
+    );
 });
 
 test("task calendar range defaults to one hour when due date is missing", () => {

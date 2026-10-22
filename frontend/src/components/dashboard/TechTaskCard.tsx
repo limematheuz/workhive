@@ -6,7 +6,7 @@ import { TaskItem, User, TaskWorkDetailedSummary } from "@/types/user";
 import { useDictionary } from "@/lib/dictionary-context";
 import { getUserTaskStatus, isTaskAssignedToUser } from "@/lib/format";
 import { canManageCompanyTasks } from "@/domain/access/roles";
-import { getTaskScheduleDate } from "@/domain/tasks/task-schedule";
+import { getTaskScheduleDate, isTaskDateOnlyValue, toTaskPlanningDateInput } from "@/domain/tasks/task-schedule";
 import { canStartTaskWork, isTaskWorkInProgress } from "@/domain/tasks/task-status";
 import { getTaskChecklistProgress } from "@/lib/task-checklist-completion";
 import { isExternalTaskForCompany } from "@/lib/task-display";
@@ -80,7 +80,14 @@ export function TechTaskCard({
 
     const formattedDate = React.useMemo(() => {
         try {
-            return planningDate.toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
+            const planningValue = task.scheduled_start_at || task.due_at;
+            const selectedDay = isTaskDateOnlyValue(planningValue)
+                ? toTaskPlanningDateInput(planningValue)
+                : null;
+            const displayDate = selectedDay
+                ? new Date(`${selectedDay}T12:00:00.000Z`)
+                : planningDate;
+            return displayDate.toLocaleDateString(locale === "en" ? "en-US" : "es-ES", {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
@@ -89,7 +96,7 @@ export function TechTaskCard({
         } catch {
             return "";
         }
-    }, [planningDate, locale]);
+    }, [planningDate, locale, task.scheduled_start_at, task.due_at]);
 
     const reservationSummary = React.useMemo(() => {
         const formatTime = (value: string) =>
