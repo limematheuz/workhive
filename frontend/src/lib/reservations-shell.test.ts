@@ -96,10 +96,19 @@ test("reservations require the planning entitlement before loading data", () => 
     assert.match(page, /usePlanningFeatureAccess\(user\)/);
     assert.match(access, /CompanyPlanAccessService\.getCurrentEntitlements\(\)/);
     assert.match(access, /entitlement\.code === "features\.planning"/);
-    assert.match(page, /if \(!hasPlanningAccess\) return;/);
+    assert.match(page, /if \(!canManage \|\| !hasPlanningAccess\) return;/);
     assert.match(page, /ReservationsPlanRequired/);
     assert.match(layout, /Planificación no incluida/);
     assert.match(requests, /if \(!hasPlanningAccess \|\| !canManage\) return;/);
     assert.doesNotMatch(sidebar, /"\/dashboard\/calendar": "features\.planning"/);
     assert.match(sidebar, /"\/dashboard\/reservations": "features\.planning"/);
+});
+
+test("viewer reservation denial does not request inaccessible data or show a load error", () => {
+    const page = source("../app/dashboard/reservations/page.tsx");
+    const loader = source("../features/reservations/reservations-page-utils.ts");
+
+    assert.match(page, /if \(!canManage \|\| !hasPlanningAccess\) return;/);
+    assert.match(page, /canManage && hasPlanningAccess \? loadData\(true\) : undefined/);
+    assert.match(loader, /if \(!canManage\) \{\s*setLoading\(false\);\s*return;/);
 });

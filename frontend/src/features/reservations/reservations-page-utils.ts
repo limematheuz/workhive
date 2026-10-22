@@ -80,6 +80,10 @@ export async function loadReservationsPageData({
     loadRequestedTasks: (silent?: boolean) => Promise<void>;
     onError: (message: string) => void;
 }) {
+    if (!canManage) {
+        setLoading(false);
+        return;
+    }
     try {
         if (!silent) setLoading(true);
         const [loadedLocations, loadedReservations] = await Promise.all([
@@ -88,7 +92,7 @@ export async function loadReservationsPageData({
         ]);
         setLocations(loadedLocations);
         setReservations(loadedReservations);
-        if (canManage) await loadRequestedTasks(silent);
+        await loadRequestedTasks(silent);
     } catch (error) {
         onError(error instanceof Error ? error.message : "No se pudieron cargar las reservas");
     } finally {
