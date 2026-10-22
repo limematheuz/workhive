@@ -10,6 +10,7 @@ import {
     getReservableLocations,
     getReservationProviderOptions,
 } from "../features/reservations/reservation-helpers.ts";
+import { reservationSaveErrorMessage } from "../features/reservations/reservation-errors.ts";
 import type { Location } from "../types/location.ts";
 import type { Reservation } from "../types/reservation.ts";
 
@@ -114,6 +115,24 @@ test("reservation form preserves editable values and payload nulls optional fiel
     assert.equal(payload.assigned_company_id, null);
     assert.equal(payload.cleaning_scheduled_at, null);
     assert.equal(payload.source, "manual");
+});
+
+test("reservation conflicts explain the correction in the selected language", () => {
+    const overlap = new Error("This reservation overlaps another active reservation at the location");
+
+    assert.equal(
+        reservationSaveErrorMessage(overlap, "es", "No se pudo guardar"),
+        "Las fechas coinciden con otra reserva activa de esta ubicación. Revisa la entrada y la salida.",
+    );
+    assert.equal(
+        reservationSaveErrorMessage(overlap, "en", "Could not save"),
+        "These dates overlap another active reservation at this location. Review check-in and check-out.",
+    );
+    assert.equal(
+        reservationSaveErrorMessage(new Error("Not enough permissions"), "es", "No se pudo guardar"),
+        "Not enough permissions",
+    );
+    assert.equal(reservationSaveErrorMessage(null, "es", "No se pudo guardar"), "No se pudo guardar");
 });
 
 test("reservation provider options de-duplicate and sort collaborator companies", () => {

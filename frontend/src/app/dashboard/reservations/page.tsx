@@ -27,6 +27,7 @@ import {
     getReservableLocations,
     getReservationProviderOptions,
 } from "@/features/reservations/reservation-helpers";
+import { reservationSaveErrorMessage } from "@/features/reservations/reservation-errors";
 import {
     confirmReservationCancellation,
     loadReservationsPageData,
@@ -230,9 +231,11 @@ function ReservationsPageContent() {
             await loadData();
         } catch (error) {
             toast.error(
-                error instanceof Error
-                    ? error.message
-                    : dict.reservations?.form?.save_error || "Error al guardar la reserva",
+                reservationSaveErrorMessage(
+                    error,
+                    locale,
+                    dict.reservations?.form?.save_error || "Error al guardar la reserva",
+                ),
             );
         } finally {
             setSaving(false);
