@@ -5,6 +5,7 @@ import { Loader2, Plus, Wallet } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import { ExpenseFormDialog } from "@/components/expenses/ExpenseFormDialog";
+import { ExpenseReceiptDialog } from "@/components/expenses/ExpenseReceiptDialog";
 import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,8 @@ export default function ExpensesPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [keepAdding, setKeepAdding] = useState(true);
     const [form, setForm] = useState<ExpenseFormState>(DEFAULT_EXPENSE_FORM);
+    const [receiptExpense, setReceiptExpense] = useState<Expense | null>(null);
+    const [receiptUploading, setReceiptUploading] = useState(false);
     const loadRequestRef = useRef(0);
 
     const loadExpenses = useCallback(async () => {
@@ -182,6 +185,37 @@ export default function ExpensesPage() {
         }
     };
 
+    const handleReceiptUpload = async (file: File) => {
+        if (!receiptExpense) return;
+        try {
+            setReceiptUploading(true);
+            await ExpenseService.uploadReceipt(receiptExpense.id, file);
+            toast.success(text.receipt_uploaded);
+            setReceiptExpense(null);
+            await loadExpenses();
+        } catch (error) {
+            console.error("Error uploading expense receipt", error);
+            toast.error(getExpenseSaveFeedback(error, text.receipt_upload_error));
+        } finally {
+            setReceiptUploading(false);
+        }
+    };
+
+    const handleReceiptDownload = async (expense: Expense) => {
+        try {
+            const { blob, filename } = await ExpenseService.downloadReceipt(expense.id);
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading expense receipt", error);
+            toast.error(text.receipt_download_error);
+        }
+    };
+
     if (!userLoading && !canViewExpenses) redirect("/dashboard");
 
     if (userLoading || loading) {
@@ -226,8 +260,18 @@ export default function ExpensesPage() {
                     onMonthChange={setMonth}
                     onEdit={startEdit}
                     onDelete={(expense) => void handleDelete(expense)}
+                    onUploadReceipt={setReceiptExpense}
+                    onDownloadReceipt={(expense) => void handleReceiptDownload(expense)}
                     canManage={canManageExpenses}
                 />
+
+                {canManageExpenses && <ExpenseReceiptDialog
+                    key={receiptExpense?.id ?? "none"}
+                    expense={receiptExpense}
+                    uploading={receiptUploading}
+                    onClose={() => setReceiptExpense(null)}
+                    onUpload={(file) => void handleReceiptUpload(file)}
+                />}
 
                 {canManageExpenses && <ExpenseFormDialog
                     open={isFormOpen}

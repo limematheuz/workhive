@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
+import { Download, FileUp, Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatExpenseDate, getExpenseNotes } from "@/lib/expense-form";
+import { isPrivateExpenseReceipt } from "@/lib/expense-receipt";
 import { formatCurrency } from "@/lib/format";
 import type { Expense } from "@/types/expense";
 import { CATEGORY_OPTIONS } from "./expense-options";
@@ -25,6 +26,8 @@ type ExpensesListSectionProps = {
     onMonthChange: (value: string) => void;
     onEdit: (expense: Expense) => void;
     onDelete: (expense: Expense) => void;
+    onUploadReceipt: (expense: Expense) => void;
+    onDownloadReceipt: (expense: Expense) => void;
     canManage: boolean;
 };
 
@@ -39,25 +42,36 @@ export function ExpensesListSection({
     onMonthChange,
     onEdit,
     onDelete,
+    onUploadReceipt,
+    onDownloadReceipt,
     canManage,
 }: ExpensesListSectionProps) {
     const { dict } = useDictionary();
     const text = dict.expenses;
 
-    const getExpenseActions = (expense: Expense): PopoverOption[] => !canManage ? [] : [
-        {
-            label: text.edit,
-            icon: Pencil,
-            variant: "edit",
-            onClick: () => onEdit(expense),
-        },
-        {
-            label: text.delete,
-            icon: Trash2,
-            variant: "delete",
-            onClick: () => onDelete(expense),
-        },
-    ];
+    const getExpenseActions = (expense: Expense): PopoverOption[] => {
+        const actions: PopoverOption[] = [];
+        if (isPrivateExpenseReceipt(expense.receipt_url)) {
+            actions.push({
+                label: text.receipt_download,
+                icon: Download,
+                onClick: () => onDownloadReceipt(expense),
+            });
+        } else if (!expense.receipt_url && canManage) {
+            actions.push({
+                label: text.receipt_upload,
+                icon: FileUp,
+                onClick: () => onUploadReceipt(expense),
+            });
+        }
+        if (canManage) {
+            actions.push(
+                { label: text.edit, icon: Pencil, variant: "edit", onClick: () => onEdit(expense) },
+                { label: text.delete, icon: Trash2, variant: "delete", onClick: () => onDelete(expense) },
+            );
+        }
+        return actions;
+    };
     const operationalScopeLabel = (expense: Expense) => expense.service_contract_id
         ? `${text.operational_assignment_contract} #${expense.service_contract_id}`
         : expense.work_order_id
@@ -145,7 +159,7 @@ export function ExpensesListSection({
                         </div>
                         <div className="flex shrink-0 items-start gap-2">
                             <span className="text-sm font-semibold text-[var(--text-main)]">{formatCurrency(expense.total_amount)}</span>
-                            <ActionPopover options={getExpenseActions(expense)} />
+                            {getExpenseActions(expense).length > 0 && <ActionPopover options={getExpenseActions(expense)} triggerLabel={text.actions} />}
                         </div>
                     </div>
                     <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] pt-2.5 text-xs text-[var(--text-muted)]">
@@ -176,7 +190,7 @@ export function ExpensesListSection({
                     <span className="text-right text-sm font-semibold text-[var(--text-muted)]">{formatCurrency(expense.tax_amount)}</span>
                     <span className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(expense.total_amount)}</span>
                     <span className="flex justify-end">
-                        <ActionPopover options={getExpenseActions(expense)} />
+                        {getExpenseActions(expense).length > 0 && <ActionPopover options={getExpenseActions(expense)} triggerLabel={text.actions} />}
                     </span>
                 </>
             )}

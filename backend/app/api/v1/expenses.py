@@ -1,19 +1,22 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
     ActiveFinanceManager,
+    ActiveUser,
     AsyncActiveFinancialReader,
     get_async_db,
     get_db,
 )
 from app.api.pagination import PaginationLimit, PaginationOffset
 from app.models.user import User
+from app.core.config import settings
+from app.core.rate_limit import enforce_rate_limit
 from app.schemas.expense import ExpenseCreate, ExpenseResponse, ExpenseUpdate
-from app.services import expense_service
+from app.services import expense_receipt_service, expense_service
 from app.services.user_scope import is_platform_superadmin
 
 
@@ -107,3 +110,50 @@ def delete_expense(
 ):
     _require_company_admin(current_user)
     expense_service.delete_expense(db, current_user.company_id, expense_id)
+
+
+@router.post("/{expense_id}/receipt", response_model=ExpenseResponse, status_code=status.HTTP_201_CREATED)
+def upload_expense_receipt(
+    expense_id: int,
+    request: Request,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    _require_company_admin(current_user)
+    enforce_rate_limit(
+        request,
+        "expense-receipt-upload",
+        settings.MEDIA_UPLOAD_RATE_LIMIT,
+        settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
+        identity=str(current_user.id),
+    )
+    return expense_receipt_service.upload_receipt(
+        db,
+        user=current_user,
+        expense_id=expense_id,
+        contents=file.file.read(expense_receipt_service.MAX_RECEIPT_BYTES + 1),
+        content_type=file.content_type,
+    )
+
+
+@router.get("/{expense_id}/receipt")
+def download_expense_receipt(
+    expense_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    _require_company_admin(current_user)
+    stored, filename = expense_receipt_service.download_receipt(
+        db, user=current_user, expense_id=expense_id
+    )
+    return Response(
+        content=stored.contents,
+        media_type=stored.content_type,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "private, no-store",
+            "X-Content-Type-Options": "nosniff",
+            "Content-Security-Policy": "sandbox",
+        },
+    )

@@ -38,6 +38,21 @@ def _reject_purchase_managed_expense(db: Session, company_id: int, expense_id: i
         )
 
 
+def require_mutable_expense(db: Session, company_id: int, expense_id: int):
+    expense = _get_expense_or_404(db, company_id, expense_id)
+    _reject_purchase_managed_expense(db, company_id, expense_id)
+    return expense
+
+
+def _reject_private_receipt_reference(payload: dict) -> None:
+    reference = payload.get("receipt_url")
+    if isinstance(reference, str) and reference.startswith("private-expense-receipt:"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Los justificantes privados se suben desde la acción del gasto",
+        )
+
+
 def _validate_client_assignment(
     db: Session,
     company_id: int,
@@ -129,6 +144,7 @@ def create_expense(
     data: ExpenseCreate,
 ):
     payload = data.model_dump()
+    _reject_private_receipt_reference(payload)
     payload["client_id"] = _resolve_operational_scope_client_id(
         db,
         company_id=company_id,
@@ -155,9 +171,9 @@ def update_expense(
     expense_id: int,
     data: ExpenseUpdate,
 ):
-    expense = _get_expense_or_404(db, company_id, expense_id)
-    _reject_purchase_managed_expense(db, company_id, expense_id)
+    expense = require_mutable_expense(db, company_id, expense_id)
     payload = data.model_dump(exclude_unset=True)
+    _reject_private_receipt_reference(payload)
     next_service_contract_id = payload.get(
         "service_contract_id", expense.service_contract_id
     )
@@ -186,6 +202,5 @@ def update_expense(
 
 
 def delete_expense(db: Session, company_id: int, expense_id: int) -> None:
-    expense = _get_expense_or_404(db, company_id, expense_id)
-    _reject_purchase_managed_expense(db, company_id, expense_id)
+    expense = require_mutable_expense(db, company_id, expense_id)
     expense_repo.delete_expense(db, expense)
