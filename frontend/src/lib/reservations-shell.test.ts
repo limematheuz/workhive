@@ -75,6 +75,17 @@ test("reservation cleaning completed status uses accent, not green", () => {
     assert.doesNotMatch(list, /text-emerald/);
 });
 
+test("reservation cards show browser-local dates and times after hydration", () => {
+    const list = source("../features/reservations/ReservationList.tsx");
+
+    assert.match(list, /useSyncExternalStore\(/);
+    assert.match(list, /getServerTimeZone/);
+    assert.match(list, /formatReservationDate\(/);
+    assert.match(list, /formatReservationTime\(/);
+    assert.match(list, /formatReservationDateTime\(/);
+    assert.doesNotMatch(list, /timeZone: "UTC"/);
+});
+
 test("reservations require the planning entitlement before loading data", () => {
     const page = source("../app/dashboard/reservations/page.tsx");
     const layout = source("../features/reservations/ReservationsPageLayout.tsx");
