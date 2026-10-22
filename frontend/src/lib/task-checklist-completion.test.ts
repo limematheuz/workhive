@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+    canMarkEditedTaskCompleted,
     canMarkTaskCompleted,
     getTaskChecklistProgress,
     isTaskChecklistComplete,
@@ -99,4 +100,19 @@ test("structured checklist honours recorded legacy answers until rows are repair
 
     assert.deepEqual(getTaskChecklistProgress(task), { completed: 2, total: 2 });
     assert.equal(isTaskChecklistComplete(task), true);
+});
+
+test("one edit can check every step and complete while stored structured rows are stale", () => {
+    const stored = {
+        description: "- [ ] Cocina\n- [ ] Baño",
+        checklist_items: [
+            { id: 1, completed: false },
+            { id: 2, completed: false },
+        ],
+    };
+
+    assert.equal(canMarkTaskCompleted(stored), false);
+    assert.equal(canMarkEditedTaskCompleted(stored, "- [x] Cocina\n- [x] Baño"), true);
+    assert.equal(canMarkEditedTaskCompleted(stored, "- [x] Cocina\n- [ ] Baño"), false);
+    assert.equal(canMarkEditedTaskCompleted(stored, ""), false);
 });

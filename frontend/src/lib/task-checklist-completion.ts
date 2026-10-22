@@ -92,3 +92,18 @@ export function getTaskChecklistProgress(
 export function canMarkTaskCompleted(task: ChecklistCompletionSource): boolean {
     return !taskHasChecklist(task) || isTaskChecklistComplete(task);
 }
+
+/** Check the incoming description snapshot, as the backend does for a combined edit/status update. */
+export function canMarkEditedTaskCompleted(
+    storedTask: ChecklistCompletionSource,
+    editedDescription: string,
+): boolean {
+    const incoming = {
+        description: editedDescription,
+        checklist_evidence: storedTask.checklist_evidence,
+    };
+    if (!taskHasChecklist({ ...incoming, checklist_items: storedTask.checklist_items })) {
+        return true;
+    }
+    return taskHasChecklist(incoming) && isTaskChecklistComplete(incoming);
+}

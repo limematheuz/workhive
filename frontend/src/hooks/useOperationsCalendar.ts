@@ -22,7 +22,7 @@ import {
     isTaskPlanningDateChangeToPast,
     sortTasksByOperationalPriority,
 } from "@/domain/tasks/task-schedule";
-import { canMarkTaskCompleted } from "@/lib/task-checklist-completion";
+import { canMarkEditedTaskCompleted, canMarkTaskCompleted } from "@/lib/task-checklist-completion";
 import {
     completionDateForStatus,
     toKanbanStatus,
@@ -288,10 +288,7 @@ export function useOperationsCalendar({
         }
         if (
             values.status === "completed"
-            && !canMarkTaskCompleted({
-                ...selectedTask,
-                description: values.description,
-            })
+            && !canMarkEditedTaskCompleted(selectedTask, values.description)
         ) {
             toast.error(
                 dict.tasks?.error_checklist_incomplete
