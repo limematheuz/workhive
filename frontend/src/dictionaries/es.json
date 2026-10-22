@@ -1614,7 +1614,7 @@
       "label_location": "Ubicación",
       "label_checkout": "Salida",
       "label_guests": "Huéspedes",
-      "label_time": "Hora",
+      "label_time": "Hora (opcional)",
       "unassigned_option": "-- Sin asignar --",
       "select_operator_placeholder": "-- Selecciona un operario --",
       "btn_delete": "Eliminar",

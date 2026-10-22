@@ -49,7 +49,7 @@ export function CalendarBoard({
                 locale={locale === "es" ? esLocale : "en"}
                 firstDay={1}
                 headerToolbar={false}
-                allDaySlot={false}
+                allDaySlot
                 nowIndicator
                 editable={canEdit}
                 eventStartEditable={canEdit}

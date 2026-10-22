@@ -133,11 +133,11 @@ test("date-only due dates use the same local-day compatibility as scheduled date
     );
 });
 
-test("task editor inputs preserve legacy date-only values without a timezone shift", () => {
+test("task editor preserves a date-only task without inventing an hour", () => {
     const value = "2026-07-11T00:00:00Z";
 
     assert.equal(toTaskPlanningDateInput(value), "2026-07-11");
-    assert.equal(toTaskPlanningTimeInput(value), "12:00");
+    assert.equal(toTaskPlanningTimeInput(value), "");
 });
 
 test("dashboard tab counts and rendered tasks come from the same calendar-day classification", () => {

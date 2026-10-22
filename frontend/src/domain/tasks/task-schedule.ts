@@ -30,10 +30,20 @@ export function parseDate(value: string | null | undefined): Date | null {
 }
 
 function getUtcMidnightDateParts(value: string): [number, number, number] | null {
-    const match = /^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.000)?Z$/.exec(value);
+    const match = /^(\d{4})-(\d{2})-(\d{2})T00:00:00(?:\.0+)?(?:Z|\+00:00)$/.exec(value);
     if (!match) return null;
     const [, year, month, day] = match;
     return [Number(year), Number(month) - 1, Number(day)];
+}
+
+export function isTaskDateOnlyValue(value: string | null | undefined): boolean {
+    // Older date-only tasks used the last millisecond of the selected day.
+    // An edited 23:59:00 value is ambiguous and must remain a timed task.
+    if (!value) return false;
+    if (getUtcMidnightDateParts(value)) return true;
+    if (!/T\d{2}:59:59\.999(?:0{0,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return false;
+    const date = parseDate(value);
+    return Boolean(date && date.getHours() === 23 && date.getMinutes() === 59);
 }
 
 function padDatePart(value: number): string {
@@ -48,8 +58,10 @@ function parseTaskPlanningDate(value: string): Date | null {
 
 export function parseTaskCalendarDate(value: string): Date | null {
     const parts = getUtcMidnightDateParts(value);
-    if (!parts) return parseDate(value);
-    return new Date(parts[0], parts[1], parts[2], 12, 0, 0, 0);
+    if (parts) return new Date(parts[0], parts[1], parts[2], 12, 0, 0, 0);
+    const date = parseDate(value);
+    if (!date || !isTaskDateOnlyValue(value)) return date;
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 12);
 }
 
 export function toTaskPlanningDateInput(value: string | null | undefined): string {
@@ -64,7 +76,8 @@ export function toTaskPlanningTimeInput(
     value: string | null | undefined,
     fallback = "12:00",
 ): string {
-    if (!value || getUtcMidnightDateParts(value)) return fallback;
+    if (!value) return fallback;
+    if (isTaskDateOnlyValue(value)) return "";
     const date = parseDate(value);
     if (!date) return fallback;
     return `${padDatePart(date.getHours())}:${padDatePart(date.getMinutes())}`;

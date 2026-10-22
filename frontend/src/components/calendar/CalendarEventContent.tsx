@@ -28,9 +28,11 @@ export function CalendarEventContent({
                 <StatusIcon className="h-3 w-3 shrink-0 opacity-90" />
                 <span className="truncate">{eventInfo.event.title}</span>
             </div>
-            <div className="truncate font-semibold opacity-80">
-                {eventInfo.timeText}
-            </div>
+            {eventInfo.timeText && (
+                <div className="truncate font-semibold opacity-80">
+                    {eventInfo.timeText}
+                </div>
+            )}
             <div className="hidden truncate opacity-75 sm:block">
                 {props.locationName}
             </div>

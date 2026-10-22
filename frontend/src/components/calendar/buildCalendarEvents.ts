@@ -1,6 +1,6 @@
 import type { EventInput } from "@fullcalendar/core";
 
-import { getTaskCalendarRange } from "@/lib/company-calendar";
+import { formatLocalCalendarDay, getTaskCalendarRange } from "@/lib/company-calendar";
 import { parseChecklistItems, parseTaskAssigneeIds } from "@/lib/format";
 import { isExternalTaskForCompany, taskLocationTitle } from "@/lib/task-display";
 import { normalizeTaskStatus } from "@/domain/tasks/task-status";
@@ -46,8 +46,10 @@ export function buildCalendarEvents(
         return [{
             id: String(task.id),
             title: taskLocationTitle(task, locationName(task.location_id)),
-            start: range.start.toISOString(),
-            end: range.end.toISOString(),
+            start: range.allDay ? formatLocalCalendarDay(range.start) : range.start.toISOString(),
+            end: range.allDay ? formatLocalCalendarDay(range.end) : range.end.toISOString(),
+            allDay: range.allDay,
+            durationEditable: !range.allDay,
             backgroundColor: "transparent",
             borderColor: "transparent",
             textColor: "inherit",

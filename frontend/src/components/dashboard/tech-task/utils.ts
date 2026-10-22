@@ -1,4 +1,5 @@
 import type { Dictionary } from "@/lib/dictionary-context";
+import { isTaskDateOnlyValue, parseTaskCalendarDate } from "../../../domain/tasks/task-schedule.ts";
 
 export interface PropertyFeatures {
     rooms: number;
@@ -43,8 +44,17 @@ export function formatClockTime(seconds: number): string {
 
 export function formatShortDateTime(value: string | null | undefined, locale: string): string | null {
     if (!value) return null;
-    const date = new Date(value);
+    const dateOnly = isTaskDateOnlyValue(value);
+    const date = dateOnly ? parseTaskCalendarDate(value) : new Date(value);
+    if (!date) return null;
     if (Number.isNaN(date.getTime())) return null;
+    if (dateOnly) {
+        const day = date.toLocaleDateString(locale === "es" ? "es-ES" : "en-US", {
+            day: "2-digit",
+            month: "short",
+        });
+        return `${day} · ${locale === "es" ? "Sin hora" : "No time set"}`;
+    }
     return date.toLocaleString(locale === "es" ? "es-ES" : "en-US", {
         day: "2-digit",
         month: "short",
