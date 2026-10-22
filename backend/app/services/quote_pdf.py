@@ -1,7 +1,6 @@
 import logging
 import tempfile
 from io import BytesIO
-from decimal import Decimal
 from pathlib import Path
 from xml.sax.saxutils import escape
 
@@ -14,6 +13,7 @@ from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate
 
 from app.core.config import settings
 from app.models.quote import Quote
+from app.services.quote_pdf_amounts import format_quote_money, format_quote_quantity, quote_total_rows
 from app.services.storage_service import get_object_storage, media_key_from_url
 
 
@@ -27,15 +27,6 @@ INK = colors.HexColor("#172033")
 MUTED = colors.HexColor("#64748B")
 LINE = colors.HexColor("#DCE5F2")
 SURFACE = colors.HexColor("#F8FAFC")
-
-
-def _money(value: Decimal | float | int | None) -> str:
-    amount = Decimal(str(value or 0)).quantize(Decimal("0.01"))
-    return f"{amount:,.2f} EUR".replace(",", "X").replace(".", ",").replace("X", ".")
-
-
-def _quantity(value: Decimal | float | int | None) -> str:
-    return f"{Decimal(str(value or 0)):f}".rstrip("0").rstrip(".") or "0"
 
 
 def _text(value: object | None, fallback: str = "-") -> str:
@@ -272,9 +263,9 @@ def generate_quote_email_pdf(quote: Quote) -> Path:
     for item in quote.items:
         item_rows.append([
             Paragraph(_text(item.description), styles["QuoteBody"]),
-            _quantity(item.quantity),
-            _money(item.unit_price),
-            _money(item.subtotal),
+            format_quote_quantity(item.quantity),
+            format_quote_money(item.unit_price),
+            format_quote_money(item.subtotal),
         ])
     items = Table(item_rows, colWidths=[93 * mm, 18 * mm, 35.5 * mm, 35.5 * mm], repeatRows=1)
     items.setStyle(TableStyle([
@@ -293,25 +284,7 @@ def generate_quote_email_pdf(quote: Quote) -> Path:
         ("BOTTOMPADDING", (0, 0), (-1, -1), 2.35 * mm),
     ]))
 
-    total_rows = [["Base imponible", _money(quote.base_amount)]]
-    surcharge_amount = Decimal("0")
-    if quote.equivalence_surcharge:
-        surcharge_amount = (
-            Decimal(str(quote.base_amount or 0))
-            * Decimal(str(quote.equivalence_surcharge))
-            / Decimal("100")
-        )
-        total_rows.append([
-            f"Recargo ({quote.equivalence_surcharge:g}%)",
-            _money(surcharge_amount),
-        ])
-    vat_amount = Decimal(str(quote.tax_amount or 0)) - surcharge_amount
-    total_rows.append([f"IVA ({quote.tax_rate * 100:.0f}%)", _money(vat_amount)])
-    if quote.retention:
-        retention = Decimal(str(quote.base_amount or 0)) * Decimal(str(quote.retention)) / Decimal("100")
-        total_rows.append([f"Retención ({quote.retention:g}%)", f"-{_money(retention)}"])
-    total_rows.append(["TOTAL PRESUPUESTO", _money(quote.total_amount)])
-    totals = Table(total_rows, colWidths=[47 * mm, 43 * mm], hAlign="RIGHT")
+    totals = Table(quote_total_rows(quote), colWidths=[47 * mm, 43 * mm], hAlign="RIGHT")
     totals.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -2), SURFACE),
         ("BACKGROUND", (0, -1), (-1, -1), BRAND_BLUE_DARK),
