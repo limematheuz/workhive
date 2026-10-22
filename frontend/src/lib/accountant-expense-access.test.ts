@@ -17,6 +17,12 @@ test("accountant reaches the read-only expense and receipt screen, not managemen
     assert.match(navigation, /ACCOUNTANT_HREFS[^\n]*"\/dashboard\/expenses"/);
     assert.match(page, /canManageExpenses && <ExpenseReceiptDialog/);
     assert.match(page, /canManageExpenses && <ExpenseFormDialog/);
+    assert.match(page, /canManageExpenses \? text\.subtitle : text\.readonly_subtitle/);
+    assert.match(page, /canManageExpenses \? ClientService\.getClients\(null\) : Promise\.resolve\(\[\]\)/);
+    assert.match(page, /canManageExpenses \? ServiceContractService\.getContracts\(\) : Promise\.resolve\(\[\]\)/);
+    assert.match(page, /canManageExpenses \? WorkOrderService\.getWorkOrders\(\) : Promise\.resolve\(\[\]\)/);
+    assert.match(read("../dictionaries/es.json"), /"readonly_subtitle": "Consulta los gastos/);
+    assert.match(read("../dictionaries/en.json"), /"readonly_subtitle": "Review company expenses/);
     assert.match(list, /isPrivateExpenseReceipt\(expense\.receipt_url\)/);
     assert.match(list, /onDownloadReceipt\(expense\)/);
     assert.match(list, /!expense\.receipt_url && canManage/);

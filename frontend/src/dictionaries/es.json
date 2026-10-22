@@ -173,6 +173,7 @@
     "eyebrow": "Finanzas",
     "title": "Gastos",
     "subtitle": "Registra gastos de empresa, IVA soportado, proveedor, categoría y recibos.",
+    "readonly_subtitle": "Consulta los gastos de la empresa y descarga sus justificantes disponibles.",
     "total_spent": "Total gastado",
     "tax_amount": "IVA soportado",
     "records": "Registros",

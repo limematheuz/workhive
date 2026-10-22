@@ -80,9 +80,9 @@ export default function ExpensesPage() {
             setLoading(true);
             const [expenseResult, clientResult, contractResult, workOrderResult] = await Promise.allSettled([
                 ExpenseService.getAllExpenses(getExpenseComparisonRange(month)),
-                ClientService.getClients(null),
-                ServiceContractService.getContracts(),
-                WorkOrderService.getWorkOrders(),
+                canManageExpenses ? ClientService.getClients(null) : Promise.resolve([]),
+                canManageExpenses ? ServiceContractService.getContracts() : Promise.resolve([]),
+                canManageExpenses ? WorkOrderService.getWorkOrders() : Promise.resolve([]),
             ]);
             if (requestId !== loadRequestRef.current) return;
             if (expenseResult.status === "rejected") {
@@ -107,7 +107,7 @@ export default function ExpensesPage() {
         } finally {
             setLoading((current) => requestId === loadRequestRef.current ? false : current);
         }
-    }, [canViewExpenses, month, text.error_load]);
+    }, [canManageExpenses, canViewExpenses, month, text.error_load]);
 
     const loadExpensesEvent = useEffectEvent(loadExpenses);
 
@@ -265,7 +265,7 @@ export default function ExpensesPage() {
                 <PageHeader
                     icon={Wallet}
                     title={text.title}
-                    subtitle={text.subtitle}
+                    subtitle={canManageExpenses ? text.subtitle : text.readonly_subtitle}
                     actions={canManageExpenses ? (
                         <Button
                             type="button"

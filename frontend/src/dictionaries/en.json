@@ -173,6 +173,7 @@
     "eyebrow": "Finance",
     "title": "Expenses",
     "subtitle": "Track company expenses, input VAT, vendor, category, and receipts.",
+    "readonly_subtitle": "Review company expenses and download available receipts.",
     "total_spent": "Total spent",
     "tax_amount": "Input VAT",
     "records": "Records",
