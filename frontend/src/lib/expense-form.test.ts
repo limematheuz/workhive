@@ -8,6 +8,8 @@ import {
     dateFromApi,
     dateToApi,
     expenseToFormState,
+    expenseDuplicateKey,
+    findPotentialDuplicateExpense,
     filterExpenses,
     formatExpenseDate,
     getExpenseNotes,
@@ -104,6 +106,22 @@ test("expense payload normalizes empty optional fields to null", () => {
     assert.equal(payload.payment_method, null);
     assert.equal(payload.notes, null);
     assert.equal(payload.tax_amount, 0);
+});
+
+test("duplicate warning only matches active expenses with the same day, amounts and assignment", () => {
+    const candidate = {
+        ...baseExpense,
+        id: 9,
+        vendor: "  IMPREX  ",
+        description: "Limpieza",
+    };
+    assert.equal(expenseDuplicateKey(candidate), expenseDuplicateKey(baseExpense));
+    assert.equal(findPotentialDuplicateExpense(candidate, [baseExpense])?.id, 1);
+    assert.equal(findPotentialDuplicateExpense(candidate, [{ ...baseExpense, is_active: false }]), undefined);
+    assert.equal(findPotentialDuplicateExpense(candidate, [{ ...baseExpense, expense_date: "2026-07-17T00:00:00" }]), undefined);
+    assert.equal(findPotentialDuplicateExpense(candidate, [{ ...baseExpense, base_amount: 135 }]), undefined);
+    assert.equal(findPotentialDuplicateExpense(candidate, [{ ...baseExpense, client_id: 4 }]), undefined);
+    assert.equal(findPotentialDuplicateExpense(candidate, [baseExpense], 1), undefined);
 });
 
 test("expense edit state infers tax rate and preserves editable fields", () => {

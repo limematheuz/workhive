@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import type { Client } from "@/types/client";
 import type { ServiceContract } from "@/types/service-contract";
 import type { WorkOrder } from "@/types/work-order";
+import type { Expense } from "@/types/expense";
 import { CATEGORY_OPTIONS, PAYMENT_METHOD_OPTIONS } from "./expense-options";
 
 type ExpenseFormDialogProps = {
@@ -42,6 +43,8 @@ type ExpenseFormDialogProps = {
     contracts: ServiceContract[];
     workOrders: WorkOrder[];
     onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+    potentialDuplicate?: Expense | null;
+    duplicateCheckUnavailable?: boolean;
 };
 
 export function ExpenseFormDialog({
@@ -57,6 +60,8 @@ export function ExpenseFormDialog({
     contracts,
     workOrders,
     onSubmit,
+    potentialDuplicate,
+    duplicateCheckUnavailable,
 }: ExpenseFormDialogProps) {
     const { dict } = useDictionary();
     const text = dict.expenses;
@@ -127,7 +132,7 @@ export function ExpenseFormDialog({
                     : "Registra un gasto de empresa con proveedor, categoría e IVA soportado."
             }
             cancelLabel={dict.clients?.form?.cancel || "Cancelar"}
-            submitLabel={editing ? text.save_changes : text.add_expense}
+            submitLabel={potentialDuplicate || duplicateCheckUnavailable ? "Guardar de todos modos" : editing ? text.save_changes : text.add_expense}
             submittingLabel={dict.quotes?.saving || "Guardando..."}
             submitting={saving}
             submitDisabled={saving || missingOperationalTarget}
@@ -136,6 +141,17 @@ export function ExpenseFormDialog({
             contentClassName="sm:max-w-[min(56rem,calc(100vw-2rem))]"
             footerStart={footerExtra}
         >
+            {potentialDuplicate && (
+                <div role="alert" className="rounded-xl border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-[var(--text-main)]">
+                    <p className="font-semibold">Posible gasto duplicado (#{potentialDuplicate.id})</p>
+                    <p className="mt-1">Coinciden fecha, proveedor, concepto, categoría, importes y asignación. Revisa el gasto anterior; si son dos tickets distintos, puedes guardarlo igualmente.</p>
+                </div>
+            )}
+            {duplicateCheckUnavailable && (
+                <div role="alert" className="rounded-xl border border-amber-500/50 bg-amber-500/10 px-4 py-3 text-sm text-[var(--text-main)]">
+                    No se pudo comprobar si existe un gasto igual. Revisa el listado y, si corresponde, guarda de todos modos.
+                </div>
+            )}
             <DocumentFormSection
                 title="Datos del gasto"
                 description="Fecha, proveedor y concepto del movimiento."

@@ -86,6 +86,33 @@ export function buildExpensePayload(form: ExpenseFormState): ExpensePayload {
     };
 }
 
+function duplicateText(value: string | null | undefined): string {
+    return (value ?? "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("es");
+}
+
+export function expenseDuplicateKey(expense: ExpensePayload): string {
+    return JSON.stringify([
+        dateFromApi(expense.expense_date),
+        duplicateText(expense.vendor),
+        duplicateText(expense.description),
+        expense.category,
+        Math.round(expense.base_amount * 100),
+        Math.round((expense.tax_amount ?? 0) * 100),
+        expense.client_id ?? null,
+        expense.service_contract_id ?? null,
+        expense.work_order_id ?? null,
+    ]);
+}
+
+export function findPotentialDuplicateExpense(
+    candidate: ExpensePayload,
+    expenses: Expense[],
+    excludedId?: number,
+): Expense | undefined {
+    const key = expenseDuplicateKey(candidate);
+    return expenses.find((expense) => expense.is_active && expense.id !== excludedId && expenseDuplicateKey(expense) === key);
+}
+
 export function getExpenseNotes(expense: Pick<Expense, "notes">): string {
     return expense.notes?.trim() || "";
 }

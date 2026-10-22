@@ -18,6 +18,8 @@ import {
     buildExpensePayload,
     DEFAULT_EXPENSE_FORM,
     expenseToFormState,
+    expenseDuplicateKey,
+    findPotentialDuplicateExpense,
     filterExpenses,
     getExpenseSaveFeedback,
     type ExpenseFormState,
@@ -68,6 +70,7 @@ export default function ExpensesPage() {
     const [form, setForm] = useState<ExpenseFormState>(DEFAULT_EXPENSE_FORM);
     const [receiptExpense, setReceiptExpense] = useState<Expense | null>(null);
     const [receiptUploading, setReceiptUploading] = useState(false);
+    const [confirmedDuplicate, setConfirmedDuplicate] = useState<{ key: string; expense: Expense | null } | null>(null);
     const loadRequestRef = useRef(0);
 
     const loadExpenses = useCallback(async () => {
@@ -129,11 +132,13 @@ export default function ExpensesPage() {
     const resetForm = () => {
         setEditingExpense(null);
         setForm(DEFAULT_EXPENSE_FORM);
+        setConfirmedDuplicate(null);
     };
 
     const openCreateForm = () => {
         setEditingExpense(null);
         setForm(DEFAULT_EXPENSE_FORM);
+        setConfirmedDuplicate(null);
         setKeepAdding(true);
         setIsFormOpen(true);
     };
@@ -142,6 +147,7 @@ export default function ExpensesPage() {
         setEditingExpense(expense);
         setKeepAdding(false);
         setForm(expenseToFormState(expense));
+        setConfirmedDuplicate(null);
         setIsFormOpen(true);
     };
 
@@ -151,6 +157,23 @@ export default function ExpensesPage() {
         try {
             setSaving(true);
             const payload: ExpensePayload = buildExpensePayload(form);
+            const duplicateKey = expenseDuplicateKey(payload);
+            if (!editingExpense && confirmedDuplicate?.key !== duplicateKey) {
+                try {
+                    const sameDay = await ExpenseService.getAllExpenses({
+                        dateFrom: `${form.expense_date}T00:00:00`,
+                        dateTo: `${form.expense_date}T23:59:59.999999`,
+                    });
+                    const duplicate = findPotentialDuplicateExpense(payload, sameDay);
+                    if (duplicate) {
+                        setConfirmedDuplicate({ key: duplicateKey, expense: duplicate });
+                        return;
+                    }
+                } catch {
+                    setConfirmedDuplicate({ key: duplicateKey, expense: null });
+                    return;
+                }
+            }
             if (editingExpense) {
                 await ExpenseService.updateExpense(editingExpense.id, payload);
                 toast.success(text.updated);
@@ -161,6 +184,7 @@ export default function ExpensesPage() {
                 toast.success(text.created);
                 if (keepAdding) {
                     setForm(DEFAULT_EXPENSE_FORM);
+                    setConfirmedDuplicate(null);
                 } else {
                     setIsFormOpen(false);
                     resetForm();
@@ -295,6 +319,8 @@ export default function ExpensesPage() {
                     contracts={contracts}
                     workOrders={workOrders}
                     onSubmit={(event) => void handleSubmit(event)}
+                    potentialDuplicate={confirmedDuplicate?.key === expenseDuplicateKey(buildExpensePayload(form)) ? confirmedDuplicate.expense : null}
+                    duplicateCheckUnavailable={confirmedDuplicate?.key === expenseDuplicateKey(buildExpensePayload(form)) && !confirmedDuplicate.expense}
                 />}
             </div>
         </div>
