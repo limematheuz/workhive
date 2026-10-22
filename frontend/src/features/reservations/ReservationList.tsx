@@ -1,5 +1,7 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+
 import {
     Calendar,
     CalendarDays,
@@ -17,6 +19,16 @@ import type { Dictionary, Locale } from "@/lib/dictionary-context";
 import { cn } from "@/lib/utils";
 import type { Location } from "@/types/location";
 import type { Reservation } from "@/types/reservation";
+
+import {
+    formatReservationDate,
+    formatReservationDateTime,
+    formatReservationTime,
+} from "./reservation-display";
+
+const subscribeToTimeZone = () => () => {};
+const getBrowserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+const getServerTimeZone = () => null;
 
 const statusBadgeClass: Record<string, string> = {
     confirmed:
@@ -48,6 +60,12 @@ export function ReservationList({
     onEdit,
     onCancel,
 }: ReservationListProps) {
+    const timeZone = useSyncExternalStore(
+        subscribeToTimeZone,
+        getBrowserTimeZone,
+        getServerTimeZone,
+    );
+
     if (loading) {
         return (
             <div className="flex justify-center py-16">
@@ -77,6 +95,7 @@ export function ReservationList({
                     location={locationMap.get(reservation.location_id)}
                     dict={dict}
                     locale={locale}
+                    timeZone={timeZone}
                     canEdit={reservation.owner_company_id === companyId}
                     onEdit={onEdit}
                     onCancel={onCancel}
@@ -91,6 +110,7 @@ interface ReservationCardProps {
     location?: Location;
     dict: Dictionary;
     locale: Locale;
+    timeZone: string | null;
     canEdit: boolean;
     onEdit: (reservation: Reservation) => void;
     onCancel: (reservation: Reservation) => void;
@@ -134,6 +154,7 @@ function ReservationCard({
     location,
     dict,
     locale,
+    timeZone,
     canEdit,
     onEdit,
     onCancel,
@@ -164,23 +185,19 @@ function ReservationCard({
                     <div className="flex items-center gap-1.5 text-[var(--text-muted)]">
                         <Calendar className="h-3.5 w-3.5 text-accent" />
                         <span>
-                            {new Date(reservation.check_in_at)
-                                .toLocaleDateString(dateLocale, {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                    timeZone: "UTC",
-                                })
-                                .toUpperCase()}
+                            {formatReservationDate(
+                                reservation.check_in_at,
+                                dateLocale,
+                                timeZone,
+                                true,
+                            ).toUpperCase()}
                             {" – "}
-                            {new Date(reservation.check_out_at)
-                                .toLocaleDateString(dateLocale, {
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                    timeZone: "UTC",
-                                })
-                                .toUpperCase()}
+                            {formatReservationDate(
+                                reservation.check_out_at,
+                                dateLocale,
+                                timeZone,
+                                true,
+                            ).toUpperCase()}
                         </span>
                     </div>
                     <Badge
@@ -250,19 +267,15 @@ function ReservationCard({
                                 </span>
                                 <span className="mt-0.5 block text-[11px] font-semibold text-[var(--text-main)]">
                                     {reservation.cleaning_scheduled_at
-                                        ? `${new Date(
-                                              reservation.cleaning_scheduled_at
-                                          ).toLocaleDateString(dateLocale, {
-                                              month: "short",
-                                              day: "numeric",
-                                              timeZone: "UTC",
-                                          })} ${new Date(
-                                              reservation.cleaning_scheduled_at
-                                          ).toLocaleTimeString(dateLocale, {
-                                              hour: "2-digit",
-                                              minute: "2-digit",
-                                              timeZone: "UTC",
-                                          })}`
+                                        ? `${formatReservationDate(
+                                              reservation.cleaning_scheduled_at,
+                                              dateLocale,
+                                              timeZone,
+                                          )} ${formatReservationTime(
+                                              reservation.cleaning_scheduled_at,
+                                              dateLocale,
+                                              timeZone,
+                                          )}`
                                         : "—"}
                                 </span>
                             </div>
@@ -309,13 +322,11 @@ function ReservationCard({
                                                 accuracyMeters={
                                                     startLocation.accuracy_meters
                                                 }
-                                                label={`${
-                                                    startLocation.user_name
-                                                } · ${new Date(
-                                                    startLocation.started_at
-                                                ).toLocaleString(dateLocale, {
-                                                    timeZone: "UTC",
-                                                })}`}
+                                                label={`${startLocation.user_name} · ${formatReservationDateTime(
+                                                    startLocation.started_at,
+                                                    dateLocale,
+                                                    timeZone,
+                                                )}`}
                                             />
                                         ),
                                     )}
@@ -336,22 +347,18 @@ function ReservationCard({
                             {`${
                                 dict.reservations?.table?.check_in_short ||
                                 "ENTRADA"
-                            } ${new Date(
-                                reservation.check_in_at
-                            ).toLocaleTimeString(dateLocale, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                timeZone: "UTC",
-                            })} / ${
+                            } ${formatReservationTime(
+                                reservation.check_in_at,
+                                dateLocale,
+                                timeZone,
+                            )} / ${
                                 dict.reservations?.table?.check_out_short ||
                                 "SALIDA"
-                            } ${new Date(
-                                reservation.check_out_at
-                            ).toLocaleTimeString(dateLocale, {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                timeZone: "UTC",
-                            })}`}
+                            } ${formatReservationTime(
+                                reservation.check_out_at,
+                                dateLocale,
+                                timeZone,
+                            )}`}
                         </span>
                         <Flag className="ml-0.5 h-3.5 w-3.5 text-[var(--btn-secondary-text)]/70" />
                     </div>
