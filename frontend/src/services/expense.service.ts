@@ -59,4 +59,26 @@ export const ExpenseService = {
         });
         await assertApiResponseOk(response, "Error deleting expense");
     },
+
+    uploadReceipt: async (id: number, file: File): Promise<Expense> => {
+        const body = new FormData();
+        body.append("file", file);
+        const response = await apiFetch(`/api/v1/expenses/${id}/receipt`, {
+            method: "POST",
+            body,
+        });
+        await assertApiResponseOk(response, "Error uploading receipt");
+        return await response.json();
+    },
+
+    downloadReceipt: async (id: number): Promise<{ blob: Blob; filename: string }> => {
+        const response = await apiFetch(`/api/v1/expenses/${id}/receipt`, {
+            method: "GET",
+            cache: "no-store",
+        });
+        await assertApiResponseOk(response, "Error downloading receipt");
+        const filename = response.headers.get("Content-Disposition")?.match(/filename="([^"]+)"/)?.[1]
+            ?? `justificante-${id}`;
+        return { blob: await response.blob(), filename };
+    },
 };

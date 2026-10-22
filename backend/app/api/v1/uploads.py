@@ -67,7 +67,7 @@ def read_media(
     # Quality evidence is only readable through its inspection or incident route,
     # where the feature entitlement and location capability are both checked.
     key_parts = normalized.split("/", 3)
-    if len(key_parts) >= 3 and key_parts[0] == "company" and key_parts[2] == "quality-evidence":
+    if len(key_parts) >= 3 and key_parts[0] == "company" and key_parts[2] in {"quality-evidence", "expense-receipts"}:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Media not found",
