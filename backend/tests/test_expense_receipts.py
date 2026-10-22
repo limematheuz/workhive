@@ -4,6 +4,8 @@ from io import BytesIO
 from PIL import Image
 
 from app.models.expense import Expense
+from app.models.external_access_grant import ExternalAccessGrant
+from app.models.role import Role
 from tests.test_client_permission_authorization import (
     _assign_company_profile,
     _headers,
@@ -137,3 +139,41 @@ def test_receipt_rejects_mismatched_or_invalid_file_and_reserved_reference(clien
     assert downloaded_image.status_code == 200
     assert downloaded_image.content == image.getvalue()
     assert downloaded_image.headers["content-type"] == "image/png"
+
+
+def test_accountant_can_download_receipt_but_cannot_upload_or_cross_tenants(client, db):
+    company = _company(db, "Expense accountant owner")
+    owner = _admin(db, company)
+    expense = _expense(db, company, owner)
+    other_company = _company(db, "Expense accountant other")
+    other_owner = _admin(db, other_company)
+    other_expense = _expense(db, other_company, other_owner)
+    portal_role = db.query(Role).filter(Role.name == "external_portal").one()
+    accountant = _user(db, company, "expense-accountant", role_id=portal_role.id)
+    grant = ExternalAccessGrant(
+        company_id=company.id,
+        user_id=accountant.id,
+        access_type="accountant",
+        status="active",
+    )
+    db.add(grant)
+    db.commit()
+
+    path = f"/api/v1/expenses/{expense.id}/receipt"
+    assert client.post(
+        path, headers=_headers(owner), files={"file": ("ticket.pdf", PDF, "application/pdf")}
+    ).status_code == 201
+    accountant_headers = _headers(accountant)
+    accountant_download = client.get(path, headers=accountant_headers)
+    assert accountant_download.status_code == 200, accountant_download.text
+    assert accountant_download.content == PDF
+    assert client.post(
+        path, headers=accountant_headers, files={"file": ("another.pdf", PDF, "application/pdf")}
+    ).status_code == 403
+    assert client.get(
+        f"/api/v1/expenses/{other_expense.id}/receipt", headers=accountant_headers
+    ).status_code == 404
+
+    grant.status = "revoked"
+    db.commit()
+    assert client.get(path, headers=accountant_headers).status_code == 403

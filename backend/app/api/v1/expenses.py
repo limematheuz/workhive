@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.api.deps import (
+    ActiveApplicationUser,
     ActiveFinanceManager,
     ActiveUser,
     AsyncActiveFinancialReader,
@@ -141,7 +142,7 @@ def upload_expense_receipt(
 def download_expense_receipt(
     expense_id: int,
     db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    current_user: User = ActiveApplicationUser,
 ):
     _require_company_admin(current_user)
     stored, filename = expense_receipt_service.download_receipt(
