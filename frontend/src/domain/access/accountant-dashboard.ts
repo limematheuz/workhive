@@ -1,5 +1,6 @@
 const ACCOUNTANT_ALLOWED_DASHBOARD_PATHS = new Set([
     "/dashboard/analytics",
+    "/dashboard/expenses",
     "/dashboard/fiscal-summary",
     "/dashboard/profile",
 ]);

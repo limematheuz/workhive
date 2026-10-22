@@ -23,7 +23,7 @@ export type SidebarNavUserFlags = {
 };
 
 const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
-const ACCOUNTANT_HREFS = new Set(["/dashboard/analytics", "/dashboard/fiscal-summary"]);
+const ACCOUNTANT_HREFS = new Set(["/dashboard/analytics", "/dashboard/expenses", "/dashboard/fiscal-summary"]);
 const NAVIGATION_FEATURES: Record<string, string> = {
     "/dashboard/clients": "features.clients", "/dashboard/locations": "features.locations", "/dashboard/documents": "features.locations", "/dashboard/assets": "features.locations", "/dashboard/inventory": "features.inventory", "/dashboard/tasks": "features.work_orders", "/dashboard/work-orders": "features.work_orders", "/dashboard/live-work": "features.time_tracking", "/dashboard/time-corrections": "features.time_tracking", "/dashboard/reservations": "features.planning", "/dashboard/organization": "features.organization", "/dashboard/api-access": "features.api", "/dashboard/quotes": "features.quotes", "/dashboard/contracts": "features.quotes", "/dashboard/invoices": "features.invoices", "/dashboard/quality": "features.quality",
 };
