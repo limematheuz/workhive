@@ -147,17 +147,17 @@ function ReservationsPageContent() {
     );
 
     useEffect(() => {
-        if (!hasPlanningAccess) return;
+        if (!canManage || !hasPlanningAccess) return;
         loadData(false);
-    }, [hasPlanningAccess, loadData]);
+    }, [canManage, hasPlanningAccess, loadData]);
 
     useBackgroundPolling(
-        () => (hasPlanningAccess ? loadData(true) : undefined),
+        () => (canManage && hasPlanningAccess ? loadData(true) : undefined),
         POLL_INTERVALS.reservations,
         POLL_INTERVALS.realtimeSafety,
     );
     useRealtimeInvalidation(["calendar", "reservations", "tasks"], () => {
-        if (hasPlanningAccess) void loadData(true);
+        if (canManage && hasPlanningAccess) void loadData(true);
     });
 
     const locationMap = useMemo(
