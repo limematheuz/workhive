@@ -11,6 +11,7 @@ import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
+import { ApiResponseError } from "@/lib/api";
 import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
@@ -21,6 +22,7 @@ import {
     getExpenseSaveFeedback,
     type ExpenseFormState,
 } from "@/lib/expense-form";
+import { getExpenseReceiptFeedback, isExpectedReceiptRejection } from "@/lib/expense-receipt";
 import { useUser } from "@/lib/user-context";
 import { ExpenseService } from "@/services/expense.service";
 import { ClientService } from "@/services/client.service";
@@ -166,7 +168,9 @@ export default function ExpensesPage() {
             }
             await loadExpenses();
         } catch (error) {
-            console.error("Error saving expense", error);
+            if (!(error instanceof ApiResponseError && error.status < 500)) {
+                console.error("Error saving expense", error);
+            }
             toast.error(getExpenseSaveFeedback(error, text.error_save));
         } finally {
             setSaving(false);
@@ -194,8 +198,10 @@ export default function ExpensesPage() {
             setReceiptExpense(null);
             await loadExpenses();
         } catch (error) {
-            console.error("Error uploading expense receipt", error);
-            toast.error(getExpenseSaveFeedback(error, text.receipt_upload_error));
+            if (!isExpectedReceiptRejection(error)) {
+                console.error("Error uploading expense receipt", error);
+            }
+            toast.error(getExpenseReceiptFeedback(error, text.receipt_upload_error));
         } finally {
             setReceiptUploading(false);
         }
