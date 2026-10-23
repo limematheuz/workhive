@@ -827,6 +827,45 @@ def test_viewer_cannot_create_reservations_and_tasks_can_be_standalone(db):
     assert task.service_context == "standalone"
 
 
+def test_same_company_manager_can_edit_reservation_but_viewer_cannot(db):
+    company = _company(db, "SameCompanyRoles", "SAMECOMPANYROLES")
+    location = _location(db, company)
+    manager = _user(db, company, role_id=2, email="manager@same-company-roles.test")
+    viewer = _user(db, company, role_id=3, email="viewer@same-company-roles.test")
+    reservation = reservation_service.create_reservation(
+        db,
+        manager,
+        ReservationCreate(
+            location_id=location.id,
+            check_in_at=datetime(2026, 11, 2, 16, 0, tzinfo=timezone.utc),
+            check_out_at=datetime(2026, 11, 4, 11, 0, tzinfo=timezone.utc),
+            cleaning_required=False,
+        ),
+    )
+
+    for change in [
+        lambda: reservation_service.update_reservation(
+            db, viewer, reservation.id, ReservationUpdate(notes="Unauthorized")
+        ),
+        lambda: reservation_service.delete_reservation(db, viewer, reservation.id),
+    ]:
+        with pytest.raises(HTTPException) as denied:
+            change()
+        assert denied.value.status_code == 403
+    db.refresh(reservation)
+    assert reservation.notes is None
+    assert reservation_service.get_reservation(db, manager, reservation.id).id == reservation.id
+
+    updated = reservation_service.update_reservation(
+        db, manager, reservation.id, ReservationUpdate(notes="Manager update")
+    )
+    assert updated.notes == "Manager update"
+    cancelled = reservation_service.update_reservation(
+        db, manager, reservation.id, ReservationUpdate(status="cancelled")
+    )
+    assert cancelled.status == "cancelled"
+
+
 def test_service_provider_cannot_link_reservations_when_creating_manual_work(db):
     issuer = _company(db, "Inmobiliaria", "INMOTASK")
     receiver = _company(db, "Limpiezas", "CLEANTASK")
