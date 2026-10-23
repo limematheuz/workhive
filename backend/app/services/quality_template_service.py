@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.quality_template import QualityInspectionTemplate, QualityInspectionTemplateItem
