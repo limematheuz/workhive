@@ -14,6 +14,7 @@ import { Reservation } from "@/types/reservation";
 import { ReservationService } from "@/services/reservation.service";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { getTaskDeletionErrorMessage } from "@/lib/task-deletion";
 import {
     buildScheduledStartAt,
     buildTaskUpdatePayload,
@@ -480,7 +481,7 @@ export function useTaskCrud({
             loadTasks();
         } catch (error: unknown) {
             console.error("Error deleting task", error);
-            toast.error(getErrorMessage(error, "Error al eliminar la tarea."));
+            toast.error(getTaskDeletionErrorMessage(error, dict.tasks.delete_confirm_dialog));
         } finally {
             setIsDeletingTask(false);
         }

@@ -166,15 +166,7 @@ export const TaskService = {
         const response = await apiFetch(`/api/v1/task-items/${id}`, {
             method: "DELETE"
         })
-        // DELETE is idempotent. A stale Kanban card may point to a task that was
-        // already removed by reservation reconciliation or another open tab.
-        if (response.status === 404) {
-            return
-        }
-        if (!response.ok) {
-            const errMsg = await extractErrorMessage(response, "Error deleting task item")
-            throw new Error(errMsg)
-        }
+        await assertApiResponseOk(response, "Error deleting task item")
         notifyTasksChanged()
     },
 

@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
 from app.core.security import create_access_token
 from app.models.company import Company
 from app.models.location import Location
+from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
+from app.models.task_report import TaskReport
 from app.models.task_structure import (
     TaskAssignment,
     TaskChecklistAssignment,
     TaskChecklistItem,
 )
 from app.models.user import User
+from app.models.work_session import WorkSession
 
 
 def _company(db, name: str) -> Company:
@@ -149,6 +156,110 @@ def test_invoiced_task_cannot_be_deleted_from_modal_actions(client, db):
     )
     assert deleted.status_code == 400
     assert "invoiced" in deleted.json()["detail"].lower()
+
+
+@pytest.mark.parametrize("activity", ["completed", "work_session", "field_report"])
+def test_reservation_task_with_recorded_work_cannot_be_deleted_directly(client, db, activity):
+    company = _company(db, f"TaskHistory{activity}")
+    admin = _user(db, company, f"admin-{activity}@task-history.test", 1)
+    other_company = _company(db, f"OtherTaskHistory{activity}")
+    other_admin = _user(db, other_company, f"other-{activity}@task-history.test", 1)
+    location = _location(db, company)
+    check_in = datetime.now(timezone.utc) + timedelta(days=1)
+    reservation = Reservation(
+        location_id=location.id,
+        owner_company_id=company.id,
+        check_in_at=check_in,
+        check_out_at=check_in + timedelta(days=2),
+        guest_count=1,
+    )
+    db.add(reservation)
+    db.commit()
+
+    created = client.post(
+        "/api/v1/task-items/",
+        headers=_headers(admin),
+        json={
+            "title": "Recorded reservation work",
+            "description": "- [x] Done" if activity == "completed" else "- [ ] Pending",
+            "unit": "service",
+            "location_id": location.id,
+            "status": "completed" if activity == "completed" else "accepted",
+        },
+    )
+    assert created.status_code == 201, created.text
+    task_id = created.json()["id"]
+    task = db.get(TaskItem, task_id)
+    task.checkout_reservation_id = reservation.id
+    if activity == "work_session":
+        db.add(WorkSession(
+            user_id=admin.id,
+            location_id=location.id,
+            task_item_id=task_id,
+            start_time=datetime.now(timezone.utc),
+        ))
+    elif activity == "field_report":
+        db.add(TaskReport(
+            task_item_id=task_id,
+            reporter_user_id=admin.id,
+            reporter_company_id=company.id,
+            client_event_id="task-direct-delete-evidence",
+            report_type="note",
+            reporter_name=admin.full_name,
+            description="Recorded field work",
+        ))
+    db.commit()
+
+    denied = client.delete(f"/api/v1/task-items/{task_id}", headers=_headers(other_admin))
+    assert denied.status_code == 404
+
+    blocked = client.delete(f"/api/v1/task-items/{task_id}", headers=_headers(admin))
+    assert blocked.status_code == 409
+    assert blocked.json()["detail"]["code"] == "RESERVATION_TASK_HAS_RECORDED_WORK"
+    db.expire_all()
+    assert db.get(TaskItem, task_id).checkout_reservation_id == reservation.id
+    if activity == "work_session":
+        assert db.query(WorkSession).filter_by(task_item_id=task_id).count() == 1
+    elif activity == "field_report":
+        assert db.query(TaskReport).filter_by(task_item_id=task_id).count() == 1
+
+
+def test_reservation_task_without_activity_can_still_be_deleted(client, db):
+    company = _company(db, "TaskWithoutActivity")
+    admin = _user(db, company, "admin@task-no-activity.test", 1)
+    location = _location(db, company)
+    check_in = datetime.now(timezone.utc) + timedelta(days=1)
+    reservation = Reservation(
+        location_id=location.id,
+        owner_company_id=company.id,
+        check_in_at=check_in,
+        check_out_at=check_in + timedelta(days=2),
+        guest_count=1,
+    )
+    db.add(reservation)
+    db.commit()
+
+    created = client.post(
+        "/api/v1/task-items/",
+        headers=_headers(admin),
+        json={
+            "title": "Unstarted reservation work",
+            "description": "- [ ] Pending",
+            "unit": "service",
+            "location_id": location.id,
+            "status": "accepted",
+        },
+    )
+    assert created.status_code == 201, created.text
+    task_id = created.json()["id"]
+    task = db.get(TaskItem, task_id)
+    task.checkout_reservation_id = reservation.id
+    db.commit()
+
+    deleted = client.delete(f"/api/v1/task-items/{task_id}", headers=_headers(admin))
+    assert deleted.status_code == 204
+    assert db.get(TaskItem, task_id) is None
+    assert db.get(Reservation, reservation.id) is not None
 
 
 def test_modal_checklist_toggle_and_assign_persist_in_database(client, db):

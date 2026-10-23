@@ -1557,7 +1557,10 @@
       "title": "Delete Task",
       "description": "Are you sure you want to delete the task \"{title}\"? This action cannot be undone.",
       "confirm": "Delete",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "blocked_recorded_work": "This task cannot be deleted: it has recorded work and must remain linked to the reservation.",
+      "not_found": "This task is no longer available or you do not have permission to delete it.",
+      "error": "The task could not be deleted."
     },
     "filters": "Filters",
     "filter_all_locations": "All locations",

@@ -1557,7 +1557,10 @@
       "title": "Eliminar Tarea",
       "description": "¿Estás seguro de que deseas eliminar la tarea \"{title}\"? Esta acción no se puede deshacer.",
       "confirm": "Eliminar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "blocked_recorded_work": "No se puede eliminar esta tarea: tiene trabajo registrado y debe conservarse vinculada a la reserva.",
+      "not_found": "La tarea ya no está disponible o no tienes permiso para eliminarla.",
+      "error": "No se pudo eliminar la tarea."
     },
     "filters": "Filtros",
     "filter_all_locations": "Todas las ubicaciones",
