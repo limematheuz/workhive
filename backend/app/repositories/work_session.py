@@ -168,6 +168,15 @@ def get_sessions_by_task(db: Session, task_item_id: int) -> list[WorkSession]:
     )
 
 
+def has_sessions_for_task(db: Session, task_item_id: int) -> bool:
+    return (
+        db.query(WorkSession.id)
+        .filter(WorkSession.task_item_id == task_item_id)
+        .first()
+        is not None
+    )
+
+
 def get_sessions_by_tasks(db: Session, task_item_ids: list[int]) -> list[WorkSession]:
     if not task_item_ids:
         return []

@@ -3234,7 +3234,7 @@
       },
       "cancel_dialog": {
         "title": "Cancel Reservation?",
-        "description": "Are you sure you want to cancel this reservation? Uncompleted linked tasks will be cancelled.",
+        "description": "Cancel this reservation? Tasks with no recorded activity will be removed. Tasks with work, time entries or evidence stay linked to the cancelled reservation. Invoiced work prevents cancellation.",
         "confirm": "Yes, cancel",
         "cancel": "No, keep",
         "success": "Reservation cancelled successfully",

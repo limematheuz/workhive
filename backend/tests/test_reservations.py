@@ -12,9 +12,12 @@ from app.models.location import Location
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.location_template import LocationTemplate
 from app.models.task_item import TaskItem
+from app.models.task_report import TaskReport
+from app.models.task_structure import TaskChecklistItem
 from app.models.template_task import TemplateTask
 from app.models.user import User
-from app.schemas.reservation import ReservationCreate
+from app.models.work_session import WorkSession
+from app.schemas.reservation import ReservationCreate, ReservationUpdate
 from app.schemas.location import LocationUpdate
 from app.schemas.task_item import (
     TaskAcceptRequest,
@@ -100,6 +103,189 @@ def _reservation_data(location_id: int) -> ReservationCreate:
         guest_count=5,
         cleaning_required=True,
     )
+
+
+@pytest.mark.parametrize(
+    ("task_status", "with_session"),
+    [("progress", False), ("review", False), ("completed", False), ("accepted", True)],
+)
+def test_cancelling_reservation_preserves_started_work_and_its_sessions(
+    db, task_status, with_session
+):
+    company = _company(db, "Preserved cleaning", f"PRESERVE{task_status}{with_session}")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email=f"admin-{task_status}-{with_session}@test.com")
+    reservation = reservation_service.create_reservation(
+        db, admin, _reservation_data(location.id)
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+    task.status = task_status
+    session_id = None
+    if with_session:
+        work_session = WorkSession(
+            user_id=admin.id,
+            location_id=location.id,
+            task_item_id=task.id,
+            start_time=datetime.now(timezone.utc),
+        )
+        db.add(work_session)
+    db.commit()
+    if with_session:
+        session_id = work_session.id
+
+    updated = reservation_service.update_reservation(
+        db, admin, reservation.id, ReservationUpdate(status="cancelled")
+    )
+
+    db.expire_all()
+    assert updated.status == "cancelled"
+    preserved_task = db.get(TaskItem, task.id)
+    assert preserved_task is not None
+    assert preserved_task.checkout_reservation_id == reservation.id
+    assert preserved_task.status == task_status
+    if session_id is not None:
+        assert db.get(WorkSession, session_id).task_item_id == task.id
+
+
+def test_cancelling_reservation_removes_only_unstarted_work(db):
+    company = _company(db, "Pending cleaning", "PENDINGCANCEL")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="admin-pending-cancel@test.com")
+    reservation = reservation_service.create_reservation(
+        db, admin, _reservation_data(location.id)
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+    task_id = task.id
+
+    updated = reservation_service.update_reservation(
+        db, admin, reservation.id, ReservationUpdate(status="cancelled")
+    )
+
+    assert updated.status == "cancelled"
+    assert db.get(TaskItem, task_id) is None
+
+
+@pytest.mark.parametrize("activity", ["partial_checklist", "field_report"])
+def test_cancelling_reservation_preserves_work_evidence_without_progress_status(db, activity):
+    company = _company(db, "Recorded cleaning", f"RECORDED{activity}")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email=f"admin-{activity}@test.com")
+    reservation = reservation_service.create_reservation(
+        db, admin, _reservation_data(location.id)
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+    assert task.status == "accepted"
+    if activity == "partial_checklist":
+        db.add(TaskChecklistItem(
+            task_id=task.id,
+            position=0,
+            text="QA first step",
+            completed=True,
+        ))
+    else:
+        db.add(TaskReport(
+            task_item_id=task.id,
+            reporter_user_id=admin.id,
+            reporter_company_id=company.id,
+            client_event_id="reservation-cancel-evidence",
+            report_type="note",
+            reporter_name=admin.full_name,
+            description="QA work already recorded",
+        ))
+    db.commit()
+
+    reservation_service.update_reservation(
+        db, admin, reservation.id, ReservationUpdate(status="cancelled")
+    )
+
+    db.expire_all()
+    preserved_task = db.get(TaskItem, task.id)
+    assert preserved_task is not None
+    assert preserved_task.checkout_reservation_id == reservation.id
+    if activity == "partial_checklist":
+        assert preserved_task.checklist_items[0].completed is True
+    else:
+        assert db.query(TaskReport).filter_by(task_item_id=task.id).count() == 1
+
+
+@pytest.mark.parametrize("operation", ["delete", "disable_cleaning"])
+def test_started_work_cannot_be_removed_through_other_reservation_actions(db, operation):
+    company = _company(db, "Protected cleaning", f"PROTECT{operation}")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email=f"admin-{operation}@test.com")
+    reservation = reservation_service.create_reservation(
+        db, admin, _reservation_data(location.id)
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+    task.status = "completed"
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        if operation == "delete":
+            reservation_service.delete_reservation(db, admin, reservation.id)
+        else:
+            reservation_service.update_reservation(
+                db, admin, reservation.id, ReservationUpdate(cleaning_required=False)
+            )
+
+    assert error.value.status_code == 409
+    db.expire_all()
+    assert db.get(TaskItem, task.id).checkout_reservation_id == reservation.id
+    assert db.get(TaskItem, task.id).status == "completed"
+
+
+def test_viewer_cannot_cancel_reservation_with_started_work(db):
+    company = _company(db, "Protected booking", "PROTECTEDVIEWER")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="admin-protected-viewer@test.com")
+    viewer = _user(db, company, role_id=3, email="viewer-protected@test.com")
+    reservation = reservation_service.create_reservation(
+        db, admin, _reservation_data(location.id)
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+    task.status = "completed"
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        reservation_service.update_reservation(
+            db, viewer, reservation.id, ReservationUpdate(status="cancelled")
+        )
+
+    assert error.value.status_code == 403
+    db.expire_all()
+    assert reservation.status != "cancelled"
+    assert db.get(TaskItem, task.id).checkout_reservation_id == reservation.id
+
+
+def test_provider_change_cannot_discard_pending_task_with_field_report(db):
+    company = _company(db, "Reported cleaning", "REPORTEDPROVIDER")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="admin-reported-provider@test.com")
+    reservation = reservation_service.create_reservation(
+        db, admin, _reservation_data(location.id)
+    )
+    task = db.query(TaskItem).filter_by(checkout_reservation_id=reservation.id).one()
+    task.status = "pending"
+    db.add(TaskReport(
+        task_item_id=task.id,
+        reporter_user_id=admin.id,
+        reporter_company_id=company.id,
+        client_event_id="provider-change-evidence",
+        report_type="note",
+        reporter_name=admin.full_name,
+        description="QA report before provider change",
+    ))
+    db.commit()
+
+    with pytest.raises(HTTPException) as error:
+        reservation_service._discard_checkout_task_for_assignment_change(
+            db, reservation, task, True
+        )
+
+    assert error.value.status_code == 409
+    db.expire_all()
+    assert db.get(TaskItem, task.id) is not None
+    assert db.query(TaskReport).filter_by(task_item_id=task.id).count() == 1
 
 
 def test_shared_company_admin_can_manage_reservations(db):

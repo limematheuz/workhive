@@ -9,6 +9,7 @@ import {
     filterReservations,
     getReservableLocations,
     getReservationProviderOptions,
+    hasReservationCheckedOut,
 } from "../features/reservations/reservation-helpers.ts";
 import { reservationSaveErrorMessage } from "../features/reservations/reservation-errors.ts";
 import type { Location } from "../types/location.ts";
@@ -196,9 +197,40 @@ test("reservation filters enforce role visibility, search and cancelled visibili
         reservations: [hidden, assignedToCompany, cancelled, visible],
         locationMap,
         companyId,
-        filters: defaultFilters,
+        filters: { ...defaultFilters, date: "UPCOMING" },
         viewMode: "active",
     });
 
     assert.deepEqual(active.map(item => item.id), [2, 1]);
+});
+
+test("completed cleaning does not hide a future stay before checkout", () => {
+    const checkIn = new Date();
+    checkIn.setDate(checkIn.getDate() + 1);
+    const checkOut = new Date(checkIn);
+    checkOut.setDate(checkOut.getDate() + 2);
+    const futureStay = reservation({
+        cleaning_status: "completed",
+        check_in_at: checkIn.toISOString(),
+        check_out_at: checkOut.toISOString(),
+    });
+    assert.equal(hasReservationCheckedOut(futureStay), false);
+    const options = {
+        reservations: [futureStay],
+        locationMap: new Map([[1, location({ owner_company_id: 10 })]]),
+        companyId: 10,
+        filters: { ...defaultFilters, date: "UPCOMING" },
+    };
+
+    assert.deepEqual(filterReservations({ ...options, viewMode: "active" }).map(item => item.id), [1]);
+    assert.deepEqual(filterReservations({ ...options, viewMode: "history" }), []);
+    assert.deepEqual(
+        filterReservations({
+            ...options,
+            reservations: [{ ...futureStay, status: "cancelled" }],
+            filters: { ...defaultFilters, date: "UPCOMING", showCancelled: true },
+            viewMode: "history",
+        }).map(item => item.id),
+        [1],
+    );
 });

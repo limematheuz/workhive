@@ -3234,7 +3234,7 @@
       },
       "cancel_dialog": {
         "title": "¿Cancelar reserva?",
-        "description": "¿Estás seguro de que deseas cancelar esta reserva? Se cancelarán los servicios vinculados no completados.",
+        "description": "¿Cancelar esta reserva? Las tareas sin actividad se retirarán. Las tareas con trabajo, fichajes o evidencias se conservarán vinculadas a la reserva cancelada. El trabajo facturado impide la cancelación.",
         "confirm": "Sí, cancelar",
         "cancel": "No, mantener",
         "success": "Reserva cancelada con éxito",
