@@ -9,6 +9,7 @@ import { toast } from "@/lib/toast";
 import React from "react";
 import { ShieldAlert } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
+import { getTaskDeletionErrorMessage } from "@/lib/task-deletion";
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import {
     buildScheduledStartAt,
@@ -358,7 +359,7 @@ export function useOperationsCalendar({
             onTaskUpdate();
         } catch (error: unknown) {
             console.error("Error deleting task", error);
-            toast.error(getErrorMessage(error, "Error al eliminar la tarea."));
+            toast.error(getTaskDeletionErrorMessage(error, dict.tasks.delete_confirm_dialog));
         } finally {
             setIsDeletingTask(false);
         }

@@ -37,6 +37,7 @@ from app.services.task_work_completion_service import (
     finish_task_work,
     require_work_orders_feature as _require_work_orders_feature,
 )
+from app.services.task_work_activity_service import has_recorded_activity
 from app.services.task_item_read_service import (
     build_loaded_task_response,  # noqa: F401 - public compatibility re-export
     build_task_response,  # noqa: F401 - public compatibility re-export
@@ -679,6 +680,16 @@ def delete_task_item(db: Session, current_user: User, task_item_id: int) -> None
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete an invoiced task item",
+        )
+    if db_task_item.checkout_reservation_id is not None and has_recorded_activity(
+        db, db_task_item
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "RESERVATION_TASK_HAS_RECORDED_WORK",
+                "message": "Recorded work must remain linked to its reservation.",
+            },
         )
     calendar_sync_service.enqueue_task_deletion(db, db_task_item)
     task_item_repo.delete_task_item(db, db_task_item)
