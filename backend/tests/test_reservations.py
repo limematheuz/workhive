@@ -11,6 +11,7 @@ from app.models.google_calendar_connection import GoogleCalendarConnection
 from app.models.location import Location
 from app.models.location_company_access import LocationCompanyAccess
 from app.models.location_template import LocationTemplate
+from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.task_report import TaskReport
 from app.models.task_structure import TaskChecklistItem
@@ -483,6 +484,76 @@ def test_reservation_overlap_is_rejected(db):
         reservation_service.create_reservation(db, admin, data)
 
     assert error.value.status_code == 409
+
+
+def test_reservation_availability_accepts_touching_boundaries_but_rejects_real_overlap(db):
+    company = _company(db, "Availability", "AVAILABILITY")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="admin@availability.test")
+    check_in = datetime(2026, 11, 2, 16, 0, tzinfo=timezone.utc)
+    check_out = datetime(2026, 11, 4, 11, 0, tzinfo=timezone.utc)
+
+    def book(start: datetime, end: datetime):
+        return reservation_service.create_reservation(
+            db,
+            admin,
+            ReservationCreate(
+                location_id=location.id,
+                check_in_at=start,
+                check_out_at=end,
+                cleaning_required=False,
+            ),
+        )
+
+    first = book(check_in, check_out)
+    before = book(check_in - timedelta(days=1), check_in)
+    after = book(check_out, check_out + timedelta(days=1))
+    assert len({first.id, before.id, after.id}) == 3
+
+    with pytest.raises(HTTPException) as left_overlap:
+        book(check_in - timedelta(days=1), check_in + timedelta(microseconds=1))
+    with pytest.raises(HTTPException) as right_overlap:
+        book(check_out - timedelta(microseconds=1), check_out + timedelta(days=1))
+    assert left_overlap.value.status_code == 409
+    assert right_overlap.value.status_code == 409
+    assert db.query(Reservation).filter_by(location_id=location.id).count() == 3
+
+
+def test_reservation_availability_excludes_itself_and_releases_cancelled_stay(db):
+    company = _company(db, "AvailabilityUpdate", "AVAILABILITYUPDATE")
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="admin@availability-update.test")
+    check_in = datetime(2026, 11, 2, 16, 0, tzinfo=timezone.utc)
+    check_out = datetime(2026, 11, 4, 11, 0, tzinfo=timezone.utc)
+    first = reservation_service.create_reservation(
+        db,
+        admin,
+        ReservationCreate(
+            location_id=location.id,
+            check_in_at=check_in,
+            check_out_at=check_out,
+            cleaning_required=False,
+        ),
+    )
+
+    same_dates = reservation_service.update_reservation(
+        db, admin, first.id, ReservationUpdate(notes="Same stay dates")
+    )
+    assert same_dates.id == first.id
+    reservation_service.update_reservation(
+        db, admin, first.id, ReservationUpdate(status="cancelled")
+    )
+    replacement = reservation_service.create_reservation(
+        db,
+        admin,
+        ReservationCreate(
+            location_id=location.id,
+            check_in_at=check_in,
+            check_out_at=check_out,
+            cleaning_required=False,
+        ),
+    )
+    assert replacement.id != first.id
 
 
 def test_consecutive_external_reservations_create_independent_requests(db):
