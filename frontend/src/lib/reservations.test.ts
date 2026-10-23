@@ -129,6 +129,17 @@ test("reservation conflicts explain the correction in the selected language", ()
         reservationSaveErrorMessage(overlap, "en", "Could not save"),
         "These dates overlap another active reservation at this location. Review check-in and check-out.",
     );
+    const invalidRange = new Error(
+        "body: Value error, La fecha de salida (check-out) debe ser posterior a la fecha de entrada (check-in).",
+    );
+    assert.equal(
+        reservationSaveErrorMessage(invalidRange, "es", "No se pudo guardar"),
+        "La salida debe ser posterior a la entrada. Corrige las fechas o las horas.",
+    );
+    assert.equal(
+        reservationSaveErrorMessage(invalidRange, "en", "Could not save"),
+        "Check-out must be after check-in. Adjust the dates or times.",
+    );
     assert.equal(
         reservationSaveErrorMessage(new Error("Not enough permissions"), "es", "No se pudo guardar"),
         "Not enough permissions",
