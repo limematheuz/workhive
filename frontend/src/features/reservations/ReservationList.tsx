@@ -25,6 +25,7 @@ import {
     formatReservationDateTime,
     formatReservationTime,
 } from "./reservation-display";
+import { hasReservationCheckedOut } from "./reservation-helpers";
 
 const subscribeToTimeZone = () => () => {};
 const getBrowserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -162,9 +163,7 @@ function ReservationCard({
     const dateLocale = locale === "en" ? "en-US" : "es-ES";
     const statusClass =
         statusBadgeClass[reservation.status] || statusBadgeClass.confirmed;
-    const isFinished =
-        new Date(reservation.check_out_at) < new Date() ||
-        reservation.cleaning_status === "completed";
+    const isFinished = hasReservationCheckedOut(reservation);
 
     const statusLabel =
         reservation.status === "confirmed"

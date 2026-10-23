@@ -5,6 +5,7 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.models.task_item import TaskItem
+from app.models.task_report import TaskReport
 from app.models.location import Location
 from app.models.client import Client
 from app.models.reservation import Reservation
@@ -182,6 +183,15 @@ def update_task_item(
 def delete_task_item(db: Session, db_task_item: TaskItem) -> None:
     db.delete(db_task_item)
     db.flush()
+
+
+def has_reports_for_task(db: Session, task_item_id: int) -> bool:
+    return (
+        db.query(TaskReport.id)
+        .filter(TaskReport.task_item_id == task_item_id)
+        .first()
+        is not None
+    )
 
 
 def count_tasks_by_user(

@@ -8,6 +8,7 @@ from app.models.task_item import TaskItem
 from app.models.user import User
 from app.repositories import reservation as reservation_repo
 from app.repositories import task_item as task_item_repo
+from app.repositories import work_session as work_session_repo
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
 from app.services import task_lifecycle_notification_service  # noqa: F401 - compatibility re-export
 from app.services.reservation_mutation_access import ReservationMutationAccess, require_reservation_mutation_access
@@ -19,6 +20,7 @@ from app.services.reservation_tasks import (
     sync_location_reservation_chain,
 )
 from app.services.reservation_lifecycle_policy_service import (
+    linked_work_has_started,
     require_all_linked_work_removable,
     require_linked_work_removable,
     require_provider_change_allowed,
@@ -132,6 +134,10 @@ def dispatch_cleaning_request(db: Session, current_user: User, reservation_id: i
                 detail="The receiving company has already incorporated this request.",
             )
         if checkout_task and checkout_task.status == "rejected":
+            require_provider_change_allowed(
+                checkout_task,
+                has_persisted_activity=_has_linked_work_activity(db, checkout_task),
+            )
             task_item_repo.delete_task_item(db, checkout_task)
 
         ensure_location_access(
@@ -232,10 +238,21 @@ def _discard_checkout_task_for_assignment_change(
 ) -> TaskItem | None:
     if not assignment_changed or checkout_task is None:
         return checkout_task
-    require_provider_change_allowed(checkout_task)
+    require_provider_change_allowed(
+        checkout_task,
+        has_persisted_activity=_has_linked_work_activity(db, checkout_task),
+    )
     task_item_repo.delete_task_item(db, checkout_task)
     reservation.service_request_sent_at = None
     return None
+
+
+def _has_linked_work_activity(db: Session, task: TaskItem) -> bool:
+    return (
+        linked_work_has_started(task)
+        or work_session_repo.has_sessions_for_task(db, task.id)
+        or task_item_repo.has_reports_for_task(db, task.id)
+    )
 
 
 def _cancel_updated_reservation(
@@ -245,7 +262,8 @@ def _cancel_updated_reservation(
 ) -> Reservation:
     if checkout_task:
         require_linked_work_removable(checkout_task, operation="cancel")
-        task_item_repo.delete_task_item(db, checkout_task)
+        if not _has_linked_work_activity(db, checkout_task):
+            task_item_repo.delete_task_item(db, checkout_task)
     sync_location_reservation_chain(db, reservation.location_id)
     db.commit()
     db.refresh(reservation)
@@ -311,7 +329,11 @@ def _remove_updated_reservation_cleaning(
 ) -> None:
     if not checkout_task:
         return
-    require_linked_work_removable(checkout_task, operation="disable_cleaning")
+    require_linked_work_removable(
+        checkout_task,
+        operation="disable_cleaning",
+        has_persisted_activity=_has_linked_work_activity(db, checkout_task),
+    )
     task_item_repo.delete_task_item(db, checkout_task)
     reservation.service_request_sent_at = None
     db.add(reservation)
@@ -406,7 +428,15 @@ def delete_reservation(db: Session, current_user: User, reservation_id: int, *, 
             .filter(TaskItem.checkout_reservation_id == reservation.id)
             .all()
         )
-        require_all_linked_work_removable(checkout_tasks, operation="delete")
+        require_all_linked_work_removable(
+            checkout_tasks,
+            operation="delete",
+            task_ids_with_activity={
+                task.id
+                for task in checkout_tasks
+                if _has_linked_work_activity(db, task)
+            },
+        )
         for task in checkout_tasks:
             task_item_repo.delete_task_item(db, task)
         reservation_repo.delete_reservation(db, reservation)

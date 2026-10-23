@@ -8,6 +8,10 @@ import type {
     ReservationViewMode,
 } from "./types";
 
+export function hasReservationCheckedOut(reservation: Reservation, now = new Date()): boolean {
+    return new Date(reservation.check_out_at) < now;
+}
+
 export function toLocalInput(date: Date | string): string {
     const value = typeof date === "string" ? new Date(date) : date;
     const offset = value.getTimezoneOffset() * 60_000;
@@ -205,10 +209,9 @@ export function filterReservations({
 
     const matchesViewAndDate = (reservation: Reservation) => {
         const checkOut = new Date(reservation.check_out_at);
-        const isPast = checkOut < new Date();
-        const isWorkDone = reservation.cleaning_status === "completed";
+        const isPast = hasReservationCheckedOut(reservation);
         const isCancelled = reservation.status === "cancelled";
-        const isHistorical = isPast || isWorkDone || isCancelled;
+        const isHistorical = isPast || isCancelled;
 
         if (viewMode === "history") return isHistorical;
         if (isHistorical) return false;
