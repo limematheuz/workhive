@@ -565,6 +565,66 @@ def test_start_work_repairs_an_existing_session_and_task_status(db):
     ) == 1
 
 
+@pytest.mark.parametrize("with_pause", [False, True])
+def test_start_work_closes_duplicate_active_sessions_without_losing_current_work(db, with_pause):
+    company = _company(db, "DuplicateClockIn")
+    manager = _user(db, company, "manager@duplicate-clock-in.test", role_id=2)
+    worker = _user(db, company, "worker@duplicate-clock-in.test", role_id=3)
+    location = Location(
+        name="Casa reloj duplicado",
+        address="Calle Reloj 1",
+        city="Girona",
+        managing_company_id=company.id,
+    )
+    db.add(location)
+    db.flush()
+    task = TaskItem(
+        title="Reparar fichajes duplicados",
+        description=f"[ ] Revisar casa (@{worker.id}:Viewer:pending)",
+        unit="servicio",
+        company_id=company.id,
+        location_id=location.id,
+        user_id=manager.id,
+        status="accepted",
+    )
+    db.add(task)
+    db.flush()
+    earlier = WorkSession(
+        user_id=worker.id,
+        location_id=location.id,
+        task_item_id=task.id,
+        start_time=datetime.now(timezone.utc) - timedelta(minutes=10),
+    )
+    latest = WorkSession(
+        user_id=worker.id,
+        location_id=location.id,
+        task_item_id=task.id,
+        start_time=datetime.now(timezone.utc) - timedelta(minutes=5),
+    )
+    db.add_all([earlier, latest])
+    if with_pause:
+        db.flush()
+        earlier.paused_at = earlier.start_time
+        db.add(WorkSessionPause(
+            work_session_id=earlier.id,
+            started_at=earlier.start_time,
+        ))
+    db.commit()
+
+    repaired = _start_task_work(db, worker, task.id)
+
+    db.refresh(earlier)
+    db.refresh(latest)
+    assert repaired.status == "progress"
+    assert earlier.end_time == earlier.start_time
+    assert earlier.paused_at is None
+    if with_pause:
+        pause = db.query(WorkSessionPause).filter_by(work_session_id=earlier.id).one()
+        assert pause.ended_at == earlier.end_time
+    assert latest.end_time is None
+    assert work_session_service.get_active_session(db, worker.id).id == latest.id
+
+
 def test_manual_clock_out_resets_unfinished_viewer_assignment_to_pending(db):
     company = _company(db, "ClockOut")
     manager = _user(db, company, "manager@clockout.test", role_id=2)

@@ -34,10 +34,11 @@ from app.models.task_structure import TaskChecklistItem
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.task_work_completion_service import (
     complete_task_when_checklist_is_done as _complete_task_when_checklist_is_done,
-    finish_task_work,
+    finish_task_work,  # noqa: F401 - public compatibility re-export
     require_work_orders_feature as _require_work_orders_feature,
 )
 from app.services.task_work_activity_service import has_recorded_activity
+from app.services.work_session_pause_service import close_open_pause
 from app.services.task_item_read_service import (
     build_loaded_task_response,  # noqa: F401 - public compatibility re-export
     build_task_response,  # noqa: F401 - public compatibility re-export
