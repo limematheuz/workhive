@@ -7,7 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models.bank_reconciliation import BankReconciliation, BankStatementEntry
+from app.models.bank_reconciliation import BankStatementEntry
 from app.models.user import User
 from app.repositories import bank_reconciliation as bank_reconciliation_repo
 from app.repositories import customer_payment as customer_payment_repo
