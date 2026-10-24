@@ -16,6 +16,12 @@ test("organization and invitation flows use the shared English and Spanish dicti
     assert.equal(es.organization.tabs.people, "Personas");
     assert.equal(en.organization.actions.invite_person, "Invite person");
     assert.equal(es.organization.actions.invite_person, "Invitar persona");
+    assert.match(es.organization.invite_dialog.admin_notice, /precios y facturas/);
+    assert.match(en.organization.invite_dialog.admin_notice, /pricing and invoices/);
+    assert.match(es.organization.invite_dialog.admin_invitation_description, /administrador de esta empresa/);
+    assert.match(en.organization.invite_dialog.admin_invitation_description, /administrator of this company/);
+    assert.match(invitationDialog, /selectedRole\?\.roleName === "admin" \? copy\.admin_notice : copy\.notice/);
+    assert.match(invitationDialog, /selectedRole\?\.roleName === "admin" \? copy\.admin_invitation_description : copy\.description/);
     assert.equal(en.organization.profiles.permission_catalog["access.members.manage"], "Invite, update, suspend, and reactivate people");
     assert.equal(es.organization.profiles.permission_catalog["access.members.manage"], "Invitar, actualizar, suspender y reactivar personas");
     assert.equal(es.organization.profiles.select_category, "Seleccionar todo");

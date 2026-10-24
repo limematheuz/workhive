@@ -87,7 +87,7 @@ export function OrganizationInvitePersonDialog({
                             <UserPlus className="h-5 w-5" aria-hidden="true" />
                         </span>
                         <DialogTitle>{copy.title}</DialogTitle>
-                        <DialogDescription>{copy.description}</DialogDescription>
+                        <DialogDescription>{selectedRole?.roleName === "admin" ? copy.admin_invitation_description : copy.description}</DialogDescription>
                     </DialogHeader>
 
                     <div className="grid gap-4 sm:grid-cols-2">
@@ -136,7 +136,7 @@ export function OrganizationInvitePersonDialog({
 
                     <div className="flex items-start gap-3 rounded-xl border border-accent/15 bg-accent/5 p-3 text-xs leading-5 text-[var(--text-muted)]">
                         <Mail className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                        <p>{copy.notice}</p>
+                        <p>{selectedRole?.roleName === "admin" ? copy.admin_notice : copy.notice}</p>
                     </div>
 
                     <DialogFooter>

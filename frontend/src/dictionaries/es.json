@@ -2560,6 +2560,7 @@
     "invite_dialog": {
       "title": "Invitar persona",
       "description": "Recibirá un enlace seguro para crear su cuenta. Cuando lo complete, podrás asignarle equipos y permisos concretos.",
+      "admin_invitation_description": "Recibirá un enlace seguro para crear su cuenta como administrador de esta empresa.",
       "name": "Nombre",
       "name_placeholder": "Nombre y apellidos",
       "email": "Correo electrónico",
@@ -2567,6 +2568,7 @@
       "initial_type": "Tipo inicial",
       "select_type": "Selecciona un tipo",
       "notice": "La invitación no da acceso a precios, facturas ni analítica por sí sola. Esos accesos se definen después mediante perfiles y ámbito.",
+      "admin_notice": "Al activar su cuenta, esta persona tendrá acceso completo a la empresa, incluidos precios y facturas, y a la analítica disponible en su plan. Invita sólo a alguien de confianza.",
       "sent": "Invitación enviada. La persona aparecerá aquí cuando active su cuenta.",
       "send_error": "No se pudo enviar la invitación.",
       "admin_description": "Control total de la empresa.",
