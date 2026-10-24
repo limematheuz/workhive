@@ -10,6 +10,7 @@ import { ProfileStats } from "@/components/profile/ProfileStats";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { ProfileHistories } from "@/components/profile/ProfileHistories";
 import { PrivacyControls } from "@/components/profile/PrivacyControls";
+import { CompanyPlanSummary } from "@/components/profile/CompanyPlanSummary";
 import {
     Dialog,
     DialogContent,
@@ -19,6 +20,7 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
+import { canViewCompanyPlanSummary } from "@/lib/company-plan-summary";
 
 export default function ProfilePage() {
     const state = useProfile();
@@ -165,6 +167,10 @@ export default function ProfilePage() {
                         />
                     </div>
                 </section>
+            )}
+
+            {canViewCompanyPlanSummary(state.user) && state.user?.company_id != null && (
+                <CompanyPlanSummary companyId={state.user.company_id} />
             )}
 
             <PrivacyControls
