@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { assignmentPayload, buildAssignmentDrafts, hasInvalidDraftScopes, replaceDraftScope } from "./organization-assignment-drafts.ts";
+import { assignmentPayload, buildAssignmentDrafts, haveProfileAssignmentsChanged, hasInvalidDraftScopes, replaceDraftScope } from "./organization-assignment-drafts.ts";
 import type { OrganizationMember, PermissionProfile } from "../services/organization.service.ts";
 
 test("editing unrelated member fields preserves every scope and inactive assignment", () => {
@@ -35,4 +35,27 @@ test("empty, duplicate and unselected scopes fail closed", () => {
         assert.equal(hasInvalidDraftScopes([{ permission_profile_id: 1, scopes }]), true);
     }
     assert.deepEqual(buildAssignmentDrafts(null, []), []);
+});
+
+test("saving unrelated member fields does not replace permission profiles", () => {
+    const profiles = [{ id: 5, is_editable: true, is_active: true }] as PermissionProfile[];
+    const legacyMember = { profile_assignments: [] } as unknown as OrganizationMember;
+    assert.equal(haveProfileAssignmentsChanged(legacyMember, profiles, []), false);
+    assert.equal(haveProfileAssignmentsChanged(legacyMember, profiles, [{
+        permission_profile_id: 5, scopes: [{ scope_type: "company", scope_id: 3 }],
+    }]), true);
+
+    const configuredMember = { profile_assignments: [{
+        permission_profile_id: 5,
+        scopes: [{ id: 2, scope_type: "location", scope_id: 6 }, { id: 3, scope_type: "team", scope_id: 8 }],
+    }] } as OrganizationMember;
+    const unchanged = buildAssignmentDrafts(configuredMember, profiles);
+    assert.equal(haveProfileAssignmentsChanged(configuredMember, profiles, unchanged), false);
+    assert.equal(haveProfileAssignmentsChanged(configuredMember, profiles, [{
+        permission_profile_id: 5, scopes: [{ scope_type: "team", scope_id: 8 }, { scope_type: "location", scope_id: 6 }],
+    }]), false);
+    assert.equal(haveProfileAssignmentsChanged(configuredMember, profiles, [{
+        permission_profile_id: 5, scopes: [{ scope_type: "location", scope_id: 7 }],
+    }]), true);
+    assert.equal(haveProfileAssignmentsChanged(configuredMember, profiles, []), true);
 });

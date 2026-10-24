@@ -2567,6 +2567,7 @@
       "teams": "Equipos",
       "profiles_scope": "Perfiles y ámbito",
       "profiles_scope_description": "Puedes asignar varios ámbitos por perfil: empresa, departamentos, equipos o ubicaciones. Los permisos de todos los perfiles se suman; un ámbito de empresa incluye todos los datos de esa empresa.",
+      "legacy_profile_transition": "Al configurar perfiles, los permisos heredados del tipo de usuario pueden dejar de aplicarse. Comprueba que el nuevo perfil incluye todo lo que esta persona necesita antes de guardar.",
       "scope_location": "Ubicación",
       "add_scope": "Añadir ámbito",
       "remove_scope": "Quitar ámbito",

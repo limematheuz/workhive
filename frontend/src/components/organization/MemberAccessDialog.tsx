@@ -19,7 +19,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { createEditableLineKey } from "@/lib/editable-line-key";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
-import { assignmentPayload, buildAssignmentDrafts, hasInvalidDraftScopes, type AssignmentDraft } from "@/lib/organization-assignment-drafts";
+import { assignmentPayload, buildAssignmentDrafts, haveProfileAssignmentsChanged, hasInvalidDraftScopes, type AssignmentDraft } from "@/lib/organization-assignment-drafts";
 import { MemberProfileScopeFields } from "@/components/organization/MemberProfileScopeFields";
 import { LocationService, type Location } from "@/services/location.service";
 import {
@@ -87,6 +87,8 @@ export function MemberAccessDialog({
         () => profiles.filter((profile) => profile.is_editable && (profile.is_active || assignments.some(assignment => assignment.permission_profile_id === profile.id))),
         [profiles, assignments],
     );
+    const profileAssignmentsChanged = Boolean(member && haveProfileAssignmentsChanged(member, profiles, assignments));
+    const addingFirstProfile = Boolean(member?.legacy_role_name && member.profile_assignments.length === 0 && assignments.length > 0);
 
     const setProfileEnabled = (profileId: number, enabled: boolean) => {
         setAssignments((current) => enabled
@@ -108,7 +110,7 @@ export function MemberAccessDialog({
                 status: membershipStatus,
                 department_ids: departmentIds,
                 team_ids: teamIds,
-                profile_assignments: { assignments: assignmentPayload(assignments) },
+                profile_assignments: profileAssignmentsChanged ? { assignments: assignmentPayload(assignments) } : undefined,
             });
             await onSaved();
             toast.success(copy.updated);
@@ -188,6 +190,7 @@ export function MemberAccessDialog({
                                 </div>
                             );
                         })}
+                        {addingFirstProfile && <p role="status" className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-[var(--text-main)]">{copy.legacy_profile_transition}</p>}
                     </section>
 
                     <DialogFooter>

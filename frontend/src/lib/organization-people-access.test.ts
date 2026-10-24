@@ -107,7 +107,9 @@ test("organization teams use the shared table while permission profiles expose r
         "utf8",
     );
     assert.match(memberAccessDialog, /profile\.is_editable && \(profile\.is_active \|\| assignments\.some/);
-    assert.match(memberAccessDialog, /profile_assignments: \{ assignments: assignmentPayload\(assignments\) \}/);
+    assert.match(memberAccessDialog, /haveProfileAssignmentsChanged\(member, profiles, assignments\)/);
+    assert.match(memberAccessDialog, /profile_assignments: profileAssignmentsChanged \? \{ assignments: assignmentPayload\(assignments\) \} : undefined/);
+    assert.match(memberAccessDialog, /copy\.legacy_profile_transition/);
     assert.doesNotMatch(memberAccessDialog, /await OrganizationService\.replaceMemberProfileAssignments/);
 });
 

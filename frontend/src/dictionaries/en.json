@@ -2567,6 +2567,7 @@
       "teams": "Teams",
       "profiles_scope": "Profiles and scope",
       "profiles_scope_description": "Each profile can have multiple scopes: company, departments, teams, or locations. Permissions from all profiles add up; a company scope includes all data in that company.",
+      "legacy_profile_transition": "When profiles are configured, permissions inherited from the user type may stop applying. Check that the new profile includes everything this person needs before saving.",
       "scope_location": "Location",
       "add_scope": "Add scope",
       "remove_scope": "Remove scope",
