@@ -2478,7 +2478,9 @@
         "work": "Trabajo",
         "time": "Tiempo",
         "finance": "Finanzas",
-        "commercial": "Comercial"
+        "commercial": "Comercial",
+        "inventory": "Inventario",
+        "quality": "Calidad"
       },
       "permission_catalog": {
         "access.members.read": "Ver las personas de la empresa",
@@ -2504,6 +2506,18 @@
         "time.approve": "Revisar correcciones de fichajes",
         "finance.read": "Ver presupuestos, facturas, gastos y fiscalidad",
         "finance.manage": "Gestionar información financiera",
+        "labor_costs.read": "Ver costes laborales internos confidenciales",
+        "labor_costs.manage": "Configurar costes laborales internos confidenciales",
+        "inventory.read": "Ver proveedores, materiales y existencias",
+        "inventory.manage": "Gestionar proveedores, materiales, almacenes y movimientos de stock",
+        "quality.templates.read": "Ver plantillas de inspección",
+        "quality.templates.manage": "Crear y actualizar plantillas de inspección",
+        "quality.inspections.read": "Ver inspecciones de calidad",
+        "quality.inspections.manage": "Realizar y cerrar inspecciones de calidad",
+        "quality.incidents.read": "Ver incidencias y acciones correctivas",
+        "quality.incidents.manage": "Gestionar incidencias y acciones correctivas",
+        "quality.complaints.read": "Ver reclamaciones de clientes",
+        "quality.complaints.manage": "Gestionar reclamaciones de clientes",
         "unknown": "Permiso adicional de WorkHive"
       },
       "permission_guidance": {
@@ -2529,7 +2543,19 @@
         "time.manage": "Inicia y registra tiempo en el trabajo permitido.",
         "time.approve": "Revisa y decide las correcciones de fichajes dentro de las ubicaciones permitidas.",
         "finance.read": "Consulta presupuestos, facturas, gastos y registros fiscales.",
-        "finance.manage": "Crea y actualiza información financiera de la empresa."
+        "finance.manage": "Crea y actualiza información financiera de la empresa.",
+        "labor_costs.read": "Consulta los costes horarios internos confidenciales de la empresa.",
+        "labor_costs.manage": "Establece y modifica los costes horarios internos confidenciales de las personas.",
+        "inventory.read": "Consulta proveedores, el catálogo de materiales y las existencias de la empresa.",
+        "inventory.manage": "Gestiona proveedores, materiales, almacenes y movimientos de existencias.",
+        "quality.templates.read": "Consulta las plantillas utilizadas en inspecciones de calidad.",
+        "quality.templates.manage": "Crea y actualiza plantillas de inspección de calidad.",
+        "quality.inspections.read": "Consulta las inspecciones de calidad de la empresa.",
+        "quality.inspections.manage": "Realiza y cierra inspecciones de calidad.",
+        "quality.incidents.read": "Consulta incidencias de calidad y sus acciones correctivas.",
+        "quality.incidents.manage": "Gestiona incidencias de calidad y acciones correctivas.",
+        "quality.complaints.read": "Consulta reclamaciones de clientes.",
+        "quality.complaints.manage": "Gestiona reclamaciones de clientes y su seguimiento."
       }
     },
     "member_dialog": {
