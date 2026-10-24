@@ -37,6 +37,7 @@ from app.services import (
     task_item_service,
     template_task_service,
 )
+from tests.test_client_permission_authorization import _headers
 
 
 def _company(db, name: str, tax_id: str) -> Company:
@@ -864,6 +865,68 @@ def test_same_company_manager_can_edit_reservation_but_viewer_cannot(db):
         db, manager, reservation.id, ReservationUpdate(status="cancelled")
     )
     assert cancelled.status == "cancelled"
+
+
+def test_reservation_api_rejects_viewer_mutations_without_changing_the_stay(client, db):
+    company = _company(db, "API reservation permissions", "APIRESERVATION")
+    company.subscription_status = "active"
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="admin@api-reservation.test")
+    manager = _user(db, company, role_id=2, email="manager@api-reservation.test")
+    viewer = _user(db, company, role_id=3, email="viewer@api-reservation.test")
+    db.commit()
+    check_in_at = datetime.now(timezone.utc) + timedelta(days=2)
+    payload = ReservationCreate(
+        location_id=location.id,
+        check_in_at=check_in_at,
+        check_out_at=check_in_at + timedelta(days=2),
+        cleaning_required=False,
+    ).model_dump(mode="json")
+
+    denied_create = client.post(
+        "/api/v1/reservations/", headers=_headers(viewer), json=payload
+    )
+    assert denied_create.status_code == 403
+    assert db.query(Reservation).filter_by(location_id=location.id).count() == 0
+
+    created = client.post(
+        "/api/v1/reservations/", headers=_headers(admin), json=payload
+    )
+    assert created.status_code == 201
+    reservation_id = created.json()["id"]
+
+    denied_update = client.patch(
+        f"/api/v1/reservations/{reservation_id}",
+        headers=_headers(viewer),
+        json={"notes": "viewer change"},
+    )
+    denied_delete = client.delete(
+        f"/api/v1/reservations/{reservation_id}", headers=_headers(viewer)
+    )
+    denied_dispatch = client.post(
+        f"/api/v1/reservations/{reservation_id}/dispatch-cleaning",
+        headers=_headers(viewer),
+    )
+    assert denied_update.status_code == 403
+    assert denied_delete.status_code == 403
+    assert denied_dispatch.status_code == 403
+    db.expire_all()
+    reservation = db.query(Reservation).filter_by(id=reservation_id).one()
+    assert reservation.notes is None
+    assert reservation.status == "confirmed"
+
+    updated = client.patch(
+        f"/api/v1/reservations/{reservation_id}",
+        headers=_headers(manager),
+        json={"notes": "manager change"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["notes"] == "manager change"
+    removed = client.delete(
+        f"/api/v1/reservations/{reservation_id}", headers=_headers(manager)
+    )
+    assert removed.status_code == 204
+    assert db.query(Reservation).filter_by(id=reservation_id).first() is None
 
 
 def test_service_provider_cannot_link_reservations_when_creating_manual_work(db):
