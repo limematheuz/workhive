@@ -8,7 +8,7 @@ import { User } from "@/types/user";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { parseChecklist } from "./tasksListUtils";
+import { getTaskListDisplayStatus, parseChecklist } from "./tasksListUtils";
 
 interface TaskListCardProps {
     dict: Dictionary;
@@ -77,9 +77,11 @@ export function TaskListCard({
     getLocationName,
     dimmed = false,
 }: TaskListCardProps) {
-    const isCompleted = task.status === "completed";
-    const isProgress = task.status === "progress" || task.status === "in_progress";
-    const isReview = task.status === "review" || task.status === "in_review";
+    const displayStatus = getTaskListDisplayStatus(task.status);
+    const isCompleted = displayStatus === "completed";
+    const isProgress = displayStatus === "progress";
+    const isReview = displayStatus === "review";
+    const isAccepted = displayStatus === "accepted";
     const checklist = parseChecklist(task.description);
 
     const loc = locations.find(l => l.id === task.location_id);
@@ -93,11 +95,13 @@ export function TaskListCard({
           ? (dict.tasks?.filter_in_review || "In review")
           : isProgress
             ? (dict.profile?.tables?.status_in_progress || "In Progress")
+            : isAccepted
+              ? (dict.tasks?.filter_accepted || "Accepted")
             : (dict.profile?.tables?.status_pending || "Pending");
 
     const statusBadgeClass = isCompleted
         ? "border-accent/20 bg-accent/10 text-accent"
-        : isProgress || isReview
+        : isProgress || isReview || isAccepted
           ? "border-accent/20 bg-accent/10 text-accent"
           : "border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]";
 

@@ -161,6 +161,17 @@ test("task list filters prevent viewers from querying another user", () => {
 
     assert.deepEqual(
         buildTaskListFilters({
+            currentUser: manager,
+            activeTab: "list",
+            selectedLocationId: "",
+            selectedStatus: "accepted",
+            selectedUserId: "",
+        }),
+        { status: "accepted" },
+    );
+
+    assert.deepEqual(
+        buildTaskListFilters({
             currentUser: viewer,
             activeTab: "list",
             selectedLocationId: "50",
