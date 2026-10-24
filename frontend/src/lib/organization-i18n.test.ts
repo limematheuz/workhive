@@ -14,6 +14,9 @@ test("organization and invitation flows use the shared English and Spanish dicti
 
     assert.equal(en.organization.tabs.people, "People");
     assert.equal(es.organization.tabs.people, "Personas");
+    assert.match(es.organization.access_unavailable, /permisos/);
+    assert.match(en.organization.access_unavailable, /permission/);
+    assert.notEqual(es.organization.access_unavailable, es.organization.configuration_unavailable);
     assert.equal(en.organization.actions.invite_person, "Invite person");
     assert.equal(es.organization.actions.invite_person, "Invitar persona");
     assert.match(es.organization.invite_dialog.admin_notice, /precios y facturas/);

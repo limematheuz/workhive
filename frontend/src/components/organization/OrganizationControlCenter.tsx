@@ -249,7 +249,7 @@ export function OrganizationControlCenter() {
                 onChange={setTab}
             />
 
-            {loading ? <LoadingState /> : loadError || !allowedTabs.length ? <RestrictedOrganizationState message={loadError || copy.configuration_unavailable} /> : (
+            {loading ? <LoadingState /> : loadError || !allowedTabs.length ? <RestrictedOrganizationState message={loadError || copy.access_unavailable} /> : (
                 <>
                     {tab === "people" && <MembersTable members={data.members} departments={data.departments} teams={data.teams} invitations={data.invitations} onInvitationChanged={load} onSelect={member => canInvitePeople && setSelectedMember(member)} onDelete={setDeleteTarget} canDelete={canRemovePeople} currentUserId={user?.id} />}
                     {tab === "departments" && <OrganizationDepartmentsPanel departments={data.departments} onChanged={load} />}

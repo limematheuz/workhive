@@ -2220,6 +2220,7 @@
     "title": "Organization & access",
     "subtitle": "Define your internal structure and control what each person can do within their scope.",
     "configuration_unavailable": "Organization settings are only available inside a company.",
+    "access_unavailable": "Your account does not have permission to view this company's organization settings. If you need access, contact an administrator.",
     "load_error": "Could not load organization settings.",
     "loading": "Loading organization…",
     "tabs": {

@@ -56,6 +56,12 @@ test("organization enables invitations and uses the shared shadcn form primitive
     assert.match(invitationDialog, /useDictionary/);
 });
 
+test("organization distinguishes missing company context from missing permissions", () => {
+    assert.match(controlCenter, /if \(!companyId && !userLoading\) \{\s*return <RestrictedOrganizationState message=\{copy\.configuration_unavailable\}/);
+    assert.match(controlCenter, /loadError \|\| !allowedTabs\.length \? <RestrictedOrganizationState message=\{loadError \|\| copy\.access_unavailable\}/);
+    assert.doesNotMatch(controlCenter, /loadError \|\| copy\.configuration_unavailable/);
+});
+
 test("organization invitation status uses service calls and shadcn confirmation controls", () => {
     assert.match(controlCenter, /PendingInvitationsPanel/);
     assert.match(controlCenter, /UserService\.getInvitations/);
