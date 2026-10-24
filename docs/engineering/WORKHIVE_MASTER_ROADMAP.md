@@ -1,6 +1,6 @@
 # WorkHive — plan maestro de dominio, producto y entregas
 
-Actualizado: 26 de septiembre de 2026.
+Actualizado: 14 de octubre de 2026.
 
 Este es el único documento de referencia para el modelo Enterprise de WorkHive,
 el orden de producto y el estado comprobable de cada entrega. Sustituye los
@@ -38,14 +38,14 @@ como WorkHive Core solo cuando el caso real las exige.
 
 ## 2. Estado de publicación
 
-- ✅ Producción: `v1.6.6` (`ee738b3`), publicada desde `main` con imágenes
+- ✅ Producción: `v1.7.1` (`e82ab393`), publicada desde `main` con imágenes
   inmutables en ECR y despliegue SSM verificado. Backend, frontend, React
   Doctor, SAST, secretos y GitGuardian terminaron correctamente.
-- 🟡 `main` local contiene trabajo posterior a `origin/main`, todavía no
-  publicado. Las fases operativas, financieras y el gobierno comercial que se
-  describen abajo deben conservar este estado local hasta completar su revisión
-  visual autenticada y una publicación explícita. La asociación semanal,
-  agente CloudWatch y alarma se aplican en AWS como paso operativo separado.
+- ✅ Fase 4 — Ubicaciones Enterprise: validación visual autenticada local
+  completada el 11 de octubre con los recorridos completos, perfiles Admin,
+  Manager y Viewer, SSE y limpieza de datos QA. Los correctivos locales
+  posteriores a `v1.7.1` requieren una publicación explícita antes de poder
+  considerarlos disponibles en producción.
 - ✅ Seguimiento comercial y la paginación de Facturas y Presupuestos están
   publicados; el cambio inicial fue `07e0e83`.
 - ✅ Documentación unificada: este documento sustituye blueprint, roadmap y
@@ -404,43 +404,40 @@ como WorkHive Core solo cuando el caso real las exige.
 
 - ✅ Ubicaciones, perfiles operativos, zonas y acceso protegido ya existen.
 - ✅ La interfaz de Ubicaciones y el acceso rápido desde Clientes existen.
-- 🟡 Revalidación técnica local completada el 25 de septiembre: 21 regresiones
-  backend de ubicación, activos, zonas y contratos, y 598 pruebas frontend,
-  todas correctas. No sustituye la revisión visual autenticada en producción,
-  que sigue siendo la condición pendiente para cerrar esta fase.
-- 🟡 Contactos operativos por ubicación: cada local puede tener varias personas
+- ✅ Revalidación técnica y visual autenticada local completada el 11 de
+  octubre: se recorrieron cliente, contrato, ubicación, contactos, zonas,
+  riesgos, horarios, documentos y activos con Admin, Manager y Viewer. La
+  limpieza posterior archivó todos los datos QA creados para la prueba.
+- ✅ Contactos operativos por ubicación: cada local puede tener varias personas
   para operaciones, acceso, calidad o emergencias, con un contacto principal;
   no se confunden con los contactos comerciales o de facturación de la cuenta.
   Cubierto con migración reversible, aislamiento entre empresas, regresiones y
-  E2E autenticada local; pendiente de revisión visual autenticada y publicación
-  para marcarlo como completado.
-- 🟡 Riesgos operativos por ubicación: el local puede mantener riesgos abiertos
+  E2E autenticada local, más validación visual autenticada local.
+- ✅ Riesgos operativos por ubicación: el local puede mantener riesgos abiertos
   o mitigados, con severidad, instrucciones y medida preventiva. Está
   integrado en los tres flujos canónicos de alta/edición, con migración
-  reversible, regresiones de aislamiento y E2E autenticada local; pendiente de
-  revisión visual autenticada y publicación para marcarlo como completado.
-- 🟡 Horarios de servicio por ubicación: se guardan separados de las
+  reversible, regresiones de aislamiento y E2E autenticada local, más
+  validación visual autenticada local.
+- ✅ Horarios de servicio por ubicación: se guardan separados de las
   credenciales/horarios de acceso, por días, franja y estado. Están disponibles
   al crear o editar en el espacio interno, portal patrocinado y alta inicial;
   cubiertos con migración reversible, regresiones de aislamiento y E2E
-  autenticada local. Pendiente de revisión visual autenticada y publicación
-  para marcarlo como completado.
-- 🟡 Documentos y equipos normalizados por ubicación: documentos privados PDF,
+  autenticada local, más validación visual autenticada local.
+- ✅ Documentos y equipos normalizados por ubicación: documentos privados PDF,
   JPEG y PNG con hash, cuota documental por empresa: 1 MB en Basic/Medium y 10 MB
   en Top/Enterprise; inventario
   con estado, cantidad y mantenimiento. Lectura por ámbito y altas/archivo solo
   para la empresa propietaria con `locations.manage`; migración y regresiones
   cubiertas, con E2E autenticada local de alta y archivo. Vistas independientes
-  de Documentos y Activos, sin mezclarlas con Ubicaciones. Pendiente de revisión
-  visual autenticada y publicación.
+  de Documentos y Activos, sin mezclarlas con Ubicaciones. Validado de forma
+  visual con alta, lectura por ámbito y archivo local de datos QA.
   Servicios contratados quedan cubiertos por la relación formal de contratos
   siguiente.
-- 🟡 Relación formal cliente → contrato → ubicación → zona: un contrato nace
+- ✅ Relación formal cliente → contrato → ubicación → zona: un contrato nace
   de la revisión aceptada, solo puede cubrir ubicaciones activas de su cliente y
   puede restringirse a zonas activas de esas ubicaciones; sin zonas elegidas,
   cubre la ubicación completa. Cubierto con migración reversible, aislamiento,
-  regresiones y E2E autenticada local; pendiente de revisión visual autenticada
-  y publicación para marcarlo como completado.
+  regresiones, E2E y validación visual autenticada local.
 
 ### Fase 5 — Órdenes, recurrencia y tiempo
 
@@ -458,8 +455,14 @@ como WorkHive Core solo cuando el caso real las exige.
   coordenadas finales; las correcciones son revisables y no alteran tiempo ya
   facturado; los partes están separados de la tarea y el coste queda congelado
   al cerrar la sesión. Publicado en `v1.6.5` y validado con 45 regresiones
-  backend y 15 pruebas frontend focalizadas; pendiente de revisión visual
-  autenticada para cerrar la fase.
+  backend y 15 pruebas frontend focalizadas. La revisión visual autenticada
+  local del 14 de octubre confirmó orden única, recurrencia, pausa,
+  reactivación, generación de tarea y replanificación: la siguiente ejecución
+  se muestra y se edita como tal (20 → 21 de octubre), sin alterar el origen
+  de la recurrencia. También se verificaron jornadas cerradas, el formulario
+  de corrección y la cola de aprobaciones. Sigue pendiente una prueba de campo
+  con GPS real y una aprobación extremo a extremo entre personas distintas;
+  hasta entonces la fase no se cierra.
 
 ### Fase 6 — Calidad e incidencias
 
@@ -467,7 +470,9 @@ como WorkHive Core solo cuando el caso real las exige.
   acciones correctivas con ámbitos por empresa y ubicación están publicados
   en `v1.6.1`. La UI de plantillas, inspecciones, puntuación, incidencias y
   creación o cierre de acciones correctivas está validada con E2E autenticada
-  local; la cancelación está cubierta por la regresión backend.
+  local y revisión visual administrativa el 14 de octubre: plantilla →
+  inspección → puntuación → cierre → incidencia → acción correctiva
+  completada. La cancelación está cubierta por la regresión backend.
 - 🟡 Fotos de evidencia privadas para inspecciones e incidencias están listas
   localmente: se almacenan por empresa y ubicación, se descargan solo por sus
   rutas autorizadas y el cargador genérico las rechaza. Todas las cargas de
@@ -477,7 +482,9 @@ como WorkHive Core solo cuando el caso real las exige.
 - 🟡 La conformidad interna de una inspección cerrada está lista localmente:
   se registra una única confirmación inmutable, con persona, versión de texto
   y fecha, y exige permiso de gestión de la ubicación. No sustituye una firma
-  legal. Faltan validación visual autenticada y publicación.
+  legal. La validación visual autenticada local del 14 de octubre confirmó que
+  sólo se habilita tras cerrar la inspección y queda registrada con persona y
+  fecha; falta publicación.
 - 🟡 La aceptación del cliente o su representante está lista localmente en el
   portal autorizado: solo ve inspecciones cerradas de sus ubicaciones, no
   notas ni evidencias internas, y registra una única aceptación con cuenta,
@@ -489,35 +496,44 @@ como WorkHive Core solo cuando el caso real las exige.
   ámbitos por ubicación, conservando notas internas privadas. La creación,
   resolución, auditoría, aislamiento entre cliente–empresa y no exposición de
   notas internas están cubiertos localmente con migración, pruebas, typecheck,
-  lint, build y React Doctor; faltan validación visual autenticada y
-  publicación.
+  lint, build y React Doctor. La administración local se validó visualmente el
+  14 de octubre con una reclamación QA, su respuesta visible, nota interna y
+  resolución; falta validación visual desde el portal autorizado y publicación.
 
 ### Fase 7 — Material, compras y activos
 
 - ✅ Gastos básicos existen.
-- 🟡 Revalidación técnica local completada el 25 de septiembre: 8 regresiones
-  backend de inventario, compras y consumo por orden, y 598 pruebas frontend,
-  todas correctas. No sustituye la revisión visual autenticada ni la
-  publicación necesarias para cerrar esta fase.
+- 🟡 Revalidación técnica y visual autenticada local de inventario y compras
+  completada el 12 de octubre: proveedor → material → almacén → entrada/salida
+  → saldo → archivo de catálogo; compra → gasto → lote → corrección → saldo
+  cero; y orden de trabajo → consumo → corrección con motivo → saldo cero.
+  Admin se comprobó visualmente y las regresiones confirman que Manager puede
+  operar y Viewer recibe denegación. El historial inmutable conserva los
+  nombres tras archivar el catálogo. La publicación sigue pendiente; la fase
+  no se cierra todavía.
 - 🟡 Base de inventario: proveedores, catálogo de material, almacenes,
   movimientos inmutables y saldo calculado por almacén. Cubierta con migración
   reversible, permisos por empresa, aislamiento, regresiones y recorrido API
-  autenticado local. Interfaz local de stock, materiales, proveedores,
-  almacenes y movimientos integrada y validada sin navegador; pendiente de
-  revisión visual autenticada y publicación.
+  autenticado local. La interfaz de stock, materiales, proveedores, almacenes
+  y movimientos fue validada visualmente con datos QA locales archivados; el
+  historial de movimientos se conserva por diseño. Pendiente de publicación.
 - 🟡 Flujo de compra de material local: la cabecera usa un proveedor del
   directorio y conserva su snapshot fiscal; sus líneas crean entradas
   inmutables y un único gasto fiscal con IVA, pago y justificante. Finanzas
   cuenta solo el gasto; una corrección crea movimientos de ajuste, archiva el
-  gasto enlazado y bloquea su edición/borrado directo. Backend, migración y UI
-  local validados sin navegador; pendiente de revisión visual autenticada y
-  publicación.
+  gasto enlazado y bloquea su edición/borrado directo. La validación visual
+  autenticada local confirmó compra, lote, entrada, total con IVA y corrección.
+  La corrección usa un diálogo accesible con motivo obligatorio, no un prompt
+  nativo. Pendiente de publicación.
 - 🟡 Lotes, activos operativos y consumo por orden local: los activos ya se
   administran por ubicación, separados del stock. Una recepción puede crear
   un lote con caducidad y saldo propio; una orden de trabajo registra su
   consumo como salida inmutable y una corrección añade la entrada inversa una
-  sola vez. Backend, migración y UI local validados sin navegador; pendiente
-  de revisión visual autenticada y publicación.
+  sola vez. La recepción y el saldo de lote fueron validados visualmente con
+  la compra QA local. El consumo por orden se validó visualmente el 12 de
+  octubre con una orden QA temporal: salida, diálogo accesible de corrección
+  con motivo obligatorio, entrada inversa única y saldo final cero. La orden
+  quedó cancelada y el catálogo QA archivado; la publicación sigue pendiente.
 
 ### Fase 8 — Cobros, margen y analítica
 
@@ -528,28 +544,43 @@ como WorkHive Core solo cuando el caso real las exige.
   autenticada ni la publicación necesarias para cerrar esta fase.
 - 🟡 Cobros: recibos de cliente inmutables con reparto entre facturas, saldo no
   aplicado y anulación auditable; actualizan el estado de cobro sin alterar el
-  registro fiscal ni el IVA. Validado por API y UI local; pendiente de revisión
-  visual autenticada.
+  registro fiscal ni el IVA. Validado por API y visualmente el 12 de octubre
+  en sesión autenticada local: factura QA emitida → cobro completo → factura
+  pagada → anulación con motivo → factura pendiente y cobro histórico marcado
+  como anulado. La limpieza se hizo con una rectificativa total, preservando el
+  historial fiscal y el saldo neto cero. Pendiente la publicación y la revisión
+  visual de los demás flujos de la fase.
 - ✅ Coste laboral interno con históricos inmutables por sesión y rentabilidad
   conocida por cliente a partir de ingresos y gastos asignados.
 - 🟡 Conciliación bancaria manual: apuntes de extracto inmutables, vínculo de
   importe exacto con un único cobro y reversión auditada. No crea ingresos ni
   altera IVA; un cobro conciliado exige deshacer el vínculo antes de anularse.
-  Backend, migración y UI local validados sin navegador; pendiente de revisión
-  visual autenticada e importación bancaria.
+  Validada visualmente en sesión autenticada local el 13 de octubre: apunte QA
+  → cobro del mismo importe → conciliación → bloqueo de anulación → reversión
+  con motivo → anulación → rectificativa total y saldo financiero neto cero.
+  Durante esa revisión se corrigió un bloqueo PostgreSQL incompatible con el
+  `LEFT JOIN` nullable de la consulta y se añadió su regresión. Pendiente la
+  publicación y la importación bancaria.
 - 🟡 Imputación de material: el consumo por orden conserva el coste medio
   ponderado disponible y el cliente de la ubicación como snapshots inmutables;
   una corrección queda fuera del margen y un coste no trazable no se estima.
   La compra sigue siendo un gasto fiscal, pero se excluye del margen de cliente
   hasta que el stock se consume, evitando el doble conteo. Backend, migración y
-  UI local validados sin navegador; pendiente de revisión visual autenticada.
+  UI local validados sin navegador. Validada visualmente en sesión autenticada
+  local el 13 de octubre con proveedor → compra costada → entrada → consumo de
+  una unidad en una orden activa: el margen de la orden incorporó el material
+  como coste directo y la rentabilidad mensual del cliente lo reflejó. Los
+  datos QA siguen siendo locales y auditables; pendiente de publicación.
 - 🟡 Subcontrata: Gastos incorpora la categoría operativa `subcontracting`; al
   asignarla a un cliente ya entra como coste directo en la rentabilidad, con el
   mismo IVA, pago, justificante y edición de Gastos. Puede imputarse además a
   un contrato o a una orden (nunca a ambos): el backend confirma el cliente del
   alcance y rechaza referencias de otra empresa. Se mantiene separada del
-  inventario y no crea stock. Validada por tests y UI local sin navegador;
-  pendiente de revisión visual autenticada.
+  inventario y no crea stock. Validada visualmente en sesión autenticada local
+  el 13 de octubre: gasto QA de categoría Subcontrata vinculado a una orden,
+  cliente confirmado por el alcance, IVA calculado, gasto directo en el margen
+  de la orden y en la rentabilidad de su cliente. El registro QA permanece
+  local y auditable; pendiente de publicación.
 - 🟡 Margen previsto frente a real: hay presupuesto de coste explícito por
   contrato u orden, con la oferta aceptada como ingreso previsto del contrato
   y coste/ingreso trazado desde tareas facturadas, fichajes con snapshot y
@@ -558,7 +589,12 @@ como WorkHive Core solo cuando el caso real las exige.
   que se consume el stock, evitando doble conteo. Los gastos generales
   —incluidos los solo asignados a cliente— no se reparten ni se inventan.
   Backend, migración SQLite, UI local y regresiones de autorización validados
-  sin navegador; pendiente de revisión visual autenticada.
+  sin navegador. La revisión visual autenticada inició el 13 de octubre:
+  presupuesto QA guardado en orden, gasto directo trazado en la orden y en el
+  cliente, paneles de ubicación y servicio coherentes y equipo vacío explícito;
+  Manager y Viewer no acceden a Finanzas. Se completó la imputación de
+  material no revertida: compra costada, consumo en orden activa, coste en el
+  margen de la orden y rentabilidad del cliente. Pendiente de publicación.
 - 🟡 Analítica financiera y de rentabilidad por cliente existen con permisos de
   lectura. El corte operativo permite consultar el margen previsto frente al
   real de un contrato o de una orden, sin repartir ingresos ni costes entre
@@ -577,19 +613,24 @@ como WorkHive Core solo cuando el caso real las exige.
   el equipo responsable de su ubicación y no se reescribe si cambian equipos o
   asignaciones; solo suma sesiones con coste conocido y no inventa un margen
   de equipo. Los fichajes históricos sin ese snapshot quedan sin equipo. UI
-  local, migración y regresiones de autorización validadas sin navegador;
-  pendientes de revisión visual autenticada y de cortes homogéneos por
-  sociedad y delegación, además de la futura imputación explícita de
-  material/gastos a una tarea.
+  local, migración y regresiones de autorización validadas sin navegador. La
+  revisión visual autenticada del 13 de octubre cubrió Finanzas, selector de
+  período, exportación para gestoría, Rentabilidad por cliente y Margen
+  operativo con coste de subcontrata y material; Admin accede y Manager/Viewer
+  quedan fuera de Finanzas. Quedan como evolución de producto los cortes
+  homogéneos por sociedad y delegación y la futura imputación explícita de
+  material/gastos a una tarea; pendiente de publicación.
 
 ### Fase 9 — Portales e integraciones
 
 - ✅ Colaboración externa y Google Calendar existen de forma parcial.
-- 🟡 Revalidación técnica local completada el 25 de septiembre: 52 regresiones
-  backend de grants externos, portales, API pública, idempotencia y avisos, y
-  598 pruebas frontend, todas correctas. No sustituye la revisión visual
-  autenticada, el contrato de integración real ni la publicación necesarios
-  para cerrar esta fase.
+- 🟡 Revalidación técnica local completada: 52 regresiones backend de grants
+  externos, portales, API pública, idempotencia y avisos, y pruebas frontend
+  correctas. La revisión visual administrativa del 14 de octubre confirmó el
+  acceso móvil a la ficha de cliente y la gestión del portal (accesos e
+  invitaciones vacíos) sin emitir credenciales ni invitaciones. Falta la
+  revisión autenticada con una cuenta portal existente, el contrato de
+  integración real y la publicación para cerrar esta fase.
 - ✅ Base de portal de gestoría: acceso externo por empresa, revocable y de
   solo lectura financiera, sin plaza ni membresía interna.
 - ✅ Portal de inmobiliaria existente: acceso patrocinado revocable, sin plaza
