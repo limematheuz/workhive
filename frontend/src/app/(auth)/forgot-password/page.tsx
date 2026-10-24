@@ -20,6 +20,11 @@ import { Label } from "@/components/ui/label";
 import { Mail, ArrowLeft, CheckCircle2, Send } from "lucide-react";
 import { toast } from "sonner";
 
+type RecoveryAlert =
+    | { type: "validation"; email: string }
+    | { type: "request"; error: unknown }
+    | null;
+
 export default function ForgotPasswordPage() {
     const router = useRouter();
     const { dict, locale } = useDictionary();
@@ -28,15 +33,20 @@ export default function ForgotPasswordPage() {
     const [email, setEmail] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [alertMsg, setAlertMsg] = useState({ type: "", text: "" });
+    const [alertMsg, setAlertMsg] = useState<RecoveryAlert>(null);
+    const alertText = alertMsg?.type === "validation"
+        ? preparePasswordResetEmail(alertMsg.email, getAuthFormMessages(locale)).error
+        : alertMsg?.type === "request"
+            ? getPasswordRecoveryErrorMessage(alertMsg.error, locale)
+            : null;
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setAlertMsg({ type: "", text: "" });
+        setAlertMsg(null);
 
         const prepared = preparePasswordResetEmail(email, getAuthFormMessages(locale));
         if (prepared.error !== null) {
-            setAlertMsg({ type: "error", text: prepared.error });
+            setAlertMsg({ type: "validation", email });
             toast.error(prepared.error);
             return;
         }
@@ -48,7 +58,7 @@ export default function ForgotPasswordPage() {
             setSubmitted(true);
         } catch (err: unknown) {
             const message = getPasswordRecoveryErrorMessage(err, locale);
-            setAlertMsg({ type: "error", text: message });
+            setAlertMsg({ type: "request", error: err });
             toast.error(message);
         } finally {
             setSubmitting(false);
@@ -117,8 +127,8 @@ export default function ForgotPasswordPage() {
                             </div>
                         </div>
 
-                        {alertMsg.text !== "" && (
-                            <div className={authAlertClass("error")}>{alertMsg.text}</div>
+                        {alertText && (
+                            <div className={authAlertClass("error")}>{alertText}</div>
                         )}
 
                         <Button type="submit" disabled={submitting} size="lg" className="w-full">
