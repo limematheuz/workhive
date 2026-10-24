@@ -2560,6 +2560,7 @@
     "invite_dialog": {
       "title": "Invite person",
       "description": "They will receive a secure link to create their account. Once complete, you can assign their teams and specific permissions.",
+      "admin_invitation_description": "They will receive a secure link to create their account as an administrator of this company.",
       "name": "Name",
       "name_placeholder": "Full name",
       "email": "Email address",
@@ -2567,6 +2568,7 @@
       "initial_type": "Initial type",
       "select_type": "Select a type",
       "notice": "An invitation does not grant access to pricing, invoices, or analytics on its own. Define those rights later through profiles and scope.",
+      "admin_notice": "Once they activate their account, this person will have full company access, including pricing and invoices, plus any analytics available in your plan. Invite only someone you trust.",
       "sent": "Invitation sent. The person will appear here once they activate their account.",
       "send_error": "Could not send the invitation.",
       "admin_description": "Full control of the company.",
