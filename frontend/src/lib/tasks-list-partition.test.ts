@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     filterTasksForGeneralList,
+    getTaskListDisplayStatus,
     isTaskFinished,
     paginateTaskListPage,
     partitionTasksForGeneralList,
@@ -43,6 +44,13 @@ test("isTaskFinished treats completed and invoiced tasks as finished", () => {
     assert.equal(isTaskFinished(task(4, "pending", true)), true);
 });
 
+test("accepted work is distinct from pending and from work already in progress", () => {
+    assert.equal(getTaskListDisplayStatus("accepted"), "accepted");
+    assert.equal(getTaskListDisplayStatus("pending"), "pending");
+    assert.equal(getTaskListDisplayStatus("progress"), "progress");
+    assert.equal(getTaskListDisplayStatus("in_progress"), "progress");
+});
+
 test("partitionTasksForGeneralList keeps completed out of the active group", () => {
     const partitioned = partitionTasksForGeneralList([
         task(10, "completed"),
@@ -61,9 +69,10 @@ test("sortTasksForGeneralList orders by workflow weight then newest id", () => {
         task(3, "completed"),
         task(2, "pending"),
         task(5, "progress"),
+        task(6, "accepted"),
         task(4, "pending"),
     ]);
-    assert.deepEqual(sorted.map(item => item.id), [4, 2, 5, 3]);
+    assert.deepEqual(sorted.map(item => item.id), [4, 2, 6, 5, 3]);
 });
 
 test("filterTasksForGeneralList applies search date and priority filters", () => {

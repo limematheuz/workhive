@@ -1,14 +1,25 @@
+import { normalizeTaskStatus } from "../../domain/tasks/task-status.ts";
+
 type TaskListStatusFields = {
     id: number;
     status: string;
     is_invoiced?: boolean | null;
 };
 
+export function getTaskListDisplayStatus(status: string): "pending" | "accepted" | "progress" | "review" | "completed" {
+    const normalized = normalizeTaskStatus(status);
+    if (normalized === "accepted" || normalized === "progress" || normalized === "review" || normalized === "completed") {
+        return normalized;
+    }
+    return "pending";
+}
+
 export const getStatusWeight = (t: TaskListStatusFields) => {
     if (t.is_invoiced) return 5;
-    if (t.status === "completed") return 4;
-    if (t.status === "review" || t.status === "in_review") return 3;
-    if (t.status === "progress" || t.status === "in_progress") return 2;
+    const status = getTaskListDisplayStatus(t.status);
+    if (status === "completed") return 4;
+    if (status === "review") return 3;
+    if (status === "progress" || status === "accepted") return 2;
     return 1; // pending
 };
 

@@ -1567,6 +1567,7 @@
     "filter_all_operators": "All workers",
     "filter_assigned_to_me": "Assigned to me",
     "filter_all_statuses": "All statuses",
+    "filter_accepted": "Accepted",
     "filter_in_progress": "In progress",
     "filter_in_review": "In review",
     "no_tasks_found": "No tasks found in the general list.",

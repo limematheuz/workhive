@@ -109,6 +109,7 @@ export function TasksListFilters({
                     options={[
                         { value: "", label: dict.tasks?.filter_all_statuses || "All statuses" },
                         { value: "pending", label: dict.profile?.tables?.status_pending || "Pending" },
+                        { value: "accepted", label: dict.tasks?.filter_accepted || "Accepted" },
                         { value: "progress", label: dict.tasks?.filter_in_progress || "In progress" },
                         { value: "review", label: dict.tasks?.filter_in_review || "In review" },
                         { value: "completed", label: dict.profile?.tables?.status_completed || "Completed" },
