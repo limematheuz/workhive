@@ -1,7 +1,6 @@
 export const HOP_BY_HOP_HEADERS = new Set([
     "connection",
     "content-encoding",
-    "content-length",
     "host",
     "keep-alive",
     "transfer-encoding",
@@ -60,6 +59,10 @@ export function copyProxyResponseHeaders(
     source.forEach((value, key) => {
         const header = key.toLowerCase();
         if (!HOP_BY_HOP_HEADERS.has(header) && header !== "set-cookie") {
+            // The proxy streams the upstream body without changing it, so its
+            // framing remains valid. Preserving the known length lets clients
+            // finish small JSON responses immediately instead of waiting for
+            // the keep-alive connection to close.
             responseHeaders.append(key, value);
         }
     });

@@ -92,7 +92,7 @@ def create_demo_members(db: Session, *, password: str) -> DemoMembers:
         city="Ciudad de Ejemplo",
         province="Provincia de Ejemplo",
         phone="000000000",
-        email="administracion@enterprise-demo.invalid",
+        email="administracion@enterprise-demo.example",
         operating_model="service_provider",
         onboarding_completed=True,
         subscription_plan="mega",
@@ -102,7 +102,7 @@ def create_demo_members(db: Session, *, password: str) -> DemoMembers:
     db.flush()
     users = {
         "administrator": _demo_user(
-            email="administrador@enterprise-demo.invalid",
+            email="administrador@enterprise-demo.example",
             full_name="Administrador de demostración",
             role_id=roles["admin"].id,
             company_id=company.id,
@@ -110,7 +110,7 @@ def create_demo_members(db: Session, *, password: str) -> DemoMembers:
             now=now,
         ),
         "operations": _demo_user(
-            email="operaciones@enterprise-demo.invalid",
+            email="operaciones@enterprise-demo.example",
             full_name="Responsable de operaciones",
             role_id=roles["manager"].id,
             company_id=company.id,
@@ -118,7 +118,7 @@ def create_demo_members(db: Session, *, password: str) -> DemoMembers:
             now=now,
         ),
         "commercial": _demo_user(
-            email="comercial@enterprise-demo.invalid",
+            email="comercial@enterprise-demo.example",
             full_name="Comercial de demostración",
             role_id=roles["worker"].id,
             company_id=company.id,
@@ -126,7 +126,7 @@ def create_demo_members(db: Session, *, password: str) -> DemoMembers:
             now=now,
         ),
         "finance": _demo_user(
-            email="finanzas@enterprise-demo.invalid",
+            email="finanzas@enterprise-demo.example",
             full_name="Finanzas de demostración",
             role_id=roles["worker"].id,
             company_id=company.id,
@@ -134,7 +134,7 @@ def create_demo_members(db: Session, *, password: str) -> DemoMembers:
             now=now,
         ),
         "field": _demo_user(
-            email="campo@enterprise-demo.invalid",
+            email="campo@enterprise-demo.example",
             full_name="Equipo de campo",
             role_id=roles["worker"].id,
             company_id=company.id,

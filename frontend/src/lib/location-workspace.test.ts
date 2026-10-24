@@ -188,6 +188,14 @@ test("location operational data does not reload when polling replaces the locati
     assert.match(detail, /Estructura de espacios/);
 });
 
+test("location task assignment loads people only with the directory-read capability", () => {
+    const hook = read("../hooks/useLocationTasksSheet.ts");
+
+    assert.match(hook, /OrganizationService\.getAccess\(\)/);
+    assert.match(hook, /access\["access\.members\.read"\]/);
+    assert.match(hook, /if \(access\["access\.members\.read"\]\) \{/);
+});
+
 test("opening a location shows its detail first and keeps editing as an explicit action", () => {
     const grid = read("../components/locations/LocationsGrid.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");

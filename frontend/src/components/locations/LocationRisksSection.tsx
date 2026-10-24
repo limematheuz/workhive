@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { createEditableLineKey } from "@/lib/editable-line-key";
 import type {
     LocationRisk,
     LocationRiskSeverity,
@@ -59,7 +60,7 @@ export function LocationRisksSection({ risks, setRisks }: LocationRisksSectionPr
                     type="button"
                     variant="secondary"
                     size="sm"
-                    onClick={() => setRisks([...risks, { ...EMPTY_RISK, draft_id: crypto.randomUUID() }])}
+                    onClick={() => setRisks([...risks, { ...EMPTY_RISK, draft_id: createEditableLineKey("location-risk") }])}
                 >
                     <Plus className="h-4 w-4" /> Añadir riesgo
                 </Button>

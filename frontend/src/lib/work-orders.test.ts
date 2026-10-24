@@ -7,6 +7,8 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("work orders have an independent operational service and page", () => {
     const service = read("../services/work-order.service.ts");
     const page = read("../app/dashboard/work-orders/page.tsx");
+    const materialsDialog = read("../components/work-orders/WorkOrderMaterialsDialog.tsx");
+    const correctionDialog = read("../components/work-orders/WorkOrderMaterialCorrectionDialog.tsx");
     const sidebar = read("../components/dashboard/sidebar-nav-config.tsx");
 
     assert.match(service, /\/api\/v1\/work-orders\//);
@@ -20,5 +22,10 @@ test("work orders have an independent operational service and page", () => {
     assert.match(page, /workOrder\.next_occurrence_at \?\? workOrder\.scheduled_start_at/);
     assert.match(page, /next_occurrence_at: new Date\(draft\.scheduledStart\)\.toISOString\(\)/);
     assert.match(page, /WorkOrderMaterialsDialog/);
+    assert.match(materialsDialog, /WorkOrderMaterialCorrectionDialog/);
+    assert.doesNotMatch(materialsDialog, /window\.prompt/);
+    assert.match(correctionDialog, /Motivo de la corrección/);
+    assert.match(correctionDialog, /Corregir consumo/);
+    assert.doesNotMatch(correctionDialog, /window\.prompt/);
     assert.match(sidebar, /"\/dashboard\/work-orders"/);
 });

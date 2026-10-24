@@ -32,6 +32,15 @@ def test_backend_entrypoints_apply_migrations_before_serving_requests(entrypoint
     assert script.index("alembic upgrade head") < script.index("exec uvicorn")
 
 
+@pytest.mark.parametrize("entrypoint", ("start.sh", "dev.sh", "docker-entrypoint.dev.sh"))
+def test_backend_entrypoints_bound_graceful_shutdown_for_realtime_streams(entrypoint):
+    script_path = os.path.dirname(__file__) + f"/../{entrypoint}"
+    with open(script_path, encoding="utf-8") as script_file:
+        script = script_file.read()
+
+    assert "--timeout-graceful-shutdown 5" in script
+
+
 @pytest.mark.skipif(
     not os.getenv("MIGRATION_TEST_DATABASE_URL"),
     reason="PostgreSQL migration contract runs in CI",

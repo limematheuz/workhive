@@ -4,6 +4,8 @@ from PIL import Image
 
 from app.models.location import Location
 from app.models.location_document import LocationDocument
+from app.models.task_item import TaskItem
+from app.models.user import User
 from app.services.image_service import MAX_IMAGE_BYTES
 from tests.test_location_workspace import _admin, _company, _headers
 
@@ -29,6 +31,21 @@ def _location(db, company, name="Centro de pruebas"):
     db.commit()
     db.refresh(location)
     return location
+
+
+def _viewer(db, company, email="viewer@assets.test"):
+    user = User(
+        email=email,
+        hashed_password="unused",
+        full_name="Viewer Assets",
+        company_id=company.id,
+        role_id=3,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 def test_location_documents_are_private_validated_and_archived(client, db):
@@ -230,3 +247,88 @@ def test_location_assets_reject_other_company_and_manage_equipment(client, db):
     )
     assert archived.status_code == 204
     assert client.get(f"/api/v1/locations/{location.id}/equipment", headers=owner_headers).json() == []
+
+
+def test_legacy_viewer_location_assets_are_limited_to_assigned_locations(client, db):
+    company = _company(db, "ViewerScopedAssets")
+    admin = _admin(db, company)
+    viewer = _viewer(db, company)
+    assigned_location = _location(db, company, "Ubicación asignada")
+    private_location = _location(db, company, "Ubicación privada")
+    admin_headers = _headers(admin)
+    viewer_headers = _headers(viewer)
+
+    assigned_equipment_response = client.post(
+        f"/api/v1/locations/{assigned_location.id}/equipment",
+        headers=admin_headers,
+        json={"name": "Equipo asignado", "category": "cleaning", "quantity": 1, "status": "active"},
+    )
+    assert assigned_equipment_response.status_code == 201
+    assigned_equipment = assigned_equipment_response.json()
+    private_equipment_response = client.post(
+        f"/api/v1/locations/{private_location.id}/equipment",
+        headers=admin_headers,
+        json={"name": "Equipo privado", "category": "cleaning", "quantity": 1, "status": "active"},
+    )
+    assert private_equipment_response.status_code == 201
+    private_equipment = private_equipment_response.json()
+    assigned_document_response = client.post(
+        f"/api/v1/locations/{assigned_location.id}/documents",
+        headers=admin_headers,
+        files={"file": ("asignado.pdf", PDF, "application/pdf")},
+    )
+    assert assigned_document_response.status_code == 201
+    assigned_document = assigned_document_response.json()
+    private_document_response = client.post(
+        f"/api/v1/locations/{private_location.id}/documents",
+        headers=admin_headers,
+        files={"file": ("privado.pdf", PDF, "application/pdf")},
+    )
+    assert private_document_response.status_code == 201
+    private_document = private_document_response.json()
+
+    assert client.get("/api/v1/locations/", headers=viewer_headers).json() == []
+    assert client.get("/api/v1/location-equipment", headers=viewer_headers).json() == []
+    assert client.get("/api/v1/location-documents", headers=viewer_headers).json() == []
+    assert client.get(
+        f"/api/v1/locations/{private_location.id}/equipment", headers=viewer_headers
+    ).status_code == 403
+    assert client.delete(
+        f"/api/v1/locations/{private_location.id}/equipment/{private_equipment['id']}",
+        headers=viewer_headers,
+    ).status_code == 403
+    assert client.get(
+        f"/api/v1/locations/{private_location.id}/documents", headers=viewer_headers
+    ).status_code == 403
+    assert client.get(
+        f"/api/v1/locations/{private_location.id}/documents/{private_document['id']}/download",
+        headers=viewer_headers,
+    ).status_code == 403
+
+    db.add(
+        TaskItem(
+            title="Trabajo asignado",
+            unit="servicio",
+            company_id=company.id,
+            location_id=assigned_location.id,
+            user_id=viewer.id,
+            status="accepted",
+        )
+    )
+    db.commit()
+
+    assert [location["id"] for location in client.get(
+        "/api/v1/locations/", headers=viewer_headers
+    ).json()] == [assigned_location.id]
+    assert [equipment["id"] for equipment in client.get(
+        "/api/v1/location-equipment", headers=viewer_headers
+    ).json()] == [assigned_equipment["id"]]
+    assert [document["id"] for document in client.get(
+        "/api/v1/location-documents", headers=viewer_headers
+    ).json()] == [assigned_document["id"]]
+    assert client.get(
+        f"/api/v1/locations/{assigned_location.id}/equipment", headers=viewer_headers
+    ).status_code == 200
+    assert client.get(
+        f"/api/v1/locations/{assigned_location.id}/documents", headers=viewer_headers
+    ).status_code == 200

@@ -28,6 +28,10 @@ test("sidebar groups navigation by domain while preserving role and feature filt
     assert.match(config, /NAVIGATION_FEATURES/);
     assert.match(config, /PLATFORM_SUPERADMIN_HREFS/);
     assert.match(config, /ACCOUNTANT_HREFS/);
+    assert.match(config, /canReadClients: boolean/);
+    assert.match(config, /flags\.canReadClients \? \[\{ href: "\/dashboard\/clients"/);
+    assert.match(sidebar, /ClientService\.getAccess/);
+    assert.match(sidebar, /canReadClients: clientAccess\?\.context === featureContext && clientAccess\.canRead === true/);
     assert.match(navigation, /state === "collapsed"/);
     assert.match(navigation, /!overflow-y-auto/);
     assert.match(navigation, /scrollbar-width:none/);

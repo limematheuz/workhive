@@ -16,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
+import { createEditableLineKey } from "@/lib/editable-line-key";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import { assignmentPayload, buildAssignmentDrafts, hasInvalidDraftScopes, type AssignmentDraft } from "@/lib/organization-assignment-drafts";
@@ -89,7 +90,7 @@ export function MemberAccessDialog({
 
     const setProfileEnabled = (profileId: number, enabled: boolean) => {
         setAssignments((current) => enabled
-            ? [...current, { permission_profile_id: profileId, scopes: [{ scope_type: "company", scope_id: companyId, draft_id: crypto.randomUUID() }] }]
+            ? [...current, { permission_profile_id: profileId, scopes: [{ scope_type: "company", scope_id: companyId, draft_id: createEditableLineKey("member-scope") }] }]
             : current.filter((assignment) => assignment.permission_profile_id !== profileId));
     };
 

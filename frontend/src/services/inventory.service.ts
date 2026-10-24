@@ -17,6 +17,7 @@ import type {
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const response = await apiFetch(path, { cache: "no-store", ...options });
     await assertApiResponseOk(response, "No se pudo completar la operación de inventario.");
+    if (response.status === 204) return undefined as T;
     return response.json() as Promise<T>;
 }
 
@@ -26,16 +27,28 @@ export const InventoryService = {
         "/api/v1/inventory/suppliers",
         { method: "POST", body: JSON.stringify(input) },
     ),
+    archiveSupplier: (supplierId: number) => request<void>(
+        `/api/v1/inventory/suppliers/${supplierId}`,
+        { method: "DELETE" },
+    ),
     getMaterials: () => request<InventoryMaterial[]>("/api/v1/inventory/materials"),
     getLots: () => request<InventoryLot[]>("/api/v1/inventory/lots"),
     createMaterial: (input: InventoryMaterialInput) => request<InventoryMaterial>(
         "/api/v1/inventory/materials",
         { method: "POST", body: JSON.stringify(input) },
     ),
+    archiveMaterial: (materialId: number) => request<void>(
+        `/api/v1/inventory/materials/${materialId}`,
+        { method: "DELETE" },
+    ),
     getWarehouses: () => request<InventoryWarehouse[]>("/api/v1/inventory/warehouses"),
     createWarehouse: (input: InventoryWarehouseInput) => request<InventoryWarehouse>(
         "/api/v1/inventory/warehouses",
         { method: "POST", body: JSON.stringify(input) },
+    ),
+    archiveWarehouse: (warehouseId: number) => request<void>(
+        `/api/v1/inventory/warehouses/${warehouseId}`,
+        { method: "DELETE" },
     ),
     getMovements: () => request<InventoryMovement[]>("/api/v1/inventory/movements"),
     createMovement: (input: InventoryMovementInput) => request<InventoryMovement>(

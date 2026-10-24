@@ -12,6 +12,7 @@ import {
 } from "../domain/tasks/task-create.ts";
 import {
     getOverviewTabForDate,
+    isTaskPlanningDateChangeToPast,
     isTaskPlanningDateBeforeToday,
 } from "../domain/tasks/task-schedule.ts";
 import type { Reservation } from "../types/reservation.ts";
@@ -74,6 +75,23 @@ test("task planning rejects previous days but allows today and future days", () 
     assert.equal(isTaskPlanningDateBeforeToday("2026-07-13", now), false);
     assert.equal(isTaskPlanningDateBeforeToday("2026-07-14", now), false);
     assert.equal(isTaskPlanningDateBeforeToday("", now), false);
+});
+
+test("historical task metadata can be edited without backdating another task", () => {
+    const now = new Date(2026, 6, 13, 10, 5, 0);
+
+    assert.equal(
+        isTaskPlanningDateChangeToPast("2026-07-11", "2026-07-11", now),
+        false,
+    );
+    assert.equal(
+        isTaskPlanningDateChangeToPast("2026-07-13", "2026-07-11", now),
+        true,
+    );
+    assert.equal(
+        isTaskPlanningDateChangeToPast("2026-07-13", "2026-07-14", now),
+        false,
+    );
 });
 
 test("checklist description keeps hidden all-worker metadata", () => {

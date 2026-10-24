@@ -22,7 +22,7 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     ));
     await page.getByRole("button", { name: "Añadir proveedor" }).click();
     expect((await supplierCreated).status()).toBe(201);
-    await expect(page.getByText("E2E Supplies", { exact: true })).toBeVisible();
+    await expect(page.getByRole("row", { name: /E2E Supplies/ })).toBeVisible();
 
     await page.getByRole("tab", { name: "Materiales" }).click();
     await page.getByLabel("SKU").fill("E2E-DET-001");
@@ -32,7 +32,7 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     ));
     await page.getByRole("button", { name: "Añadir material" }).click();
     expect((await materialCreated).status()).toBe(201);
-    await expect(page.getByText("E2E detergent", { exact: true })).toBeVisible();
+    await expect(page.getByRole("row", { name: /E2E detergent/ })).toBeVisible();
 
     await page.getByRole("tab", { name: "Almacenes" }).click();
     await page.getByLabel("Nombre del almacén").fill("E2E central warehouse");
@@ -65,5 +65,5 @@ test("administrator creates inventory data and sees the calculated warehouse bal
 
     await page.getByRole("tab", { name: "Stock" }).click();
     const stockRow = page.locator("tr", { hasText: "E2E detergent" });
-    await expect(stockRow.getByText("6", { exact: true })).toBeVisible();
+    await expect(stockRow).toContainText("6 unidades");
 });

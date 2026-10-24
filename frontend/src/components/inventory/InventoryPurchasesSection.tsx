@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/errors";
+import { createClientId } from "@/lib/editable-line-key";
 import { formatCurrency } from "@/lib/format";
 import { toast } from "@/lib/toast";
 import { InventoryService } from "@/services/inventory.service";
@@ -47,7 +48,7 @@ const purchaseColumns: DataListColumn[] = [
 
 function createLine(): PurchaseLineDraft {
     return {
-        id: crypto.randomUUID(),
+        id: createClientId(),
         materialId: "",
         warehouseId: "",
         quantity: "",
@@ -198,20 +199,67 @@ function PurchaseDialog({
     );
 }
 
+function PurchaseCorrectionDialog({
+    purchase,
+    isSubmitting,
+    onOpenChange,
+    onConfirm,
+}: {
+    purchase: InventoryPurchase | null;
+    isSubmitting: boolean;
+    onOpenChange: (open: boolean) => void;
+    onConfirm: (purchase: InventoryPurchase, reason: string) => Promise<boolean>;
+}) {
+    const [reason, setReason] = useState("");
+
+    const close = () => {
+        setReason("");
+        onOpenChange(false);
+    };
+
+    const submit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        if (!purchase || !reason.trim()) return;
+        if (await onConfirm(purchase, reason.trim())) close();
+    };
+
+    return (
+        <Dialog open={purchase !== null} onOpenChange={(open) => !open && close()}>
+            <DialogContent compact>
+                <DialogHeader>
+                    <DialogTitle>Corregir compra</DialogTitle>
+                    <DialogDescription>Generará un ajuste de salida y anulará el gasto asociado; el historial de la compra se conserva.</DialogDescription>
+                </DialogHeader>
+                <form className="grid gap-4" onSubmit={(event) => void submit(event)}>
+                    <div className="grid gap-2">
+                        <Label htmlFor="inventory-purchase-correction-reason">Motivo de la corrección</Label>
+                        <Textarea id="inventory-purchase-correction-reason" required value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Describe el motivo de la corrección" rows={3} />
+                    </div>
+                    <DialogFooter>
+                        <Button type="button" variant="cancel" disabled={isSubmitting} onClick={close}>Cancelar</Button>
+                        <Button type="submit" disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="size-4 animate-spin" />}Corregir compra</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 export function InventoryPurchasesSection({ purchases, suppliers, materials, warehouses, loading, canManage, onChanged }: InventoryPurchasesSectionProps) {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [reversingId, setReversingId] = useState<number | null>(null);
+    const [purchaseToCorrect, setPurchaseToCorrect] = useState<InventoryPurchase | null>(null);
 
-    const reverse = async (purchase: InventoryPurchase) => {
-        const reason = window.prompt("Motivo de la corrección de compra:");
-        if (!reason?.trim()) return;
+    const reverse = async (purchase: InventoryPurchase, reason: string) => {
         setReversingId(purchase.id);
         try {
-            await InventoryService.reversePurchase(purchase.id, reason.trim());
+            await InventoryService.reversePurchase(purchase.id, reason);
             toast.success("Compra corregida mediante ajuste de stock.");
             await onChanged();
+            return true;
         } catch (error) {
             toast.error(getErrorMessage(error, "No se pudo corregir la compra."));
+            return false;
         } finally {
             setReversingId(null);
         }
@@ -231,10 +279,11 @@ export function InventoryPurchasesSection({ purchases, suppliers, materials, war
                 <div key="description" className="min-w-0"><p className="truncate text-sm text-[var(--text-main)]">{purchase.expense.description}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{purchase.lines.length} {purchase.lines.length === 1 ? "línea" : "líneas"}{purchase.reference ? ` · ${purchase.reference}` : ""}</p></div>,
                 <span key="date" className="text-sm text-[var(--text-muted)]">{formatDate(purchase.expense.expense_date)}</span>,
                 <span key="total" className="block text-right text-sm font-semibold text-[var(--text-main)]">{formatCurrency(purchase.expense.total_amount)}</span>,
-                <div key="status" className="flex justify-end gap-2"><span className={purchase.status === "received" ? "inline-flex rounded-full bg-accent/10 px-2 py-1 text-xs font-semibold text-accent" : "inline-flex rounded-full bg-[var(--bg-tertiary)] px-2 py-1 text-xs font-semibold text-[var(--text-muted)]"}>{purchase.status === "received" ? "Recibida" : "Corregida"}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => void reverse(purchase)}>{reversingId === purchase.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}Corregir</Button>}</div>,
+                <div key="status" className="flex justify-end gap-2"><span className={purchase.status === "received" ? "inline-flex rounded-full bg-accent/10 px-2 py-1 text-xs font-semibold text-accent" : "inline-flex rounded-full bg-[var(--bg-tertiary)] px-2 py-1 text-xs font-semibold text-[var(--text-muted)]"}>{purchase.status === "received" ? "Recibida" : "Corregida"}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => setPurchaseToCorrect(purchase)}>{reversingId === purchase.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}Corregir</Button>}</div>,
             ]}
-            renderCompactRow={(purchase) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{purchase.supplier_name_snapshot}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{purchase.expense.description} · {formatDate(purchase.expense.expense_date)}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{purchase.status === "received" ? "Recibida" : "Corregida"}</p></div><div className="flex shrink-0 flex-col items-end gap-2"><span className="font-semibold text-[var(--text-main)]">{formatCurrency(purchase.expense.total_amount)}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => void reverse(purchase)}><RotateCcw className="size-4" />Corregir</Button>}</div></div>}
+            renderCompactRow={(purchase) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{purchase.supplier_name_snapshot}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{purchase.expense.description} · {formatDate(purchase.expense.expense_date)}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{purchase.status === "received" ? "Recibida" : "Corregida"}</p></div><div className="flex shrink-0 flex-col items-end gap-2"><span className="font-semibold text-[var(--text-main)]">{formatCurrency(purchase.expense.total_amount)}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => setPurchaseToCorrect(purchase)}><RotateCcw className="size-4" />Corregir</Button>}</div></div>}
         />
         <PurchaseDialog open={dialogOpen} onOpenChange={setDialogOpen} suppliers={suppliers} materials={materials} warehouses={warehouses} onCreated={onChanged} />
+        <PurchaseCorrectionDialog purchase={purchaseToCorrect} isSubmitting={reversingId === purchaseToCorrect?.id} onOpenChange={(open) => !open && setPurchaseToCorrect(null)} onConfirm={reverse} />
     </>;
 }

@@ -1,17 +1,12 @@
-const VISITOR_ID_KEY = "workhive_visitor_id";
+import { createClientId } from "@/lib/editable-line-key";
 
-function createVisitorId(): string {
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-        return crypto.randomUUID();
-    }
-    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`;
-}
+const VISITOR_ID_KEY = "workhive_visitor_id";
 
 export function getVisitorId(): string {
     if (typeof window === "undefined") return "";
     const existing = localStorage.getItem(VISITOR_ID_KEY);
     if (existing) return existing;
-    const created = createVisitorId();
+    const created = createClientId();
     localStorage.setItem(VISITOR_ID_KEY, created);
     return created;
 }

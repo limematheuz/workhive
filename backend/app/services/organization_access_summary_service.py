@@ -9,6 +9,7 @@ ORGANIZATION_CAPABILITIES = (
     "access.profiles.read", "access.profiles.manage",
     "organization.departments.read", "organization.departments.manage",
     "organization.teams.read", "organization.teams.manage",
+    "inventory.read", "inventory.manage",
 )
 
 

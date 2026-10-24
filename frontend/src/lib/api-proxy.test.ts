@@ -65,7 +65,7 @@ test("request header copy allows auth csrf and metadata but drops hop-by-hop hea
     assert.equal(copied.has("host"), false);
 });
 
-test("response header copy drops unsafe transport headers and preserves set-cookie", () => {
+test("response header copy preserves body length while dropping unsafe transport headers", () => {
     const source = new Headers({
         "content-type": "application/json",
         "content-length": "99",
@@ -76,7 +76,7 @@ test("response header copy drops unsafe transport headers and preserves set-cook
 
     const copied = copyProxyResponseHeaders(source);
     assert.equal(copied.get("content-type"), "application/json");
-    assert.equal(copied.has("content-length"), false);
+    assert.equal(copied.get("content-length"), "99");
     assert.equal(copied.has("connection"), false);
     assert.deepEqual(copied.getSetCookie(), ["session=abc; HttpOnly", "csrf=def; SameSite=Lax"]);
 });

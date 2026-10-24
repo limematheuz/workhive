@@ -1,6 +1,10 @@
-export function createEditableLineKey(prefix = "line") {
+export function createClientId() {
     if (typeof globalThis.crypto?.randomUUID === "function") {
-        return `${prefix}-${globalThis.crypto.randomUUID()}`;
+        return globalThis.crypto.randomUUID();
     }
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function createEditableLineKey(prefix = "line") {
+    return `${prefix}-${createClientId()}`;
 }

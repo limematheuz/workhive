@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { createEditableLineKey } from "@/lib/editable-line-key";
 import type { LocationServiceWindow, LocationWeekday } from "@/types/location";
 
 const WEEKDAYS: Array<[LocationWeekday, string]> = [
@@ -64,7 +65,7 @@ export function LocationServiceWindowsSection({
                     size="sm"
                     onClick={() => setServiceWindows([
                         ...serviceWindows,
-                        { ...EMPTY_SERVICE_WINDOW, days: [...EMPTY_SERVICE_WINDOW.days], draft_id: crypto.randomUUID() },
+                        { ...EMPTY_SERVICE_WINDOW, days: [...EMPTY_SERVICE_WINDOW.days], draft_id: createEditableLineKey("location-service-window") },
                     ])}
                 >
                     <Plus className="h-4 w-4" /> Añadir horario

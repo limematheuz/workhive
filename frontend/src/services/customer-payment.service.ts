@@ -56,4 +56,13 @@ export const CustomerPaymentService = {
         }
         return response.json();
     },
+
+    async voidPayment(paymentId: number, reason: string): Promise<CustomerPayment> {
+        const response = await apiFetch(`/api/v1/customer-payments/${paymentId}/void`, {
+            method: "POST",
+            body: JSON.stringify({ reason }),
+        });
+        await assertApiResponseOk(response, "No se pudo anular el cobro");
+        return response.json();
+    },
 };

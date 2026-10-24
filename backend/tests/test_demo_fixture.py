@@ -1,6 +1,7 @@
 import pytest
 
 from app.models.company_membership import Department, Team
+from app.models.client import Client
 from app.models.location import Location
 from app.models.permission_profile import (
     MembershipPermissionProfileScope,
@@ -8,6 +9,8 @@ from app.models.permission_profile import (
 )
 from app.models.subscription_entitlement import CompanySubscription
 from app.models.user import User
+from app.schemas.client import ClientResponse
+from app.schemas.user import UserResponse
 from scripts.demo_fixture import seed_demo_enterprise
 from scripts.seed_demo import DEMO_STORAGE_ROOT, require_demo_database
 from credentials import TEST_SECRET
@@ -36,8 +39,11 @@ def test_demo_fixture_creates_a_fictional_enterprise_company_with_scoped_profile
     )
     users = db.query(User).filter(User.company_id == company.id).all()
     assert len(users) == 5
-    assert all(user.email.endswith(".invalid") for user in users)
+    assert all(user.email.endswith(".example") for user in users)
     assert all(user.full_name for user in users)
+    assert all(UserResponse.model_validate(user).email.endswith(".example") for user in users)
+    client = db.query(Client).filter(Client.company_id == company.id).one()
+    assert ClientResponse.model_validate(client).email == "cliente@enterprise-demo.example"
     scopes = (
         db.query(MembershipPermissionProfileScope)
         .filter(MembershipPermissionProfileScope.company_id == company.id)

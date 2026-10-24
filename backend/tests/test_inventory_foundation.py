@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from app.models.user import User
 from tests.test_location_workspace import _admin, _company, _headers
 
 
@@ -141,3 +142,119 @@ def test_inventory_rejects_companies_without_the_feature(client, db):
     assert (
         response.headers["x-workhive-error-code"] == "entitlement.feature_not_in_plan"
     )
+
+
+def test_inventory_allows_managers_but_denies_viewers(client, db):
+    company = _inventory_company(db, "InventoryRoles")
+    manager = User(
+        email="inventory-manager@roles.test",
+        hashed_password="unused",
+        full_name="Inventory Manager",
+        company_id=company.id,
+        role_id=2,
+        is_active=True,
+    )
+    viewer = User(
+        email="inventory-viewer@roles.test",
+        hashed_password="unused",
+        full_name="Inventory Viewer",
+        company_id=company.id,
+        role_id=3,
+        is_active=True,
+    )
+    db.add_all([manager, viewer])
+    db.commit()
+    db.refresh(manager)
+    db.refresh(viewer)
+
+    manager_headers = _headers(manager)
+    viewer_headers = _headers(viewer)
+    created = client.post(
+        "/api/v1/inventory/suppliers",
+        headers=manager_headers,
+        json={"name": "Proveedor gestionado"},
+    )
+
+    assert created.status_code == 201, created.text
+    assert client.get("/api/v1/inventory/suppliers", headers=viewer_headers).status_code == 403
+    assert (
+        client.post(
+            "/api/v1/inventory/suppliers",
+            headers=viewer_headers,
+            json={"name": "Proveedor no autorizado"},
+        ).status_code
+        == 403
+    )
+
+
+def test_inventory_archives_empty_catalogue_entities_without_erasing_ledger(client, db):
+    company = _inventory_company(db, "InventoryArchive")
+    headers = _headers(_admin(db, company))
+
+    supplier = client.post(
+        "/api/v1/inventory/suppliers",
+        headers=headers,
+        json={"name": "Proveedor archivado"},
+    ).json()
+    material = client.post(
+        "/api/v1/inventory/materials",
+        headers=headers,
+        json={"sku": "ARCH-001", "name": "Material archivable", "supplier_id": supplier["id"]},
+    ).json()
+    warehouse = client.post(
+        "/api/v1/inventory/warehouses",
+        headers=headers,
+        json={"name": "Almacén archivable"},
+    ).json()
+
+    receipt = client.post(
+        "/api/v1/inventory/movements",
+        headers=headers,
+        json={
+            "material_id": material["id"],
+            "warehouse_id": warehouse["id"],
+            "movement_type": "receipt",
+            "quantity": "1.000",
+        },
+    )
+    assert receipt.status_code == 201, receipt.text
+    assert client.delete(
+        f"/api/v1/inventory/materials/{material['id']}", headers=headers
+    ).status_code == 409
+    assert client.delete(
+        f"/api/v1/inventory/warehouses/{warehouse['id']}", headers=headers
+    ).status_code == 409
+
+    drained = client.post(
+        "/api/v1/inventory/movements",
+        headers=headers,
+        json={
+            "material_id": material["id"],
+            "warehouse_id": warehouse["id"],
+            "movement_type": "adjustment_out",
+            "quantity": "1.000",
+            "reference": "Corrección de catálogo QA",
+        },
+    )
+    assert drained.status_code == 201, drained.text
+
+    assert client.delete(
+        f"/api/v1/inventory/materials/{material['id']}", headers=headers
+    ).status_code == 204
+    assert client.delete(
+        f"/api/v1/inventory/warehouses/{warehouse['id']}", headers=headers
+    ).status_code == 204
+    assert client.delete(
+        f"/api/v1/inventory/suppliers/{supplier['id']}", headers=headers
+    ).status_code == 204
+
+    assert client.get("/api/v1/inventory/materials", headers=headers).json() == []
+    assert client.get("/api/v1/inventory/warehouses", headers=headers).json() == []
+    assert client.get("/api/v1/inventory/suppliers", headers=headers).json() == []
+    assert client.get("/api/v1/inventory/lots", headers=headers).json() == []
+    movements = client.get("/api/v1/inventory/movements", headers=headers).json()
+    assert [movement["id"] for movement in movements] == [drained.json()["id"], receipt.json()["id"]]
+    assert {
+        (movement["material_name"], movement["warehouse_name"])
+        for movement in movements
+    } == {("Material archivable", "Almacén archivable")}

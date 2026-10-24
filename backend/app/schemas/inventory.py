@@ -91,6 +91,8 @@ class InventoryMovementResponse(InventoryMovementCreate):
     reversal_of_movement_id: int | None
     recorded_by_user_id: int | None
     created_at: datetime
+    material_name: str | None = None
+    warehouse_name: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
