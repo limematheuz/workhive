@@ -39,7 +39,7 @@ export function CustomerPaymentVoidDialog({
         <DialogContent compact>
             <DialogHeader>
                 <DialogTitle>Anular cobro</DialogTitle>
-                <DialogDescription>El cobro se conservará en el historial como anulado y la factura volverá a reflejar su saldo pendiente.</DialogDescription>
+                <DialogDescription>El cobro se conservará en el historial como anulado. Esto no devuelve el dinero recibido ni deshace una rectificación. Revisa el estado y el saldo de la factura después de confirmar.</DialogDescription>
             </DialogHeader>
             <form className="grid gap-4" onSubmit={(event) => void submit(event)}>
                 <div className="grid gap-2">

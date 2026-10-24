@@ -16,5 +16,7 @@ test("customer payments support an auditable void from the invoice workspace", (
     assert.match(section, /CustomerPaymentService\.voidPayment/);
     assert.match(dialog, /Motivo de la anulación/);
     assert.match(dialog, /Anular cobro/);
+    assert.match(dialog, /no devuelve el dinero recibido ni deshace una rectificación/);
+    assert.doesNotMatch(dialog, /volverá a reflejar su saldo pendiente/);
     assert.doesNotMatch(dialog, /window\.prompt/);
 });
