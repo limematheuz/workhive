@@ -2478,7 +2478,9 @@
         "work": "Work",
         "time": "Time",
         "finance": "Finance",
-        "commercial": "Sales"
+        "commercial": "Sales",
+        "inventory": "Inventory",
+        "quality": "Quality"
       },
       "permission_catalog": {
         "access.members.read": "View company people",
@@ -2504,6 +2506,18 @@
         "time.approve": "Review time correction requests",
         "finance.read": "View quotes, invoices, expenses, and fiscal records",
         "finance.manage": "Manage financial information",
+        "labor_costs.read": "View confidential internal labor costs",
+        "labor_costs.manage": "Set confidential internal labor costs",
+        "inventory.read": "View suppliers, materials, and stock",
+        "inventory.manage": "Manage suppliers, materials, warehouses, and stock movements",
+        "quality.templates.read": "View inspection templates",
+        "quality.templates.manage": "Create and update inspection templates",
+        "quality.inspections.read": "View quality inspections",
+        "quality.inspections.manage": "Perform and close quality inspections",
+        "quality.incidents.read": "View incidents and corrective actions",
+        "quality.incidents.manage": "Manage incidents and corrective actions",
+        "quality.complaints.read": "View customer complaints",
+        "quality.complaints.manage": "Manage customer complaints",
         "unknown": "Additional WorkHive permission"
       },
       "permission_guidance": {
@@ -2529,7 +2543,19 @@
         "time.manage": "Start and log time for permitted work.",
         "time.approve": "Review and decide time correction requests in permitted locations.",
         "finance.read": "View quotes, invoices, expenses, and fiscal records.",
-        "finance.manage": "Create and update company financial information."
+        "finance.manage": "Create and update company financial information.",
+        "labor_costs.read": "View confidential internal hourly labor costs for this company.",
+        "labor_costs.manage": "Set and update confidential internal hourly labor costs for people.",
+        "inventory.read": "View company suppliers, the materials catalog, and available stock.",
+        "inventory.manage": "Manage suppliers, materials, warehouses, and stock movements.",
+        "quality.templates.read": "View templates used for quality inspections.",
+        "quality.templates.manage": "Create and update quality inspection templates.",
+        "quality.inspections.read": "View the company's quality inspections.",
+        "quality.inspections.manage": "Perform and close quality inspections.",
+        "quality.incidents.read": "View quality incidents and their corrective actions.",
+        "quality.incidents.manage": "Manage quality incidents and corrective actions.",
+        "quality.complaints.read": "View customer complaints.",
+        "quality.complaints.manage": "Manage customer complaints and follow-up."
       }
     },
     "member_dialog": {

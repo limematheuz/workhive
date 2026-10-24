@@ -48,3 +48,20 @@ test("organization and invitation flows use the shared English and Spanish dicti
     assert.match(dictionaryContext, /DEFAULT_LOCALE: Locale = "es"/);
     assert.match(dictionaryContext, /return stored === "en" \? "en" : "es"/);
 });
+
+test("every built-in permission has a localized category, label, and explanation", () => {
+    const en = JSON.parse(source("../dictionaries/en.json"));
+    const es = JSON.parse(source("../dictionaries/es.json"));
+    const backendSource = source("../../../backend/app/services/organization_base_profile_service.py");
+    const definitions = backendSource.split("DEFAULT_PERMISSION_DEFINITIONS:")[1].split("COMMERCIAL_PERMISSION_CODES")[0];
+    const permissions = [...definitions.matchAll(/\(\s*"([a-z_]+\.[a-z_.]+)",\s*"([a-z_]+)",/g)];
+    assert.ok(permissions.length >= 30);
+
+    for (const [, code, category] of permissions) {
+        for (const dictionary of [es, en]) {
+            assert.ok(dictionary.organization.profiles.permission_categories[category], `${category} category is missing`);
+            assert.ok(dictionary.organization.profiles.permission_catalog[code], `${code} label is missing`);
+            assert.ok(dictionary.organization.profiles.permission_guidance[code], `${code} guidance is missing`);
+        }
+    }
+});
