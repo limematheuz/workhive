@@ -51,6 +51,8 @@ export type InventoryMovement = {
     notes: string | null;
     recorded_by_user_id: number | null;
     created_at: string;
+    material_name: string | null;
+    warehouse_name: string | null;
 };
 
 export type InventoryStockBalance = {

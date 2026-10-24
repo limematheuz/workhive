@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
+import { createEditableLineKey } from "@/lib/editable-line-key";
 import { replaceDraftScope, type ScopeDraft } from "@/lib/organization-assignment-drafts";
 import type { OrganizationScopeType } from "@/services/organization.service";
 
@@ -48,6 +49,6 @@ export function MemberProfileScopeFields({ scopes, onChange, companyId, departme
                 <Button type="button" variant="ghost" disabled={disabled || scopes.length === 1} onClick={() => onChange(scopes.filter((_, position) => position !== index))}>{copy.remove_scope}</Button>
             </div>;
         })}
-        <Button type="button" variant="outline" size="sm" disabled={disabled || scopes.length >= 100} onClick={() => onChange([...scopes, { scope_type: "location", scope_id: 0, draft_id: crypto.randomUUID() }])}>{copy.add_scope}</Button>
+        <Button type="button" variant="outline" size="sm" disabled={disabled || scopes.length >= 100} onClick={() => onChange([...scopes, { scope_type: "location", scope_id: 0, draft_id: createEditableLineKey("member-scope") }])}>{copy.add_scope}</Button>
     </div>;
 }

@@ -26,7 +26,7 @@ def _create_demo_locations(
         city="Ciudad de Ejemplo",
         postal_code="00001",
         country="España",
-        email="cliente@enterprise-demo.invalid",
+        email="cliente@enterprise-demo.example",
     )
     db.add(client)
     db.flush()

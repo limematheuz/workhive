@@ -129,6 +129,8 @@ class RealtimeEventHub:
     async def stop(self) -> None:
         self._stopped.set()
         self._set_listener_connected(False)
+        for subscriber in self._subscribers.values():
+            subscriber.changed.set()
         task = self._listener_task
         self._listener_task = None
         if task is None:
@@ -181,6 +183,9 @@ class RealtimeEventHub:
                 except TimeoutError:
                     yield ": keepalive\n\n"
                     continue
+
+                if self._stopped.is_set():
+                    return
 
                 topics = sorted(subscriber.pending_topics)
                 subscriber.pending_topics.clear()

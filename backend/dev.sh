@@ -8,4 +8,4 @@ echo "Running local database migrations..."
 alembic upgrade head
 
 echo "Starting local application..."
-exec uvicorn app.main:app --reload
+exec uvicorn app.main:app --reload --timeout-graceful-shutdown 5

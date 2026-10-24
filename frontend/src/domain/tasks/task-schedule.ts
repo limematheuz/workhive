@@ -92,6 +92,18 @@ export function isTaskPlanningDateBeforeToday(
     return Boolean(date && startOfLocalDay(date) < startOfLocalDay(now));
 }
 
+/** Historical work remains editable, but its date cannot be moved into the past. */
+export function isTaskPlanningDateChangeToPast(
+    currentPlanningDate: string,
+    nextPlanningDate: string,
+    now = new Date(),
+): boolean {
+    return (
+        currentPlanningDate !== nextPlanningDate
+        && isTaskPlanningDateBeforeToday(nextPlanningDate, now)
+    );
+}
+
 export function getTaskScheduleDate(task: TaskItem): Date | null {
     const scheduled = task.scheduled_start_at || task.due_at || task.created_at;
     return scheduled ? parseTaskPlanningDate(scheduled) : null;

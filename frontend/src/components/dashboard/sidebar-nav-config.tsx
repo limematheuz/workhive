@@ -9,6 +9,7 @@ export const SIDEBAR_LOGO_STYLE: CSSProperties = { filter: "var(--logo-filter)" 
 export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
     isCompanyAdmin: boolean;
+    canReadClients: boolean;
     canManageTime: boolean;
     canViewWorkReports: boolean;
     canViewOrganization?: boolean;
@@ -50,7 +51,7 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
         ...(flags.canViewQuality ? [
             { href: "/dashboard/quality", label: "Calidad", exact: false, icon: <Sparkles /> },
         ] : []),
-        { href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> },
+        ...(flags.canReadClients ? [{ href: "/dashboard/clients", label: dict.dashboard.clients, exact: false, icon: <Building2 /> }] : []),
         ...(flags.isCompanyAdmin || flags.canViewOrganization ? [
             { href: "/dashboard/organization", label: dict.organization.nav_label, exact: false, icon: <Network /> },
         ] : []),

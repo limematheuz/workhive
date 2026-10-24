@@ -3,8 +3,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Package } from "lucide-react";
+import { Check, Loader2, Package } from "lucide-react";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { formatHoursShort } from "@/lib/format-hours";
 import {
@@ -88,7 +87,9 @@ export function InvoiceTaskSelector({
                                 }`}
                             >
                                 <div className="mt-0.5">
-                                    <Checkbox checked={isChecked} aria-hidden="true" tabIndex={-1} className="pointer-events-none size-3.5" />
+                                    <span aria-hidden="true" className={`flex size-3.5 items-center justify-center rounded-md border ${isChecked ? "border-accent bg-accent text-accent-foreground" : "border-[var(--border-soft)]"}`}>
+                                        {isChecked ? <Check className="size-3" /> : null}
+                                    </span>
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-semibold text-[var(--text-main)] truncate">

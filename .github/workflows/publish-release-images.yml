@@ -82,7 +82,10 @@ jobs:
     name: Require successful release checks
     needs: release-metadata
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # CI can legitimately take longer than the original ~4-minute polling
+    # window. Leave enough room for a complete release gate without making
+    # publication wait indefinitely.
+    timeout-minutes: 10
 
     steps:
       - name: Verify required checks on the release commit
@@ -101,7 +104,7 @@ jobs:
             "react-doctor"
           )
 
-          for attempt in $(seq 1 17); do
+          for attempt in $(seq 1 33); do
             checks_json="$(gh api \
               -H 'Accept: application/vnd.github+json' \
               "/repos/${GITHUB_REPOSITORY}/commits/${RELEASE_SHA}/check-runs?per_page=100")"
@@ -117,7 +120,7 @@ jobs:
               case "$conclusion" in
                 success) ;;
                 queued|in_progress|missing)
-                  printf 'Waiting for required check %s (%s), attempt %s/17.\n' \
+                  printf 'Waiting for required check %s (%s), attempt %s/33.\n' \
                     "$check_name" "$conclusion" "$attempt"
                   pending=1
                   ;;

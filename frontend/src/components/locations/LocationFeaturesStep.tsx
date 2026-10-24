@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { createEditableLineKey } from "@/lib/editable-line-key";
 import { Textarea } from "@/components/ui/textarea";
 import type { LocationContact, LocationContactRole } from "@/types/location";
 import type { LocationFeaturesStepProps } from "./location-workspace-types";
@@ -140,7 +141,7 @@ export function LocationFeaturesStep({
                         type="button"
                         variant="secondary"
                         size="sm"
-                        onClick={() => setContacts([...contacts, { ...EMPTY_CONTACT, draft_id: crypto.randomUUID() }])}
+                        onClick={() => setContacts([...contacts, { ...EMPTY_CONTACT, draft_id: createEditableLineKey("location-contact") }])}
                     >
                         <Plus className="h-4 w-4" /> Añadir contacto
                     </Button>

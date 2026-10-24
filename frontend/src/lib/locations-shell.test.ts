@@ -31,6 +31,13 @@ test("locations page uses billing surfaces and a compact filter chip", () => {
     assert.match(grid, /DataListTable/);
 });
 
+test("locations avoids requesting the client catalog when the profile cannot read it", () => {
+    const page = source("../app/dashboard/locations/page.tsx");
+
+    assert.match(page, /ClientService\.getAccess\(\)/);
+    assert.match(page, /canReadClients \? ClientService\.getClients\(\) : Promise\.resolve\(\[\] as Client\[\]\)/);
+});
+
 test("location services can be unlinked with an explicit confirmation without deleting the catalog template", () => {
     const tab = source("../components/locations/LocationTemplatesTab.tsx");
 

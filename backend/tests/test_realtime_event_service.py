@@ -85,6 +85,21 @@ def test_event_hub_delivers_a_user_notification_without_company_membership():
     assert '"notifications"' in asyncio.run(scenario())
 
 
+def test_event_hub_closes_streams_when_the_application_stops():
+    async def scenario() -> bool:
+        hub = RealtimeEventHub("sqlite://")
+        stream = hub.stream_for_user(user_id=10, company_id=7)
+        await anext(stream)
+        await hub.stop()
+        try:
+            await anext(stream)
+        except StopAsyncIteration:
+            return True
+        return False
+
+    assert asyncio.run(scenario())
+
+
 def test_realtime_stream_requires_authentication_and_keeps_its_payload_scoped(
     client, db, monkeypatch
 ):

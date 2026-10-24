@@ -32,6 +32,7 @@ export default function LocationsPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [tasks, setTasks] = useState<TaskItem[]>([]);
     const [collaborations, setCollaborations] = useState<CompanyCollaboration[]>([]);
+    const [canReadClients, setCanReadClients] = useState(false);
     const [selectedClientId, setSelectedClientId] = useState<number | "ALL">("ALL");
 
     // Filter and tab state
@@ -53,7 +54,7 @@ export default function LocationsPage() {
     const loadInitialData = useCallback(async () => {
         try {
             const [clientsData, collaborationsData] = await Promise.all([
-                ClientService.getClients(),
+                canReadClients ? ClientService.getClients() : Promise.resolve([] as Client[]),
                 CollaborationService.getCollaborations().catch(() => [] as CompanyCollaboration[])
             ]);
             setClients(clientsData);
@@ -61,6 +62,20 @@ export default function LocationsPage() {
         } catch (error) {
             console.error("Error loading initial data", error);
         }
+    }, [canReadClients]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        void ClientService.getAccess().then((access) => {
+            if (!cancelled) setCanReadClients(access.can_read_clients);
+        }).catch(() => {
+            if (!cancelled) setCanReadClients(false);
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     useEffect(() => {

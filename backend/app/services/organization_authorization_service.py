@@ -6,6 +6,9 @@ from app.models.company import Company
 from app.models.external_access_grant import ExternalAccessGrant
 from app.models.user import User
 from app.repositories import organization as organization_repo
+from app.repositories.organization_legacy_viewer_locations import (
+    list_legacy_viewer_location_ids,
+)
 from app.services.entitlement_service import require_feature
 from app.services.external_access_policy import require_external_company_capability
 from app.services.organization_location_scope_service import (
@@ -19,6 +22,7 @@ from app.services.organization_permission_policy import is_system_only_permissio
 from app.services.user_scope import (
     is_platform_superadmin,
     require_company_context,
+    role_name,
 )
 
 
@@ -122,12 +126,26 @@ def require_capability(
     membership = principal
 
     target_id = scope_id if scope_id is not None else company_id
-    if legacy_role_allows(
+    legacy_allowed = legacy_role_allows(
         db,
         current_user,
         capability,
         company_id=company_id,
         membership=membership,
+    )
+    if legacy_allowed and not (
+        capability == "locations.read"
+        and role_name(current_user) == "viewer"
+        and scope_type == "location"
+    ):
+        return membership
+    if (
+        legacy_allowed
+        and scope_type == "location"
+        and scope_id
+        in list_legacy_viewer_location_ids(
+            db, company_id=company_id, user_id=current_user.id
+        )
     ):
         return membership
     if organization_repo.has_permission_in_scope(
@@ -232,6 +250,10 @@ def permitted_location_ids(
         company_id=company_id,
         membership=membership,
     ):
+        if capability == "locations.read" and role_name(current_user) == "viewer":
+            return list_legacy_viewer_location_ids(
+                db, company_id=company_id, user_id=current_user.id
+            )
         return None
     return resolve_permitted_location_ids(
         db,

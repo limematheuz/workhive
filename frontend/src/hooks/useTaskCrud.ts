@@ -23,6 +23,7 @@ import {
 } from "@/domain/tasks/task-edit";
 import {
     getScheduleViolation,
+    isTaskPlanningDateChangeToPast,
     isTaskPlanningDateBeforeToday,
 } from "@/domain/tasks/task-schedule";
 import { completionDateForStatus } from "@/domain/tasks/task-status";
@@ -413,7 +414,10 @@ export function useTaskCrud({
             planningDate: editCreatedAt,
             planningTime: editPlanningTime,
         };
-        if (isTaskPlanningDateBeforeToday(values.planningDate)) {
+        if (isTaskPlanningDateChangeToPast(
+            taskToEditValues(selectedTask).planningDate,
+            values.planningDate,
+        )) {
             toast.error("La fecha de planificación no puede ser anterior a hoy");
             return;
         }

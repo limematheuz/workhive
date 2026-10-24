@@ -11,6 +11,7 @@ from app.repositories import inventory as inventory_repo
 from app.schemas.inventory import (
     InventoryMaterialCreate,
     InventoryMovementCreate,
+    InventoryMovementResponse,
     InventorySupplierCreate,
     InventoryWarehouseCreate,
 )
@@ -54,6 +55,24 @@ def create_supplier(db: Session, current_user: User, payload: InventorySupplierC
     return _commit(db, supplier)
 
 
+def archive_supplier(db: Session, current_user: User, supplier_id: int):
+    company_id = _company_id(db, current_user, INVENTORY_MANAGE)
+    supplier = inventory_repo.get_supplier(
+        db, company_id=company_id, supplier_id=supplier_id
+    )
+    if supplier is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proveedor no encontrado")
+    if inventory_repo.has_active_materials_for_supplier(
+        db, company_id=company_id, supplier_id=supplier.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Archiva primero los materiales activos de este proveedor",
+            headers={"X-WorkHive-Error-Code": "inventory.supplier_has_active_materials"},
+        )
+    return _commit(db, inventory_repo.archive_supplier(db, supplier))
+
+
 def list_materials(db: Session, current_user: User):
     company_id = _company_id(db, current_user, INVENTORY_READ)
     return inventory_repo.list_materials(db, company_id=company_id)
@@ -77,6 +96,24 @@ def create_material(db: Session, current_user: User, payload: InventoryMaterialC
     return _commit(db, material)
 
 
+def archive_material(db: Session, current_user: User, material_id: int):
+    company_id = _company_id(db, current_user, INVENTORY_MANAGE)
+    material = inventory_repo.get_material(
+        db, company_id=company_id, material_id=material_id
+    )
+    if material is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Material no encontrado")
+    if inventory_repo.has_available_stock(
+        db, company_id=company_id, material_id=material.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede archivar un material con stock disponible",
+            headers={"X-WorkHive-Error-Code": "inventory.material_has_stock"},
+        )
+    return _commit(db, inventory_repo.archive_material(db, material))
+
+
 def list_warehouses(db: Session, current_user: User):
     company_id = _company_id(db, current_user, INVENTORY_READ)
     return inventory_repo.list_warehouses(db, company_id=company_id)
@@ -92,9 +129,37 @@ def create_warehouse(
     return _commit(db, warehouse)
 
 
+def archive_warehouse(db: Session, current_user: User, warehouse_id: int):
+    company_id = _company_id(db, current_user, INVENTORY_MANAGE)
+    warehouse = inventory_repo.get_warehouse(
+        db, company_id=company_id, warehouse_id=warehouse_id
+    )
+    if warehouse is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Almacén no encontrado")
+    if inventory_repo.has_available_stock(
+        db, company_id=company_id, warehouse_id=warehouse.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se puede archivar un almacén con stock disponible",
+            headers={"X-WorkHive-Error-Code": "inventory.warehouse_has_stock"},
+        )
+    return _commit(db, inventory_repo.archive_warehouse(db, warehouse))
+
+
 def list_movements(db: Session, current_user: User):
     company_id = _company_id(db, current_user, INVENTORY_READ)
-    return inventory_repo.list_movements(db, company_id=company_id)
+    return [
+        InventoryMovementResponse.model_validate(movement).model_copy(
+            update={
+                "material_name": material.name,
+                "warehouse_name": warehouse.name,
+            }
+        )
+        for movement, material, warehouse in inventory_repo.list_movements(
+            db, company_id=company_id
+        )
+    ]
 
 
 def list_lot_balances(db: Session, current_user: User):

@@ -41,6 +41,15 @@ def create_supplier(
     return inventory_service.create_supplier(db, current_user, payload)
 
 
+@router.delete("/suppliers/{supplier_id}", status_code=status.HTTP_204_NO_CONTENT)
+def archive_supplier(
+    supplier_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    inventory_service.archive_supplier(db, current_user, supplier_id)
+
+
 @router.get("/materials", response_model=list[InventoryMaterialResponse])
 def read_materials(db: Session = Depends(get_db), current_user: User = ActiveUser):
     return inventory_service.list_materials(db, current_user)
@@ -64,6 +73,15 @@ def create_material(
     return inventory_service.create_material(db, current_user, payload)
 
 
+@router.delete("/materials/{material_id}", status_code=status.HTTP_204_NO_CONTENT)
+def archive_material(
+    material_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    inventory_service.archive_material(db, current_user, material_id)
+
+
 @router.get("/warehouses", response_model=list[InventoryWarehouseResponse])
 def read_warehouses(db: Session = Depends(get_db), current_user: User = ActiveUser):
     return inventory_service.list_warehouses(db, current_user)
@@ -80,6 +98,15 @@ def create_warehouse(
     current_user: User = ActiveUser,
 ):
     return inventory_service.create_warehouse(db, current_user, payload)
+
+
+@router.delete("/warehouses/{warehouse_id}", status_code=status.HTTP_204_NO_CONTENT)
+def archive_warehouse(
+    warehouse_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = ActiveUser,
+):
+    inventory_service.archive_warehouse(db, current_user, warehouse_id)
 
 
 @router.get("/movements", response_model=list[InventoryMovementResponse])

@@ -33,3 +33,24 @@ test("task edit modal keeps a denser report-like chrome without footer close", (
     assert.doesNotMatch(actions, /<button\b/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
 });
+
+test("historical tasks can update their metadata without being blocked by their original date", () => {
+    const crud = read("../hooks/useTaskCrud.ts");
+    const calendar = read("../hooks/useOperationsCalendar.ts");
+    const editHandler = crud.slice(
+        crud.indexOf("const handleSaveTaskDetails"),
+        crud.indexOf("const handleDeleteTask"),
+    );
+    const calendarEditHandler = calendar.slice(
+        calendar.indexOf("const handleSaveTaskDetails"),
+        calendar.indexOf("const handleDeleteTask"),
+    );
+    const createHandler = crud.slice(
+        crud.indexOf("const handleCreateTask"),
+        crud.indexOf("const handleLinkHouseTemplate"),
+    );
+
+    assert.match(editHandler, /isTaskPlanningDateChangeToPast/);
+    assert.match(calendarEditHandler, /isTaskPlanningDateChangeToPast/);
+    assert.match(createHandler, /isTaskPlanningDateBeforeToday/);
+});

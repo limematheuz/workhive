@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
+import { createClientId } from "@/lib/editable-line-key";
 
 
 export type TaskReportType = "issue" | "note" | "photo" | "checklist_note" | "checklist_photo";
@@ -75,7 +76,7 @@ export const TaskReportService = {
         const response = await apiFetch("/api/v1/task-reports/", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...payload, client_event_id: crypto.randomUUID() }),
+            body: JSON.stringify({ ...payload, client_event_id: createClientId() }),
         });
         return parseReportResponse(response);
     },

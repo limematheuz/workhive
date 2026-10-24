@@ -20,6 +20,7 @@ import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { canManageQuality, canViewQuality, isPlatformSuperadmin } from "@/domain/access/roles";
 import { getErrorMessage } from "@/lib/errors";
+import { createEditableLineKey } from "@/lib/editable-line-key";
 import { formatDate } from "@/lib/format";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { toast } from "@/lib/toast";
@@ -37,7 +38,7 @@ function correctiveActionStatusLabel(status: QualityCorrectiveAction["status"]):
 }
 
 function createTemplateItemDraft(): TemplateItemDraft {
-    return { id: crypto.randomUUID(), title: "", max_points: "1" };
+    return { id: createEditableLineKey("quality-template-item"), title: "", max_points: "1" };
 }
 function locationName(locations: Location[], locationId: number | null) {
     if (locationId === null) return "Toda la empresa";

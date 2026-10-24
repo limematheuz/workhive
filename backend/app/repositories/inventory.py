@@ -51,6 +51,27 @@ def create_supplier(db: Session, **values) -> InventorySupplier:
     return supplier
 
 
+def archive_supplier(db: Session, supplier: InventorySupplier) -> InventorySupplier:
+    supplier.is_active = False
+    db.flush()
+    return supplier
+
+
+def has_active_materials_for_supplier(
+    db: Session, *, company_id: int, supplier_id: int
+) -> bool:
+    return (
+        db.query(InventoryMaterial.id)
+        .filter(
+            InventoryMaterial.company_id == company_id,
+            InventoryMaterial.supplier_id == supplier_id,
+            InventoryMaterial.is_active.is_(True),
+        )
+        .first()
+        is not None
+    )
+
+
 def list_materials(db: Session, *, company_id: int) -> list[InventoryMaterial]:
     return (
         db.query(InventoryMaterial)
@@ -84,6 +105,12 @@ def create_material(db: Session, **values) -> InventoryMaterial:
     return material
 
 
+def archive_material(db: Session, material: InventoryMaterial) -> InventoryMaterial:
+    material.is_active = False
+    db.flush()
+    return material
+
+
 def list_warehouses(db: Session, *, company_id: int) -> list[InventoryWarehouse]:
     return (
         db.query(InventoryWarehouse)
@@ -112,6 +139,12 @@ def get_warehouse(
 def create_warehouse(db: Session, **values) -> InventoryWarehouse:
     warehouse = InventoryWarehouse(**values)
     db.add(warehouse)
+    db.flush()
+    return warehouse
+
+
+def archive_warehouse(db: Session, warehouse: InventoryWarehouse) -> InventoryWarehouse:
+    warehouse.is_active = False
     db.flush()
     return warehouse
 
@@ -199,6 +232,32 @@ def available_quantity(
     return Decimal(str(value or 0))
 
 
+def has_available_stock(
+    db: Session,
+    *,
+    company_id: int,
+    material_id: int | None = None,
+    warehouse_id: int | None = None,
+) -> bool:
+    """Whether an active catalogue entity still owns available stock."""
+
+    signed_quantity = case(
+        (
+            InventoryMovement.movement_type.in_(("receipt", "adjustment_in")),
+            InventoryMovement.quantity,
+        ),
+        else_=-InventoryMovement.quantity,
+    )
+    query = db.query(func.coalesce(func.sum(signed_quantity), 0)).filter(
+        InventoryMovement.company_id == company_id
+    )
+    if material_id is not None:
+        query = query.filter(InventoryMovement.material_id == material_id)
+    if warehouse_id is not None:
+        query = query.filter(InventoryMovement.warehouse_id == warehouse_id)
+    return Decimal(str(query.scalar() or 0)) > 0
+
+
 def available_lot_quantity(
     db: Session,
     *,
@@ -273,10 +332,16 @@ def create_movement(db: Session, **values) -> InventoryMovement:
     return movement
 
 
-def list_movements(db: Session, *, company_id: int) -> list[InventoryMovement]:
+def list_movements(db: Session, *, company_id: int):
     return (
-        db.query(InventoryMovement)
-        .filter(InventoryMovement.company_id == company_id)
+        db.query(InventoryMovement, InventoryMaterial, InventoryWarehouse)
+        .join(InventoryMaterial, InventoryMaterial.id == InventoryMovement.material_id)
+        .join(InventoryWarehouse, InventoryWarehouse.id == InventoryMovement.warehouse_id)
+        .filter(
+            InventoryMovement.company_id == company_id,
+            InventoryMaterial.company_id == company_id,
+            InventoryWarehouse.company_id == company_id,
+        )
         .order_by(InventoryMovement.created_at.desc(), InventoryMovement.id.desc())
         .all()
     )
@@ -332,6 +397,8 @@ def list_lot_balances(db: Session, *, company_id: int):
             InventoryLot.company_id == company_id,
             InventoryMaterial.company_id == company_id,
             InventoryWarehouse.company_id == company_id,
+            InventoryMaterial.is_active.is_(True),
+            InventoryWarehouse.is_active.is_(True),
         )
         .group_by(InventoryLot.id, InventoryMaterial.id, InventoryWarehouse.id)
         .order_by(

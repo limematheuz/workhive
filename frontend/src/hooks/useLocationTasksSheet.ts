@@ -12,6 +12,7 @@ import {
     LocationTemplateService,
     TemplateTaskService,
 } from "@/services/template.service";
+import { OrganizationService } from "@/services/organization.service";
 import type {
     LocationTemplate as HouseTemplate,
     TemplateTask,
@@ -185,14 +186,21 @@ export function useLocationTasksSheet({ location, open, initialCreateForm, initi
     const syncAdminSheetData = useEffectEvent(async () => {
         try {
             if (isAdminOrManager) {
-                const data = await UserService.getUsers();
-                const filtered = data.filter(
-                    (user) => user.role?.name === "viewer" && user.is_active !== false
-                );
-                setUsers(filtered);
+                const access = await OrganizationService.getAccess();
+                if (access["access.members.read"]) {
+                    const data = await UserService.getUsers();
+                    const filtered = data.filter(
+                        (user) => user.role?.name === "viewer" && user.is_active !== false
+                    );
+                    setUsers(filtered);
+                } else {
+                    setUsers([]);
+                }
             }
-        } catch (error) {
-            console.error("Error fetching users", error);
+        } catch {
+            // A task manager may not be allowed to browse the people directory.
+            // The workspace remains usable without assignment choices.
+            setUsers([]);
         }
         if (locationId) await loadHouseTemplates(locationId);
     });

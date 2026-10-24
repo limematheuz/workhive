@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkOrderMaterialCorrectionDialog } from "@/components/work-orders/WorkOrderMaterialCorrectionDialog";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { InventoryService } from "@/services/inventory.service";
@@ -52,6 +53,7 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
     const [consumedQuantity, setConsumedQuantity] = useState("");
     const [notes, setNotes] = useState("");
     const [reversingId, setReversingId] = useState<number | null>(null);
+    const [movementToReverse, setMovementToReverse] = useState<InventoryMovement | null>(null);
 
     const reload = useCallback(async () => {
         setLoading(true);
@@ -114,16 +116,16 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
         }
     };
 
-    const reverse = async (movement: InventoryMovement) => {
-        const reason = window.prompt("Motivo de la corrección del consumo:");
-        if (!reason?.trim()) return;
+    const reverse = async (movement: InventoryMovement, reason: string) => {
         setReversingId(movement.id);
         try {
-            await WorkOrderService.reverseMaterialConsumption(workOrder.id, movement.id, reason.trim());
+            await WorkOrderService.reverseMaterialConsumption(workOrder.id, movement.id, reason);
             toast.success("Consumo corregido mediante una entrada de ajuste.");
             await reload();
+            return true;
         } catch (error) {
             toast.error(getErrorMessage(error, "No se pudo corregir el consumo."));
+            return false;
         } finally {
             setReversingId(null);
         }
@@ -155,12 +157,13 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
                         <span key="warehouse" className="truncate text-sm text-[var(--text-main)]">{warehousesById.get(movement.warehouse_id)?.name ?? `Almacén #${movement.warehouse_id}`}</span>,
                         <span key="lot" className="text-sm text-[var(--text-muted)]">{movement.lot_id ? lotsById.get(movement.lot_id)?.code ?? `Lote #${movement.lot_id}` : "—"}</span>,
                         <span key="quantity" className="block text-right text-sm font-semibold text-[var(--text-main)]">{movement.movement_type === "issue" ? "−" : "+"}{quantity(movement.quantity)}</span>,
-                        <div key="actions" className="flex justify-end">{movement.movement_type === "issue" && !correctedMovementIds.has(movement.id) && <Button type="button" size="sm" variant="outline" disabled={reversingId === movement.id} onClick={() => void reverse(movement)}>{reversingId === movement.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}Corregir</Button>}</div>,
+                        <div key="actions" className="flex justify-end">{movement.movement_type === "issue" && !correctedMovementIds.has(movement.id) && <Button type="button" size="sm" variant="outline" disabled={reversingId === movement.id} onClick={() => setMovementToReverse(movement)}>{reversingId === movement.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}Corregir</Button>}</div>,
                     ]}
-                    renderCompactRow={(movement) => <div className="flex min-w-0 items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{materialsById.get(movement.material_id)?.name ?? `Material #${movement.material_id}`}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{movement.movement_type === "issue" ? "Consumo" : "Corrección"} · {lotsById.get(movement.lot_id ?? 0)?.code ?? "Sin lote"}</p></div><div className="flex shrink-0 items-center gap-2"><span className="text-sm font-semibold text-[var(--text-main)]">{movement.movement_type === "issue" ? "−" : "+"}{quantity(movement.quantity)}</span>{movement.movement_type === "issue" && !correctedMovementIds.has(movement.id) && <Button type="button" size="sm" variant="outline" disabled={reversingId === movement.id} onClick={() => void reverse(movement)}><RotateCcw className="size-4" />Corregir</Button>}</div></div>}
+                    renderCompactRow={(movement) => <div className="flex min-w-0 items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{materialsById.get(movement.material_id)?.name ?? `Material #${movement.material_id}`}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{movement.movement_type === "issue" ? "Consumo" : "Corrección"} · {lotsById.get(movement.lot_id ?? 0)?.code ?? "Sin lote"}</p></div><div className="flex shrink-0 items-center gap-2"><span className="text-sm font-semibold text-[var(--text-main)]">{movement.movement_type === "issue" ? "−" : "+"}{quantity(movement.quantity)}</span>{movement.movement_type === "issue" && !correctedMovementIds.has(movement.id) && <Button type="button" size="sm" variant="outline" disabled={reversingId === movement.id} onClick={() => setMovementToReverse(movement)}><RotateCcw className="size-4" />Corregir</Button>}</div></div>}
                 />
             </div>
             <DialogFooter><Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cerrar</Button></DialogFooter>
+            <WorkOrderMaterialCorrectionDialog movement={movementToReverse} isSubmitting={reversingId !== null} onOpenChange={(open) => !open && setMovementToReverse(null)} onConfirm={reverse} />
         </DialogContent>
     </Dialog>;
 }
