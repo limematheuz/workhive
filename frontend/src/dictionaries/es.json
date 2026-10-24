@@ -1344,7 +1344,9 @@
       "limits.departments": "Departamentos",
       "limits.teams": "Equipos",
       "limits.external_portals": "Usuarios de portal externo",
-      "limits.accountant_portals": "Usuarios de portal de gestoría"
+      "limits.accountant_portals": "Usuarios de portal de gestoría",
+      "limits.partner_portals": "Usuarios de portal de colaboradores",
+      "limits.location_document_storage_bytes": "Tamaño máximo por documento de ubicación"
     }
   },
   "work_sessions": {
