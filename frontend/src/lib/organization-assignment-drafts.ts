@@ -20,6 +20,16 @@ export function assignmentPayload(assignments: AssignmentDraft[]): AssignmentDra
     return assignments.map(assignment => ({ ...assignment, scopes: assignment.scopes.map(({ scope_type, scope_id }) => ({ scope_type, scope_id })) }));
 }
 
+export function haveProfileAssignmentsChanged(member: OrganizationMember, profiles: PermissionProfile[], drafts: AssignmentDraft[]): boolean {
+    const signature = (assignments: AssignmentDraft[]) => JSON.stringify(assignmentPayload(assignments)
+        .map(({ permission_profile_id, scopes }) => ({
+            permission_profile_id,
+            scopes: scopes.map(({ scope_type, scope_id }) => `${scope_type}:${scope_id}`).sort(),
+        }))
+        .sort((a, b) => a.permission_profile_id - b.permission_profile_id));
+    return signature(buildAssignmentDrafts(member, profiles)) !== signature(drafts);
+}
+
 export function replaceDraftScope(scopes: ScopeDraft[], index: number, scope: ScopeDraft): ScopeDraft[] {
     return scopes.map((current, position) => position === index ? { ...current, ...scope } : current);
 }

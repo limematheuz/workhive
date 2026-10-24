@@ -11,6 +11,7 @@ from app.models.permission_profile import (
 )
 from app.models.user import User
 from app.services import company_entitlement_service, organization_bootstrap_service
+from app.services.organization_authorization_service import has_capability
 
 
 PERMISSIONS = (
@@ -142,6 +143,62 @@ def test_all_organization_tab_reads_accept_get_requests(client, db):
     ):
         response = client.get(path, headers=headers)
         assert response.status_code == 200, response.text
+
+
+def test_editing_member_department_preserves_legacy_access_until_profiles_change(client, db):
+    _seed_permission_definitions(db)
+    company = _company(db, "member-legacy-preserved")
+    admin = _bootstrap_admin(db, company, "member-legacy-admin")
+    worker = _user(db, company, "member-legacy-worker", role_id=3)
+    membership = organization_bootstrap_service.ensure_user_membership(db, worker)
+    assert membership is not None
+    db.commit()
+    assert has_capability(db, worker, "time.read")
+
+    department = client.post(
+        "/api/v1/organization/departments",
+        headers=_headers(admin),
+        json={"name": "Operations"},
+    )
+    assert department.status_code == 201, department.text
+    updated = client.patch(
+        f"/api/v1/organization/members/{membership.id}",
+        headers=_headers(admin),
+        json={"department_ids": [department.json()["id"]]},
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["department_ids"] == [department.json()["id"]]
+    db.refresh(membership)
+    assert not membership.permissions_configured
+    assert has_capability(db, worker, "time.read")
+
+    other_company = _company(db, "member-legacy-other")
+    other_admin = _bootstrap_admin(db, other_company, "member-legacy-other-admin")
+    forbidden = client.patch(
+        f"/api/v1/organization/members/{membership.id}",
+        headers=_headers(other_admin),
+        json={"department_ids": []},
+    )
+    assert forbidden.status_code == 404, forbidden.text
+    assert has_capability(db, worker, "time.read")
+
+    profile = client.post(
+        "/api/v1/organization/permission-profiles",
+        headers=_headers(admin),
+        json={"name": "Team reader", "permission_codes": ["organization.teams.read"]},
+    )
+    assert profile.status_code == 201, profile.text
+    assigned = client.put(
+        f"/api/v1/organization/members/{membership.id}/profile-assignments",
+        headers=_headers(admin),
+        json={"assignments": [{"permission_profile_id": profile.json()["id"],
+                              "scopes": [{"scope_type": "company", "scope_id": company.id}]}]},
+    )
+    assert assigned.status_code == 200, assigned.text
+    db.refresh(membership)
+    assert membership.permissions_configured
+    assert has_capability(db, worker, "organization.teams.read")
+    assert not has_capability(db, worker, "time.read")
 
 
 def test_permission_catalog_explains_recommendations_and_reserved_permissions(client, db):
