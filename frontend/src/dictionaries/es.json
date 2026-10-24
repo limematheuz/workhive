@@ -2220,6 +2220,7 @@
     "title": "Organización y accesos",
     "subtitle": "Define la estructura interna y controla qué puede hacer cada persona dentro de su ámbito.",
     "configuration_unavailable": "La configuración de una organización solo está disponible dentro de una empresa.",
+    "access_unavailable": "Tu cuenta no tiene permisos para ver la configuración de esta empresa. Si necesitas acceso, contacta con un administrador.",
     "load_error": "No se pudo cargar la configuración de la organización.",
     "loading": "Cargando la organización…",
     "tabs": {
