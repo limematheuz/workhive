@@ -125,6 +125,42 @@ def test_client_opportunities_keep_sales_context_and_an_activity_history(client)
     assert activities.json()[1]["stage_from"] == "qualified"
     assert activities.json()[1]["stage_to"] == "lost"
 
+    reopened = client.patch(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity['id']}",
+        headers=headers,
+        json={"stage": "qualified"},
+    )
+    assert reopened.status_code == 200, reopened.text
+    assert reopened.json()["loss_reason"] is None
+    assert reopened.json()["contact_id"] == contact.json()["id"]
+    assert reopened.json()["owner_membership_id"] == owner_id
+    assert reopened.json()["next_follow_up_at"] == opportunity["next_follow_up_at"]
+
+    # A reopened opportunity must require a fresh reason for a later loss.
+    lost_again_without_reason = client.patch(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity['id']}",
+        headers=headers,
+        json={"stage": "lost"},
+    )
+    assert lost_again_without_reason.status_code == 422
+    same_stage = client.patch(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity['id']}",
+        headers=headers,
+        json={"stage": "qualified", "title": "Seguimiento reabierto"},
+    )
+    assert same_stage.status_code == 200, same_stage.text
+    history = client.get(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity['id']}/activities",
+        headers=headers,
+    )
+    assert history.status_code == 200, history.text
+    assert len(history.json()) == 3
+    assert [(item["stage_from"], item["stage_to"]) for item in history.json()
+            if item["activity_type"] == "stage_change"] == [
+        ("lost", "qualified"), ("qualified", "lost"),
+    ]
+    assert any(item["body"] == "Llamada de seguimiento acordada." for item in history.json())
+
 
 def test_converting_a_lead_preserves_its_existing_commercial_context(client, db):
     headers = _admin_headers(client, "conversion")
