@@ -81,7 +81,7 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
 
     const scopeLabel = scopeType === "contract" ? "contrato" : "orden";
     return (
-        <section className={`border-b border-[var(--border-soft)] py-5 ${className}`} aria-label={`Margen de ${scopeLabel}`}>
+        <section className={`@container border-b border-[var(--border-soft)] py-5 ${className}`} aria-label={`Margen de ${scopeLabel}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex min-w-0 gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent"><ChartNoAxesCombined className="size-4" aria-hidden="true" /></span>
@@ -93,13 +93,13 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
                 {!forecast.budget && <Badge variant="outline" className="border-[var(--alert-warning-border)] bg-[var(--alert-warning-bg)] text-[var(--alert-warning-text)]">Falta presupuesto de coste</Badge>}
             </div>
 
-            <SummaryMetricGrid className="mt-4" desktopColumns={4} aria-label={`Resumen de margen de ${scopeLabel}`}>
+            <SummaryMetricGrid className="mt-4 lg:grid-cols-2 @min-[56rem]:grid-cols-4 [&_article]:min-w-0 [&_article_p]:[overflow-wrap:anywhere]" desktopColumns={4} aria-label={`Resumen de margen de ${scopeLabel}`}>
                 <SummaryMetricCard icon={ReceiptText} label="Ingreso previsto" value={forecast.planned_revenue_base_amount === null ? "—" : formatCurrency(forecast.planned_revenue_base_amount)} />
                 <SummaryMetricCard icon={CircleDollarSign} label="Coste previsto" value={forecast.planned_direct_cost_base_amount === null ? "—" : formatCurrency(forecast.planned_direct_cost_base_amount)} />
                 <SummaryMetricCard icon={ChartNoAxesCombined} label="Margen previsto" value={forecast.planned_margin_base_amount === null ? "—" : formatCurrency(forecast.planned_margin_base_amount)} valueTone={marginTone(forecast.planned_margin_base_amount)} />
                 <SummaryMetricCard icon={HandCoins} label="Margen trazado" value={formatCurrency(forecast.actual_margin_base_amount)} valueTone={marginTone(forecast.actual_margin_base_amount)} />
             </SummaryMetricGrid>
-            <div className="mt-3 grid gap-2 text-xs sm:grid-cols-2 lg:grid-cols-4">
+            <div className="mt-3 grid gap-2 text-xs [overflow-wrap:anywhere] @min-[32rem]:grid-cols-2 @min-[56rem]:grid-cols-4">
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Facturado trazado: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_revenue_base_amount)}</span></p>
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Mano de obra: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_labor_cost_base_amount)}</span></p>
                 <p className="rounded-lg bg-[var(--bg-secondary)] px-3 py-2 text-[var(--text-muted)]">Material: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_material_cost_base_amount)}</span> · Gastos directos: <span className="font-mono font-semibold text-[var(--text-main)]">{formatCurrency(forecast.actual_expense_cost_base_amount)}</span></p>
@@ -107,10 +107,10 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
             </div>
 
             {canManage && <div className="mt-4 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)]/55 p-3">
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)_auto] sm:items-end">
-                    <div className="space-y-1.5"><Label htmlFor={`${scopeType}-planned-cost-${scopeId}`}>Coste directo previsto (€)</Label><Input id={`${scopeType}-planned-cost-${scopeId}`} type="number" min="0" step="0.01" value={plannedCost} onChange={(event) => setPlannedCost(event.target.value)} disabled={saving} /></div>
-                    <div className="space-y-1.5"><Label htmlFor={`${scopeType}-forecast-notes-${scopeId}`}>Base de cálculo interna</Label><Textarea id={`${scopeType}-forecast-notes-${scopeId}`} value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={2} disabled={saving} placeholder="Ej.: 4 h de equipo y material estimado" /></div>
-                    <Button type="button" onClick={() => void save()} disabled={saving || !plannedCost.trim()}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}Guardar coste</Button>
+                <div className="grid gap-3 @min-[32rem]:grid-cols-[minmax(0,12rem)_minmax(0,1fr)]">
+                    <div className="min-w-0 space-y-1.5"><Label htmlFor={`${scopeType}-planned-cost-${scopeId}`}>Coste directo previsto (€)</Label><Input id={`${scopeType}-planned-cost-${scopeId}`} type="number" min="0" step="0.01" value={plannedCost} onChange={(event) => setPlannedCost(event.target.value)} disabled={saving} /></div>
+                    <div className="min-w-0 space-y-1.5"><Label htmlFor={`${scopeType}-forecast-notes-${scopeId}`}>Base de cálculo interna</Label><Textarea id={`${scopeType}-forecast-notes-${scopeId}`} value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={2} disabled={saving} placeholder="Ej.: 4 h de equipo y material estimado" /></div>
+                    <Button className="w-full @min-[32rem]:col-span-2 @min-[32rem]:w-auto @min-[32rem]:justify-self-end" type="button" onClick={() => void save()} disabled={saving || !plannedCost.trim()}>{saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}Guardar coste</Button>
                 </div>
             </div>}
         </section>
