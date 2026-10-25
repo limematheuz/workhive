@@ -122,7 +122,7 @@ function FilterSelect({
         <label className="grid gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">{label}</span>
             <Select value={value} onValueChange={onChange}>
-            <SelectTrigger className="h-10 bg-[var(--bg-primary)]/65"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 bg-[var(--bg-primary)]/65"><SelectValue placeholder={options.find((option) => option.value === value)?.label} /></SelectTrigger>
                 <SelectContent>
                     {options.map((option) => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
                 </SelectContent>
