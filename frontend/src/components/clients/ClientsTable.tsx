@@ -138,7 +138,7 @@ export function ClientsTable({
                                         </ClientIdentity>
                                     </TableCell>
                                     <TableCell className="align-top px-2.5">
-                                        <p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p>
+                                        <p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.email || row.client.phone || workspace.no_contact}</p>
                                         <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{row.client.address || row.client.city}</p>
                                     </TableCell>
                                     <TableCell className="align-top px-2.5">
@@ -164,7 +164,7 @@ export function ClientsTable({
                                 </div>
                                 <div className="flex flex-wrap gap-1.5">{typeBadge(row.client)}{relationshipBadge(row.client)}{statusBadge(row.client)}</div>
                                 <div className="border-t border-[var(--border-soft)] pt-2 text-xs text-[var(--text-muted)]">
-                                    <p className="truncate font-medium text-[var(--text-main)]">{row.client.email || workspace.no_contact}</p>
+                                    <p className="truncate font-medium text-[var(--text-main)]">{row.client.email || row.client.phone || workspace.no_contact}</p>
                                     <p className="mt-1 truncate">{row.client.address || row.client.city || "—"}</p>
                                 </div>
                                 <div className="flex items-center gap-2 rounded-xl bg-[var(--bg-tertiary)] px-3 py-2.5">
