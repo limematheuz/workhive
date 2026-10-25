@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SummaryMetricCard, SummaryMetricGrid, type SummaryMetricTone } from "@/components/ui/summary-metric-card";
+import { useDialogFormGuardReset } from "@/components/ui/dialog-form-guard";
 import { Textarea } from "@/components/ui/textarea";
 import { formatCurrency } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
@@ -20,7 +21,6 @@ type MarginForecastPanelProps = {
     scopeId: number;
     canManage: boolean;
     className?: string;
-    onSaved?: () => void;
 };
 
 function marginTone(value: number | null): SummaryMetricTone {
@@ -28,7 +28,9 @@ function marginTone(value: number | null): SummaryMetricTone {
     return value >= 0 ? "positive" : "negative";
 }
 
-export function MarginForecastPanel({ scopeType, scopeId, canManage, className = "", onSaved }: MarginForecastPanelProps) {
+export function MarginForecastPanel({ scopeType, scopeId, canManage, className = "" }: MarginForecastPanelProps) {
+    const panelRef = React.useRef<HTMLElement>(null);
+    const resetDialogDirty = useDialogFormGuardReset();
     const [forecast, setForecast] = React.useState<MarginForecast | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [saving, setSaving] = React.useState(false);
@@ -69,7 +71,7 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
             setForecast(next);
             setPlannedCost(next.budget?.planned_direct_cost_amount.toString() ?? "");
             setNotes(next.budget?.notes ?? "");
-            onSaved?.();
+            if (panelRef.current) resetDialogDirty(panelRef.current);
             toast.success("Presupuesto de coste guardado.");
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, "No se pudo guardar el presupuesto de coste"));
@@ -83,7 +85,7 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
 
     const scopeLabel = scopeType === "contract" ? "contrato" : "orden";
     return (
-        <section className={`@container border-b border-[var(--border-soft)] py-5 ${className}`} aria-label={`Margen de ${scopeLabel}`}>
+        <section ref={panelRef} className={`@container border-b border-[var(--border-soft)] py-5 ${className}`} aria-label={`Margen de ${scopeLabel}`}>
             <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="flex min-w-0 gap-3">
                     <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent"><ChartNoAxesCombined className="size-4" aria-hidden="true" /></span>
