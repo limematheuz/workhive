@@ -94,6 +94,13 @@ class InvoiceResponse(InvoiceBase):
     updated_at: datetime
 
 
+    @field_validator("payment_method", mode="before")
+    @classmethod
+    def normalize_legacy_payment_method(cls, value: object) -> object:
+        # Read compatibility only; stored fiscal records and write schemas stay unchanged.
+        return "bank_transfer" if value == "transfer" else value
+
+
 class InvoiceListResponse(InvoiceResponse):
     collected_amount: float
 
