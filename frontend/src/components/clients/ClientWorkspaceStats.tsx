@@ -32,6 +32,7 @@ export function ClientWorkspaceStats({ summary, monthlyRevenue }: ClientWorkspac
         },
         {
             label: workspace.stats_pending_contact,
+            description: workspace.stats_pending_contact_description,
             value: String(summary.missingContactCount),
             icon: Clock3,
         },
