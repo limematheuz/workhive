@@ -42,7 +42,7 @@ export function PremiumTabs<T extends string>({
                 <SelectTrigger aria-label={mobileLabel} className="h-11 rounded-2xl bg-[var(--bg-primary)]/45 font-semibold text-[var(--text-main)]">
                     <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent data-form-guard-ignore>
                     {tabs.map((tab) => {
                         const Icon = tab.icon;
                         return (
