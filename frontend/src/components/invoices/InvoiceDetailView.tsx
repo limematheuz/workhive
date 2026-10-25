@@ -12,6 +12,7 @@ import { CustomerPaymentSection } from "@/components/invoices/CustomerPaymentSec
 import { buildDefaultInvoiceEmailMessage } from "@/components/invoices/invoice-detail-utils";
 import { useInvoiceDetail } from "@/hooks/useInvoiceDetail";
 import { formatInvoiceNumber } from "@/lib/format";
+import { Button } from "@/components/ui/button";
 
 type InvoiceDetailViewProps = {
     invoiceId: number;
@@ -23,7 +24,7 @@ type InvoiceDetailViewProps = {
 export function InvoiceDetailView({ invoiceId, initialEdit = false, embedded = false, onChanged }: InvoiceDetailViewProps) {
     const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
     const {
-        dict, user, userLoading, invoice, client, company, loading, updatingStatus,
+        dict, user, userLoading, invoice, client, company, loading, loadError, updatingStatus,
         isRectificationOpen, setIsRectificationOpen, isEditMode, editingItems,
         editingInvoiceNumber, setEditingInvoiceNumber, editingIssueDate, setEditingIssueDate,
         editingDueDate, setEditingDueDate, editingIssuerFields, editingRecipientFields,
@@ -46,7 +47,13 @@ export function InvoiceDetailView({ invoiceId, initialEdit = false, embedded = f
     }
     if (!user || !canViewInvoice) return null;
     if (!invoice) {
-        return <div className="p-8 text-center"><p className="font-semibold text-red-500">{dict.invoices.not_found_or_error || "Factura no encontrada o error de carga."}</p>{!embedded && <Link href="/dashboard/invoices" className="mt-2 inline-block text-sm text-accent underline">{dict.invoices.back_to_list}</Link>}</div>;
+        return <div className="flex flex-col items-center gap-3 p-8 text-center" role="alert">
+            <p className="font-semibold text-red-500">
+                {loadError === "not_found" ? dict.invoices.not_found : dict.invoices.load_failed}
+            </p>
+            {loadError === "failed" && <Button type="button" variant="outline" onClick={() => void loadAllData()}>{dict.invoices.retry_load}</Button>}
+            {!embedded && <Link href="/dashboard/invoices" className="text-sm text-accent underline">{dict.invoices.back_to_list}</Link>}
+        </div>;
     }
 
     const defaultEmailMessage = buildDefaultInvoiceEmailMessage({ recipientName, issueDate: invoice.issue_date, issuerName, isDraft: invoice.status === "draft", dict, locale });

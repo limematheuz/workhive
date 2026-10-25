@@ -20,6 +20,7 @@ import {
 import { validateDocumentLines } from "@/lib/document-line-validation";
 import { createEditableLineKey } from "@/lib/editable-line-key";
 import { useDictionary } from "@/lib/dictionary-context";
+import { ApiResponseError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDateLong } from "@/lib/format";
 import { toast } from "@/lib/toast";
@@ -192,6 +193,7 @@ export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
     const [client, setClient] = useState<Client | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<"not_found" | "failed" | null>(null);
     const [updatingStatus, setUpdatingStatus] = useState(false);
     const [isRectificationOpen, setIsRectificationOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
@@ -234,6 +236,7 @@ export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
         }
         try {
             setLoading(true);
+            setLoadError(null);
             const loadedInvoice = await InvoiceService.getInvoice(invoiceId);
             setInvoice(loadedInvoice);
             const isIssued = ["issued", "partially_paid", "paid", "overdue", "rectified"].includes(
@@ -264,12 +267,17 @@ export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
             setFiscalReadiness(loadedFiscalReadiness);
             setFacturaeReadiness(loadedFacturaeReadiness);
         } catch (error) {
-            console.error("Error loading invoice data", error);
-            toast.error(dict.invoices.error_load);
+            if (error instanceof ApiResponseError && error.status === 404) {
+                setInvoice(null);
+                setLoadError("not_found");
+            } else {
+                console.error("Error loading invoice data", error);
+                setLoadError("failed");
+            }
         } finally {
             setLoading(false);
         }
-    }, [canViewInvoice, dict.invoices.error_load, invoiceId, user, userLoading]);
+    }, [canViewInvoice, invoiceId, user, userLoading]);
 
     const loadAllDataEvent = useEffectEvent(() => {
         void loadAllData();
@@ -701,6 +709,7 @@ export function useInvoiceDetail(invoiceId: number, initialEdit = false) {
         client,
         company,
         loading,
+        loadError,
         updatingStatus,
         isRectificationOpen,
         setIsRectificationOpen,
