@@ -146,7 +146,7 @@ def test_converting_a_lead_preserves_its_existing_commercial_context(client, db)
     opportunity = client.post(
         f"/api/v1/clients/{client_id}/opportunities",
         headers=headers,
-        json={"title": "Primera propuesta"},
+        json={"title": "Primera propuesta", "contact_id": contact.json()["id"]},
     )
     assert opportunity.status_code == 201, opportunity.text
     activity = client.post(
@@ -188,6 +188,36 @@ def test_converting_a_lead_preserves_its_existing_commercial_context(client, db)
     assert activity.json()["id"] in [item["id"] for item in activities.json()]
     assert db.query(Location).filter_by(id=location.id).one().client_id == client_id
     assert db.query(Client).filter_by(id=client_id).count() == 1
+
+    archived = client.delete(f"/api/v1/clients/{client_id}", headers=headers)
+    assert archived.status_code == 200
+    assert archived.json()["is_active"] is False
+    assert client.get("/api/v1/clients/?is_active=true", headers=headers).json() == []
+    inactive = client.get("/api/v1/clients/?is_active=false", headers=headers)
+    assert inactive.status_code == 200
+    assert [item["id"] for item in inactive.json()] == [client_id]
+    restored = client.patch(
+        f"/api/v1/clients/{client_id}", headers=headers, json={"is_active": True}
+    )
+    assert restored.status_code == 200
+    assert restored.json()["relationship_status"] == "client"
+    assert restored.json()["is_active"] is True
+    assert [item["id"] for item in client.get(
+        f"/api/v1/clients/{client_id}/contacts", headers=headers
+    ).json()] == [contact.json()["id"]]
+    persisted_opportunities = client.get(
+        f"/api/v1/clients/{client_id}/opportunities", headers=headers
+    )
+    assert persisted_opportunities.status_code == 200
+    assert [(item["id"], item["contact_id"]) for item in persisted_opportunities.json()] == [
+        (opportunity.json()["id"], contact.json()["id"])
+    ]
+    assert [item["id"] for item in client.get(
+        f"/api/v1/clients/{client_id}/opportunities/{opportunity.json()['id']}/activities",
+        headers=headers,
+    ).json()] == [activity.json()["id"]]
+    db.refresh(location)
+    assert location.client_id == client_id
 
 
 def test_client_opportunities_enforce_tenant_owner_and_write_boundaries(client, db):
