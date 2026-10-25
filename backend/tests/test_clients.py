@@ -1,6 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
+from app.models.client import Client
 from app.schemas.client import ClientCreate, ClientResponse
 from credentials import TEST_SECRET, login_form, CREDENTIAL_FIELD
 
@@ -101,3 +102,45 @@ def test_client_writes_reject_blank_required_data_but_responses_allow_legacy_bla
 
     assert response.city == ""
     assert response.postal_code == ""
+
+
+def test_legacy_email_remains_readable_without_allowing_new_invalid_addresses(client, db):
+    headers = _create_company_admin(client)
+    payload = {
+        "name": "Cliente histórico",
+        "address": "Calle Uno",
+        "city": "Girona",
+        "postal_code": "17001",
+        "country": "España",
+        "email": "valid@example.com",
+    }
+    created = client.post("/api/v1/clients/", headers=headers, json=payload)
+    assert created.status_code == 201
+    client_id = created.json()["id"]
+    historical_email = "legacy@example.test"
+    stored = db.get(Client, client_id)
+    stored.email = historical_email
+    db.commit()
+
+    listing = client.get("/api/v1/clients/?include_inactive=true", headers=headers)
+    assert listing.status_code == 200
+    assert listing.json()[0]["email"] == historical_email
+    detail = client.get(f"/api/v1/clients/{client_id}", headers=headers)
+    assert detail.status_code == 200
+    assert detail.json()["email"] == historical_email
+
+    for invalid_email in [historical_email, "not-an-email"]:
+        assert client.post(
+            "/api/v1/clients/", headers=headers, json={**payload, "email": invalid_email}
+        ).status_code == 422
+        assert client.patch(
+            f"/api/v1/clients/{client_id}", headers=headers, json={"email": invalid_email}
+        ).status_code == 422
+        assert client.post(
+            f"/api/v1/clients/{client_id}/send-email",
+            headers=headers,
+            json={"recipient_emails": [invalid_email]},
+        ).status_code == 422
+    assert db.query(Client).count() == 1
+    db.refresh(stored)
+    assert stored.email == historical_email

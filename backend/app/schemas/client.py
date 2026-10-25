@@ -108,6 +108,8 @@ class ClientAccountAssignmentCandidateResponse(BaseModel):
 
 
 class ClientResponse(ClientBase):
+    # Historical contact data stays readable; write and delivery schemas validate addresses.
+    email: str | None = None
     id: int
     company_id: int
     account_assignment: ClientAccountAssignmentResponse | None = Field(
