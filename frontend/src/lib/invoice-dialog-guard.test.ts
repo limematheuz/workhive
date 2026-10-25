@@ -10,8 +10,8 @@ test("invoice draft save resets the dialog's dirty guard only after the API succ
     const invoice = read("../hooks/useInvoiceDetail.ts");
 
     assert.match(guard, /useDialogFormGuardReset/);
-    assert.match(guard, /dirty\.current = false/);
+    assert.match(guard, /dirty\.current\.clear\(\)/);
     assert.match(dialog, /DialogFormGuardResetProvider/);
     assert.match(invoice, /await InvoiceService\.updateInvoice\(invoice\.id, headerPayload\);\s*resetDialogDirty\(\)/);
-    assert.match(guard, /if \(!dirty\.current\) return close\(\)/);
+    assert.match(guard, /if \(dirty\.current\.size === 0\) return close\(\)/);
 });

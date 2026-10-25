@@ -13,9 +13,10 @@ const GuardContext = React.createContext<{
     register: (guard: CloseGuard) => () => void;
     dismiss: () => void;
 } | null>(null);
-const ResetDirtyContext = React.createContext<() => void>(() => {});
+type ResetDirty = (scope?: Element) => void;
+const ResetDirtyContext = React.createContext<ResetDirty>(() => {});
 
-export function DialogFormGuardResetProvider({ reset, children }: React.PropsWithChildren<{ reset: () => void }>) {
+export function DialogFormGuardResetProvider({ reset, children }: React.PropsWithChildren<{ reset: ResetDirty }>) {
     return <ResetDirtyContext.Provider value={reset}>{children}</ResetDirtyContext.Provider>;
 }
 
@@ -53,15 +54,21 @@ export function useDialogDismiss(fallback: () => void) {
 export function useDialogFormGuard(enabled: boolean) {
     const context = React.useContext(GuardContext);
     const { dict } = useDictionary();
-    const dirty = React.useRef(false);
+    const dirty = React.useRef(new Set<Element>());
     const pendingClose = React.useRef<(() => void) | null>(null);
     const [confirming, setConfirming] = React.useState(false);
-    const resetDirty = React.useCallback(() => { dirty.current = false; }, []);
+    const resetDirty = React.useCallback((scope?: Element) => {
+        if (!scope) return dirty.current.clear();
+        // A saved section must not clear changes made elsewhere in the dialog.
+        for (const target of dirty.current) {
+            if (scope.contains(target)) dirty.current.delete(target);
+        }
+    }, []);
 
     React.useEffect(() => {
         if (!context || !enabled) return;
         const guard: CloseGuard = (close) => {
-            if (!dirty.current) return close();
+            if (dirty.current.size === 0) return close();
             pendingClose.current = close;
             setConfirming(true);
         };
@@ -71,17 +78,17 @@ export function useDialogFormGuard(enabled: boolean) {
     const markFieldChange = (event: React.SyntheticEvent) => {
         const target = event.target;
         if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
-            if (!target.disabled && (!("readOnly" in target) || !target.readOnly)) dirty.current = true;
+            if (!target.disabled && (!("readOnly" in target) || !target.readOnly)) dirty.current.add(target);
         }
     };
     const markControlChange = (event: React.SyntheticEvent) => {
         if (!(event.target instanceof Element)) return;
         // Radix options render in a portal, but React capture still reaches this dialog.
         const control = event.target.closest('[role="option"], [role="checkbox"], [role="radio"], [role="switch"], [aria-pressed], [data-dirty-control]');
-        if (control && !control.matches(':disabled, [aria-disabled="true"], [data-disabled]')) dirty.current = true;
+        if (control && !control.matches(':disabled, [aria-disabled="true"], [data-disabled]')) dirty.current.add(control);
     };
     const discard = () => {
-        dirty.current = false;
+        dirty.current.clear();
         setConfirming(false);
         const close = pendingClose.current;
         pendingClose.current = null;
