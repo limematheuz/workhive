@@ -20,6 +20,7 @@ type MarginForecastPanelProps = {
     scopeId: number;
     canManage: boolean;
     className?: string;
+    onSaved?: () => void;
 };
 
 function marginTone(value: number | null): SummaryMetricTone {
@@ -27,7 +28,7 @@ function marginTone(value: number | null): SummaryMetricTone {
     return value >= 0 ? "positive" : "negative";
 }
 
-export function MarginForecastPanel({ scopeType, scopeId, canManage, className = "" }: MarginForecastPanelProps) {
+export function MarginForecastPanel({ scopeType, scopeId, canManage, className = "", onSaved }: MarginForecastPanelProps) {
     const [forecast, setForecast] = React.useState<MarginForecast | null>(null);
     const [loading, setLoading] = React.useState(true);
     const [saving, setSaving] = React.useState(false);
@@ -68,6 +69,7 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
             setForecast(next);
             setPlannedCost(next.budget?.planned_direct_cost_amount.toString() ?? "");
             setNotes(next.budget?.notes ?? "");
+            onSaved?.();
             toast.success("Presupuesto de coste guardado.");
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, "No se pudo guardar el presupuesto de coste"));
