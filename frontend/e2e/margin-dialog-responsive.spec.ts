@@ -56,8 +56,34 @@ for (const width of [1440, 1038, 768, 390, 320]) {
         expect(saveBox!.y).toBeGreaterThanOrEqual(notesBox!.y + notesBox!.height);
         await notes.fill("Nota de prueba editable sin comprimir");
         await expect(notes).toHaveValue("Nota de prueba editable sin comprimir");
+        await dialog.getByRole("button", { name: "Close", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toBeVisible();
+        await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+        await expect(notes).toHaveValue("Nota de prueba editable sin comprimir");
+        if (width === 1440) {
+            await page.route("**/api/v1/margin-forecasts/work-orders/1", route => route.fulfill({ status: 503, json: { detail: "No disponible temporalmente" } }), { times: 1 });
+            await save.click();
+            await expect(save).toBeEnabled();
+            await dialog.getByRole("button", { name: "Close", exact: true }).click();
+            await expect(page.getByRole("alertdialog")).toBeVisible();
+            await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+            await expect(notes).toHaveValue("Nota de prueba editable sin comprimir");
+        }
         await save.click();
         await expect.poll(() => writes.length).toBe(1);
         expect(writes[0]).toEqual({ planned_direct_cost_amount: 15, notes: "Nota de prueba editable sin comprimir" });
+        await expect(save).toBeEnabled();
+        if (width === 1440) {
+            await notes.fill("Cambio posterior al guardado");
+            await dialog.getByRole("button", { name: "Close", exact: true }).click();
+            await expect(page.getByRole("alertdialog")).toBeVisible();
+            await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+            await save.click();
+            await expect.poll(() => writes.length).toBe(2);
+            await expect(save).toBeEnabled();
+        }
+        await dialog.getByRole("button", { name: "Close", exact: true }).click();
+        await expect(dialog).toBeHidden();
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
     });
 }
