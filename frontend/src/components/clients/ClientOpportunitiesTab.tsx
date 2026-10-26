@@ -272,9 +272,9 @@ function OpportunityEditorDialog({
                                         <SelectItem value="no-contact">{copy.no_contact}</SelectItem>
                                         {contacts.map((contact) => <SelectItem key={contact.id} value={String(contact.id)}>{contact.full_name}</SelectItem>)}
                                     </SelectField>
-                                    <Field>
+                                    <Field className="sm:col-span-2">
                                         <FieldLabel htmlFor="opportunity-follow-up">{copy.next_follow_up_label}</FieldLabel>
-                                        <FieldContent><DateTimePicker id="opportunity-follow-up" value={draft.next_follow_up_at} onValueChange={(next_follow_up_at) => setDraft((current) => ({ ...current, next_follow_up_at }))} /></FieldContent>
+                                        <FieldContent><DateTimePicker id="opportunity-follow-up" clearable aria-label={copy.next_follow_up_label} value={draft.next_follow_up_at} onValueChange={(next_follow_up_at) => setDraft((current) => ({ ...current, next_follow_up_at }))} /></FieldContent>
                                     </Field>
                                 </div>
                                 {draft.stage === "lost" && <Field>

@@ -421,3 +421,34 @@ def test_opportunity_owner_changes_preserve_context_and_reject_foreign_members(c
     history = client.get(f"{endpoint}/activities", headers=headers)
     assert history.status_code == 200, history.text
     assert history.json() == []
+
+
+def test_opportunity_follow_up_date_can_be_rescheduled_and_cleared(client):
+    headers = _admin_headers(client, "follow-up-date")
+    created_client = client.post(
+        "/api/v1/clients/", headers=headers, json=_lead_payload("Follow-up date account")
+    )
+    assert created_client.status_code == 201, created_client.text
+    client_id = created_client.json()["id"]
+    created = client.post(
+        f"/api/v1/clients/{client_id}/opportunities", headers=headers,
+        json={"title": "Scheduled follow-up", "next_follow_up_at": "2026-11-02T09:30:00Z"},
+    )
+    assert created.status_code == 201, created.text
+    endpoint = f"/api/v1/clients/{client_id}/opportunities/{created.json()['id']}"
+    moved = client.patch(
+        endpoint, headers=headers, json={"next_follow_up_at": "2026-11-03T10:00:00Z"}
+    )
+    assert moved.status_code == 200, moved.text
+    assert moved.json()["next_follow_up_at"].startswith("2026-11-03T10:00:00")
+    cleared = client.patch(endpoint, headers=headers, json={"next_follow_up_at": None})
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["next_follow_up_at"] is None
+    for field in ("title", "contact_id", "owner_membership_id", "stage", "loss_reason"):
+        assert cleared.json()[field] == created.json()[field]
+    persisted = client.get(f"/api/v1/clients/{client_id}/opportunities", headers=headers)
+    assert persisted.status_code == 200, persisted.text
+    assert persisted.json()[0]["next_follow_up_at"] is None
+    history = client.get(f"{endpoint}/activities", headers=headers)
+    assert history.status_code == 200, history.text
+    assert history.json() == []

@@ -11,6 +11,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formControlSurfaceClassName } from "@/components/ui/control-styles";
+import { useDialogFormGuardMark } from "./dialog-form-guard";
 import { cn } from "@/lib/utils";
 
 type DateTimePickerProps = {
@@ -67,6 +68,13 @@ export function DateTimePicker({
     clearable = false,
     "aria-label": ariaLabel,
 }: DateTimePickerProps) {
+    const control = React.useRef<HTMLDivElement>(null);
+    const markDirty = useDialogFormGuardMark();
+    const changeValue = (next: string | null) => {
+        if (next === value) return;
+        markDirty(control.current);
+        onValueChange(next);
+    };
     const selectedDate = parseDate(value);
     const [open, setOpen] = React.useState(false);
     const [month, setMonth] = React.useState<Date | undefined>(selectedDate);
@@ -83,7 +91,7 @@ export function DateTimePicker({
     }, [max, min]);
 
     const applyDateTime = (date: Date, nextTime: string) => {
-        onValueChange(clampToBounds(toLocalDateTime(date, nextTime), min, max).toISOString());
+        changeValue(clampToBounds(toLocalDateTime(date, nextTime), min, max).toISOString());
     };
 
     const selectDate = (date: Date | undefined) => {
@@ -94,7 +102,7 @@ export function DateTimePicker({
     };
 
     return (
-        <div className={cn("grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]", className)}>
+        <div ref={control} className={cn("grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]", className)}>
             <InputGroup className={cn("h-10 overflow-hidden rounded-xl shadow-none", formControlSurfaceClassName)}>
                 <InputGroupInput
                     id={id}
@@ -111,7 +119,7 @@ export function DateTimePicker({
                             variant="ghost"
                             size="icon-xs"
                             aria-label="Borrar fecha y hora"
-                            onClick={() => onValueChange(null)}
+                            onClick={() => changeValue(null)}
                         >
                             <X />
                         </InputGroupButton>

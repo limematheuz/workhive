@@ -14,10 +14,16 @@ const GuardContext = React.createContext<{
     dismiss: () => void;
 } | null>(null);
 type ResetDirty = (scope?: Element) => void;
+type MarkDirty = (control: Element | null) => void;
+const MarkDirtyContext = React.createContext<MarkDirty>(() => {});
 const ResetDirtyContext = React.createContext<ResetDirty>(() => {});
 
-export function DialogFormGuardResetProvider({ reset, children }: React.PropsWithChildren<{ reset: ResetDirty }>) {
-    return <ResetDirtyContext.Provider value={reset}>{children}</ResetDirtyContext.Provider>;
+export function DialogFormGuardResetProvider({ reset, mark, children }: React.PropsWithChildren<{ reset: ResetDirty; mark: MarkDirty }>) {
+    return <ResetDirtyContext.Provider value={reset}><MarkDirtyContext.Provider value={mark}>{children}</MarkDirtyContext.Provider></ResetDirtyContext.Provider>;
+}
+
+export function useDialogFormGuardMark() {
+    return React.useContext(MarkDirtyContext);
 }
 
 export function useDialogFormGuardReset() {
@@ -72,6 +78,9 @@ export function useDialogFormGuard(enabled: boolean) {
     const context = React.useContext(GuardContext);
     const { dict } = useDictionary();
     const dirty = React.useRef(new Set<Element>());
+    const markDirty = React.useCallback<MarkDirty>((control) => {
+        if (control) dirty.current.add(control);
+    }, []);
     const pendingClose = React.useRef<(() => void) | null>(null);
     const [confirming, setConfirming] = React.useState(false);
     const resetDirty = React.useCallback((scope?: Element) => {
@@ -127,5 +136,5 @@ export function useDialogFormGuard(enabled: boolean) {
         </AlertDialogContent>
     </AlertDialog>;
 
-    return { markFieldChange, markControlChange, confirmation, resetDirty };
+    return { markFieldChange, markControlChange, confirmation, resetDirty, markDirty };
 }
