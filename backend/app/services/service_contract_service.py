@@ -220,11 +220,14 @@ def update_contract_terms(
     updates = data.model_dump(exclude_unset=True)
     starts_at = updates.get("starts_at", contract.starts_at)
     ends_at = updates.get("ends_at", contract.ends_at)
-    if starts_at is not None and ends_at is not None and ends_at < starts_at:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Contract end date cannot be before its start date",
-        )
+    if starts_at is not None and ends_at is not None:
+        start_utc = starts_at.replace(tzinfo=timezone.utc) if starts_at.tzinfo is None else starts_at
+        end_utc = ends_at.replace(tzinfo=timezone.utc) if ends_at.tzinfo is None else ends_at
+        if end_utc < start_utc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="Contract end date cannot be before its start date",
+            )
     try:
         service_contract_repo.update_contract(db, contract, **updates)
         db.commit()

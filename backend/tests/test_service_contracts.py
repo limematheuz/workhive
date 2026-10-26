@@ -288,3 +288,85 @@ def test_contract_requires_matching_client_locations_before_activation(client):
     )
     assert removed.status_code == 200, removed.text
     assert removed.json()["covered_locations"][0]["is_active"] is False
+
+
+def test_contract_terms_reject_invalid_updates_without_losing_saved_values(client):
+    headers = _authenticated_company(
+        client, email="contract-terms-qa@example.com", name="Contract terms QA", tax_id="B10000054"
+    )
+    customer = _client(client, headers)
+    _accepted_quote(client, headers, customer["id"])
+    contract = client.get("/api/v1/service-contracts/", headers=headers).json()[0]
+    endpoint = f"/api/v1/service-contracts/{contract['id']}"
+    saved = client.patch(endpoint, headers=headers, json={
+        "starts_at": "2026-10-01T09:00:00Z", "ends_at": "2027-10-01T09:00:00Z",
+        "renewal_mode": "automatic", "renewal_notice_days": 45,
+    })
+    assert saved.status_code == 200, saved.text
+    equivalent = client.patch(endpoint, headers=headers, json={
+        "starts_at": "2026-10-01T11:00:00+02:00", "ends_at": "2027-10-01T09:00:00",
+    })
+    assert equivalent.status_code == 200, equivalent.text
+    assert equivalent.json()["starts_at"].startswith("2026-10-01T09:00:00")
+    assert equivalent.json()["ends_at"].startswith("2027-10-01T09:00:00")
+    saved = equivalent
+    for payload in (
+        {"starts_at": "2028-10-01T09:00:00Z"},
+        {"renewal_notice_days": -1}, {"renewal_notice_days": 366},
+        {"renewal_mode": "unsupported"}, {"renewal_mode": None},
+        {"renewal_notice_days": None}, {"title": None},
+    ):
+        denied = client.patch(endpoint, headers=headers, json=payload)
+        assert denied.status_code == 422, denied.text
+        persisted = client.get(endpoint, headers=headers)
+        assert persisted.status_code == 200, persisted.text
+        assert persisted.json() == saved.json()
+    manual = client.patch(endpoint, headers=headers, json={"renewal_mode": "manual", "renewal_notice_days": 0})
+    assert manual.status_code == 200, manual.text
+    assert manual.json()["renewal_mode"] == "manual"
+    assert manual.json()["renewal_notice_days"] == 0
+    for field in ("starts_at", "ends_at", "source_quote_revision_id", "quote_snapshot", "service_lines"):
+        assert manual.json()[field] == saved.json()[field]
+
+
+def test_contract_coverage_can_be_removed_and_restored_without_losing_zones(client, db):
+    headers = _authenticated_company(
+        client, email="contract-restore-qa@example.com", name="Coverage QA", tax_id="B10000055"
+    )
+    outsider = _authenticated_company(
+        client, email="contract-restore-foreign@example.com", name="Foreign coverage QA", tax_id="B10000056"
+    )
+    customer = _client(client, headers)
+    location = _location(client, headers, customer["id"], spaces=[{"name": "QA zone", "space_type": "office"}])
+    _accepted_quote(client, headers, customer["id"])
+    contract = client.get("/api/v1/service-contracts/", headers=headers).json()[0]
+    endpoint = f"/api/v1/service-contracts/{contract['id']}"
+    added = client.post(f"{endpoint}/locations", headers=headers, json={"location_ids": [location["id"]]})
+    assert added.status_code == 200, added.text
+    coverage_endpoint = f"{endpoint}/locations/{location['id']}"
+    zones = client.get(f"{coverage_endpoint}/zone-candidates", headers=headers)
+    assert zones.status_code == 200, zones.text
+    restricted = client.put(f"{coverage_endpoint}/zones", headers=headers, json={"zone_ids": [zones.json()[0]["id"]]})
+    assert restricted.status_code == 200, restricted.text
+    activated = client.post(f"{endpoint}/activate", headers=headers)
+    assert activated.status_code == 200, activated.text
+    original = activated.json()
+    link = original["covered_locations"][0]
+    removed = client.delete(coverage_endpoint, headers=headers)
+    assert removed.status_code == 200, removed.text
+    inactive = removed.json()["covered_locations"][0]
+    assert inactive["id"] == link["id"]
+    assert inactive["is_active"] is False and inactive["covered_until"] is not None
+    assert inactive["covered_zones"] == link["covered_zones"]
+    assert client.put(f"{coverage_endpoint}/zones", headers=headers, json={"zone_ids": []}).status_code == 404
+    assert client.post(f"{endpoint}/locations", headers=outsider, json={"location_ids": [location["id"]]}).status_code == 404
+    assert client.delete(coverage_endpoint, headers=outsider).status_code == 404
+    restored = client.post(f"{endpoint}/locations", headers=headers, json={"location_ids": [location["id"], location["id"]]})
+    assert restored.status_code == 200, restored.text
+    assert restored.json()["covered_locations"] == [link]
+    for field in ("status", "client_id", "source_quote_id", "source_quote_revision_id", "quote_snapshot", "service_lines"):
+        assert restored.json()[field] == original[field]
+    repeated = client.post(f"{endpoint}/locations", headers=headers, json={"location_ids": [location["id"]]})
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json()["covered_locations"] == [link]
+    assert db.query(TaskItem).count() == 0
