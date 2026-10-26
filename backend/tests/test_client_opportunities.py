@@ -359,3 +359,65 @@ def test_client_opportunities_enforce_tenant_owner_and_write_boundaries(client, 
     assert readable.status_code == 403, readable.text
     assert owners_for_viewer.status_code == 403
     assert blocked.status_code == 403
+
+
+def test_opportunity_owner_changes_preserve_context_and_reject_foreign_members(client):
+    headers = _admin_headers(client, "assignment")
+    foreign_headers = _admin_headers(client, "foreign-assignment")
+    created_client = client.post(
+        "/api/v1/clients/", headers=headers, json=_lead_payload("Assignment account")
+    )
+    assert created_client.status_code == 201, created_client.text
+    client_id = created_client.json()["id"]
+    owners = client.get(f"/api/v1/clients/{client_id}/opportunity-owners", headers=headers)
+    assert owners.status_code == 200, owners.text
+    owner_id = owners.json()[0]["membership_id"]
+    contact = client.post(
+        f"/api/v1/clients/{client_id}/contacts", headers=headers,
+        json={"full_name": "Assignment contact", "roles": ["commercial"]},
+    )
+    assert contact.status_code == 201, contact.text
+    created = client.post(
+        f"/api/v1/clients/{client_id}/opportunities", headers=headers,
+        json={"title": "Assignment follow-up", "contact_id": contact.json()["id"],
+              "next_follow_up_at": "2026-11-02T09:30:00Z"},
+    )
+    assert created.status_code == 201, created.text
+    endpoint = f"/api/v1/clients/{client_id}/opportunities/{created.json()['id']}"
+    assigned = client.patch(endpoint, headers=headers, json={"owner_membership_id": owner_id})
+    assert assigned.status_code == 200, assigned.text
+    assert assigned.json()["owner_membership_id"] == owner_id
+    assert assigned.json()["owner_name"] == "Commercial admin assignment"
+    renamed = client.patch(endpoint, headers=headers, json={"title": "Updated follow-up"})
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["owner_membership_id"] == owner_id
+
+    foreign_client = client.post(
+        "/api/v1/clients/", headers=foreign_headers, json=_lead_payload("Foreign account")
+    )
+    assert foreign_client.status_code == 201, foreign_client.text
+    foreign_owners = client.get(
+        f"/api/v1/clients/{foreign_client.json()['id']}/opportunity-owners",
+        headers=foreign_headers,
+    )
+    assert foreign_owners.status_code == 200, foreign_owners.text
+    denied = client.patch(endpoint, headers=foreign_headers, json={"owner_membership_id": None})
+    assert denied.status_code == 404, denied.text
+    invalid = client.patch(
+        endpoint, headers=headers,
+        json={"owner_membership_id": foreign_owners.json()[0]["membership_id"]},
+    )
+    assert invalid.status_code == 422, invalid.text
+    unchanged = client.get(f"/api/v1/clients/{client_id}/opportunities", headers=headers)
+    assert unchanged.status_code == 200, unchanged.text
+    assert unchanged.json() == [renamed.json()]
+
+    cleared = client.patch(endpoint, headers=headers, json={"owner_membership_id": None})
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["owner_membership_id"] is None
+    assert cleared.json()["owner_name"] is None
+    for field in ("contact_id", "stage", "next_follow_up_at", "loss_reason"):
+        assert cleared.json()[field] == created.json()[field]
+    history = client.get(f"{endpoint}/activities", headers=headers)
+    assert history.status_code == 200, history.text
+    assert history.json() == []
