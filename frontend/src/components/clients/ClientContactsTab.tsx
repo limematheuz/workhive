@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { isAccountHolderMirror } from "@/lib/client-contact-display";
@@ -251,7 +251,7 @@ function ContactEditorDialog({ clientId, contact, onOpenChange, onSaved }: { cli
                         </FieldGroup>
                     </div>
                     <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
-                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{copy.cancel}</Button>
+                        <DialogClose asChild><Button type="button" variant="cancel">{copy.cancel}</Button></DialogClose>
                         <Button type="submit" disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}{saving ? copy.saving : copy.save}</Button>
                     </DialogFooter>
                 </form>

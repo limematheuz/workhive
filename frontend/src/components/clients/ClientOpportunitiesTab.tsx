@@ -5,7 +5,7 @@ import { CalendarClock, ClipboardList, Loader2, Pencil, Plus, UserRound } from "
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -285,7 +285,7 @@ function OpportunityEditorDialog({
                         )}
                     </div>
                     <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
-                        <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{copy.cancel}</Button>
+                        <DialogClose asChild><Button type="button" variant="cancel">{copy.cancel}</Button></DialogClose>
                         <Button type="submit" disabled={saving || loadingOptions}>{saving && <Loader2 className="size-4 animate-spin" />}{saving ? copy.saving : copy.save}</Button>
                     </DialogFooter>
                 </form>
