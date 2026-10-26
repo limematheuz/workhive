@@ -488,3 +488,58 @@ def test_opportunity_stage_cycle_records_each_transition_once(client):
     persisted = client.get(f"/api/v1/clients/{client_id}/opportunities", headers=headers)
     assert persisted.status_code == 200, persisted.text
     assert persisted.json()[0]["stage"] == "new"
+
+
+def test_deactivated_contact_keeps_history_and_requires_explicit_replacement(client):
+    headers = _admin_headers(client, "inactive-contact")
+    account = client.post(
+        "/api/v1/clients/", headers=headers, json=_lead_payload("Inactive contact account")
+    )
+    assert account.status_code == 201, account.text
+    client_id = account.json()["id"]
+    contact = client.post(
+        f"/api/v1/clients/{client_id}/contacts", headers=headers,
+        json={"full_name": "Historical person", "roles": ["commercial"]},
+    )
+    assert contact.status_code == 201, contact.text
+    contact_id = contact.json()["id"]
+    created = client.post(
+        f"/api/v1/clients/{client_id}/opportunities", headers=headers,
+        json={"title": "Historical follow-up", "contact_id": contact_id},
+    )
+    assert created.status_code == 201, created.text
+    endpoint = f"/api/v1/clients/{client_id}/opportunities/{created.json()['id']}"
+    note = client.post(
+        f"{endpoint}/activities", headers=headers,
+        json={"activity_type": "note", "body": "Preserved historical context"},
+    )
+    assert note.status_code == 201, note.text
+    deactivated = client.delete(
+        f"/api/v1/clients/{client_id}/contacts/{contact_id}", headers=headers
+    )
+    assert deactivated.status_code == 200, deactivated.text
+    assert deactivated.json()["is_active"] is False
+    blocked = client.patch(endpoint, headers=headers, json={"title": "Must not persist"})
+    assert blocked.status_code == 422, blocked.text
+    persisted = client.get(f"/api/v1/clients/{client_id}/opportunities", headers=headers)
+    assert persisted.status_code == 200, persisted.text
+    assert persisted.json() == [created.json()]
+    cleared = client.patch(endpoint, headers=headers, json={"contact_id": None})
+    assert cleared.status_code == 200, cleared.text
+    assert cleared.json()["contact_id"] is None
+    blocked_reassignment = client.patch(endpoint, headers=headers, json={"contact_id": contact_id})
+    assert blocked_reassignment.status_code == 422, blocked_reassignment.text
+    history = client.get(f"{endpoint}/activities", headers=headers)
+    assert history.status_code == 200, history.text
+    assert history.json() == [note.json()]
+    reactivated = client.patch(
+        f"/api/v1/clients/{client_id}/contacts/{contact_id}", headers=headers,
+        json={"is_active": True},
+    )
+    assert reactivated.status_code == 200, reactivated.text
+    restored = client.patch(endpoint, headers=headers, json={"contact_id": contact_id})
+    assert restored.status_code == 200, restored.text
+    assert restored.json()["contact_id"] == contact_id
+    restored_history = client.get(f"{endpoint}/activities", headers=headers)
+    assert restored_history.status_code == 200, restored_history.text
+    assert restored_history.json() == [note.json()]

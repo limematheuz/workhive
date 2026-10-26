@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { Field, FieldContent, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -206,12 +206,13 @@ function OpportunityEditorDialog({
     const [loadingOptions, setLoadingOptions] = useState(true);
     const [saving, setSaving] = useState(false);
     const editing = opportunity !== null;
+    const inactiveContactSelected = contacts.some((contact) => contact.id === draft.contact_id && !contact.is_active);
 
     useEffect(() => {
         const timeoutId = window.setTimeout(() => {
             void Promise.all([ClientService.getClientContacts(client.id), ClientService.getClientOpportunityOwners(client.id)])
                 .then(([loadedContacts, loadedOwners]) => {
-                    setContacts(loadedContacts.filter((contact) => contact.is_active));
+                    setContacts(loadedContacts);
                     setOwners(loadedOwners);
                 })
                 .catch((error) => toast.error(getErrorMessage(error, copy.load_options_error)))
@@ -222,6 +223,7 @@ function OpportunityEditorDialog({
 
     const submit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
+        if (inactiveContactSelected) return;
         const payload: ClientOpportunityPayload = {
             ...draft,
             title: draft.title.trim(),
@@ -268,9 +270,9 @@ function OpportunityEditorDialog({
                                         <SelectItem value="unassigned">{copy.unassigned}</SelectItem>
                                         {owners.map((owner) => <SelectItem key={owner.membership_id} value={String(owner.membership_id)}>{owner.full_name}</SelectItem>)}
                                     </SelectField>
-                                    <SelectField label={copy.contact_label} value={draft.contact_id ? String(draft.contact_id) : "no-contact"} onValueChange={(value) => setDraft((current) => ({ ...current, contact_id: value === "no-contact" ? null : Number(value) }))}>
+                                    <SelectField label={copy.contact_label} description={inactiveContactSelected ? copy.inactive_contact_hint : undefined} value={draft.contact_id ? String(draft.contact_id) : "no-contact"} onValueChange={(value) => setDraft((current) => ({ ...current, contact_id: value === "no-contact" ? null : Number(value) }))}>
                                         <SelectItem value="no-contact">{copy.no_contact}</SelectItem>
-                                        {contacts.map((contact) => <SelectItem key={contact.id} value={String(contact.id)}>{contact.full_name}</SelectItem>)}
+                                        {contacts.map((contact) => contact.is_active || contact.id === draft.contact_id ? <SelectItem key={contact.id} value={String(contact.id)} disabled={!contact.is_active}>{contact.full_name}{!contact.is_active && ` · ${dict.clients.contacts.inactive}`}</SelectItem> : null)}
                                     </SelectField>
                                     <Field className="sm:col-span-2">
                                         <FieldLabel htmlFor="opportunity-follow-up">{copy.next_follow_up_label}</FieldLabel>
@@ -286,7 +288,7 @@ function OpportunityEditorDialog({
                     </div>
                     <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
                         <DialogClose asChild><Button type="button" variant="cancel">{copy.cancel}</Button></DialogClose>
-                        <Button type="submit" disabled={saving || loadingOptions}>{saving && <Loader2 className="size-4 animate-spin" />}{saving ? copy.saving : copy.save}</Button>
+                        <Button type="submit" disabled={saving || loadingOptions || inactiveContactSelected}>{saving && <Loader2 className="size-4 animate-spin" />}{saving ? copy.saving : copy.save}</Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
@@ -294,7 +296,8 @@ function OpportunityEditorDialog({
     );
 }
 
-function SelectField({ label, value, onValueChange, children }: { label: string; value: string; onValueChange: (value: string) => void; children: React.ReactNode }) {
+function SelectField({ label, description, value, onValueChange, children }: { label: string; description?: string; value: string; onValueChange: (value: string) => void; children: React.ReactNode }) {
     const id = useId();
-    return <Field><FieldLabel htmlFor={id}>{label}</FieldLabel><FieldContent><Select value={value} onValueChange={onValueChange}><SelectTrigger id={id}><SelectValue /></SelectTrigger><SelectContent>{children}</SelectContent></Select></FieldContent></Field>;
+    const descriptionId = description ? `${id}-description` : undefined;
+    return <Field><FieldLabel htmlFor={id}>{label}</FieldLabel><FieldContent><Select value={value} onValueChange={onValueChange}><SelectTrigger id={id} aria-describedby={descriptionId}><SelectValue /></SelectTrigger><SelectContent>{children}</SelectContent></Select>{description && <FieldDescription id={descriptionId}>{description}</FieldDescription>}</FieldContent></Field>;
 }

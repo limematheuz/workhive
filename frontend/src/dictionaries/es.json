@@ -1010,6 +1010,7 @@
       "loss_reason_label": "Motivo de descarte",
       "unassigned": "Sin asignar",
       "no_contact": "Sin contacto concreto",
+      "inactive_contact_hint": "La persona vinculada está inactiva. Elige otra persona o selecciona «Sin contacto concreto» antes de guardar.",
       "cancel": "Cancelar",
       "close": "Cerrar",
       "save": "Guardar seguimiento",
