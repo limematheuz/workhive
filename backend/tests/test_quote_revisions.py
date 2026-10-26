@@ -165,3 +165,49 @@ def test_quote_revisions_freeze_sent_content_and_link_acceptance_to_the_version(
         json={},
         headers=owner_headers,
     ).status_code == 400
+
+
+def test_rejected_quote_can_be_revised_without_rewriting_sent_versions(client):
+    headers = _authenticated_company(
+        client, email="quote-rejection@example.com", name="Quote rejection QA", tax_id="B10000043"
+    )
+    quote = _quote_with_line(client, headers)
+    endpoint = f"/api/v1/quotes/{quote['id']}"
+    sent = client.patch(endpoint, headers=headers, json={"status": "sent"})
+    assert sent.status_code == 200, sent.text
+    original_history = client.get(f"{endpoint}/revisions", headers=headers)
+    assert original_history.status_code == 200, original_history.text
+    first = original_history.json()[0]
+    rejected = client.patch(endpoint, headers=headers, json={"status": "rejected"})
+    assert rejected.status_code == 200, rejected.text
+    assert rejected.json()["accepted_revision_id"] is None
+    blocked = client.patch(endpoint, headers=headers, json={"title": "Blocked direct edit"})
+    assert blocked.status_code == 400, blocked.text
+    revision = client.post(f"{endpoint}/revisions", headers=headers, json={})
+    assert revision.status_code == 200, revision.text
+    assert revision.json()["id"] == quote["id"]
+    assert revision.json()["revision_number"] == 2
+    assert revision.json()["status"] == "draft"
+    updated = client.patch(
+        endpoint, headers=headers,
+        json={"title": "Revised after rejection", "notes": "Revised note",
+              "items": [{"description": "Revised service", "quantity": 3, "unit_price": 10}]},
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["total_amount"] == 36.3
+    assert client.get(f"{endpoint}/revisions", headers=headers).json() == [first]
+    resent = client.patch(endpoint, headers=headers, json={"status": "sent"})
+    assert resent.status_code == 200, resent.text
+    history = client.get(f"{endpoint}/revisions", headers=headers)
+    assert history.status_code == 200, history.text
+    second, retained_first = history.json()
+    assert retained_first == first
+    assert second["version"] == 2
+    assert second["snapshot"]["title"] == "Revised after rejection"
+    assert second["snapshot"]["notes"] == "Revised note"
+    assert second["snapshot"]["total_amount"] == 36.3
+    assert second["snapshot"]["items"][0]["description"] == "Revised service"
+    rejected_again = client.patch(endpoint, headers=headers, json={"status": "rejected"})
+    assert rejected_again.status_code == 200, rejected_again.text
+    assert rejected_again.json()["accepted_revision_id"] is None
+    assert client.get(f"{endpoint}/revisions", headers=headers).json() == history.json()
