@@ -36,7 +36,10 @@ for (const width of [1440, 768, 390]) {
         }
         await parent.getByRole("button", { name: "Editar seguimiento", exact: true }).click();
         const editor = page.getByRole("dialog", { name: "Editar seguimiento", exact: true });
-        await editor.getByRole("combobox").filter({ hasText: "Por contactar" }).click();
+        for (const label of ["Situación", "Responsable", "Persona de contacto"]) {
+            await expect(editor.getByRole("combobox", { name: label, exact: true })).toBeVisible();
+        }
+        await editor.getByRole("combobox", { name: "Situación", exact: true }).click();
         await page.getByRole("option", { name: "En conversación", exact: true }).click();
         await editor.getByRole("button", { name: "Close", exact: true }).click();
         await expect(page.getByRole("alertdialog")).toBeVisible();
