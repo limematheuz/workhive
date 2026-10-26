@@ -13,6 +13,7 @@ const clientStats = readFileSync(new URL("../components/clients/ClientWorkspaceS
 const clientContacts = readFileSync(new URL("../components/clients/ClientContactsTab.tsx", import.meta.url), "utf8");
 const clientOpportunities = readFileSync(new URL("../components/clients/ClientOpportunitiesTab.tsx", import.meta.url), "utf8");
 const clientOpportunityTimeline = readFileSync(new URL("../components/clients/ClientOpportunityTimelineDialog.tsx", import.meta.url), "utf8");
+const clientOpportunityActivityForm = readFileSync(new URL("../components/clients/ClientOpportunityActivityForm.tsx", import.meta.url), "utf8");
 const clientAccountAssignment = readFileSync(new URL("../components/clients/ClientAccountAssignmentDialog.tsx", import.meta.url), "utf8");
 const clientAccountAssignmentService = readFileSync(new URL("../services/client-account-assignment.service.ts", import.meta.url), "utf8");
 const clientDateTimePicker = readFileSync(new URL("../components/ui/date-time-picker.tsx", import.meta.url), "utf8");
@@ -131,10 +132,12 @@ test("commercial opportunities remain in the client detail and use shadcn contro
     assert.match(clientDateTimePicker, /rounded-xl/);
     assert.match(clientDateTimePicker, /formControlSurfaceClassName/);
     assert.match(clientOpportunityTimeline, /ClientService\.getClientOpportunityActivities/);
-    assert.match(clientOpportunityTimeline, /ClientService\.createClientOpportunityActivity/);
-    assert.match(clientOpportunityTimeline, /Textarea/);
+    assert.match(clientOpportunityTimeline, /ClientOpportunityActivityForm/);
+    assert.match(clientOpportunityActivityForm, /ClientService\.createClientOpportunityActivity/);
+    assert.match(clientOpportunityActivityForm, /Textarea/);
     assert.doesNotMatch(clientOpportunities, /fetch\s*\(/);
     assert.doesNotMatch(clientOpportunityTimeline, /fetch\s*\(/);
+    assert.doesNotMatch(clientOpportunityActivityForm, /fetch\s*\(/);
 });
 
 test("commercial follow-up uses plain language without changing its service contract", () => {
