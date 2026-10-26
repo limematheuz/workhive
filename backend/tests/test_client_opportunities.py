@@ -452,3 +452,39 @@ def test_opportunity_follow_up_date_can_be_rescheduled_and_cleared(client):
     history = client.get(f"{endpoint}/activities", headers=headers)
     assert history.status_code == 200, history.text
     assert history.json() == []
+
+
+def test_opportunity_stage_cycle_records_each_transition_once(client):
+    headers = _admin_headers(client, "stage-cycle")
+    account = client.post(
+        "/api/v1/clients/", headers=headers, json=_lead_payload("Stage cycle account")
+    )
+    assert account.status_code == 201, account.text
+    client_id = account.json()["id"]
+    created = client.post(
+        f"/api/v1/clients/{client_id}/opportunities", headers=headers,
+        json={"title": "Stage cycle", "next_follow_up_at": "2026-11-02T09:00:00Z"},
+    )
+    assert created.status_code == 201, created.text
+    endpoint = f"/api/v1/clients/{client_id}/opportunities/{created.json()['id']}"
+    previous = "new"
+    transitions = []
+    for stage in ("qualified", "proposal", "negotiation", "won", "new"):
+        changed = client.patch(endpoint, headers=headers, json={"stage": stage})
+        assert changed.status_code == 200, changed.text
+        assert changed.json()["stage"] == stage
+        for field in ("title", "contact_id", "owner_membership_id", "next_follow_up_at", "loss_reason"):
+            assert changed.json()[field] == created.json()[field]
+        repeated = client.patch(endpoint, headers=headers, json={"stage": stage})
+        assert repeated.status_code == 200, repeated.text
+        transitions.insert(0, (previous, stage))
+        previous = stage
+        history = client.get(f"{endpoint}/activities", headers=headers)
+        assert history.status_code == 200, history.text
+        assert [(item["stage_from"], item["stage_to"]) for item in history.json()] == transitions
+        assert all(item["activity_type"] == "stage_change" for item in history.json())
+    invalid = client.patch(endpoint, headers=headers, json={"stage": "unsupported"})
+    assert invalid.status_code == 422, invalid.text
+    persisted = client.get(f"/api/v1/clients/{client_id}/opportunities", headers=headers)
+    assert persisted.status_code == 200, persisted.text
+    assert persisted.json()[0]["stage"] == "new"
