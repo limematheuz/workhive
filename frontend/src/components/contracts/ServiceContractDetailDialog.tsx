@@ -146,8 +146,8 @@ function ServiceContractDetailDialogContent({
 
     const handleSaveTerms = () => void updateContract(
         () => ServiceContractService.updateTerms(contract.id, {
-            starts_at: isoDateValue(startsAt),
-            ends_at: isoDateValue(endsAt),
+            ...(startsAt === dateInputValue(contract.starts_at) ? {} : { starts_at: isoDateValue(startsAt) }),
+            ...(endsAt === dateInputValue(contract.ends_at) ? {} : { ends_at: isoDateValue(endsAt) }),
             renewal_mode: renewalMode,
             renewal_notice_days: Number(renewalNoticeDays || 0),
             response_time_hours: responseTimeHours ? Number(responseTimeHours) : null,

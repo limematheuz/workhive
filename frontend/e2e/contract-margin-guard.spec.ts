@@ -8,7 +8,7 @@ test.beforeEach(async ({ context, page }) => {
     await page.addInitScript(() => { localStorage.setItem("locale", "es"); });
     const contract = {
         id: 1, contract_number: "CON-TEST", title: "Contrato de prueba", status: "active", company_id: 1, client_id: 1,
-        source_quote_id: 1, source_quote_revision_id: 1, starts_at: null, ends_at: null,
+        source_quote_id: 1, source_quote_revision_id: 1, starts_at: "2026-10-15T10:12:25.781694Z", ends_at: "2027-10-15T10:12:25.781694Z",
         renewal_mode: "manual", renewal_notice_days: 30, response_time_hours: 24, resolution_time_hours: 48,
         service_window: "Horario de prueba", notes: "Condiciones originales", quote_snapshot: { total_amount: 100 },
         service_lines: [], covered_locations: [{ id: 1, location_id: 1, location_name: "Ubicación de prueba", is_active: true, covered_from: "2026-01-01", covered_zones: [] }], created_at: "2026-01-01",
@@ -21,7 +21,10 @@ test.beforeEach(async ({ context, page }) => {
         else if (path === "/api/v1/companies/1") body = { id: 1, name: "Prueba", onboarding_completed: true, subscription_status: "active" };
         else if (path.includes("entitlements")) body = { entitlements: [{ code: "features.quotes", value_type: "boolean", value: true }] };
         else if (path === "/api/v1/service-contracts") body = [contract];
-        else if (path === "/api/v1/service-contracts/1") body = contract;
+        else if (path === "/api/v1/service-contracts/1") {
+            if (route.request().method() === "PATCH") Object.assign(contract, route.request().postDataJSON());
+            body = contract;
+        }
         else if (path.endsWith("/zone-candidates")) body = [{ id: 1, name: "Zona de prueba" }];
         else if (path === "/api/v1/margin-forecasts/contracts/1") {
             if (route.request().method() === "PUT") budget = { id: 1, ...route.request().postDataJSON() };
@@ -100,4 +103,26 @@ test("failed margin save and later edits still require confirmation", async ({ p
     await notes.fill("Nueva edición posterior");
     await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
     await expect(page.getByRole("alertdialog")).toBeVisible();
+});
+
+
+test("saving a renewal notice preserves unchanged contract timestamps", async ({ page }) => {
+    const updates: Record<string, unknown>[] = [];
+    page.on("request", request => {
+        if (request.method() === "PATCH" && new URL(request.url()).pathname === "/api/v1/service-contracts/1") {
+            updates.push(request.postDataJSON());
+        }
+    });
+    const dialog = await openContract(page);
+    await dialog.getByLabel("Aviso previo (días)", { exact: true }).fill("45");
+    await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+    await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
+    expect(updates).toHaveLength(1);
+    expect(updates[0]).not.toHaveProperty("starts_at");
+    expect(updates[0]).not.toHaveProperty("ends_at");
+    expect(updates[0].renewal_notice_days).toBe(45);
+    const reopened = await openContract(page);
+    await expect(reopened.getByLabel("Aviso previo (días)", { exact: true })).toHaveValue("45");
+    await expect(reopened.getByLabel("Inicio", { exact: true })).toHaveValue("15/10/2026");
+    await expect(reopened.getByLabel("Fin", { exact: true })).toHaveValue("15/10/2027");
 });

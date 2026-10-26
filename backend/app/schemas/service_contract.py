@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -19,11 +19,25 @@ class ServiceContractTermsUpdate(BaseModel):
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
+    @field_validator("starts_at", "ends_at")
+    @classmethod
+    def normalize_contract_date(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
+
     @field_validator("title")
     @classmethod
     def require_non_blank_title(cls, value: str | None) -> str | None:
-        if value is not None and not value:
+        if not value:
             raise ValueError("Title cannot be blank")
+        return value
+
+    @field_validator("renewal_mode", "renewal_notice_days")
+    @classmethod
+    def require_renewal_value(cls, value: str | int | None) -> str | int:
+        if value is None:
+            raise ValueError("Renewal settings cannot be null")
         return value
 
 
