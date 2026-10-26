@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
+import { ContractTermsSaveButton } from "./ContractTermsSaveButton"
 import { MarginForecastPanel } from "@/components/margin-forecast/MarginForecastPanel"
 import { ServiceContractService } from "@/services/service-contract.service"
 import type { Location, LocationSpace } from "@/types/location"
@@ -137,14 +138,16 @@ function ServiceContractDetailDialogContent({
             const updated = await work()
             onContractUpdated(updated)
             toast.success(success)
+            return true
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, "No se pudieron guardar los cambios"))
+            return false
         } finally {
             setSaving(false)
         }
     }
 
-    const handleSaveTerms = () => void updateContract(
+    const handleSaveTerms = () => updateContract(
         () => ServiceContractService.updateTerms(contract.id, {
             ...(startsAt === dateInputValue(contract.starts_at) ? {} : { starts_at: isoDateValue(startsAt) }),
             ...(endsAt === dateInputValue(contract.ends_at) ? {} : { ends_at: isoDateValue(endsAt) }),
@@ -365,7 +368,7 @@ function ServiceContractDetailDialogContent({
                                 <DialogClose asChild>
                                     <Button type="button" variant="secondary" disabled={saving}>Cerrar</Button>
                                 </DialogClose>
-                                <Button type="button" disabled={saving} onClick={handleSaveTerms}>Guardar condiciones</Button>
+                                <ContractTermsSaveButton disabled={saving} onSave={handleSaveTerms} />
                                 {contract.status === "draft" && (
                                     <Button type="button" disabled={saving} onClick={() => void updateContract(
                                         () => ServiceContractService.activate(contract.id),

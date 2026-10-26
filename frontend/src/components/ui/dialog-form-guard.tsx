@@ -57,21 +57,21 @@ export function useDialogDismiss(fallback: () => void) {
     return React.useContext(GuardContext)?.dismiss ?? fallback;
 }
 
-function belongsToDialog(event: React.SyntheticEvent): boolean {
+function dialogChangeTarget(event: React.SyntheticEvent): Element | null {
     const root = event.currentTarget;
     const target = event.target;
-    if (!(root instanceof Element) || !(target instanceof Element)) return false;
-    if (target.closest('[data-form-guard-ignore]')) return false;
+    if (!(root instanceof Element) || !(target instanceof Element)) return null;
+    if (target.closest('[data-form-guard-ignore]')) return null;
     const listbox = target.closest('[role="listbox"]');
     if (listbox?.id) {
         // Select options are portaled; their trigger identifies the owning dialog.
-        return Array.from(root.querySelectorAll('[aria-controls]')).some((control) =>
+        return Array.from(root.querySelectorAll('[aria-controls]')).find((control) =>
             control.getAttribute('aria-controls')?.split(/\s+/).includes(listbox.id)
             && control.closest('[data-slot="dialog-content"]') === root
-        );
+        ) ?? null;
     }
     // React capture bubbles through parent dialogs even when the child is portaled.
-    return target.closest('[data-slot="dialog-content"]') === root;
+    return target.closest('[data-slot="dialog-content"]') === root ? target : null;
 }
 
 export function useDialogFormGuard(enabled: boolean) {
@@ -102,18 +102,18 @@ export function useDialogFormGuard(enabled: boolean) {
     }, [context, enabled]);
 
     const markFieldChange = (event: React.SyntheticEvent) => {
-        if (!belongsToDialog(event)) return;
-        const target = event.target;
+        const target = dialogChangeTarget(event);
+        if (!target) return;
         if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
             if (!target.disabled && (!("readOnly" in target) || !target.readOnly)) dirty.current.add(target);
         }
     };
     const markControlChange = (event: React.SyntheticEvent) => {
-        if (!belongsToDialog(event)) return;
-        if (!(event.target instanceof Element)) return;
+        const target = dialogChangeTarget(event);
+        if (!target || !(event.target instanceof Element)) return;
         // Radix options render in a portal, but React capture still reaches this dialog.
         const control = event.target.closest('[role="option"], [role="checkbox"], [role="radio"], [role="switch"], [aria-pressed], [data-dirty-control]');
-        if (control && !control.matches(':disabled, [aria-disabled="true"], [data-disabled]')) dirty.current.add(control);
+        if (control && !control.matches(':disabled, [aria-disabled="true"], [data-disabled]')) dirty.current.add(target === event.target ? control : target);
     };
     const discard = () => {
         dirty.current.clear();

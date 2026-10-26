@@ -126,3 +126,64 @@ test("saving a renewal notice preserves unchanged contract timestamps", async ({
     await expect(reopened.getByLabel("Inicio", { exact: true })).toHaveValue("15/10/2026");
     await expect(reopened.getByLabel("Fin", { exact: true })).toHaveValue("15/10/2027");
 });
+
+for (const width of [1440, 768, 390]) {
+    test(`saved contract conditions close cleanly at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        const dialog = await openContract(page);
+        await dialog.getByRole("combobox").filter({ hasText: "Manual" }).click();
+        await page.getByRole("option", { name: "Automática", exact: true }).click();
+        await dialog.getByLabel("Aviso previo (días)", { exact: true }).fill("45");
+        await dialog.getByLabel("Notas internas", { exact: true }).fill("Condiciones guardadas QA");
+        await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+        await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        await expect(dialog).toHaveCount(0);
+        const reopened = await openContract(page);
+        await expect(reopened.getByLabel("Notas internas", { exact: true })).toHaveValue("Condiciones guardadas QA");
+        await expect(reopened.getByLabel("Aviso previo (días)", { exact: true })).toHaveValue("45");
+    });
+}
+
+for (const section of ["margin", "zones"]) {
+    test(`saving conditions preserves unsaved ${section}`, async ({ page }) => {
+        const dialog = await openContract(page);
+        if (section === "margin") await dialog.getByLabel("Base de cálculo interna", { exact: true }).fill("Coste sin guardar QA");
+        else {
+            await dialog.getByRole("button", { name: "Zonas", exact: true }).click();
+            await dialog.getByRole("checkbox", { name: "Zona de prueba", exact: true }).check();
+        }
+        await dialog.getByLabel("Notas internas", { exact: true }).fill("Condiciones guardadas QA");
+        await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+        await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toBeVisible();
+        await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+        if (section === "margin") await expect(dialog.getByLabel("Base de cálculo interna", { exact: true })).toHaveValue("Coste sin guardar QA");
+        else await expect(dialog.getByRole("checkbox", { name: "Zona de prueba", exact: true })).toBeChecked();
+    });
+}
+
+test("failed conditions save preserves the draft and successful retry clears it", async ({ page }) => {
+    await page.route("**/api/v1/service-contracts/1", async route => {
+        if (route.request().method() === "PATCH") {
+            await route.fulfill({ status: 503, json: { detail: "QA temporary failure" } });
+            return;
+        }
+        await route.fallback();
+    });
+    const dialog = await openContract(page);
+    await dialog.getByLabel("Notas internas", { exact: true }).fill("Borrador conservado QA");
+    await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+    await expect(page.getByText("No se pudieron guardar las condiciones", { exact: true })).toBeVisible();
+    await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await expect(page.getByRole("alertdialog")).toBeVisible();
+    await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+    await expect(dialog.getByLabel("Notas internas", { exact: true })).toHaveValue("Borrador conservado QA");
+    await page.unroute("**/api/v1/service-contracts/1");
+    await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+    await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
+    await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+});
