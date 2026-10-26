@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { CalendarClock, ClipboardList, Loader2, Pencil, Plus, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -295,5 +295,6 @@ function OpportunityEditorDialog({
 }
 
 function SelectField({ label, value, onValueChange, children }: { label: string; value: string; onValueChange: (value: string) => void; children: React.ReactNode }) {
-    return <Field><FieldLabel>{label}</FieldLabel><FieldContent><Select value={value} onValueChange={onValueChange}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{children}</SelectContent></Select></FieldContent></Field>;
+    const id = useId();
+    return <Field><FieldLabel htmlFor={id}>{label}</FieldLabel><FieldContent><Select value={value} onValueChange={onValueChange}><SelectTrigger id={id}><SelectValue /></SelectTrigger><SelectContent>{children}</SelectContent></Select></FieldContent></Field>;
 }
