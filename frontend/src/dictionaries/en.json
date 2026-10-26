@@ -1010,6 +1010,7 @@
       "loss_reason_label": "Discard reason",
       "unassigned": "Unassigned",
       "no_contact": "No specific contact",
+      "inactive_contact_hint": "The linked person is inactive. Choose another person or select “No specific contact” before saving.",
       "cancel": "Cancel",
       "close": "Close",
       "save": "Save follow-up",
