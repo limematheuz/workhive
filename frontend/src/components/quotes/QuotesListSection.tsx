@@ -79,8 +79,8 @@ export function QuotesListSection({
                                     >
                                         <span className="min-w-0 flex-1">
                                             <span className="flex min-w-0 items-start justify-between gap-2">
-                                                <span className="min-w-0">
-                                                    <span className="font-mono text-xs font-semibold text-accent">{formatQuoteNumber(quote.quote_number)}</span>
+                                                <span className="min-w-0 flex-1">
+                                                    <span title={formatQuoteNumber(quote.quote_number)} className="block truncate font-mono text-xs font-semibold text-accent">{formatQuoteNumber(quote.quote_number)}</span>
                                                     <span className="mt-1 block truncate text-sm font-semibold text-[var(--text-main)]">{quote.title}</span>
                                                 </span>
                                                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase ${STATUS_BADGE[quote.status] ?? STATUS_BADGE.draft}`}>
@@ -131,9 +131,10 @@ export function QuotesListSection({
                                                     event.stopPropagation();
                                                     onViewQuote(quote);
                                                 }}
-                                                className="h-auto border-0 bg-transparent p-0 font-mono text-sm font-semibold text-accent shadow-none hover:bg-transparent hover:shadow-none hover:no-underline"
+                                                title={formatQuoteNumber(quote.quote_number)}
+                                                className="h-auto w-full min-w-0 max-w-full justify-start border-0 bg-transparent p-0 font-mono text-sm font-semibold text-accent shadow-none hover:bg-transparent hover:shadow-none hover:no-underline"
                                             >
-                                                {formatQuoteNumber(quote.quote_number)}
+                                                <span className="min-w-0 truncate">{formatQuoteNumber(quote.quote_number)}</span>
                                             </Button>
                                         </TableCell>
                                         <TableCell className="truncate font-medium text-[var(--text-main)]">{quote.title}</TableCell>
