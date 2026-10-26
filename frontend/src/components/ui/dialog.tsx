@@ -77,7 +77,7 @@ function DialogContentSession({
   onPointerUpCapture,
   ...props
 }: DialogContentProps) {
-  const { markFieldChange, markControlChange, confirmation, resetDirty } = useDialogFormGuard(confirmDiscard)
+  const { markFieldChange, markControlChange, confirmation, resetDirty, markDirty } = useDialogFormGuard(confirmDiscard)
 
   return (
     <>
@@ -106,7 +106,7 @@ function DialogContentSession({
         }}
         {...props}
       >
-        <DialogFormGuardResetProvider reset={resetDirty}>{children}</DialogFormGuardResetProvider>
+        <DialogFormGuardResetProvider reset={resetDirty} mark={markDirty}>{children}</DialogFormGuardResetProvider>
         {showCloseButton && (
           <DialogPrimitive.Close
             data-slot="dialog-close"
