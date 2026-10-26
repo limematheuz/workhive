@@ -263,6 +263,18 @@ def test_client_and_commercial_permissions_are_separate_and_fail_closed(client, 
         == 200
     )
 
+    history_path = f"/api/v1/clients/{account.id}/opportunities/{follow_up_id}/activities"
+    original_history = client.get(history_path, headers=commercial_headers)
+    assert original_history.status_code == 200, original_history.text
+    reader_history = client.get(history_path, headers=reader_headers)
+    assert reader_history.status_code == 200, reader_history.text
+    assert reader_history.json() == original_history.json()
+    assert len(reader_history.json()) == 2
+    assert any(item["body"] == "Primera visita realizada" for item in reader_history.json())
+    original_follow_up = client.get(
+        f"/api/v1/clients/{account.id}/opportunities", headers=commercial_headers
+    ).json()
+
     assert client.get("/api/v1/clients/", headers=reader_headers).status_code == 200
     assert (
         client.get(
@@ -324,6 +336,16 @@ def test_client_and_commercial_permissions_are_separate_and_fail_closed(client, 
         == 403
     )
 
+    after_denials = client.get(history_path, headers=reader_headers)
+    assert after_denials.status_code == 200, after_denials.text
+    assert after_denials.json() == original_history.json()
+    assert client.get(
+        f"/api/v1/clients/{account.id}/opportunities", headers=reader_headers
+    ).json() == original_follow_up
+    for denied_user in (unassigned, narrow_scope):
+        denied_history = client.get(history_path, headers=_headers(denied_user))
+        assert denied_history.status_code == 403, denied_history.text
+
     for path in (
         "/api/v1/clients/",
         f"/api/v1/clients/{account.id}/contacts",
@@ -352,6 +374,8 @@ def test_me_exposes_finance_hints_from_the_explicit_profile(client, db):
     assert response.status_code == 200, response.text
     assert response.json()["can_view_finance"] is False
     assert response.json()["can_manage_finance"] is False
+    invoices = client.get("/api/v1/invoices/", headers=_headers(commercial))
+    assert invoices.status_code == 403, invoices.text
 
 
 def test_client_permissions_do_not_cross_company_or_grant_platform_access(client, db):
