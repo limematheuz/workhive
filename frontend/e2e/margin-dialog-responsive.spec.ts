@@ -33,7 +33,8 @@ for (const width of [1440, 1038, 768, 390, 320]) {
             await route.fulfill({ json: body });
         });
         await page.goto("/dashboard/work-orders");
-        await page.getByRole("button", { name: "Margen", exact: true }).filter({ visible: true }).click();
+        await page.getByRole("button", { name: /Acciones de Orden de prueba/ }).filter({ visible: true }).click();
+        await page.getByRole("menuitem", { name: "Margen", exact: true }).click();
         const dialog = page.getByRole("dialog");
         const notes = dialog.getByLabel("Base de cálculo interna");
         await expect(notes).toHaveValue("Base de cálculo de prueba");
