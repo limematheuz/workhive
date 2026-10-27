@@ -1,12 +1,19 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 WorkOrderStatus = Literal["draft", "active", "paused", "completed", "cancelled"]
 WorkOrderType = Literal["one_off", "recurring"]
 RecurrenceUnit = Literal["weekly", "monthly"]
+
+
+def normalize_work_order_date(value: datetime | None) -> datetime | None:
+    """Treat zone-less order dates as UTC and preserve offset-aware instants."""
+    if value is None:
+        return None
+    return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
 def _validate_recurrence(
@@ -16,7 +23,9 @@ def _validate_recurrence(
     scheduled_start_at: datetime,
     recurrence_ends_at: datetime | None,
 ) -> None:
-    if recurrence_ends_at is not None and recurrence_ends_at < scheduled_start_at:
+    if recurrence_ends_at is not None and (
+        normalize_work_order_date(recurrence_ends_at) < normalize_work_order_date(scheduled_start_at)
+    ):
         raise ValueError("La recurrencia no puede terminar antes del primer servicio")
     if order_type == "recurring":
         if recurrence_unit is None or recurrence_interval is None:
@@ -39,6 +48,10 @@ class WorkOrderCreate(BaseModel):
     recurrence_ends_at: datetime | None = None
     estimated_people: int | None = Field(default=None, ge=1, le=1_000)
     estimated_minutes: int | None = Field(default=None, ge=1, le=100_000)
+
+    _normalize_dates = field_validator("scheduled_start_at", "recurrence_ends_at")(
+        normalize_work_order_date
+    )
 
     @model_validator(mode="after")
     def validate_recurrence(self):
@@ -63,6 +76,10 @@ class WorkOrderUpdate(BaseModel):
     recurrence_ends_at: datetime | None = None
     estimated_people: int | None = Field(default=None, ge=1, le=1_000)
     estimated_minutes: int | None = Field(default=None, ge=1, le=100_000)
+
+    _normalize_dates = field_validator(
+        "scheduled_start_at", "next_occurrence_at", "recurrence_ends_at"
+    )(normalize_work_order_date)
 
 
 class WorkOrderResponse(BaseModel):
