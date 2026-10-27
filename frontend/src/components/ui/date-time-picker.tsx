@@ -81,6 +81,7 @@ export function DateTimePicker({
     const time = selectedDate
         ? `${String(selectedDate.getHours()).padStart(2, "0")}:${String(selectedDate.getMinutes()).padStart(2, "0")}`
         : "09:00";
+    const timeOptions = TIME_OPTIONS.includes(time) ? TIME_OPTIONS : [...TIME_OPTIONS, time].sort();
     const disabled = React.useMemo<Matcher | undefined>(() => {
         const before = parseDate(min ?? null);
         const after = parseDate(max ?? null);
@@ -102,7 +103,7 @@ export function DateTimePicker({
     };
 
     return (
-        <div ref={control} className={cn("grid gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]", className)}>
+        <div ref={control} className={cn("grid min-w-0 gap-2 sm:grid-cols-[minmax(0,1fr)_8.5rem]", className)}>
             <InputGroup className={cn("h-10 overflow-hidden rounded-xl shadow-none", formControlSurfaceClassName)}>
                 <InputGroupInput
                     id={id}
@@ -148,8 +149,8 @@ export function DateTimePicker({
                 </InputGroupAddon>
             </InputGroup>
             <Select value={time} onValueChange={(nextTime) => selectedDate && applyDateTime(selectedDate, nextTime)}>
-                <SelectTrigger className="h-10"><Clock3 className="size-4 text-[var(--text-muted)]" /><SelectValue placeholder="Hora" /></SelectTrigger>
-                <SelectContent>{TIME_OPTIONS.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
+                <SelectTrigger id={`${id}-time`} aria-label={ariaLabel ? `Hora de ${ariaLabel}` : "Hora"} className="h-10"><Clock3 className="size-4 text-[var(--text-muted)]" /><SelectValue placeholder="Hora" /></SelectTrigger>
+                <SelectContent>{timeOptions.map((option) => <SelectItem key={option} value={option}>{option}</SelectItem>)}</SelectContent>
             </Select>
         </div>
     );
