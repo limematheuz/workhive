@@ -11,7 +11,12 @@ from app.models.work_order import WorkOrder
 from app.repositories import service_contract as service_contract_repo
 from app.repositories import work_order as work_order_repo
 from app.schemas.task_item import TaskItemCreate
-from app.schemas.work_order import WorkOrderCreate, WorkOrderUpdate, _validate_recurrence
+from app.schemas.work_order import (
+    WorkOrderCreate,
+    WorkOrderUpdate,
+    _validate_recurrence,
+    normalize_work_order_date,
+)
 from app.services import location_access_service, task_item_service
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import permitted_location_ids
@@ -65,7 +70,9 @@ def _advance_occurrence(work_order: WorkOrder) -> None:
         year = current.year + month // 12
         month = month % 12 + 1
         candidate = current.replace(year=year, month=month, day=min(current.day, monthrange(year, month)[1]))
-    if work_order.recurrence_ends_at is not None and candidate > work_order.recurrence_ends_at:
+    if work_order.recurrence_ends_at is not None and (
+        normalize_work_order_date(candidate) > normalize_work_order_date(work_order.recurrence_ends_at)
+    ):
         work_order.next_occurrence_at = None
         work_order.status = "completed"
     else:
@@ -169,9 +176,14 @@ def update_work_order(
     next_unit = updates.get("recurrence_unit", work_order.recurrence_unit)
     next_interval = updates.get("recurrence_interval", work_order.recurrence_interval)
     next_end = updates.get("recurrence_ends_at", work_order.recurrence_ends_at)
-    _validate_recurrence(
-        work_order.order_type, next_unit, next_interval, next_start, next_end
-    )
+    try:
+        _validate_recurrence(
+            work_order.order_type, next_unit, next_interval, next_start, next_end
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
     if work_order.order_type == "recurring":
         require_company_feature(db, company_id=company_id, code="features.recurrence")
     if "next_occurrence_at" in updates:
@@ -186,7 +198,9 @@ def update_work_order(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Una orden recurrente necesita una próxima ejecución",
             )
-        if next_end is not None and next_occurrence > next_end:
+        if next_end is not None and (
+            normalize_work_order_date(next_occurrence) > normalize_work_order_date(next_end)
+        ):
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="La próxima ejecución no puede ser posterior al final de la recurrencia",
