@@ -233,6 +233,12 @@ def generate_next_task(db: Session, current_user: User, work_order_id: int):
             status_code=status.HTTP_409_CONFLICT,
             detail="La orden no tiene una próxima ejecución activa",
         )
+    _validate_contract_coverage(
+        db,
+        company_id=company_id,
+        location_id=work_order.location_id,
+        service_contract_id=work_order.service_contract_id,
+    )
     if work_order_repo.task_exists_for_occurrence(
         db,
         work_order_id=work_order.id,
