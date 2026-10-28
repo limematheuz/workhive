@@ -5,7 +5,6 @@ import {
     CheckCircle2,
     FileSignature,
     MapPin,
-    Plus,
     RotateCcw,
     Trash2,
 } from "lucide-react"
@@ -35,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
+import { ContractLocationPicker } from "./ContractLocationPicker"
 import { ContractTermsSaveButton } from "./ContractTermsSaveButton"
 import { MarginForecastPanel } from "@/components/margin-forecast/MarginForecastPanel"
 import { ServiceContractService } from "@/services/service-contract.service"
@@ -91,7 +91,6 @@ function ServiceContractDetailDialogContent({
     onContractUpdated,
 }: ServiceContractDetailDialogContentProps) {
     const [saving, setSaving] = React.useState(false)
-    const [selectedLocationId, setSelectedLocationId] = React.useState("")
     const [locationCandidates, setLocationCandidates] = React.useState<Location[]>([])
     const [zoneCandidates, setZoneCandidates] = React.useState<Record<number, LocationSpace[]>>({})
     const [managedLocationId, setManagedLocationId] = React.useState<number | null>(null)
@@ -161,11 +160,13 @@ function ServiceContractDetailDialogContent({
         "Condiciones del contrato guardadas",
     )
 
-    const handleAddLocation = () => {
-        const locationId = Number(selectedLocationId)
-        if (!Number.isSafeInteger(locationId) || locationId < 1) return
+    const handleAddLocation = (locationId: number, onAdded: () => void) => {
         void updateContract(
-            () => ServiceContractService.addLocations(contract.id, [locationId]),
+            async () => {
+                const updated = await ServiceContractService.addLocations(contract.id, [locationId])
+                onAdded()
+                return updated
+            },
             "Ubicación añadida al contrato",
         )
     }
@@ -252,19 +253,7 @@ function ServiceContractDetailDialogContent({
                                 <p className="mt-1 text-xs text-[var(--text-muted)]">Solo se pueden cubrir ubicaciones de este cliente.</p>
                             </div>
                             {canManage && eligibleLocations.length > 0 && (
-                                <div className="flex min-w-[14rem] gap-2">
-                                    <Select value={selectedLocationId} onValueChange={setSelectedLocationId}>
-                                        <SelectTrigger aria-label="Añadir ubicación cubierta" className="h-9 min-w-0"><SelectValue placeholder="Selecciona ubicación" /></SelectTrigger>
-                                        <SelectContent>
-                                            {eligibleLocations.map((location) => (
-                                                <SelectItem key={location.id} value={String(location.id)}>{location.name}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <Button type="button" size="sm" onClick={handleAddLocation} disabled={saving || !selectedLocationId} aria-label="Añadir ubicación">
-                                        <Plus className="size-4" aria-hidden="true" />
-                                    </Button>
-                                </div>
+                                <ContractLocationPicker locations={eligibleLocations} saving={saving} onAdd={handleAddLocation} />
                             )}
                         </div>
                         <div className="mt-3 divide-y divide-[var(--table-divider)]">
