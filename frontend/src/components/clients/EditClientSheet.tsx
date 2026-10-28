@@ -4,7 +4,7 @@ import * as React from "react";
 
 import { ClientFormFields } from "@/components/clients/ClientFormFields";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import { ClientService, type Client } from "@/services/client.service";
@@ -12,7 +12,7 @@ import { ClientService, type Client } from "@/services/client.service";
 interface EditClientSheetProps { client: Client | null; open: boolean; onOpenChange: (open: boolean) => void; onClientUpdated?: () => void; }
 
 export function EditClientSheet({ client, open, onOpenChange, onClientUpdated }: EditClientSheetProps) {
-    if (!client) return null;
+    if (!client || !open) return null;
 
     return <EditClientForm key={client.id} client={client} open={open} onOpenChange={onOpenChange} onClientUpdated={onClientUpdated} />;
 }
@@ -32,5 +32,5 @@ function EditClientForm({ client, open, onOpenChange, onClientUpdated }: EditCli
             toast.success(dict.clients.form.update_success_toast); onOpenChange(false); onClientUpdated?.();
         } catch (error) { toast.error(error instanceof Error ? error.message : dict.clients.form.update_error_toast); } finally { setIsLoading(false); }
     };
-    return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="flex max-h-[92vh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[56rem]"><form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col"><DialogHeader className="shrink-0 border-b border-[var(--border-soft)] px-5 py-5 text-left sm:px-7"><DialogTitle>{dict.clients.form.edit_title}</DialogTitle><DialogDescription>{dict.clients.form.edit_description}</DialogDescription></DialogHeader><div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7"><ClientFormFields idPrefix="edit-client" client={client} clientType={clientType} onClientTypeChange={setClientType} relationshipStatus={relationshipStatus} onRelationshipStatusChange={setRelationshipStatus} isActive={isActive} onActiveChange={setIsActive} /></div><footer className="flex shrink-0 justify-end gap-3 border-t border-[var(--border-soft)] px-5 py-4 sm:px-7"><Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{dict.clients.form.cancel}</Button><Button type="submit" disabled={isLoading}>{isLoading ? dict.clients.form.saving : dict.clients.form.save}</Button></footer></form></DialogContent></Dialog>;
+    return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="flex max-h-[92vh] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[56rem]"><form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col"><DialogHeader className="shrink-0 border-b border-[var(--border-soft)] px-5 py-5 text-left sm:px-7"><DialogTitle>{dict.clients.form.edit_title}</DialogTitle><DialogDescription>{dict.clients.form.edit_description}</DialogDescription></DialogHeader><div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-7"><ClientFormFields idPrefix="edit-client" client={client} clientType={clientType} onClientTypeChange={setClientType} relationshipStatus={relationshipStatus} onRelationshipStatusChange={setRelationshipStatus} isActive={isActive} onActiveChange={setIsActive} /></div><footer className="flex shrink-0 justify-end gap-3 border-t border-[var(--border-soft)] px-5 py-4 sm:px-7"><DialogClose asChild><Button type="button" variant="cancel">{dict.clients.form.cancel}</Button></DialogClose><Button type="submit" disabled={isLoading}>{isLoading ? dict.clients.form.saving : dict.clients.form.save}</Button></footer></form></DialogContent></Dialog>;
 }
