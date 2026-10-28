@@ -1,7 +1,7 @@
 """Plan contractual and ad-hoc work without mutating legacy task records."""
 
 from calendar import monthrange
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -19,6 +19,7 @@ from app.schemas.work_order import (
 )
 from app.services import location_access_service, task_item_service
 from app.services.entitlement_service import require_company_feature
+from app.services.service_contract_execution_policy import require_occurrence_within_contract
 from app.services.organization_authorization_service import permitted_location_ids
 from app.services.user_scope import require_company_context
 
@@ -33,6 +34,7 @@ def _validate_contract_coverage(
     company_id: int,
     location_id: int,
     service_contract_id: int | None,
+    occurrence_at: datetime | None = None,
 ) -> None:
     if service_contract_id is None:
         return
@@ -52,6 +54,9 @@ def _validate_contract_coverage(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="La ubicación no está cubierta por este contrato activo",
         )
+
+    if occurrence_at is not None:
+        require_occurrence_within_contract(contract, occurrence_at)
 
 
 def _advance_occurrence(work_order: WorkOrder) -> None:
@@ -238,6 +243,7 @@ def generate_next_task(db: Session, current_user: User, work_order_id: int):
         company_id=company_id,
         location_id=work_order.location_id,
         service_contract_id=work_order.service_contract_id,
+        occurrence_at=work_order.next_occurrence_at,
     )
     if work_order_repo.task_exists_for_occurrence(
         db,
