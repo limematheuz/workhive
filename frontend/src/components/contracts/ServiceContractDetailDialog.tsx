@@ -195,15 +195,15 @@ function ServiceContractDetailDialogContent({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-4xl gap-0 overflow-hidden p-0 sm:max-w-4xl" confirmDiscard={canManage}>
-                <DialogHeader className="border-b border-[var(--border-soft)] px-5 py-5 pr-14 sm:px-6">
+            <DialogContent className="flex w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl" confirmDiscard={canManage}>
+                <DialogHeader className="min-w-0 shrink-0 border-b border-[var(--border-soft)] px-5 py-5 pr-14 sm:pl-6">
                     <div className="flex min-w-0 items-start gap-3">
                         <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[color-mix(in_srgb,var(--accent-color)_12%,transparent)] text-accent">
                             <FileSignature className="size-5" aria-hidden="true" />
                         </span>
                         <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
-                                <DialogTitle className="font-mono text-lg">{contract.contract_number}</DialogTitle>
+                                <DialogTitle className="min-w-0 font-mono text-lg [overflow-wrap:anywhere]">{contract.contract_number}</DialogTitle>
                                 <Badge variant={contract.status === "active" ? "default" : "secondary"}>
                                     {statusCopy[contract.status]}
                                 </Badge>
@@ -213,7 +213,7 @@ function ServiceContractDetailDialogContent({
                     </div>
                 </DialogHeader>
 
-                <div className="max-h-[calc(92vh-10rem)] overflow-y-auto px-5 py-5 sm:px-6">
+                <div className="min-h-0 min-w-0 overflow-y-auto px-5 py-5 sm:px-6">
                     <section className="grid gap-4 border-b border-[var(--border-soft)] pb-5 sm:grid-cols-3">
                         <div>
                             <p className="text-xs font-medium text-[var(--text-muted)]">Presupuesto aceptado</p>
@@ -261,8 +261,8 @@ function ServiceContractDetailDialogContent({
                                 <p className="py-3 text-sm text-[var(--text-muted)]">Todavía no hay ubicaciones cubiertas.</p>
                             ) : contract.covered_locations.map((location) => (
                                 <div key={location.id} className="py-3 first:pt-0 last:pb-0">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="flex min-w-0 items-center gap-2">
+                                    <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+                                        <div className="flex min-w-0 max-w-full items-center gap-2">
                                             <MapPin className="size-4 shrink-0 text-accent" aria-hidden="true" />
                                             <div className="min-w-0">
                                                 <p className="truncate text-sm font-medium text-[var(--text-main)]">{location.location_name ?? `Ubicación #${location.location_id}`}</p>
