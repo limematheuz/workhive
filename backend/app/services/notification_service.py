@@ -1,11 +1,9 @@
-from sqlalchemy.dialects.postgresql import insert as postgresql_insert
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
 from app.models.user import User
-from app.repositories import notification_inbox
+from app.repositories import notification_delivery, notification_inbox
 from app.services.user_scope import require_company_context
 
 
@@ -68,32 +66,21 @@ def notify_users_once(
         return 0
 
     event_metadata = {**(metadata or {}), "dedupe_key": dedupe_key}
-    dialect_name = db.get_bind().dialect.name
-    insert = postgresql_insert if dialect_name == "postgresql" else sqlite_insert
     notification_count = 0
     for user in unique_users.values():
-        statement = insert(Notification).values(
-            user_id=user.id,
-            company_id=user.company_id,
-            event_type=event_type,
-            title=title,
-            message=message,
-            entity_type=entity_type,
-            entity_id=entity_id,
-            href=href,
-            dedupe_key=dedupe_key,
-            metadata_json=event_metadata,
-        ).on_conflict_do_nothing(
-            index_elements=[
-                "user_id",
-                "event_type",
-                "entity_type",
-                "entity_id",
-                "dedupe_key",
-            ]
-        )
-        result = db.execute(statement)
-        notification_count += int(result.rowcount or 0)
+        inserted = notification_delivery.insert_once(db, values={
+            "user_id": user.id,
+            "company_id": user.company_id,
+            "event_type": event_type,
+            "title": title,
+            "message": message,
+            "entity_type": entity_type,
+            "entity_id": entity_id,
+            "href": href,
+            "dedupe_key": dedupe_key,
+            "metadata_json": event_metadata,
+        })
+        notification_count += int(inserted)
     if commit:
         db.commit()
     return notification_count
