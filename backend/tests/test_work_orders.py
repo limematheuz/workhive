@@ -42,6 +42,13 @@ def test_recurring_work_order_creates_traceable_task_instances(client, db):
     customer = _client(client, owner_headers, name="Cliente de órdenes")
     location = _location(client, owner_headers, customer["id"])
     contract = _active_contract(client, owner_headers, customer["id"], location["id"])
+    # This historical occurrence must belong to an explicitly persisted term.
+    dated = client.patch(
+        f"/api/v1/service-contracts/{contract['id']}",
+        headers=owner_headers,
+        json={"starts_at": "2026-10-01T09:00:00Z"},
+    )
+    assert dated.status_code == 200, dated.text
 
     created = client.post(
         "/api/v1/work-orders/",
