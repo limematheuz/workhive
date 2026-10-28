@@ -1,18 +1,22 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Every API request is intercepted; this suite never changes local contracts.
-test.beforeEach(async ({ context, page }) => {
-    test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
-    const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
-    await context.addCookies([{ name: "auth_token", value: `fixture.${payload}.not-a-backend-token`, url: "http://localhost:3000" }]);
-    await page.addInitScript(() => localStorage.setItem("locale", "es"));
-    const contract = {
+function coverageContract() {
+    return {
         id: 1, contract_number: "CON-COVERAGE", title: "Contrato QA", status: "active", company_id: 1, client_id: 1,
         source_quote_id: 1, source_quote_revision_id: 1, starts_at: null, ends_at: null,
         renewal_mode: "manual", renewal_notice_days: 30, response_time_hours: 24, resolution_time_hours: 48,
         service_window: "Horario QA", notes: "Notas originales", quote_snapshot: { total_amount: 100 }, service_lines: [], created_at: "2026-01-01",
         covered_locations: [{ id: 1, location_id: 1, location_name: "Sede original", is_active: true, covered_from: "2026-01-01", covered_zones: [] }],
     };
+}
+
+// Every API request is intercepted; this suite never changes local contracts.
+test.beforeEach(async ({ context, page }) => {
+    test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
+    const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
+    await context.addCookies([{ name: "auth_token", value: `fixture.${payload}.not-a-backend-token`, url: "http://localhost:3000" }]);
+    await page.addInitScript(() => localStorage.setItem("locale", "es"));
+    const contract = coverageContract();
     await page.route("**/api/v1/**", async route => {
         const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
         let body: unknown = [];
@@ -119,3 +123,42 @@ test("saved coverage clears its selection when other candidates remain", async (
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
     await expect(dialog).toHaveCount(0);
 });
+
+for (const width of [1440, 768, 390, 320]) {
+    test(`long references keep contract content and actions inside the dialog at ${width}px`, async ({ page }) => {
+        const contract = { ...coverageContract(), contract_number: "QA-PORTAL-20261015-CONTRACT-LONG-REFERENCE",
+            title: "Servicio para una ubicación con una referencia extensa",
+            service_lines: [{ id: 1, description: "Servicio mensual de mantenimiento con descripción extensa", quantity: 1, unit_price: 100, subtotal: 100 }],
+        };
+        await page.route(/\/api\/v1\/service-contracts\/?(?:\?.*)?$/, route => route.fulfill({ json: [contract] }));
+        await page.route("**/api/v1/service-contracts/1", route => route.fulfill({ json: contract }));
+        await page.setViewportSize({ width, height: 844 });
+        await page.goto("/dashboard/contracts");
+        await page.locator(`[aria-label="Abrir contrato ${contract.contract_number}"]`).filter({ visible: true }).click();
+        const dialog = page.getByRole("dialog");
+        await expect(dialog.getByLabel("Base de cálculo interna")).toHaveValue("Base original");
+        const dimensions = await dialog.evaluate(element => {
+            const bounds = element.getBoundingClientRect();
+            return { left: bounds.left, right: bounds.right, width: bounds.width, scrollWidth: element.scrollWidth };
+        });
+        expect(dimensions.left).toBeGreaterThanOrEqual(0);
+        expect(dimensions.right).toBeLessThanOrEqual(width);
+        expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width + 1);
+        for (const locator of [dialog.getByRole("heading", { name: contract.contract_number, exact: true }), dialog.getByRole("button", { name: "Zonas", exact: true }), dialog.getByText("Cubierta", { exact: true }), dialog.getByText("100,00 €", { exact: true })]) {
+            const rects = await locator.evaluateAll(elements => elements.map(element => {
+                const bounds = element.getBoundingClientRect();
+                return { left: bounds.left, right: bounds.right };
+            }));
+            expect(rects.length).toBeGreaterThan(0);
+            for (const bounds of rects) {
+                expect(bounds.left).toBeGreaterThanOrEqual(dimensions.left);
+                expect(bounds.right).toBeLessThanOrEqual(dimensions.right);
+            }
+        }
+        await dialog.getByRole("button", { name: "Zonas", exact: true }).click();
+        await expect(dialog.getByRole("checkbox", { name: "Zona QA", exact: true })).toBeVisible();
+        await dialog.getByRole("button", { name: "Cancelar", exact: true }).click();
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(dialog).toHaveCount(0);
+    });
+}
