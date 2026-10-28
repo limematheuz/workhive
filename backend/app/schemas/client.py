@@ -54,18 +54,23 @@ class ClientUpdate(BaseModel):
     legal_number: str | None = Field(default=None, max_length=20)
     is_active: bool | None = None
 
-    @field_validator(
-        "name",
-        "phone",
-        "address",
-        "city",
-        "province",
-        "postal_code",
-        "country",
-        "legal_number",
-    )
+    @field_validator("name", "address", "city", "postal_code", "country")
     @classmethod
-    def normalize_text(cls, value: str | None) -> str | None:
+    def normalize_required_text(cls, value: str | None) -> str:
+        if value is None or not value.strip():
+            raise ValueError("Value cannot be blank")
+        return value.strip()
+
+    @field_validator("client_type", "relationship_status", "is_active")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
+
+    @field_validator("phone", "province", "legal_number")
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
         if value is None:
             return None
         return value.strip() or None
