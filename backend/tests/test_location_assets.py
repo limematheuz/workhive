@@ -332,3 +332,24 @@ def test_legacy_viewer_location_assets_are_limited_to_assigned_locations(client,
     assert client.get(
         f"/api/v1/locations/{assigned_location.id}/documents", headers=viewer_headers
     ).status_code == 200
+
+
+def test_equipment_rejects_null_required_fields_without_losing_optional_clears(client, db):
+    company = _company(db, "RequiredAssets")
+    admin = _admin(db, company)
+    location = _location(db, company)
+    headers = _headers(admin)
+    base = f"/api/v1/locations/{location.id}/equipment"
+    created = client.post(base, headers=headers, json={"name": "QA vacuum", "notes": "QA", "serial_number": "QA-1"})
+    assert created.status_code == 201, created.text
+    original = created.json()
+    url = f"{base}/{original['id']}"
+    for field in ("name", "category", "quantity", "status"):
+        rejected = client.patch(url, headers=headers, json={field: None, "notes": "must not persist"})
+        assert rejected.status_code == 422, (field, rejected.text)
+        assert client.get(base, headers=headers).json() == [original]
+    updated = client.patch(url, headers=headers, json={"notes": None, "serial_number": None, "next_service_at": None})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["notes"] is None
+    assert updated.json()["serial_number"] is None
+    assert updated.json()["name"] == original["name"]
