@@ -465,7 +465,7 @@ function ChecklistRequirementItem({
                         type="file"
                         accept="image/*"
                         aria-label={dict.tech.btn_upload_photo}
-                        className="sr-only"
+                        className="hidden"
                         disabled={uploading}
                         onChange={event => onChecklistPhoto(item.id, event)}
                     />
