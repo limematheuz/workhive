@@ -46,7 +46,8 @@ def create_reservation(db: Session, current_user: User, data: ReservationCreate,
     require_reservation_mutation_access(db, current_user, data.location_id, access=access)
     location = get_location(db, data.location_id)
     validate_guest_capacity(location, data.guest_count)
-    validate_no_overlap(db, data.location_id, data.check_in_at, data.check_out_at)
+    if data.status != "cancelled":
+        validate_no_overlap(db, data.location_id, data.check_in_at, data.check_out_at)
     validate_cleaning_schedule(
         db,
         data.location_id,
@@ -70,7 +71,7 @@ def create_reservation(db: Session, current_user: User, data: ReservationCreate,
             owner_company_id,
         )
 
-        if data.cleaning_required:
+        if data.cleaning_required and data.status != "cancelled":
             target_company_id = data.assigned_company_id or owner_company_id
             if data.assigned_company_id is not None:
                 ensure_location_access(db, data.location_id, target_company_id)
