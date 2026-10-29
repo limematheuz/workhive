@@ -11,7 +11,6 @@ from app.schemas.task_item import (
 from app.repositories import task_item as task_item_repo
 from app.repositories import service_catalog_version as service_catalog_version_repo
 from app.repositories import template_task as template_task_repo
-from app.repositories import user as user_repo
 from app.services import location_access_service
 from app.services.organization_authorization_service import require_capability
 from app.models.user import User
@@ -109,13 +108,9 @@ def create_task_item(
         "can_manage_tasks",
         permission_code="work.manage",
     )
-    if task_item_data.user_id is not None:
-        assigned_user = user_repo.get_user_by_id(db, task_item_data.user_id)
-        if not assigned_user or assigned_user.company_id != current_user.company_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Assigned user not found or does not belong to your company",
-            )
+    task_update_policy_service.validate_direct_assignee(
+        db, current_user.company_id, task_item_data.user_id,
+    )
     if (
         task_item_data.checkout_reservation_id is not None
         or task_item_data.next_reservation_id is not None
