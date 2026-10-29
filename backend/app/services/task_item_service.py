@@ -632,6 +632,12 @@ def update_task_checklist_item(
             scope_type="location",
             scope_id=task.location_id,
         )
+        active_sessions = work_session_repo.get_active_sessions_by_user(db, current_user.id)
+        if not any(session.task_item_id == task.id for session in active_sessions):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Start work on this task before updating its checklist",
+            )
     else:
         location_access_service.require_location_capability(
             db,
