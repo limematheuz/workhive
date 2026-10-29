@@ -1,3 +1,7 @@
+from datetime import datetime, timezone
+
+import pytest
+
 from app.core.security import create_access_token
 from app.models.company import Company
 from app.models.location import Location
@@ -8,6 +12,7 @@ from app.models.task_structure import (
     TaskChecklistItem,
 )
 from app.models.user import User
+from app.models.work_session import WorkSession
 
 
 def _company(db, name: str) -> Company:
@@ -58,6 +63,19 @@ def _location(db, company: Company) -> Location:
     db.commit()
     db.refresh(location)
     return location
+
+
+def _start_worker_task(client, admin, worker, task_id):
+    accepted = client.patch(
+        f"/api/v1/task-items/{task_id}", headers=_headers(admin),
+        json={"status": "accepted", "price": 1, "quantity": 1, "unit": "servicio"},
+    )
+    assert accepted.status_code == 200, accepted.text
+    started = client.post(
+        f"/api/v1/task-items/{task_id}/start-work", headers=_headers(worker),
+        json={"start_latitude": 0, "start_longitude": 0},
+    )
+    assert started.status_code == 200, started.text
 
 
 def test_create_backfills_structured_checklist_and_assignments(client, db):
@@ -239,6 +257,8 @@ def test_worker_can_update_only_own_structured_checklist_item(client, db):
             "location_id": location.id,
         },
     ).json()
+    _start_worker_task(client, admin, first, created["id"])
+
     own_item, foreign_item = created["checklist_items"]
 
     forbidden = client.patch(
@@ -298,6 +318,7 @@ def test_structured_no_answer_is_complete_without_becoming_yes(client, db):
             "location_id": location.id,
         },
     ).json()
+    _start_worker_task(client, admin, viewer, created["id"])
 
     response = client.patch(
         f"/api/v1/task-items/{created['id']}/checklist-items/{created['checklist_items'][0]['id']}",
@@ -445,6 +466,7 @@ def test_all_worker_assignment_can_update_shared_structured_item(client, db):
             "location_id": location.id,
         },
     ).json()
+    _start_worker_task(client, admin, viewer, created["id"])
 
     response = client.patch(
         f"/api/v1/task-items/{created['id']}/checklist-items/{created['checklist_items'][0]['id']}",
@@ -474,6 +496,7 @@ def test_explicit_worker_cannot_update_unassigned_structured_item(client, db):
             "location_id": location.id,
         },
     ).json()
+    _start_worker_task(client, admin, viewer, created["id"])
 
     response = client.patch(
         f"/api/v1/task-items/{created['id']}/checklist-items/{created['checklist_items'][1]['id']}",
@@ -482,3 +505,55 @@ def test_explicit_worker_cannot_update_unassigned_structured_item(client, db):
     )
 
     assert response.status_code == 403
+
+
+@pytest.mark.parametrize("session_kind", ["missing", "closed", "other_task", "other_user"])
+def test_worker_checklist_requires_own_open_session_for_task(client, db, session_kind):
+    company = _company(db, "ChecklistSession")
+    admin = _user(db, company, "admin@checklist-session.test", 1)
+    worker = _user(db, company, "worker@checklist-session.test", 3)
+    location = _location(db, company)
+    response = client.post(
+        "/api/v1/task-items/",
+        headers=_headers(admin),
+        json={
+            "title": "Checklist session guard",
+            "description": f"- [ ] Cocina (@{worker.id}:Worker:pending)",
+            "unit": "servicio",
+            "location_id": location.id,
+            "status": "accepted",
+        },
+    )
+    assert response.status_code == 201, response.text
+    task_id = response.json()["id"]
+    item_id = response.json()["checklist_items"][0]["id"]
+    session_task_id = task_id
+    if session_kind == "other_task":
+        other_task = TaskItem(
+            title="Other work", unit="servicio", company_id=company.id,
+            location_id=location.id, status="progress",
+        )
+        db.add(other_task)
+        db.flush()
+        session_task_id = other_task.id
+    if session_kind != "missing":
+        db.add(WorkSession(
+            user_id=admin.id if session_kind == "other_user" else worker.id,
+            location_id=location.id,
+            task_item_id=session_task_id,
+            start_time=datetime.now(timezone.utc),
+            end_time=datetime.now(timezone.utc) if session_kind == "closed" else None,
+        ))
+        db.commit()
+    before = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(admin)).json()
+
+    denied = client.patch(
+        f"/api/v1/task-items/{task_id}/checklist-items/{item_id}",
+        headers=_headers(worker),
+        json={"completed": True, "answer": "yes"},
+    )
+
+    assert denied.status_code == 409, denied.text
+    assert denied.json()["detail"] == "Start work on this task before updating its checklist"
+    after = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(admin)).json()
+    assert after == before
