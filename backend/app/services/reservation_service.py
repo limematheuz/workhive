@@ -25,6 +25,7 @@ from app.services.reservation_lifecycle_policy_service import (
     require_provider_change_allowed,
 )
 from app.services.task_work_activity_service import has_recorded_activity
+from app.services.reservation_planning_policy import changes_cleaning_plan
 from app.services.reservation_query_service import (
     build_reservation_response,  # noqa: F401 - public compatibility re-export
     get_reservation,  # noqa: F401 - public compatibility re-export
@@ -359,6 +360,7 @@ def update_reservation(db: Session, current_user: User, reservation_id: int, dat
         .first()
     )
 
+    planning_changed = changes_cleaning_plan(reservation, data, checkout_task)
     try:
         checkout_task = _discard_checkout_task_for_assignment_change(
             db,
@@ -369,6 +371,10 @@ def update_reservation(db: Session, current_user: User, reservation_id: int, dat
         updated_reservation = reservation_repo.update_reservation(
             db, reservation, data, current_user.id
         )
+        if not planning_changed:
+            db.commit()
+            db.refresh(updated_reservation)
+            return updated_reservation
         if updated_reservation.status == "cancelled":
             return _cancel_updated_reservation(
                 db,
