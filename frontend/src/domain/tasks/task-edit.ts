@@ -38,8 +38,7 @@ export interface TaskEditValues {
 
 export function taskToEditValues(task: TaskItem): TaskEditValues {
     const planningValue = task.scheduled_start_at
-        || task.checkout_reservation?.check_out_at
-        || task.created_at;
+        || task.checkout_reservation?.check_out_at;
     const pricing = pricingValuesForTaskEdit(task);
     return {
         title: task.title,
@@ -53,11 +52,17 @@ export function taskToEditValues(task: TaskItem): TaskEditValues {
             : normalizeTaskStatus(task.status),
         priority: task.priority || "medium",
         planningDate: toTaskPlanningDateInput(planningValue),
-        planningTime: toTaskPlanningTimeInput(planningValue),
+        planningTime: toTaskPlanningTimeInput(planningValue, ""),
     };
 }
 
-export function buildScheduledStartAt(values: TaskEditValues): string | null {
+export function buildScheduledStartAt(values: TaskEditValues, task?: TaskItem): string | null {
+    if (task) {
+        const original = taskToEditValues(task);
+        if (values.planningDate === original.planningDate && values.planningTime === original.planningTime) {
+            return task.scheduled_start_at || null;
+        }
+    }
     if (!values.planningTime) {
         return buildTaskPlanningDate(values.planningDate) || null;
     }
@@ -69,7 +74,7 @@ export function buildTaskUpdatePayload(
     companyId: number | null | undefined,
     values: TaskEditValues,
 ): TaskItemUpdate {
-    const scheduledStartAt = buildScheduledStartAt(values);
+    const scheduledStartAt = buildScheduledStartAt(values, task);
     const externalTask = isExternalTaskForCompany(task, companyId);
     const operationalFields: TaskItemUpdate = {
         description: values.description || null,
