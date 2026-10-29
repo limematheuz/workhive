@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.datetime import as_utc
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.user import User
@@ -167,8 +168,8 @@ def _validate_reservation_update_schedule(
     reservation: Reservation,
     data: ReservationUpdate,
 ):
-    check_in_at = data.check_in_at or reservation.check_in_at
-    check_out_at = data.check_out_at or reservation.check_out_at
+    check_in_at = as_utc(data.check_in_at or reservation.check_in_at)
+    check_out_at = as_utc(data.check_out_at or reservation.check_out_at)
     if check_out_at <= check_in_at:
         raise HTTPException(
             status_code=422,
