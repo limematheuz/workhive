@@ -1,8 +1,12 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.core.datetime import as_utc
 from app.schemas.work_session import WorkSessionStartLocationResponse
+
+
+ReservationStatus = Literal["confirmed", "tentative", "cancelled"]
 
 
 class ReservationBase(BaseModel):
@@ -29,6 +33,7 @@ class ReservationBase(BaseModel):
 
 
 class ReservationCreate(ReservationBase):
+    status: ReservationStatus = "confirmed"
     assigned_company_id: int | None = None
     cleaning_scheduled_at: datetime | None = None
 
@@ -40,7 +45,7 @@ class ReservationUpdate(BaseModel):
     check_out_at: datetime | None = None
     guest_count: int | None = Field(default=None, ge=1)
     stay_type: str | None = None
-    status: str | None = None
+    status: ReservationStatus | None = None
     source: str | None = None
     external_reference: str | None = None
     notes: str | None = None
