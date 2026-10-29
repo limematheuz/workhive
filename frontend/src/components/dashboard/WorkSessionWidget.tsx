@@ -152,8 +152,9 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         POLL_INTERVALS.tasks,
         POLL_INTERVALS.realtimeSafety,
     )
-    useRealtimeInvalidation(["tasks"], () => {
+    useRealtimeInvalidation(["tasks", "live-work"], () => {
         void refreshAvailableTasks()
+        window.dispatchEvent(new CustomEvent("workhive:session-changed"))
     })
 
     const handleSessionChanged = useEffectEvent(async () => {

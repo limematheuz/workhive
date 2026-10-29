@@ -54,7 +54,7 @@ interface UseTechTaskChecklistReturn {
     availableAssignees: User[];
     handleAnswer: (itemId: string, answer: "yes" | "no") => Promise<void>;
     handleNoteChange: (itemId: string, note: string) => void;
-    persistChecklistNote: (itemId: string, note: string) => Promise<void>;
+    persistChecklistNote: (itemId: string, note: string) => Promise<boolean>;
     handleChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     handleResetChecklist: () => Promise<void>;
     handleAddChecklistItem: (question: string, assigneeId: number) => Promise<boolean>;
@@ -327,7 +327,7 @@ export function useTechTaskChecklist({
     };
 
     const persistChecklistNote = async (itemId: string, note: string) => {
-        if (!itemId.startsWith("item_") || !note.trim()) return;
+        if (!itemId.startsWith("item_") || !note.trim()) return false;
         try {
             await TaskReportService.createChecklistNote(
                 task.id,
@@ -335,8 +335,10 @@ export function useTechTaskChecklist({
                 note.trim(),
             );
             onStatusUpdate();
+            return true;
         } catch {
             toast.error("No se pudo guardar la nota");
+            return false;
         }
     };
 

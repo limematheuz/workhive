@@ -74,9 +74,6 @@ export function useTechTaskWorkSession({
         POLL_INTERVALS.liveWork,
         POLL_INTERVALS.realtimeSafety,
     );
-    useRealtimeInvalidation(["live-work", "tasks"], () => {
-        void loadWorkSummary();
-    });
 
     // Active session management
     const refreshActiveSession = useCallback(async () => {
@@ -86,6 +83,11 @@ export function useTechTaskWorkSession({
             setActiveSession(null);
         }
     }, []);
+
+    useRealtimeInvalidation(["live-work", "tasks"], () => {
+        void loadWorkSummary();
+        void refreshActiveSession();
+    });
 
     useEffect(() => {
         startTransition(() => {

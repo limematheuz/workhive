@@ -67,7 +67,10 @@ export function useTechTaskDetailsController({
         task,
         currentUser,
         isCurrentTaskSessionActive: workSession.isCurrentTaskSessionActive,
-        onStatusUpdate,
+        onStatusUpdate: () => {
+            window.dispatchEvent(new CustomEvent("workhive:session-changed"));
+            onStatusUpdate();
+        },
         dict,
     });
 

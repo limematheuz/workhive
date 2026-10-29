@@ -4,10 +4,8 @@ import React from "react";
 import {
     Camera,
     CheckCircle2,
-    ChevronDown,
     ClipboardCheck,
     Pencil,
-    Plus,
     RotateCcw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +14,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ChecklistExtraWorkForm } from "./ChecklistExtraWorkForm";
+import { useDialogFormGuardReset } from "@/components/ui/dialog-form-guard";
 import { Textarea } from "@/components/ui/textarea";
 import { User } from "@/types/user";
 import {
@@ -52,7 +51,7 @@ interface TechTaskChecklistDialogProps {
     getCategoryForItem: (question: string) => "General" | "Baño" | "Cocina";
     onAnswer: (itemId: string, answer: "yes" | "no") => Promise<void>;
     onNoteChange: (itemId: string, note: string) => void;
-    onPersistNote: (itemId: string, note: string) => Promise<void>;
+    onPersistNote: (itemId: string, note: string) => Promise<boolean>;
     onChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     onResetChecklist: () => Promise<void>;
     onAddChecklistItem: (question: string, assigneeId: number) => Promise<boolean>;
@@ -129,17 +128,6 @@ function TechTaskChecklistDialogContent({
     goToFirstPending,
     progress,
 }: TechTaskChecklistDialogProps & ReturnType<typeof useTechTaskChecklistDialogState>) {
-    const [newChecklistQuestion, setNewChecklistQuestion] = React.useState("");
-    const [newChecklistAssigneeId, setNewChecklistAssigneeId] = React.useState("");
-
-    const addChecklistItem = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        const added = await onAddChecklistItem(newChecklistQuestion, Number(newChecklistAssigneeId));
-        if (!added) return;
-        setNewChecklistQuestion("");
-        setNewChecklistAssigneeId("");
-    };
-
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
@@ -198,7 +186,7 @@ function TechTaskChecklistDialogContent({
                         </div>
                     </section>
 
-                    <nav aria-label={dict.tech.requirements_categories}>
+                    <nav aria-label={dict.tech.requirements_categories} data-form-guard-ignore>
                         <PremiumTabs
                             activeTab={activeCategory}
                             onChange={setActiveCategory}
@@ -220,48 +208,11 @@ function TechTaskChecklistDialogContent({
                     </nav>
 
                     {isCurrentTaskSessionActive && (
-                        <details className="billing-block group overflow-hidden rounded-2xl">
-                            <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 text-xs font-semibold text-[var(--text-main)] marker:hidden">
-                                <span className="flex items-center gap-2">
-                                    <Plus className="h-4 w-4 text-accent" />
-                                    {dict.tech.add_checklist_item}
-                                </span>
-                                <ChevronDown className="h-4 w-4 text-[var(--text-muted)] transition-transform group-open:rotate-180" />
-                            </summary>
-                            <form
-                                onSubmit={addChecklistItem}
-                                className="grid gap-2 border-t border-[var(--border-soft)] p-3.5 sm:grid-cols-[1fr_11rem_auto]"
-                            >
-                                <Label htmlFor="new-checklist-question" className="sr-only">
-                                    {dict.tech.checklist_item_placeholder}
-                                </Label>
-                                <Input
-                                    id="new-checklist-question"
-                                    type="text"
-                                    value={newChecklistQuestion}
-                                    onChange={event => setNewChecklistQuestion(event.target.value)}
-                                    placeholder={dict.tech.checklist_item_placeholder}
-                                    required
-                                    className="h-10 text-xs"
-                                />
-                                <Select value={newChecklistAssigneeId} onValueChange={setNewChecklistAssigneeId}>
-                                    <SelectTrigger aria-label={dict.tech.assign_to_placeholder} className="h-10 text-xs">
-                                        <SelectValue placeholder={dict.tech.assign_to_placeholder} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                    {availableAssignees.map(user => (
-                                        <SelectItem key={user.id} value={String(user.id)}>{user.full_name || user.email}</SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                                <Button
-                                    type="submit"
-                                    className="min-h-10 border-none bg-accent px-4 text-xs font-semibold text-white shadow-sm hover:bg-accent-light hover:shadow-sm"
-                                >
-                                    {dict.tech.btn_add}
-                                </Button>
-                            </form>
-                        </details>
+                        <ChecklistExtraWorkForm
+                            dict={dict}
+                            availableAssignees={availableAssignees}
+                            onAddChecklistItem={onAddChecklistItem}
+                        />
                     )}
 
                     <ChecklistRequirementsList
@@ -288,7 +239,7 @@ function TechTaskChecklistDialogContent({
                     </Button>
                 </main>
 
-                <footer className="dialog-glass-chrome flex shrink-0 items-center gap-3 border-t border-[var(--border-soft)] px-3 py-3 sm:px-5">
+                <footer data-form-guard-ignore className="dialog-glass-chrome flex shrink-0 items-center gap-3 border-t border-[var(--border-soft)] px-3 py-3 sm:px-5">
                     <div className="flex min-w-0 flex-1 items-center gap-2.5">
                         <Checkbox
                             id="checklist-hide-completed"
@@ -331,7 +282,7 @@ interface ChecklistRequirementsListProps {
     onAnswer: (itemId: string, answer: "yes" | "no") => Promise<void>;
     onChecklistPhoto: (itemId: string, event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     onNoteChange: (itemId: string, note: string) => void;
-    onPersistNote: (itemId: string, note: string) => Promise<void>;
+    onPersistNote: (itemId: string, note: string) => Promise<boolean>;
     setExpandedItem: React.Dispatch<React.SetStateAction<string | null>>;
     uploadingChecklistItem: string | null;
 }
@@ -400,6 +351,7 @@ function ChecklistRequirementItem({
     onToggleNote,
     uploading,
 }: ChecklistRequirementItemProps) {
+    const resetGuard = useDialogFormGuardReset();
     const answered = item.answer !== null;
     const label = (dict.tech.checklist as Record<string, string>)?.[item.id] || item.question;
     const photoInputId = `tech-checklist-photo-${item.id}`;
@@ -444,7 +396,7 @@ function ChecklistRequirementItem({
                 </div>
             </div>
 
-            <fieldset className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-2.5">
+            <fieldset className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--border-soft)] pt-2.5" data-form-guard-ignore>
                 <legend className="sr-only">{dict.tech.requirements_answer}</legend>
                 <div className="flex items-center gap-1.5">
                     <ChecklistAnswerButton
@@ -498,7 +450,13 @@ function ChecklistRequirementItem({
                         id={`tech-checklist-note-${item.id}`}
                         value={item.note}
                         onChange={event => onNoteChange(item.id, event.target.value)}
-                        onBlur={event => onPersistNote(item.id, event.target.value)}
+                        onBlur={async event => {
+                            const control = event.currentTarget;
+                            const note = control.value;
+                            if (await onPersistNote(item.id, note) && control.value === note) {
+                                resetGuard(control);
+                            }
+                        }}
                         placeholder={dict.tech.notes_placeholder}
                         rows={2}
                         className="min-h-16 resize-none text-xs"
