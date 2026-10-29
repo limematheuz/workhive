@@ -4,6 +4,8 @@ import { useEffect, useEffectEvent, useMemo, useRef } from "react";
 
 import {
     REALTIME_INVALIDATION_EVENT,
+    REALTIME_TOPICS,
+    getRealtimeConnectionState,
     type RealtimeTopic,
     isRealtimeTopic,
     setRealtimeConnectionState,
@@ -41,13 +43,25 @@ export function useRealtimeEvents(enabled: boolean): void {
             return;
         }
 
+        let receivedConnectionState = false;
+        const updateConnectionState = (event: MessageEvent<string>) => {
+            const wasConnected = getRealtimeConnectionState();
+            const connected = parseConnectionState(event);
+            setRealtimeConnectionState(connected);
+            // Events sent during an outage cannot be replayed. Revalidate the
+            // active views once on recovery, without duplicating initial load.
+            if (receivedConnectionState && connected && !wasConnected) {
+                window.dispatchEvent(new CustomEvent<ReadonlyArray<RealtimeTopic>>(
+                    REALTIME_INVALIDATION_EVENT,
+                    { detail: REALTIME_TOPICS },
+                ));
+            }
+            receivedConnectionState = true;
+        };
+
         return subscribeToRealtimeEvents({
-            onReady: (event) => {
-                setRealtimeConnectionState(parseConnectionState(event));
-            },
-            onConnection: (event) => {
-                setRealtimeConnectionState(parseConnectionState(event));
-            },
+            onReady: updateConnectionState,
+            onConnection: updateConnectionState,
             onInvalidation: (event) => {
                 const topics = parseTopics(event);
                 if (topics.length > 0) {
