@@ -22,7 +22,6 @@ import { resolveTaskEditChecklist } from "@/lib/resolve-task-edit-checklist";
 import {
     taskFormControlClass,
     taskFormLabelClass,
-    taskFormReadOnlyClass,
     taskFormSectionClass,
     taskFormSectionHeaderClass,
     taskFormSectionHintClass,
@@ -163,12 +162,15 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                         />
                     </div>
                     <div className="space-y-1.5">
-                        <span className={taskFormLabelClass}>
+                        <label htmlFor="task-edit-location" className={taskFormLabelClass}>
                             {dict.tasks?.dialog?.location_label || "Location"}
-                        </span>
-                        <div className={taskFormReadOnlyClass}>
-                            {locations.find((location) => location.id.toString() === editLocationId)?.name || ""}
-                        </div>
+                        </label>
+                        <Input
+                            id="task-edit-location"
+                            readOnly
+                            value={locations.find((location) => location.id.toString() === editLocationId)?.name || ""}
+                            className={taskFormControlClass}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <label htmlFor="task-edit-date" className={taskFormLabelClass}>
@@ -181,6 +183,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             max={maxPlanningDate}
                             onValueChange={setEditCreatedAt}
                             disabled={!managerEditable}
+                            className={taskFormControlClass}
                         />
                     </div>
                     <div className="space-y-1.5">

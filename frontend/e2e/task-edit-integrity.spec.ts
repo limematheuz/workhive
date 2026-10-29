@@ -205,3 +205,77 @@ for (const width of [1440, 768, 390]) {
     }
 
 }
+
+for (const width of [1440, 768, 390]) {
+    for (const theme of ["light", "dark"]) {
+        test(`modal headers and footers share the sheet background in ${theme} at ${width}px`, async ({ context, page }) => {
+            await page.addInitScript(value => localStorage.setItem("theme", value), theme);
+            const { dialog, updates } = await openEditor(context, page, width);
+            await expect(page.locator("html")).toHaveClass(theme === "light" ? /light-mode/ : /^(?!.*light-mode)/);
+            const chrome = dialog.locator('[data-slot="dialog-header"], .dialog-glass-chrome');
+            expect(await chrome.count()).toBeGreaterThanOrEqual(2);
+            for (const section of await chrome.all()) {
+                await expect(section).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+                await expect(section).toHaveCSS("backdrop-filter", "none");
+            }
+            await dialog.locator("#task-edit-notes").fill("QA borrador para comprobar descarte");
+            await dialog.getByRole("button", { name: "Close", exact: true }).click();
+            const confirmation = page.getByRole("alertdialog");
+            await expect(confirmation).toBeVisible();
+            for (const slot of ["alert-dialog-header", "alert-dialog-footer"]) {
+                await expect(confirmation.locator(`[data-slot="${slot}"]`)).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+            }
+            await confirmation.getByRole("button", { name: "Salir sin guardar", exact: true }).click();
+            await expect(dialog).toHaveCount(0);
+            await page.getByRole("button", { name: "Nueva Tarea", exact: true }).click();
+            const create = page.getByRole("dialog");
+            await expect(create).toBeVisible();
+            const createChrome = create.locator('[data-slot="dialog-header"], .dialog-glass-chrome');
+            expect(await createChrome.count()).toBeGreaterThanOrEqual(2);
+            for (const section of await createChrome.all()) {
+                await expect(section).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+                await expect(section).toHaveCSS("backdrop-filter", "none");
+            }
+            await create.getByRole("button", { name: "Close", exact: true }).click();
+            await expect(create).toHaveCount(0);
+            expect(updates).toHaveLength(0);
+        });
+    }
+}
+
+for (const width of [1440, 768, 390]) {
+    for (const theme of ["light", "dark"]) {
+        test(`task controls and footer align consistently in ${theme} at ${width}px`, async ({ context, page }) => {
+            await page.addInitScript(value => localStorage.setItem("theme", value), theme);
+            const { dialog } = await openEditor(context, page, width);
+            await dialog.getByRole("heading", { name: /QA integridad edición/ }).click();
+            const location = dialog.getByLabel(/instalación.*ubicación/i);
+            await expect(location).toHaveValue("QA ubicación");
+            await expect(location).toHaveAttribute("readonly", "");
+            await expect(dialog.locator("#task-edit-time")).toHaveCSS("color-scheme", theme);
+            const surfaces = [dialog.locator("#task-edit-title"), location, dialog.locator('[data-slot="input-group"]').first(), dialog.locator("#task-edit-time")];
+            await expect(async () => {
+                const styles = await Promise.all(surfaces.map(control => control.evaluate(element => {
+                    const css = getComputedStyle(element);
+                    return { height: css.height, radius: css.borderRadius, border: css.borderColor, background: css.backgroundColor, shadow: css.boxShadow };
+                })));
+                expect(styles[0].height).toBe("44px");
+                for (const style of styles) expect(style).toEqual(styles[0]);
+            }).toPass({ timeout: 3000 });
+            const remove = await dialog.getByRole("button", { name: "Eliminar", exact: true }).boundingBox();
+            const duplicate = await dialog.getByRole("button", { name: "Duplicar", exact: true }).boundingBox();
+            const save = await dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).boundingBox();
+            expect(remove).not.toBeNull(); expect(duplicate).not.toBeNull(); expect(save).not.toBeNull();
+            expect(remove!.y).toBe(duplicate!.y);
+            expect(remove!.height).toBe(duplicate!.height);
+            if (width < 640) {
+                expect(save!.y).toBeGreaterThanOrEqual(remove!.y + remove!.height);
+                expect(save!.x).toBe(remove!.x);
+                expect(save!.x + save!.width).toBe(duplicate!.x + duplicate!.width);
+                expect(remove!.width).toBe(duplicate!.width);
+            } else expect(save!.y).toBe(remove!.y);
+            await dialog.getByRole("button", { name: "Close", exact: true }).click();
+            await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        });
+    }
+}

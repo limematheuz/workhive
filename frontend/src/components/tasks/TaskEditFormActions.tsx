@@ -6,6 +6,7 @@ import type { Dictionary } from "@/lib/dictionary-context";
 import type { TaskItem } from "@/services/task.service";
 import { canDuplicateTask } from "@/domain/tasks/task-permissions";
 import type { User } from "@/types/user";
+import { cn } from "@/lib/utils";
 import {
     taskDialogFooterClass,
 } from "./taskDialogChrome";
@@ -38,11 +39,12 @@ export function TaskEditFormActions({
     handleDuplicateTask,
 }: TaskEditFormActionsProps) {
     const allowDuplicate = canDuplicateTask(currentUser, selectedTask) && adminOrManager && !receiverCompany;
+    const allowDelete = !immutable && adminOrManager && !receiverCompany;
 
     return (
-        <div className={taskDialogFooterClass}>
-            <div className="flex flex-wrap gap-2">
-                {!immutable && adminOrManager && !receiverCompany && (
+        <div className={cn(taskDialogFooterClass, "flex-col items-stretch sm:flex-row sm:items-center")}>
+            {(allowDelete || allowDuplicate) && <div className="grid w-full auto-cols-fr grid-flow-col gap-2 sm:flex sm:w-auto">
+                {allowDelete && (
                     <Button
                         type="button"
                         variant="dangerSoft"
@@ -70,14 +72,14 @@ export function TaskEditFormActions({
                         {dict.tasks.duplicate || "Duplicar"}
                     </Button>
                 )}
-            </div>
+            </div>}
 
             {managerEditable && (
                 <Button
                     type="submit"
                     size="sm"
                     disabled={saving}
-                    className="ml-auto min-w-[9.5rem]"
+                    className="w-full sm:ml-auto sm:w-auto sm:min-w-[9.5rem]"
                 >
                     {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                     {saving ? dict.tasks.dialog.saving_btn : (dict.tasks?.dialog?.save_btn || "Save Changes")}
