@@ -476,3 +476,86 @@ def test_task_listing_uses_a_bounded_number_of_queries(client, db):
     assert len(statements) <= 20, (
         f"Task listing executed {len(statements)} SQL statements; expected a bounded query plan"
     )
+
+
+@pytest.mark.parametrize(
+    ("identity", "query", "expected"),
+    [
+        ("worker", "", ["own", "shared"]),
+        ("worker", "?user_id={other}", ["own", "shared"]),
+        ("worker", "?user_id={admin}&location_id={first_location}", ["own"]),
+        ("worker", "?location_id={second_location}", ["shared"]),
+        ("worker", "?location_id={foreign_location}", []),
+        ("worker", "?user_id={other}&task_status=accepted", []),
+        ("worker", "?user_id={other}&task_status=completed", ["shared"]),
+        ("worker", "?user_id={other}&skip=1&limit=1", ["shared"]),
+        ("unassigned", "?user_id={worker}", []),
+        ("unassigned", "?location_id={second_location}&task_status=completed", []),
+        ("admin", "", ["own", "other", "shared"]),
+        ("admin", "?location_id={first_location}", ["own", "other"]),
+        ("admin", "?location_id={second_location}", ["shared"]),
+        ("manager", "?location_id={foreign_location}", []),
+        ("manager", "?user_id={worker}", ["own", "shared"]),
+        ("foreign_admin", "?location_id={first_location}&user_id={worker}", []),
+    ],
+)
+def test_task_filters_preserve_assignment_and_company_scope(client, db, identity, query, expected):
+    company = _company(db, "FilterScope")
+    foreign_company = _company(db, "ForeignFilterScope")
+    users = {
+        "admin": _user(db, company, "admin@filter-scope.test", 1),
+        "manager": _user(db, company, "manager@filter-scope.test", 2),
+        "worker": _user(db, company, "worker@filter-scope.test", 3),
+        "other": _user(db, company, "other@filter-scope.test", 3),
+        "unassigned": _user(db, company, "unassigned@filter-scope.test", 3),
+        "foreign_admin": _user(db, foreign_company, "admin@foreign-filter-scope.test", 1),
+    }
+    first_location = _location(db, company, "First filter location")
+    second_location = _location(db, company, "Second filter location")
+    foreign_location = _location(db, foreign_company, "Foreign filter location")
+    tasks = {
+        "own": TaskItem(title="Assigned work", unit="servicio", company_id=company.id,
+                        location_id=first_location.id, user_id=users["worker"].id, status="pending"),
+        "other": TaskItem(title="Other worker work", unit="servicio", company_id=company.id,
+                          location_id=first_location.id, user_id=users["other"].id, status="accepted"),
+        "shared": TaskItem(title="Shared assigned work", unit="servicio", company_id=company.id,
+                           location_id=second_location.id, status="completed"),
+        "foreign": TaskItem(title="Other company work", unit="servicio", company_id=foreign_company.id,
+                            location_id=foreign_location.id, user_id=users["foreign_admin"].id, status="accepted"),
+    }
+    db.add_all(tasks.values())
+    db.flush()
+    db.add_all([
+        TaskAssignment(task_id=tasks["shared"].id, user_id=users[key].id,
+                       status="completed", source="all")
+        for key in ("worker", "other")
+    ])
+    db.commit()
+    before = {
+        key: client.get(f"/api/v1/task-items/{task.id}", headers=_headers(
+            users["foreign_admin"] if key == "foreign" else users["admin"]
+        )).json()
+        for key, task in tasks.items()
+    }
+    params = {key: user.id for key, user in users.items()}
+    params.update(first_location=first_location.id, second_location=second_location.id,
+                  foreign_location=foreign_location.id)
+
+    response = client.get("/api/v1/task-items/" + query.format(**params), headers=_headers(users[identity]))
+
+    assert response.status_code == 200, response.text
+    assert [task["id"] for task in response.json()] == [tasks[key].id for key in expected]
+    for key, task in tasks.items():
+        check = client.get(f"/api/v1/task-items/{task.id}", headers=_headers(
+            users["foreign_admin"] if key == "foreign" else users["admin"]
+        ))
+        assert check.status_code == 200, check.text
+        assert check.json() == before[key]
+
+
+def test_task_filter_queries_require_authentication(client):
+    response = client.get(
+        "/api/v1/task-items/?location_id=1&user_id=1&task_status=completed&limit=1"
+    )
+
+    assert response.status_code == 401
