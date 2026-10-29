@@ -78,7 +78,6 @@
   --glass-sheet-border: rgba(255, 255, 255, 0.16);
   --glass-sheet-highlight: rgba(255, 255, 255, 0.2);
   --glass-sheet-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
-  --glass-chrome-bg: rgba(24, 24, 28, 0.55);
   --glass-panel-bg: rgba(255, 255, 255, 0.08);
   --glass-panel-border: rgba(255, 255, 255, 0.12);
   /* Overlay dims + frosts the page behind the sheet */
@@ -357,7 +356,6 @@
   --glass-sheet-border: rgba(255, 255, 255, 0.72);
   --glass-sheet-highlight: rgba(255, 255, 255, 0.9);
   --glass-sheet-shadow: 0 40px 120px rgba(52, 74, 94, 0.28);
-  --glass-chrome-bg: rgba(244, 248, 251, 0.55);
   --glass-panel-bg: rgba(255, 255, 255, 0.55);
   --glass-panel-border: rgba(82, 101, 119, 0.16);
   --glass-overlay-bg: rgba(15, 23, 42, 0.4);
@@ -493,10 +491,18 @@
     inset 0 1px 0 var(--glass-sheet-highlight) !important;
 }
 
+/* The sheet owns the fill and frost; chrome must not add another tinted layer. */
+.dialog-glass-chrome,
+[data-slot="dialog-header"],
+[data-slot="dialog-footer"],
+[data-slot="alert-dialog-header"],
+[data-slot="alert-dialog-footer"] {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 .dialog-glass-chrome {
-  background-color: var(--glass-chrome-bg) !important;
-  -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(1.6) !important;
-  backdrop-filter: blur(var(--dialog-surface-blur)) saturate(1.6) !important;
   border-color: var(--glass-sheet-border);
 }
 
@@ -930,6 +936,14 @@ select option {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.48),
     0 18px 46px rgba(77, 96, 116, 0.14);
+}
+
+.dialog-compact-control {
+  color-scheme: dark;
+}
+
+.light-mode .dialog-compact-control {
+  color-scheme: light;
 }
 
 /* Global Subtle Focus Styles for Form Fields */
