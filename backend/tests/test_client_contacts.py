@@ -193,3 +193,25 @@ def test_client_contacts_require_an_assigned_client_profile(client, db):
 
     assert readable.status_code == 403, readable.text
     assert blocked.status_code == 403
+
+
+def test_contact_rejects_null_required_fields_and_preserves_responsibilities(client):
+    headers = _admin_headers(client, "required")
+    created_client = client.post("/api/v1/clients/", headers=headers, json=_client_payload("QA required"))
+    assert created_client.status_code == 201, created_client.text
+    base = f"/api/v1/clients/{created_client.json()['id']}/contacts"
+    created = client.post(base, headers=headers, json={"full_name": "QA Billing", "roles": ["billing"], "phone": "000000000", "is_primary": True})
+    assert created.status_code == 201, created.text
+    original = created.json()
+    url = f"{base}/{original['id']}"
+    for field in ("full_name", "is_active", "is_primary", "roles"):
+        rejected = client.patch(url, headers=headers, json={field: None, "phone": "must not persist"})
+        assert rejected.status_code == 422, (field, rejected.text)
+        assert client.get(base, headers=headers).json() == [original]
+    for name in ("", "   "):
+        assert client.patch(url, headers=headers, json={"full_name": name}).status_code == 422
+    updated = client.patch(url, headers=headers, json={"phone": None, "email": None, "job_title": None, "roles": [], "is_primary": False})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["full_name"] == original["full_name"]
+    assert updated.json()["roles"] == []
+    assert updated.json()["phone"] is None

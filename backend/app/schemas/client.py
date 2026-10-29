@@ -185,7 +185,21 @@ class ClientContactUpdate(BaseModel):
     is_primary: bool | None = None
     is_active: bool | None = None
 
-    @field_validator("full_name", "phone", "job_title")
+    @field_validator("full_name")
+    @classmethod
+    def normalize_required_name(cls, value: str | None) -> str:
+        if value is None or not value.strip():
+            raise ValueError("Value cannot be blank")
+        return value.strip()
+
+    @field_validator("is_active", "is_primary", "roles")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
+
+    @field_validator("phone", "job_title")
     @classmethod
     def normalize_optional_contact_text(cls, value: str | None) -> str | None:
         return value.strip() or None if value is not None else None
