@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from app.schemas.work_session import WorkSessionStartLocationResponse
 
 
@@ -42,6 +42,16 @@ class ReservationUpdate(BaseModel):
     cleaning_required: bool | None = None
     assigned_company_id: int | None = None
     cleaning_scheduled_at: datetime | None = None
+
+    @field_validator(
+        "check_in_at", "check_out_at", "guest_count", "stay_type",
+        "status", "source", "cleaning_required",
+    )
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
 
 
 class ReservationOperationalResponse(BaseModel):

@@ -1383,3 +1383,27 @@ def test_receiver_can_read_owner_location_templates_without_mixing_catalogs(db):
             location.id,
         )
     assert error.value.status_code == 403
+
+
+def test_reservation_rejects_null_required_fields_without_changing_stay(client, db):
+    company = _company(db, "Required reservation", "REQUIREDRESERVATION")
+    company.subscription_status = "active"
+    location = _location(db, company)
+    admin = _user(db, company, role_id=1, email="required@reservation.test")
+    db.commit()
+    headers = _headers(admin)
+    payload = _reservation_data(location.id).model_dump(mode="json")
+    payload.update(cleaning_required=False, notes="QA original")
+    created = client.post("/api/v1/reservations/", headers=headers, json=payload)
+    assert created.status_code == 201, created.text
+    original = created.json()
+    url = f"/api/v1/reservations/{original['id']}"
+    for field in ("check_in_at", "check_out_at", "guest_count", "stay_type", "status", "source", "cleaning_required"):
+        rejected = client.patch(url, headers=headers, json={field: None, "notes": "must not persist"})
+        assert rejected.status_code == 422, (field, rejected.text)
+        assert client.get(url, headers=headers).json() == original
+    updated = client.patch(url, headers=headers, json={"notes": None, "external_reference": None, "assigned_company_id": None, "cleaning_scheduled_at": None})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["notes"] is None
+    assert updated.json()["check_in_at"] == original["check_in_at"]
+    assert updated.json()["guest_count"] == original["guest_count"]
