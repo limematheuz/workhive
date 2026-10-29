@@ -102,6 +102,7 @@ def test_production_public_registration_requires_a_workhive_notification_inbox()
     with pytest.raises(ValidationError, match="ACCOUNT_REQUEST_RECIPIENT_EMAIL"):
         production_settings(
             ALLOW_PUBLIC_REGISTRATION=True,
+            ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED=True,
             ACCOUNT_REQUEST_RECIPIENT_EMAIL=None,
         )
 

@@ -75,7 +75,8 @@ def _invoice(
     return invoice
 
 
-def test_payment_reminders_alert_only_active_company_admins_and_deduplicate(db):
+def test_payment_reminders_alert_only_active_company_admins_and_deduplicate(db, monkeypatch):
+    monkeypatch.setattr(payment_reminder_service.settings, "PAYMENT_REMINDERS_ENABLED", True)
     now = datetime(2026, 8, 10, 9, tzinfo=timezone.utc)
     company = _company(db, "Cobros")
     admin = _user(db, company, "admin@payment.test", 1)
@@ -113,6 +114,7 @@ def test_payment_reminders_alert_only_active_company_admins_and_deduplicate(db):
 
 
 def test_payment_reminders_skip_inactive_companies_and_can_be_disabled(db, monkeypatch):
+    monkeypatch.setattr(payment_reminder_service.settings, "PAYMENT_REMINDERS_ENABLED", True)
     now = datetime(2026, 8, 10, 9, tzinfo=timezone.utc)
     inactive_company = _company(db, "Inactiva", active=False)
     _user(db, inactive_company, "admin-inactiva@payment.test", 1)
