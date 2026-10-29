@@ -53,6 +53,13 @@ class LocationEquipmentUpdate(BaseModel):
     next_service_at: date | None = None
     notes: str | None = Field(default=None, max_length=4_000)
 
+    @field_validator("name", "category", "quantity", "status")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
+
     @field_validator("name", "category", "serial_number", "notes")
     @classmethod
     def trim_text(cls, value: str | None) -> str | None:
