@@ -39,6 +39,13 @@ class QualityInspectionTemplateUpdate(BaseModel):
     is_active: bool | None = None
     items: list[QualityInspectionTemplateItemInput] | None = Field(default=None, min_length=1, max_length=100)
 
+    @field_validator("title", "is_active", "items")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
+
     @field_validator("title")
     @classmethod
     def normalize_title(cls, value: str | None) -> str | None:
