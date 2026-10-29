@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.datetime import as_utc
 from app.models.company_collaboration import CompanyCollaboration
 from app.models.location import Location
 from app.models.location_company_access import LocationCompanyAccess
@@ -41,6 +42,8 @@ def validate_cleaning_schedule(
 ) -> None:
     if cleaning_scheduled_at is None:
         return
+    cleaning_scheduled_at = as_utc(cleaning_scheduled_at)
+    check_out_at = as_utc(check_out_at)
     if cleaning_scheduled_at < check_out_at:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -55,7 +58,7 @@ def validate_cleaning_schedule(
     if exclude_reservation_id is not None:
         next_query = next_query.filter(Reservation.id != exclude_reservation_id)
     next_reservation = next_query.order_by(Reservation.check_in_at.asc()).first()
-    if next_reservation and cleaning_scheduled_at > next_reservation.check_in_at:
+    if next_reservation and cleaning_scheduled_at > as_utc(next_reservation.check_in_at):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Cleaning must be performed before the next check-in.",

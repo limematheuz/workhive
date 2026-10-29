@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.core.datetime import as_utc
 from app.schemas.work_session import WorkSessionStartLocationResponse
 
 
@@ -18,6 +19,8 @@ class ReservationBase(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+    _normalize_dates = field_validator("check_in_at", "check_out_at")(as_utc)
+
     @model_validator(mode="after")
     def validate_dates(self):
         if self.check_out_at <= self.check_in_at:
@@ -28,6 +31,8 @@ class ReservationBase(BaseModel):
 class ReservationCreate(ReservationBase):
     assigned_company_id: int | None = None
     cleaning_scheduled_at: datetime | None = None
+
+    _normalize_cleaning = field_validator("cleaning_scheduled_at")(as_utc)
 
 
 class ReservationUpdate(BaseModel):
@@ -42,6 +47,8 @@ class ReservationUpdate(BaseModel):
     cleaning_required: bool | None = None
     assigned_company_id: int | None = None
     cleaning_scheduled_at: datetime | None = None
+
+    _normalize_dates = field_validator("check_in_at", "check_out_at", "cleaning_scheduled_at")(as_utc)
 
     @field_validator(
         "check_in_at", "check_out_at", "guest_count", "stay_type",

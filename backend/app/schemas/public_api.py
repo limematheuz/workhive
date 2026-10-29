@@ -3,7 +3,9 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from app.core.datetime import as_utc
 
 
 class PublicWorkOrderResponse(BaseModel):
@@ -34,6 +36,8 @@ class PublicReservationUpsert(BaseModel):
     cleaning_scheduled_at: datetime | None = None
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    _normalize_dates = field_validator("check_in_at", "check_out_at", "cleaning_scheduled_at")(as_utc)
 
     @model_validator(mode="after")
     def validate_dates(self):
