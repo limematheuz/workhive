@@ -181,13 +181,14 @@ def _validate_reservation_update_schedule(
     )
     location = get_location(db, reservation.location_id)
     validate_guest_capacity(location, guest_count)
-    validate_no_overlap(
-        db,
-        reservation.location_id,
-        check_in_at,
-        check_out_at,
-        reservation.id,
-    )
+    if (data.status or reservation.status) != "cancelled":
+        validate_no_overlap(
+            db,
+            reservation.location_id,
+            check_in_at,
+            check_out_at,
+            reservation.id,
+        )
     proposed_cleaning_at = (
         data.cleaning_scheduled_at
         if "cleaning_scheduled_at" in data.model_fields_set
