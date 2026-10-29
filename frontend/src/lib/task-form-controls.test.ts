@@ -25,12 +25,13 @@ test("task editors reuse local shadcn inputs and selects", () => {
 
 test("tech task forms use shared controls and keep native file selection behind Input", () => {
     const checklist = source("../components/dashboard/tech-task/TechTaskChecklistDialog.tsx");
+    const extraWork = source("../components/dashboard/tech-task/ChecklistExtraWorkForm.tsx");
     const issues = source("../components/dashboard/tech-task/TechTaskIssuesSection.tsx");
     const property = source("../components/dashboard/tech-task/TechTaskPropertySection.tsx");
     const comments = source("../components/dashboard/tech-task/TechTaskCommentsDialog.tsx");
     const attachments = source("../components/dashboard/tech-task/TechTaskAttachmentsDialog.tsx");
 
-    for (const control of [checklist, issues, property]) {
+    for (const control of [extraWork, issues, property]) {
         assert.match(control, /from "@\/components\/ui\/input"/);
         assert.match(control, /from "@\/components\/ui\/select"/);
         assert.match(control, /<SelectTrigger/);
@@ -42,7 +43,10 @@ test("tech task forms use shared controls and keep native file selection behind 
         assert.doesNotMatch(control, /<(?:input|textarea)\b/);
     }
 
-    assert.match(checklist, /onAddChecklistItem\(newChecklistQuestion, Number\(newChecklistAssigneeId\)\)/);
+    assert.match(checklist, /<ChecklistExtraWorkForm/);
+    assert.match(checklist, /from "@\/components\/ui\/input"/);
+    assert.doesNotMatch(checklist, /<(?:input|select|textarea)\b/);
+    assert.match(extraWork, /onAddChecklistItem\(newChecklistQuestion, Number\(newChecklistAssigneeId\)\)/);
     assert.match(property, /onSubmit=\{save\}/);
     assert.doesNotMatch(property, /querySelector|data-tech-features-editor.*closest/);
     assert.doesNotMatch(issues, /(?:amber|red|purple)-/);
