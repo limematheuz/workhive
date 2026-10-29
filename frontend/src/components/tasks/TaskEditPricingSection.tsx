@@ -47,6 +47,7 @@ export function TaskPricingAgreementSection({
 }: TaskPricingAgreementSectionProps) {
     const isHourly = pricingMode === "hourly";
     const inputDisabled = !managerEditable || pricingLocked;
+    const selectedUnit = isHourly ? "hour" : unit;
 
     return (
         <section className={taskFormSectionClass}>
@@ -138,7 +139,7 @@ export function TaskPricingAgreementSection({
                         {dict.tasks?.dialog?.unit_label || "Unit"}
                     </label>
                     <Select
-                        value={isHourly ? "hour" : unit}
+                        value={selectedUnit}
                         onValueChange={onUnitChange}
                         disabled={inputDisabled || isHourly}
                     >
@@ -146,6 +147,9 @@ export function TaskPricingAgreementSection({
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
+                            {selectedUnit && !TASK_EDIT_UNIT_OPTIONS.includes(selectedUnit) && (
+                                <SelectItem value={selectedUnit}>{selectedUnit}</SelectItem>
+                            )}
                             {TASK_EDIT_UNIT_OPTIONS.map((option) => (
                                 <SelectItem key={option} value={option}>{option}</SelectItem>
                             ))}
