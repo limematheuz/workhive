@@ -134,3 +134,23 @@ def test_quality_template_fails_closed_without_quality_profile(client, db):
         headers=_headers(admin),
         json={**_payload(location.id), "items": []},
     ).status_code == 422
+
+
+def test_quality_template_rejects_null_required_fields_and_preserves_items(client, db):
+    company = _company(db, "quality-required")
+    admin = _bootstrap_admin(db, company, "quality-required-admin")
+    location = _location(db, company, "QA template")
+    headers = _headers(admin)
+    created = client.post("/api/v1/quality/templates/", headers=headers, json=_payload(location.id))
+    assert created.status_code == 201, created.text
+    original = created.json()
+    url = f"/api/v1/quality/templates/{original['id']}"
+    for field in ("title", "is_active", "items"):
+        rejected = client.patch(url, headers=headers, json={field: None, "description": "must not persist"})
+        assert rejected.status_code == 422, (field, rejected.text)
+        assert client.get(url, headers=headers).json() == original
+    updated = client.patch(url, headers=headers, json={"description": None, "is_active": False})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["description"] is None
+    assert updated.json()["is_active"] is False
+    assert updated.json()["items"] == original["items"]
