@@ -424,7 +424,7 @@ export function useTaskCrud({
         }
         const violation = getScheduleViolation(
             selectedTask,
-            buildScheduledStartAt(values),
+            buildScheduledStartAt(values, selectedTask),
         );
         if (violation) {
             const boundary = violation.boundary.toLocaleString("es-ES");

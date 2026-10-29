@@ -1,4 +1,5 @@
 import { normalizeTaskStatus } from "../../domain/tasks/task-status.ts";
+import { cleanChecklistDescription } from "../../lib/format.ts";
 
 type TaskListStatusFields = {
     id: number;
@@ -94,7 +95,7 @@ export function filterTasksForGeneralList<T extends TaskListSearchable>(
 
         return [
             task.title,
-            task.description,
+            cleanChecklistDescription(task.description || ""),
             options.getLocationName(task.location_id),
             options.getAssigneeName(task.user_id),
         ]

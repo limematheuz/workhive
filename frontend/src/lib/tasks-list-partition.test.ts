@@ -111,3 +111,20 @@ test("paginateTaskListPage clamps pages for compact list browsing", () => {
     assert.equal(last.safePage, 3);
     assert.equal(last.pageItems.length, 5);
 });
+
+test("list search preserves original task data and excludes hidden checklist metadata", () => {
+    const original = task(1, "pending", false, {
+        description: "<!-- workhive_assignees:98765 -->\n- [ ] Comprobar acceso (@98765:MetadataPrivada:pending)",
+    });
+    const before = structuredClone(original);
+    const options = {
+        query: "comprobar acceso", dateScope: "ALL" as const,
+        getLocationName: () => "QA ubicación", getAssigneeName: () => "QA persona",
+    };
+    const result = filterTasksForGeneralList([original], options);
+
+    assert.equal(result[0], original);
+    assert.deepEqual(original, before);
+    assert.deepEqual(filterTasksForGeneralList([original], { ...options, query: "MetadataPrivada" }), []);
+    assert.deepEqual(filterTasksForGeneralList([original], { ...options, query: "workhive_assignees" }), []);
+});

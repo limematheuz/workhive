@@ -2,7 +2,6 @@
 
 import React from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
-import { cleanChecklistDescription } from "@/lib/format";
 import { TaskItem } from "@/services/task.service";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
@@ -81,10 +80,7 @@ export function TasksList({
 
     const visibleTasks = React.useMemo(
         () => filterTasksForGeneralList(
-            tasks.map(task => ({
-                ...task,
-                description: cleanChecklistDescription(task.description || ""),
-            })),
+            tasks,
             {
                 query: searchQuery,
                 dateScope,
