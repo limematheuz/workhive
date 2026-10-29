@@ -507,8 +507,9 @@ def test_explicit_worker_cannot_update_unassigned_structured_item(client, db):
     assert response.status_code == 403
 
 
+@pytest.mark.parametrize("channel", ["structured", "description", "evidence"])
 @pytest.mark.parametrize("session_kind", ["missing", "closed", "other_task", "other_user"])
-def test_worker_checklist_requires_own_open_session_for_task(client, db, session_kind):
+def test_worker_checklist_requires_own_open_session_for_task(client, db, session_kind, channel):
     company = _company(db, "ChecklistSession")
     admin = _user(db, company, "admin@checklist-session.test", 1)
     worker = _user(db, company, "worker@checklist-session.test", 3)
@@ -547,13 +548,54 @@ def test_worker_checklist_requires_own_open_session_for_task(client, db, session
         db.commit()
     before = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(admin)).json()
 
-    denied = client.patch(
-        f"/api/v1/task-items/{task_id}/checklist-items/{item_id}",
-        headers=_headers(worker),
-        json={"completed": True, "answer": "yes"},
-    )
+    path = f"/api/v1/task-items/{task_id}"
+    if channel == "structured":
+        path += f"/checklist-items/{item_id}"
+        payload = {"completed": True, "answer": "yes"}
+    elif channel == "description":
+        payload = {"description": before["description"].replace("- [ ] Cocina", "- [x] Cocina")}
+    else:
+        payload = {"checklist_evidence": {f"item_{item_id}": {"answer": "yes"}}}
+    denied = client.patch(path, headers=_headers(worker), json=payload)
 
     assert denied.status_code == 409, denied.text
     assert denied.json()["detail"] == "Start work on this task before updating its checklist"
     after = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(admin)).json()
     assert after == before
+
+
+@pytest.mark.parametrize("channel", ["description", "evidence"])
+def test_worker_can_save_checklist_snapshot_after_starting_work(client, db, channel):
+    company = _company(db, "ActiveChecklist")
+    admin = _user(db, company, "admin@active-checklist.test", 1)
+    worker = _user(db, company, "worker@active-checklist.test", 3)
+    location = _location(db, company)
+    created = client.post(
+        "/api/v1/task-items/", headers=_headers(admin),
+        json={
+            "title": "Active worker checklist", "unit": "servicio",
+            "location_id": location.id,
+            "description": f"- [ ] Cocina (@{worker.id}:Worker:pending)",
+        },
+    )
+    assert created.status_code == 201, created.text
+    task_id = created.json()["id"]
+    item_id = created.json()["checklist_items"][0]["id"]
+    _start_worker_task(client, admin, worker, task_id)
+    before = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(worker)).json()
+    payload = (
+        {"description": before["description"].replace("- [ ] Cocina", "- [x] Cocina")}
+        if channel == "description"
+        else {"checklist_evidence": {f"item_{item_id}": {"answer": "yes"}}}
+    )
+
+    response = client.patch(
+        f"/api/v1/task-items/{task_id}", headers=_headers(worker), json=payload,
+    )
+
+    assert response.status_code == 200, response.text
+    persisted = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(admin)).json()
+    if channel == "description":
+        assert persisted["checklist_items"][0]["completed"] is True
+    else:
+        assert persisted["checklist_evidence"][f"item_{item_id}"]["answer"] == "yes"

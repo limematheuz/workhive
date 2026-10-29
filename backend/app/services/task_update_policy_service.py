@@ -15,6 +15,7 @@ from app.models.user import User
 from app.repositories import reservation as reservation_repo
 from app.repositories import task_item as task_item_repo
 from app.repositories import user as user_repo
+from app.repositories import work_session as work_session_repo
 from app.schemas.task_item import TaskItemUpdate
 from app.services import (
     location_access_service,
@@ -25,6 +26,15 @@ from app.services.organization_authorization_service import (
     has_capability,
     require_capability,
 )
+
+
+def require_active_task_session(db: Session, task: TaskItem, current_user: User) -> None:
+    active_sessions = work_session_repo.get_active_sessions_by_user(db, current_user.id)
+    if not any(session.task_item_id == task.id for session in active_sessions):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Start work on this task before updating its checklist",
+        )
 
 
 def validate_reservation_links(
@@ -206,6 +216,8 @@ def validate_task_update_scope(
             scope_id=task.location_id,
         )
         _validate_worker_task_update(task, current_user, task_data)
+        if task_data.model_fields_set & {"description", "checklist_evidence"}:
+            require_active_task_session(db, task, current_user)
     return is_external
 
 
