@@ -172,3 +172,22 @@ def test_task_persists_selected_location_zones_and_rejects_another_location(clie
     )
     assert rejected.status_code == 400
     assert db.query(TaskItem).filter(TaskItem.title == "Zona incorrecta").count() == 0
+
+
+def test_zone_rejects_null_required_fields_without_mutation(client, db):
+    company = _company(db, "RequiredZones")
+    admin = _user(db, company, "required@zones.test")
+    location = _location(db, company, "QA zones")
+    headers = _headers(admin)
+    base = f"/api/v1/locations/{location.id}/zones"
+    created = _create_zone(client, admin, location.id, "QA bathroom", "bathroom")
+    assert created.status_code == 201, created.text
+    original = created.json()
+    url = f"{base}/{original['id']}"
+    for field in ("name", "zone_type", "sort_order"):
+        rejected = client.patch(url, headers=headers, json={field: None})
+        assert rejected.status_code == 422, (field, rejected.text)
+        assert client.get(base, headers=headers).json() == [original]
+    updated = client.patch(url, headers=headers, json={"sort_order": 0})
+    assert updated.status_code == 200, updated.text
+    assert updated.json() == original
