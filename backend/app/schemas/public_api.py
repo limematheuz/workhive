@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.datetime import as_utc
+from app.schemas.reservation import ReservationStayType
 
 
 class PublicWorkOrderResponse(BaseModel):
@@ -29,7 +30,7 @@ class PublicReservationUpsert(BaseModel):
     check_in_at: datetime
     check_out_at: datetime
     guest_count: int = Field(default=1, ge=1, le=10_000)
-    stay_type: str = Field(default="guest", min_length=1, max_length=20)
+    stay_type: ReservationStayType = "guest"
     status: Literal["confirmed", "cancelled"] = "confirmed"
     notes: str | None = Field(default=None, max_length=5_000)
     cleaning_required: bool = True
