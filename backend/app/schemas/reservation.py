@@ -7,6 +7,7 @@ from app.schemas.work_session import WorkSessionStartLocationResponse
 
 
 ReservationStatus = Literal["confirmed", "tentative", "cancelled"]
+ReservationStayType = Literal["guest", "owner", "block"]
 
 
 class ReservationBase(BaseModel):
@@ -33,6 +34,7 @@ class ReservationBase(BaseModel):
 
 
 class ReservationCreate(ReservationBase):
+    stay_type: ReservationStayType = "guest"
     status: ReservationStatus = "confirmed"
     assigned_company_id: int | None = None
     cleaning_scheduled_at: datetime | None = None
@@ -44,7 +46,7 @@ class ReservationUpdate(BaseModel):
     check_in_at: datetime | None = None
     check_out_at: datetime | None = None
     guest_count: int | None = Field(default=None, ge=1)
-    stay_type: str | None = None
+    stay_type: ReservationStayType | None = None
     status: ReservationStatus | None = None
     source: str | None = None
     external_reference: str | None = None
