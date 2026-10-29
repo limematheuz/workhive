@@ -4,14 +4,19 @@ test.beforeEach(() => {
     test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
 });
 
-async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false) {
+async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean } = {}) {
     await page.setViewportSize({ width, height: 900 });
     const token = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
     await context.addCookies([{ name: "auth_token", value: `fixture.${token}.not-a-backend-token`, url: "http://localhost:3000" }]);
     await page.addInitScript(() => localStorage.setItem("locale", "es"));
     const task = {
         id: 1, title: "QA integridad edición", description: "- [ ] Comprobar acceso QA",
-        unit: "service", price: 1, quantity: 1, pricing_mode: "fixed", status: "pending",
+        unit: pricing.unit || "service", price: 1, quantity: 1, pricing_mode: "fixed", status: "pending",
+        pricing_locked_at: pricing.locked ? new Date().toISOString() : null,
+        billing_pricing_mode_snapshot: pricing.locked ? "fixed" : null,
+        billing_unit_snapshot: pricing.locked ? pricing.unit : null,
+        billing_price_snapshot: pricing.locked ? 1 : null,
+        billing_quantity_snapshot: pricing.locked ? 1 : null,
         priority: "low", company_id: 1, location_id: 1, user_id: null,
         created_at: new Date().toISOString(), scheduled_start_at: scheduled, due_at: null,
         checklist_items: [{ id: 1, position: 0, text: "Comprobar acceso QA", completed: false, assignments: [] }],
@@ -183,5 +188,20 @@ for (const width of [1440, 768, 390]) {
         expect(updates[0].description).toBe("- [ ] Comprobar acceso QA");
         expect(updates[0].scheduled_start_at).toBeNull();
     });
+
+    for (const pricing of [{ unit: "servicio", locked: false }, { unit: "service", locked: false }, { unit: "servicio", locked: true }]) {
+        test(`existing unit ${pricing.unit} locked=${pricing.locked} is visible and preserved at ${width}px`, async ({ context, page }) => {
+            const { dialog, updates } = await openEditor(context, page, width, null, null, false, pricing);
+            const unit = dialog.locator("#task-edit-unit");
+            await expect(unit).toContainText(pricing.unit);
+            if (pricing.locked) await expect(unit).toBeDisabled();
+            await dialog.locator("#task-edit-notes").fill("QA unidad conservada");
+            await dialog.getByRole("button", { name: /guardar cambios/i }).click();
+            await expect(dialog).toHaveCount(0);
+            expect(updates).toHaveLength(1);
+            if (pricing.locked) expect(updates[0]).not.toHaveProperty("unit");
+            else expect(updates[0].unit).toBe(pricing.unit);
+        });
+    }
 
 }
