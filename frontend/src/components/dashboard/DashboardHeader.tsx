@@ -19,6 +19,7 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/profile") ? dict.dashboard.profile
         : pathname.includes("/dashboard/live-work") ? (dict.dashboard.live_work || "Fichajes en vivo")
         : pathname.includes("/dashboard/time-corrections") ? "Fichajes"
+        : pathname.includes("/dashboard/reservations") ? dict.reservations.page_title
         : pathname.includes("/dashboard/calendar") ? dict.dashboard.calendar
         : pathname.includes("/dashboard/integrations") ? dict.dashboard.integrations
         : pathname.includes("/dashboard/api-access") ? "Acceso API"

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 // Isolated UI fixtures: no local account or client data is changed.
-for (const path of ["/dashboard/clients", "/dashboard/client", "/dashboard/client/profile", "/dashboard/quotes"]) {
+for (const path of ["/dashboard/clients", "/dashboard/client", "/dashboard/client/profile", "/dashboard/quotes", "/dashboard/reservations"]) {
     test(`header distinguishes the client workspace at ${path}`, async ({ context, page }) => {
         test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
         const portal = path === "/dashboard/client" || path.startsWith("/dashboard/client/");
@@ -19,6 +19,6 @@ for (const path of ["/dashboard/clients", "/dashboard/client", "/dashboard/clien
             await route.fulfill({ json: body });
         });
         await page.goto(path);
-        await expect(page.locator("header").first().getByRole("heading", { level: 1 })).toHaveText(portal ? "Portal de cliente" : path === "/dashboard/quotes" ? "Presupuestos" : "Clientes");
+        await expect(page.locator("header").first().getByRole("heading", { level: 1 })).toHaveText(path === "/dashboard/reservations" ? "Reservas y Estancias" : portal ? "Portal de cliente" : path === "/dashboard/quotes" ? "Presupuestos" : "Clientes");
     });
 }
