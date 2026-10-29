@@ -257,13 +257,7 @@ def validate_task_update_relations(
             target_location_id,
             "can_manage_reservations",
         )
-    if task_data.user_id is not None:
-        assigned_user = user_repo.get_user_by_id(db, task_data.user_id)
-        if not assigned_user or assigned_user.company_id != current_user.company_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Assigned user not found or does not belong to your company",
-            )
+    validate_direct_assignee(db, current_user.company_id, task_data.user_id)
     validate_reservation_links(
         db,
         target_location_id,
@@ -279,6 +273,21 @@ def validate_task_update_relations(
             db,
             task.company_id,
             task_data.description,
+        )
+
+
+def validate_direct_assignee(db: Session, company_id: int, user_id: int | None) -> None:
+    if user_id is None:
+        return
+    assigned_user = user_repo.get_user_by_id(db, user_id)
+    if (
+        not assigned_user
+        or assigned_user.company_id != company_id
+        or not assigned_user.is_active
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Assigned user must be active and belong to your company",
         )
 
 
