@@ -261,8 +261,8 @@ async def create_report(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"
         )
 
-    media_key = copy_report_media(payload.media_url, company_id)
     checklist_item = _checklist_item(task, payload)
+    media_key = copy_report_media(payload.media_url, company_id)
     requesting_company_id = (
         task.checkout_reservation.owner_company_id
         if task.checkout_reservation
