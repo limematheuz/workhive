@@ -4,14 +4,14 @@ test.beforeEach(() => {
     test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
 });
 
-async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean } = {}) {
+async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean; completed?: boolean } = {}) {
     await page.setViewportSize({ width, height: 900 });
     const token = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
     await context.addCookies([{ name: "auth_token", value: `fixture.${token}.not-a-backend-token`, url: "http://localhost:3000" }]);
     await page.addInitScript(() => localStorage.setItem("locale", "es"));
     const task = {
-        id: 1, title: "QA integridad edición", description: "- [ ] Comprobar acceso QA",
-        unit: pricing.unit || "service", price: 1, quantity: 1, pricing_mode: "fixed", status: "pending",
+        id: 1, title: "QA integridad edición", description: pricing.completed ? "- [x] Comprobar acceso QA (@1:QA Admin:completed)" : "- [ ] Comprobar acceso QA",
+        unit: pricing.unit || "service", price: 1, quantity: 1, pricing_mode: "fixed", status: pricing.completed ? "completed" : "pending",
         pricing_locked_at: pricing.locked ? new Date().toISOString() : null,
         billing_pricing_mode_snapshot: pricing.locked ? "fixed" : null,
         billing_unit_snapshot: pricing.locked ? pricing.unit : null,
@@ -19,18 +19,25 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
         billing_quantity_snapshot: pricing.locked ? 1 : null,
         priority: "low", company_id: 1, location_id: 1, user_id: null,
         created_at: new Date().toISOString(), scheduled_start_at: scheduled, due_at: null,
-        checklist_items: [{ id: 1, position: 0, text: "Comprobar acceso QA", completed: false, assignments: [] }],
+        checklist_items: [{ id: 1, position: 0, text: "Comprobar acceso QA", completed: Boolean(pricing.completed), assignments: [] }],
         assignments: [],
         checkout_reservation: checkout ? { id: 1, check_out_at: checkout, owner_company_id: 1 } : null,
     };
     const updates: Record<string, unknown>[] = [];
+    const creations: Record<string, unknown>[] = [];
     await page.route("**/api/v1/**", async route => {
         const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
         let body: unknown = [];
         if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA Admin", role: { name: "admin" }, company_id: 1, is_active: true };
         else if (path === "/api/v1/users") body = [{ id: 1, full_name: "QA Admin", email: "qa@example.test", is_active: true }];
         else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
-        else if (path === "/api/v1/task-items") body = [task];
+        else if (path === "/api/v1/task-items") {
+            if (route.request().method() === "POST") {
+                const payload = route.request().postDataJSON();
+                creations.push(payload);
+                body = { ...task, ...payload, id: 2, status: "pending" };
+            } else body = [task];
+        }
         else if (path === "/api/v1/task-items/1") {
             if (route.request().method() === "PATCH") {
                 const payload = route.request().postDataJSON();
@@ -52,10 +59,14 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
             await page.getByRole("option", { name: "Lista", exact: true }).click();
         }
     }
+    if (fromList && pricing.completed) {
+        await page.getByRole("combobox", { name: "Filtrar por estado", exact: true }).click();
+        await page.getByRole("option", { name: "Completada", exact: true }).click();
+    }
     await page.getByRole("button", { name: fromList ? task.title : `Abrir tarea: ${task.title}`, exact: true }).click();
     const dialog = page.getByRole("dialog", { name: /QA integridad edición/ });
     await expect(dialog).toBeVisible();
-    return { dialog, updates };
+    return { dialog, updates, creations, source: () => structuredClone(task) };
 }
 
 for (const width of [1440, 768, 390]) {
@@ -276,6 +287,24 @@ for (const width of [1440, 768, 390]) {
             } else expect(save!.y).toBe(remove!.y);
             await dialog.getByRole("button", { name: "Close", exact: true }).click();
             await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        });
+    }
+}
+
+for (const width of [1440, 768, 390]) {
+    for (const fromList of [false, true]) {
+        test(`duplicating completed work resets checklist progress from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+            const state = await openEditor(context, page, width, null, null, fromList, { completed: true });
+            const before = state.source();
+            await state.dialog.getByRole("button", { name: "Duplicar", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.creations).toHaveLength(1);
+            expect(state.creations[0].description).toBe("- [ ] Comprobar acceso QA (@1:QA Admin:pending)");
+            expect(state.creations[0].title).toBe("QA integridad edición (Copia)");
+            for (const key of ["status", "date_done", "checklist_evidence", "attachments", "pricing_locked_at", "scheduled_start_at"]) {
+                expect(state.creations[0]).not.toHaveProperty(key);
+            }
+            expect(state.source()).toEqual(before);
         });
     }
 }

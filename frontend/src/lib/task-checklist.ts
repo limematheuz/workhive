@@ -112,3 +112,18 @@ export function isTaskChecklistFullyDistributed(
 ): boolean {
     return items.length > 0 && items.every((item) => Boolean(item.assignedUserId));
 }
+
+/** A duplicate keeps its instructions and people, but represents new work. */
+export function resetTaskChecklistProgress(description: string | null | undefined): string | null {
+    if (!description) return null;
+    const lines = description.split("\n");
+    for (const item of parseTaskChecklist(description)) {
+        let line = lines[item.index].replace(/^(\s*[-*]?\s*\[)\s*[xX\s]\s*(\])/, "$1 $2");
+        if (item.assignedStatus) {
+            const statusStart = line.lastIndexOf(`:${item.assignedStatus})`);
+            if (statusStart >= 0) line = `${line.slice(0, statusStart)}:pending)`;
+        }
+        lines[item.index] = line;
+    }
+    return lines.join("\n");
+}

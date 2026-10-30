@@ -50,7 +50,9 @@ test("selected zones stay visible to planners and field workers", () => {
 });
 
 test("duplicating a task preserves its selected source spaces", () => {
-    const taskCrud = read("../hooks/useTaskCrud.ts");
-
-    assert.match(taskCrud, /zone_ids: task\.zones\?\.map\(\(zone\) => zone\.space_id\)/);
+    const duplicate = read("../domain/tasks/task-duplicate.ts");
+    assert.match(duplicate, /zone_ids: task\.zones\?\.map\(\(zone\) => zone\.space_id\)/);
+    for (const path of ["../hooks/useTaskCrud.ts", "../hooks/useOperationsCalendar.ts"]) {
+        assert.match(read(path), /TaskService\.createTaskItem\(buildTaskDuplicatePayload\(task\)\)/);
+    }
 });
