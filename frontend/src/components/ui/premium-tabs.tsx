@@ -38,7 +38,8 @@ export function PremiumTabsNavigation<T extends string>({ tabs, activeTab, onCha
     const { containerRef, measurementRef, dropdown, ready } = useAdaptiveTabs(tabs.length);
     const pickerLabel = mobileLabel || dict.tabNavigation.select;
 
-    return <div ref={containerRef} data-tab-navigation data-tabs-ready={ready} className={cn("relative mb-4 w-full min-w-0", className)}>
+    // Radix also emits native select changes inside forms; view changes are not edits.
+    return <div ref={containerRef} data-tab-navigation data-form-guard-ignore data-tabs-ready={ready} className={cn("relative mb-4 w-full min-w-0", className)}>
         <div aria-hidden="true" inert className="pointer-events-none invisible absolute inset-0 overflow-hidden">
             <div ref={measurementRef} className={cn(tabListClass, "w-max")}>
                 {tabs.map(tab => <span key={tab.id} className={premiumTabTriggerClass(activeTab === tab.id)}><PremiumTabLabel tab={tab} active={activeTab === tab.id} /></span>)}

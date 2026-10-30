@@ -53,10 +53,10 @@ export function CreateLocationSheet({ clients, defaultClientId, onLocationCreate
                 </Button>
             </DialogTrigger>
             <DialogContent className="flex h-[min(92vh,980px)] w-[calc(100vw-1.5rem)] !max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-[calc(100vw-3rem)] sm:!max-w-[calc(100vw-3rem)] 2xl:!max-w-[1380px]">
-                <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 sm:px-7 sm:py-5">
+                <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 pr-16 text-left sm:px-7 sm:py-5 sm:pr-20">
                     <div className="flex items-start gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><MapPinned className="h-5 w-5" /></div>
-                        <div>
+                        <div className="min-w-0">
                             <DialogTitle>Nueva ubicación</DialogTitle>
                     <DialogDescription>
                                 Crea el local paso a paso. Solo pedimos lo necesario y podrás completar el resto cuando quieras.
