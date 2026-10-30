@@ -2,14 +2,14 @@ from collections.abc import Collection
 from datetime import datetime
 
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.task_item import TaskItem
 from app.models.task_report import TaskReport
 from app.models.location import Location
 from app.models.client import Client
 from app.models.reservation import Reservation
-from app.models.task_structure import TaskAssignment
+from app.models.task_structure import TaskAssignment, TaskChecklistAssignment, TaskChecklistItem
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
 
 
@@ -140,6 +140,15 @@ def get_task_items_by_ids(
     if user_id is not None:
         query = query.filter(or_(*_user_assignment_conditions(user_id)))
     return query.order_by(TaskItem.id.asc()).all()
+
+
+def get_task_duplication_source(db: Session, company_id: int, task_id: int) -> TaskItem | None:
+    return db.query(TaskItem).options(
+        selectinload(TaskItem.checklist_items).selectinload(TaskChecklistItem.assignments)
+        .selectinload(TaskChecklistAssignment.user),
+        selectinload(TaskItem.assignments).selectinload(TaskAssignment.user),
+        selectinload(TaskItem.zones),
+    ).filter(TaskItem.id == task_id, TaskItem.company_id == company_id).first()
 
 
 def create_task_item(

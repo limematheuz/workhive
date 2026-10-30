@@ -12,7 +12,7 @@ from app.schemas.task_item import (
     TaskItemResponse,
     TaskChecklistItemUpdate,
 )
-from app.services import task_item_service
+from app.services import task_duplication_service, task_item_service
 from app.services.calendar_background_service import sync_company_calendar
 from app.api.v1.task_item_read import (  # noqa: F401
     read_task_item as read_task_item,
@@ -36,6 +36,23 @@ async def create_task_item(
             current_user,
             task_item_data,
         )
+        return task_item_service.build_task_response(sync_db, task, current_user)
+
+    response = await db.run_sync(operation)
+    if background_tasks:
+        background_tasks.add_task(sync_company_calendar, current_user.company_id)
+    return response
+
+
+@router.post("/{task_item_id}/duplicate", response_model=TaskItemResponse, status_code=status.HTTP_201_CREATED)
+async def duplicate_task_item(
+    task_item_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+    background_tasks: BackgroundTasks = None,
+):
+    def operation(sync_db: Session):
+        task = task_duplication_service.duplicate_task_item(sync_db, current_user, task_item_id)
         return task_item_service.build_task_response(sync_db, task, current_user)
 
     response = await db.run_sync(operation)

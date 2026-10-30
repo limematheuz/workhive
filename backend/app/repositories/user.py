@@ -81,6 +81,16 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     )
 
 
+def get_active_company_user_ids(db: Session, company_id: int, user_ids: set[int]) -> set[int]:
+    if not user_ids:
+        return set()
+    return {
+        row[0] for row in db.query(User.id).filter(
+            User.id.in_(user_ids), User.company_id == company_id, User.is_active.is_(True),
+        )
+    }
+
+
 def get_latest_company_membership(db: Session, user_id: int) -> CompanyMembership | None:
     """Return the latest company relationship for an identity without a workspace."""
 

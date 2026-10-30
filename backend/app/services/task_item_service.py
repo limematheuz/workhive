@@ -99,6 +99,7 @@ def create_task_item(
     task_item_data: TaskItemCreate,
     *,
     work_order_id: int | None = None,
+    checklist_source: TaskItem | None = None,
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
     location_access_service.require_location_capability(
@@ -194,6 +195,8 @@ def create_task_item(
         task,
         selected_space_task_templates,
     )
+    if checklist_source is not None:
+        task_structure_service.copy_pending_structure(db, checklist_source, task)
     _complete_task_when_checklist_is_done(db, task)
     db.commit()
     db.refresh(task)
