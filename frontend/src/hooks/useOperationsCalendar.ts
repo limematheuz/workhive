@@ -33,6 +33,7 @@ import {
 import { canDuplicateTask, canMoveTaskOnKanban } from "@/domain/tasks/task-permissions";
 import type { KanbanStatus, TaskPriority, TaskStatus } from "@/types/task";
 import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task-notification-acknowledgement";
+import { filterTasksForKanban } from "@/domain/tasks/task-kanban-filter";
 
 export type { KanbanStatus };
 
@@ -83,22 +84,11 @@ export function useOperationsCalendar({
     const isAdminOrManager = canManageCompanyTasks(currentUser);
 
     // Filter tasks based on search and selects
-    const filteredTasks = useMemo(() => {
-        return tasks.filter((task) => {
-            if (task.is_invoiced) return false; // Filter out invoiced tasks from Kanban and operations feed
-            if (task.status === "requested" || task.status === "rejected") return false;
-
-            const matchesSearch = searchQuery.trim() === "" ||
-                task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                (task.description && task.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-                (task.notes && task.notes.toLowerCase().includes(searchQuery.toLowerCase()));
-
-            const matchesUser = selectedUserId === "ALL" || task.user_id === parseInt(selectedUserId, 10);
-            const matchesLocation = selectedLocationId === "ALL" || task.location_id === parseInt(selectedLocationId, 10);
-
-            return matchesSearch && matchesUser && matchesLocation;
-        });
-    }, [tasks, searchQuery, selectedUserId, selectedLocationId]);
+    const filteredTasks = useMemo(() => filterTasksForKanban(tasks, {
+        query: searchQuery,
+        userId: selectedUserId,
+        locationId: selectedLocationId,
+    }), [tasks, searchQuery, selectedUserId, selectedLocationId]);
 
     // Split tasks by Kanban column (no review column)
     const columnsTasks = useMemo(() => {
