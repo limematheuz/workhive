@@ -10,7 +10,6 @@ import React from "react";
 import { ShieldAlert } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
 import { getTaskDeletionErrorMessage } from "@/lib/task-deletion";
-import { buildTaskDuplicatePayload } from "@/domain/tasks/task-duplicate";
 import { canManageCompanyTasks } from "@/domain/access/roles";
 import {
     buildScheduledStartAt,
@@ -373,7 +372,7 @@ export function useOperationsCalendar({
         }
         try {
             setIsSavingTask(true);
-            await TaskService.createTaskItem(buildTaskDuplicatePayload(task));
+            await TaskService.duplicateTaskItem(task.id);
             toast.success("Tarea duplicada con éxito.");
             setSelectedTask(null);
             onTaskUpdate();

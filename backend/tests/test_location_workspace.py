@@ -685,3 +685,17 @@ def test_task_uses_spaces_and_selected_space_tasks_as_its_checklist(client, db):
     assert created.json()["spaces"][0]["space_id"] == space["id"]
     assert created.json()["checklist_items"][0]["space_name"] == "Baño pacientes"
     assert created.json()["checklist_items"][0]["text"] == "Desinfectar lavabo"
+    original = created.json()
+    changed = client.patch(
+        f"/api/v1/locations/{location['id']}/spaces/{space['id']}/tasks/{space['tasks'][0]['id']}",
+        headers=headers, json={"title": "Nueva definición del catálogo"},
+    )
+    assert changed.status_code == 200, changed.text
+    duplicate = client.post(f"/api/v1/task-items/{original['id']}/duplicate", headers=headers)
+    assert duplicate.status_code == 201, duplicate.text
+    copy = duplicate.json()
+    assert [(row["space_id"], row["name"]) for row in copy["spaces"]] == [(space["id"], "Baño pacientes")]
+    assert copy["checklist_items"][0]["text"] == "Desinfectar lavabo"
+    assert copy["checklist_items"][0]["space_name"] == "Baño pacientes"
+    assert copy["checklist_items"][0]["id"] != original["checklist_items"][0]["id"]
+    assert copy["checklist_items"][0]["completed"] is False

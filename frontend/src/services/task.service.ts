@@ -126,6 +126,14 @@ export const TaskService = {
         return task
     },
 
+    duplicateTaskItem: async (id: number): Promise<TaskItem> => {
+        const response = await apiFetch(`/api/v1/task-items/${id}/duplicate`, { method: "POST" })
+        await assertApiResponseOk(response, "Error duplicating task item")
+        const task = await response.json() as TaskItem
+        notifyTasksChanged()
+        return task
+    },
+
     updateTaskItem: async (id: number, data: TaskItemUpdate): Promise<TaskItem> => {
         const response = await apiFetch(`/api/v1/task-items/${id}`, {
             method: "PATCH",

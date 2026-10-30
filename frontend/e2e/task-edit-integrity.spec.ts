@@ -38,6 +38,13 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
                 body = { ...task, ...payload, id: 2, status: "pending" };
             } else body = [task];
         }
+        else if (path === "/api/v1/task-items/1/duplicate") {
+            creations.push({ method: route.request().method(), body: route.request().postData() });
+            body = {
+                ...task, id: 2, title: `${task.title} (Copia)`, status: "pending",
+                checklist_items: task.checklist_items.map(item => ({ ...item, id: item.id + 10, completed: false })),
+            };
+        }
         else if (path === "/api/v1/task-items/1") {
             if (route.request().method() === "PATCH") {
                 const payload = route.request().postDataJSON();
@@ -293,17 +300,13 @@ for (const width of [1440, 768, 390]) {
 
 for (const width of [1440, 768, 390]) {
     for (const fromList of [false, true]) {
-        test(`duplicating completed work resets checklist progress from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+        test(`duplicating completed work uses its stored definition from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
             const state = await openEditor(context, page, width, null, null, fromList, { completed: true });
             const before = state.source();
             await state.dialog.getByRole("button", { name: "Duplicar", exact: true }).click();
             await expect(state.dialog).toHaveCount(0);
             expect(state.creations).toHaveLength(1);
-            expect(state.creations[0].description).toBe("- [ ] Comprobar acceso QA (@1:QA Admin:pending)");
-            expect(state.creations[0].title).toBe("QA integridad edición (Copia)");
-            for (const key of ["status", "date_done", "checklist_evidence", "attachments", "pricing_locked_at", "scheduled_start_at"]) {
-                expect(state.creations[0]).not.toHaveProperty(key);
-            }
+            expect(state.creations[0]).toEqual({ method: "POST", body: null });
             expect(state.source()).toEqual(before);
         });
     }

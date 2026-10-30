@@ -11,6 +11,7 @@ from app.models.task_structure import (
     TaskChecklistItem,
 )
 from app.models.user import User
+from app.repositories import user as user_repo
 from app.services import task_assignment_service
 
 
@@ -51,17 +52,13 @@ def validate_description_assignees(
     company_id: int,
     description: str | None,
 ) -> None:
-    ids = description_assignee_ids(description)
+    validate_assignee_ids(db, company_id, description_assignee_ids(description))
+
+
+def validate_assignee_ids(db: Session, company_id: int, ids: set[int]) -> None:
     if not ids:
         return
-    valid_ids = {
-        row[0]
-        for row in db.query(User.id).filter(
-            User.id.in_(ids),
-            User.company_id == company_id,
-            User.is_active.is_(True),
-        )
-    }
+    valid_ids = user_repo.get_active_company_user_ids(db, company_id, ids)
     if valid_ids != ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -167,6 +164,33 @@ def sync_from_description(
     db.add(task)
     db.flush()
     return task
+
+
+def copy_pending_structure(db: Session, source: TaskItem, target: TaskItem) -> None:
+    """Copy the stored work definition, including steps absent from markdown."""
+    if source.checklist_items:
+        target.checklist_items.clear()
+        db.flush()
+        target.checklist_items = [
+            TaskChecklistItem(
+                position=item.position, source_line_index=item.source_line_index,
+                location_space_task_template_id=item.location_space_task_template_id,
+                space_name=item.space_name, text=item.text, completed=False,
+                assignments=[
+                    TaskChecklistAssignment(user_id=assignment.user_id, status="pending")
+                    for assignment in item.assignments
+                ],
+            )
+            for item in source.checklist_items
+        ]
+    if source.assignments:
+        target.assignments.clear()
+        db.flush()
+        target.assignments = [
+            TaskAssignment(user_id=assignment.user_id, source=assignment.source, status="pending")
+            for assignment in source.assignments
+        ]
+    db.flush()
 
 
 def set_user_status(task: TaskItem, user_id: int, next_status: str) -> None:

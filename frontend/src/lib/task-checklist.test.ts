@@ -6,27 +6,7 @@ import {
     isTaskChecklistFullyDistributed,
     parseTaskChecklist,
     toggleTaskChecklistItem,
-    resetTaskChecklistProgress,
 } from "./task-checklist.ts";
-
-test("new work clears answers and worker progress while preserving instructions and distribution", () => {
-    const description = "<!-- workhive_assignees:7,8 -->\nNota libre\n- [x] Cocina (@7:Ana:completed)\n* [X] Baño (@8:Luis:progress)\n- [ ] Puerta (@7:Ana:review)\n- [x] Cristales (@8:Luis)";
-    assert.equal(resetTaskChecklistProgress(description), "<!-- workhive_assignees:7,8 -->\nNota libre\n- [ ] Cocina (@7:Ana:pending)\n* [ ] Baño (@8:Luis:pending)\n- [ ] Puerta (@7:Ana:pending)\n- [ ] Cristales (@8:Luis)");
-    assert.ok(description.includes("[x] Cocina"));
-});
-
-test("new work leaves non-checklist content intact and handles absent instructions", () => {
-    assert.equal(resetTaskChecklistProgress(null), null);
-    assert.equal(resetTaskChecklistProgress(undefined), null);
-    assert.equal(resetTaskChecklistProgress(""), null);
-    assert.equal(resetTaskChecklistProgress("Texto (completed)\n<!-- categorías: Cocina -->"), "Texto (completed)\n<!-- categorías: Cocina -->");
-});
-
-test("all recorded assignment statuses reset to pending, including unchecked completed assignments", () => {
-    for (const status of ["pending", "accepted", "rejected", "progress", "completed", "review"]) {
-        assert.equal(resetTaskChecklistProgress(`- [ ] Revisar (@7:Ana Pérez:${status})`), "- [ ] Revisar (@7:Ana Pérez:pending)");
-    }
-});
 
 test("task checklist parsing preserves completion and assignment metadata", () => {
     const items = parseTaskChecklist(
