@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
+import type { TaskChecklistEdit } from "@/types/task-update";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
@@ -89,6 +90,7 @@ export function TaskEditForm({
     setEditUnit,
     users,
 }: TaskEditFormProps) {
+    const [checklistUpdates, setChecklistUpdates] = useState<TaskChecklistEdit[]>([]);
     const immutable = selectedTask.is_invoiced;
     const managerEditable = !immutable && adminOrManager;
 
@@ -97,6 +99,7 @@ export function TaskEditForm({
             onSubmit={managerEditable ? handleSaveTaskDetails : event => event.preventDefault()}
             className="flex min-h-0 flex-1 flex-col font-sans"
         >
+            <input type="hidden" name="checklist_updates" value={JSON.stringify(checklistUpdates)} />
             <div className="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:p-6">
                 <TaskEditFormAlerts
                     dict={dict}
@@ -105,6 +108,8 @@ export function TaskEditForm({
                 />
 
                 <TaskEditFormFields
+                    checklistUpdates={checklistUpdates}
+                    onChecklistUpdatesChange={setChecklistUpdates}
                     dict={dict}
                     editCreatedAt={editCreatedAt}
                     editDescription={editDescription}

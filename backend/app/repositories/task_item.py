@@ -142,7 +142,7 @@ def get_task_items_by_ids(
     return query.order_by(TaskItem.id.asc()).all()
 
 
-def get_task_duplication_source(db: Session, company_id: int, task_id: int) -> TaskItem | None:
+def get_task_with_structure(db: Session, company_id: int, task_id: int) -> TaskItem | None:
     return db.query(TaskItem).options(
         selectinload(TaskItem.checklist_items).selectinload(TaskChecklistItem.assignments)
         .selectinload(TaskChecklistAssignment.user),
@@ -180,7 +180,7 @@ def update_task_item(
 ) -> TaskItem:
     update_data = task_item_data.model_dump(
         exclude_unset=True,
-        exclude={"zone_ids", "space_ids"},
+        exclude={"zone_ids", "space_ids", "checklist_updates"},
     )
     for key, value in update_data.items():
         setattr(db_task_item, key, value)

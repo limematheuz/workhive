@@ -4,21 +4,17 @@ import type { Dictionary } from "@/lib/dictionary-context";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-    assignTaskChecklistItem,
-    toggleTaskChecklistItem,
-} from "@/lib/task-checklist";
-import { localizeTaskDescription } from "@/lib/task-display";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
 import type { TaskPriority, TaskStatus } from "@/types/task";
 import type { User } from "@/types/user";
 import type { TaskPricingMode } from "@/domain/tasks/task-edit";
-import { TaskChecklistEditor } from "./TaskChecklistEditor";
+import { TaskEditChecklistSection } from "./TaskEditChecklistSection";
+import type { TaskChecklistEdit } from "@/types/task-update";
+import { projectTaskChecklistEdits } from "@/domain/tasks/task-checklist-edit";
 import { TaskPricingAgreementSection } from "./TaskEditPricingSection";
 import { TaskEditStatusSection } from "./TaskEditStatusSection";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
-import { resolveTaskEditChecklist } from "@/lib/resolve-task-edit-checklist";
 import {
     taskFormControlClass,
     taskFormLabelClass,
@@ -31,6 +27,8 @@ import {
 
 type TaskEditFormFieldsProps = {
     dict: Dictionary;
+    checklistUpdates: TaskChecklistEdit[];
+    onChecklistUpdatesChange: (value: TaskChecklistEdit[]) => void;
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
@@ -72,6 +70,8 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         editLocationId,
         editNotes,
         editPlanningTime,
+        checklistUpdates,
+        onChecklistUpdatesChange,
         editPrice,
         editPricingMode,
         editPriority,
@@ -99,35 +99,6 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         isAdminOrManager,
         immutable,
     } = props;
-
-    const localizedDescription = localizeTaskDescription(editDescription) || "";
-    const checklist = resolveTaskEditChecklist(localizedDescription, selectedTask);
-    const toggleChecklistItem = (itemIndex: number) => {
-        setEditDescription(toggleTaskChecklistItem(editDescription, itemIndex));
-    };
-
-    const assignWorkerToItem = (itemIndex: number, userId: string) => {
-        const targetUser = users.find((user) => user.id.toString() === userId);
-        setEditDescription(
-            assignTaskChecklistItem(
-                editDescription,
-                itemIndex,
-                userId,
-                targetUser?.full_name || targetUser?.email || "",
-            ),
-        );
-    };
-
-    const assignWorkerToAllItems = (userId: string) => {
-        const targetUser = users.find((user) => user.id.toString() === userId);
-        const assignedName = targetUser?.full_name || targetUser?.email || "";
-        setEditDescription(
-            checklist.reduce(
-                (description, item) => assignTaskChecklistItem(description, item.index, userId, assignedName),
-                editDescription,
-            ),
-        );
-    };
 
     const handlePricingModeChange = (mode: TaskPricingMode) => {
         setEditPricingMode(mode);
@@ -202,37 +173,12 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                 </div>
             </section>
 
-            <section className={taskFormSectionClass}>
-                <div className={taskFormSectionHeaderClass}>
-                    <h3 className={taskFormSectionTitleClass}>
-                        {dict.tasks?.create_dialog?.checklist || "Checklist and instructions"}
-                    </h3>
-                    <p className={taskFormSectionHintClass}>
-                        {dict.tasks?.create_dialog?.services_section_hint
-                            || "Select fixed work, review steps and assign owners."}
-                    </p>
-                </div>
-                {checklist.length > 0 ? (
-                    <TaskChecklistEditor
-                        items={checklist}
-                        users={users}
-                        canEdit={!immutable && isAdminOrManager}
-                        onToggle={toggleChecklistItem}
-                        onAssign={assignWorkerToItem}
-                        onAssignAll={assignWorkerToAllItems}
-                    />
-                ) : (
-                    <Textarea
-                        id="task-edit-checklist"
-                        value={editDescription}
-                        onChange={(event) => setEditDescription(event.target.value)}
-                        disabled={!managerEditable}
-                        rows={4}
-                        aria-label={dict.tasks?.create_dialog?.checklist || "Checklist and instructions"}
-                        className={taskFormTextAreaClass}
-                    />
-                )}
-            </section>
+            <TaskEditChecklistSection
+                dict={dict} task={selectedTask} description={editDescription}
+                onDescriptionChange={setEditDescription} edits={checklistUpdates}
+                onEditsChange={onChecklistUpdatesChange} users={users}
+                canEdit={!immutable && isAdminOrManager}
+            />
 
             {!isReceiverCompany && (
                 <section className={taskFormSectionClass}>
@@ -278,7 +224,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                 isReceiverCompany={isReceiverCompany}
                 managerEditable={managerEditable}
                 priority={editPriority}
-                selectedTask={selectedTask}
+                selectedTask={projectTaskChecklistEdits(selectedTask, checklistUpdates, users)}
                 status={editStatus}
                 onPriorityChange={setEditPriority}
                 onStatusChange={setEditStatus}

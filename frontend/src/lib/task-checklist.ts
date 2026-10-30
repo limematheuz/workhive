@@ -2,6 +2,7 @@ export interface TaskChecklistItem {
     text: string;
     checked: boolean;
     assignedUserId?: number;
+    assignedUserIds?: number[];
     assignedUserName?: string;
     assignedStatus?: TaskChecklistAssignmentStatus;
     index: number;

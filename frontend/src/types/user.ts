@@ -146,6 +146,7 @@ export interface TaskChecklistAssignment {
 
 export interface TaskChecklistItem {
     id: number;
+    source_line_index?: number | null;
     position: number;
     space_name?: string | null;
     text: string;

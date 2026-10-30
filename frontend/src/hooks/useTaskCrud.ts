@@ -1,5 +1,7 @@
 "use client";
 
+import { readTaskChecklistEdits } from "@/domain/tasks/task-checklist-edit";
+
 import React, { startTransition, useState, useEffect, useEffectEvent } from "react";
 import { TaskService, TaskItem } from "@/services/task.service";
 import { toast } from "@/lib/toast";
@@ -400,6 +402,7 @@ export function useTaskCrud({
             return;
         }
 
+        const checklistUpdates = readTaskChecklistEdits(e.currentTarget);
         const values: TaskEditValues = {
             title: editTitle,
             notes: editNotes,
@@ -445,6 +448,7 @@ export function useTaskCrud({
                     selectedTask,
                     currentUser?.company_id,
                     values,
+                    checklistUpdates,
                 ),
             );
 

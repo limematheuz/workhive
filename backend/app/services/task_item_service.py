@@ -27,6 +27,7 @@ from app.services import (
     location_workspace_service,
     task_structure_service,
     task_update_policy_service,
+    task_checklist_edit_service,
 )
 from app.services.company_client_service import ensure_company_as_client
 from app.models.task_structure import TaskChecklistItem
@@ -250,65 +251,69 @@ def update_task_item(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Update the selected spaces when changing the task location",
         )
-    task_data = task_update_policy_service.normalize_task_completion(
-        db_task_item,
-        task_data,
-    )
-    if "pricing_mode" in task_data.model_fields_set and task_data.pricing_mode is not None:
-        mode = task_billing_service.normalize_pricing_mode(task_data.pricing_mode)
-        updates = {"pricing_mode": mode}
-        if mode == task_billing_service.PRICING_MODE_HOURLY:
-            updates["unit"] = "hour"
-        task_data = task_data.model_copy(update=updates)
-
-    structure_changed = any(
-        field in task_data.model_fields_set
-        and getattr(task_data, field) != getattr(db_task_item, field)
-        for field in ("description", "user_id")
-    )
-
-    if task_update_policy_service.should_freeze_external_snapshot(
-        db_task_item,
-        task_data,
-        is_external,
-    ):
-        _freeze_live_external_snapshot(db, db_task_item)
-
-    if "template_task_id" in task_data.model_fields_set:
-        db_task_item.service_catalog_version_id = (
-            _resolve_current_catalog_version_id(
-                db,
-                template_task_id=task_data.template_task_id,
-                company_id=current_user.company_id,
-            )
-            if task_data.template_task_id is not None
-            else None
+    with db.begin_nested():
+        checklist_changed = task_checklist_edit_service.apply_checklist_edits(
+            db, db_task_item, current_user, task_data.checklist_updates,
         )
-
-    pricing_updates = task_data.model_dump(exclude_unset=True)
-    task_billing_service.validate_pricing_update(db_task_item, pricing_updates)
-    if task_data.status in {"progress", "review", "completed"}:
-        task_billing_service.lock_task_pricing(
+        task_data = task_update_policy_service.normalize_task_completion(
             db_task_item,
-            updates=pricing_updates,
+            task_data,
+        )
+        if "pricing_mode" in task_data.model_fields_set and task_data.pricing_mode is not None:
+            mode = task_billing_service.normalize_pricing_mode(task_data.pricing_mode)
+            updates = {"pricing_mode": mode}
+            if mode == task_billing_service.PRICING_MODE_HOURLY:
+                updates["unit"] = "hour"
+            task_data = task_data.model_copy(update=updates)
+
+        structure_changed = any(
+            field in task_data.model_fields_set
+            and getattr(task_data, field) != getattr(db_task_item, field)
+            for field in ("description", "user_id")
         )
 
-    updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
-    if selected_space_ids is not None:
-        location_zone_service.sync_task_zones(
+        if task_update_policy_service.should_freeze_external_snapshot(
+            db_task_item,
+            task_data,
+            is_external,
+        ):
+            _freeze_live_external_snapshot(db, db_task_item)
+
+        if "template_task_id" in task_data.model_fields_set:
+            db_task_item.service_catalog_version_id = (
+                _resolve_current_catalog_version_id(
+                    db,
+                    template_task_id=task_data.template_task_id,
+                    company_id=current_user.company_id,
+                )
+                if task_data.template_task_id is not None
+                else None
+            )
+
+        pricing_updates = task_data.model_dump(exclude_unset=True)
+        task_billing_service.validate_pricing_update(db_task_item, pricing_updates)
+        if task_data.status in {"progress", "review", "completed"}:
+            task_billing_service.lock_task_pricing(
+                db_task_item,
+                updates=pricing_updates,
+            )
+
+        updated_task = task_item_repo.update_task_item(db, db_task_item, task_data)
+        if selected_space_ids is not None:
+            location_zone_service.sync_task_zones(
+                db,
+                updated_task.id,
+                updated_task.location_id,
+                selected_space_ids,
+            )
+        if structure_changed or checklist_changed:
+            task_structure_service.sync_from_description(db, updated_task)
+        _complete_task_when_checklist_is_done(db, updated_task)
+        task_completion_service.apply_update_side_effects(
             db,
-            updated_task.id,
-            updated_task.location_id,
-            selected_space_ids,
+            updated_task,
+            was_completed=was_completed,
         )
-    if structure_changed:
-        task_structure_service.sync_from_description(db, updated_task)
-    _complete_task_when_checklist_is_done(db, updated_task)
-    task_completion_service.apply_update_side_effects(
-        db,
-        updated_task,
-        was_completed=was_completed,
-    )
     db.commit()
     db.refresh(updated_task)
     task_lifecycle_notification_service.notify_task_assignees(
@@ -319,6 +324,11 @@ def update_task_item(
     calendar_sync_service.enqueue_task_sync(db, updated_task)
     if not was_completed and updated_task.status == "completed":
         task_lifecycle_notification_service.notify_task_completed(db, updated_task)
+    if checklist_changed:
+        loaded = task_item_repo.get_task_with_structure(db, current_user.company_id, updated_task.id)
+        if loaded is None:
+            raise HTTPException(status_code=404, detail="Task Item not found")
+        return loaded
     return updated_task
 
 
