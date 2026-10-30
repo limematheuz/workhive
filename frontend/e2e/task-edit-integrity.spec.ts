@@ -4,7 +4,7 @@ test.beforeEach(() => {
     test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
 });
 
-async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean; completed?: boolean; structuredOnly?: boolean } = {}) {
+async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean; completed?: boolean; structuredOnly?: boolean; mixed?: boolean; shared?: boolean } = {}) {
     await page.setViewportSize({ width, height: 900 });
     const token = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
     await context.addCookies([{ name: "auth_token", value: `fixture.${token}.not-a-backend-token`, url: "http://localhost:3000" }]);
@@ -19,10 +19,15 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
         billing_quantity_snapshot: pricing.locked ? 1 : null,
         priority: "low", company_id: 1, location_id: 1, user_id: null,
         created_at: new Date().toISOString(), scheduled_start_at: scheduled, due_at: null,
-        checklist_items: [{ id: 1, position: 0, text: "Comprobar acceso QA", completed: Boolean(pricing.completed), assignments: [] }],
+        checklist_items: [{ id: 1, position: 0, source_line_index: pricing.structuredOnly ? null : 0, text: "Comprobar acceso QA", completed: Boolean(pricing.completed), assignments: [] as Array<{ user_id: number; user_name: string; status: string }> }],
         assignments: [],
         checkout_reservation: checkout ? { id: 1, check_out_at: checkout, owner_company_id: 1 } : null,
     };
+    if (pricing.mixed) task.checklist_items.push({ id: 2, position: 1, source_line_index: null, text: "Revisar espacio QA", completed: false, assignments: [] });
+    if (pricing.shared) task.checklist_items[0].assignments = [
+        { user_id: 1, user_name: "QA Admin", status: "pending" },
+        { user_id: 2, user_name: "QA Worker", status: "pending" },
+    ];
     const updates: Record<string, unknown>[] = [];
     const creations: Record<string, unknown>[] = [];
     await page.route("**/api/v1/**", async route => {
@@ -49,6 +54,12 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
             if (route.request().method() === "PATCH") {
                 const payload = route.request().postDataJSON();
                 updates.push(payload);
+                for (const edit of payload.checklist_updates || []) {
+                    const item = task.checklist_items.find(item => item.id === edit.id);
+                    if (!item) continue;
+                    if (edit.completed !== undefined) item.completed = edit.completed;
+                    if (edit.assigned_user_ids !== undefined) item.assignments = edit.assigned_user_ids.map((id: number) => ({ user_id: id, user_name: "QA Admin", status: item.completed ? "completed" : "pending" }));
+                }
                 Object.assign(task, payload);
             }
             body = task;
@@ -75,6 +86,16 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
     await expect(dialog).toBeVisible();
     return { dialog, updates, creations, source: () => structuredClone(task) };
 }
+
+test("structured shared assignments remain intact when only the answer changes", async ({ context, page }) => {
+    const state = await openEditor(context, page, 1440, null, null, false, { structuredOnly: true, shared: true });
+    await expect(state.dialog.getByRole("combobox", { name: "Asignar trabajador: Comprobar acceso QA", exact: true })).toContainText("2 responsables");
+    await state.dialog.getByRole("button", { name: "Marcar completado: Comprobar acceso QA", exact: true }).click();
+    await state.dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).click();
+    await expect(state.dialog).toHaveCount(0);
+    expect(state.updates[0].checklist_updates).toEqual([{ id: 1, completed: true }]);
+    expect(state.source().checklist_items[0].assignments.map(a => a.user_id)).toEqual([1, 2]);
+});
 
 for (const width of [1440, 768, 390]) {
     test(`unplanned task stays unplanned after editing notes at ${width}px`, async ({ context, page }) => {
@@ -300,6 +321,48 @@ for (const width of [1440, 768, 390]) {
 
 for (const width of [1440, 768, 390]) {
     for (const fromList of [false, true]) {
+        test(`structured checklist draft saves by id from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+            const state = await openEditor(context, page, width, null, null, fromList, { structuredOnly: true });
+            await state.dialog.getByRole("button", { name: "Marcar completado: Comprobar acceso QA", exact: true }).click();
+            await expect(state.dialog.getByRole("button", { name: "Marcar pendiente: Comprobar acceso QA", exact: true })).toBeVisible();
+            await state.dialog.getByRole("combobox", { name: "Asignar trabajador: Comprobar acceso QA", exact: true }).click();
+            await page.getByRole("option", { name: "QA Admin", exact: true }).click();
+            expect(state.updates).toHaveLength(0);
+            await state.dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.updates).toHaveLength(1);
+            expect(state.updates[0].checklist_updates).toEqual([{ id: 1, completed: true, assigned_user_ids: [1] }]);
+            expect(state.updates[0].description).toBe("Instrucciones de espacio QA");
+            expect(state.source().checklist_items[0].completed).toBe(true);
+            expect(state.source().checklist_items[0].assignments[0].user_id).toBe(1);
+        });
+
+        test(`structured checklist draft discards from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+            const state = await openEditor(context, page, width, null, null, fromList, { structuredOnly: true });
+            const before = state.source();
+            await state.dialog.getByRole("button", { name: "Marcar completado: Comprobar acceso QA", exact: true }).click();
+            await state.dialog.getByRole("button", { name: "Close", exact: true }).click();
+            await page.getByRole("button", { name: "Salir sin guardar", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.updates).toHaveLength(0);
+            expect(state.source()).toEqual(before);
+            await page.getByRole("button", { name: fromList ? "QA integridad edición" : "Abrir tarea: QA integridad edición", exact: true }).click();
+            await expect(state.dialog.getByRole("button", { name: "Marcar completado: Comprobar acceso QA", exact: true })).toBeVisible();
+        });
+
+        test(`mixed structured checklist drafts assign all from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+            const state = await openEditor(context, page, width, null, null, fromList, { mixed: true });
+            await expect(state.dialog.getByRole("button", { name: "Marcar completado: Revisar espacio QA", exact: true })).toBeVisible();
+            await state.dialog.getByRole("button", { name: "Marcar completado: Comprobar acceso QA", exact: true }).click();
+            await state.dialog.getByRole("combobox", { name: "Asignar todos los pasos", exact: true }).click();
+            await page.getByRole("option", { name: "QA Admin", exact: true }).click();
+            await state.dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.updates).toHaveLength(1);
+            expect(state.updates[0].checklist_updates).toEqual([{ id: 2, assigned_user_ids: [1] }]);
+            expect(state.updates[0].description).toBe("- [x] Comprobar acceso QA (@1:QA Admin)");
+        });
+
         test(`keyboard planning time persists from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
             const state = await openEditor(context, page, width, null, null, fromList);
             await state.dialog.locator("#task-edit-date").fill("10/06/2050");

@@ -16,7 +16,7 @@ interface TaskChecklistEditorProps {
 }
 
 const assignmentDiffers = (item: TaskChecklistItem, value: string) =>
-    (item.assignedUserId?.toString() || "unassigned") !== value;
+    (item.assignedUserIds && item.assignedUserIds.length > 1 ? "multiple" : item.assignedUserId?.toString() || "unassigned") !== value;
 
 export function TaskChecklistEditor({
     items,
@@ -94,7 +94,7 @@ export function TaskChecklistEditor({
                         {canEdit ? (
                             <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
                                 <Select
-                                    value={item.assignedUserId?.toString() || "unassigned"}
+                                    value={item.assignedUserIds && item.assignedUserIds.length > 1 ? "multiple" : item.assignedUserId?.toString() || "unassigned"}
                                     onValueChange={(value) => {
                                         if (!assignmentDiffers(item, value)) return;
                                         markDirty(editorRef.current);
@@ -102,7 +102,7 @@ export function TaskChecklistEditor({
                                     }}
                                 >
                                     <SelectTrigger aria-label={`Asignar trabajador: ${item.text}`} className="h-9 w-full sm:w-44 text-left text-xs font-semibold"><SelectValue /></SelectTrigger>
-                                    <SelectContent data-form-guard-ignore><SelectItem value="unassigned">Sin asignar</SelectItem>{users.map((user) => (
+                                    <SelectContent data-form-guard-ignore>{item.assignedUserIds && item.assignedUserIds.length > 1 && <SelectItem value="multiple" disabled>{item.assignedUserIds.length} responsables</SelectItem>}<SelectItem value="unassigned">Sin asignar</SelectItem>{users.map((user) => (
                                         <SelectItem key={user.id} value={user.id.toString()}>
                                             {user.full_name || user.email}
                                         </SelectItem>

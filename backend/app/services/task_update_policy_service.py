@@ -113,6 +113,7 @@ def _validate_external_task_update(
 ) -> None:
     if is_external and can_manage_work:
         allowed_external_fields = {
+            "checklist_updates",
             "description",
             "checklist_evidence",
             "price",

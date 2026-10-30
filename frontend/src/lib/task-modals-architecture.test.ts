@@ -121,11 +121,13 @@ test("modal permissions block duplicate when invoiced and allow managers otherwi
 
 test("task edit form keeps checklist editor wiring and sticky glass footer actions", () => {
     const fields = read("../components/tasks/TaskEditFormFields.tsx");
+    const checklist = read("../components/tasks/TaskEditChecklistSection.tsx");
     const form = read("../components/tasks/TaskEditForm.tsx");
     const actions = read("../components/tasks/TaskEditFormActions.tsx");
 
-    assert.match(fields, /resolveTaskEditChecklist|resolve-task-edit-checklist/);
-    assert.match(fields, /TaskChecklistEditor/);
+    assert.match(fields, /TaskEditChecklistSection/);
+    assert.match(checklist, /resolveTaskEditChecklist|resolve-task-edit-checklist/);
+    assert.match(checklist, /TaskChecklistEditor/);
     assert.match(form, /overflow-y-auto/);
     assert.match(actions, /canDuplicateTask/);
     assert.match(actions, /from "@\/components\/ui\/button"/);
@@ -133,7 +135,7 @@ test("task edit form keeps checklist editor wiring and sticky glass footer actio
     assert.doesNotMatch(actions, /<button\b/);
     assert.doesNotMatch(actions, /dict\.tasks\.dialog\.close_btn/);
     assert.match(fields, /title_label/);
-    assert.match(fields, /onAssignAll/);
+    assert.match(checklist, /onAssignAll/);
     assert.match(fields, /from "@\/components\/ui\/input"/);
     assert.match(fields, /from "@\/components\/ui\/textarea"/);
     assert.doesNotMatch(fields, /<input\b|<textarea\b/);

@@ -8,6 +8,7 @@ import {
 import type { TaskPricingMode } from "@/lib/task-pricing";
 import { isExternalTaskForCompany } from "@/lib/task-display";
 import { buildExternalTaskOperationalUpdate } from "@/lib/external-task-update";
+import type { TaskChecklistEdit } from "@/types/task-update";
 import type { TaskItemUpdate } from "@/services/task.service";
 import type { TaskItem } from "@/types/user";
 import type { TaskPriority, TaskStatus } from "@/types/task";
@@ -73,10 +74,12 @@ export function buildTaskUpdatePayload(
     task: TaskItem,
     companyId: number | null | undefined,
     values: TaskEditValues,
+    checklistUpdates: TaskChecklistEdit[] = [],
 ): TaskItemUpdate {
     const scheduledStartAt = buildScheduledStartAt(values, task);
     const externalTask = isExternalTaskForCompany(task, companyId);
     const operationalFields: TaskItemUpdate = {
+        ...(checklistUpdates.length ? { checklist_updates: checklistUpdates } : {}),
         description: values.description || null,
         scheduled_start_at: scheduledStartAt,
     };
@@ -93,6 +96,7 @@ export function buildTaskUpdatePayload(
                 dateDone: completionDateForStatus(values.status),
             }),
             ...pricingFields,
+            ...(checklistUpdates.length ? { checklist_updates: checklistUpdates } : {}),
         };
     }
 

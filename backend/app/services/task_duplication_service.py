@@ -43,7 +43,7 @@ def duplicate_task_item(db: Session, current_user: User, task_id: int) -> TaskIt
     require_company_feature(
         db, company_id=current_user.company_id, code="features.work_orders"
     )
-    source = task_repo.get_task_duplication_source(db, current_user.company_id, task_id)
+    source = task_repo.get_task_with_structure(db, current_user.company_id, task_id)
     if source is None:
         raise HTTPException(status_code=404, detail="Task Item not found")
     location_access_service.require_location_capability(
@@ -82,4 +82,4 @@ def duplicate_task_item(db: Session, current_user: User, task_id: int) -> TaskIt
         zone_ids=[zone.zone_id for zone in source.zones],
     )
     task = create_task_item(db, current_user, payload, checklist_source=source)
-    return task_repo.get_task_duplication_source(db, current_user.company_id, task.id)
+    return task_repo.get_task_with_structure(db, current_user.company_id, task.id)

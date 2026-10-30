@@ -1,5 +1,7 @@
 "use client";
 
+import { readTaskChecklistEdits, projectTaskChecklistEdits } from "@/domain/tasks/task-checklist-edit";
+
 import { useState, useMemo } from "react";
 import { TaskItem, User } from "@/types/user";
 import { Location } from "@/types/location";
@@ -265,6 +267,7 @@ export function useOperationsCalendar({
             return;
         }
 
+        const checklistUpdates = readTaskChecklistEdits(e.currentTarget);
         const values: TaskEditValues = {
             title: editTitle,
             notes: editNotes,
@@ -289,7 +292,7 @@ export function useOperationsCalendar({
         }
         if (
             values.status === "completed"
-            && !canMarkEditedTaskCompleted(selectedTask, values.description)
+            && !canMarkEditedTaskCompleted(projectTaskChecklistEdits(selectedTask, checklistUpdates), values.description)
         ) {
             toast.error(
                 dict.tasks?.error_checklist_incomplete
@@ -320,6 +323,7 @@ export function useOperationsCalendar({
                     selectedTask,
                     currentUser?.company_id,
                     values,
+                    checklistUpdates,
                 ),
             );
 

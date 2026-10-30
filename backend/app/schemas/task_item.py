@@ -70,6 +70,26 @@ class TaskItemCreate(TaskItemBase):
     space_task_template_ids: list[int] = Field(default_factory=list, max_length=200)
 
 
+class TaskChecklistEdit(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: int = Field(gt=0)
+    completed: bool | None = None
+    assigned_user_ids: list[int] | None = Field(default=None, max_length=100)
+
+    @model_validator(mode="after")
+    def require_explicit_changes(self):
+        fields = self.model_fields_set - {"id"}
+        if not fields or any(getattr(self, field) is None for field in fields):
+            raise ValueError("Provide a non-null checklist change")
+        if self.assigned_user_ids is not None and (
+            any(user_id <= 0 for user_id in self.assigned_user_ids)
+            or len(set(self.assigned_user_ids)) != len(self.assigned_user_ids)
+        ):
+            raise ValueError("Checklist assignees must be unique positive identifiers")
+        return self
+
+
 class TaskItemUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
@@ -96,6 +116,16 @@ class TaskItemUpdate(BaseModel):
     next_reservation_id: int | None = None
     zone_ids: list[int] | None = Field(default=None, max_length=100)
     space_ids: list[int] | None = Field(default=None, max_length=100)
+    checklist_updates: list[TaskChecklistEdit] = Field(default_factory=list, max_length=200)
+
+    @model_validator(mode="after")
+    def validate_checklist_updates(self):
+        ids = [item.id for item in self.checklist_updates]
+        if len(set(ids)) != len(ids):
+            raise ValueError("Each checklist item can only be edited once")
+        if ids and "checklist_evidence" in self.model_fields_set:
+            raise ValueError("Use a single checklist update channel")
+        return self
 
     _limit_report_payload = field_validator(
         "operational_notes",
@@ -154,6 +184,7 @@ class TaskChecklistAssignmentResponse(BaseModel):
 class TaskChecklistItemResponse(BaseModel):
     id: int
     position: int
+    source_line_index: int | None = None
     text: str
     completed: bool
     space_name: str | None = None

@@ -1,3 +1,4 @@
+import type { TaskItemUpdate } from "@/types/task-update"
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import {
     buildTaskAcceptancePayload,
@@ -5,7 +6,7 @@ import {
 } from "@/domain/tasks/task-acceptance"
 import { TaskItem } from "@/types/user"
 import { WorkStartLocation } from "@/lib/work-start-location"
-import type { TaskPriority, TaskStatus } from "@/types/task"
+import type { TaskPriority } from "@/types/task"
 import { collectPaginated } from "@/lib/pagination"
 
 export type { TaskItem };
@@ -37,33 +38,7 @@ export interface TaskItemCreate {
     space_task_template_ids?: number[];
 }
 
-export interface TaskItemUpdate {
-    title?: string | null;
-    description?: string | null;
-    notes?: string | null;
-    operational_notes?: TaskItem["operational_notes"];
-    attachments?: TaskItem["attachments"];
-    checklist_evidence?: TaskItem["checklist_evidence"];
-    reported_issues?: TaskItem["reported_issues"];
-    price?: number | null;
-    quantity?: number | null;
-    unit?: string | null;
-    pricing_mode?: "fixed" | "hourly" | null;
-    status?: TaskStatus | null;
-    template_task_id?: number | null;
-    location_id?: number | null;
-    user_id?: number | null;
-    date_done?: string | null;
-    priority?: TaskPriority | null;
-    created_at?: string | null;
-    scheduled_start_at?: string | null;
-    due_at?: string | null;
-    service_context?: string | null;
-    checkout_reservation_id?: number | null;
-    next_reservation_id?: number | null;
-    zone_ids?: number[] | null;
-    space_ids?: number[] | null;
-}
+export type { TaskItemUpdate } from "@/types/task-update";
 
 export interface TaskItemFilters {
     locationId?: number;
