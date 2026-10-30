@@ -300,6 +300,31 @@ for (const width of [1440, 768, 390]) {
 
 for (const width of [1440, 768, 390]) {
     for (const fromList of [false, true]) {
+        test(`keyboard planning time persists from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+            const state = await openEditor(context, page, width, null, null, fromList);
+            await state.dialog.locator("#task-edit-date").fill("10/06/2050");
+            await state.dialog.locator("#task-edit-title").click();
+            const time = state.dialog.locator("#task-edit-time");
+            await time.fill("10:35");
+            await time.press("ArrowUp");
+            const value = await time.inputValue();
+            expect(value).toMatch(/^\d{2}:\d{2}$/);
+            expect(value).not.toBe("10:35");
+            const [hours, minutes] = value.split(":").map(Number);
+            const expected = new Date(2050, 5, 10, hours, minutes).toISOString();
+            await state.dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.updates).toHaveLength(1);
+            expect(state.updates[0].scheduled_start_at).toBe(expected);
+            await page.getByRole("button", { name: fromList ? "QA integridad edición" : "Abrir tarea: QA integridad edición", exact: true }).click();
+            await expect(time).toHaveValue(value);
+            await state.dialog.locator("#task-edit-notes").fill("QA conservar hora de teclado");
+            await state.dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.updates).toHaveLength(2);
+            expect(state.updates[1].scheduled_start_at).toBe(expected);
+        });
+
         test(`completed structured work can save notes from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
             const state = await openEditor(context, page, width, null, null, fromList, { completed: true, structuredOnly: true });
             const before = state.source();
