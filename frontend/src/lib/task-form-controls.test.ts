@@ -28,7 +28,7 @@ test("tech task forms use shared controls and keep native file selection behind 
     const extraWork = source("../components/dashboard/tech-task/ChecklistExtraWorkForm.tsx");
     const issues = source("../components/dashboard/tech-task/TechTaskIssuesSection.tsx");
     const property = source("../components/dashboard/tech-task/TechTaskPropertySection.tsx");
-    const comments = source("../components/dashboard/tech-task/TechTaskCommentsDialog.tsx");
+    const comments = source("../components/dashboard/tech-task/TechTaskCommentForm.tsx");
     const attachments = source("../components/dashboard/tech-task/TechTaskAttachmentsDialog.tsx");
 
     for (const control of [extraWork, issues, property]) {

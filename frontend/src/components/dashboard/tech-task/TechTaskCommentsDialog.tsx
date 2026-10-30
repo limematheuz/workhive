@@ -1,9 +1,8 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { TechTaskCommentForm } from "./TechTaskCommentForm";
 import {
     Dialog,
     DialogContent,
@@ -18,7 +17,7 @@ interface TechTaskCommentsDialogProps {
     onOpenChange: (open: boolean) => void;
     newCommentText: string;
     setNewCommentText: (text: string) => void;
-    onAddComment: (e: React.FormEvent) => Promise<void>;
+    onAddComment: (e: React.FormEvent) => Promise<boolean>;
 }
 
 export function TechTaskCommentsDialog({
@@ -29,10 +28,21 @@ export function TechTaskCommentsDialog({
     onAddComment,
 }: TechTaskCommentsDialogProps) {
     const { dict } = useDictionary();
+    const [saving, setSaving] = useState(false);
+    const changeOpen = (next: boolean) => {
+        if (saving) return;
+        if (!next) setNewCommentText("");
+        onOpenChange(next);
+    };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[80vh] max-w-md flex-col overflow-hidden rounded-3xl border border-[var(--border-soft)] p-6 text-[var(--text-main)]">
+        <Dialog open={open} onOpenChange={changeOpen}>
+            <DialogContent
+                showCloseButton={!saving}
+                onEscapeKeyDown={(event) => { if (saving) event.preventDefault(); }}
+                onPointerDownOutside={(event) => { if (saving) event.preventDefault(); }}
+                className="flex max-h-[80vh] max-w-md flex-col overflow-hidden rounded-3xl border border-[var(--border-soft)] p-6 text-[var(--text-main)]"
+            >
                 <DialogHeader className="border-b border-[var(--border-soft)] pb-4">
                     <DialogTitle className="flex items-center gap-2 text-base font-bold">
                         <MessageSquare className="h-5 w-5 text-accent" />
@@ -43,22 +53,13 @@ export function TechTaskCommentsDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={onAddComment} className="mt-4 flex flex-col gap-3">
-                    <Textarea
-                        value={newCommentText}
-                        onChange={(e) => setNewCommentText(e.target.value)}
-                        placeholder={dict.tech.comments_placeholder}
-                        required
-                        rows={3}
-                        className="min-h-20 resize-none text-xs"
-                    />
-                    <Button
-                        type="submit"
-                        className="flex h-10 cursor-pointer items-center justify-center self-end rounded-2xl border-none bg-accent px-4 text-xs font-black text-white hover:bg-accent-light"
-                    >
-                        {dict.tech.comments_submit}
-                    </Button>
-                </form>
+                <TechTaskCommentForm
+                    value={newCommentText}
+                    onChange={setNewCommentText}
+                    onSubmit={onAddComment}
+                    saving={saving}
+                    onSavingChange={setSaving}
+                />
 
                 <p className="mt-3 text-center text-xs text-[var(--text-muted)]">
                     {dict.task_reports.worker_hint}

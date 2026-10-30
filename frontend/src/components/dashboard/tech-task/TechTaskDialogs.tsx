@@ -38,7 +38,7 @@ type TechTaskDialogsProps = {
     onUploadAttachment: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
     newCommentText: string;
     setNewCommentText: (text: string) => void;
-    onAddComment: (e: React.FormEvent) => Promise<void>;
+    onAddComment: (e: React.FormEvent) => Promise<boolean>;
 };
 
 export function TechTaskDialogs(props: TechTaskDialogsProps) {

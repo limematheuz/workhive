@@ -11,7 +11,8 @@ test("tech task photo and note dialogs always expose create controls", () => {
 
     assert.match(attachments, /type="file"/);
     assert.doesNotMatch(attachments, /isCurrentTaskSessionActive/);
-    assert.match(comments, /comments_placeholder/);
+    assert.match(comments, /<TechTaskCommentForm/);
+    assert.match(read("../components/dashboard/tech-task/TechTaskCommentForm.tsx"), /comments_placeholder/);
     assert.doesNotMatch(comments, /isCurrentTaskSessionActive/);
     assert.match(map, /navigate_gps/);
     assert.match(map, /Abrir en Maps/);

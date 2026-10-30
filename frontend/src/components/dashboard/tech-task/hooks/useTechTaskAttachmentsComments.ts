@@ -46,7 +46,7 @@ export function useTechTaskAttachmentsComments({
 
     const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newCommentText.trim()) return;
+        if (!newCommentText.trim()) return false;
 
         try {
             await TaskReportService.create({
@@ -57,9 +57,11 @@ export function useTechTaskAttachmentsComments({
             onStatusUpdate();
             setNewCommentText("");
             toast.success("Comentario añadido");
+            return true;
         } catch (err) {
             console.error("Error adding comment", err);
             toast.error("Error al añadir el comentario");
+            return false;
         }
     };
 
