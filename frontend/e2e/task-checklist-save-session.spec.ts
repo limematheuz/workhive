@@ -1,3 +1,4 @@
+import { selectSection } from "./helpers/select-section";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 
 async function openChecklist(context: BrowserContext, page: Page, width: number, failNote = false) {
@@ -89,12 +90,7 @@ for (const width of [1440, 768, 390]) {
     test(`view categories close without discarding at ${width}px`, async ({ context, page }) => {
         test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
         const state = await openChecklist(context, page, width);
-        if (width === 1440) {
-            await state.dialog.getByRole("tab", { name: /baño/i }).click();
-        } else {
-            await state.dialog.getByRole("combobox", { name: "Seleccionar sección", exact: true }).click();
-            await page.getByRole("option", { name: /baño/i }).click();
-        }
+        await selectSection(state.dialog, page, /baño/i);
         await state.dialog.getByRole("button", { name: "Close", exact: true }).click();
         await expect(page.getByRole("alertdialog")).toHaveCount(0);
         await expect(state.dialog).toHaveCount(0);

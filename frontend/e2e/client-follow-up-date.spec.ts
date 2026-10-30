@@ -1,3 +1,4 @@
+import { selectSection } from "./helpers/select-section";
 import { expect, test } from "@playwright/test";
 
 for (const width of [1440, 768, 390]) {
@@ -31,11 +32,7 @@ for (const width of [1440, 768, 390]) {
         if (width >= 1280) await page.getByRole("row").filter({ hasText: "QA Guard" }).click();
         else await page.getByRole("button", { name: "Ver detalle de QA Guard", exact: true }).click();
         const parent = page.getByRole("dialog").filter({ has: page.getByRole("heading", { name: "QA Guard", exact: true }) });
-        if (width >= 1024) await parent.getByRole("tab", { name: "Seguimiento", exact: true }).click();
-        else {
-            await parent.getByRole("combobox", { name: "Seleccionar sección", exact: true }).click();
-            await page.getByRole("option", { name: "Seguimiento", exact: true }).click();
-        }
+        await selectSection(parent, page, "Seguimiento");
         await parent.getByRole("button", { name: "Editar seguimiento", exact: true }).click();
         const editor = page.getByRole("dialog", { name: "Editar seguimiento", exact: true });
         await editor.getByRole("button", { name: "Abrir calendario", exact: true }).click();

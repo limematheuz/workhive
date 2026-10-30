@@ -5,7 +5,8 @@ import { ClipboardList, Compass, Layers3, MapPinned, ChevronLeft, ChevronRight }
 
 import { Button } from "@/components/ui/button";
 import { useDialogDismiss } from "@/components/ui/dialog-form-guard";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PremiumTabsNavigation } from "@/components/ui/premium-tabs";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type {
@@ -399,26 +400,23 @@ export function LocationWorkspaceForm({
         <form onSubmit={handleSubmit} className="flex h-full min-h-0 flex-col">
             <Tabs value={activeStep} onValueChange={(value) => goToStep(value as LocationWorkspaceStep)} className="flex min-h-0 flex-1 flex-col">
                 <div className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 py-3 sm:px-6 sm:py-4 lg:px-7">
-                    <TabsList aria-label="Pasos de la ubicación" className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl bg-[var(--bg-secondary)] p-1 md:grid-cols-4">
-                        {WORKSPACE_STEPS.map((step, index) => {
-                            const Icon = step.icon;
-                            const isActive = activeStep === step.id;
-                            return (
-                                <TabsTrigger key={step.id} value={step.id} className="min-w-0 rounded-lg px-2 py-2.5 text-left data-[state=active]:bg-[var(--bg-primary)] data-[state=active]:text-[var(--text-main)]">
-                                    <span className="flex min-w-0 items-center gap-2">
-                                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${isActive ? "bg-accent text-white" : "bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}`}>{index + 1}</span>
-                                        <span className="min-w-0"><span className="flex items-center gap-1.5 truncate text-xs font-semibold sm:text-sm"><Icon className="h-3.5 w-3.5 shrink-0" />{step.label}</span><span className="hidden truncate text-[11px] font-normal text-[var(--text-muted)] lg:block">{step.description}</span></span>
-                                    </span>
-                                </TabsTrigger>
-                            );
-                        })}
-                    </TabsList>
+                    <PremiumTabsNavigation
+                        tabs={WORKSPACE_STEPS.map((step, index) => ({
+                            id: step.id, icon: step.icon,
+                            label: <span className="flex flex-col text-left"><span>{index + 1}. {step.label}</span><span className="text-[11px] font-normal normal-case">{step.description}</span></span>,
+                            compactLabel: `${index + 1}. ${step.label}`,
+                        }))}
+                        activeTab={activeStep}
+                        onChange={goToStep}
+                        mobileLabel="Pasos de la ubicación"
+                        className="mb-0"
+                    />
                 </div>
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-7">
-                    <TabsContent value="information" className="m-0 mx-auto w-full max-w-5xl"><LocationInfoAccessStep clients={clients} showClientAssignment={!portalMode} requirePostalCode={requirePostalCode} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} /></TabsContent>
-                    <TabsContent value="type" className="m-0 mx-auto w-full max-w-5xl"><LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} /></TabsContent>
-                    <TabsContent value="operations" className="m-0 mx-auto w-full max-w-5xl"><LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} contacts={contacts} setContacts={setContacts} risks={risks} setRisks={setRisks} serviceWindows={serviceWindows} setServiceWindows={setServiceWindows} /></TabsContent>
-                    <TabsContent value="spaces" className="m-0 mx-auto w-full max-w-5xl"><LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} /></TabsContent>
+                    <TabsContent value="information" aria-labelledby={undefined} aria-label="Información" className="m-0 mx-auto w-full max-w-5xl"><LocationInfoAccessStep clients={clients} showClientAssignment={!portalMode} requirePostalCode={requirePostalCode} name={name} address={address} city={city} postalCode={postalCode} clientId={clientId} departments={departments} teams={teams} organizationAssignmentAvailable={organizationAssignmentAvailable} departmentId={departmentId} teamId={teamId} access={access} hasStoredAccessCode={Boolean(location?.access?.has_access_code)} setName={setName} setAddress={setAddress} setCity={setCity} setPostalCode={setPostalCode} setClientId={setClientId} setDepartmentId={setDepartmentId} setTeamId={setTeamId} setAccess={setAccess} /></TabsContent>
+                    <TabsContent value="type" aria-labelledby={undefined} aria-label="Tipo" className="m-0 mx-auto w-full max-w-5xl"><LocationTypeStep catalog={catalog} loading={catalogLoading} profile={profile} setProfile={setProfile} /></TabsContent>
+                    <TabsContent value="operations" aria-labelledby={undefined} aria-label="Operación" className="m-0 mx-auto w-full max-w-5xl"><LocationFeaturesStep catalog={catalog} profile={profile} setProfile={setProfile} setAttribute={setAttribute} contacts={contacts} setContacts={setContacts} risks={risks} setRisks={setRisks} serviceWindows={serviceWindows} setServiceWindows={setServiceWindows} /></TabsContent>
+                    <TabsContent value="spaces" aria-labelledby={undefined} aria-label="Espacios" className="m-0 mx-auto w-full max-w-5xl"><LocationSpacesStep editingExistingLocation={Boolean(location)} profile={profile} spaces={spaces} spaceName={spaceName} spaceType={spaceType} suggesting={suggesting} setSpaceName={setSpaceName} setSpaceType={setSpaceType} removeSpace={(index) => setSpaces((current) => current.filter((_, currentIndex) => currentIndex !== index))} addSpace={addSpace} suggestSpaces={() => void suggestSpaces()} /></TabsContent>
                 </div>
             </Tabs>
             <div className="flex shrink-0 items-center justify-between gap-2 border-t border-[var(--border-soft)] bg-[var(--bg-primary)] px-4 py-4 sm:px-6 lg:px-7">

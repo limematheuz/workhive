@@ -1,4 +1,17 @@
 {
+  "inventoryNavigation": {
+    "navigation": "Inventory sections",
+    "area": "Inventory area",
+    "view": "View",
+    "operations": "Operations",
+    "catalog": "Catalogue",
+    "purchases": "Purchases"
+  },
+  "tabNavigation": {
+    "change": "Switch view",
+    "options": "{count} options",
+    "select": "Select section"
+  },
   "formGuard": {
     "title": "Discard changes?",
     "description": "Your changes have not been saved. You can keep editing or leave without saving.",

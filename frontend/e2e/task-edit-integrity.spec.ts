@@ -1,3 +1,4 @@
+import { selectSection } from "./helpers/select-section";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 
 test.beforeEach(() => {
@@ -70,13 +71,7 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
         await route.fulfill({ json: body });
     });
     await page.goto("/dashboard/tasks");
-    if (fromList) {
-        if (width >= 1024) await page.getByRole("tab", { name: "Lista", exact: true }).click();
-        else {
-            await page.getByRole("combobox", { name: "Seleccionar sección", exact: true }).click();
-            await page.getByRole("option", { name: "Lista", exact: true }).click();
-        }
-    }
+    if (fromList) await selectSection(page, page, "Lista");
     if (fromList && pricing.completed) {
         await page.getByRole("combobox", { name: "Filtrar por estado", exact: true }).click();
         await page.getByRole("option", { name: "Completada", exact: true }).click();
