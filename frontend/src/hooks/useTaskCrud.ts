@@ -15,6 +15,7 @@ import { ReservationService } from "@/services/reservation.service";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { getTaskDeletionErrorMessage } from "@/lib/task-deletion";
+import { buildTaskDuplicatePayload } from "@/domain/tasks/task-duplicate";
 import {
     buildScheduledStartAt,
     buildTaskUpdatePayload,
@@ -526,20 +527,7 @@ export function useTaskCrud({
         }
         try {
             setIsSaving(true);
-            await TaskService.createTaskItem({
-                title: `${task.title} (Copia)`,
-                notes: task.notes || null,
-                description: task.description || null,
-                price: task.price,
-                quantity: task.quantity,
-                unit: task.unit || "unidad",
-                pricing_mode: task.pricing_mode || "fixed",
-                template_task_id: task.template_task_id,
-                location_id: task.location_id,
-                user_id: task.user_id,
-                priority: task.priority || "medium",
-                zone_ids: task.zones?.map((zone) => zone.space_id),
-            });
+            await TaskService.createTaskItem(buildTaskDuplicatePayload(task));
             toast.success("Tarea duplicada con éxito.");
             setSelectedTask(null);
             loadTasks();
