@@ -4,23 +4,22 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("PremiumTabs shell keeps the Vigentes bar metrics and compacts every tab set on tablet", () => {
+test("PremiumTabs shares adaptive navigation, labels and guarded shadcn selection", () => {
     const source = read("../components/ui/premium-tabs.tsx");
-
+    const labels = read("../components/ui/premium-tab-label.tsx") + read("../components/ui/premium-tab-styles.ts");
+    assert.match(source, /useAdaptiveTabs/);
+    assert.match(source, /PremiumTabsNavigation/);
     assert.match(source, /bg-\[var\(--bg-primary\)\]\/40/);
-    assert.doesNotMatch(source, /dialog-control-bg/);
-    assert.match(source, /layout\s*=\s*"fit"/);
-    assert.match(source, /text-xs font-bold uppercase tracking-wider/);
-    assert.doesNotMatch(source, /text-\[10px\] font-bold uppercase tracking-wider/);
-    assert.match(source, /h-3\.5 w-3\.5/);
-    assert.doesNotMatch(source, /md:h-4 md:w-4/);
-    assert.match(source, /gap-1\.5 px-2 sm:gap-2 sm:px-3/);
-    assert.doesNotMatch(source, /tabs\.length > 4/);
-    assert.match(source, /<div className="mb-4 lg:hidden">/);
-    assert.match(source, /className=\{`hidden h-auto[\s\S]*lg:flex/);
-    assert.match(source, /\{tabs\.map\(\(tab\) => \{/);
-    assert.doesNotMatch(source, /bg-red-|shadow-red-/);
-    assert.match(source, /--btn-cancel-hover-bg/);
+    assert.match(source, /<SelectContent data-form-guard-ignore>/);
+    assert.match(source, /dict.tabNavigation.change/);
+    assert.match(source, /dict.tabNavigation.options/);
+    assert.match(source, /aria-hidden="true" inert/);
+    assert.match(labels, /text-xs font-bold uppercase tracking-wider/);
+    assert.match(labels, /h-3\.5 w-3\.5/);
+    assert.match(labels, /gap-1\.5/);
+    assert.match(labels, /--btn-cancel-hover-bg/);
+    assert.doesNotMatch(source + labels, /bg-red-|shadow-red-/);
+    assert.doesNotMatch(source, /lg:hidden|lg:flex|snap-x/);
 });
 
 test("ReservationsFilters reuses PremiumTabs for Vigentes/Historial", () => {

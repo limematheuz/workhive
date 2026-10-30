@@ -1,4 +1,17 @@
 {
+  "inventoryNavigation": {
+    "navigation": "Secciones de inventario",
+    "area": "Área de inventario",
+    "view": "Vista",
+    "operations": "Operativa",
+    "catalog": "Catálogo",
+    "purchases": "Compras"
+  },
+  "tabNavigation": {
+    "change": "Cambiar vista",
+    "options": "{count} opciones",
+    "select": "Seleccionar sección"
+  },
   "formGuard": {
     "title": "¿Descartar los cambios?",
     "description": "Los datos que has introducido no se han guardado. Puedes seguir editando o salir sin guardar.",

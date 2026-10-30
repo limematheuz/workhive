@@ -11,7 +11,8 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
-import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { InventoryNavigation } from "@/components/inventory/InventoryNavigation";
+import type { InventoryView as InventoryTab } from "@/lib/inventory-navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
@@ -30,7 +31,6 @@ import type {
     InventoryWarehouse,
 } from "@/types/inventory";
 
-type InventoryTab = "stock" | "materials" | "suppliers" | "warehouses" | "movements" | "lots" | "purchases";
 type ArchiveTarget = {
     kind: "supplier" | "material" | "warehouse";
     id: number;
@@ -426,7 +426,7 @@ export default function InventoryPage() {
 
     return <div className="dashboard-page-content px-[3%] py-6 md:p-8">
         <PageHeader icon={Boxes} title="Inventario" subtitle="Material, stock y movimientos operativos separados de gastos y activos por ubicación." className="mb-6" />
-        <PremiumTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} layout="scroll" mobileLabel="Sección de inventario" />
+        <InventoryNavigation tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
         <div className="mt-5">{activeTab === "stock" ? renderStock() : activeTab === "materials" ? renderMaterials() : activeTab === "suppliers" ? renderSuppliers() : activeTab === "warehouses" ? renderWarehouses() : activeTab === "movements" ? renderMovements() : activeTab === "lots" ? <InventoryLotsSection lots={lots} loading={loading} /> : <InventoryPurchasesSection purchases={purchases} suppliers={suppliers} materials={materials} warehouses={warehouses} loading={loading} canManage={canManagePurchases} onChanged={reload} />}</div>
         <DeleteConfirmDialog open={archiveTarget !== null} onOpenChange={(open) => !open && setArchiveTarget(null)} title="Archivar registro de inventario" description="Dejará de aparecer en el catálogo operativo; el historial de movimientos se conserva." confirmText="Archivar" cancelText="Cancelar" confirmVariant="soft-danger" isDeleting={saving} onConfirm={() => void archiveCatalogEntity()} />
     </div>;

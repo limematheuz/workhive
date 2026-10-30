@@ -32,7 +32,7 @@ test("report center reuses the application visual system and keeps details in a 
     const page = read("../app/dashboard/task-reports/page.tsx");
     const reportCard = read("../features/task-reports/TaskReportCard.tsx");
     const reportDialog = read("../features/task-reports/TaskReportDetailDialog.tsx");
-    const premiumTabs = read("../components/ui/premium-tabs.tsx");
+    const premiumTabs = read("../components/ui/premium-tabs.tsx") + read("../components/ui/premium-tab-label.tsx");
 
     assert.match(page, /PremiumTabs/);
     assert.match(page, /layout="fit"/);
@@ -41,7 +41,7 @@ test("report center reuses the application visual system and keeps details in a 
     assert.match(page, /components\/ui\/button/);
     assert.match(page, /scrollbar-width:none/);
     assert.match(premiumTabs, /layout\?:\s*"scroll"\s*\|\s*"fit"/);
-    assert.match(premiumTabs, /layout\s*=\s*"fit"/);
+    assert.match(premiumTabs, /useAdaptiveTabs/);
     assert.match(premiumTabs, /bg-\[var\(--bg-primary\)\]\/40/);
     assert.doesNotMatch(premiumTabs, /dialog-control-bg/);
     assert.doesNotMatch(premiumTabs, /text-\[10px\].*uppercase tracking-wider/);

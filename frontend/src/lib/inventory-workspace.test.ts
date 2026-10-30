@@ -26,7 +26,8 @@ test("inventory workspace uses the service layer and is visible in Operations", 
     assert.match(page, /canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/);
     assert.match(page, /canManageFinance\(user\)\s*&& canManageInventory/);
     assert.match(page, /DataListTable/);
-    assert.match(page, /PremiumTabs/);
+    assert.match(page, /InventoryNavigation/);
+    assert.match(read("../components/inventory/InventoryNavigation.tsx"), /PremiumTabs/);
     assert.doesNotMatch(page, /\bfetch\s*\(/);
 
     assert.match(service, /"\/api\/v1\/inventory\/suppliers"/);
