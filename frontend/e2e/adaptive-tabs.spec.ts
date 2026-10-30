@@ -1,5 +1,19 @@
 import { selectSection } from "./helpers/select-section";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function expectControlsContained(page: Page, names: string[]) {
+    for (const name of names) {
+        const control = name.startsWith("Añadir")
+            ? page.getByRole("button", { name, exact: true })
+            : page.getByLabel(name, { exact: true });
+        const bounds = await control.evaluate(element => {
+            const r = element.getBoundingClientRect();
+            return { left: r.left, right: r.right, viewport: window.innerWidth };
+        });
+        expect(bounds.left).toBeGreaterThanOrEqual(0);
+        expect(bounds.right).toBeLessThanOrEqual(bounds.viewport);
+    }
+}
 
 for (const width of [390, 751, 768, 1440]) {
     test(`login exposes both navigation tabs at ${width}px`, async ({ page }) => {
@@ -14,7 +28,7 @@ for (const width of [390, 751, 768, 1440]) {
     });
 }
 
-for (const width of [390, 768, 1440]) {
+for (const width of [390, 768, 1024, 1440]) {
     for (const count of [6, 7]) {
         test(`inventory preserves ${count} views at ${width}px`, async ({ context, page }) => {
             test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
@@ -37,6 +51,7 @@ for (const width of [390, 768, 1440]) {
             await selectSection(nav, page, "Movimientos", "Vista: Operativa");
             await selectSection(nav, page, "Catálogo", "Área de inventario");
             await selectSection(nav, page, "Almacenes", "Vista: Catálogo");
+            await expectControlsContained(page, ["Nombre del almacén", "Dirección del almacén", "Añadir almacén"]);
             await selectSection(nav, page, "Operativa", "Área de inventario");
             const selectedView = async (name: string) => {
                 const tab = nav.getByRole("tab", { name, exact: true });
@@ -47,7 +62,9 @@ for (const width of [390, 768, 1440]) {
             await selectSection(nav, page, "Catálogo", "Área de inventario");
             await selectedView("Almacenes");
             await selectSection(nav, page, "Materiales", "Vista: Catálogo");
+            await expectControlsContained(page, ["SKU", "Nombre del material", "Unidad", "Proveedor preferido", "Punto de reposición", "Añadir material"]);
             await selectSection(nav, page, "Proveedores", "Vista: Catálogo");
+            await expectControlsContained(page, ["Nombre del proveedor", "Correo del proveedor", "Añadir proveedor"]);
             await selectSection(nav, page, "Operativa", "Área de inventario");
             await selectSection(nav, page, "Stock", "Vista: Operativa");
             await selectSection(nav, page, "Lotes", "Vista: Operativa");
@@ -89,6 +106,17 @@ for (const width of [390, 768, 1440]) {
         await expect(wizard.getByRole("tabpanel", { name: "Información", exact: true })).toBeVisible();
         await wizard.getByRole("button", { name: "Siguiente", exact: true }).click();
         await expect(wizard.getByRole("tabpanel", { name: "Información", exact: true })).toBeVisible();
+        const headerClearance = await wizard.evaluate(element => {
+            const close = element.querySelector('[data-slot="dialog-close"]')!.getBoundingClientRect();
+            const description = element.querySelector('[data-slot="dialog-description"]')!.getBoundingClientRect();
+            return { right: description.right, closeLeft: close.left };
+        });
+        expect(headerClearance.right).toBeLessThanOrEqual(headerClearance.closeLeft);
+        await selectSection(wizard, page, /^4\./, "Pasos de la ubicación");
+        await wizard.getByRole("button", { name: "Cancelar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        await expect(wizard).toHaveCount(0);
+        await page.getByRole("button", { name: "Nueva Ubicación", exact: true }).click();
         await wizard.getByRole("textbox", { name: "Nombre *", exact: true }).fill("QA borrador de ubicación");
         for (const [number, name] of [[2, "Tipo"], [3, "Operación"], [4, "Espacios"]] as const) {
             await selectSection(wizard, page, new RegExp(`^${number}\\.`), "Pasos de la ubicación");

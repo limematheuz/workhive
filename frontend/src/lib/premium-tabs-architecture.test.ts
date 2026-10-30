@@ -11,6 +11,7 @@ test("PremiumTabs shares adaptive navigation, labels and guarded shadcn selectio
     assert.match(source, /PremiumTabsNavigation/);
     assert.match(source, /bg-\[var\(--bg-primary\)\]\/40/);
     assert.match(source, /<SelectContent data-form-guard-ignore>/);
+    assert.match(source, /data-tab-navigation data-form-guard-ignore/);
     assert.match(source, /dict.tabNavigation.change/);
     assert.match(source, /dict.tabNavigation.options/);
     assert.match(source, /aria-hidden="true" inert/);
