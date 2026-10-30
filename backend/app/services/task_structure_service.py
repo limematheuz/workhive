@@ -84,8 +84,12 @@ def sync_from_description(
         )
     }
     existing_by_text: dict[str, deque[TaskChecklistItem]] = defaultdict(deque)
+    stored_items: list[TaskChecklistItem] = []
     for existing in list(task.checklist_items):
-        existing_by_text[_key(existing.text)].append(existing)
+        if existing.source_line_index is None:
+            stored_items.append(existing)
+        else:
+            existing_by_text[_key(existing.text)].append(existing)
         existing.position += 1_000_000
     if task.checklist_items:
         db.flush()
@@ -124,6 +128,13 @@ def sync_from_description(
             item.assignments.clear()
         retained.append(item)
 
+    for item in stored_items:
+        item.position = len(retained)
+        retained.append(item)
+        for assignment in item.assignments:
+            explicit_ids.add(assignment.user_id)
+            user_statuses[assignment.user_id].append(assignment.status)
+
     retained_ids = {id(item) for item in retained}
     for existing in list(task.checklist_items):
         if id(existing) not in retained_ids:
@@ -156,6 +167,8 @@ def sync_from_description(
     db.flush()
     evidence = dict(task.checklist_evidence or {})
     for item in retained:
+        if item.source_line_index is None:
+            continue
         legacy_key = f"parsed_{item.position + 1}"
         stable_key = f"item_{item.id}"
         if stable_key not in evidence and legacy_key in evidence:

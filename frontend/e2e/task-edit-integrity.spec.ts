@@ -4,13 +4,13 @@ test.beforeEach(() => {
     test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
 });
 
-async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean; completed?: boolean } = {}) {
+async function openEditor(context: BrowserContext, page: Page, width: number, scheduled: string | null = null, checkout: string | null = null, fromList = false, pricing: { unit?: string; locked?: boolean; completed?: boolean; structuredOnly?: boolean } = {}) {
     await page.setViewportSize({ width, height: 900 });
     const token = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
     await context.addCookies([{ name: "auth_token", value: `fixture.${token}.not-a-backend-token`, url: "http://localhost:3000" }]);
     await page.addInitScript(() => localStorage.setItem("locale", "es"));
     const task = {
-        id: 1, title: "QA integridad edición", description: pricing.completed ? "- [x] Comprobar acceso QA (@1:QA Admin:completed)" : "- [ ] Comprobar acceso QA",
+        id: 1, title: "QA integridad edición", description: pricing.structuredOnly ? "Instrucciones de espacio QA" : pricing.completed ? "- [x] Comprobar acceso QA (@1:QA Admin:completed)" : "- [ ] Comprobar acceso QA",
         unit: pricing.unit || "service", price: 1, quantity: 1, pricing_mode: "fixed", status: pricing.completed ? "completed" : "pending",
         pricing_locked_at: pricing.locked ? new Date().toISOString() : null,
         billing_pricing_mode_snapshot: pricing.locked ? "fixed" : null,
@@ -300,6 +300,17 @@ for (const width of [1440, 768, 390]) {
 
 for (const width of [1440, 768, 390]) {
     for (const fromList of [false, true]) {
+        test(`completed structured work can save notes from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
+            const state = await openEditor(context, page, width, null, null, fromList, { completed: true, structuredOnly: true });
+            const before = state.source();
+            await state.dialog.locator("#task-edit-notes").fill("QA nota conservando requisitos");
+            await state.dialog.getByRole("button", { name: "Guardar Cambios", exact: true }).click();
+            await expect(state.dialog).toHaveCount(0);
+            expect(state.updates).toHaveLength(1);
+            expect(state.updates[0].notes).toBe("QA nota conservando requisitos");
+            expect(state.source().checklist_items).toEqual(before.checklist_items);
+        });
+
         test(`duplicating completed work uses its stored definition from ${fromList ? "list" : "board"} at ${width}px`, async ({ context, page }) => {
             const state = await openEditor(context, page, width, null, null, fromList, { completed: true });
             const before = state.source();

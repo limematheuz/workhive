@@ -5,8 +5,6 @@ calendar, creating notifications, and billing snapshots remain orchestration
 concerns of :mod:`task_item_service`.
 """
 
-from datetime import datetime, timezone
-
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -17,6 +15,7 @@ from app.repositories import task_item as task_item_repo
 from app.repositories import user as user_repo
 from app.repositories import work_session as work_session_repo
 from app.schemas.task_item import TaskItemUpdate
+from app.services.task_edit_completion_policy import normalize_task_completion  # noqa: F401
 from app.services import (
     location_access_service,
     task_assignment_service,
@@ -289,46 +288,6 @@ def validate_direct_assignee(db: Session, company_id: int, user_id: int | None) 
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Assigned user must be active and belong to your company",
         )
-
-
-def normalize_task_completion(
-    task: TaskItem,
-    task_data: TaskItemUpdate,
-) -> TaskItemUpdate:
-    if task_data.status == "completed":
-        description_changed = "description" in task_data.model_fields_set
-        prospective_description = (
-            task_data.description if description_changed else task.description
-        )
-        prospective_evidence = (
-            task_data.checklist_evidence
-            if "checklist_evidence" in task_data.model_fields_set
-            else task.checklist_evidence
-        )
-        has_checklist = bool(
-            task_assignment_service.parse_checklist(prospective_description)
-            or task.checklist_items
-        )
-        if description_changed:
-            checklist_complete = task_assignment_service.checklist_snapshot_is_complete(
-                prospective_description,
-                prospective_evidence,
-            )
-        else:
-            checklist_complete = task_assignment_service.all_task_checklist_items_are_complete(
-                task
-            )
-        if has_checklist and not checklist_complete:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Complete every checklist item before completing the task",
-            )
-        return task_data.model_copy(
-            update={"date_done": datetime.now(timezone.utc)}
-        )
-    if "status" in task_data.model_fields_set and task.status == "completed":
-        return task_data.model_copy(update={"date_done": None})
-    return task_data
 
 
 def should_freeze_external_snapshot(
