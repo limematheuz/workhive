@@ -44,6 +44,7 @@ export function TechTaskAttachmentsDialog({
                     <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[var(--border-soft)] bg-[var(--bg-primary)]/5 p-6 transition-colors duration-200 hover:border-accent/50">
                         <Input
                             type="file"
+                            data-form-guard-ignore
                             accept="image/*"
                             onChange={onUploadAttachment}
                             className="hidden"

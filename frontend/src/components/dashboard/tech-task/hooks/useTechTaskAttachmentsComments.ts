@@ -22,6 +22,8 @@ export function useTechTaskAttachmentsComments({
         const files = e.target.files;
         if (!files || files.length === 0) return;
         const file = files[0];
+        // Allow choosing the same photo again after a failed upload or report.
+        e.currentTarget.value = "";
 
         setUploadingAttachment(true);
         try {
