@@ -9,6 +9,21 @@ import {
     taskHasChecklist,
 } from "./task-checklist-completion.ts";
 
+test("unchanged text uses all stored requirements when editing completed work", () => {
+    const task = {
+        description: "Instrucciones libres",
+        checklist_items: [{ id: 1, completed: true }, { id: 2, completed: true }],
+    };
+    assert.equal(canMarkEditedTaskCompleted(task, task.description), true);
+    assert.equal(canMarkEditedTaskCompleted({
+        ...task, checklist_items: [{ id: 1, completed: true }, { id: 2, completed: false }],
+    }, task.description), false);
+    const mixed = { ...task, description: "- [x] Paso escrito" };
+    assert.equal(canMarkEditedTaskCompleted({
+        ...mixed, checklist_items: [{ id: 1, completed: true }, { id: 2, completed: false }],
+    }, mixed.description), false);
+});
+
 test("tasks without checklist can be completed", () => {
     const task = { description: "Solo notas", checklist_items: [] };
     assert.equal(taskHasChecklist(task), false);

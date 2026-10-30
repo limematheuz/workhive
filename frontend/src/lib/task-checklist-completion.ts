@@ -98,6 +98,9 @@ export function canMarkEditedTaskCompleted(
     storedTask: ChecklistCompletionSource,
     editedDescription: string,
 ): boolean {
+    if (editedDescription === (storedTask.description ?? "")) {
+        return canMarkTaskCompleted(storedTask);
+    }
     const incoming = {
         description: editedDescription,
         checklist_evidence: storedTask.checklist_evidence,

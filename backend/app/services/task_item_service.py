@@ -261,6 +261,12 @@ def update_task_item(
             updates["unit"] = "hour"
         task_data = task_data.model_copy(update=updates)
 
+    structure_changed = any(
+        field in task_data.model_fields_set
+        and getattr(task_data, field) != getattr(db_task_item, field)
+        for field in ("description", "user_id")
+    )
+
     if task_update_policy_service.should_freeze_external_snapshot(
         db_task_item,
         task_data,
@@ -295,10 +301,7 @@ def update_task_item(
             updated_task.location_id,
             selected_space_ids,
         )
-    if (
-        "description" in task_data.model_fields_set
-        or "user_id" in task_data.model_fields_set
-    ):
+    if structure_changed:
         task_structure_service.sync_from_description(db, updated_task)
     _complete_task_when_checklist_is_done(db, updated_task)
     task_completion_service.apply_update_side_effects(
