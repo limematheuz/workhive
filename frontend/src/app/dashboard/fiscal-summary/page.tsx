@@ -126,12 +126,12 @@ export default function FiscalSummaryPage() {
                     getRowKey={(period) => period.key}
                     columns={COLUMNS.map((column) => ({
                         ...column,
-                        label: column.key === "period" ? text.period
+                        label: <span className="block whitespace-normal break-words">{column.key === "period" ? text.period
                             : column.key === "activity" ? text.activity_header
                                 : column.key === "output" ? text.output_vat
                                     : column.key === "input" ? text.input_vat
                                         : column.key === "balance" ? text.vat_balance
-                                            : text.irpf_withheld,
+                                            : text.irpf_withheld}</span>,
                     }))}
                     header={{ title: text.periods_title, subtitle: text.periods_subtitle }}
                     desktopFrom="lg"
