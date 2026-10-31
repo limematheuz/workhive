@@ -3,6 +3,7 @@
 import { Download, FileUp, Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataListTable } from "@/components/ui/data-list-table";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -89,8 +90,8 @@ export function ExpensesListSection({
                 countLabel: `${expenses.length} ${expenses.length === 1 ? "gasto" : "gastos"}`,
             }}
             toolbar={(
-                <div className="mb-2 flex flex-col gap-2 sm:flex-row">
-                    <label className="relative block w-full sm:max-w-xs">
+                <div className="mb-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_14rem_11rem]">
+                    <label className="relative block min-w-0 sm:col-span-2 xl:col-span-1">
                         <span className="sr-only">{text.search}</span>
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
                         <Input
@@ -101,7 +102,7 @@ export function ExpensesListSection({
                             placeholder={text.search}
                         />
                     </label>
-                    <label className="block sm:w-56">
+                    <label className="block min-w-0">
                         <span className="sr-only">{text.all_categories}</span>
                         <Select
                             value={categoryFilter || "__all-categories__"}
@@ -118,7 +119,7 @@ export function ExpensesListSection({
                             </SelectContent>
                         </Select>
                     </label>
-                    <label className="block sm:w-44">
+                    <label className="block min-w-0">
                         <span className="sr-only">{text.month}</span>
                         <DatePicker
                             id="expenses-month-filter"
@@ -131,13 +132,10 @@ export function ExpensesListSection({
                 </div>
             )}
             columns={[
-                { key: "date", label: text.date },
+                { key: "date", label: text.date, className: "w-24" },
                 { key: "description", label: text.description },
-                { key: "vendor", label: text.vendor },
-                { key: "category", label: text.category },
-                { key: "base", label: text.base_short, className: "text-right" },
-                { key: "tax", label: text.tax_short, className: "text-right" },
-                { key: "total", label: text.total, className: "text-right" },
+                { key: "amounts", label: <span className="block whitespace-normal">{text.base_short} / {text.tax_short}</span>, className: "w-32 text-right" },
+                { key: "total", label: text.total, className: "w-32 text-right" },
                 { key: "actions", label: <span className="sr-only">{text.actions}</span>, className: "w-16 overflow-visible" },
             ]}
             empty={(
@@ -150,9 +148,9 @@ export function ExpensesListSection({
                 <>
                     <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                            <p className="truncate font-semibold text-[var(--text-main)]">{expense.description}</p>
-                            <div className="mt-1 flex min-w-0 items-center gap-2">
-                                <p className="truncate text-xs text-[var(--text-muted)]">{expense.vendor || text.no_vendor}</p>
+                            <p className="break-words font-semibold text-[var(--text-main)]">{expense.description}</p>
+                            <div className="mt-1 flex min-w-0 items-start gap-2">
+                                <p className="min-w-0 break-words text-xs text-[var(--text-muted)]">{expense.vendor || text.no_vendor}</p>
                                 <ExpenseNotesTooltip label={text.notes} notes={getExpenseNotes(expense)} />
                             </div>
                             {operationalScopeLabel(expense) && <p className="mt-1 truncate text-xs font-medium text-accent">{operationalScopeLabel(expense)}</p>}
@@ -164,7 +162,7 @@ export function ExpensesListSection({
                     </div>
                     <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-[var(--border-soft)] pt-2.5 text-xs text-[var(--text-muted)]">
                         <span>{formatExpenseDate(expense.expense_date)}</span>
-                        <span className="text-right">{text.categories[expense.category as keyof typeof text.categories] || expense.category}</span>
+                        <Badge variant="secondary" className="ml-auto max-w-full whitespace-normal break-words text-right">{text.categories[expense.category as keyof typeof text.categories] || expense.category}</Badge>
                         <span>{text.base_short}: {formatCurrency(expense.base_amount)}</span>
                         <span className="text-right">{text.tax_short}: {formatCurrency(expense.tax_amount)}</span>
                     </div>
@@ -173,21 +171,19 @@ export function ExpensesListSection({
             renderDesktopRow={(expense) => (
                 <>
                     <span className="text-sm font-semibold text-[var(--text-main)]">{formatExpenseDate(expense.expense_date)}</span>
-                    <span className="flex min-w-0 items-center gap-2">
-                        <span className="min-w-0">
-                            <span className="block truncate font-semibold text-[var(--text-main)]">{expense.description}</span>
+                    <span className="flex min-w-0 items-start gap-2 whitespace-normal">
+                        <span className="min-w-0 space-y-1">
+                            <span className="block break-words font-semibold text-[var(--text-main)]">{expense.description}</span>
+                            <span className="block break-words text-xs text-[var(--text-muted)]">{expense.vendor || text.no_vendor}</span>
+                            <Badge variant="secondary" className="max-w-full whitespace-normal break-words">{text.categories[expense.category as keyof typeof text.categories] || expense.category}</Badge>
                             {operationalScopeLabel(expense) && <span className="block truncate text-xs font-medium text-accent">{operationalScopeLabel(expense)}</span>}
                         </span>
                         <ExpenseNotesTooltip label={text.notes} notes={getExpenseNotes(expense)} />
                     </span>
-                    <span className="min-w-0 truncate text-sm text-[var(--text-muted)]">{expense.vendor || text.no_vendor}</span>
-                    <span className="min-w-0">
-                        <span className="inline-flex max-w-full rounded-full bg-[var(--bg-card-solid)] px-2.5 py-1 text-xs font-semibold text-[var(--text-main)]">
-                            <span className="truncate">{text.categories[expense.category as keyof typeof text.categories] || expense.category}</span>
-                        </span>
+                    <span className="block space-y-1 text-right text-sm text-[var(--text-muted)]">
+                        <span className="block font-semibold"><span className="sr-only">{text.base_short}: </span>{formatCurrency(expense.base_amount)}</span>
+                        <span className="block text-xs">{text.tax_short}: {formatCurrency(expense.tax_amount)}</span>
                     </span>
-                    <span className="text-right text-sm font-semibold text-[var(--text-muted)]">{formatCurrency(expense.base_amount)}</span>
-                    <span className="text-right text-sm font-semibold text-[var(--text-muted)]">{formatCurrency(expense.tax_amount)}</span>
                     <span className="text-right font-mono text-sm font-semibold text-[var(--text-main)]">{formatCurrency(expense.total_amount)}</span>
                     <span className="flex justify-end">
                         {getExpenseActions(expense).length > 0 && <ActionPopover options={getExpenseActions(expense)} triggerLabel={text.actions} />}
