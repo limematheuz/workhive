@@ -119,6 +119,7 @@ class InventoryLotResponse(BaseModel):
     warehouse_name: str
     code: str
     expires_at: date | None
+    expiry_status: Literal["undated", "valid", "expiring", "expired"]
     available_quantity: Decimal
     created_at: datetime
 

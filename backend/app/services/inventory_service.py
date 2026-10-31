@@ -15,6 +15,7 @@ from app.schemas.inventory import (
     InventorySupplierCreate,
     InventoryWarehouseCreate,
 )
+from app.services.inventory_expiry_policy import expiry_status, require_movement_expiry_policy
 from app.services.organization_authorization_service import require_capability
 from app.services.user_scope import require_company_context
 
@@ -174,6 +175,7 @@ def list_lot_balances(db: Session, current_user: User):
             "warehouse_name": warehouse.name,
             "code": lot.code,
             "expires_at": lot.expires_at,
+            "expiry_status": expiry_status(lot.expires_at),
             "available_quantity": available_quantity,
             "created_at": lot.created_at,
         }
@@ -213,6 +215,7 @@ def create_movement(db: Session, current_user: User, payload: InventoryMovementC
         )
         if lot is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lote no encontrado")
+    require_movement_expiry_policy(lot, payload)
     if payload.movement_type in OUTGOING_MOVEMENT_TYPES:
         if lot is None and inventory_repo.has_lots(
             db,
