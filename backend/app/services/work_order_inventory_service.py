@@ -15,6 +15,7 @@ from app.schemas.inventory import (
     InventoryWorkOrderConsumptionReversal,
 )
 from app.services import location_access_service
+from app.services.inventory_expiry_policy import require_usable_lot
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import require_capability
 from app.services.user_scope import require_company_context
@@ -188,6 +189,7 @@ def create_consumption(
             detail="Selecciona el lote para registrar el consumo de este material",
             headers={"X-WorkHive-Error-Code": "inventory.lot_required"},
         )
+    require_usable_lot(lot)
     available = (
         inventory_repo.available_lot_quantity(db, company_id=company_id, lot_id=lot.id)
         if lot is not None

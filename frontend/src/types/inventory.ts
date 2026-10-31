@@ -77,6 +77,7 @@ export type InventoryLot = {
     warehouse_name: string;
     code: string;
     expires_at: string | null;
+    expiry_status?: "undated" | "valid" | "expiring" | "expired";
     available_quantity: string;
     created_at: string;
 };
