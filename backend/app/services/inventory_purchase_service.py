@@ -251,9 +251,9 @@ def reverse_purchase(
     )
     for line in purchase.lines:
         quantities[(line.material_id, line.warehouse_id, line.lot_id)] += line.quantity
-    for material_id, warehouse_id, lot_id in sorted(
-        quantities, key=lambda group: (group[0], group[1], group[2] or 0)
-    ):
+    # Every correction acquires shared warehouse locks in the same order,
+    # independently of its materials and lots, before checking any balance.
+    for warehouse_id in sorted({line.warehouse_id for line in purchase.lines}):
         warehouse = inventory_repo.get_warehouse(
             db,
             company_id=company_id,
@@ -262,6 +262,9 @@ def reverse_purchase(
         )
         if warehouse is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Almacén no encontrado")
+    for material_id, warehouse_id, lot_id in sorted(
+        quantities, key=lambda group: (group[0], group[1], group[2] or 0)
+    ):
         required_quantity = quantities[(material_id, warehouse_id, lot_id)]
         available = inventory_repo.available_quantity(
             db,
