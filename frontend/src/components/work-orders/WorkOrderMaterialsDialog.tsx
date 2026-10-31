@@ -85,6 +85,8 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
         () => lots.filter((lot) => lot.material_id === Number(materialId) && lot.warehouse_id === Number(warehouseId)),
         [lots, materialId, warehouseId],
     );
+    const selectedLot = availableLots.find((lot) => String(lot.id) === lotId);
+    const lotExpired = selectedLot?.expiry_status === "expired";
     const materialsById = useMemo(() => new Map(materials.map((material) => [material.id, material])), [materials]);
     const warehousesById = useMemo(() => new Map(warehouses.map((warehouse) => [warehouse.id, warehouse])), [warehouses]);
     const lotsById = useMemo(() => new Map(lots.map((lot) => [lot.id, lot])), [lots]);
@@ -140,10 +142,12 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(11rem,1fr)_minmax(11rem,1fr)_minmax(10rem,1fr)_7rem]">
                         <Select value={materialId} onValueChange={(value) => { setMaterialId(value); setLotId("none"); }} disabled={!canConsume}><SelectTrigger aria-label="Material consumido"><SelectValue placeholder="Material" /></SelectTrigger><SelectContent>{materials.map((material) => <SelectItem key={material.id} value={String(material.id)}>{material.name}</SelectItem>)}</SelectContent></Select>
                         <Select value={warehouseId} onValueChange={(value) => { setWarehouseId(value); setLotId("none"); }} disabled={!canConsume}><SelectTrigger aria-label="Almacén de salida"><SelectValue placeholder="Almacén" /></SelectTrigger><SelectContent>{warehouses.map((warehouse) => <SelectItem key={warehouse.id} value={String(warehouse.id)}>{warehouse.name}</SelectItem>)}</SelectContent></Select>
-                        <Select value={lotId} onValueChange={setLotId} disabled={!canConsume || !materialId || !warehouseId}><SelectTrigger aria-label="Lote consumido"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sin lote</SelectItem>{availableLots.map((lot) => <SelectItem key={lot.id} value={String(lot.id)}>{lot.code} · {quantity(lot.available_quantity)}</SelectItem>)}</SelectContent></Select>
+                        <Select value={lotId} onValueChange={setLotId} disabled={!canConsume || !materialId || !warehouseId}><SelectTrigger aria-label="Lote consumido"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sin lote</SelectItem>{availableLots.map((lot) => <SelectItem key={lot.id} value={String(lot.id)}>{lot.code} · {quantity(lot.available_quantity)}{lot.expiry_status === "expired" ? " · Caducado" : lot.expiry_status === "expiring" ? " · Próxima caducidad" : ""}</SelectItem>)}</SelectContent></Select>
                         <Input type="number" min="0.001" step="0.001" disabled={!canConsume} value={consumedQuantity} onChange={(event) => setConsumedQuantity(event.target.value)} placeholder="Cantidad" aria-label="Cantidad consumida" />
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><div className="grid gap-1"><Label htmlFor="work-order-material-notes">Nota interna</Label><Textarea id="work-order-material-notes" rows={2} disabled={!canConsume} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Opcional" /></div><Button className="self-end" type="button" disabled={!canConsume || !materialId || !warehouseId || !consumedQuantity || Number(consumedQuantity) <= 0 || saving} onClick={() => void consume()}>{saving && <Loader2 className="size-4 animate-spin" />}<PackageMinus className="size-4" />Registrar</Button></div>
+                    {lotExpired && <p role="status" className="text-sm text-destructive">Lote caducado: selecciona otro lote para registrar el consumo.</p>}
+                    {selectedLot?.expiry_status === "expiring" && <p role="status" className="text-sm text-[var(--text-muted)]">Este lote caduca en 30 días o menos.</p>}
+                    <div className="grid gap-2 sm:grid-cols-[1fr_auto]"><div className="grid gap-1"><Label htmlFor="work-order-material-notes">Nota interna</Label><Textarea id="work-order-material-notes" rows={2} disabled={!canConsume} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Opcional" /></div><Button className="self-end" type="button" disabled={!canConsume || lotExpired || !materialId || !warehouseId || !consumedQuantity || Number(consumedQuantity) <= 0 || saving} onClick={() => void consume()}>{saving && <Loader2 className="size-4 animate-spin" />}<PackageMinus className="size-4" />Registrar</Button></div>
                 </div>
                 <DataListTable
                     items={movements}
