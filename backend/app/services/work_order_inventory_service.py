@@ -10,6 +10,7 @@ from app.repositories import client as client_repo
 from app.repositories import inventory as inventory_repo
 from app.repositories import work_order as work_order_repo
 from app.schemas.inventory import (
+    InventoryMovementResponse,
     InventoryWorkOrderConsumptionCreate,
     InventoryWorkOrderConsumptionReversal,
 )
@@ -109,9 +110,19 @@ def list_consumptions(db: Session, current_user: User, work_order_id: int):
         work_order_id=work_order_id,
         permission_code=WORK_READ,
     )
-    return inventory_repo.list_work_order_movements(
-        db, company_id=company_id, work_order_id=work_order_id
-    )
+    return [
+        InventoryMovementResponse.model_validate(movement).model_copy(
+            update={
+                "material_name": material_name,
+                "warehouse_name": warehouse_name,
+                "lot_code": lot_code,
+            }
+        )
+        for movement, material_name, warehouse_name, lot_code
+        in inventory_repo.list_work_order_movements(
+            db, company_id=company_id, work_order_id=work_order_id
+        )
+    ]
 
 
 def create_consumption(
