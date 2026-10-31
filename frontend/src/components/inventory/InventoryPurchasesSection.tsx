@@ -283,7 +283,7 @@ export function InventoryPurchasesSection({ purchases, suppliers, materials, war
             desktopFrom="lg"
             loading={loading}
             header={{ title: "Compras de material", subtitle: "Cada compra enlaza un gasto fiscal con entradas de stock inmutables.", countLabel: `${purchases.length} compras` }}
-            toolbar={canManage ? <Button type="button" disabled={suppliers.length === 0 || materials.length === 0 || warehouses.length === 0} onClick={() => setDialogOpen(true)}><CircleDollarSign className="size-4" />Nueva compra</Button> : undefined}
+            toolbar={canManage ? <div className="flex justify-end"><Button type="button" disabled={suppliers.length === 0 || materials.length === 0 || warehouses.length === 0} onClick={() => setDialogOpen(true)}><CircleDollarSign className="size-4" />Nueva compra</Button></div> : undefined}
             empty={<p className="text-sm text-[var(--text-muted)]">Registra una compra cuando recibas material y su gasto asociado.</p>}
             renderDesktopRow={(purchase) => [
                 <div key="supplier" className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{purchase.supplier_name_snapshot}</p>{purchase.supplier_tax_id_snapshot && <p className="mt-1 text-xs text-[var(--text-muted)]">{purchase.supplier_tax_id_snapshot}</p>}</div>,
