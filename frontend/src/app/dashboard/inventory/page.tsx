@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Archive, ArrowDownToLine, Boxes, Building2, CircleDollarSign, Layers3, PackagePlus, ShieldAlert, type LucideIcon, Warehouse } from "lucide-react";
 
-import { InventoryMovementForm, type InventoryMovementDraft } from "@/components/inventory/InventoryMovementForm";
+import { InventoryMovementForm } from "@/components/inventory/InventoryMovementForm";
 import { InventoryLotsSection } from "@/components/inventory/InventoryLotsSection";
 import { InventoryPurchasesSection } from "@/components/inventory/InventoryPurchasesSection";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { InventoryNavigation } from "@/components/inventory/InventoryNavigation";
+import { reconcileInventoryMovementDraft, type InventoryMovementDraft } from "@/lib/inventory-movement-draft";
 import type { InventoryView as InventoryTab } from "@/lib/inventory-navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getErrorMessage } from "@/lib/errors";
@@ -182,6 +183,9 @@ export default function InventoryPage() {
                 InventoryService.getLots(),
                 canViewPurchases ? InventoryService.getPurchases() : Promise.resolve<InventoryPurchase[]>([]),
             ]);
+            setMovementDraft(current => reconcileInventoryMovementDraft(current, {
+                materials: nextMaterials, warehouses: nextWarehouses, lots: nextLots,
+            }));
             setInventoryData({
                 suppliers: nextSuppliers,
                 materials: nextMaterials,

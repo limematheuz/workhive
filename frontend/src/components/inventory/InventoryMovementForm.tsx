@@ -6,14 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { InventoryLot, InventoryMaterial, InventoryMovementType, InventoryWarehouse } from "@/types/inventory";
 
-export type InventoryMovementDraft = {
-    materialId: string;
-    warehouseId: string;
-    lotId: string;
-    movementType: InventoryMovementType;
-    quantity: string;
-    reference: string;
-};
+import type { InventoryMovementDraft } from "@/lib/inventory-movement-draft";
 
 export function InventoryMovementForm({ materials, warehouses, lots, draft, labels, saving, onChange, onSubmit }: {
     materials: InventoryMaterial[];
