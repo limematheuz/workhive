@@ -99,6 +99,10 @@ def test_inventory_catalogue_and_immutable_stock_ledger_are_tenant_scoped(client
         }
     ]
 
+    ledger_before_rejection = client.get(
+        "/api/v1/inventory/movements", headers=owner_headers
+    ).json()
+    assert len(ledger_before_rejection) == 2
     insufficient = client.post(
         "/api/v1/inventory/movements",
         headers=owner_headers,
@@ -114,6 +118,13 @@ def test_inventory_catalogue_and_immutable_stock_ledger_are_tenant_scoped(client
         insufficient.headers["x-workhive-error-code"] == "inventory.insufficient_stock"
     )
 
+    assert client.get(
+        "/api/v1/inventory/movements", headers=owner_headers
+    ).json() == ledger_before_rejection
+    assert client.get(
+        "/api/v1/inventory/stock", headers=owner_headers
+    ).json() == balances.json()
+
     assert client.get("/api/v1/inventory/materials", headers=other_headers).json() == []
     cross_tenant = client.post(
         "/api/v1/inventory/movements",
@@ -126,6 +137,12 @@ def test_inventory_catalogue_and_immutable_stock_ledger_are_tenant_scoped(client
         },
     )
     assert cross_tenant.status_code == 404
+    assert client.get(
+        "/api/v1/inventory/movements", headers=owner_headers
+    ).json() == ledger_before_rejection
+    assert client.get(
+        "/api/v1/inventory/stock", headers=owner_headers
+    ).json() == balances.json()
 
     assert Decimal(balances.json()[0]["available_quantity"]) == Decimal("8.000")
 

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { selectSection } from "./helpers/select-section";
 
 // Use only with backend/scripts/seed_portal_e2e.py and an isolated E2E URL.
 async function login(page: Page) {
@@ -15,7 +16,8 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     await page.goto("/dashboard/inventory");
     await expect(page.getByRole("heading", { name: "Inventario" })).toBeVisible();
 
-    await page.getByRole("tab", { name: "Proveedores" }).click();
+    await selectSection(page, page, "Catálogo", "Área de inventario");
+    await selectSection(page, page, "Proveedores", "Vista: Catálogo");
     await page.getByLabel("Nombre del proveedor").fill("E2E Supplies");
     const supplierCreated = page.waitForResponse((response) => (
         response.url().endsWith("/inventory/suppliers") && response.request().method() === "POST"
@@ -24,7 +26,7 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     expect((await supplierCreated).status()).toBe(201);
     await expect(page.getByRole("row", { name: /E2E Supplies/ })).toBeVisible();
 
-    await page.getByRole("tab", { name: "Materiales" }).click();
+    await selectSection(page, page, "Materiales", "Vista: Catálogo");
     await page.getByLabel("SKU").fill("E2E-DET-001");
     await page.getByLabel("Nombre del material").fill("E2E detergent");
     const materialCreated = page.waitForResponse((response) => (
@@ -34,7 +36,7 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     expect((await materialCreated).status()).toBe(201);
     await expect(page.getByRole("row", { name: /E2E detergent/ })).toBeVisible();
 
-    await page.getByRole("tab", { name: "Almacenes" }).click();
+    await selectSection(page, page, "Almacenes", "Vista: Catálogo");
     await page.getByLabel("Nombre del almacén").fill("E2E central warehouse");
     const warehouseCreated = page.waitForResponse((response) => (
         response.url().endsWith("/inventory/warehouses") && response.request().method() === "POST"
@@ -42,7 +44,8 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     await page.getByRole("button", { name: "Añadir almacén" }).click();
     expect((await warehouseCreated).status()).toBe(201);
 
-    await page.getByRole("tab", { name: "Movimientos" }).click();
+    await selectSection(page, page, "Operativa", "Área de inventario");
+    await selectSection(page, page, "Movimientos", "Vista: Operativa");
     await page.getByLabel("Material").click();
     await page.getByRole("option", { name: "E2E detergent", exact: true }).click();
     await page.getByLabel("Almacén").click();
@@ -63,7 +66,7 @@ test("administrator creates inventory data and sees the calculated warehouse bal
     await page.getByRole("button", { name: "Registrar movimiento" }).click();
     expect((await issueCreated).status()).toBe(201);
 
-    await page.getByRole("tab", { name: "Stock" }).click();
+    await selectSection(page, page, "Stock", "Vista: Operativa");
     const stockRow = page.locator("tr", { hasText: "E2E detergent" });
     await expect(stockRow).toContainText("6 unidades");
 });

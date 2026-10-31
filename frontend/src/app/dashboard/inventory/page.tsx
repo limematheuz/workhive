@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Archive, ArrowDownToLine, ArrowUpFromLine, Boxes, Building2, CircleDollarSign, Layers3, PackagePlus, ShieldAlert, type LucideIcon, Warehouse } from "lucide-react";
+import { Archive, ArrowDownToLine, Boxes, Building2, CircleDollarSign, Layers3, PackagePlus, ShieldAlert, type LucideIcon, Warehouse } from "lucide-react";
 
+import { InventoryMovementForm, type InventoryMovementDraft } from "@/components/inventory/InventoryMovementForm";
 import { InventoryLotsSection } from "@/components/inventory/InventoryLotsSection";
 import { InventoryPurchasesSection } from "@/components/inventory/InventoryPurchasesSection";
 import { Button } from "@/components/ui/button";
@@ -141,12 +142,10 @@ export default function InventoryPage() {
     const [reorderPoint, setReorderPoint] = useState("0");
     const [warehouseName, setWarehouseName] = useState("");
     const [warehouseAddress, setWarehouseAddress] = useState("");
-    const [movementMaterialId, setMovementMaterialId] = useState("");
-    const [movementWarehouseId, setMovementWarehouseId] = useState("");
-    const [movementLotId, setMovementLotId] = useState("none");
-    const [movementType, setMovementType] = useState<InventoryMovementType>("receipt");
-    const [movementQuantity, setMovementQuantity] = useState("");
-    const [movementReference, setMovementReference] = useState("");
+    const [movementDraft, setMovementDraft] = useState<InventoryMovementDraft>({
+        materialId: "", warehouseId: "", lotId: "none", movementType: "receipt", quantity: "", reference: "",
+    });
+    const updateMovementDraft = (patch: Partial<InventoryMovementDraft>) => setMovementDraft(current => ({ ...current, ...patch }));
     const [archiveTarget, setArchiveTarget] = useState<ArchiveTarget | null>(null);
 
     useEffect(() => {
@@ -283,21 +282,20 @@ export default function InventoryPage() {
     };
 
     const addMovement = async () => {
-        if (!movementMaterialId || !movementWarehouseId || !movementQuantity || Number(movementQuantity) <= 0) return;
+        if (!movementDraft.materialId || !movementDraft.warehouseId || !movementDraft.quantity || Number(movementDraft.quantity) <= 0) return;
         setSaving(true);
         try {
             await InventoryService.createMovement({
-                material_id: Number(movementMaterialId),
-                warehouse_id: Number(movementWarehouseId),
-                lot_id: movementLotId === "none" ? null : Number(movementLotId),
-                movement_type: movementType,
-                quantity: movementQuantity,
+                material_id: Number(movementDraft.materialId),
+                warehouse_id: Number(movementDraft.warehouseId),
+                lot_id: movementDraft.lotId === "none" ? null : Number(movementDraft.lotId),
+                movement_type: movementDraft.movementType,
+                quantity: movementDraft.quantity,
                 unit_cost: null,
-                reference: optional(movementReference),
+                reference: optional(movementDraft.reference),
                 notes: null,
             });
-            setMovementQuantity("");
-            setMovementReference("");
+            updateMovementDraft({ quantity: "", reference: "" });
             toast.success("Movimiento registrado.");
             await reload();
         } catch (error) {
@@ -391,15 +389,13 @@ export default function InventoryPage() {
         renderCompactRow={(item) => <div className="flex min-w-0 items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{item.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{item.address || "Sin dirección"}</p></div>{canManageInventory && <Button type="button" size="icon" variant="ghost" className="size-8 shrink-0 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiveTarget({ kind: "warehouse", id: item.id, name: item.name })} aria-label={`Archivar ${item.name}`}><Archive className="size-4" /></Button>}</div>}
     />;
 
-    const movementLots = lots.filter((lot) => lot.material_id === Number(movementMaterialId) && lot.warehouse_id === Number(movementWarehouseId));
-
     const renderMovements = () => <DataListTable
         items={movements}
         getRowKey={(item) => item.id}
         columns={movementColumns}
         loading={loading}
         header={{ title: "Libro de movimientos", subtitle: "Las entradas, salidas y ajustes se conservan como trazabilidad inmutable.", countLabel: `${movements.length} movimientos` }}
-        toolbar={canManageInventory ? <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(10rem,1fr)_minmax(10rem,1fr)_minmax(9rem,0.8fr)_minmax(9rem,0.8fr)_7rem_minmax(10rem,1fr)_auto]"><Select value={movementMaterialId} onValueChange={(value) => { setMovementMaterialId(value); setMovementLotId("none"); }}><SelectTrigger aria-label="Material"><SelectValue placeholder="Material" /></SelectTrigger><SelectContent>{materials.map((material) => <SelectItem key={material.id} value={String(material.id)}>{material.name}</SelectItem>)}</SelectContent></Select><Select value={movementWarehouseId} onValueChange={(value) => { setMovementWarehouseId(value); setMovementLotId("none"); }}><SelectTrigger aria-label="Almacén"><SelectValue placeholder="Almacén" /></SelectTrigger><SelectContent>{warehouses.map((warehouse) => <SelectItem key={warehouse.id} value={String(warehouse.id)}>{warehouse.name}</SelectItem>)}</SelectContent></Select><Select value={movementLotId} onValueChange={setMovementLotId} disabled={!movementMaterialId || !movementWarehouseId}><SelectTrigger aria-label="Lote"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sin lote</SelectItem>{movementLots.map((lot) => <SelectItem key={lot.id} value={String(lot.id)}>{lot.code}</SelectItem>)}</SelectContent></Select><Select value={movementType} onValueChange={(value) => setMovementType(value as InventoryMovementType)}><SelectTrigger aria-label="Tipo de movimiento"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(movementLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><Input value={movementQuantity} onChange={(event) => setMovementQuantity(event.target.value)} type="number" min="0.001" step="0.001" aria-label="Cantidad" /><Input value={movementReference} onChange={(event) => setMovementReference(event.target.value)} placeholder="Referencia opcional" aria-label="Referencia" /><Button type="button" disabled={!movementMaterialId || !movementWarehouseId || !movementQuantity || Number(movementQuantity) <= 0 || saving} onClick={() => void addMovement()}>{movementType === "issue" || movementType === "adjustment_out" ? <ArrowUpFromLine className="size-4" /> : <ArrowDownToLine className="size-4" />}Registrar movimiento</Button></div> : undefined}
+        toolbar={canManageInventory ? <InventoryMovementForm materials={materials} warehouses={warehouses} lots={lots} draft={movementDraft} labels={movementLabels} saving={saving} onChange={updateMovementDraft} onSubmit={() => void addMovement()} /> : undefined}
         empty={<p className="text-sm text-[var(--text-muted)]">El primer movimiento debe ser una entrada o ajuste de entrada.</p>}
         renderDesktopRow={(item) => [
             <div key="movement" className="min-w-0"><span className={item.movement_type === "issue" || item.movement_type === "adjustment_out" ? "inline-flex rounded-full bg-destructive/10 px-2 py-1 text-xs font-semibold text-destructive" : "inline-flex rounded-full bg-accent/10 px-2 py-1 text-xs font-semibold text-accent"}>{movementLabels[item.movement_type]}</span>{item.reference && <p className="mt-1 truncate text-xs text-[var(--text-muted)]">{item.reference}</p>}</div>,
