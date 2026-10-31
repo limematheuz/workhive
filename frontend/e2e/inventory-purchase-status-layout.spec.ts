@@ -22,6 +22,12 @@ for (const width of [1440, 1091, 1032, 768, 390]) {
         });
         await page.goto("/dashboard/inventory");
         await selectSection(page, page, "Compras", "Área de inventario");
+        const createAction = page.getByRole("button", { name: "Nueva compra", exact: true }).filter({ visible: true });
+        expect(await createAction.evaluate(element => {
+            const parent = element.parentElement!;
+            const style = getComputedStyle(parent);
+            return Math.abs(element.getBoundingClientRect().right - parent.getBoundingClientRect().right + parseFloat(style.paddingRight));
+        })).toBeLessThanOrEqual(1);
         for (const status of ["Recibida", "Corregida"]) {
             const label = page.getByText(status, { exact: true }).filter({ visible: true });
             await expect(label).toBeVisible();
