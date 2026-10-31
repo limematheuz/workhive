@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { CircleDollarSign, Loader2, PackagePlus, RotateCcw } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -40,11 +41,20 @@ type InventoryPurchasesSectionProps = {
 
 const purchaseColumns: DataListColumn[] = [
     { key: "supplier", label: "Proveedor", className: "w-[24%]" },
-    { key: "description", label: "Compra", className: "w-[28%]" },
-    { key: "date", label: "Fecha", className: "w-[15%]" },
-    { key: "total", label: "Total", className: "w-[15%] text-right" },
-    { key: "status", label: "Estado", className: "w-[18%] text-right" },
+    { key: "description", label: "Compra" },
+    { key: "date", label: "Fecha", className: "w-32" },
+    { key: "total", label: "Total", className: "w-28 text-right" },
+    { key: "status", label: "Estado", className: "w-24 text-right" },
+    { key: "actions", label: "Acciones", className: "w-32 text-right" },
 ];
+
+function PurchaseStatus({ status }: { status: InventoryPurchase["status"] }) {
+    return <Badge variant="outline" className={status === "received"
+        ? "border-accent/25 bg-accent/10 text-accent"
+        : "border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[var(--text-muted)]"}>
+        {status === "received" ? "Recibida" : "Corregida"}
+    </Badge>;
+}
 
 function createLine(): PurchaseLineDraft {
     return {
@@ -270,6 +280,7 @@ export function InventoryPurchasesSection({ purchases, suppliers, materials, war
             items={purchases}
             getRowKey={(purchase) => purchase.id}
             columns={purchaseColumns}
+            desktopFrom="lg"
             loading={loading}
             header={{ title: "Compras de material", subtitle: "Cada compra enlaza un gasto fiscal con entradas de stock inmutables.", countLabel: `${purchases.length} compras` }}
             toolbar={canManage ? <Button type="button" disabled={suppliers.length === 0 || materials.length === 0 || warehouses.length === 0} onClick={() => setDialogOpen(true)}><CircleDollarSign className="size-4" />Nueva compra</Button> : undefined}
@@ -279,9 +290,10 @@ export function InventoryPurchasesSection({ purchases, suppliers, materials, war
                 <div key="description" className="min-w-0"><p className="truncate text-sm text-[var(--text-main)]">{purchase.expense.description}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{purchase.lines.length} {purchase.lines.length === 1 ? "línea" : "líneas"}{purchase.reference ? ` · ${purchase.reference}` : ""}</p></div>,
                 <span key="date" className="text-sm text-[var(--text-muted)]">{formatDate(purchase.expense.expense_date)}</span>,
                 <span key="total" className="block text-right text-sm font-semibold text-[var(--text-main)]">{formatCurrency(purchase.expense.total_amount)}</span>,
-                <div key="status" className="flex justify-end gap-2"><span className={purchase.status === "received" ? "inline-flex rounded-full bg-accent/10 px-2 py-1 text-xs font-semibold text-accent" : "inline-flex rounded-full bg-[var(--bg-tertiary)] px-2 py-1 text-xs font-semibold text-[var(--text-muted)]"}>{purchase.status === "received" ? "Recibida" : "Corregida"}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => setPurchaseToCorrect(purchase)}>{reversingId === purchase.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}Corregir</Button>}</div>,
+                <div key="status" className="flex justify-end"><PurchaseStatus status={purchase.status} /></div>,
+                <div key="actions" className="flex justify-end">{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => setPurchaseToCorrect(purchase)}>{reversingId === purchase.id ? <Loader2 className="size-4 animate-spin" /> : <RotateCcw className="size-4" />}Corregir</Button>}</div>,
             ]}
-            renderCompactRow={(purchase) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{purchase.supplier_name_snapshot}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{purchase.expense.description} · {formatDate(purchase.expense.expense_date)}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{purchase.status === "received" ? "Recibida" : "Corregida"}</p></div><div className="flex shrink-0 flex-col items-end gap-2"><span className="font-semibold text-[var(--text-main)]">{formatCurrency(purchase.expense.total_amount)}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => setPurchaseToCorrect(purchase)}><RotateCcw className="size-4" />Corregir</Button>}</div></div>}
+            renderCompactRow={(purchase) => <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{purchase.supplier_name_snapshot}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{purchase.expense.description} · {formatDate(purchase.expense.expense_date)}</p><div className="mt-2"><PurchaseStatus status={purchase.status} /></div></div><div className="flex shrink-0 flex-col items-end gap-2"><span className="font-semibold text-[var(--text-main)]">{formatCurrency(purchase.expense.total_amount)}</span>{canManage && purchase.status === "received" && <Button type="button" size="sm" variant="outline" disabled={reversingId === purchase.id} onClick={() => setPurchaseToCorrect(purchase)}><RotateCcw className="size-4" />Corregir</Button>}</div></div>}
         />
         <PurchaseDialog open={dialogOpen} onOpenChange={setDialogOpen} suppliers={suppliers} materials={materials} warehouses={warehouses} onCreated={onChanged} />
         <PurchaseCorrectionDialog purchase={purchaseToCorrect} isSubmitting={reversingId === purchaseToCorrect?.id} onOpenChange={(open) => !open && setPurchaseToCorrect(null)} onConfirm={reverse} />
