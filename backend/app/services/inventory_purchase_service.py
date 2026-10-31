@@ -283,23 +283,30 @@ def reverse_purchase(
                 headers={"X-WorkHive-Error-Code": "inventory.insufficient_stock"},
             )
 
-    for line in purchase.lines:
-        inventory_repo.create_movement(
-            db,
-            company_id=company_id,
-            material_id=line.material_id,
-            warehouse_id=line.warehouse_id,
-            lot_id=line.lot_id,
-            movement_type="adjustment_out",
-            quantity=line.quantity,
-            unit_cost=line.unit_cost,
-            reference=f"Corrección compra #{purchase.id}",
-            notes=payload.reason,
-            recorded_by_user_id=current_user.id,
-        )
-    purchase.status = "reversed"
-    purchase.reversed_at = datetime.now(timezone.utc)
-    purchase.reversed_by_user_id = current_user.id
-    purchase.reversal_reason = payload.reason
-    purchase.expense.is_active = False
+    try:
+        with db.begin_nested():
+            for line in purchase.lines:
+                inventory_repo.create_movement(
+                    db,
+                    company_id=company_id,
+                    material_id=line.material_id,
+                    warehouse_id=line.warehouse_id,
+                    lot_id=line.lot_id,
+                    movement_type="adjustment_out",
+                    quantity=line.quantity,
+                    unit_cost=line.unit_cost,
+                    reference=f"Corrección compra #{purchase.id}",
+                    notes=payload.reason,
+                    recorded_by_user_id=current_user.id,
+                )
+            purchase.status = "reversed"
+            purchase.reversed_at = datetime.now(timezone.utc)
+            purchase.reversed_by_user_id = current_user.id
+            purchase.reversal_reason = payload.reason
+            purchase.expense.is_active = False
+    except IntegrityError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se pudo corregir la compra por un conflicto de datos",
+        ) from error
     return _commit_purchase(db, company_id=company_id, purchase_id=purchase.id)

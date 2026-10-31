@@ -108,3 +108,41 @@ def test_write_conflict_rolls_back_all_lines_and_allows_a_clean_retry(client, db
     assert len(after["inventory/purchases/"]) == 1
     assert len(after["expenses/"]) == 1
     assert len(after["inventory/movements"]) == 2
+
+
+def test_reversal_write_conflict_preserves_purchase_expense_and_every_balance(client, db, monkeypatch):
+    from app.repositories import inventory as inventory_repo
+
+    headers, payload = _setup(client, db, "PurchaseReversalWriteConflict")
+    line = payload["lines"][0]
+    payload["lines"] = [{**line, "lot_code": "QA-RETURN-A"}, {**line, "lot_code": "QA-RETURN-B"}]
+    response = client.post("/api/v1/inventory/purchases/", headers=headers, json=payload)
+    assert response.status_code == 201, response.text
+    path = f"/api/v1/inventory/purchases/{response.json()['id']}/reverse"
+    before = _snapshot(client, headers)
+    create_movement = inventory_repo.create_movement
+    calls = 0
+
+    def fail_second_adjustment(session, **values):
+        nonlocal calls
+        if values["movement_type"] == "adjustment_out":
+            calls += 1
+            if calls == 2:
+                return create_movement(session, **{**values, "quantity": 0})
+        return create_movement(session, **values)
+
+    monkeypatch.setattr(inventory_repo, "create_movement", fail_second_adjustment)
+    rejected = client.post(path, headers=headers, json={"reason": "QA full return"})
+    assert rejected.status_code == 409, rejected.text
+    assert _snapshot(client, headers) == before
+    db.commit()
+    assert _snapshot(client, headers) == before
+    monkeypatch.setattr(inventory_repo, "create_movement", create_movement)
+    corrected = client.post(path, headers=headers, json={"reason": "QA retry return"})
+    assert corrected.status_code == 200, corrected.text
+    assert corrected.json()["status"] == "reversed"
+    assert corrected.json()["expense"]["is_active"] is False
+    after = _snapshot(client, headers)
+    assert len(after["inventory/movements"]) == 4
+    assert after["inventory/stock"][0]["available_quantity"] == "0.000"
+    assert all(lot["available_quantity"] == "0.000" for lot in after["inventory/lots"])
