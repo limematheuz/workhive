@@ -93,6 +93,7 @@ class InventoryMovementResponse(InventoryMovementCreate):
     created_at: datetime
     material_name: str | None = None
     warehouse_name: str | None = None
+    lot_code: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 

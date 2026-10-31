@@ -53,6 +53,7 @@ export type InventoryMovement = {
     created_at: string;
     material_name: string | null;
     warehouse_name: string | null;
+    lot_code?: string | null;
 };
 
 export type InventoryStockBalance = {

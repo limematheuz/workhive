@@ -349,12 +349,26 @@ def list_movements(db: Session, *, company_id: int):
 
 def list_work_order_movements(
     db: Session, *, company_id: int, work_order_id: int
-) -> list[InventoryMovement]:
+):
     return (
-        db.query(InventoryMovement)
+        db.query(
+            InventoryMovement,
+            InventoryMaterial.name,
+            InventoryWarehouse.name,
+            InventoryLot.code,
+        )
+        .join(InventoryMaterial, InventoryMaterial.id == InventoryMovement.material_id)
+        .join(InventoryWarehouse, InventoryWarehouse.id == InventoryMovement.warehouse_id)
+        .outerjoin(
+            InventoryLot,
+            (InventoryLot.id == InventoryMovement.lot_id)
+            & (InventoryLot.company_id == company_id),
+        )
         .filter(
             InventoryMovement.company_id == company_id,
             InventoryMovement.work_order_id == work_order_id,
+            InventoryMaterial.company_id == company_id,
+            InventoryWarehouse.company_id == company_id,
         )
         .order_by(InventoryMovement.created_at.desc(), InventoryMovement.id.desc())
         .all()
