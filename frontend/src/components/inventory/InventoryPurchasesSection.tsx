@@ -6,7 +6,7 @@ import { CircleDollarSign, Loader2, PackagePlus, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -182,17 +182,17 @@ function PurchaseDialog({
                     </div>
                     <div className="grid gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)]/55 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold text-[var(--text-main)]">Líneas recibidas</p><p className="text-xs text-[var(--text-muted)]">Cada línea crea una entrada en el almacén elegido.</p></div><Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => [...current, createLine()])}><PackagePlus className="size-4" />Añadir línea</Button></div>
-                        {lines.map((line, index) => <div key={line.id} className="grid gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/55 p-3"><div className="grid gap-2 sm:grid-cols-[minmax(11rem,1fr)_minmax(11rem,1fr)_7rem_8rem_auto]">
+                        {lines.map((line, index) => <div key={line.id} className="grid gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/55 p-3"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_6rem_7rem_auto]">
                             <Select value={line.materialId} onValueChange={(value) => updateLine(line.id, { materialId: value })}><SelectTrigger aria-label={`Material ${index + 1}`}><SelectValue placeholder="Material" /></SelectTrigger><SelectContent>{materials.map((material) => <SelectItem key={material.id} value={String(material.id)}>{material.name}</SelectItem>)}</SelectContent></Select>
                             <Select value={line.warehouseId} onValueChange={(value) => updateLine(line.id, { warehouseId: value })}><SelectTrigger aria-label={`Almacén ${index + 1}`}><SelectValue placeholder="Almacén" /></SelectTrigger><SelectContent>{warehouses.map((warehouse) => <SelectItem key={warehouse.id} value={String(warehouse.id)}>{warehouse.name}</SelectItem>)}</SelectContent></Select>
                             <Input type="number" min="0.001" step="0.001" aria-label={`Cantidad ${index + 1}`} placeholder="Cantidad" value={line.quantity} onChange={(event) => updateLine(line.id, { quantity: event.target.value })} />
                             <Input type="number" min="0" step="0.0001" aria-label={`Coste unitario ${index + 1}`} placeholder="Coste/unidad" value={line.unitCost} onChange={(event) => updateLine(line.id, { unitCost: event.target.value })} />
-                            {lines.length > 1 ? <Button type="button" variant="outline" size="sm" onClick={() => setLines((current) => current.filter((item) => item.id !== line.id))}>Quitar</Button> : <span />}
+                            {lines.length > 1 ? <Button type="button" variant="outline" size="sm" className="sm:col-span-2 lg:col-span-1" onClick={() => setLines((current) => current.filter((item) => item.id !== line.id))}>Quitar</Button> : <span className="hidden lg:block" />}
                         </div><div className="grid gap-2 sm:grid-cols-2"><Input aria-label={`Lote ${index + 1}`} placeholder="Código de lote opcional" value={line.lotCode} onChange={(event) => updateLine(line.id, { lotCode: event.target.value, ...(event.target.value.trim() ? {} : { lotExpiresAt: "" }) })} /><DatePicker id={`inventory-purchase-lot-expiry-${line.id}`} aria-label={`Caducidad del lote ${index + 1}`} disabled={!line.lotCode.trim()} value={line.lotExpiresAt} onValueChange={(lotExpiresAt) => updateLine(line.id, { lotExpiresAt })} /></div></div>)}
                     </div>
                     <div className="grid gap-2"><Label htmlFor="inventory-purchase-notes">Notas</Label><Textarea id="inventory-purchase-notes" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Observaciones internas opcionales" rows={2} /></div>
-                    <div className="flex justify-end gap-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)]/55 px-4 py-3 text-sm"><span>Base: <strong>{formatCurrency(baseAmount)}</strong></span><span>IVA: <strong>{formatCurrency(Number(taxAmount || 0))}</strong></span><span>Total: <strong>{formatCurrency(totalAmount)}</strong></span></div>
-                    <DialogFooter><Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cancelar</Button><Button type="submit" disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Registrar compra</Button></DialogFooter>
+                    <div className="flex flex-wrap justify-end gap-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)]/55 px-4 py-3 text-sm"><span>Base: <strong>{formatCurrency(baseAmount)}</strong></span><span>IVA: <strong>{formatCurrency(Number(taxAmount || 0))}</strong></span><span>Total: <strong>{formatCurrency(totalAmount)}</strong></span></div>
+                    <DialogFooter><DialogClose asChild><Button type="button" variant="cancel">Cancelar</Button></DialogClose><Button type="submit" disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Registrar compra</Button></DialogFooter>
                 </form>
             </DialogContent>
         </Dialog>
@@ -236,7 +236,7 @@ function PurchaseCorrectionDialog({
                         <Textarea id="inventory-purchase-correction-reason" required value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Describe el motivo de la corrección" rows={3} />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="cancel" disabled={isSubmitting} onClick={close}>Cancelar</Button>
+                        <DialogClose asChild><Button type="button" variant="cancel" disabled={isSubmitting}>Cancelar</Button></DialogClose>
                         <Button type="submit" disabled={!reason.trim() || isSubmitting}>{isSubmitting && <Loader2 className="size-4 animate-spin" />}Corregir compra</Button>
                     </DialogFooter>
                 </form>
