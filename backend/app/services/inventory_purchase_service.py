@@ -154,67 +154,74 @@ def create_purchase(
     )
     supplier = _validate_purchase_references(db, company_id=company_id, payload=payload)
     base_amount = _expense_base_amount(payload)
-    expense = expense_repo.create_expense(
-        db,
-        company_id=company_id,
-        created_by_user_id=current_user.id,
-        commit=False,
-        expense_date=payload.expense_date,
-        client_id=payload.client_id,
-        vendor=supplier.name,
-        category=payload.category,
-        description=payload.description,
-        payment_method=payload.payment_method,
-        base_amount=float(base_amount),
-        tax_amount=float(payload.tax_amount),
-        total_amount=float(base_amount + payload.tax_amount),
-        receipt_url=payload.receipt_url,
-        notes=payload.notes,
-    )
-    purchase = purchase_repo.create_purchase(
-        db,
-        company_id=company_id,
-        supplier_id=supplier.id,
-        expense_id=expense.id,
-        status="received",
-        supplier_name_snapshot=supplier.name,
-        supplier_tax_id_snapshot=supplier.tax_id,
-        reference=payload.reference,
-        notes=payload.notes,
-        created_by_user_id=current_user.id,
-    )
-    for line in payload.lines:
-        lot = _get_or_create_lot(
-            db,
-            company_id=company_id,
-            material_id=line.material_id,
-            warehouse_id=line.warehouse_id,
-            code=line.lot_code,
-            expires_at=line.lot_expires_at,
-        )
-        movement = inventory_repo.create_movement(
-            db,
-            company_id=company_id,
-            material_id=line.material_id,
-            warehouse_id=line.warehouse_id,
-            lot_id=lot.id if lot else None,
-            movement_type="receipt",
-            quantity=line.quantity,
-            unit_cost=line.unit_cost,
-            reference=payload.reference or f"Compra #{purchase.id}",
-            notes=payload.notes,
-            recorded_by_user_id=current_user.id,
-        )
-        purchase_repo.create_purchase_line(
-            db,
-            purchase_id=purchase.id,
-            material_id=line.material_id,
-            warehouse_id=line.warehouse_id,
-            movement_id=movement.id,
-            lot_id=lot.id if lot else None,
-            quantity=line.quantity,
-            unit_cost=line.unit_cost,
-        )
+    try:
+        with db.begin_nested():
+            expense = expense_repo.create_expense(
+                db,
+                company_id=company_id,
+                created_by_user_id=current_user.id,
+                commit=False,
+                expense_date=payload.expense_date,
+                client_id=payload.client_id,
+                vendor=supplier.name,
+                category=payload.category,
+                description=payload.description,
+                payment_method=payload.payment_method,
+                base_amount=float(base_amount),
+                tax_amount=float(payload.tax_amount),
+                total_amount=float(base_amount + payload.tax_amount),
+                receipt_url=payload.receipt_url,
+                notes=payload.notes,
+            )
+            purchase = purchase_repo.create_purchase(
+                db,
+                company_id=company_id,
+                supplier_id=supplier.id,
+                expense_id=expense.id,
+                status="received",
+                supplier_name_snapshot=supplier.name,
+                supplier_tax_id_snapshot=supplier.tax_id,
+                reference=payload.reference,
+                notes=payload.notes,
+                created_by_user_id=current_user.id,
+            )
+            for line in payload.lines:
+                lot = _get_or_create_lot(
+                    db,
+                    company_id=company_id,
+                    material_id=line.material_id,
+                    warehouse_id=line.warehouse_id,
+                    code=line.lot_code,
+                    expires_at=line.lot_expires_at,
+                )
+                movement = inventory_repo.create_movement(
+                    db,
+                    company_id=company_id,
+                    material_id=line.material_id,
+                    warehouse_id=line.warehouse_id,
+                    lot_id=lot.id if lot else None,
+                    movement_type="receipt",
+                    quantity=line.quantity,
+                    unit_cost=line.unit_cost,
+                    reference=payload.reference or f"Compra #{purchase.id}",
+                    notes=payload.notes,
+                    recorded_by_user_id=current_user.id,
+                )
+                purchase_repo.create_purchase_line(
+                    db,
+                    purchase_id=purchase.id,
+                    material_id=line.material_id,
+                    warehouse_id=line.warehouse_id,
+                    movement_id=movement.id,
+                    lot_id=lot.id if lot else None,
+                    quantity=line.quantity,
+                    unit_cost=line.unit_cost,
+                )
+    except IntegrityError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se pudo registrar la compra por un conflicto de datos",
+        ) from error
     return _commit_purchase(db, company_id=company_id, purchase_id=purchase.id)
 
 
@@ -244,7 +251,9 @@ def reverse_purchase(
     )
     for line in purchase.lines:
         quantities[(line.material_id, line.warehouse_id, line.lot_id)] += line.quantity
-    for material_id, warehouse_id, lot_id in sorted(quantities):
+    for material_id, warehouse_id, lot_id in sorted(
+        quantities, key=lambda group: (group[0], group[1], group[2] or 0)
+    ):
         warehouse = inventory_repo.get_warehouse(
             db,
             company_id=company_id,
