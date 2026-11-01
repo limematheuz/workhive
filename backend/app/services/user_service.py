@@ -22,6 +22,7 @@ from app.services.user_scope import is_platform_superadmin, require_company_cont
 from app.services.organization_authorization_service import require_capability
 from app.services.organization_member_service import active_admin_count
 from app.services.user_stats_service import get_user_stats as _get_user_stats
+from app.services.user_session_policy import requires_session_revocation
 
 
 USER_DELETE_RELATED_DATA_ERROR = {
@@ -292,8 +293,7 @@ def update_user(
             status_code=status.HTTP_409_CONFLICT,
             detail="A company must keep at least one active administrator",
         )
-    password_changed = user_data.password is not None
-    if password_changed:
+    if requires_session_revocation(db_user, user_data):
         db_user.session_version += 1
     updated_user = user_repo.update_user(db, db_user, user_data)
     if membership:
