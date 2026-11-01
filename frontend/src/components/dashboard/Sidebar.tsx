@@ -58,7 +58,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         if (!featureContext) return;
         let cancelled = false;
         void OrganizationService.getAccess().then(access => {
-            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: Object.entries(access).some(([code, granted]) => code.endsWith(".read") && granted) });
+            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: ["access.members.read", "access.profiles.read", "organization.departments.read", "organization.teams.read"].some(code => access[code] === true) });
         }).catch(() => {
             if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: false });
         });

@@ -16,6 +16,7 @@ for (const width of [1440, 768, 390]) for (const manage of [true, false]) {
             const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
             let body: unknown = [];
             if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA", role: { name: manage ? "admin" : "viewer" }, company_id: 1, is_active: true, can_view_quality: true, can_manage_quality: manage };
+            else if (path.endsWith("organization/access")) body = Object.fromEntries(["templates", "inspections", "incidents", "complaints"].flatMap(section => [[`quality.${section}.read`, true], [`quality.${section}.manage`, manage]]));
             else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
             else if (path === "/api/v1/quality/incidents/2" && route.request().method() === "PATCH") {
                 const payload = route.request().postDataJSON();
