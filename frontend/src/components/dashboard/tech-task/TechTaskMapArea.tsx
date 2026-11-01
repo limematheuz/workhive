@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
 import { ExternalLink } from "lucide-react";
 import { Location } from "@/types/location";
 import type { Dictionary } from "@/lib/dictionary-context";
-import { isSafeLocationMapUrl } from "@/lib/location-map-url";
+import { getLocationNavigationHref } from "@/lib/location-map-url";
 import { Button } from "@/components/ui/button";
 import { getLocationHeroFallbackGradient } from "./utils";
 
@@ -19,18 +18,7 @@ export function TechTaskMapArea({
     locationName,
     dict,
 }: TechTaskMapAreaProps) {
-    const addressQuery = useMemo(() => {
-        if (!location) return locationName;
-        if (location.latitude && location.longitude) {
-            return `${location.latitude},${location.longitude}`;
-        }
-        return `${location.address || ""}, ${location.city || ""}`.trim() || location.name;
-    }, [location, locationName]);
-
-    const customMapUrl = location?.map_url;
-    const mapsHref = isSafeLocationMapUrl(customMapUrl)
-        ? customMapUrl
-        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
+    const mapsHref = getLocationNavigationHref(location);
 
     const addressLine = [location?.address, location?.city].filter(Boolean).join(", ");
     const fallbackGradient = getLocationHeroFallbackGradient(locationName);
@@ -55,7 +43,7 @@ export function TechTaskMapArea({
                         {addressLine}
                     </p>
                 ) : null}
-                <Button
+                {mapsHref && <Button
                     asChild
                     size="sm"
                     className="mt-4 h-9 rounded-xl border-white/15 bg-accent px-3.5 text-xs font-semibold text-white shadow-md shadow-black/25 hover:bg-accent-light"
@@ -64,7 +52,7 @@ export function TechTaskMapArea({
                         {dict.tech?.navigate_gps || "Abrir en Maps"}
                         <ExternalLink className="h-3.5 w-3.5" />
                     </a>
-                </Button>
+                </Button>}
             </div>
         </div>
     );

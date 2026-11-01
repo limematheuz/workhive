@@ -96,8 +96,8 @@ function TechDashboardInner({
 
         // A notification link is also a task opening. Do not wait for a click
         // inside the dashboard before acknowledging it.
-        openedNotificationTaskRef.current = notificationKey;
         const timeoutId = window.setTimeout(() => {
+            openedNotificationTaskRef.current = notificationKey;
             acknowledgeTaskOpened(currentUser.id, task);
             setSelectedTaskId(task.id);
         }, 0);
