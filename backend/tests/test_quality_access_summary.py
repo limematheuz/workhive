@@ -53,3 +53,13 @@ def test_quality_access_summary_matches_scoped_endpoints_and_revocation(
         for operation in ["read", "manage"]
     )
     assert client.get(f"/api/v1/quality/{section}/", headers=headers).status_code == 403
+
+    scoped_after = client.get("/api/v1/quality/access", headers=headers)
+    assert scoped_after.status_code == 200
+    assert all(
+        not scope["can_read"]
+        and not scope["can_manage"]
+        and scope["read_locations"] == []
+        and scope["manage_locations"] == []
+        for scope in scoped_after.json()["sections"].values()
+    )

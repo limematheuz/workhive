@@ -1,4 +1,5 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { qualityAccessFixture } from "./helpers/quality-access";
 import { selectSection } from "./helpers/select-section";
 
 const sections = [
@@ -24,6 +25,7 @@ for (const width of [1440, 768, 390]) for (const section of sections) {
             if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA lector", role: { name: "viewer" }, company_id: 1, is_active: true, can_view_quality: true, can_manage_quality: false };
             else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
             else if (path.endsWith("organization/access")) body = { [`quality.${section.id}.read`]: true };
+            else if (path === "/api/v1/quality/access") body = qualityAccessFixture({ [`quality.${section.id}.read`]: true });
             else if (path === "/api/v1/locations") {
                 // The shared notification panel performs one independent lookup.
                 backgroundLocationReads++;
@@ -69,6 +71,7 @@ async function setupScenario(context: BrowserContext, page: Page, capabilities: 
         if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA", role: { name: "admin" }, company_id: 1, is_active: true, can_view_quality: true, can_manage_quality: true };
         else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
         else if (path.endsWith("organization/access")) body = capabilities;
+        else if (path === "/api/v1/quality/access") body = qualityAccessFixture(capabilities);
         else if (path.startsWith("/api/v1/quality/")) {
             reads.push(path);
             const section = path.split("/")[4];
@@ -129,4 +132,58 @@ test("quality load failure offers retry instead of an empty record list", async 
     await expect(page.getByText("QA incidencia visible", { exact: true }).filter({ visible: true })).toBeVisible();
     expect(reads).toEqual(["/api/v1/quality/incidents", "/api/v1/quality/incidents"]);
     expect(denied).toEqual([]);
+});
+
+for (const width of [1440, 768, 390]) test(`quality company reading and local management at ${width}px`, async ({ context, page }) => {
+    test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
+    await page.setViewportSize({ width, height: 1000 });
+    const token = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
+    await context.addCookies([{ name: "auth_token", value: `fixture.${token}.not-a-backend-token`, url: "http://localhost:3000" }]);
+    await page.addInitScript(() => localStorage.setItem("locale", "es"));
+    const capabilities = { "quality.incidents.read": true, "quality.incidents.manage": true, "quality.templates.read": true, "quality.templates.manage": true };
+    const writes: string[] = [];
+    await page.route("**/api/v1/**", async route => {
+        const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
+        let body: unknown = [];
+        if (path.endsWith("users/me")) body = { id: 1, full_name: "QA local", role: { name: "viewer" }, company_id: 1, is_active: true, can_view_quality: true, can_manage_quality: true };
+        else if (path.endsWith("companies/1")) body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
+        else if (path.endsWith("organization/access")) body = capabilities;
+        else if (path.endsWith("quality/access")) {
+            const access = qualityAccessFixture(capabilities);
+            access.sections.incidents.manage_locations = [15];
+            access.sections.templates.manage_locations = [15];
+            body = access;
+        } else if (path.endsWith("quality/incidents")) body = [15, 16].map(id => ({ ...sections[2].record, id, title: `QA sede ${id}`, location_id: id }));
+        if (route.request().method() !== "GET") {
+            writes.push(path);
+            await route.fulfill({ status: 403, json: { detail: "Not enough permissions" } });
+        } else await route.fulfill({ json: body });
+    });
+    await page.goto("/dashboard/quality");
+    await page.getByRole("button", { name: "Nueva plantilla", exact: true }).click();
+    const template = page.getByRole("dialog", { name: "Nueva plantilla de inspección", exact: true });
+    const titleRects = await template.getByRole("heading", { name: "Nueva plantilla de inspección", exact: true }).evaluate(element => {
+        const range = document.createRange();
+        range.selectNodeContents(element);
+        return Array.from(range.getClientRects(), rect => ({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }));
+    });
+    const close = await template.getByRole("button", { name: "Close", exact: true }).boundingBox();
+    if (!close) throw new Error("Missing close control");
+    expect(titleRects.every(rect => rect.right <= close.x || rect.bottom <= close.y || rect.top >= close.y + close.height)).toBe(true);
+    await template.getByRole("combobox", { name: "Ubicación", exact: true }).click();
+    await expect(page.getByRole("option", { name: "Toda la empresa", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("option", { name: "Ubicación #15", exact: true })).toBeVisible();
+    await expect(page.getByRole("option", { name: "Ubicación #16", exact: true })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await template.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await selectSection(page, page, "Incidencias");
+    for (const id of [15, 16]) {
+        await page.getByText(`QA sede ${id}`, { exact: true }).filter({ visible: true }).click();
+        const dialog = page.getByRole("dialog", { name: "Acciones correctivas", exact: true });
+        await expect(dialog.getByRole("combobox", { name: "Estado de la incidencia", exact: true })).toHaveCount(id === 15 ? 1 : 0);
+        await expect(dialog.getByRole("button", { name: "Añadir acción", exact: true })).toHaveCount(id === 15 ? 1 : 0);
+        await expect(dialog.getByRole("button", { name: "Añadir foto", exact: true })).toHaveCount(id === 15 ? 1 : 0);
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+    }
+    expect(writes).toEqual([]);
 });

@@ -1,5 +1,6 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { compressImageForUpload } from "@/lib/image";
+import type { QualityWorkspaceAccess } from "@/types/quality-access";
 
 export type QualityTemplateItem = {
     id: number;
@@ -122,6 +123,7 @@ async function uploadEvidence<T>(path: string, file: File, caption: string | und
 }
 
 export const QualityService = {
+    getAccess: () => request<QualityWorkspaceAccess>("/access", { cache: "no-store" }, "No se pudieron cargar los permisos de Calidad."),
     getTemplates: () => request<QualityTemplate[]>("/templates/", { cache: "no-store" }, "No se pudieron cargar las plantillas."),
     createTemplate: (payload: { location_id?: number; title: string; description?: string; items: Array<{ title: string; guidance?: string; is_required?: boolean; max_points: number }> }) => request<QualityTemplate>("/templates/", { method: "POST", body: JSON.stringify(payload) }, "No se pudo crear la plantilla."),
     getInspections: () => request<QualityInspection[]>("/inspections/", { cache: "no-store" }, "No se pudieron cargar las inspecciones."),

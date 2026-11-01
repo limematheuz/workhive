@@ -14,20 +14,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/errors";
 import { formatDate } from "@/lib/format";
 import { toast } from "@/lib/toast";
+import type { QualityLocationOption } from "@/types/quality-access";
 import { type Location } from "@/services/location.service";
 import { QualityService, type QualityComplaint } from "@/services/quality.service";
 
 type QualityComplaintsSectionProps = {
     complaints: QualityComplaint[];
     locations: Location[];
-    canManage: boolean;
+    canManage: (complaint: QualityComplaint) => boolean;
     onUpdated: (complaint: QualityComplaint) => void;
 };
 
 type QualityComplaintDialogProps = {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    locations: Location[];
+    locations: QualityLocationOption[];
     onCreated: (complaint: QualityComplaint) => void;
 };
 
@@ -55,7 +56,7 @@ export function QualityComplaintDialog({ open, onOpenChange, locations, onCreate
     const [description, setDescription] = useState("");
     const [category, setCategory] = useState<QualityComplaint["category"]>("service");
     const [saving, setSaving] = useState(false);
-    const customerLocations = locations.filter((location) => location.client_id != null);
+    const customerLocations = locations.filter((location) => location.client_id !== null);
 
     const submit = async () => {
         if (!locationId || !title.trim() || !description.trim() || saving) return;
@@ -118,5 +119,5 @@ export function QualityComplaintsSection({ complaints, locations, canManage, onU
         onUpdated(complaint);
         setSelected(complaint);
     };
-    return <><DataListTable desktopFrom="lg" items={complaints} getRowKey={(item) => item.id} onRowClick={setSelected} rowAriaLabel={() => "Abrir reclamación"} header={{ title: "Reclamaciones", subtitle: "Expedientes del cliente separados de las incidencias operativas.", countLabel: `${complaints.length} ${complaints.length === 1 ? "reclamación" : "reclamaciones"}` }} columns={[{ key: "complaint", label: "Reclamación", className: "w-[38%]" }, { key: "location", label: "Ubicación", className: "w-[24%]" }, { key: "source", label: "Origen", className: "w-[18%]" }, { key: "status", label: "Estado", className: "w-[20%] text-right" }]} renderDesktopRow={(item) => [<span key="complaint" className="font-semibold text-[var(--text-main)]">{item.title}<span className="ml-2 text-xs font-normal text-[var(--text-muted)]">{categoryLabel[item.category]}</span></span>, <span key="location" className="text-[var(--text-muted)]">{locationName(locations, item.location_id)}</span>, <span key="source" className="text-[var(--text-muted)]">{item.source === "client_portal" ? "Portal cliente" : "Interna"}</span>, <span key="status" className="block text-right"><Badge variant={item.status === "resolved" || item.status === "closed" ? "default" : "secondary"}>{statusLabel[item.status]}</Badge></span>]} renderCompactRow={(item) => <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{item.title}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{locationName(locations, item.location_id)} · {item.source === "client_portal" ? "Portal cliente" : "Interna"} · {formatDate(item.created_at)}</p></div><Badge variant={item.status === "resolved" || item.status === "closed" ? "default" : "secondary"}>{statusLabel[item.status]}</Badge></div>} empty={<div className="py-5 text-center"><MessageSquareWarning className="mx-auto size-6 text-accent" /><p className="mt-3 text-sm text-[var(--text-muted)]">Aún no hay reclamaciones registradas.</p></div>} /><ComplaintDetailDialog key={selected?.id ?? "none"} complaint={selected} open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)} canManage={canManage} onUpdated={save} /></>;
+    return <><DataListTable desktopFrom="lg" items={complaints} getRowKey={(item) => item.id} onRowClick={setSelected} rowAriaLabel={() => "Abrir reclamación"} header={{ title: "Reclamaciones", subtitle: "Expedientes del cliente separados de las incidencias operativas.", countLabel: `${complaints.length} ${complaints.length === 1 ? "reclamación" : "reclamaciones"}` }} columns={[{ key: "complaint", label: "Reclamación", className: "w-[38%]" }, { key: "location", label: "Ubicación", className: "w-[24%]" }, { key: "source", label: "Origen", className: "w-[18%]" }, { key: "status", label: "Estado", className: "w-[20%] text-right" }]} renderDesktopRow={(item) => [<span key="complaint" className="font-semibold text-[var(--text-main)]">{item.title}<span className="ml-2 text-xs font-normal text-[var(--text-muted)]">{categoryLabel[item.category]}</span></span>, <span key="location" className="text-[var(--text-muted)]">{locationName(locations, item.location_id)}</span>, <span key="source" className="text-[var(--text-muted)]">{item.source === "client_portal" ? "Portal cliente" : "Interna"}</span>, <span key="status" className="block text-right"><Badge variant={item.status === "resolved" || item.status === "closed" ? "default" : "secondary"}>{statusLabel[item.status]}</Badge></span>]} renderCompactRow={(item) => <div className="flex items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{item.title}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{locationName(locations, item.location_id)} · {item.source === "client_portal" ? "Portal cliente" : "Interna"} · {formatDate(item.created_at)}</p></div><Badge variant={item.status === "resolved" || item.status === "closed" ? "default" : "secondary"}>{statusLabel[item.status]}</Badge></div>} empty={<div className="py-5 text-center"><MessageSquareWarning className="mx-auto size-6 text-accent" /><p className="mt-3 text-sm text-[var(--text-muted)]">Aún no hay reclamaciones registradas.</p></div>} /><ComplaintDetailDialog key={selected?.id ?? "none"} complaint={selected} open={Boolean(selected)} onOpenChange={(open) => !open && setSelected(null)} canManage={Boolean(selected && canManage(selected))} onUpdated={save} /></>;
 }
