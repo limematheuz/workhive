@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.models.user import User
 from app.services.organization_authorization_service import has_capability
+from app.services.quality_workspace_access_service import quality_workspace_access
 
 
 ORGANIZATION_CAPABILITIES = (
@@ -20,4 +21,13 @@ ORGANIZATION_CAPABILITIES = (
 
 def access_summary(db: Session, current_user: User) -> dict[str, bool]:
     """Presentation hints from the same policy that guards every operation."""
-    return {code: has_capability(db, current_user, code) for code in ORGANIZATION_CAPABILITIES}
+    quality = quality_workspace_access(db, current_user)
+    summary = {}
+    for code in ORGANIZATION_CAPABILITIES:
+        if code.startswith("quality."):
+            _, section, operation = code.split(".")
+            scope = quality.sections[section]
+            summary[code] = scope.can_read if operation == "read" else scope.can_manage
+        else:
+            summary[code] = has_capability(db, current_user, code)
+    return summary

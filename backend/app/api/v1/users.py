@@ -28,6 +28,7 @@ from app.services import user_service
 from app.services import audit_service
 from app.services import organization_authorization_service
 from app.services.subscription_policy import require_company_access
+from app.services.quality_workspace_access_service import quality_workspace_access
 
 router = APIRouter()
 
@@ -53,6 +54,7 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
     response = UserResponse.model_validate(current_user)
     if current_user.role.name == "partner_portal" or current_user.company_id is None:
         return response
+    quality_access = quality_workspace_access(db, current_user)
     return response.model_copy(
         update={
             "can_view_finance": organization_authorization_service.has_capability(
@@ -67,24 +69,8 @@ def _current_user_response(db: Session, current_user: User) -> UserResponse:
             "can_manage_labor_costs": organization_authorization_service.has_capability(
                 db, current_user, "labor_costs.manage"
             ),
-            "can_view_quality": any(
-                organization_authorization_service.has_capability(
-                    db, current_user, capability
-                )
-                for capability in (
-                    "quality.templates.read", "quality.inspections.read",
-                    "quality.incidents.read", "quality.complaints.read",
-                )
-            ),
-            "can_manage_quality": any(
-                organization_authorization_service.has_capability(
-                    db, current_user, capability
-                )
-                for capability in (
-                    "quality.templates.manage", "quality.inspections.manage",
-                    "quality.incidents.manage", "quality.complaints.manage",
-                )
-            ),
+            "can_view_quality": any(section.can_read for section in quality_access.sections.values()),
+            "can_manage_quality": any(section.can_manage for section in quality_access.sections.values()),
             "can_manage_time": organization_authorization_service.has_capability(
                 db, current_user, "time.manage"
             ),

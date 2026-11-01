@@ -13,7 +13,7 @@ const image = readFileSync(new URL("./image.ts", import.meta.url), "utf8");
 test("quality has a protected dedicated workspace in Operations", () => {
     assert.match(page, /canViewQuality\(user\) && !isPlatformSuperadmin\(user\)/);
     const data = readFileSync(new URL("../components/quality/useQualityWorkspaceData.ts", import.meta.url), "utf8");
-    assert.match(data, /OrganizationService\.getAccess/);
+    assert.match(data, /QualityService\.getAccess/);
     assert.match(data, /nextAccess\.read\.templates \? QualityService\.getTemplates/);
     assert.match(data, /nextAccess\.read\.incidents \? QualityService\.getIncidents/);
     assert.doesNotMatch(data, /\bfetch\s*\(/);

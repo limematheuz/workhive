@@ -4,10 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getErrorMessage } from "@/lib/errors";
 import { getQualityWorkspaceAccess } from "@/lib/quality-workspace-access";
 import { LocationService, type Location } from "@/services/location.service";
-import { OrganizationService } from "@/services/organization.service";
 import { QualityService, type QualityComplaint, type QualityIncident, type QualityInspection, type QualityTemplate } from "@/services/quality.service";
 
-const emptyAccess = getQualityWorkspaceAccess({});
+const emptyAccess = getQualityWorkspaceAccess(null);
 type LoadState = {
     phase: "loading" | "ready" | "failed";
     access: ReturnType<typeof getQualityWorkspaceAccess>;
@@ -30,7 +29,7 @@ export function useQualityWorkspaceData(enabled: boolean) {
         setLoadState({ phase: "loading", access: emptyAccess, error: null });
         setTemplates([]); setInspections([]); setIncidents([]); setComplaints([]); setLocations([]);
         try {
-            const nextAccess = getQualityWorkspaceAccess(await OrganizationService.getAccess());
+            const nextAccess = getQualityWorkspaceAccess(await QualityService.getAccess());
             if (version !== requestVersion.current) return;
             const [nextTemplates, nextInspections, nextIncidents, nextComplaints, nextLocations] = await Promise.all([
                 nextAccess.read.templates ? QualityService.getTemplates() : [],
