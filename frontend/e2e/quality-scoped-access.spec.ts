@@ -27,7 +27,7 @@ for (const width of [1440, 768, 390]) for (const section of sections) {
             else if (path.endsWith("organization/access")) body = { [`quality.${section.id}.read`]: true };
             else if (path === "/api/v1/quality/access") body = qualityAccessFixture({ [`quality.${section.id}.read`]: true });
             else if (path === "/api/v1/locations") {
-                // The shared notification panel performs one independent lookup.
+                // No location lookup may be sent without its explicit read permission.
                 backgroundLocationReads++;
                 await route.fulfill({ status: 403, json: { detail: "Not enough permissions" } });
                 return;
@@ -49,7 +49,7 @@ for (const width of [1440, 768, 390]) for (const section of sections) {
         await expect(page.getByText(title, { exact: true }).filter({ visible: true })).toBeVisible();
         expect(denied).toEqual([]);
         expect(reads).toEqual([`/api/v1/quality/${section.id}`]);
-        expect(backgroundLocationReads).toBe(1);
+        expect(backgroundLocationReads).toBe(0);
         await expect(page.getByRole("table").filter({ visible: true })).toHaveCount(width >= 1024 ? 1 : 0);
         for (const other of sections.filter(item => item.id !== section.id)) {
             await expect(page.getByRole("tab", { name: other.label, exact: true })).toHaveCount(0);

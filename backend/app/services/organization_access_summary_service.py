@@ -28,6 +28,8 @@ def access_summary(db: Session, current_user: User) -> dict[str, bool]:
             _, section, operation = code.split(".")
             scope = quality.sections[section]
             summary[code] = scope.can_read if operation == "read" else scope.can_manage
+        elif code == "locations.read":
+            summary[code] = quality.can_read_locations
         else:
             summary[code] = has_capability(db, current_user, code)
     return summary

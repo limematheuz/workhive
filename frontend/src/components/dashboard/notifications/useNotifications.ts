@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TaskItem, TaskService } from "@/services/task.service";
-import { Location, LocationService } from "@/services/location.service";
+import { useNotificationLocations } from "./useNotificationLocations";
 import { ReservationService } from "@/services/reservation.service";
 import { PrivacyRequest, PrivacyService } from "@/services/privacy.service";
 import { Reservation } from "@/types/reservation";
@@ -61,7 +61,7 @@ export function useNotifications({
 }: UseNotificationsParams) {
     const router = useRouter();
     const [notificationTasks, setNotificationTasks] = useState<TaskItem[]>([]);
-    const [notificationLocations, setNotificationLocations] = useState<Location[]>([]);
+    const { loadLocationNotifications, getNotificationLocationName } = useNotificationLocations(enabled, userId, companyId);
     const [notificationReservations, setNotificationReservations] = useState<Reservation[]>([]);
     const [privacyRequests, setPrivacyRequests] = useState<PrivacyRequest[]>([]);
     const [upcomingArrivals, setUpcomingArrivals] = useState<Reservation[]>([]);
@@ -97,11 +97,6 @@ export function useNotifications({
         );
         setNotificationReferenceTime(Date.now());
     }, [enabled, roleName, userId]);
-
-    const loadLocationNotifications = useCallback(async () => {
-        if (!enabled || !userId) return;
-        setNotificationLocations(await LocationService.getLocations().catch(() => [] as Location[]));
-    }, [enabled, userId]);
 
     const loadReservationNotifications = useCallback(async () => {
         if (!enabled || !userId) return;
@@ -348,10 +343,6 @@ export function useNotifications({
 
     const totalNotificationCount = primaryNotificationCount + alertNotificationCount;
     const hasAlertNotifications = alertNotificationCount > 0;
-
-    const getNotificationLocationName = useCallback((locationId: number) => {
-        return notificationLocations.find(location => location.id === locationId)?.name || `Ubicación #${locationId}`;
-    }, [notificationLocations]);
 
     const getNotificationPreview = useCallback((task: TaskItem) => {
         if (!userId) return "";
