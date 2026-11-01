@@ -34,6 +34,13 @@ class QualityIncidentUpdate(BaseModel):
     severity: IncidentSeverity | None = None
     status: IncidentStatus | None = None
 
+    @field_validator("title", "severity", "status")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
+
     @field_validator("title")
     @classmethod
     def normalize_title(cls, value: str | None) -> str | None:
@@ -64,6 +71,13 @@ class QualityCorrectiveActionUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=5_000)
     due_at: datetime | None = None
     status: CorrectiveActionStatus | None = None
+
+    @field_validator("title", "status")
+    @classmethod
+    def reject_explicit_null(cls, value):
+        if value is None:
+            raise ValueError("Value cannot be null")
+        return value
 
     @field_validator("title")
     @classmethod
