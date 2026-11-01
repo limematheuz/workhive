@@ -32,6 +32,7 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/contracts") ? "Contratos"
         : pathname.includes("/dashboard/locations") ? dict.dashboard.locations
         : (pathname === "/dashboard/assets" || pathname.startsWith("/dashboard/assets/")) ? "Activos"
+        : (pathname === "/dashboard/quality" || pathname.startsWith("/dashboard/quality/")) ? "Calidad"
         : pathname.includes("/dashboard/work-orders") ? "Órdenes de trabajo"
         : pathname.includes("/dashboard/tasks") ? dict.dashboard.tasks
         : pathname.includes("/dashboard/invoice-summary") ? dict.invoices.summary_nav

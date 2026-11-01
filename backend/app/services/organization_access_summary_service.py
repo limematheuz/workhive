@@ -10,6 +10,11 @@ ORGANIZATION_CAPABILITIES = (
     "organization.departments.read", "organization.departments.manage",
     "organization.teams.read", "organization.teams.manage",
     "inventory.read", "inventory.manage",
+    "locations.read",
+    "quality.templates.read", "quality.templates.manage",
+    "quality.inspections.read", "quality.inspections.manage",
+    "quality.incidents.read", "quality.incidents.manage",
+    "quality.complaints.read", "quality.complaints.manage",
 )
 
 
