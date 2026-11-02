@@ -541,7 +541,12 @@ def test_task_filters_preserve_assignment_and_company_scope(client, db, identity
     params.update(first_location=first_location.id, second_location=second_location.id,
                   foreign_location=foreign_location.id)
 
-    response = client.get("/api/v1/task-items/" + query.format(**params), headers=_headers(users[identity]))
+    claimed = users["admin"] if identity == "foreign_admin" else users["foreign_admin"]
+    headers = {
+        **_headers(users[identity]),
+        "X-Notification-Context": f"notification-tasks:{claimed.id}:{claimed.company_id}:admin:9",
+    }
+    response = client.get("/api/v1/task-items/" + query.format(**params), headers=headers)
 
     assert response.status_code == 200, response.text
     assert [task["id"] for task in response.json()] == [tasks[key].id for key in expected]

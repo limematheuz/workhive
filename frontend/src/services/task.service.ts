@@ -55,7 +55,7 @@ function notifyTasksChanged() {
 }
 
 export const TaskService = {
-    getTaskItems: async (filters: TaskItemFilters = {}): Promise<TaskItem[]> => {
+    getTaskItems: async (filters: TaskItemFilters = {}, readContext?: string): Promise<TaskItem[]> => {
         const queryParams = new URLSearchParams()
         if (filters.locationId) queryParams.set("location_id", filters.locationId.toString())
         if (filters.userId) queryParams.set("user_id", filters.userId.toString())
@@ -66,7 +66,9 @@ export const TaskService = {
         const path = `/api/v1/task-items/?${queryParams.toString()}`
         const response = await apiFetch(path, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            // Partition concurrent notification reads; authorization remains server-side.
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
         await assertApiResponseOk(response, "Error fetching task items")
         return await response.json()
