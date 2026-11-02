@@ -3306,6 +3306,7 @@
       "photo": "Fotos",
       "empty": "No hay reportes con estos filtros.",
       "loading": "Cargando reportes...",
+      "unavailable": "El reporte no está disponible o no tienes acceso.",
       "error": "No se pudo cargar el historial de reportes.",
       "reported_by": "Reportado por",
       "task": "Tarea",

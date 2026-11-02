@@ -135,7 +135,7 @@ export function TaskReportDetailDialog({
                             <p className="text-xs text-[var(--text-muted)]">{copy.photos_not_editable}</p>
                         )}
 
-                        {!editing && (
+                        {!editing && canManage && (
                             <div className={`${reportActionCluster} w-full sm:w-auto`}>
                                 {canManage && editable && (
                                     <Button

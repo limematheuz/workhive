@@ -3306,6 +3306,7 @@
       "photo": "Photos",
       "empty": "No reports match these filters.",
       "loading": "Loading reports...",
+      "unavailable": "This report is unavailable or you do not have access.",
       "error": "Could not load report history.",
       "reported_by": "Reported by",
       "task": "Task",
