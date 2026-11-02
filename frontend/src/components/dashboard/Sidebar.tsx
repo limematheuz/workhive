@@ -1,12 +1,12 @@
 "use client";
 
-import { startTransition, useCallback, useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronUp, LogOut, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
-import { TaskService } from "@/services/task.service";
+import { useSidebarTaskCounts } from "./notifications/useSidebarTaskCounts";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -16,7 +16,6 @@ import { ClientService } from "@/services/client.service";
 import { OrganizationService } from "@/services/organization.service";
 import { useNotificationReportCount } from "./notifications/useNotificationReportCount";
 import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
-import { countOperationalPendingTasks } from "@/lib/operational-task-count";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sidebar as ShadcnSidebar, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -32,8 +31,6 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const { user } = useUser();
     const pathname = usePathname();
     const { isMobile, state } = useSidebar();
-    const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
-    const [taskPendingCount, setTaskPendingCount] = useState(0);
     const [loadedFeatures, setLoadedFeatures] = useState<{
         context: string;
         values: Set<string> | null;
@@ -96,14 +93,10 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         ? loadedFeatures.values
         : null;
 
-    const refreshPending = useCallback(async () => {
-        if (!isAdminOrManager || userIsPlatformSuperadmin || isPartnerPortal || isClientPortal) return setPendingRequestsCount(0);
-        try { setPendingRequestsCount((await TaskService.getTaskItems({ status: "requested" })).filter(task => task.status === "requested").length); } catch { /* navigation stays available */ }
-    }, [isAdminOrManager, isClientPortal, isPartnerPortal, userIsPlatformSuperadmin]);
-    const refreshTasks = useCallback(async () => {
-        if (!user || userIsPlatformSuperadmin || isAccountant || isPartnerPortal || isClientPortal) return setTaskPendingCount(0);
-        try { setTaskPendingCount(countOperationalPendingTasks(await TaskService.getAllTaskItems(), user.id, isAdminOrManager)); } catch { /* keep last count */ }
-    }, [isAccountant, isAdminOrManager, isClientPortal, isPartnerPortal, user, userIsPlatformSuperadmin]);
+    const { pendingRequestsCount, taskPendingCount, refreshPending, refreshTasks } = useSidebarTaskCounts(
+        Boolean(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
+        user?.id, user?.company_id, isAdminOrManager, user?.role?.name,
+    );
     const { reportAlertsCount, refreshReports } = useNotificationReportCount(
         canViewWorkReports(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
         user?.id, user?.company_id,
