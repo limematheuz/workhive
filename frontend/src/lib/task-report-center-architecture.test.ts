@@ -68,6 +68,8 @@ test("report center has role-scoped navigation and its own alert count", () => {
     const config = read("../components/dashboard/sidebar-nav-config.tsx");
     assert.match(config, /\/dashboard\/task-reports/);
     assert.match(config, /isAdminOrManager/);
-    assert.match(sidebar, /countUnreadTaskReportNotifications/);
+    const reportCount = read("../components/dashboard/notifications/useNotificationReportCount.ts");
+    assert.match(sidebar, /useNotificationReportCount/);
+    assert.match(reportCount, /countUnreadTaskReportNotifications/);
     assert.match(navigation, /reportAlertsCount/);
 });
