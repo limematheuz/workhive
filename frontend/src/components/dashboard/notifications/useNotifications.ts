@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { TaskItem, TaskService } from "@/services/task.service";
 import { useNotificationLocations } from "./useNotificationLocations";
 import { usePersistentNotificationFeed } from "./usePersistentNotificationFeed";
+import { useTaskNotificationFeed } from "./useTaskNotificationFeed";
 import { ReservationService } from "@/services/reservation.service";
 import { PrivacyRequest, PrivacyService } from "@/services/privacy.service";
 import { Reservation } from "@/types/reservation";
@@ -61,7 +62,6 @@ export function useNotifications({
     setIsNotificationsOpen,
 }: UseNotificationsParams) {
     const router = useRouter();
-    const [notificationTasks, setNotificationTasks] = useState<TaskItem[]>([]);
     const { loadLocationNotifications, getNotificationLocationName } = useNotificationLocations(enabled, userId, companyId);
     const [notificationReservations, setNotificationReservations] = useState<Reservation[]>([]);
     const [privacyRequests, setPrivacyRequests] = useState<PrivacyRequest[]>([]);
@@ -73,32 +73,9 @@ export function useNotifications({
     const { persistentNotifications, setPersistentNotifications, loadPersistentNotifications,
         persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
-    const loadTaskNotifications = useCallback(async () => {
-        if (!enabled || !userId) return;
-
-        const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
-        const [tasks, requestedTasks, rejectedTasks] = await Promise.all([
-            TaskService.getTaskItems({ userId }).catch(() => [] as TaskItem[]),
-            isManagerOrAdmin
-                ? TaskService.getTaskItems({ status: "requested" }).catch(() => [] as TaskItem[])
-                : Promise.resolve([] as TaskItem[]),
-            isManagerOrAdmin
-                ? TaskService.getTaskItems({ status: "rejected" }).catch(() => [] as TaskItem[])
-                : Promise.resolve([] as TaskItem[]),
-        ]);
-
-        const mergedTasksMap = new Map<number, TaskItem>();
-        tasks.forEach(t => mergedTasksMap.set(t.id, t));
-        requestedTasks.forEach(t => mergedTasksMap.set(t.id, t));
-        rejectedTasks.forEach(t => mergedTasksMap.set(t.id, t));
-
-        setNotificationTasks(
-            Array.from(mergedTasksMap.values()).sort(
-                (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
-            )
-        );
-        setNotificationReferenceTime(Date.now());
-    }, [enabled, roleName, userId]);
+    const { notificationTasks, loadTaskNotifications } = useTaskNotificationFeed(
+        enabled, userId, companyId, roleName, setNotificationReferenceTime,
+    );
 
     const loadReservationNotifications = useCallback(async () => {
         if (!enabled || !userId) return;
