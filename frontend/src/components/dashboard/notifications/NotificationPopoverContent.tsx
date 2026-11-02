@@ -1,4 +1,4 @@
-import { CheckCheck, CheckSquare, Inbox, TriangleAlert } from "lucide-react";
+import { CheckCheck, CheckSquare, Inbox, Loader2, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
@@ -43,6 +43,7 @@ export function NotificationPopoverContent({
         primaryNotificationCount,
         alertNotificationCount,
         totalNotificationCount,
+        persistentLoadFailed, persistentLoading, loadNotifications,
         openingNotificationKey,
         notificationReferenceTime,
         getNotificationLocationName,
@@ -62,9 +63,11 @@ export function NotificationPopoverContent({
                 <div className="min-w-0">
                     <p className="text-sm font-semibold text-[var(--text-main)]">{dict.notifications?.title || "Notificaciones"}</p>
                     <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                        {totalNotificationCount > 0
-                            ? (dict.notifications?.pending_alerts ? dict.notifications.pending_alerts.replace("{count}", totalNotificationCount.toString()) : `${totalNotificationCount} avisos pendientes`)
-                            : (dict.notifications?.no_new_notifications || "No tienes notificaciones nuevas")}
+                        {persistentLoadFailed ? dict.notifications.status_unavailable
+                            : persistentLoading && totalNotificationCount === 0 ? dict.notifications.refreshing
+                            : totalNotificationCount > 0
+                                ? (totalNotificationCount === 1 ? dict.notifications.pending_alert : dict.notifications.pending_alerts).replace("{count}", String(totalNotificationCount))
+                                : dict.notifications.no_new_notifications}
                     </p>
                 </div>
                 <Button type="button" variant="outline" size="xs" onClick={() => handleClearActiveTab(activeTab)} disabled={activeCount === 0} className="shrink-0 hover:translate-y-0">
@@ -72,6 +75,12 @@ export function NotificationPopoverContent({
                     {dict.notifications?.clear_all || "Marcar como vistas"}
                 </Button>
             </div>
+            {persistentLoadFailed && <div role="alert" className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] p-3 text-xs text-[var(--text-main)]">
+                <p>{dict.notifications.load_error}</p>
+                <Button type="button" size="xs" variant="outline" disabled={persistentLoading} onClick={() => void loadNotifications()}>
+                    {persistentLoading && <Loader2 className="size-3 animate-spin" aria-hidden="true" />}{dict.notifications.retry}
+                </Button>
+            </div>}
             <PremiumTabs
                 layout="fit"
                 tabs={[
@@ -83,7 +92,7 @@ export function NotificationPopoverContent({
                 className="mb-1.5"
             />
             <div className="max-h-[360px] overflow-y-auto py-1">
-                {activeCount === 0 ? (
+                {activeCount === 0 && (persistentLoadFailed || persistentLoading) ? null : activeCount === 0 ? (
                     <div className="billing-block rounded-xl border border-dashed border-[var(--border-soft)] px-3 py-4 text-center">
                         <CheckSquare className="mx-auto mb-1.5 h-4 w-4 text-[var(--text-muted)]" />
                         <p className="text-xs font-semibold text-[var(--text-main)]">

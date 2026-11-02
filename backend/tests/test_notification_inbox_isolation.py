@@ -218,3 +218,29 @@ def test_inbox_scope_keeps_reads_bounded_to_one_query(db):
         assert len(queries) == 1
     finally:
         event.remove(db.bind, "before_cursor_execute", record_query)
+
+
+def test_client_read_context_never_selects_another_recipient_or_company(client, db):
+    owner, colleague, foreign, current, historical = _inbox(db)
+    headers = {
+        **_headers(owner),
+        "X-Notification-Context": f"{foreign.id}:{foreign.company_id}:9",
+    }
+    own = client.get("/api/v1/notifications/?unread_only=false", headers=headers)
+    assert own.status_code == 200, own.text
+    assert [item["id"] for item in own.json()] == [current.id]
+    for outsider in [colleague, foreign]:
+        forged = {
+            **_headers(outsider),
+            "X-Notification-Context": f"{owner.id}:{owner.company_id}:9",
+        }
+        listing = client.get("/api/v1/notifications/?unread_only=false", headers=forged)
+        assert listing.status_code == 200, listing.text
+        assert current.id not in {item["id"] for item in listing.json()}
+        assert historical.id not in {item["id"] for item in listing.json()}
+        denied = client.patch(
+            f"/api/v1/notifications/{current.id}/read", headers=forged
+        )
+        assert denied.status_code == 404, denied.text
+    db.refresh(current)
+    assert current.read_at is None

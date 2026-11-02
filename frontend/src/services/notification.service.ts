@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 
 
 export interface PersistentNotification {
@@ -15,13 +15,13 @@ export interface PersistentNotification {
 }
 
 export const NotificationService = {
-    listUnread: async (): Promise<PersistentNotification[]> => {
+    listUnread: async (readContext?: string): Promise<PersistentNotification[]> => {
         const response = await apiFetch("/api/v1/notifications/?unread_only=true&limit=200", {
             cache: "no-store",
+            // Separates client-side in-flight reads; the backend still authorizes the session.
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not load notifications"));
-        }
+        await assertApiResponseOk(response, "Could not load notifications");
         return await response.json();
     },
 

@@ -3345,6 +3345,11 @@
     },
     "notifications": {
       "title": "Notificaciones",
+      "load_error": "No se pudieron actualizar los avisos.",
+      "status_unavailable": "No se ha podido comprobar si hay avisos nuevos.",
+      "retry": "Reintentar",
+      "refreshing": "Actualizando avisos…",
+      "pending_alert": "{count} aviso pendiente de atender",
       "pending_alerts": "{count} avisos pendientes de atender",
       "no_new_notifications": "No tienes notificaciones nuevas",
       "clear_all": "Marcar como vistas",
