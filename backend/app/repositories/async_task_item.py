@@ -7,19 +7,13 @@ from app.models.location import Location
 from app.models.location_template import LocationTemplate
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
+from app.repositories.task_assignment_scope import assigned_task_condition
 from app.models.task_structure import (
     TaskAssignment,
     TaskChecklistAssignment,
     TaskChecklistItem,
 )
 from app.models.location_zone import TaskZone
-
-
-def _user_assignment_conditions(user_id: int):
-    return [
-        TaskItem.assignments.any(TaskAssignment.user_id == user_id),
-        TaskItem.user_id == user_id,
-    ]
 
 
 def _load_options():
@@ -82,7 +76,7 @@ async def get_task_items(
         .where(_company_scope(company_id))
     )
     if user_id:
-        statement = statement.where(or_(*_user_assignment_conditions(user_id)))
+        statement = statement.where(assigned_task_condition(user_id))
     if location_id:
         statement = statement.where(TaskItem.location_id == location_id)
     if location_ids is not None:

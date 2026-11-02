@@ -19,7 +19,9 @@ from app.schemas.task_report import (
     TaskReportUpdate,
 )
 from app.services import notification_service, task_assignment_service
+from app.services.task_report_serializer import serialize_task_report as _response
 from app.services.task_report_access_service import (
+    assigned_report_user_id,
     permitted_report_location_ids,
     require_report_management,
     require_report_read,
@@ -38,36 +40,6 @@ EDITABLE_FIELDS_BY_TYPE = {
     "note": {"description"},
     "checklist_note": {"description"},
 }
-
-
-def _response(report: TaskReport) -> TaskReportResponse:
-    task = report.task_item
-    return TaskReportResponse(
-        id=report.id,
-        task_item_id=report.task_item_id,
-        reporter_user_id=report.reporter_user_id,
-        reporter_company_id=report.reporter_company_id,
-        requesting_company_id=report.requesting_company_id,
-        report_type=report.report_type,
-        title=report.title,
-        description=report.description,
-        issue_type=report.issue_type,
-        element=report.element,
-        file_name=report.file_name,
-        checklist_item_id=report.checklist_item_id,
-        checklist_item_label=report.checklist_item_label,
-        reporter_name=report.reporter_name,
-        reporter_company_name=report.reporter_company.name,
-        requesting_company_name=(
-            report.requesting_company.name if report.requesting_company else None
-        ),
-        task_title=task.title,
-        location_name=task.location.name,
-        media_url=(
-            f"/api/v1/task-reports/{report.id}/media" if report.media_key else None
-        ),
-        created_at=report.created_at,
-    )
 
 
 def _checklist_item(task, payload: TaskReportCreate):
@@ -233,7 +205,7 @@ async def create_report(
     event_id = str(payload.client_event_id)
     existing = await task_report_repo.get_by_user_event(db, current_user.id, event_id)
     if existing:
-        return _response(existing)
+        return _response(await get_report(db, current_user, existing.id))
 
     task = await async_task_item_repo.get_task_item(
         db,
@@ -313,7 +285,7 @@ async def create_report(
             db, current_user.id, event_id
         )
         if duplicate:
-            return _response(duplicate)
+            return _response(await get_report(db, current_user, duplicate.id))
         raise
 
     loaded = await task_report_repo.get_for_company(db, company_id, report.id)
@@ -338,6 +310,7 @@ async def list_reports(
         skip=skip,
         limit=limit,
         location_ids=location_ids,
+        assigned_user_id=assigned_report_user_id(current_user),
     )
     return [_response(report) for report in reports]
 
@@ -348,7 +321,9 @@ async def get_report(
     report_id: int,
 ) -> TaskReport:
     company_id = require_company_context(current_user)
-    report = await task_report_repo.get_for_company(db, company_id, report_id)
+    report = await task_report_repo.get_for_company(
+        db, company_id, report_id, assigned_user_id=assigned_report_user_id(current_user)
+    )
     if report is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -438,6 +413,7 @@ async def bulk_delete_reports(
         db,
         company_id,
         payload.ids,
+        assigned_user_id=assigned_report_user_id(current_user),
     )
     if len(reports) != len(payload.ids):
         raise HTTPException(

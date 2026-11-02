@@ -5,19 +5,13 @@ from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.task_item import TaskItem
+from app.repositories.task_assignment_scope import assigned_task_condition
 from app.models.task_report import TaskReport
 from app.models.location import Location
 from app.models.client import Client
 from app.models.reservation import Reservation
 from app.models.task_structure import TaskAssignment, TaskChecklistAssignment, TaskChecklistItem
 from app.schemas.task_item import TaskItemCreate, TaskItemUpdate
-
-
-def _user_assignment_conditions(user_id: int):
-    return [
-        TaskItem.assignments.any(TaskAssignment.user_id == user_id),
-        TaskItem.user_id == user_id,
-    ]
 
 
 def get_task_items(
@@ -54,7 +48,7 @@ def get_task_items(
         )
     )
     if user_id:
-        query = query.filter(or_(*_user_assignment_conditions(user_id)))
+        query = query.filter(assigned_task_condition(user_id))
     if location_id:
         query = query.filter(TaskItem.location_id == location_id)
     if location_ids is not None:
@@ -138,7 +132,7 @@ def get_task_items_by_ids(
         .filter(TaskItem.id.in_(task_item_ids))
     )
     if user_id is not None:
-        query = query.filter(or_(*_user_assignment_conditions(user_id)))
+        query = query.filter(assigned_task_condition(user_id))
     return query.order_by(TaskItem.id.asc()).all()
 
 
@@ -210,7 +204,7 @@ def count_tasks_by_user(
     statuses: Collection[str] | None = None,
     location_ids: set[int] | None = None,
 ) -> int:
-    query = db.query(TaskItem).filter(or_(*_user_assignment_conditions(user_id)))
+    query = db.query(TaskItem).filter(assigned_task_condition(user_id))
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
     if statuses is not None:
@@ -229,7 +223,7 @@ def count_tasks_by_user_and_status(
 ) -> int:
     query = (
         db.query(TaskItem)
-        .filter(or_(*_user_assignment_conditions(user_id)))
+        .filter(assigned_task_condition(user_id))
         .filter(TaskItem.status == status)
     )
     if start_date:
@@ -247,7 +241,7 @@ def get_distinct_location_ids_by_user(
 ) -> list[int]:
     query = (
         db.query(TaskItem.location_id)
-        .filter(or_(*_user_assignment_conditions(user_id)))
+        .filter(assigned_task_condition(user_id))
         .filter(TaskItem.location_id.isnot(None))
     )
     if start_date:

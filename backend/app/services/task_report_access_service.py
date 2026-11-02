@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.task_report import TaskReport
 from app.models.user import User
+from app.services.user_scope import role_name
 from app.services.organization_authorization_service import (
     permitted_location_ids,
     require_capability,
@@ -42,3 +43,8 @@ async def require_report_management(
             scope_id=report.task_item.location_id,
         )
     )
+
+
+def assigned_report_user_id(current_user: User) -> int | None:
+    """Worker report access also requires a current task assignment."""
+    return current_user.id if role_name(current_user) == "viewer" else None

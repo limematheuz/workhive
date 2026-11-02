@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from app.models.task_item import TaskItem
 from app.models.task_report import TaskReport
+from app.repositories.task_assignment_scope import assigned_task_condition
 
 
 def _load_options():
@@ -38,6 +39,7 @@ async def list_for_company(
     skip: int,
     limit: int,
     location_ids: set[int] | None = None,
+    assigned_user_id: int | None = None,
 ) -> list[TaskReport]:
     statement = (
         select(TaskReport)
@@ -56,6 +58,10 @@ async def list_for_company(
         statement = statement.where(
             TaskReport.task_item.has(TaskItem.location_id.in_(location_ids))
         )
+    if assigned_user_id is not None:
+        statement = statement.where(
+            TaskReport.task_item.has(assigned_task_condition(assigned_user_id))
+        )
     result = await db.scalars(statement)
     return list(result.all())
 
@@ -64,6 +70,8 @@ async def get_for_company(
     db: AsyncSession,
     company_id: int,
     report_id: int,
+    *,
+    assigned_user_id: int | None = None,
 ) -> TaskReport | None:
     statement = (
         select(TaskReport)
@@ -76,6 +84,10 @@ async def get_for_company(
             ),
         )
     )
+    if assigned_user_id is not None:
+        statement = statement.where(
+            TaskReport.task_item.has(assigned_task_condition(assigned_user_id))
+        )
     return await db.scalar(statement)
 
 
@@ -83,6 +95,8 @@ async def list_by_ids_for_company(
     db: AsyncSession,
     company_id: int,
     report_ids: list[int],
+    *,
+    assigned_user_id: int | None = None,
 ) -> list[TaskReport]:
     if not report_ids:
         return []
@@ -97,5 +111,9 @@ async def list_by_ids_for_company(
             ),
         )
     )
+    if assigned_user_id is not None:
+        statement = statement.where(
+            TaskReport.task_item.has(assigned_task_condition(assigned_user_id))
+        )
     result = await db.scalars(statement)
     return list(result.all())
