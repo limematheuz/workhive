@@ -1,9 +1,9 @@
 """Contracts for managing a public read-only API credential."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator
 
 
 ApiAccessScope = Literal["work_orders.read", "reservations.write"]
@@ -12,9 +12,14 @@ ApiAccessScope = Literal["work_orders.read", "reservations.write"]
 class ApiAccessKeyCreate(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     scopes: list[ApiAccessScope] = Field(min_length=1, max_length=8)
-    expires_at: datetime | None = None
+    expires_at: AwareDatetime | None = None
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    @field_validator("expires_at")
+    @classmethod
+    def expiration_is_utc(cls, value: datetime | None) -> datetime | None:
+        return value.astimezone(timezone.utc) if value is not None else None
 
     @field_validator("scopes")
     @classmethod
