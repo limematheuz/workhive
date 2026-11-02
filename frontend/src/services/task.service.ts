@@ -76,8 +76,9 @@ export const TaskService = {
 
     getAllTaskItems: async (
         filters: Omit<TaskItemFilters, "skip" | "limit"> = {},
+        readContext?: string,
     ): Promise<TaskItem[]> => collectPaginated(
-        (skip, limit) => TaskService.getTaskItems({ ...filters, skip, limit }),
+        (skip, limit) => TaskService.getTaskItems({ ...filters, skip, limit }, readContext),
     ),
 
     getTaskItem: async (id: number): Promise<TaskItem> => {

@@ -17,6 +17,8 @@ async function setup(context: BrowserContext, page: Page, width: number) {
             : route.fulfill({ json: reports(inbox.count) });
     });
     await refreshIdentity(page);
+    // Simulate the notification invalidation after the fixture adds new report notices.
+    await page.evaluate(() => window.dispatchEvent(new Event("workhive:notifications-updated")));
     if (width < 768) await page.getByRole("button", { name: "Alternar navegación", exact: true }).click();
     const link = page.locator('a[href="/dashboard/task-reports"]:visible');
     await expect(link).toContainText("2");
