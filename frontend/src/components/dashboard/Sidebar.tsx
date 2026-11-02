@@ -14,10 +14,9 @@ import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFina
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { ClientService } from "@/services/client.service";
 import { OrganizationService } from "@/services/organization.service";
-import { NotificationService } from "@/services/notification.service";
+import { useNotificationReportCount } from "./notifications/useNotificationReportCount";
 import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
 import { countOperationalPendingTasks } from "@/lib/operational-task-count";
-import { countUnreadTaskReportNotifications } from "@/lib/task-reporting";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sidebar as ShadcnSidebar, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { UserAvatar } from "@/components/ui/user-avatar";
@@ -35,7 +34,6 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const { isMobile, state } = useSidebar();
     const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
     const [taskPendingCount, setTaskPendingCount] = useState(0);
-    const [reportAlertsCount, setReportAlertsCount] = useState(0);
     const [loadedFeatures, setLoadedFeatures] = useState<{
         context: string;
         values: Set<string> | null;
@@ -106,10 +104,10 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         if (!user || userIsPlatformSuperadmin || isAccountant || isPartnerPortal || isClientPortal) return setTaskPendingCount(0);
         try { setTaskPendingCount(countOperationalPendingTasks(await TaskService.getAllTaskItems(), user.id, isAdminOrManager)); } catch { /* keep last count */ }
     }, [isAccountant, isAdminOrManager, isClientPortal, isPartnerPortal, user, userIsPlatformSuperadmin]);
-    const refreshReports = useCallback(async () => {
-        if (!user || isAccountant || isPartnerPortal || isClientPortal) return setReportAlertsCount(0);
-        try { setReportAlertsCount(countUnreadTaskReportNotifications(await NotificationService.listUnread())); } catch { /* keep last count */ }
-    }, [isAccountant, isClientPortal, isPartnerPortal, user]);
+    const { reportAlertsCount, refreshReports } = useNotificationReportCount(
+        canViewWorkReports(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
+        user?.id, user?.company_id,
+    );
     useEffect(() => { startTransition(() => { void refreshPending(); void refreshTasks(); void refreshReports(); }); }, [refreshPending, refreshReports, refreshTasks]);
     useEffect(() => { const refresh = () => void refreshReports(); window.addEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); return () => window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refresh); }, [refreshReports]);
     useEffect(() => { const refresh = () => void refreshTasks(); window.addEventListener("workhive:tasks-changed", refresh); window.addEventListener("workhive:session-changed", refresh); return () => { window.removeEventListener("workhive:tasks-changed", refresh); window.removeEventListener("workhive:session-changed", refresh); }; }, [refreshTasks]);
