@@ -22,10 +22,10 @@ test("task report UI uses its dedicated service instead of mutating task history
 });
 
 test("report center marks report notifications read only after loading history", () => {
-    const page = read("../app/dashboard/task-reports/page.tsx");
+    const page = read("../features/task-reports/useTaskReportHistory.ts");
     assert.match(page, /TaskReportService\.list/);
     assert.match(page, /TaskReportService\.markNotificationsRead/);
-    assert.match(page, /await TaskReportService\.list[\s\S]+await TaskReportService\.markNotificationsRead/);
+    assert.match(page, /TaskReportService\.list[\s\S]+\.then\(history =>[\s\S]+if \(!current\) return;[\s\S]+TaskReportService\.markNotificationsRead/);
 });
 
 test("report center reuses the application visual system and keeps details in a dialog", () => {

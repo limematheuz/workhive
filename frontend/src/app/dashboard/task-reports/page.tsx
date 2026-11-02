@@ -1,9 +1,10 @@
 "use client";
 
-import { startTransition, useEffect, useEffectEvent, useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { Camera, CheckSquare, FileText, Search, ShieldAlert, Trash2 } from "lucide-react";
 
-import { NOTIFICATIONS_UPDATED_EVENT } from "@/components/dashboard/notifications/notification-utils";
+import { useTaskReportHistory } from "@/features/task-reports/useTaskReportHistory";
+import { useTaskReportNavigation } from "@/features/task-reports/useTaskReportNavigation";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ import {
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
 import { canManageWorkReports, canViewWorkReports } from "@/domain/access/roles";
-import { TaskReportService, type TaskReport, type TaskReportUpdate } from "@/services/task-report.service";
+import { TaskReportService, type TaskReportUpdate } from "@/services/task-report.service";
 
 type ReportFilter = TaskReportCategory | "all";
 
@@ -38,48 +39,28 @@ const scrollHide =
     "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden";
 
 export default function TaskReportsPage() {
+    const { user, loading } = useUser();
+    const context = JSON.stringify([user?.id, user?.company_id, user?.role?.name, canViewWorkReports(user), canManageWorkReports(user)]);
+    return <Suspense><TaskReportsWorkspace key={context} context={context} userLoading={loading} /></Suspense>;
+}
+
+function TaskReportsWorkspace({ context, userLoading }: { context: string; userLoading: boolean }) {
     const { dict, locale } = useDictionary();
-    const { user, loading: userLoading } = useUser();
+    const { user } = useUser();
     const copy = dict.task_reports;
     const canView = canViewWorkReports(user);
     const canManage = canManageWorkReports(user);
-    const [reports, setReports] = useState<TaskReport[]>([]);
+    const { reports, setReports, loading, error } = useTaskReportHistory(context, !userLoading && canView);
+    const { selectedReport, setSelectedReport, linkUnavailable } = useTaskReportNavigation(reports, !loading && !error);
     const [query, setQuery] = useState("");
     const [type, setType] = useState<ReportFilter>("all");
     const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(false);
-    const [selectedReport, setSelectedReport] = useState<TaskReport | null>(null);
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [pendingDelete, setPendingDelete] = useState<"single" | "bulk" | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [saving, setSaving] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
-
-    const loadReports = useEffectEvent(async () => {
-        setError(false);
-        try {
-            const history = await TaskReportService.list();
-            setReports(history);
-            try {
-                await TaskReportService.markNotificationsRead();
-                window.dispatchEvent(new Event(NOTIFICATIONS_UPDATED_EVENT));
-            } catch {
-                // History remains usable; next visit can retry alert acknowledgement.
-            }
-        } catch {
-            setError(true);
-        } finally {
-            setLoading(false);
-        }
-    });
-
-    useEffect(() => {
-        if (!userLoading && canView) {
-            startTransition(() => { void loadReports(); });
-        }
-    }, [canView, userLoading]);
 
     const filtered = useMemo(() => filterTaskReports(reports, { type, query }), [query, reports, type]);
     const totalPages = totalPagesForCount(filtered.length);
@@ -248,9 +229,9 @@ export default function TaskReportsPage() {
                 </section>}
 
                 {canView && loading && <p className="py-14 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>}
-                {canView && !loading && error && (
+                {canView && !loading && (error || linkUnavailable) && (
                     <div className="rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-4 text-sm text-[var(--btn-cancel-text)]">
-                        {copy.error}
+                        {linkUnavailable ? copy.unavailable : copy.error}
                     </div>
                 )}
                 {canView && !loading && !error && filtered.length === 0 && (
@@ -259,7 +240,7 @@ export default function TaskReportsPage() {
                     </div>
                 )}
 
-                {canView && <section className="grid items-start gap-2 md:grid-cols-2">
+                {canView && <section className="grid items-start gap-2 xl:grid-cols-2">
                     {pageItems.map(report => (
                         <TaskReportCard
                             key={report.id}

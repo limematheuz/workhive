@@ -54,13 +54,13 @@ async function parseReportResponse(response: Response): Promise<TaskReport> {
 }
 
 export const TaskReportService = {
-    list: async (): Promise<TaskReport[]> => {
+    list: async (options: { readContext?: string; signal?: AbortSignal } = {}): Promise<TaskReport[]> => {
         const reports: TaskReport[] = [];
         const pageSize = 200;
         for (let skip = 0; ; skip += pageSize) {
             const response = await apiFetch(
                 `/api/v1/task-reports/?skip=${skip}&limit=${pageSize}`,
-                { cache: "no-store" },
+                { cache: "no-store", signal: options.signal, headers: options.readContext ? { "X-Notification-Context": options.readContext } : undefined },
             );
             if (!response.ok) {
                 throw new Error(await extractErrorMessage(response, "No se pudo cargar el historial"));
@@ -131,9 +131,10 @@ export const TaskReportService = {
         file_name: fileName,
     }),
 
-    markNotificationsRead: async (): Promise<void> => {
+    markNotificationsRead: async (signal?: AbortSignal): Promise<void> => {
         const response = await apiFetch("/api/v1/task-reports/notifications/read", {
             method: "PATCH",
+            signal,
         });
         if (!response.ok) {
             throw new Error(await extractErrorMessage(response, "No se pudieron limpiar las alertas"));
