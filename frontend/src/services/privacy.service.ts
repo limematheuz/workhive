@@ -55,9 +55,10 @@ export const PrivacyService = {
         return await response.json();
     },
 
-    listCompanyRequests: async (): Promise<PrivacyRequest[]> => {
+    listCompanyRequests: async (readContext?: string): Promise<PrivacyRequest[]> => {
         const response = await apiFetch("/api/v1/privacy/requests", {
             cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
         if (!response.ok) {
             throw new Error(

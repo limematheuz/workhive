@@ -2,10 +2,11 @@ import { apiFetch, extractErrorMessage } from "@/lib/api";
 import { Reservation, ReservationInput } from "@/types/reservation";
 
 export const ReservationService = {
-    getUpcomingArrivals: async (days: number = 3): Promise<Reservation[]> => {
+    getUpcomingArrivals: async (days: number = 3, readContext?: string): Promise<Reservation[]> => {
         const response = await apiFetch(`/api/v1/reservations/upcoming/arrivals?days=${days}`, {
             method: "GET",
             cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
         if (!response.ok) throw new Error("No se pudieron cargar las próximas entradas");
         return response.json();
@@ -15,7 +16,7 @@ export const ReservationService = {
         locationId?: number;
         dateFrom?: string;
         dateTo?: string;
-    } = {}): Promise<Reservation[]> => {
+    } = {}, readContext?: string): Promise<Reservation[]> => {
         const params = new URLSearchParams();
         if (filters.locationId) params.set("location_id", filters.locationId.toString());
         if (filters.dateFrom) params.set("date_from", filters.dateFrom);
@@ -23,6 +24,7 @@ export const ReservationService = {
         const response = await apiFetch(`/api/v1/reservations/?${params.toString()}`, {
             method: "GET",
             cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
         if (!response.ok) throw new Error("No se pudieron cargar las reservas");
         return response.json();

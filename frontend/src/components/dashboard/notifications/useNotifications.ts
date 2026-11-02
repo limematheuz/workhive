@@ -6,8 +6,10 @@ import { TaskItem, TaskService } from "@/services/task.service";
 import { useNotificationLocations } from "./useNotificationLocations";
 import { usePersistentNotificationFeed } from "./usePersistentNotificationFeed";
 import { useTaskNotificationFeed } from "./useTaskNotificationFeed";
+import { usePrivacyNotificationFeed } from "./usePrivacyNotificationFeed";
+import { useReservationNotificationFeed } from "./useReservationNotificationFeed";
 import { ReservationService } from "@/services/reservation.service";
-import { PrivacyRequest, PrivacyService } from "@/services/privacy.service";
+import type { PrivacyRequest } from "@/services/privacy.service";
 import { Reservation } from "@/types/reservation";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
@@ -26,10 +28,6 @@ import {
 } from "./notification-utils";
 import { acknowledgeTaskOpened } from "./task-notification-acknowledgement";
 import type { Dictionary } from "@/lib/dictionary-context";
-import {
-    isCompanyAdminRole,
-    isCompanyTaskManagerRole,
-} from "@/domain/access/roles";
 import { NotificationService, PersistentNotification } from "@/services/notification.service";
 import {
     getPersistentNotificationHref,
@@ -63,9 +61,6 @@ export function useNotifications({
 }: UseNotificationsParams) {
     const router = useRouter();
     const { loadLocationNotifications, getNotificationLocationName } = useNotificationLocations(enabled, userId, companyId);
-    const [notificationReservations, setNotificationReservations] = useState<Reservation[]>([]);
-    const [privacyRequests, setPrivacyRequests] = useState<PrivacyRequest[]>([]);
-    const [upcomingArrivals, setUpcomingArrivals] = useState<Reservation[]>([]);
     const [notificationReferenceTime, setNotificationReferenceTime] = useState(0);
     const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<string[]>([]);
     const [openingNotificationKey, setOpeningNotificationKey] = useState<string | null>(null);
@@ -77,37 +72,10 @@ export function useNotifications({
         enabled, userId, companyId, roleName, setNotificationReferenceTime,
     );
 
-    const loadReservationNotifications = useCallback(async () => {
-        if (!enabled || !userId) return;
-
-        if (!isCompanyTaskManagerRole(roleName)) {
-            setNotificationReservations([]);
-            setUpcomingArrivals([]);
-            return;
-        }
-
-        const [reservations, arrivals] = await Promise.all([
-            ReservationService.getReservations().catch(() => [] as Reservation[]),
-            ReservationService.getUpcomingArrivals(3).catch(() => [] as Reservation[]),
-        ]);
-        setNotificationReservations(
-            [...reservations].sort(
-                (a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()
-            )
-        );
-        setUpcomingArrivals(arrivals);
-        setNotificationReferenceTime(Date.now());
-    }, [enabled, roleName, userId]);
-
-    const loadPrivacyNotifications = useCallback(async () => {
-        if (!enabled || !userId) return;
-
-        if (!isCompanyAdminRole(roleName)) {
-            setPrivacyRequests([]);
-            return;
-        }
-        setPrivacyRequests(await PrivacyService.listCompanyRequests().catch(() => [] as PrivacyRequest[]));
-    }, [enabled, roleName, userId]);
+    const { notificationReservations, upcomingArrivals, loadReservationNotifications } = useReservationNotificationFeed(
+        enabled, userId, companyId, roleName, setNotificationReferenceTime,
+    );
+    const { privacyRequests, loadPrivacyNotifications } = usePrivacyNotificationFeed(enabled, userId, companyId, roleName);
 
     const loadNotifications = useCallback(async () => {
         await Promise.all([
