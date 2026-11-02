@@ -3345,6 +3345,11 @@
     },
     "notifications": {
       "title": "Notifications",
+      "load_error": "Notifications could not be refreshed.",
+      "status_unavailable": "New notifications could not be checked.",
+      "retry": "Retry",
+      "refreshing": "Refreshing notifications…",
+      "pending_alert": "{count} alert pending attention",
       "pending_alerts": "{count} alerts pending attention",
       "no_new_notifications": "No new notifications",
       "clear_all": "Mark as seen",

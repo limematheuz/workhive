@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { TaskItem, TaskService } from "@/services/task.service";
 import { useNotificationLocations } from "./useNotificationLocations";
+import { usePersistentNotificationFeed } from "./usePersistentNotificationFeed";
 import { ReservationService } from "@/services/reservation.service";
 import { PrivacyRequest, PrivacyService } from "@/services/privacy.service";
 import { Reservation } from "@/types/reservation";
@@ -68,8 +69,9 @@ export function useNotifications({
     const [notificationReferenceTime, setNotificationReferenceTime] = useState(0);
     const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<string[]>([]);
     const [openingNotificationKey, setOpeningNotificationKey] = useState<string | null>(null);
-    const [persistentNotifications, setPersistentNotifications] = useState<PersistentNotification[]>([]);
     const [pendingTaskAcknowledgements] = useState(() => new Set<number>());
+    const { persistentNotifications, setPersistentNotifications, loadPersistentNotifications,
+        persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
     const loadTaskNotifications = useCallback(async () => {
         if (!enabled || !userId) return;
@@ -129,17 +131,6 @@ export function useNotifications({
         }
         setPrivacyRequests(await PrivacyService.listCompanyRequests().catch(() => [] as PrivacyRequest[]));
     }, [enabled, roleName, userId]);
-
-    const loadPersistentNotifications = useCallback(async () => {
-        if (!enabled || !userId) return;
-
-        const persistent = await NotificationService.listUnread().catch(() => [] as PersistentNotification[]);
-        setPersistentNotifications(persistent.filter((notification) => !(
-            notification.entity_type === "task_item"
-            && typeof notification.entity_id === "number"
-            && pendingTaskAcknowledgements.has(notification.entity_id)
-        )));
-    }, [enabled, pendingTaskAcknowledgements, userId]);
 
     const loadNotifications = useCallback(async () => {
         await Promise.all([
@@ -220,7 +211,7 @@ export function useNotifications({
             window.removeEventListener("storage", syncDismissedNotifications);
             window.removeEventListener(NOTIFICATIONS_UPDATED_EVENT, refreshNotifications);
         };
-    }, [loadNotifications, pendingTaskAcknowledgements, userId]);
+    }, [loadNotifications, pendingTaskAcknowledgements, setPersistentNotifications, userId]);
 
     const dismissedNotificationKeySet = useMemo(
         () => new Set(dismissedNotificationKeys),
@@ -398,7 +389,7 @@ export function useNotifications({
             taskItemIds.forEach((taskItemId) => pendingTaskAcknowledgements.delete(taskItemId));
             void loadNotifications();
         });
-    }, [loadNotifications, pendingTaskAcknowledgements]);
+    }, [loadNotifications, pendingTaskAcknowledgements, setPersistentNotifications]);
 
     const handleClearActiveTab = useCallback((activeNotificationTab: NotificationTab) => {
         const relatedArrivalKeys = primaryTaskNotifications.flatMap((task) =>
@@ -471,7 +462,7 @@ export function useNotifications({
         setIsNotificationsOpen(false);
         router.push(getPersistentNotificationHref(notification));
         setOpeningNotificationKey(null);
-    }, [loadNotifications, pendingTaskAcknowledgements, router, setIsNotificationsOpen, userId]);
+    }, [loadNotifications, pendingTaskAcknowledgements, router, setIsNotificationsOpen, setPersistentNotifications, userId]);
 
     const getNotificationHref = useCallback((task: TaskItem) => {
         if (task.status === "requested") {
@@ -550,6 +541,7 @@ export function useNotifications({
 
     return {
         loadNotifications,
+        persistentLoadFailed, persistentLoading,
         primaryPersistentNotifications,
         alertPersistentNotifications,
         primaryTaskNotifications,
