@@ -189,7 +189,11 @@ async def _notification_recipients(db: AsyncSession, task) -> list[User]:
     recipients = list((await db.scalars(statement)).all())
     if emitter_user_id:
         emitter = await db.scalar(
-            select(User).where(User.id == emitter_user_id, User.is_active.is_(True))
+            select(User).where(
+                User.id == emitter_user_id,
+                User.company_id == requesting_company_id,
+                User.is_active.is_(True),
+            )
         )
         if emitter:
             recipients.append(emitter)
