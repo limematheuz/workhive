@@ -207,6 +207,7 @@ async def create_report(
 ) -> TaskReportResponse:
     company_id = require_company_context(current_user)
     event_id = str(payload.client_event_id)
+    reporter_id = current_user.id
     existing = await task_report_repo.get_by_user_event(db, current_user.id, event_id)
     if existing:
         return _response(await get_report(db, current_user, existing.id))
@@ -261,32 +262,36 @@ async def create_report(
         reporter_name=current_user.full_name or current_user.email,
         checklist_item_label=checklist_item.text if checklist_item else None,
     )
-    _apply_checklist_evidence(task, payload, checklist_item)
-    await db.run_sync(lambda sync_db: sync_db.add(report))
-    await db.run_sync(lambda sync_db: sync_db.flush())
-
-    recipients = await _notification_recipients(db, task)
-    notifications = [
-        Notification(
-            user_id=user.id,
-            company_id=user.company_id,
-            event_type=REPORT_EVENT_TYPE,
-            title="Nuevo reporte de campo",
-            message=f"Hay un nuevo reporte en {task.location.name}",
-            entity_type="task_report",
-            entity_id=report.id,
-            href=REPORT_HREF.format(report_id=report.id),
-            metadata_json={"task_item_id": task.id, "report_type": payload.report_type},
-        )
-        for user in recipients
-    ]
-    await db.run_sync(lambda sync_db: sync_db.add_all(notifications))
     try:
+        _apply_checklist_evidence(task, payload, checklist_item)
+        await db.run_sync(lambda sync_db: sync_db.add(report))
+        await db.run_sync(lambda sync_db: sync_db.flush())
+
+        recipients = await _notification_recipients(db, task)
+        notifications = [
+            Notification(
+                user_id=user.id,
+                company_id=user.company_id,
+                event_type=REPORT_EVENT_TYPE,
+                title="Nuevo reporte de campo",
+                message=f"Hay un nuevo reporte en {task.location.name}",
+                entity_type="task_report",
+                entity_id=report.id,
+                href=REPORT_HREF.format(report_id=report.id),
+                metadata_json={"task_item_id": task.id, "report_type": payload.report_type},
+            )
+            for user in recipients
+        ]
+        await db.run_sync(lambda sync_db: sync_db.add_all(notifications))
         await db.commit()
     except IntegrityError:
         await db.rollback()
-        duplicate = await task_report_repo.get_by_user_event(
-            db, current_user.id, event_id
+        if media_key:
+            await asyncio.to_thread(_delete_media_keys, [media_key])
+        duplicate = await task_report_repo.get_by_user_event(db, reporter_id, event_id)
+        await db.refresh(current_user)
+        await db.run_sync(
+            lambda sync_db: sync_db.refresh(current_user, attribute_names=["role"])
         )
         if duplicate:
             return _response(await get_report(db, current_user, duplicate.id))
