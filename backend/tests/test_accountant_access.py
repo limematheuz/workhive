@@ -4,7 +4,7 @@ import zipfile
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from app.core.security import create_access_token
+from app.core.security import create_access_token, get_password_hash
 from app.models.client import Client
 from app.models.company import Company
 from app.models.company_membership import CompanyMembership
@@ -13,6 +13,7 @@ from app.models.external_access_grant import ExternalAccessGrant
 from app.models.invoice import Invoice
 from app.models.role import Role
 from app.models.user import User
+from tests.credentials import TEST_SECRET, login_form
 
 
 def _company(db, suffix: str) -> Company:
@@ -224,6 +225,7 @@ def test_company_admin_can_suspend_and_restore_an_external_accountant(client, db
         external_portal_role.id,
         "suspendable-accountant",
     )
+    accountant.hashed_password = get_password_hash(TEST_SECRET)
     grant = ExternalAccessGrant(
         company_id=company.id,
         user_id=accountant.id,
@@ -256,4 +258,7 @@ def test_company_admin_can_suspend_and_restore_an_external_accountant(client, db
     assert grant.status == "active"
     assert grant.revoked_at is None
     assert grant.revoked_by_user_id is None
-    assert client.get("/api/v1/invoices/", headers=accountant_headers).status_code == 200
+    assert client.get("/api/v1/invoices/", headers=accountant_headers).status_code == 401
+    login = client.post("/api/v1/auth/login", data=login_form(accountant.email))
+    assert login.status_code == 200, login.text
+    assert client.get("/api/v1/invoices/").status_code == 200
