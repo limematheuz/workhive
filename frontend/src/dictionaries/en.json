@@ -1,5 +1,6 @@
 {
   "inventoryNavigation": {
+    "title": "Inventory",
     "navigation": "Inventory sections",
     "area": "Inventory area",
     "view": "View",
