@@ -22,6 +22,7 @@ import {
   InputGroupInput,
 } from "@/components/ui/input-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { useDialogFormGuardMark } from "./dialog-form-guard"
 
 type DatePickerProps = Omit<React.ComponentProps<typeof InputGroupInput>, "value" | "onChange" | "min" | "max"> & {
   value: string
@@ -41,6 +42,8 @@ function DatePicker({
   disabled = false,
   ...props
 }: DatePickerProps) {
+  const control = React.useRef<HTMLDivElement>(null)
+  const markDirty = useDialogFormGuardMark()
   const date = parseIsoDate(value)
   const [open, setOpen] = React.useState(false)
   const [month, setMonth] = React.useState<Date | undefined>(date)
@@ -63,14 +66,15 @@ function DatePicker({
   const selectDate = React.useCallback((nextDate: Date | undefined) => {
     if (disabled || !nextDate) return
     const nextValue = toIsoDate(nextDate)
+    if (nextValue !== value) markDirty(control.current)
     onValueChange(nextValue)
     setInputState({ value: nextValue, text: formatSpanishDate(nextDate) })
     setMonth(nextDate)
     setOpen(false)
-  }, [disabled, onValueChange])
+  }, [disabled, markDirty, onValueChange, value])
 
   return (
-    <div className="style-vega w-full">
+    <div ref={control} className="style-vega w-full">
       <InputGroup className={cn("h-11 border-[var(--border-color)] bg-[var(--bg-primary)] shadow-none", className)}>
         <InputGroupInput
           {...props}
