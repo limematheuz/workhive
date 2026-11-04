@@ -1144,6 +1144,12 @@
     }
   },
   "auth": {
+    "access_blocked": {
+      "trial_expired": "El periodo de prueba de tu empresa ha terminado.",
+      "unavailable": "El acceso de tu empresa está suspendido.",
+      "help": "Contacta con quien administra tu empresa o con soporte para revisar el acceso. También puedes entrar con otra cuenta.",
+      "contact": "Contactar con soporte"
+    },
     "sign_in": "Iniciar sesión",
     "join": "Solicitar acceso",
     "request_access": "Solicitar acceso",

@@ -1144,6 +1144,12 @@
     }
   },
   "auth": {
+    "access_blocked": {
+      "trial_expired": "Your company trial has ended.",
+      "unavailable": "Your company access is suspended.",
+      "help": "Contact your company administrator or support to review access. You can also sign in with another account.",
+      "contact": "Contact support"
+    },
     "sign_in": "Sign in",
     "join": "Request access",
     "request_access": "Request access",

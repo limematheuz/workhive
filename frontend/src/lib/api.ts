@@ -218,5 +218,5 @@ export async function assertApiResponseOk(
         throw new ApiResponseError(defaultMessage, response.status);
     }
     const error = await parseApiError(response, defaultMessage);
-    throw new ApiResponseError(error.message, response.status, error.code);
+    throw new ApiResponseError(error.message, response.status, error.code ?? response.headers.get("X-WorkHive-Error-Code") ?? undefined);
 }
