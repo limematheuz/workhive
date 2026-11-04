@@ -6,6 +6,10 @@ const controlCenter = readFileSync(
     new URL("../components/organization/OrganizationControlCenter.tsx", import.meta.url),
     "utf8",
 );
+const creationDialog = readFileSync(
+    new URL("../components/organization/CreateOrganizationDialog.tsx", import.meta.url),
+    "utf8",
+);
 const invitationDialog = readFileSync(
     new URL("../components/organization/OrganizationInvitePersonDialog.tsx", import.meta.url),
     "utf8",
@@ -26,7 +30,7 @@ const pendingInvitations = readFileSync(
 test("organization people uses the shared shadcn table and keeps anonymous history separate", () => {
     const peopleSection = controlCenter.slice(
         controlCenter.indexOf("function MembersTable"),
-        controlCenter.indexOf("function permissionLabel"),
+        controlCenter.indexOf("function permissionSummary"),
     );
 
     assert.match(peopleSection, /<TableHeader>/);
@@ -86,16 +90,16 @@ test("organization teams use the shared table while permission profiles expose r
     assert.match(teamsPanel, /<DialogContent compact className="max-h-\[90dvh\] max-w-2xl overflow-y-auto">/);
     assert.doesNotMatch(teamsPanel, /overflow-x-hidden/);
     assert.match(teamsPanel, /dict\.organization\.access\[member\.access_class\]/);
-    assert.match(controlCenter, /<DialogContent className="permission-profile-dialog[^\"]*overflow-hidden p-0">/);
-    assert.match(controlCenter, /max-h-\[min\(42dvh,23rem\)\] space-y-2 overflow-y-auto/);
-    assert.match(controlCenter, /@\/components\/ui\/collapsible/);
-    assert.match(controlCenter, /<CollapsibleContent className="border-t border-\[var\(--border-soft\)\] px-3 py-2 pl-12">/);
-    assert.match(controlCenter, /permission_details/);
-    assert.match(controlCenter, /flex min-w-0 items-center gap-3 px-3 py-2/);
-    assert.match(controlCenter, /disabled=\{definition\.is_system_only && !canRemoveLegacySelection\}/);
-    assert.doesNotMatch(controlCenter, /definition\.recommended_for\.map/);
-    assert.doesNotMatch(controlCenter, /profileCopy\.company_scope_note/);
-    assert.match(controlCenter, /profileCopy\.reserved_for_administrators/);
+    assert.match(creationDialog, /<DialogContent className="permission-profile-dialog[^\"]*overflow-hidden p-0">/);
+    assert.match(creationDialog, /max-h-\[min\(42dvh,23rem\)\] space-y-2 overflow-y-auto/);
+    assert.match(creationDialog, /@\/components\/ui\/collapsible/);
+    assert.match(creationDialog, /<CollapsibleContent className="border-t border-\[var\(--border-soft\)\] px-3 py-2 pl-12">/);
+    assert.match(creationDialog, /permission_details/);
+    assert.match(creationDialog, /flex min-w-0 items-center gap-3 px-3 py-2/);
+    assert.match(creationDialog, /disabled=\{definition\.is_system_only && !canRemoveLegacySelection\}/);
+    assert.doesNotMatch(creationDialog, /definition\.recommended_for\.map/);
+    assert.doesNotMatch(creationDialog, /profileCopy\.company_scope_note/);
+    assert.match(creationDialog, /profileCopy\.reserved_for_administrators/);
     assert.match(controlCenter, /function ProfilesTable/);
     assert.match(controlCenter, /copy\.profiles\.actions/);
     assert.match(controlCenter, /permissionLabel\(/);
@@ -105,9 +109,9 @@ test("organization teams use the shared table while permission profiles expose r
     assert.match(controlCenter, /OrganizationService\.deletePermissionProfile/);
     assert.match(controlCenter, /const canManage = canManageProfiles && profile\.is_editable/);
     assert.match(controlCenter, /useOrganizationPermission\("access\.profiles\.manage"\)/);
-    assert.match(controlCenter, /profileCopy\.default_edit_description/);
-    assert.match(controlCenter, /profileCopy\.default_name_locked/);
-    assert.match(controlCenter, /disabled=\{Boolean\(profile\?\.is_system\)\}/);
+    assert.match(creationDialog, /profileCopy\.default_edit_description/);
+    assert.match(creationDialog, /profileCopy\.default_name_locked/);
+    assert.match(creationDialog, /disabled=\{Boolean\(profile\?\.is_system\)\}/);
     const memberAccessDialog = readFileSync(
         new URL("../components/organization/MemberAccessDialog.tsx", import.meta.url),
         "utf8",
@@ -137,8 +141,8 @@ test("organization tables paginate with the shared shadcn controls and keep perm
 
     assert.match(controlCenter, /useDataTablePagination/);
     assert.match(controlCenter, /<OrganizationTablePagination/);
-    assert.match(controlCenter, /toggleCategory/);
-    assert.match(controlCenter, /selectedPermissionCodeSet.has\(definition\.code\)/);
+    assert.match(creationDialog, /toggleCategory/);
+    assert.match(creationDialog, /selectedPermissionCodeSet.has\(definition\.code\)/);
     assert.match(pagination, /@\/components\/ui\/pagination/);
     assert.match(pagination, /@\/components\/ui\/select/);
     assert.match(pagination, /new Set\(\[10, 25, 50, 100, pageSize\]\)/);
