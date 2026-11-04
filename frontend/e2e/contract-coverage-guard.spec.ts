@@ -183,3 +183,67 @@ for (const width of [1440, 768, 390]) {
         });
     }
 }
+
+for (const width of [1440, 768, 390]) {
+    test(`financial readers cannot change contract dates through calendar buttons at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        await page.route("**/api/v1/users/me", route => route.fulfill({ json: {
+            id: 1, full_name: "QA reader", role: { name: "viewer" }, company_id: 1, is_active: true,
+            can_view_finance: true, can_manage_finance: false, can_view_labor_costs: false,
+        } }));
+        const mutations: string[] = [];
+        page.on("request", request => {
+            if (request.url().includes("/api/v1/service-contracts/") && request.method() !== "GET") mutations.push(request.method());
+        });
+        await page.goto("/dashboard/contracts");
+        await page.locator('[aria-label="Abrir contrato CON-COVERAGE"]').filter({ visible: true }).click();
+        const dialog = page.getByRole("dialog");
+        const start = dialog.getByLabel("Inicio", { exact: true });
+        await expect(start).toBeDisabled();
+        const calendars = dialog.getByRole("button", { name: "Abrir calendario", exact: true });
+        await expect(calendars).toHaveCount(2);
+        for (const calendar of await calendars.all()) await expect(calendar).toBeDisabled();
+        await start.press("ArrowDown");
+        await expect(page.locator('[data-slot="popover-content"]')).toHaveCount(0);
+        await expect(start).toHaveValue("");
+        await expect(dialog.getByRole("button", { name: "Guardar condiciones", exact: true })).toHaveCount(0);
+        expect(mutations).toEqual([]);
+    });
+}
+
+for (const width of [1440, 768, 390]) {
+    test(`editable contract dates keep keyboard, selection and saving lock at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        const contract = { ...coverageContract(), starts_at: "2026-10-20T00:00:00Z" };
+        let releaseSave!: () => void;
+        const saved = new Promise<void>(resolve => { releaseSave = resolve; });
+        let payload: Record<string, unknown> | undefined;
+        await page.route("**/api/v1/service-contracts/1", async route => {
+            if (route.request().method() === "PATCH") {
+                payload = route.request().postDataJSON();
+                await saved;
+            }
+            await route.fulfill({ json: { ...contract, ...payload } });
+        });
+        await page.goto("/dashboard/contracts");
+        await page.locator('[aria-label="Abrir contrato CON-COVERAGE"]').filter({ visible: true }).click();
+        const dialog = page.getByRole("dialog");
+        const start = dialog.getByLabel("Inicio", { exact: true });
+        const trigger = dialog.locator("#contract-start-calendar");
+        await expect(start).toHaveValue("20/10/2026");
+        await start.press("ArrowDown");
+        await page.locator('[data-day="2026-10-21"]').click();
+        await expect(start).toHaveValue("21/10/2026");
+        await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+        await expect(start).toBeDisabled();
+        await expect(trigger).toBeDisabled();
+        expect(payload?.starts_at).toBe("2026-10-21T00:00:00Z");
+        releaseSave();
+        await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
+        await expect(trigger).toBeEnabled();
+        await trigger.click();
+        await expect(page.locator('[data-day="2026-10-21"]')).toBeVisible();
+        await page.keyboard.press("Escape");
+        await expect(start).toHaveValue("21/10/2026");
+    });
+}

@@ -38,6 +38,7 @@ function DatePicker({
   className,
   onKeyDown,
   onBlur,
+  disabled = false,
   ...props
 }: DatePickerProps) {
   const date = parseIsoDate(value)
@@ -48,7 +49,7 @@ function DatePicker({
     text: formatSpanishDate(date),
   }))
   const inputValue = inputState.value === value ? inputState.text : formatSpanishDate(date)
-  const disabled = React.useMemo<Matcher | undefined>(() => {
+  const disabledDates = React.useMemo<Matcher | undefined>(() => {
     const before = parseIsoDate(min)
     const after = parseIsoDate(max)
     if (before && after) return { before, after }
@@ -57,20 +58,23 @@ function DatePicker({
     return undefined
   }, [max, min])
 
+  if (disabled && open) setOpen(false)
+
   const selectDate = React.useCallback((nextDate: Date | undefined) => {
-    if (!nextDate) return
+    if (disabled || !nextDate) return
     const nextValue = toIsoDate(nextDate)
     onValueChange(nextValue)
     setInputState({ value: nextValue, text: formatSpanishDate(nextDate) })
     setMonth(nextDate)
     setOpen(false)
-  }, [onValueChange])
+  }, [disabled, onValueChange])
 
   return (
     <div className="style-vega w-full">
       <InputGroup className={cn("h-11 border-[var(--border-color)] bg-[var(--bg-primary)] shadow-none", className)}>
         <InputGroupInput
           {...props}
+          disabled={disabled}
           className="dialog-compact-control !border-0 !bg-transparent !shadow-none focus:!border-0 focus:!shadow-none"
           value={inputValue}
           placeholder="dd/mm/aaaa"
@@ -101,7 +105,7 @@ function DatePicker({
             onBlur?.(event)
           }}
           onKeyDown={(event) => {
-            if (event.key === "ArrowDown") {
+            if (!disabled && event.key === "ArrowDown") {
               event.preventDefault()
               setOpen(true)
             }
@@ -109,13 +113,14 @@ function DatePicker({
           }}
         />
         <InputGroupAddon align="inline-end">
-          <Popover open={open} onOpenChange={setOpen}>
+          <Popover open={open && !disabled} onOpenChange={(nextOpen) => setOpen(nextOpen && !disabled)}>
             <PopoverTrigger asChild>
               <InputGroupButton
                 id={`${props.id}-calendar`}
                 variant="ghost"
                 size="icon-xs"
                 aria-label="Abrir calendario"
+                disabled={disabled}
               >
                 <CalendarIcon />
                 <span className="sr-only">Abrir calendario</span>
@@ -134,7 +139,7 @@ function DatePicker({
                   month={month}
                   onMonthChange={setMonth}
                   onSelect={selectDate}
-                  disabled={disabled}
+                  disabled={disabledDates}
                   locale={es}
                   weekStartsOn={1}
                 />
