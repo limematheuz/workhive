@@ -1,9 +1,10 @@
-import React, { useReducer, useRef, useEffect } from "react";
+import React, { useReducer, useRef, useEffect, useState } from "react";
 import { User } from "@/types/user";
 import { CompanyService } from "@/services/company.service";
 import { UploadService } from "@/services/upload.service";
 import { toast } from "@/lib/toast";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { CompanyDetailsFormFields } from "@/components/profile/CompanyDetailsFormFields";
@@ -33,13 +34,16 @@ type CompanyFormFields = {
 
 type CompanyFormState = CompanyFormFields & {
     loading: boolean;
+    loadFailed: boolean;
+    loadedCompanyId: number | null;
     updating: boolean;
 };
 
 type CompanyFormAction =
     | { type: "loading"; value: boolean }
     | { type: "saving"; value: boolean }
-    | { type: "loaded"; fields: CompanyFormFields }
+    | { type: "loadFailed" }
+    | { type: "loaded"; companyId: number; fields: CompanyFormFields }
     | { type: "fieldChanged"; field: keyof CompanyFormFields; value: string | null };
 
 const EMPTY_FIELDS: CompanyFormFields = {
@@ -61,17 +65,21 @@ const EMPTY_FIELDS: CompanyFormFields = {
 const initialState: CompanyFormState = {
     ...EMPTY_FIELDS,
     loading: true,
+    loadFailed: false,
+    loadedCompanyId: null,
     updating: false,
 };
 
 function companyFormReducer(state: CompanyFormState, action: CompanyFormAction): CompanyFormState {
     switch (action.type) {
         case "loading":
-            return { ...state, loading: action.value };
+            return { ...state, loading: action.value, loadFailed: false, loadedCompanyId: null };
         case "saving":
             return { ...state, updating: action.value };
+        case "loadFailed":
+            return { ...state, loading: false, loadFailed: true, loadedCompanyId: null };
         case "loaded":
-            return { ...state, ...action.fields, loading: false };
+            return { ...state, ...action.fields, loading: false, loadFailed: false, loadedCompanyId: action.companyId };
         case "fieldChanged":
             return { ...state, [action.field]: action.value };
         default:
@@ -82,6 +90,7 @@ function companyFormReducer(state: CompanyFormState, action: CompanyFormAction):
 export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyDetailsFormProps) {
     const [form, dispatch] = useReducer(companyFormReducer, initialState);
     const logoUploadingRef = useRef(false);
+    const [retryVersion, setRetryVersion] = useState(0);
 
     useEffect(() => {
         if (!user.company_id) {
@@ -97,6 +106,7 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
                 if (cancelled) return;
                 dispatch({
                     type: "loaded",
+                    companyId: user.company_id!,
                     fields: {
                         companyName: comp.name || "",
                         taxId: comp.tax_id || "",
@@ -116,8 +126,7 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
             } catch (err) {
                 if (cancelled) return;
                 console.error("Error loading company details:", err);
-                toast.error(dict.invoices?.error_load || "Error loading company details");
-                dispatch({ type: "loading", value: false });
+                dispatch({ type: "loadFailed" });
             }
         };
 
@@ -125,7 +134,7 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
         return () => {
             cancelled = true;
         };
-    }, [user.company_id, dict]);
+    }, [user.company_id, retryVersion]);
 
     const setField = (field: keyof CompanyFormFields) => (value: string) => {
         dispatch({ type: "fieldChanged", field, value });
@@ -151,7 +160,7 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
 
     const handleUpdateCompany = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!user.company_id) return;
+        if (!user.company_id || form.loading || form.loadFailed || form.loadedCompanyId !== user.company_id || form.updating) return;
         if (logoUploadingRef.current) {
             toast.error("Please wait for the logo to finish uploading");
             return;
@@ -186,7 +195,22 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
         }
     };
 
-    if (form.loading) {
+    if (form.loadFailed) {
+        return (
+            <div className="space-y-3 rounded-xl border border-[var(--border-soft)] p-4">
+                <p role="alert" className="text-sm">{dict.profile.company_fields.load_error}</p>
+                <div className="flex justify-end gap-2">
+                    <Button type="button" variant="cancel" onClick={onCancel}>{dict.locations.form.cancel}</Button>
+                    <Button type="button" onClick={() => {
+                        dispatch({ type: "loading", value: true });
+                        setRetryVersion(value => value + 1);
+                    }}>{dict.profile.company_fields.retry}</Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (form.loading || (user.company_id && form.loadedCompanyId !== user.company_id)) {
         return (
             <div className="flex justify-center py-10 items-center">
                 <Loader2 className="animate-spin h-6 w-6 text-accent" />

@@ -581,6 +581,8 @@
   },
   "profile": {
     "company_fields": {
+      "load_error": "Company details could not be loaded. Retry before editing them.",
+      "retry": "Retry",
       "postal_code": "Postal code",
       "city": "City",
       "province": "Province",
