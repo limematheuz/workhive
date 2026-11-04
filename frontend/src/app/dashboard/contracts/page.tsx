@@ -65,10 +65,12 @@ function ContractsPageContent() {
     const openContract = React.useCallback(async (contract: ServiceContract) => {
         try {
             setSelectedContract(await ServiceContractService.getContract(contract.id))
-        } catch {
-            setSelectedContract(contract)
+            setDetailOpen(true)
+        } catch (error: unknown) {
+            setSelectedContract(null)
+            setDetailOpen(false)
+            toast.error(getErrorMessage(error, "No se pudo cargar el contrato"))
         }
-        setDetailOpen(true)
     }, [])
 
     React.useEffect(() => {

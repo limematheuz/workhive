@@ -162,3 +162,24 @@ for (const width of [1440, 768, 390, 320]) {
         await expect(dialog).toHaveCount(0);
     });
 }
+
+for (const width of [1440, 768, 390]) {
+    for (const status of [403, 404, 503]) {
+        test(`failed contract detail ${status} never opens cached data and allows retry at ${width}px`, async ({ page }) => {
+            await page.setViewportSize({ width, height: 1000 });
+            await page.goto("/dashboard/contracts");
+            const row = page.locator('[aria-label="Abrir contrato CON-COVERAGE"]').filter({ visible: true });
+            await expect(row).toBeVisible();
+            await page.route("**/api/v1/service-contracts/1", route => route.fulfill({ status, json: { detail: "No se pudo cargar el contrato" } }), { times: 1 });
+            const failed = page.waitForResponse(response => response.url().endsWith("/service-contracts/1") && response.status() === status);
+            await row.click();
+            await failed;
+            await expect(page.getByText("No se pudo cargar el contrato", { exact: true })).toBeVisible();
+            await expect(page.getByRole("dialog")).toHaveCount(0);
+            await expect(page.getByLabel("Notas internas", { exact: true })).toHaveCount(0);
+            await expect(row).toBeVisible();
+            await row.click();
+            await expect(page.getByRole("dialog").getByLabel("Notas internas", { exact: true })).toHaveValue("Notas originales");
+        });
+    }
+}
