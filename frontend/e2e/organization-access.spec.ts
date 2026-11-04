@@ -1,3 +1,4 @@
+import { selectSection } from "./helpers/select-section";
 import { expect, test } from "@playwright/test";
 
 // Browser-only fixtures: every API request is intercepted; no real member,
@@ -48,7 +49,7 @@ async function fixture(page: import("@playwright/test").Page, readOnly = false) 
     return { writes, requested };
 }
 
-test("owner can navigate all tabs, sees protected actions explained, and keeps multiple scopes", async ({ page }, testInfo) => {
+test("owner navigates all tabs and preserves unchanged profile assignments without replacing them", async ({ page }, testInfo) => {
     test.setTimeout(90_000);
     const { writes } = await fixture(page);
     const errors: string[] = [];
@@ -74,7 +75,7 @@ test("owner can navigate all tabs, sees protected actions explained, and keeps m
     await dialog.getByRole("button", { name: /Guardar/ }).click();
     await expect(dialog).toHaveCount(0);
     expect(writes).toHaveLength(1);
-    expect(writes[0]).toMatchObject({ profile_assignments: { assignments: [{ permission_profile_id: 2, scopes: [{ scope_type: "location", scope_id: 5 }, { scope_type: "team", scope_id: 3 }] }] } });
+    expect(writes[0]).toEqual({ access_class: "responsible", status: "active", department_ids: [], team_ids: [] });
     expect(errors).toEqual([]);
 });
 
@@ -91,3 +92,28 @@ test("a reader only loads the permitted tab and cannot open its editor", async (
     expect(requested).not.toContain("/api/v1/organization/teams");
     expect(requested).not.toContain("/api/v1/organization/permission-profiles");
 });
+
+for (const width of [1440, 768, 390]) {
+    test(`new teams can clear an optional department before saving at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        await fixture(page);
+        let created: Record<string, unknown> | undefined;
+        await page.route("**/api/v1/organization/teams", async route => {
+            if (route.request().method() !== "POST") return route.fallback();
+            created = route.request().postDataJSON();
+            await route.fulfill({ json: { id: 8, ...created, is_active: true } });
+        });
+        await page.goto("/dashboard/organization");
+        await selectSection(page, page, /Equipos/i);
+        await page.getByRole("button", { name: "Añadir equipo", exact: true }).click();
+        const dialog = page.getByRole("dialog", { name: "Nuevo equipo", exact: true });
+        await dialog.getByLabel("Nombre", { exact: true }).fill("Equipo QA sin departamento");
+        await dialog.getByRole("combobox").click();
+        await page.getByRole("option", { name: "Operaciones de prueba", exact: true }).click();
+        await dialog.getByRole("combobox").click();
+        await page.getByRole("option", { name: "Sin departamento", exact: true }).click();
+        await dialog.getByRole("button", { name: "Guardar", exact: true }).click();
+        await expect(dialog).toHaveCount(0);
+        expect(created).toEqual({ name: "Equipo QA sin departamento" });
+    });
+}

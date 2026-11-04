@@ -47,3 +47,15 @@ test("organization tabs use compact labels instead of mobile horizontal scrollin
     assert.match(tabs, /compactLabel\?: string/);
     assert.doesNotMatch(controlCenter, /layout="scroll"/);
 });
+
+test("organization creation owns its form and uses the service boundary", () => {
+    const controlCenter = source("../components/organization/OrganizationControlCenter.tsx");
+    const editor = source("../components/organization/CreateOrganizationDialog.tsx");
+    assert.match(controlCenter, /import \{ CreateOrganizationDialog, type CreateKind \}/);
+    assert.doesNotMatch(controlCenter, /function CreateOrganizationDialog/);
+    assert.match(editor, /OrganizationService\.createDepartment/);
+    assert.match(editor, /OrganizationService\.createTeam/);
+    assert.match(editor, /OrganizationService\.createPermissionProfile/);
+    assert.doesNotMatch(editor, /\bfetch\(/);
+    assert.match(editor, /permissionLabel/);
+});
