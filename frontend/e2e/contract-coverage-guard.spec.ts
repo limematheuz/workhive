@@ -237,7 +237,7 @@ for (const width of [1440, 768, 390]) {
         await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
         await expect(start).toBeDisabled();
         await expect(trigger).toBeDisabled();
-        expect(payload?.starts_at).toBe("2026-10-21T00:00:00Z");
+        await expect.poll(() => payload?.starts_at).toBe("2026-10-21T00:00:00Z");
         releaseSave();
         await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
         await expect(trigger).toBeEnabled();
@@ -245,5 +245,52 @@ for (const width of [1440, 768, 390]) {
         await expect(page.locator('[data-day="2026-10-21"]')).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(start).toHaveValue("21/10/2026");
+    });
+}
+
+for (const width of [1440, 768, 390]) {
+    test(`calendar-only contract edits are guarded and reset only their saved section at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        let contract = { ...coverageContract(), starts_at: "2026-10-20T00:00:00Z" };
+        await page.route("**/api/v1/service-contracts/1", async route => {
+            if (route.request().method() === "PATCH") contract = { ...contract, ...route.request().postDataJSON() };
+            await route.fulfill({ json: contract });
+        });
+        await page.goto("/dashboard/contracts");
+        const row = page.locator('[aria-label="Abrir contrato CON-COVERAGE"]').filter({ visible: true });
+        const dialog = page.getByRole("dialog");
+        const start = dialog.getByLabel("Inicio", { exact: true });
+        const chooseDay = async (day: string) => {
+            await dialog.locator("#contract-start-calendar").click();
+            await page.locator(`[data-day="${day}"]`).click();
+        };
+        await row.click();
+        await expect(start).toHaveValue("20/10/2026");
+        await chooseDay("2026-10-21");
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toBeVisible();
+        await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+        await expect(start).toHaveValue("21/10/2026");
+        await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+        await expect(page.getByText("Condiciones del contrato guardadas", { exact: true })).toBeVisible();
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        await expect(dialog).toHaveCount(0);
+        await row.click();
+        await expect(start).toHaveValue("21/10/2026");
+        await chooseDay("2026-10-21");
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toHaveCount(0);
+        await expect(dialog).toHaveCount(0);
+        await row.click();
+        await chooseDay("2026-10-22");
+        await dialog.getByLabel("Base de cálculo interna").fill("Margen pendiente QA");
+        await dialog.getByRole("button", { name: "Guardar condiciones", exact: true }).click();
+        await expect(start).toBeEnabled();
+        await expect.poll(() => contract.starts_at).toBe("2026-10-22T00:00:00Z");
+        await dialog.getByRole("button", { name: "Cerrar", exact: true }).click();
+        await expect(page.getByRole("alertdialog")).toBeVisible();
+        await page.getByRole("button", { name: "Seguir editando", exact: true }).click();
+        await expect(dialog.getByLabel("Base de cálculo interna")).toHaveValue("Margen pendiente QA");
     });
 }
