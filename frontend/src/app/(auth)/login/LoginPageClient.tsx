@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { LoginFormPanel, type LoginOutcome } from "@/components/auth/LoginFormPanel";
 import { LoginMarketingPanel } from "@/components/auth/LoginMarketingPanel";
+import { getLoginAccessBlock } from "@/lib/login-access";
 import { clearSessionCache } from "@/lib/auth";
 import {
     getAuthErrorMessage,
@@ -49,8 +50,12 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
             .then(() => {
                 if (!cancelled) window.location.replace(returnTo);
             })
-            .catch(() => {
-                if (!cancelled) setCheckingExistingSession(false);
+            .catch((error: unknown) => {
+                if (!cancelled) {
+                    const reason = getLoginAccessBlock(error);
+                    if (reason) setOutcome({ kind: "access_blocked", reason });
+                    setCheckingExistingSession(false);
+                }
             });
         return () => {
             cancelled = true;
@@ -87,6 +92,11 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
             await authService.getMe();
             setOutcome({ kind: "success" });
         } catch (error: unknown) {
+            const reason = getLoginAccessBlock(error);
+            if (reason) {
+                setOutcome({ kind: "access_blocked", reason });
+                return;
+            }
             setOutcome({
                 kind: "error",
                 message: getAuthErrorMessage(

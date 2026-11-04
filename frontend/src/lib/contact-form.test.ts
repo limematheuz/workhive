@@ -144,3 +144,13 @@ test("contact submission rejects blank required fields and invalid email", () =>
         "Completa todos los campos obligatorios.",
     );
 });
+
+
+test("account access support starts with a localized subject and no private data", () => {
+    for (const locale of ["es", "en"] as const) {
+        const form = getInitialContactForm("account-access", locale);
+        assert.equal(form.subject, locale === "es" ? "Revisar acceso a mi empresa" : "Review my company access");
+        assert.equal(form.email, "");
+        assert.equal(form.message, "");
+    }
+});

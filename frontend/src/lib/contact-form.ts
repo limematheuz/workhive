@@ -70,6 +70,12 @@ function trimForm(form: ContactFormState): ContactFormState {
 }
 
 export function getInitialContactForm(reason: ContactReason, locale: AuthFormLocale): ContactFormState {
+    if (reason === "account-access") {
+        return {
+            name: "", email: "", company_name: "", phone: "", message: "",
+            subject: locale === "es" ? "Revisar acceso a mi empresa" : "Review my company access",
+        };
+    }
     if (reason === "trial") {
         return {
             name: "",
