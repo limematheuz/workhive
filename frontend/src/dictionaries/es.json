@@ -581,6 +581,8 @@
   },
   "profile": {
     "company_fields": {
+      "load_error": "No se pudieron cargar los datos de la empresa. Reintenta antes de editarlos.",
+      "retry": "Reintentar",
       "postal_code": "Código postal",
       "city": "Ciudad",
       "province": "Provincia",
