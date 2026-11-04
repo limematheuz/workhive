@@ -192,9 +192,9 @@ export default function LocationsPage() {
                 icon={MapPin}
                 title={dict.locations.title}
                 subtitle={dict.locations.subtitle || "Gestiona los locales, sedes e instalaciones donde presta servicio tu equipo."}
-                className="mb-6"
+                className={`mb-6 sm:flex-col sm:items-stretch xl:flex-row xl:items-center ${!isReadOnly ? "[&>div:last-child]:self-end max-md:[&>div:last-child]:w-full" : ""}`}
                 actions={!isReadOnly ? (
-                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                    <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
                         <LocationBulkImportDialog onImported={loadLocations} />
                         <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} />
                     </div>

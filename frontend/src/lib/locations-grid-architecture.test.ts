@@ -5,13 +5,15 @@ import test from "node:test";
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
 test("location list uses a dense operational table and keeps the detail free of photos", () => {
-    const grid = read("../components/locations/LocationsGrid.tsx");
+    const grid = read("../components/locations/LocationsGrid.tsx") + read("../components/locations/LocationsListTable.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const globals = read("../app/globals.css");
     const dialog = read("../components/ui/dialog.tsx");
 
-    assert.match(grid, /DataListTable/);
-    assert.match(grid, /desktopFrom="lg"/);
+    assert.match(grid, /LocationsListTable/);
+    assert.match(grid, /from "@\/components\/ui\/table"/);
+    assert.match(grid, /DataTablePagination/);
+    assert.match(grid, /@container\/locations-list/);
     assert.match(grid, /dict\.locations\.title/);
     assert.match(grid, /workspace\.tasks/);
     assert.match(grid, /dict\.locations\.table\.status/);
@@ -29,13 +31,13 @@ test("location list uses a dense operational table and keeps the detail free of 
 });
 
 test("location table uses semantic status and shared application surfaces", () => {
-    const grid = read("../components/locations/LocationsGrid.tsx");
+    const grid = read("../components/locations/LocationsGrid.tsx") + read("../components/locations/LocationsListTable.tsx");
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const page = read("../app/dashboard/locations/page.tsx");
 
     assert.match(grid, /bg-\[var\(--status-active-bg\)\]/);
     assert.match(grid, /text-\[var\(--status-active-text\)\]/);
-    assert.match(grid, /bg-accent\/10/);
+    assert.match(grid, /from "@\/components\/ui\/badge"/);
     assert.match(detail, /bg-accent\/90/);
     assert.match(page, /billing-surface/);
     assert.match(page, /billing-block/);
