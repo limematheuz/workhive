@@ -39,7 +39,11 @@ export function MemberProfileScopeFields({ scopes, onChange, companyId, departme
                     <SelectTrigger aria-label={`${copy.scope_for.replace("{name}", name)} ${index + 1}`}><SelectValue /></SelectTrigger>
                     <SelectContent>{(Object.keys(labels) as OrganizationScopeType[]).map(type => <SelectItem key={type} value={type} disabled={!options[type].some(target => target.is_active !== false)}>{labels[type]}</SelectItem>)}</SelectContent>
                 </Select>
-                <Select disabled={disabled} value={scope.scope_id ? String(scope.scope_id) : ""} onValueChange={value => onChange(replaceDraftScope(scopes, index, { ...scope, scope_id: Number(value) }))}>
+                <Select disabled={disabled} value={scope.scope_id ? String(scope.scope_id) : ""} onValueChange={value => {
+                    // Replacing target options must not clear the new scope's initial target.
+                    if (!value) return;
+                    onChange(replaceDraftScope(scopes, index, { ...scope, scope_id: Number(value) }));
+                }}>
                     <SelectTrigger aria-label={`${copy.target_for.replace("{name}", name)} ${index + 1}`}><SelectValue /></SelectTrigger>
                     <SelectContent>
                         {scope.scope_id > 0 && !targets.some(target => target.id === scope.scope_id) && <SelectItem value={String(scope.scope_id)} disabled>{labels[scope.scope_type]} #{scope.scope_id}</SelectItem>}

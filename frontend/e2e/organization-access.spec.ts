@@ -117,3 +117,38 @@ for (const width of [1440, 768, 390]) {
         expect(created).toEqual({ name: "Equipo QA sin departamento" });
     });
 }
+
+for (const width of [1440, 768, 390]) {
+    test(`scope type changes retain a valid target and other scopes at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        const { writes } = await fixture(page);
+        await page.goto("/dashboard/organization");
+        await page.getByRole("button", { name: "Editar: Persona de prueba", exact: true }).filter({ visible: true }).click();
+        await page.getByRole("menuitem", { name: "Editar", exact: true }).click();
+        const dialog = page.getByRole("dialog");
+        const type = dialog.getByRole("combobox", { name: "Ámbito de Comercial 1", exact: true });
+        const target = dialog.getByRole("combobox", { name: "Destino de Comercial 1", exact: true });
+        const save = dialog.getByRole("button", { name: "Guardar acceso", exact: true });
+        for (const [label, destination] of [
+            ["Toda la empresa", "Toda la empresa"],
+            ["Departamento", "Operaciones de prueba"],
+            ["Equipo", "Equipo de prueba"],
+            ["Ubicación", "Ubicación de prueba"],
+            ["Toda la empresa", "Toda la empresa"],
+        ]) {
+            await type.click();
+            await page.getByRole("option", { name: label, exact: true }).click();
+            await expect(target).toHaveText(destination);
+            if (label === "Equipo") await expect(save).toBeDisabled();
+            else await expect(save).toBeEnabled();
+            await expect(dialog.getByRole("combobox", { name: "Destino de Comercial 2", exact: true })).toHaveText("Equipo de prueba");
+        }
+        await save.click();
+        await expect(dialog).toHaveCount(0);
+        expect(writes).toEqual([{ access_class: "responsible", status: "active", department_ids: [], team_ids: [],
+            profile_assignments: { assignments: [{ permission_profile_id: 2, scopes: [
+                { scope_type: "company", scope_id: 1 }, { scope_type: "team", scope_id: 3 },
+            ] }] },
+        }]);
+    });
+}
