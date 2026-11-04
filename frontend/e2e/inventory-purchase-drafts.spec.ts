@@ -29,6 +29,20 @@ for (const width of [390, 768, 1440]) {
             await opener.click();
             const dialog = page.getByRole("dialog", { name: kind === "create" ? "Nueva compra de material" : "Corregir compra", exact: true });
             if (kind === "create") {
+                const expiry = dialog.getByLabel("Caducidad del lote 1", { exact: true });
+                const calendar = expiry.locator("..").getByRole("button", { name: "Abrir calendario", exact: true });
+                await expect(expiry).toBeDisabled();
+                await expect(calendar).toBeDisabled();
+                const lot = dialog.getByLabel("Lote 1", { exact: true });
+                await lot.fill("QA-CALENDAR");
+                await expect(calendar).toBeEnabled();
+                await expiry.fill("04/11/2026");
+                await calendar.click();
+                await page.locator('[data-day="2026-11-05"]').click();
+                await expect(expiry).toHaveValue("05/11/2026");
+                await lot.fill("");
+                await expect(expiry).toHaveValue("");
+                await expect(calendar).toBeDisabled();
                 await dialog.getByRole("button", { name: "Añadir línea", exact: true }).click();
                 for (const name of ["Material 1", "Almacén 1", "Cantidad 1", "Coste unitario 1"]) {
                     const bounds = await dialog.getByLabel(name, { exact: true }).evaluate(element => {
