@@ -28,7 +28,7 @@ test("locations page uses billing surfaces and a compact filter chip", () => {
     assert.doesNotMatch(page, /btn-cancel-muted/);
     assert.doesNotMatch(page, /surface-glass-card/);
 
-    assert.match(grid, /DataListTable/);
+    assert.match(grid, /LocationsListTable/);
 });
 
 test("locations avoids requesting the client catalog when the profile cannot read it", () => {

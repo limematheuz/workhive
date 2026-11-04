@@ -147,9 +147,9 @@ test("locations use the shared data table and show operational detail without a 
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const overview = read("../components/locations/LocationDetailOverview.tsx");
 
-    assert.match(list, /DataListTable/);
+    assert.match(list, /LocationsListTable/);
     assert.doesNotMatch(list, /LocationCard/);
-    assert.match(list, /onRowClick=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
+    assert.match(list, /onOpen=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
     assert.doesNotMatch(detail, /photo_url|<Image/);
     assert.match(detail, /LocationTasksWorkspace/);
     assert.match(overview, /Operación y planificación/);
@@ -201,9 +201,9 @@ test("opening a location shows its detail first and keeps editing as an explicit
     const detail = read("../components/locations/LocationDetailDialog.tsx");
     const editSheet = read("../components/locations/EditLocationSheet.tsx");
 
-    assert.match(grid, /onRowClick=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
+    assert.match(grid, /onOpen=\{\(location\) => setSelectedLocationId\(location.id\)\}/);
     assert.doesNotMatch(grid, /Ver detalle/);
-    assert.match(grid, /workspace\.view_location/);
+    assert.match(read("../components/locations/LocationsListTable.tsx"), /workspace\.view_location/);
     assert.match(grid, /setSelectedLocationId\(null\); onEdit\(selectedLocation\)/);
     assert.match(detail, /onEdit/);
     assert.doesNotMatch(editSheet, /PremiumTabs/);
