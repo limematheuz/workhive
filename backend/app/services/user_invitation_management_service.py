@@ -40,7 +40,11 @@ def list_company_invitations(db: Session, inviter: User) -> list[UserInvitation]
         .order_by(UserInvitation.created_at.desc(), UserInvitation.id.desc())
         .all()
     )
-    if any(expire_if_needed(invitation) for invitation in invitations):
+    expired = False
+    for invitation in invitations:
+        if expire_if_needed(invitation):
+            expired = True
+    if expired:
         db.commit()
     return invitations
 

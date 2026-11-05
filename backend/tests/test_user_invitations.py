@@ -309,6 +309,69 @@ def test_company_can_view_and_cancel_its_pending_invitation(client, db, monkeypa
     )
 
 
+def test_listing_expires_every_due_invitation_in_one_tenant(client, db, monkeypatch):
+    headers, company_id = _register_company(client, "expiry-batch")
+    other_headers, other_company_id = _register_company(client, "expiry-other")
+    sent = _capture_invitation(monkeypatch)
+    expired_credentials = []
+    for index in range(4):
+        email = f"expiry-batch-{index}@workhive.com"
+        response = client.post(
+            "/api/v1/user-invitations/",
+            headers=headers,
+            json={"email": email, "role_id": 3},
+        )
+        assert response.status_code == 202, response.text
+        if index < 2:
+            expired_credentials.append(
+                (_invitation_token(sent), str(sent["verification_code"]))
+            )
+    response = client.post(
+        "/api/v1/user-invitations/",
+        headers=other_headers,
+        json={"email": "expiry-foreign@workhive.com", "role_id": 3},
+    )
+    assert response.status_code == 202, response.text
+    invitations = db.query(UserInvitation).order_by(UserInvitation.id).all()
+    own = [item for item in invitations if item.company_id == company_id]
+    foreign = next(item for item in invitations if item.company_id == other_company_id)
+    overdue = datetime.now(timezone.utc) - timedelta(days=1)
+    for item in own[:2] + [foreign]:
+        item.expires_at = overdue
+    own[3].status = "canceled"
+    own[3].expires_at = overdue
+    db.commit()
+
+    client.cookies.clear()
+    assert client.get("/api/v1/user-invitations/").status_code == 401
+    db.expire_all()
+    assert all(item.status == "pending" for item in own[:2])
+    response = client.get("/api/v1/user-invitations/", headers=headers)
+    assert response.status_code == 200, response.text
+    expected = {item.id: "expired" for item in own[:2]}
+    expected.update({own[2].id: "pending", own[3].id: "canceled"})
+    assert {item["id"]: item["status"] for item in response.json()} == expected
+    db.expire_all()
+    assert {item.id: item.status for item in own} == expected
+    assert foreign.status == "pending"
+    timestamps = {item.id: item.updated_at for item in invitations}
+    repeated = client.get("/api/v1/user-invitations/", headers=headers)
+    assert repeated.status_code == 200, repeated.text
+    assert repeated.json() == response.json()
+    db.expire_all()
+    assert {item.id: item.updated_at for item in invitations} == timestamps
+    for token, code in expired_credentials:
+        denied = client.post(
+            "/api/v1/user-invitations/accept", json=_accept_payload(token, code)
+        )
+        assert denied.status_code == 400, denied.text
+    assert db.query(User).filter(User.company_id == company_id).count() == 1
+    foreign_cancellation = client.delete(
+        f"/api/v1/user-invitations/{foreign.id}", headers=headers
+    )
+    assert foreign_cancellation.status_code == 404
+
+
 def test_other_company_cannot_view_or_cancel_an_invitation(client, db, monkeypatch):
     first_headers, _ = _register_company(client, "invitation-tenant-a")
     second_headers, _ = _register_company(client, "invitation-tenant-b")
