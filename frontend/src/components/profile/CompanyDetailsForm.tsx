@@ -141,20 +141,26 @@ export function CompanyDetailsForm({ user, dict, onCancel, onSuccess }: CompanyD
     };
 
     const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+        const input = e.currentTarget;
+        const file = input.files?.[0];
         if (!file) return;
+        if (logoUploadingRef.current) {
+            toast.error("Please wait for the logo to finish uploading");
+            input.value = "";
+            return;
+        }
 
+        const uploadToast = toast.loading("Uploading company logo...");
         try {
             logoUploadingRef.current = true;
-            const uploadToast = toast.loading("Uploading company logo...");
             const result = await UploadService.uploadFile(file, "company");
             dispatch({ type: "fieldChanged", field: "logoUrl", value: result.url });
             toast.success("Logo loaded in form", { id: uploadToast });
         } catch (error: unknown) {
-            console.error("Error uploading logo:", error);
-            toast.error(getErrorMessage(error, "Error uploading logo"));
+            toast.error(getErrorMessage(error, "Error uploading logo"), { id: uploadToast });
         } finally {
             logoUploadingRef.current = false;
+            input.value = "";
         }
     };
 
