@@ -5,6 +5,7 @@ import { Download, Loader2, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { Button } from "@/components/ui/button";
 import {
     PendingPrivacyRequests,
     PrivacyResolutionDialog,
@@ -32,6 +33,7 @@ export function PrivacyControls({
     const [requests, setRequests] = useState<PrivacyRequest[]>([]);
     const [companyRequests, setCompanyRequests] = useState<PrivacyRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadFailed, setLoadFailed] = useState(false);
     const [working, setWorking] = useState<"export" | "erasure" | null>(null);
     const [erasureDialogOpen, setErasureDialogOpen] = useState(false);
     const [resolveTarget, setResolveTarget] = useState<PrivacyRequest | null>(null);
@@ -51,8 +53,9 @@ export function PrivacyControls({
             ]);
             setRequests(myRequests);
             setCompanyRequests(managedRequests);
+            setLoadFailed(false);
         } catch {
-            // Keep polling quiet; direct actions show their own toast.
+            setLoadFailed(true);
         } finally {
             setLoading(false);
         }
@@ -88,6 +91,7 @@ export function PrivacyControls({
     };
 
     const requestErasure = async () => {
+        if (loading || loadFailed) return;
         setWorking("erasure");
         try {
             const created = await PrivacyService.createRequest("erasure");
@@ -155,7 +159,7 @@ export function PrivacyControls({
     return (
         <section className="billing-surface billing-surface-accent-pad relative overflow-hidden rounded-[24px]">
             <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
-            <div className="relative z-10 flex flex-col justify-between gap-5 md:flex-row md:items-start">
+            <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
                 <div className="max-w-2xl">
                     <div className="flex items-center gap-2.5">
                         <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
@@ -195,7 +199,7 @@ export function PrivacyControls({
                     <button
                         type="button"
                         onClick={() => setErasureDialogOpen(true)}
-                        disabled={working !== null || Boolean(openRequest)}
+                        disabled={loading || loadFailed || working !== null || Boolean(openRequest)}
                         className={`${PAGE_ACTION_BUTTON_BASE} border-red-500/30 bg-red-500/10 text-red-600 hover:border-red-600 hover:bg-red-600 hover:text-white`}
                     >
                         {working === "erasure"
@@ -205,6 +209,18 @@ export function PrivacyControls({
                     </button>
                 </div>
             </div>
+            {loadFailed && (
+                <div className="relative z-10 mt-3 flex flex-col gap-2 rounded-xl border border-[var(--border-soft)] p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <p role="alert" className="text-xs text-[var(--text-muted)]">
+                        {isSpanish
+                            ? "No se pudieron cargar las solicitudes de privacidad. Reintenta antes de solicitar una supresión."
+                            : "Privacy requests could not be loaded. Retry before requesting erasure."}
+                    </p>
+                    <Button type="button" variant="outline" disabled={loading} onClick={() => void loadPrivacyRequests()}>
+                        {isSpanish ? "Reintentar" : "Retry"}
+                    </Button>
+                </div>
+            )}
             {canManageRequests && (
                 <PendingPrivacyRequests
                     requests={pendingCompanyRequests}
