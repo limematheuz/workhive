@@ -30,8 +30,8 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
                         id: "details" as const,
                         label: (
                             <>
-                                <span className="hidden sm:inline">Datos Personales</span>
-                                <span className="sm:hidden">Personal</span>
+                                <span className="hidden sm:inline">{dict.profile.editor_tabs.personal}</span>
+                                <span className="sm:hidden">{dict.profile.editor_tabs.personal_short}</span>
                             </>
                         ),
                         icon: UserIcon
@@ -42,8 +42,8 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
                                   id: "company" as const,
                                   label: (
                                       <>
-                                          <span className="hidden sm:inline">Datos de la Empresa</span>
-                                          <span className="sm:hidden">Empresa</span>
+                                          <span className="hidden sm:inline">{dict.profile.editor_tabs.company}</span>
+                                          <span className="sm:hidden">{dict.profile.editor_tabs.company_short}</span>
                                       </>
                                   ),
                                   icon: Building2
@@ -54,8 +54,8 @@ export function ProfileEditForm({ user, dict, onCancel, onSuccess }: ProfileEdit
                         id: "password" as const,
                         label: (
                             <>
-                                <span className="hidden sm:inline">Seguridad y Contraseña</span>
-                                <span className="sm:hidden">Seguridad</span>
+                                <span className="hidden sm:inline">{dict.profile.editor_tabs.security}</span>
+                                <span className="sm:hidden">{dict.profile.editor_tabs.security_short}</span>
                             </>
                         ),
                         icon: Lock

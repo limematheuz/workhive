@@ -80,16 +80,18 @@ export function CompanyDetailsFormFields({
     onCancel,
     onSubmit,
 }: CompanyDetailsFormFieldsProps) {
+    const labels = dict.profile.company_fields;
+
     return (
         <form onSubmit={onSubmit} className="relative z-10 w-full space-y-4">
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1.35fr)_minmax(14rem,0.75fr)] lg:gap-4 lg:items-start">
                 <ProfileFormSection
-                    title="Company Details"
-                    description="Fiscal and contact details shown on invoices and quotes."
+                    title={labels.details_title}
+                    description={labels.details_description}
                     headerExtra={<Building2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />}
                 >
                     <div className="flex w-full min-w-0 flex-col gap-3">
-                        <DocumentFormField id="company-name" label="Company Name *">
+                        <DocumentFormField id="company-name" label={`${labels.name} *`}>
                             <DocumentFormInput
                                 id="company-name"
                                 type="text"
@@ -99,7 +101,7 @@ export function CompanyDetailsFormFields({
                             />
                         </DocumentFormField>
 
-                        <DocumentFormField id="company-tax-id" label="CIF / NIF (Issuer NIF) *">
+                        <DocumentFormField id="company-tax-id" label={`${labels.tax_id} *`}>
                             <DocumentFormInput
                                 id="company-tax-id"
                                 type="text"
@@ -110,7 +112,7 @@ export function CompanyDetailsFormFields({
                             />
                         </DocumentFormField>
 
-                        <DocumentFormField id="company-address" label="Fiscal Address *">
+                        <DocumentFormField id="company-address" label={`${labels.address} *`}>
                             <DocumentFormInput
                                 id="company-address"
                                 type="text"
@@ -162,7 +164,7 @@ export function CompanyDetailsFormFields({
                         </div>
 
                         <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-                            <DocumentFormField id="company-phone" label="Phone">
+                            <DocumentFormField id="company-phone" label={labels.phone}>
                                 <DocumentFormInput
                                     id="company-phone"
                                     type="text"
@@ -171,7 +173,7 @@ export function CompanyDetailsFormFields({
                                     onChange={(e) => setPhone(e.target.value)}
                                 />
                             </DocumentFormField>
-                            <DocumentFormField id="company-email" label="Email">
+                            <DocumentFormField id="company-email" label={labels.email}>
                                 <DocumentFormInput
                                     id="company-email"
                                     type="email"
@@ -183,7 +185,7 @@ export function CompanyDetailsFormFields({
                         </div>
 
                         <div className="grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
-                            <DocumentFormField id="company-bank-account" label="Account Number / IBAN">
+                            <DocumentFormField id="company-bank-account" label={labels.bank_account}>
                                 <DocumentFormInput
                                     id="company-bank-account"
                                     type="text"
@@ -202,7 +204,7 @@ export function CompanyDetailsFormFields({
                                     placeholder="CAIXESBBXXX"
                                     maxLength={11}
                                     pattern="[A-Za-z]{4}[A-Za-z]{2}[A-Za-z0-9]{2}([A-Za-z0-9]{3})?"
-                                    title="8 or 11 characters: bank, country, and BIC code"
+                                    title={labels.swift_bic_hint}
                                     autoCapitalize="characters"
                                     className="font-mono uppercase"
                                 />
@@ -212,8 +214,8 @@ export function CompanyDetailsFormFields({
                 </ProfileFormSection>
 
                 <ProfileFormSection
-                    title="Corporate Logo"
-                    description="Shown on invoices and quotes."
+                    title={labels.logo_title}
+                    description={labels.logo_description}
                     headerExtra={<Upload className="mt-0.5 h-4 w-4 shrink-0 text-[var(--text-muted)]" aria-hidden="true" />}
                 >
                     <div className="relative flex min-h-[10.5rem] flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[var(--border-color)] bg-[var(--bg-card-solid)]/40 p-4 transition-colors hover:border-accent hover:bg-accent/5 group">
@@ -228,23 +230,23 @@ export function CompanyDetailsFormFields({
                                     unoptimized
                                 />
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                                    <span className="text-xs font-semibold text-white">Change logo</span>
+                                    <span className="text-xs font-semibold text-white">{labels.logo_change}</span>
                                 </div>
                             </div>
                         ) : (
                             <div className="space-y-1.5 text-center">
                                 <Building2 className="mx-auto h-8 w-8 text-accent/40" />
                                 <span className="block text-xs font-semibold text-[var(--text-main)]">
-                                    Upload your company logo
+                                    {labels.logo_upload}
                                 </span>
                                 <span className="text-2xs text-[var(--text-muted)]">
-                                    The logo will appear on invoices and quotes.
+                                    {labels.logo_hint}
                                 </span>
                             </div>
                         )}
                         <Input
                             type="file"
-                            aria-label="Upload company logo"
+                            aria-label={labels.logo_upload}
                             accept="image/*"
                             onChange={onLogoChange}
                             className="absolute inset-0 size-full cursor-pointer opacity-0"
@@ -254,8 +256,8 @@ export function CompanyDetailsFormFields({
             </div>
 
             <ProfileFormSection
-                title="Notes & terms"
-                description="Defaults applied when creating invoices and quotes."
+                title={labels.notes_title}
+                description={labels.notes_description}
             >
                 <div className="grid w-full min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
                     <DocumentFormField
@@ -291,14 +293,14 @@ export function CompanyDetailsFormFields({
                     variant="cancel"
                     onClick={onCancel}
                 >
-                    {dict.locations?.form?.cancel || "Cancel"}
+                    {dict.locations.form.cancel}
                 </Button>
                 <Button
                     type="submit"
                     disabled={updating}
                     className={PAGE_ACTION_BUTTON_PRIMARY}
                 >
-                    {updating ? "Saving..." : (dict.locations?.form?.save || "Save")}
+                    {updating ? labels.saving : dict.locations.form.save}
                 </Button>
             </div>
         </form>
