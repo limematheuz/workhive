@@ -580,7 +580,32 @@
     "85": "Cuotas no satisfechas por concurso"
   },
   "profile": {
+    "editor_tabs": {
+      "personal": "Datos Personales",
+      "personal_short": "Personal",
+      "company": "Datos de la Empresa",
+      "company_short": "Empresa",
+      "security": "Seguridad y Contraseña",
+      "security_short": "Seguridad"
+    },
     "company_fields": {
+      "details_title": "Datos de la empresa",
+      "details_description": "Datos fiscales y de contacto que aparecen en facturas y presupuestos.",
+      "name": "Nombre de la empresa",
+      "tax_id": "CIF / NIF del emisor",
+      "address": "Dirección fiscal",
+      "phone": "Teléfono",
+      "email": "Correo electrónico",
+      "bank_account": "Número de cuenta / IBAN",
+      "swift_bic_hint": "8 u 11 caracteres: banco, país y código BIC",
+      "logo_title": "Logotipo de la empresa",
+      "logo_description": "Se muestra en facturas y presupuestos.",
+      "logo_change": "Cambiar logotipo",
+      "logo_upload": "Subir logotipo de la empresa",
+      "logo_hint": "El logotipo aparecerá en facturas y presupuestos.",
+      "notes_title": "Notas y condiciones",
+      "notes_description": "Valores predeterminados para nuevas facturas y presupuestos.",
+      "saving": "Guardando...",
       "load_error": "No se pudieron cargar los datos de la empresa. Reintenta antes de editarlos.",
       "retry": "Reintentar",
       "postal_code": "Código postal",

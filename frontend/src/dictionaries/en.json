@@ -580,7 +580,32 @@
     "85": "Unpaid tax due to insolvency"
   },
   "profile": {
+    "editor_tabs": {
+      "personal": "Personal Details",
+      "personal_short": "Personal",
+      "company": "Company Details",
+      "company_short": "Company",
+      "security": "Security & Password",
+      "security_short": "Security"
+    },
     "company_fields": {
+      "details_title": "Company Details",
+      "details_description": "Fiscal and contact details shown on invoices and quotes.",
+      "name": "Company Name",
+      "tax_id": "CIF / NIF (Issuer NIF)",
+      "address": "Fiscal Address",
+      "phone": "Phone",
+      "email": "Email",
+      "bank_account": "Account Number / IBAN",
+      "swift_bic_hint": "8 or 11 characters: bank, country, and BIC code",
+      "logo_title": "Corporate Logo",
+      "logo_description": "Shown on invoices and quotes.",
+      "logo_change": "Change logo",
+      "logo_upload": "Upload company logo",
+      "logo_hint": "The logo will appear on invoices and quotes.",
+      "notes_title": "Notes & terms",
+      "notes_description": "Defaults applied when creating invoices and quotes.",
+      "saving": "Saving...",
       "load_error": "Company details could not be loaded. Retry before editing them.",
       "retry": "Retry",
       "postal_code": "Postal code",
