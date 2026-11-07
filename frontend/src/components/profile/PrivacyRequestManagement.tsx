@@ -8,6 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import { getPrivacyRequestTypeLabel } from "@/lib/privacy-request";
 import { Textarea } from "@/components/ui/textarea";
 import type { PrivacyRequest } from "@/services/privacy.service";
 
@@ -39,7 +40,7 @@ export function PendingPrivacyRequests({
                     >
                         <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">
-                                {request.request_type} #{request.id}
+                                {getPrivacyRequestTypeLabel(request.request_type, isSpanish)} #{request.id}
                             </p>
                             <p className="mt-1 text-xs text-[var(--text-muted)]">
                                 {new Date(request.requested_at).toLocaleString(
