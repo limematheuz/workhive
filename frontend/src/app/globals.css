@@ -346,8 +346,8 @@
   --bg-tertiary: rgba(236, 244, 246, 0.62);
   --bg-card: rgba(248, 252, 252, 0.5);
   --sidebar-bg: var(--bg-primary);
-  --border-color: #91a6b8;
-  --border-soft: #a1b3c2;
+  --border-color: rgba(145, 166, 184, 0.32);
+  --border-soft: var(--border-color);
   --table-divider: var(--border-soft);
   --text-main: #111827;
   --text-muted: #526070;
