@@ -71,8 +71,8 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
             const base64 = await compressImageToBase64(compressedFile);
             setProfilePhotoUrl(base64);
             toast.success(dict.profile.form.toast_compress_success, { id: "photo-processing" });
-        } catch (error) {
-            console.error("Error compressing image:", error);
+        } catch {
+            // Invalid files are recoverable input errors; keep the existing draft.
             toast.error(dict.profile.form.toast_compress_error, { id: "photo-processing" });
         }
     };
