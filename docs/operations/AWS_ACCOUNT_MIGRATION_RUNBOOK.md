@@ -14,6 +14,10 @@ contraseñas, certificados ni datos de clientes.
   restauración en la cuenta destino.
 - La cuenta original permanece intacta hasta completar el periodo de
   observación y rollback acordado.
+- Una cuenta destino creada con el plan gratuito de AWS se usa sólo para la
+  prueba aislada: antes de migrar producción debe pasar al plan de pago y
+  quedar sujeta a controles de coste. El plan gratuito vence al agotarse los
+  créditos o al terminar su periodo y no es un destino de producción.
 
 AWS recomienda reprovisionar recursos con IaC y mantener los workloads lo más
 sin estado posible. Para recursos no transferibles directamente entre cuentas,
@@ -64,3 +68,8 @@ producción antes del corte.
   alarma de disco funcionan en destino.
 - Eliminar recursos de origen sólo tras una decisión explícita y una
   restauración comprobada.
+- Retirar el método de pago de la cuenta AWS de origen únicamente cuando se
+  hayan aprobado el cierre y la factura final, no existan recursos ni cargos
+  recurrentes en origen, y la retención de backups y la reversión ya no sean
+  necesarias. Esta operación la realiza personalmente el titular de la
+  cuenta; no se debe retirar durante la migración ni el periodo de observación.
