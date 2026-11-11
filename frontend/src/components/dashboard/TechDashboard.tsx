@@ -2,7 +2,7 @@
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { CheckSquare, Calendar, MapPin, Loader2, LayoutDashboard } from "lucide-react";
+import { CheckSquare, MapPin, Loader2, LayoutDashboard } from "lucide-react";
 import { User, TaskItem } from "@/types/user";
 import { Location } from "@/services/location.service";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -303,13 +303,7 @@ function TechDashboardInner({
                     </div>
 
                     <div className="min-w-0 space-y-6">
-                        <div className="min-w-0 space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
-                            <div className="flex items-center gap-2.5 border-b border-[var(--border-soft)] pb-2">
-                                <Calendar className="h-4.5 w-4.5 shrink-0 text-[var(--text-main)]" />
-                                <h3 className="min-w-0 truncate text-sm font-bold text-[var(--text-main)]">{dict.tech.shift_clock}</h3>
-                            </div>
-                            <WorkSessionWidget allowedLocations={dashboardTasks.activeLocations} />
-                        </div>
+                        <WorkSessionWidget key={`${currentUser.id}:${currentUser.company_id}:${currentUser.role?.name}`} allowedLocations={dashboardTasks.activeLocations} allowedTasks={tasks} onOpenTask={openTaskDetail} />
                     </div>
                 </div>
             </div>

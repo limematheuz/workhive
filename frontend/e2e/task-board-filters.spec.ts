@@ -31,6 +31,12 @@ for (const width of [1440, 768, 390]) {
         const other = page.getByRole("button", { name: "Abrir tarea: QA otra sede", exact: true });
         const unassigned = page.getByRole("button", { name: "Abrir tarea: QA sin asignar", exact: true });
         await expect(shared).toBeVisible();
+        const card = page.locator("article").filter({ has: shared });
+        await expect(card.getByRole("heading", { name: "QA compartida", exact: true })).toBeVisible();
+        await expect(card.getByText("QA Norte", { exact: true })).toBeVisible();
+        await expect(card.getByLabel("Requisitos: 0 de 1")).toBeVisible();
+        await expect(card).not.toContainText("Instrucción visible");
+        expect((await card.boundingBox())?.height).toBeLessThan(240);
         const worker = page.getByRole("combobox", { name: "Todos los trabajadores", exact: true });
         await worker.click();
         await page.getByRole("option", { name: "QA Segunda", exact: true }).click();

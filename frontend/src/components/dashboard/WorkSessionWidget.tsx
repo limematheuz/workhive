@@ -1,8 +1,8 @@
 "use client";
 
-import { startTransition, useState, useEffect, useEffectEvent, useRef, useCallback } from "react"
+import { startTransition, useState, useEffect, useEffectEvent, useRef, useCallback, useMemo } from "react"
 import { WorkSessionService, WorkSession } from "@/services/work-session.service"
-import { LocationService, Location } from "@/services/location.service"
+import { Location } from "@/services/location.service"
 import { TaskService } from "@/services/task.service"
 import { TaskItem } from "@/types/user"
 import { useUser } from "@/lib/user-context"
@@ -18,20 +18,32 @@ import { WorkSessionMobileBar } from "./work-session/WorkSessionMobileBar"
 import { WorkSessionStopWarningDialog } from "./work-session/WorkSessionStopWarningDialog"
 import { WorkSessionWidgetLoading } from "./work-session/WorkSessionWidgetLoading"
 import { cleanWorkSessionLocalStorage, formatElapsedTimeFromStart } from "./work-session/work-session-utils"
+import { useActiveWorkSession } from "./work-session/useActiveWorkSession"
+import { getTaskScheduleDate } from "@/domain/tasks/task-schedule"
 import { getCurrentWorkEndLocation } from "@/lib/work-start-location"
 
 interface WorkSessionWidgetProps {
-    allowedLocations?: Location[];
+    allowedLocations: Location[];
+    allowedTasks: TaskItem[];
+    onOpenTask: (task: TaskItem) => void;
 }
 
-function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
+function useWorkSessionWidget({ allowedLocations, allowedTasks, onOpenTask }: WorkSessionWidgetProps) {
     const { dict } = useDictionary()
     const { user } = useUser()
-    const [activeSession, setActiveSession] = useState<WorkSession | null>(null)
-    const [fetchedLocations, setFetchedLocations] = useState<Location[]>([])
-    const allLocations = allowedLocations ?? fetchedLocations
-    const [availableTasks, setAvailableTasks] = useState<TaskItem[]>([])
-    const [loading, setLoading] = useState<boolean>(true)
+    const { activeSession, setActiveSession, loading, sessionFailed, refreshSession } = useActiveWorkSession(user)
+    const allLocations = allowedLocations
+    const availableTasks = useMemo(() => {
+        if (!user) return []
+        const locationIds = new Set(allLocations.map(location => location.id))
+        return allowedTasks.filter(task => ["pending", "accepted", "progress"].includes(getUserTaskStatus(task, user.id))
+            && ["accepted", "progress", "review"].includes(task.status)
+            && isTaskAssignedToUser(task, user.id) && locationIds.has(task.location_id))
+            .sort((a, b) => {
+                const date = (task: TaskItem) => task.scheduled_start_at || task.due_at ? getTaskScheduleDate(task)?.getTime() ?? Infinity : Infinity
+                return date(a) - date(b) || a.id - b.id
+            })
+    }, [allLocations, allowedTasks, user])
     const [actionLoading, setActionLoading] = useState<boolean>(false)
     const [elapsedTime, setElapsedTime] = useState<string>("00:00:00")
 
@@ -78,105 +90,14 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         }
     })
 
-    const initSession = useEffectEvent(async () => {
-        try {
-            setLoading(true)
-            const [session, baseLocs] = await Promise.all([
-                WorkSessionService.getActiveSession(),
-                allowedLocations ? Promise.resolve<Location[]>([]) : LocationService.getLocations()
-            ])
-
-            setActiveSession(session)
-            void syncMonitoredTasks(session)
-            if (!allowedLocations) {
-                setFetchedLocations(baseLocs)
-            }
-        } catch (error) {
-            console.error("Error loading work session initial data", error)
-        } finally {
-            setLoading(false)
-        }
-    })
-
+    useEffect(() => { startTransition(() => { void syncMonitoredTasks(activeSession) }) }, [activeSession])
     useEffect(() => {
-        if (user) {
-            startTransition(() => {
-                void initSession()
-            })
-        }
-    }, [user])
-
-    const refreshAvailableTasks = useCallback(async () => {
-        if (!user) return
-
-        try {
-            const userTasks = await TaskService.getTaskItems({
-                userId: user.id
-            }).catch(() => [])
-            const allowedLocationIds = new Set(allLocations.map(location => location.id))
-            const nextTasks = userTasks.filter(task => {
-                const personalStatus = getUserTaskStatus(task, user.id)
-                return (
-                    ["pending", "accepted", "progress"].includes(personalStatus)
-                    && ["accepted", "progress", "review"].includes(task.status)
-                    && isTaskAssignedToUser(task, user.id)
-                    && allowedLocationIds.has(task.location_id)
-                )
-            })
-
-            setAvailableTasks(nextTasks)
-        } catch (error) {
-            console.error("Error refreshing available work assignments", error)
-        }
-    }, [allLocations, user])
-
-    useEffect(() => {
-        if (user && !loading) {
-            const initialRefreshId = window.setTimeout(() => {
-                void refreshAvailableTasks()
-            }, 0)
-            const handleTasksChanged = () => {
-                void refreshAvailableTasks()
-            }
-            window.addEventListener("workhive:tasks-changed", handleTasksChanged)
-            return () => {
-                window.clearTimeout(initialRefreshId)
-                window.removeEventListener("workhive:tasks-changed", handleTasksChanged)
-            }
-        }
-
-        return undefined
-    }, [user, loading, refreshAvailableTasks])
-    useBackgroundPolling(
-        refreshAvailableTasks,
-        POLL_INTERVALS.tasks,
-        POLL_INTERVALS.realtimeSafety,
-    )
-    useRealtimeInvalidation(["tasks", "live-work"], () => {
-        void refreshAvailableTasks()
-        window.dispatchEvent(new CustomEvent("workhive:session-changed"))
-    })
-
-    const handleSessionChanged = useEffectEvent(async () => {
-        try {
-            const session = await WorkSessionService.getActiveSession()
-            setActiveSession(session)
-            void syncMonitoredTasks(session)
-        } catch {
-            setActiveSession(null)
-            setMonitoredTaskIds([])
-        }
-    })
-
-    useEffect(() => {
-        const onSessionChanged = () => {
-            void handleSessionChanged()
-        }
+        const onSessionChanged = () => { void refreshSession() }
         window.addEventListener("workhive:session-changed", onSessionChanged)
-        return () => {
-            window.removeEventListener("workhive:session-changed", onSessionChanged)
-        }
-    }, [])
+        return () => window.removeEventListener("workhive:session-changed", onSessionChanged)
+    }, [refreshSession])
+    useBackgroundPolling(refreshSession, POLL_INTERVALS.tasks, POLL_INTERVALS.realtimeSafety)
+    useRealtimeInvalidation(["tasks", "live-work"], () => { void refreshSession() })
 
     const checkCancelledTasks = useCallback(async () => {
         if (!activeSession || !user) return
@@ -209,7 +130,7 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         } catch (error) {
             console.error("Error polling for cancelled tasks", error)
         }
-    }, [activeSession, dict.work_sessions, monitoredTaskIds, user])
+    }, [activeSession, dict.work_sessions, monitoredTaskIds, setActiveSession, user])
 
     useBackgroundPolling(
         checkCancelledTasks,
@@ -334,6 +255,9 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
         dict,
         elapsedTime,
         loading,
+        onOpenTask,
+        sessionFailed,
+        refreshSession,
         pendingTasksCount,
         preStopShift,
         setShowStopWarning,
@@ -343,8 +267,8 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
     }
 }
 
-export function WorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
-    const controller = useWorkSessionWidget({ allowedLocations })
+export function WorkSessionWidget(props: WorkSessionWidgetProps) {
+    const controller = useWorkSessionWidget(props)
 
     if (controller.loading) {
         return <WorkSessionWidgetLoading loadingLabel={controller.dict.dashboard.loading || "Loading..."} />
@@ -366,12 +290,14 @@ function WorkSessionWidgetContent({
         confirmStopShift,
         dict,
         elapsedTime,
+        onOpenTask,
+        sessionFailed,
+        refreshSession,
         pendingTasksCount,
         preStopShift,
         setShowStopWarning,
         showStopWarning,
         togglePause,
-        user,
     } = controller
 
     const activeLocationName = activeSession
@@ -390,7 +316,10 @@ function WorkSessionWidgetContent({
                 activeTaskTitle={activeTaskTitle}
                 elapsedTime={elapsedTime}
                 availableTasks={availableTasks}
-                user={user}
+                locations={allLocations}
+                onOpenTask={onOpenTask}
+                sessionFailed={sessionFailed}
+                onRetry={() => void refreshSession()}
                 actionLoading={actionLoading}
                 onPreStopShift={preStopShift}
                 onTogglePause={togglePause}
@@ -402,7 +331,10 @@ function WorkSessionWidgetContent({
                 activeLocationName={activeLocationName}
                 elapsedTime={elapsedTime}
                 availableTasks={availableTasks}
-                user={user}
+                locations={allLocations}
+                onOpenTask={onOpenTask}
+                sessionFailed={sessionFailed}
+                onRetry={() => void refreshSession()}
                 actionLoading={actionLoading}
                 onPreStopShift={preStopShift}
                 onTogglePause={togglePause}

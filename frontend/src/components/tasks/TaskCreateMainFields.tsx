@@ -15,7 +15,6 @@ type TaskCreateMainFieldsProps = {
     setNewLocationId: (val: string) => void;
     newCreatedAt: string;
     setNewCreatedAt: (val: string) => void;
-    onOpenLocations: () => void;
 };
 
 /** The first decision is only where and when. Team ownership belongs with the checklist. */
@@ -26,14 +25,13 @@ export function TaskCreateMainFields({
     setNewLocationId,
     newCreatedAt,
     setNewCreatedAt,
-    onOpenLocations,
 }: TaskCreateMainFieldsProps) {
     return (
         <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-4 sm:p-5">
             <div className="mb-4">
-                <p className="text-sm font-black text-[var(--text-main)]">Planificación</p>
+                <p className="text-sm font-black text-[var(--text-main)]">{dict.tasks.create_dialog.wizard_plan}</p>
                 <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    Elige la ubicación y la fecha. La asignación del equipo se hace en el siguiente paso.
+                    {dict.tasks.create_dialog.wizard_plan_hint}
                 </p>
             </div>
             {ownLocations.length === 0 && (
@@ -41,7 +39,7 @@ export function TaskCreateMainFields({
                     <p className="font-semibold text-[var(--text-main)]">{dict.tasks.create_dialog.no_locations}</p>
                     <p className="text-xs text-[var(--text-muted)]">{dict.tasks.create_dialog.no_locations_hint}</p>
                     <Button asChild variant="outline" size="sm">
-                        <Link href="/dashboard/locations" onClick={onOpenLocations}>{dict.tasks.create_dialog.go_to_locations}</Link>
+                        <Link href="/dashboard/locations">{dict.tasks.create_dialog.go_to_locations}</Link>
                     </Button>
                 </div>
             )}
@@ -56,7 +54,7 @@ export function TaskCreateMainFields({
                         onValueChange={setNewLocationId}
                     >
                         <SelectTrigger id="task-create-location" className="h-11 w-full text-sm font-semibold">
-                            <SelectValue placeholder="Elige una ubicación" />
+                            <SelectValue placeholder={dict.tasks.create_dialog.wizard_location_placeholder} />
                         </SelectTrigger>
                         <SelectContent>
                             {ownLocations.map((location) => (
