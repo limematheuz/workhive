@@ -104,6 +104,10 @@ def test_consent_export_and_erasure_workflow(client, db):
     db.commit()
     db.refresh(worker)
     worker_id = worker.id
+    worker.photo_url = "/media/qa-privacy-photo.png"
+    db.commit()
+    original_password_hash = worker.hashed_password
+    original_session_version = worker.session_version
     worker_login = client.post(
         "/api/v1/auth/login",
         data=login_form("privacy-worker@workhive.com", TEST_SECRET),
@@ -139,12 +143,73 @@ def test_consent_export_and_erasure_workflow(client, db):
     assert resolved.status_code == 200, resolved.text
     assert resolved.json()["status"] == "completed"
 
+    db.expire_all()
+    anonymized = db.get(User, worker_id)
+    assert anonymized.email == f"deleted+{worker_id}@invalid.workhive.local"
+    assert anonymized.full_name == "Deleted user"
+    assert anonymized.photo_url is None
+    assert anonymized.hashed_password != original_password_hash
+    assert anonymized.session_version > original_session_version
+    assert anonymized.is_active is False
+    assert db.get(Company, company_id).is_active is True
+
+    blocked_login = client.post(
+        "/api/v1/auth/login",
+        data=login_form("privacy-worker@workhive.com", TEST_SECRET),
+    )
+    assert blocked_login.status_code == 401
+    repeated = client.post(
+        f"/api/v1/privacy/requests/{created.json()['id']}/resolve",
+        headers=admin_headers,
+        json={"decision": "complete", "resolution_notes": "Repeat QA resolution"},
+    )
+    assert repeated.status_code == 409
+    assert client.get("/api/v1/users/me", headers=admin_headers).status_code == 200
+
     revoked = client.get("/api/v1/users/me", headers=worker_headers)
     assert revoked.status_code == 401
 
     users = client.get("/api/v1/users/", headers=admin_headers)
     assert users.status_code == 200
     assert all(item["id"] != worker_id for item in users.json())
+
+
+@pytest.mark.parametrize("actor", ["anonymous", "requester", "coworker"])
+def test_erasure_resolution_requires_admin_and_preserves_pending_request(client, db, actor):
+    admin_headers = _register(client, "denied-erasure-admin@workhive.com")
+    company_id = _create_company(client, admin_headers)
+    worker = _add_worker(db, email="denied-erasure-worker@workhive.com", company_id=company_id)
+    login = client.post("/api/v1/auth/login", data=login_form(worker.email, TEST_SECRET))
+    worker_headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    created = client.post(
+        "/api/v1/privacy/requests", headers=worker_headers,
+        json={"request_type": "erasure"},
+    )
+    assert created.status_code == 201, created.text
+    headers = worker_headers if actor == "requester" else {}
+    if actor == "anonymous":
+        client.cookies.clear()
+    if actor == "coworker":
+        coworker = _add_worker(db, email="denied-erasure-peer@workhive.com", company_id=company_id)
+        login = client.post("/api/v1/auth/login", data=login_form(coworker.email, TEST_SECRET))
+        headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+    response = client.post(
+        f"/api/v1/privacy/requests/{created.json()['id']}/resolve", headers=headers,
+        json={"decision": "complete", "resolution_notes": "Unauthorized QA attempt"},
+    )
+    assert response.status_code == (401 if actor == "anonymous" else 403)
+    db.expire_all()
+    assert db.get(User, worker.id).is_active is True
+    pending = db.get(DataSubjectRequest, created.json()["id"])
+    assert pending.status == "pending"
+    assert pending.resolved_at is None
+    assert pending.resolved_by_user_id is None
+    assert pending.resolution_notes is None
+    assert client.get("/api/v1/users/me", headers=worker_headers).status_code == 200
+    assert db.query(AuditLog).filter(
+        AuditLog.action == "privacy.request_resolved",
+        AuditLog.entity_id == str(pending.id),
+    ).count() == 0
 
 
 def test_last_company_admin_erasure_deactivates_company(client, db):
