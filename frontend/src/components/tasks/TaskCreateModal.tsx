@@ -159,6 +159,7 @@ export function TaskCreateModal({
                             setNewLocationId={setNewLocationId}
                             newCreatedAt={newCreatedAt}
                             setNewCreatedAt={setNewCreatedAt}
+                            onOpenLocations={() => setCreateOpen(false)}
                         />
 
                         {newLocationId && (
@@ -221,7 +222,7 @@ export function TaskCreateModal({
                         <Button
                             type="submit"
                             size="sm"
-                            disabled={saving}
+                            disabled={saving || !ownLocations.some(location => location.id.toString() === newLocationId)}
                         >
                             {saving ? (
                                 <>
