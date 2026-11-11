@@ -14,7 +14,7 @@ import { toast } from "@/lib/toast";
 import { AuthGlassCard } from "@/components/auth/AuthGlassCard";
 import { AuthLogo } from "@/components/auth/AuthLogo";
 import { LoginAccessFeedback } from "@/components/auth/LoginAccessFeedback";
-import type { LoginAccessBlock } from "@/lib/login-access";
+import type { LoginAccessBlock, LoginFailureReason } from "@/lib/login-access";
 import { LoginStatusFeedback } from "@/components/auth/LoginStatusFeedback";
 import { AUTH_FIELD_CLASS, AUTH_LABEL_CLASS } from "@/components/auth/auth-ui";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import { PremiumTabs } from "@/components/ui/premium-tabs";
 export type LoginOutcome =
     | { kind: "idle" }
     | { kind: "access_blocked"; reason: LoginAccessBlock }
-    | { kind: "error"; message: string }
+    | { kind: "error"; message: string; reason?: LoginFailureReason }
     | { kind: "success" };
 
 type LoginFormPanelProps = {
