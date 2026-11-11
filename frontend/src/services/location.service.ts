@@ -53,27 +53,27 @@ export interface LocationOperationalHistory {
 export const LocationService = {
     ...LocationWorkspaceService,
 
-    getLocations: async (clientId?: number): Promise<Location[]> => {
+    getLocations: async (clientId?: number, readContext?: string): Promise<Location[]> => {
         const path = clientId
             ? `/api/v1/locations/?client_id=${clientId}`
             : `/api/v1/locations/`
 
         const response = await apiFetch(path, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
         await assertApiResponseOk(response, "No se pudieron cargar las ubicaciones.")
         return await response.json()
     },
 
-    getLocation: async (id: number): Promise<Location> => {
+    getLocation: async (id: number, readContext?: string): Promise<Location> => {
         const response = await apiFetch(`/api/v1/locations/${id}`, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
-        if (!response.ok) {
-            throw new Error("Error fetching location")
-        }
+        await assertApiResponseOk(response, "Error fetching location")
         return await response.json()
     },
 
