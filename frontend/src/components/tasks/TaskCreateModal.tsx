@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { Location } from "@/services/location.service";
 import { User } from "@/types/user";
 import { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
@@ -15,6 +15,10 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { PremiumTabsNavigation } from "@/components/ui/premium-tabs";
+import { buildTaskPlanningDate, getDefaultTaskDate } from "@/domain/tasks/task-create";
+import { TaskCreateReview } from "./TaskCreateReview";
 import { TaskCreateMainFields } from "./TaskCreateMainFields";
 import { TaskCreateReservationSection } from "./TaskCreateReservationSection";
 import { TaskCreateHouseChecklistSection } from "./TaskCreateHouseChecklistSection";
@@ -29,6 +33,8 @@ import {
     taskDialogHeaderClass,
     taskDialogOverlayClass,
 } from "./taskDialogChrome";
+
+const STEP_IDS = ["plan", "work", "review"];
 
 interface TaskCreateModalProps {
     dict: Dictionary;
@@ -73,7 +79,11 @@ interface TaskCreateModalProps {
     setTaskPricingOverrides: React.Dispatch<React.SetStateAction<Record<number, TaskCreationPricingOverride>>>;
 }
 
-export function TaskCreateModal({
+export function TaskCreateModal(props: TaskCreateModalProps) {
+    return <TaskCreateWizard key={String(props.createOpen)} {...props} />;
+}
+
+function TaskCreateWizard({
     dict,
     adminOrManager,
     currentUser,
@@ -115,6 +125,20 @@ export function TaskCreateModal({
     taskPricingOverrides,
     setTaskPricingOverrides,
 }: TaskCreateModalProps) {
+    const [step, setStep] = React.useState("plan");
+    const text = dict.tasks.create_dialog;
+    const stepIndex = STEP_IDS.indexOf(step);
+    const goToStep = (next: string) => {
+        if (saving || !STEP_IDS.includes(next)) return;
+        if (next !== "plan" && !planReady) return;
+        if (next === "review" && !workReady) return;
+        setStep(next);
+    };
+    const submit = (event: React.FormEvent) => {
+        event.preventDefault();
+        if (step !== "review") { goToStep(step === "plan" ? "work" : "review"); return; }
+        if (planReady && workReady && !saving) handleCreateTask(event);
+    };
     const currentCompanyId = currentUser?.company_id;
     const ownLocations = locations.filter(location => (
         !currentCompanyId
@@ -135,6 +159,12 @@ export function TaskCreateModal({
         ),
         [houseTemplates, templates]
     );
+    const planReady = ownLocations.some(location => String(location.id) === newLocationId)
+        && !loadingLocationZones && !loadingReservations
+        && Boolean(buildTaskPlanningDate(newCreatedAt)) && newCreatedAt >= getDefaultTaskDate()
+        && (!newCheckoutReservationId || newCheckoutReservationId !== newNextReservationId);
+    const workReady = useHouseChecklist && !loadingHouseTemplates
+        && visibleHouseTemplates.some(item => item.template_task_id === selectedHouseTemplateId);
     return (
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogContent
@@ -150,8 +180,19 @@ export function TaskCreateModal({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleCreateTask} className="flex min-h-0 flex-1 flex-col font-sans">
+                <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col font-sans">
+                    <Tabs value={step} onValueChange={goToStep} className="flex min-h-0 flex-1 flex-col">
+                        <div className="shrink-0 space-y-2 border-b border-[var(--border-soft)] px-5 py-3 sm:px-6">
+                            <p aria-live="polite" className="text-xs font-semibold text-[var(--text-muted)]">{text.wizard_step.replace("{current}", String(stepIndex + 1)).replace("{total}", "3")}</p>
+                            <div role="progressbar" aria-label={text.wizard_steps} aria-valuenow={stepIndex + 1} aria-valuemin={0} aria-valuemax={3} className="h-1 overflow-hidden rounded-full bg-[var(--bg-tertiary)]"><div className="h-full bg-accent transition-[width]" style={{ width: `${(stepIndex + 1) / 3 * 100}%` }} /></div>
+                            <PremiumTabsNavigation tabs={[
+                                { id: "plan", label: `1. ${text.wizard_plan}` },
+                                { id: "work", label: `2. ${text.wizard_work}` },
+                                { id: "review", label: `3. ${text.wizard_review}` },
+                            ]} activeTab={step} onChange={goToStep} mobileLabel={text.wizard_steps} className="mb-0" />
+                        </div>
                     <div className={taskDialogBodyClass}>
+                        <TabsContent value="plan" className="m-0 space-y-4">
                         <TaskCreateMainFields
                             dict={dict}
                             ownLocations={ownLocations}
@@ -159,7 +200,6 @@ export function TaskCreateModal({
                             setNewLocationId={setNewLocationId}
                             newCreatedAt={newCreatedAt}
                             setNewCreatedAt={setNewCreatedAt}
-                            onOpenLocations={() => setCreateOpen(false)}
                         />
 
                         {newLocationId && (
@@ -185,6 +225,9 @@ export function TaskCreateModal({
                             />
                         )}
 
+                        {newCheckoutReservationId && newCheckoutReservationId === newNextReservationId && <p role="alert" className="text-sm text-[var(--priority-high-text)]">{text.wizard_distinct_reservations}</p>}
+                        </TabsContent>
+                        <TabsContent value="work" className="m-0 space-y-4">
                         {newLocationId && (
                             <TaskCreateHouseChecklistSection
                                 dict={dict}
@@ -208,21 +251,39 @@ export function TaskCreateModal({
                                 setDefaultAssigneeId={setNewUserId}
                             />
                         )}
+                        {!workReady && <p role="status" className="text-sm text-[var(--text-muted)]">{text.wizard_select_service}</p>}
+                        </TabsContent>
+                        <TabsContent value="review" className="m-0">
+                            <TaskCreateReview dict={dict} location={selectedLocation} date={newCreatedAt}
+                                template={templates.find(item => item.id === selectedHouseTemplateId)}
+                                houseTemplate={houseTemplates.find(item => item.template_task_id === selectedHouseTemplateId)}
+                                pricingOverride={selectedHouseTemplateId === null ? undefined : taskPricingOverrides[selectedHouseTemplateId]}
+                                users={users} assigneeId={newUserId} zones={locationZones} selectedZoneIds={selectedZoneIds}
+                                checkoutReservation={availableReservations.find(item => String(item.id) === newCheckoutReservationId)}
+                                nextReservation={availableReservations.find(item => String(item.id) === newNextReservationId)} />
+                        </TabsContent>
                     </div>
+                    </Tabs>
 
-                    <div className={`${taskDialogFooterClass} justify-end`}>
+                    <div className={`${taskDialogFooterClass} flex-nowrap`}>
+                        <div>{stepIndex > 0 && <Button type="button" variant="secondary" size="sm" className="px-2.5 sm:px-4" disabled={saving} onClick={() => goToStep(STEP_IDS[stepIndex - 1])}><ChevronLeft className="hidden size-4 sm:block" />{text.wizard_previous}</Button>}</div>
+                        <div className="flex gap-2">
                         <Button
                             type="button"
                             variant="cancel"
                             size="sm"
+                            className="px-2.5 sm:px-4"
                             onClick={() => setCreateOpen(false)}
                         >
                             {dict.tasks?.create_dialog?.cancel || "Cancel"}
                         </Button>
                         <Button
-                            type="submit"
+                            key={step === "review" ? "save" : "next"}
+                            type={step === "review" ? "submit" : "button"}
                             size="sm"
-                            disabled={saving || !ownLocations.some(location => location.id.toString() === newLocationId)}
+                            className="px-2.5 sm:px-4"
+                            onClick={step === "review" ? undefined : () => goToStep(step === "plan" ? "work" : "review")}
+                            disabled={saving || !planReady || (step !== "plan" && !workReady)}
                         >
                             {saving ? (
                                 <>
@@ -230,9 +291,10 @@ export function TaskCreateModal({
                                     {dict.tasks?.create_dialog?.creating || "Creating..."}
                                 </>
                             ) : (
-                                dict.tasks?.create_dialog?.register_jobs || "Register Work"
+                                step === "review" ? <><Check className="hidden size-4 sm:block" />{text.register_jobs}</> : <>{text.wizard_next}<ChevronRight className="size-4" /></>
                             )}
                         </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent>

@@ -1,155 +1,48 @@
 "use client";
 
-import { Clock, AlertCircle, PauseCircle, PlayCircle } from "lucide-react";
+import { Clock, PauseCircle, PlayCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { WorkSession } from "@/services/work-session.service";
-import type { TaskItem } from "@/types/user";
-import type { User } from "@/types/user";
-
-interface WorkSessionDesktopCardProps {
-    dict: {
-        work_sessions: {
-            title: string;
-            elapsed_time: string;
-            stop_shift: string;
-            pause_shift: string;
-            resume_shift: string;
-            paused?: string;
-            inactive_shift_timer_desc?: string;
-            viewer_no_pending_tasks?: string;
-            no_accepted_tasks_warning?: string;
-            no_active_shift?: string;
-        };
-        profile: {
-            stats: {
-                active_shift: string;
-                active_location: string;
-            };
-        };
-    };
-    activeSession: WorkSession | null;
-    activeLocationName: string;
-    activeTaskTitle?: string;
-    elapsedTime: string;
-    availableTasks: TaskItem[];
-    user: User | null;
-    actionLoading: boolean;
-    onPreStopShift: () => void;
-    onTogglePause: () => void;
-}
+import { Badge } from "@/components/ui/badge";
+import { WorkSessionTaskLauncher } from "./WorkSessionTaskLauncher";
+import type { WorkSessionPanelProps } from "./work-session-panel-types";
 
 export function WorkSessionDesktopCard({
-    dict,
-    activeSession,
-    activeLocationName,
-    activeTaskTitle,
-    elapsedTime,
-    availableTasks,
-    user,
-    actionLoading,
-    onPreStopShift,
-    onTogglePause,
-}: WorkSessionDesktopCardProps) {
-    return (
-        <div className="hidden md:flex flex-col bg-[var(--bg-card)] border border-[var(--border-soft)] rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow justify-between min-h-[220px] w-full">
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-[var(--text-main)] flex items-center gap-2">
-                        <Clock className="w-4.5 h-4.5 text-accent" /> {dict.work_sessions.title}
-                    </h3>
-                    {activeSession && (
-                        <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
-                            <span className={`w-2 h-2 rounded-full bg-accent ${activeSession.paused_at ? "" : "animate-pulse"}`}></span>
-                            {activeSession.paused_at
-                                ? (dict.work_sessions.paused || "Jornada pausada")
-                                : dict.profile.stats.active_shift}
-                        </span>
-                    )}
-                </div>
-
-                {activeSession ? (
-                    <div className="space-y-4">
-                        <div>
-                            <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider font-semibold">
-                                {dict.profile.stats.active_location}
-                            </p>
-                            <p className="text-[var(--text-main)] font-medium text-sm mt-0.5">
-                                {activeLocationName}
-                            </p>
-                            {activeTaskTitle && (
-                                <p className="mt-1 text-xs font-bold text-accent dark:text-accent">
-                                    {activeTaskTitle}
-                                </p>
-                            )}
-                            {activeSession.notes && (
-                                <p className="text-[var(--text-muted)] text-xs italic mt-1 bg-[var(--bg-primary)] p-2 rounded-lg border border-[var(--border-soft)]">
-                                    &ldquo;{activeSession.notes}&rdquo;
-                                </p>
-                            )}
-                        </div>
-
-                        <div>
-                            <p className="text-[var(--text-muted)] text-xs uppercase tracking-wider font-semibold">
-                                {dict.work_sessions.elapsed_time}
-                            </p>
-                            <p className="text-3xl font-mono font-bold tracking-tight text-[var(--text-main)] mt-1">
-                                {elapsedTime}
-                            </p>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-xs text-[var(--text-muted)] py-4 bg-[var(--bg-primary)] p-3 rounded-xl border border-[var(--border-soft)] flex items-start gap-2">
-                        {availableTasks.length > 0 ? (
-                            <PlayCircle className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-                        ) : (
-                            <AlertCircle className="w-4 h-4 text-orange-500 shrink-0 mt-0.5" />
-                        )}
-                        <span>
-                            {availableTasks.length > 0
-                                ? (dict.work_sessions?.inactive_shift_timer_desc || "Open a task and press Start shift and work to activate the timer.")
-                                : (user?.role?.name === "viewer"
-                                    ? (dict.work_sessions?.viewer_no_pending_tasks || "You have no pending tasks assigned.")
-                                    : (dict.work_sessions.no_accepted_tasks_warning || "Open an accepted task and start the shift to begin the timer."))}
-                        </span>
-                    </div>
-                )}
-            </div>
-
-            <div className="mt-6">
-                {activeSession ? (
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onTogglePause}
-                            disabled={actionLoading}
-                            className="flex-1"
-                        >
-                            <PauseCircle className="size-4" />
-                            {activeSession.paused_at
-                                ? dict.work_sessions.resume_shift
-                                : dict.work_sessions.pause_shift}
-                        </Button>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={onPreStopShift}
-                            disabled={actionLoading}
-                            className="flex-1"
-                        >
-                            {actionLoading ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                            ) : (
-                                dict.work_sessions.stop_shift
-                            )}
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] text-center">
-                        {dict.work_sessions?.no_active_shift || "No active shift"}
-                    </div>
-                )}
-            </div>
+    dict, activeSession, activeLocationName, activeTaskTitle, elapsedTime,
+    availableTasks, locations, actionLoading, sessionFailed, onOpenTask, onRetry, onPreStopShift, onTogglePause,
+}: WorkSessionPanelProps) {
+    const copy = dict.work_sessions;
+    const disabled = actionLoading || sessionFailed;
+    return <section aria-label={copy.widget_title} className="hidden w-full min-w-0 flex-col gap-5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-5 shadow-sm md:flex">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="flex items-center gap-2 text-sm font-bold text-[var(--text-main)]"><Clock className="size-4 text-accent" aria-hidden="true" />{copy.widget_title}</h3>
+            <Badge variant="outline" className="border-[var(--border-soft)] bg-[var(--bg-secondary)] text-[var(--text-muted)]">
+                {sessionFailed ? copy.widget_connection : activeSession ? activeSession.paused_at ? copy.paused : dict.profile.stats.active_shift : copy.widget_idle}
+            </Badge>
         </div>
-    );
+        {sessionFailed && <div role="alert" className="space-y-2 text-xs text-[var(--text-muted)]">
+            <p>{copy.widget_read_error}</p>
+            <Button type="button" variant="outline" size="sm" onClick={onRetry}>{copy.widget_retry}</Button>
+        </div>}
+        {activeSession ? <>
+            <div className="space-y-1">
+                <p className="break-words text-sm font-semibold text-[var(--text-main)]">{activeTaskTitle || activeLocationName}</p>
+                {activeTaskTitle && <p className="break-words text-xs text-[var(--text-muted)]">{activeLocationName}</p>}
+                {activeSession.notes && <p className="break-words text-xs text-[var(--text-muted)]">{activeSession.notes}</p>}
+            </div>
+            <div>
+                <p className="text-xs text-[var(--text-muted)]">{copy.elapsed_time}</p>
+                <p role="timer" aria-live="off" className="mt-1 font-mono text-3xl font-bold tabular-nums tracking-tight text-[var(--text-main)]">{elapsedTime}</p>
+            </div>
+            <div className="grid gap-2">
+                <Button type="button" variant="outline" onClick={onTogglePause} disabled={disabled}>
+                    {activeSession.paused_at ? <PlayCircle className="size-4" /> : <PauseCircle className="size-4" />}
+                    {activeSession.paused_at ? copy.resume_shift : copy.pause_shift}
+                </Button>
+                <Button type="button" variant="destructive" onClick={onPreStopShift} disabled={disabled}>{copy.stop_shift}</Button>
+            </div>
+        </> : <>
+            <WorkSessionTaskLauncher availableTasks={availableTasks} locations={locations} onOpenTask={onOpenTask} disabled={disabled} />
+            {availableTasks.length > 0 && <p className="border-t border-[var(--border-soft)] pt-3 text-xs leading-relaxed text-[var(--text-muted)]">{copy.widget_idle_hint}</p>}
+        </>}
+    </section>;
 }

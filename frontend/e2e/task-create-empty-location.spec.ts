@@ -21,7 +21,7 @@ for (const locale of ["es", "en"] as const) for (const width of [390, 768, 1440]
         await page.getByRole("button", { name: locale === "es" ? "Nueva Tarea" : "New Task", exact: true }).click();
         const dialog = page.getByRole("dialog");
         await expect(dialog.getByText(locale === "es" ? "No hay ubicaciones disponibles para crear tareas." : "No locations are available for creating tasks.", { exact: true })).toBeVisible();
-        await expect(dialog.locator('button[type="submit"]')).toBeDisabled();
+        await expect(dialog.getByRole("button", { name: locale === "es" ? "Siguiente" : "Next", exact: true })).toBeDisabled();
         await expect(dialog.locator("#task-create-location")).toBeDisabled();
         await dialog.getByRole("link", { name: locale === "es" ? "Ir a Ubicaciones" : "Go to Locations", exact: true }).click();
         await expect(page).toHaveURL(/\/dashboard\/locations$/);

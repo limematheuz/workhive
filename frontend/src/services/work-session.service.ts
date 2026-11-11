@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api"
+import { apiFetch, assertApiResponseOk } from "@/lib/api"
 import { ActiveCompanySession, TaskWorkSummary, TaskWorkDetailedSummary, WorkSession } from "@/types/user"
 
 export type { WorkSession };
@@ -30,14 +30,13 @@ export const WorkSessionService = {
         return await response.json()
     },
 
-    getActiveSession: async (): Promise<WorkSession | null> => {
+    getActiveSession: async (readContext?: string): Promise<WorkSession | null> => {
         const response = await apiFetch(`/api/v1/work-sessions/active`, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
-        if (!response.ok) {
-            throw new Error("Error fetching active session")
-        }
+        await assertApiResponseOk(response, "Error fetching active session")
         return await response.json()
     },
 
