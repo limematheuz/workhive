@@ -30,7 +30,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const { dict, locale, setLocale } = useDictionary();
     const { user } = useUser();
     const pathname = usePathname();
-    const { isMobile, state } = useSidebar();
+    const { isMobile, state, setOpenMobile } = useSidebar();
     const [loadedFeatures, setLoadedFeatures] = useState<{
         context: string;
         values: Set<string> | null;
@@ -131,7 +131,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
                         <DropdownMenuContent side={isMobile ? "top" : "right"} align={isMobile ? "start" : "end"} sideOffset={10} className="sidebar-account-menu w-60 rounded-2xl p-0">
                             <div className="flex min-w-0 items-center gap-2.5 px-3 py-3"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-9 shrink-0" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{user.full_name || "Usuario"}</p><p className="truncate text-xs text-[var(--text-muted)]">{user.email}</p></div></div>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem asChild className="h-10 rounded-none px-3 text-sm"><Link href={isPartnerPortal ? "/dashboard/partner/profile" : isClientPortal ? "/dashboard/client/profile" : "/dashboard/profile"}><UserRound className="size-4" />{dict.dashboard.view_profile}</Link></DropdownMenuItem>
+                            <DropdownMenuItem asChild onSelect={() => { if (isMobile) setOpenMobile(false); }} className="h-10 rounded-none px-3 text-sm"><Link href={isPartnerPortal ? "/dashboard/partner/profile" : isClientPortal ? "/dashboard/client/profile" : "/dashboard/profile"}><UserRound className="size-4" />{dict.dashboard.view_profile}</Link></DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem variant="destructive" onSelect={onLogout} className="h-10 rounded-none px-3 text-sm"><LogOut className="size-4" />{dict.dashboard.logout}</DropdownMenuItem>
                         </DropdownMenuContent>
