@@ -7,10 +7,9 @@ import { Loader2 } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { LoginFormPanel, type LoginOutcome } from "@/components/auth/LoginFormPanel";
 import { LoginMarketingPanel } from "@/components/auth/LoginMarketingPanel";
-import { getLoginAccessBlock } from "@/lib/login-access";
+import { getLoginAccessBlock, getLoginFailureReason, getLoginFailureMessage } from "@/lib/login-access";
 import { clearSessionCache } from "@/lib/auth";
 import {
-    getAuthErrorMessage,
     getAuthFormMessages,
     prepareLoginCredentials,
 } from "@/lib/auth-forms";
@@ -99,10 +98,8 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
             }
             setOutcome({
                 kind: "error",
-                message: getAuthErrorMessage(
-                    error,
-                    locale === "es" ? "No se pudo iniciar la sesión." : "Could not sign in.",
-                ),
+                reason: getLoginFailureReason(error),
+                message: "",
             });
         } finally {
             setSubmitting(false);
@@ -127,7 +124,7 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
                     password={password}
                     showPassword={showPassword}
                     locked={locked}
-                    outcome={outcome}
+                    outcome={outcome.kind === "error" && outcome.reason ? { ...outcome, message: getLoginFailureMessage(outcome.reason, locale) } : outcome}
                     successPhrases={successPhrases}
                     failPhrases={failPhrases}
                     onRequestAccess={() => router.push("/register")}

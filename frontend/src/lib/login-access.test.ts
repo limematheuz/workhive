@@ -1,7 +1,20 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {ApiResponseError,assertApiResponseOk} from './api.ts';
-import {getLoginAccessBlock} from './login-access.ts';
+import {getLoginAccessBlock, getLoginFailureReason, getLoginFailureMessage} from './login-access.ts';
+
+test('login feedback uses response status without exposing private diagnostics', () => {
+    for (const [status, reason] of [[401, 'credentials'], [429, 'rate_limit'], [500, 'unavailable'], [403, 'unavailable']] as const) {
+        const error = new ApiResponseError('Private diagnostic', status);
+        assert.equal(getLoginFailureReason(error), reason);
+        for (const locale of ['es', 'en'] as const) {
+            assert.ok(getLoginFailureMessage(reason, locale).length > 0);
+            assert.ok(!getLoginFailureMessage(reason, locale).includes(error.message));
+        }
+    }
+    assert.equal(getLoginFailureReason(new TypeError('Failed to fetch')), 'unavailable');
+    assert.notEqual(getLoginFailureMessage('credentials', 'es'), getLoginFailureMessage('credentials', 'en'));
+});
 
 test('subscription response preserves canonical header code for login recovery',async()=>{
     await assert.rejects(assertApiResponseOk(new Response(JSON.stringify({detail:'The company trial has expired'}),{status:402,headers:{'X-WorkHive-Error-Code':'subscription.trial_expired'}}),'Fallback'),error=>{
