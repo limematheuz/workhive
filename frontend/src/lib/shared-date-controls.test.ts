@@ -36,7 +36,8 @@ test("application forms use the shared calendar controls instead of browser date
     for (const formSource of [
         source("../app/dashboard/labor-costs/page.tsx"),
         source("../components/quality/CorrectiveActionsDialog.tsx"),
-        source("../app/dashboard/work-orders/page.tsx"),
+        source("../components/work-orders/CreateWorkOrderDialog.tsx"),
+        source("../components/work-orders/EditWorkOrderDialog.tsx"),
         source("../components/contracts/ServiceContractDetailDialog.tsx"),
         source("../components/expenses/ExpenseFormDialog.tsx"),
         source("../components/inventory/InventoryPurchasesSection.tsx"),

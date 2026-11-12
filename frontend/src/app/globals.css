@@ -1146,10 +1146,10 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 
 /* Unified premium styling for form fields inside modals/sheets to match iOS styling */
 [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
-[data-slot="dialog-content"] select:not(.dialog-compact-control),
+[data-slot="dialog-content"] select:not(.dialog-compact-control):not([aria-hidden="true"]),
 [data-slot="dialog-content"] textarea:not(.dialog-compact-control),
 [data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
-[data-slot="sheet-content"] select:not(.dialog-compact-control),
+[data-slot="sheet-content"] select:not(.dialog-compact-control):not([aria-hidden="true"]),
 [data-slot="sheet-content"] textarea:not(.dialog-compact-control) {
   background-color: var(--bg-tertiary) !important;
   border: 1px solid var(--border-soft) !important;
@@ -1178,10 +1178,10 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 }
 
 .light-mode [data-slot="dialog-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
-.light-mode [data-slot="dialog-content"] select:not(.dialog-compact-control),
+.light-mode [data-slot="dialog-content"] select:not(.dialog-compact-control):not([aria-hidden="true"]),
 .light-mode [data-slot="dialog-content"] textarea:not(.dialog-compact-control),
 .light-mode [data-slot="sheet-content"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="file"]):not([type="range"]):not(.dialog-compact-control),
-.light-mode [data-slot="sheet-content"] select:not(.dialog-compact-control),
+.light-mode [data-slot="sheet-content"] select:not(.dialog-compact-control):not([aria-hidden="true"]),
 .light-mode [data-slot="sheet-content"] textarea:not(.dialog-compact-control) {
   background-color: var(--dialog-control-bg) !important;
   border-color: var(--dialog-control-border) !important;

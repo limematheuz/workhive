@@ -92,6 +92,8 @@ export function DateTimePicker({
     }, [max, min]);
 
     const applyDateTime = (date: Date, nextTime: string) => {
+        // A form reset can emit an empty native Select change without a user choice.
+        if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(nextTime)) return;
         changeValue(clampToBounds(toLocalDateTime(date, nextTime), min, max).toISOString());
     };
 
