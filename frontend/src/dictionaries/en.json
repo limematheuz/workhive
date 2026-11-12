@@ -1,4 +1,7 @@
 {
+  "workOrderValidation": {
+    "location_required": "Choose an available location to continue."
+  },
   "inventoryNavigation": {
     "title": "Inventory",
     "navigation": "Inventory sections",
