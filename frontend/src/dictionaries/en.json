@@ -1,5 +1,11 @@
 {
   "workOrderValidation": {
+    "details": "Work order details",
+    "read_only": "Read only",
+    "read_only_hint": "View this work order’s schedule and instructions.",
+    "close": "Close",
+    "read_error": "We could not load all work order data. Retry to update the information.",
+    "retry": "Retry",
     "location_required": "Choose an available location to continue."
   },
   "inventoryNavigation": {

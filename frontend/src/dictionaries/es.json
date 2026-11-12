@@ -1,5 +1,11 @@
 {
   "workOrderValidation": {
+    "details": "Detalles de la orden",
+    "read_only": "Solo lectura",
+    "read_only_hint": "Consulta la planificación y las indicaciones de esta orden.",
+    "close": "Cerrar",
+    "read_error": "No se pudieron cargar todos los datos de las órdenes. Reintenta para actualizar la información.",
+    "retry": "Reintentar",
     "location_required": "Selecciona una ubicación disponible para continuar."
   },
   "inventoryNavigation": {

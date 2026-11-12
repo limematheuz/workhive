@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlus, ChartNoAxesCombined, ClipboardList, MapPin, PackageMinus, Pencil, Repeat2 } from "lucide-react";
+import { CalendarPlus, ChartNoAxesCombined, ClipboardList, Eye, MapPin, PackageMinus, Pencil, Repeat2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ type WorkOrderListProps = {
     locationName: (id: number) => string;
     generatingId: number | null;
     canViewMargin: boolean;
+    canManageOrder: (order: WorkOrder) => boolean;
     onEdit: (order: WorkOrder) => void;
     onMaterials: (order: WorkOrder) => void;
     onMargin: (order: WorkOrder) => void;
@@ -49,14 +50,14 @@ function WorkOrderSummary({ order }: { order: WorkOrder }) {
     </div>;
 }
 
-export function WorkOrderList({ workOrders, loading, locationName, generatingId, canViewMargin, onEdit, onMaterials, onMargin, onGenerate }: WorkOrderListProps) {
+export function WorkOrderList({ workOrders, loading, locationName, generatingId, canViewMargin, canManageOrder, onEdit, onMaterials, onMargin, onGenerate }: WorkOrderListProps) {
     const actions = (order: WorkOrder) => {
         const options: PopoverOption[] = [
-            { label: "Editar", icon: Pencil, variant: "edit", onClick: () => onEdit(order) },
+            { label: canManageOrder(order) ? "Editar" : "Ver detalles", icon: canManageOrder(order) ? Pencil : Eye, variant: canManageOrder(order) ? "edit" : undefined, onClick: () => onEdit(order) },
             { label: "Material", icon: PackageMinus, onClick: () => onMaterials(order) },
         ];
         if (canViewMargin) options.push({ label: "Margen", icon: ChartNoAxesCombined, onClick: () => onMargin(order) });
-        if (order.status === "active" && order.next_occurrence_at) options.push({
+        if (canManageOrder(order) && order.status === "active" && order.next_occurrence_at) options.push({
             label: generatingId === order.id ? "Generando tarea…" : "Generar tarea",
             icon: CalendarPlus, disabled: generatingId !== null, onClick: () => onGenerate(order),
         });
@@ -67,7 +68,7 @@ export function WorkOrderList({ workOrders, loading, locationName, generatingId,
 
     return <DataListTable
         items={workOrders} getRowKey={order => order.id} loading={loading} desktopFrom="lg"
-        onRowClick={onEdit} rowAriaLabel={order => `Editar orden ${order.title}`}
+        onRowClick={onEdit} rowAriaLabel={order => `${canManageOrder(order) ? "Editar orden" : "Ver orden"} ${order.title}`}
         header={{ title: "Planificación operativa", subtitle: "Una orden organiza el trabajo; una tarea registra la ejecución real.", countLabel: `${workOrders.length} órdenes` }}
         columns={[
             { key: "title", label: "Orden", className: "w-[32%]" },

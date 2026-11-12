@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { getErrorMessage } from "@/lib/errors";
+import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import { WorkOrderService } from "@/services/work-order.service";
 import type { WorkOrder, WorkOrderUpdate } from "@/types/work-order";
@@ -45,17 +46,20 @@ function createWorkOrderUpdateDraft(workOrder: WorkOrder): WorkOrderUpdateDraft 
     };
 }
 
-export function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated }: {
+export function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated, readOnly = false }: {
     workOrder: WorkOrder;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onUpdated: (workOrder: WorkOrder) => void;
+    readOnly?: boolean;
 }) {
+    const { dict } = useDictionary();
     const [saving, setSaving] = React.useState(false);
     const [draft, setDraft] = React.useState<WorkOrderUpdateDraft>(() => createWorkOrderUpdateDraft(workOrder));
     const updateDraft = (changes: Partial<WorkOrderUpdateDraft>) => setDraft((current) => ({ ...current, ...changes }));
 
     const save = async () => {
+        if (readOnly) return;
         if (!draft.title.trim() || !draft.scheduledStart) {
             toast.error("Completa el nombre y la próxima planificación.");
             return;
@@ -89,12 +93,14 @@ export function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent compact className="max-w-xl" confirmDiscard>
-                <DialogHeader>
-                    <DialogTitle>Editar orden de trabajo</DialogTitle>
-                    <DialogDescription>La ubicación y el contrato mantienen su trazabilidad; aquí ajustas la planificación y el estado operativo.</DialogDescription>
+            <DialogContent compact className="flex max-w-xl flex-col gap-0 overflow-hidden p-0" confirmDiscard={!readOnly}>
+                <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] p-5 pr-14 text-left">
+                    <DialogTitle>{readOnly ? dict.workOrderValidation.details : "Editar orden de trabajo"}</DialogTitle>
+                    <DialogDescription>{readOnly ? dict.workOrderValidation.read_only_hint : "La ubicación y el contrato mantienen su trazabilidad; aquí ajustas la planificación y el estado operativo."}</DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-2">
+                {readOnly && <p className="shrink-0 px-5 pt-4 text-xs font-semibold text-[var(--text-muted)]">{dict.workOrderValidation.read_only}</p>}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                <fieldset disabled={readOnly} className={`grid min-w-0 gap-4 p-5 ${readOnly ? "[&_input]:disabled:opacity-100 [&_textarea]:disabled:opacity-100 [&_button]:disabled:opacity-100" : ""}`}>
                     <div className="grid gap-2">
                         <Label htmlFor="work-order-edit-title">Nombre</Label>
                         <Input id="work-order-edit-title" value={draft.title} onChange={event => updateDraft({ title: event.target.value })} maxLength={160} />
@@ -134,10 +140,11 @@ export function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated }
                         <div className="grid gap-2"><Label htmlFor="work-order-edit-minutes">Minutos previstos</Label><Input id="work-order-edit-minutes" type="number" min="1" value={draft.estimatedMinutes} onChange={event => updateDraft({ estimatedMinutes: event.target.value })} /></div>
                     </div>
                     <div className="grid gap-2"><Label htmlFor="work-order-edit-description">Indicaciones</Label><Textarea id="work-order-edit-description" value={draft.description} onChange={event => updateDraft({ description: event.target.value })} /></div>
+                </fieldset>
                 </div>
-                <DialogFooter>
-                    <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>Cancelar</Button>
-                    <Button type="button" onClick={() => void save()} disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Guardar cambios</Button>
+                <DialogFooter className="shrink-0 border-t border-[var(--border-soft)] p-5">
+                    <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{readOnly ? dict.workOrderValidation.close : "Cancelar"}</Button>
+                    {!readOnly && <Button type="button" onClick={() => void save()} disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Guardar cambios</Button>}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
