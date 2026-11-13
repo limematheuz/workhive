@@ -46,7 +46,7 @@ export function CalendarKanbanCard({
         if (!planningValue) return null;
         const day = isTaskDateOnlyValue(planningValue) ? toTaskPlanningDateInput(planningValue) : null;
         const date = new Date(day ? `${day}T12:00:00.000Z` : planningValue);
-        return Number.isNaN(date.getTime()) ? null : date.toLocaleString(locale === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", ...(!day ? { hour: "2-digit" as const, minute: "2-digit" as const } : {}), timeZone: "UTC" });
+        return Number.isNaN(date.getTime()) ? null : date.toLocaleString(locale === "es" ? "es-ES" : "en-GB", { day: "numeric", month: "short", ...(!day ? { hour: "2-digit" as const, minute: "2-digit" as const } : {}), timeZone: day ? "UTC" : Intl.DateTimeFormat().resolvedOptions().timeZone });
     }, [locale, planningValue]);
 
     return (
