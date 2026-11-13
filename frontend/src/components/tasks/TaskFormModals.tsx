@@ -97,6 +97,7 @@ interface TaskFormModalsProps {
     onReject?: (taskId: number) => Promise<void> | void;
  
      // Templates Modal
+     templateSaving: boolean;
      templateModalOpen: boolean;
      setTemplateModalOpen: (open: boolean) => void;
      selectedTemplate: TemplateTask | null;
@@ -195,6 +196,7 @@ interface TaskFormModalsProps {
      onAccept,
      onReject,
  
+     templateSaving,
      templateModalOpen,
      setTemplateModalOpen,
      selectedTemplate,
@@ -304,7 +306,7 @@ interface TaskFormModalsProps {
 
             <TemplateModal
                 dict={dict}
-                isSaving={saving}
+                isSaving={templateSaving}
                 isTemplateModalOpen={templateModalOpen}
                 setIsTemplateModalOpen={setTemplateModalOpen}
                 selectedTemplate={selectedTemplate}

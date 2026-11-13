@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 import type {
     LocationTemplate,
     TemplateTask,
@@ -40,9 +40,7 @@ export const TemplateTaskService = {
             method: "POST",
             body: JSON.stringify(input),
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error creating template"));
-        }
+        await assertApiResponseOk(response, "Error creating template");
         return response.json();
     },
 
@@ -54,9 +52,7 @@ export const TemplateTaskService = {
             method: "PATCH",
             body: JSON.stringify(input),
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error updating template"));
-        }
+        await assertApiResponseOk(response, "Error updating template");
         return response.json();
     },
 

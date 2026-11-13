@@ -1631,6 +1631,11 @@
   "status_section_hint": "Only update the status when it matches real work progress."
     },
     "template_dialog": {
+      "save_changes": "Save changes",
+      "create_service": "Create service",
+      "updated": "Service updated successfully.",
+      "created": "Service created successfully.",
+      "save_error": "The service could not be saved. Check the details and try again.",
       "edit_title": "Edit Global Template",
       "create_title": "New Task Template",
       "subtitle": "Define a reusable task with its reference price and tax rate.",
