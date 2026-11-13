@@ -31,7 +31,8 @@ export function DashboardHeader() {
         : pathname.includes("/dashboard/quotes") ? dict.quotes.nav_label
         : pathname.includes("/dashboard/contracts") ? "Contratos"
         : pathname.includes("/dashboard/locations") ? dict.dashboard.locations
-        : (pathname === "/dashboard/assets" || pathname.startsWith("/dashboard/assets/")) ? "Activos"
+        : (pathname === "/dashboard/documents" || pathname.startsWith("/dashboard/documents/")) ? dict.dashboard.documents
+        : (pathname === "/dashboard/assets" || pathname.startsWith("/dashboard/assets/")) ? dict.dashboard.assets
         : (pathname === "/dashboard/quality" || pathname.startsWith("/dashboard/quality/")) ? "Calidad"
         : pathname.includes("/dashboard/work-orders") ? "Órdenes de trabajo"
         : (pathname === "/dashboard/task-reports" || pathname.startsWith("/dashboard/task-reports/")) ? dict.task_reports.title
