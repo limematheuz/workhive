@@ -16,10 +16,10 @@ import { LocationService, type Location } from "@/services/location.service";
 import { LocationDocumentService, type LocationDocumentLibraryItem } from "@/services/location-document.service";
 
 const columns: DataListColumn[] = [
-    { key: "document", label: "Documento", className: "w-[38%]" },
+    { key: "document", label: "Documento", className: "w-[34%]" },
     { key: "location", label: "Ubicación", className: "w-[28%]" },
     { key: "date", label: "Fecha", className: "w-[20%]" },
-    { key: "actions", label: "", className: "w-[14%] text-right" },
+    { key: "actions", label: "", className: "w-[18%] text-right" },
 ];
 
 const bytes = (size: number) => size < 1024 * 1024 ? `${Math.ceil(size / 1024)} KB` : `${(size / (1024 * 1024)).toFixed(1)} MB`;
@@ -91,6 +91,7 @@ export default function DocumentsPage() {
     return <div className="dashboard-page-content px-[3%] py-6 md:p-8">
         <PageHeader icon={FileText} title="Documentos" subtitle="Documentación operativa vinculada a ubicaciones. El límite depende del plan contratado." className="mb-6" />
         <DataListTable
+            desktopFrom="lg"
             items={documents}
             getRowKey={(document) => document.id}
             columns={columns}
@@ -109,7 +110,7 @@ export default function DocumentsPage() {
                 <div key="document" className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{document.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{document.document_type} · {bytes(document.size_bytes)}</p></div>,
                 <span key="location" className="truncate text-sm text-[var(--text-main)]">{document.location_name}</span>,
                 <span key="date" className="text-sm text-[var(--text-muted)]">{formatDate(document.created_at)}</span>,
-                <div key="actions" className="flex justify-end gap-1"><a className="inline-flex h-8 items-center justify-center rounded-md px-2 text-sm font-medium hover:bg-muted" href={LocationDocumentService.documentDownloadUrl(document.location_id, document.id)}><Download className="mr-1 size-4" />Descargar</a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div>,
+                <div key="actions" className="flex justify-end gap-1"><a className="inline-flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-muted" aria-label={`Descargar ${document.name}`} title="Descargar documento" href={LocationDocumentService.documentDownloadUrl(document.location_id, document.id)}><Download className="size-4" /></a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div>,
             ]}
             renderCompactRow={(document) => <div className="flex min-w-0 items-center justify-between gap-3"><div className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{document.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{document.location_name} · {bytes(document.size_bytes)}</p></div><div className="flex shrink-0 gap-1"><a className="inline-flex size-8 items-center justify-center rounded-md hover:bg-muted" href={LocationDocumentService.documentDownloadUrl(document.location_id, document.id)} aria-label={`Descargar ${document.name}`}><Download className="size-4" /></a>{locations.some((location) => location.id === document.location_id) && <Button type="button" size="icon" variant="ghost" className="size-8 text-[var(--text-muted)] hover:text-destructive" onClick={() => setArchiving(document)} aria-label={`Archivar ${document.name}`}><Archive className="size-4" /></Button>}</div></div>}
         />
