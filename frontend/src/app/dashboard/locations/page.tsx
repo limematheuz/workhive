@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LocationService, Location } from "@/services/location.service";
 import { ClientService, Client } from "@/services/client.service";
-import { TaskService, TaskItem } from "@/services/task.service";
 import { CollaborationService } from "@/services/collaboration.service";
 import { CompanyCollaboration } from "@/types/collaboration";
 import { LocationsGrid } from "@/components/locations/LocationsGrid";
@@ -21,19 +20,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
+import { useLocationList } from "@/hooks/useLocationList";
+import { Button } from "@/components/ui/button";
+import type { User } from "@/types/user";
 
 const getOwnerCompanyId = (location: Location) =>
     location.owner_company_id ?? location.managing_company_id;
 
 export default function LocationsPage() {
-    const { dict } = useDictionary();
     const { user } = useUser();
-    const [locations, setLocations] = useState<Location[]>([]);
+    if (!user) return null;
+    return <LocationsWorkspace key={`${user.id}:${user.company_id}:${user.role?.name}`} user={user} />;
+}
+
+function LocationsWorkspace({ user }: { user: User }) {
+    const { dict } = useDictionary();
     const [clients, setClients] = useState<Client[]>([]);
-    const [tasks, setTasks] = useState<TaskItem[]>([]);
     const [collaborations, setCollaborations] = useState<CompanyCollaboration[]>([]);
     const [canReadClients, setCanReadClients] = useState(false);
     const [selectedClientId, setSelectedClientId] = useState<number | "ALL">("ALL");
+    const { locations, tasks, loaded, loading, error: readError, reload: loadLocations } = useLocationList(selectedClientId);
 
     // Filter and tab state
     const [activeTab, setActiveTab] = useState<"own" | "shared">("own");
@@ -84,26 +90,6 @@ export default function LocationsPage() {
         }, 0);
         return () => window.clearTimeout(timeoutId);
     }, [loadInitialData]);
-
-    const loadLocations = useCallback(async () => {
-        try {
-            const clientIdParam = selectedClientId === "ALL" ? undefined : selectedClientId;
-            const data = await LocationService.getLocations(clientIdParam);
-            setLocations(data);
-
-            const tasksData = await TaskService.getTaskItems().catch(() => [] as TaskItem[]);
-            setTasks(tasksData);
-        } catch (error) {
-            console.error("Error loading locations", error);
-        }
-    }, [selectedClientId]);
-
-    useEffect(() => {
-        const timeoutId = window.setTimeout(() => {
-            void loadLocations();
-        }, 0);
-        return () => window.clearTimeout(timeoutId);
-    }, [loadLocations]);
 
     useBackgroundPolling(async () => {
         await Promise.all([loadInitialData(), loadLocations()]);
@@ -193,7 +179,7 @@ export default function LocationsPage() {
                 title={dict.locations.title}
                 subtitle={dict.locations.subtitle || "Gestiona los locales, sedes e instalaciones donde presta servicio tu equipo."}
                 className={`mb-6 sm:flex-col sm:items-stretch xl:flex-row xl:items-center ${!isReadOnly ? "[&>div:last-child]:self-end max-md:[&>div:last-child]:w-full" : ""}`}
-                actions={!isReadOnly ? (
+                actions={!isReadOnly && loaded ? (
                     <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
                         <LocationBulkImportDialog onImported={loadLocations} />
                         <CreateLocationSheet clients={clients} defaultClientId={selectedClientId} onLocationCreated={loadLocations} />
@@ -206,8 +192,8 @@ export default function LocationsPage() {
                     <PremiumTabs
                         layout="fit"
                         tabs={[
-                            { id: "own" as const, label: `${dict.locations?.tabs?.own || "Propias"} (${locations.filter((l) => getOwnerCompanyId(l) == null || getOwnerCompanyId(l) === user?.company_id).length})`, icon: Home },
-                            { id: "shared" as const, label: `${dict.locations?.tabs?.shared || "Compartidas"} (${locations.filter((l) => getOwnerCompanyId(l) != null && getOwnerCompanyId(l) !== user?.company_id).length})`, icon: Share2 }
+                            { id: "own" as const, label: `${dict.locations.tabs.own} (${loaded ? ownLocations.length : loading ? "…" : "—"})`, icon: Home },
+                            { id: "shared" as const, label: `${dict.locations.tabs.shared} (${loaded ? sharedLocations.length : loading ? "…" : "—"})`, icon: Share2 }
                         ]}
                         activeTab={activeTab}
                         onChange={(tab) => setActiveTab(tab as "own" | "shared")}
@@ -251,13 +237,15 @@ export default function LocationsPage() {
                         )}
                     </div>
 
-                    <LocationsGrid
+                    {readError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4"><p className="text-sm text-[var(--text-muted)]">{dict.locations.list_state[readError]}</p><Button variant="outline" disabled={loading} onClick={() => void loadLocations()}>{dict.locations.list_state.retry}</Button></div>}
+                    {loading && !loaded && <p role="status" className="p-4 text-sm text-[var(--text-muted)]">{dict.locations.list_state.loading}</p>}
+                    {loaded && <LocationsGrid
                         locations={activeTab === "own" ? ownLocations : sharedLocations}
                         clients={clients}
                         tasks={tasks}
                         onEdit={handleEdit}
                         onDelete={handleDeleteClick}
-                    />
+                    />}
                 </div>
             </section>
 

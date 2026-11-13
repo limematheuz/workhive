@@ -713,6 +713,13 @@
   },
   "locations": {
     "title": "Locations",
+    "list_state": {
+      "loading": "Loading locations…",
+      "locations": "The locations could not be loaded. Please try again.",
+      "denied": "You do not have access to these locations. Check your permissions and try again.",
+      "tasks": "The task counts could not be loaded. Locations are still available.",
+      "retry": "Retry"
+    },
     "tabs": {
       "own": "Owned",
       "shared": "Shared"

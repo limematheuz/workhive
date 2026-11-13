@@ -17,7 +17,7 @@ import { LocationDetailDialog } from "./LocationDetailDialog"
 interface LocationsGridProps {
     locations: Location[]
     clients: Client[]
-    tasks: TaskItem[]
+    tasks: TaskItem[] | null
     onEdit: (location: Location) => void
     onDelete: (location: Location) => void
 }

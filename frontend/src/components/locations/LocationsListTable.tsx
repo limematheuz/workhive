@@ -12,7 +12,7 @@ import { getLocationTypeVisual } from "./location-visuals"
 
 type Props = {
     locations: Location[]
-    tasks: TaskItem[]
+    tasks: TaskItem[] | null
     getClientName: (id?: number | null) => string
     renderActions: (location: Location) => ReactNode
     onOpen: (location: Location) => void
@@ -38,11 +38,11 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
             </TableHeader>
             <TableBody>
                 {pagination.pageItems.map(location => {
-                    const work = tasks.filter(task => task.location_id === location.id)
-                    const pending = work.filter(task => task.status !== "completed").length
+                    const work = tasks?.filter(task => task.location_id === location.id)
+                    const pending = work?.filter(task => task.status !== "completed").length ?? "—"
                     const visual = getLocationTypeVisual(location.profile?.site_type)
                     const Icon = visual.icon
-                    const taskLabel = work.length === 1 ? (locale === "es" ? "tarea" : "task") : workspace.tasks
+                    const taskLabel = work?.length === 1 ? (locale === "es" ? "tarea" : "task") : workspace.tasks
                     const pendingLabel = pending === 1 && locale === "es" ? "pendiente" : workspace.pending_tasks
                     return <TableRow key={location.id} tabIndex={0} aria-label={workspace.view_location.replace("{name}", location.name)} onClick={() => onOpen(location)} onKeyDown={event => {
                         if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
@@ -57,7 +57,7 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
                                     <p className="min-w-0 break-words text-sm font-semibold text-[var(--text-main)]">{location.name}</p>
                                     <p className="break-words text-xs text-[var(--text-muted)] @min-[800px]/locations-list:hidden">{getClientName(location.client_id)}</p>
                                     <div className="flex flex-wrap items-center gap-2 pt-1 @min-[650px]/locations-list:hidden">
-                                        <span className="text-xs text-[var(--text-muted)]">{work.length} {taskLabel} · {pending} {pendingLabel}</span>
+                                        <span className="text-xs text-[var(--text-muted)]">{work?.length ?? "—"} {taskLabel} · {pending} {pendingLabel}</span>
                                         {statusBadge(location)}
                                     </div>
                                 </div>
@@ -65,7 +65,7 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
                         </TableCell>
                         <TableCell className="hidden whitespace-normal px-3 py-3 text-xs text-[var(--text-muted)] @min-[800px]/locations-list:table-cell"><span className="break-words">{getClientName(location.client_id)}</span></TableCell>
                         <TableCell className="hidden px-3 py-3 @min-[650px]/locations-list:table-cell">
-                            <div className="flex items-center gap-1.5 text-xs font-medium tabular-nums"><ListChecks className="h-3.5 w-3.5 shrink-0 text-accent" />{work.length}</div>
+                            <div className="flex items-center gap-1.5 text-xs font-medium tabular-nums"><ListChecks className="h-3.5 w-3.5 shrink-0 text-accent" />{work?.length ?? "—"}</div>
                         </TableCell>
                         <TableCell className="hidden px-3 py-3 text-xs font-medium tabular-nums @min-[650px]/locations-list:table-cell">{pending}</TableCell>
                         <TableCell className="hidden px-3 py-3 @min-[650px]/locations-list:table-cell">{statusBadge(location)}</TableCell>
