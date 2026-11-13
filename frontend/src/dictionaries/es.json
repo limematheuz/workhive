@@ -713,6 +713,13 @@
   },
   "locations": {
     "title": "Ubicaciones",
+    "list_state": {
+      "loading": "Cargando ubicaciones…",
+      "locations": "No se pudieron cargar las ubicaciones. Inténtalo de nuevo.",
+      "denied": "No tienes acceso a estas ubicaciones. Revisa tus permisos e inténtalo de nuevo.",
+      "tasks": "No se pudo cargar el recuento de tareas. Las ubicaciones siguen disponibles.",
+      "retry": "Reintentar"
+    },
     "tabs": {
       "own": "Propias",
       "shared": "Compartidas"
