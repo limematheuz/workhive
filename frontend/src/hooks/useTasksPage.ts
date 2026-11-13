@@ -360,6 +360,7 @@ export function useTasksPage() {
         setTaskPricingOverrides: crud.setTaskPricingOverrides,
 
         // Templates CRUD
+        templateSaving: templateCrud.isSavingTemplate,
         isTemplateModalOpen: templateCrud.isTemplateModalOpen,
         templateModalOpen: templateCrud.isTemplateModalOpen,
         setIsTemplateModalOpen: templateCrud.setIsTemplateModalOpen,

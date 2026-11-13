@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { TemplateTaskService, type TemplateTaskInput } from "@/services/template.service";
 import type { TemplateTask } from "@/types/template";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
+import { ApiResponseError } from "@/lib/api";
 
 interface UseTemplateCrudParams {
     dict: Dictionary;
@@ -13,6 +14,8 @@ interface UseTemplateCrudParams {
 }
 
 export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
+    const savingTemplate = useRef(false);
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
     const [tmplName, setTmplName] = useState<string>("");
     const [tmplDescription, setTmplDescription] = useState<string>("");
@@ -26,8 +29,10 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
 
     const handleSaveTemplate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!tmplName.trim()) return;
+        if (!tmplName.trim() || savingTemplate.current) return;
 
+        savingTemplate.current = true;
+        setIsSavingTemplate(true);
         try {
             const payload: TemplateTaskInput = {
                 name: tmplName,
@@ -39,21 +44,22 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
                 requirements: tmplRequirements.trim() || null,
             };
 
-            if (selectedTemplate) {
-                await TemplateTaskService.updateTemplate(selectedTemplate.id, payload);
-                toast.success("Plantilla actualizada con éxito.");
-            } else {
-                await TemplateTaskService.createTemplate(payload);
-                toast.success("Plantilla creada con éxito.");
-            }
-
-            const freshTemplates = await TemplateTaskService.getTemplates();
-            setTemplates(freshTemplates);
+            const saved = selectedTemplate
+                ? await TemplateTaskService.updateTemplate(selectedTemplate.id, payload)
+                : await TemplateTaskService.createTemplate(payload);
+            setTemplates(current => current.some(template => template.id === saved.id)
+                ? current.map(template => template.id === saved.id ? saved : template)
+                : [...current, saved]);
+            toast.success(selectedTemplate ? dict.tasks.template_dialog.updated : dict.tasks.template_dialog.created);
             setIsTemplateModalOpen(false);
             setSelectedTemplate(null);
         } catch (error: unknown) {
-            console.error("Error saving template", error);
-            toast.error(getErrorMessage(error, "Error operativo con plantillas"));
+            toast.error(error instanceof ApiResponseError && error.status < 500
+                ? getErrorMessage(error, dict.tasks.template_dialog.save_error)
+                : dict.tasks.template_dialog.save_error);
+        } finally {
+            savingTemplate.current = false;
+            setIsSavingTemplate(false);
         }
     };
 
@@ -119,6 +125,7 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
     };
 
     return {
+        isSavingTemplate,
         isTemplateModalOpen,
         setIsTemplateModalOpen,
         tmplName,

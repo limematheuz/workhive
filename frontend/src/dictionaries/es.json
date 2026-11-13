@@ -1631,6 +1631,11 @@
   "status_section_hint": "Actualiza estado solo cuando el trabajo refleje avance real."
     },
     "template_dialog": {
+      "save_changes": "Guardar cambios",
+      "create_service": "Crear servicio",
+      "updated": "Servicio actualizado con éxito.",
+      "created": "Servicio creado con éxito.",
+      "save_error": "No se pudo guardar el servicio. Revisa los datos e inténtalo de nuevo.",
       "edit_title": "Editar Plantilla Global",
       "create_title": "Nueva Plantilla de Tarea",
       "subtitle": "Define una tarea reutilizable con su precio e IVA de referencia.",

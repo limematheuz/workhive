@@ -75,7 +75,7 @@ export function TemplateModal({
     handleSaveTemplate,
 }: TemplateModalProps) {
     return (
-        <Dialog open={isTemplateModalOpen} onOpenChange={setIsTemplateModalOpen}>
+        <Dialog open={isTemplateModalOpen} onOpenChange={(open) => { if (!isSaving) setIsTemplateModalOpen(open); }}>
             <DialogContent
                 overlayClassName={taskDialogOverlayClass}
                 className={`${taskDialogContentClass} max-h-[min(90vh,720px)] sm:max-w-md`}
@@ -91,6 +91,7 @@ export function TemplateModal({
 
                 <form onSubmit={handleSaveTemplate} className="flex min-h-0 flex-1 flex-col font-sans">
                     <div className={taskDialogBodyClass}>
+                        <fieldset disabled={isSaving} className="min-w-0 space-y-4">
                         <div className="space-y-1">
                             <Label htmlFor="template-name" className="text-xs uppercase font-bold text-[var(--text-muted)]">{dict.tasks.template_dialog.name_label}</Label>
                             <Input
@@ -153,6 +154,7 @@ export function TemplateModal({
                                 >
                                     <SelectTrigger id="template-unit" aria-label={dict.tasks.template_dialog.unit_label}><SelectValue /></SelectTrigger>
                                     <SelectContent>
+                                        {tmplUnit && !UNIT_OPTIONS.includes(tmplUnit) && <SelectItem value={tmplUnit}>{tmplUnit}</SelectItem>}
                                         {UNIT_OPTIONS.map((opt) => (
                                             <SelectItem key={opt} value={opt}>{opt}</SelectItem>
                                         ))}
@@ -185,6 +187,7 @@ export function TemplateModal({
                                 />
                             </div>
                         </div>
+                        </fieldset>
                     </div>
 
                     <div className={`${taskDialogFooterClass} justify-end`}>
@@ -192,6 +195,7 @@ export function TemplateModal({
                             type="button"
                             onClick={() => setIsTemplateModalOpen(false)}
                             variant="secondary"
+                            disabled={isSaving}
                         >
                             {dict.tasks.template_dialog.cancel}
                         </Button>
@@ -206,7 +210,7 @@ export function TemplateModal({
                                     {dict.tasks.template_dialog.saving}
                                 </>
                             ) : (
-                                selectedTemplate ? "Save changes" : "Create service"
+                                selectedTemplate ? dict.tasks.template_dialog.save_changes : dict.tasks.template_dialog.create_service
                             )}
                         </Button>
                     </div>
