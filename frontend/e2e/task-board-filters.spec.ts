@@ -18,7 +18,7 @@ for (const width of [1440, 768, 390]) {
             const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
             let body: unknown = [];
             if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA Principal", company_id: 1, role: { name: "admin" }, is_active: true };
-            else if (path === "/api/v1/users") body = [{ id: 1, full_name: "QA Principal", is_active: true }, { id: 2, full_name: "QA Segunda", is_active: true }];
+            else if (path === "/api/v1/users" || path === "/api/v1/users/assignable") body = [{ id: 1, full_name: "QA Principal", is_active: true }, { id: 2, full_name: "QA Segunda", is_active: true }];
             else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
             else if (path === "/api/v1/task-items") body = tasks;
             else if (path === "/api/v1/locations") body = [{ id: 1, name: "QA Norte", address: "QA", is_active: true }, { id: 2, name: "QA Sur", address: "QA", is_active: true }];

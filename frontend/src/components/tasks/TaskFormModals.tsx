@@ -79,6 +79,7 @@ interface TaskFormModalsProps {
     editLocationId: string;
     setEditLocationId: (val: string) => void;
     editUserId: string;
+    setEditUserId: (val: string) => void;
     editStatus: TaskStatus;
     setEditStatus: (val: TaskStatus) => void;
     editTitle: string;
@@ -179,6 +180,7 @@ interface TaskFormModalsProps {
      editLocationId,
      setEditLocationId,
      editUserId,
+     setEditUserId,
     editStatus,
     setEditStatus,
     editTitle,
@@ -286,6 +288,7 @@ interface TaskFormModalsProps {
                  editLocationId={editLocationId}
                  setEditLocationId={setEditLocationId}
                  editUserId={editUserId}
+                 setEditUserId={setEditUserId}
                  editStatus={editStatus}
                  setEditStatus={setEditStatus}
                  editTitle={editTitle}

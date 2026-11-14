@@ -35,7 +35,7 @@ async function openEditor(context: BrowserContext, page: Page, width: number, sc
         const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
         let body: unknown = [];
         if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA Admin", role: { name: "admin" }, company_id: 1, is_active: true };
-        else if (path === "/api/v1/users") body = [{ id: 1, full_name: "QA Admin", email: "qa@example.test", is_active: true }];
+        else if (path === "/api/v1/users" || path === "/api/v1/users/assignable") body = [{ id: 1, full_name: "QA Admin", email: "qa@example.test", is_active: true }];
         else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
         else if (path === "/api/v1/task-items") {
             if (route.request().method() === "POST") {
