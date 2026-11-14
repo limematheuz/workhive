@@ -108,6 +108,26 @@ test("quote payload preserves optional document fields", () => {
     assert.equal(payload.notes, null);
     assert.equal(payload.terms, "Terms");
     assert.equal(payload.shipping_address, null);
+
+    const blankOptionalPayload = buildQuotePayload({
+        selectedClientId: "25",
+        title: "Presupuesto sin condiciones por defecto",
+        validUntil: "2026-12-31",
+        notesEnabled: true,
+        notes: "   ",
+        taxRateGlobal: 0.21,
+        discount: 0,
+        equivalenceSurcharge: 0,
+        retention: 0,
+        termsEnabled: true,
+        terms: "",
+        shippingAddress: "",
+        customIssuerInfo: "Issuer",
+        customRecipientInfo: "Recipient",
+        signatureUrl: null,
+    });
+    assert.equal(blankOptionalPayload.notes, null);
+    assert.equal(blankOptionalPayload.terms, null);
 });
 
 test("quote item snapshot contains every current row and no UI identifiers", () => {

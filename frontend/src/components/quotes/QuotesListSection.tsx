@@ -16,6 +16,9 @@ type QuotesListSectionProps = {
     quotes: Quote[];
     statusLabels: Record<string, string>;
     emptyLabel: string;
+    errorMessage?: string | null;
+    retryLabel?: string;
+    onRetry?: () => void;
     columnLabels: {
         title: string;
         client: string;
@@ -35,6 +38,9 @@ export function QuotesListSection({
     quotes,
     statusLabels,
     emptyLabel,
+    errorMessage = null,
+    retryLabel = "Reintentar",
+    onRetry,
     columnLabels,
     getClientName,
     onViewQuote,
@@ -60,11 +66,34 @@ export function QuotesListSection({
                 <p className="mt-1 text-xs text-[var(--text-muted)]">Pulsa una fila para abrir el detalle sin pasos extra.</p>
             </header>
 
-            {quotes.length === 0 ? (
-                <div className="px-5 py-16 text-center">
-                    <FileText className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" />
-                    <p className="text-sm font-medium text-[var(--text-muted)]">{emptyLabel}</p>
+            {errorMessage && quotes.length > 0 && (
+                <div role="alert" className="mx-5 mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-secondary)] px-4 py-3">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">{errorMessage}</p>
+                    {onRetry && (
+                        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                            {retryLabel}
+                        </Button>
+                    )}
                 </div>
+            )}
+
+            {quotes.length === 0 ? (
+                errorMessage ? (
+                    <div role="alert" className="space-y-3 px-5 py-16 text-center">
+                        <FileText className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" />
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{errorMessage}</p>
+                        {onRetry && (
+                            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+                                {retryLabel}
+                            </Button>
+                        )}
+                    </div>
+                ) : (
+                    <div className="px-5 py-16 text-center">
+                        <FileText className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" />
+                        <p className="text-sm font-medium text-[var(--text-muted)]">{emptyLabel}</p>
+                    </div>
+                )
             ) : (
                 <>
                     <div className="space-y-2.5 p-3 xl:hidden">

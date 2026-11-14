@@ -108,12 +108,12 @@ export function buildQuotePayload(params: {
         valid_until: params.validUntil
             ? new Date(params.validUntil).toISOString()
             : null,
-        notes: params.notesEnabled ? params.notes : null,
+        notes: params.notesEnabled ? (params.notes.trim() || null) : null,
         tax_rate: params.taxRateGlobal,
         discount: params.discount,
         equivalence_surcharge: params.equivalenceSurcharge,
         retention: params.retention,
-        terms: params.termsEnabled ? params.terms : null,
+        terms: params.termsEnabled ? (params.terms.trim() || null) : null,
         shipping_address: params.shippingAddress || null,
         custom_issuer_info: params.customIssuerInfo || null,
         custom_recipient_info: params.customRecipientInfo || null,
