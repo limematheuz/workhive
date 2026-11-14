@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense } from "react";
-import { Plus, Columns3, ListTodo, Library, Loader2 } from "lucide-react";
+import { Plus, Columns3, ListTodo, Library, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
@@ -70,8 +70,33 @@ function TasksPageContent() {
                             <Loader2 className="h-8 w-8 animate-spin text-[var(--text-main)]" />
                             <span className="text-xs text-[var(--text-muted)]">{state.dict.tasks?.syncing_flows || "Sincronizando flujos..."}</span>
                         </div>
+                    ) : state.loadError && state.tasks.length === 0 ? (
+                        <div
+                            role="alert"
+                            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] px-6 py-16 text-center"
+                        >
+                            <AlertTriangle className="h-8 w-8 text-amber-500" aria-hidden="true" />
+                            <p className="text-sm font-semibold text-[var(--text-main)]">{state.loadError}</p>
+                            <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
+                                Reintentar
+                            </Button>
+                        </div>
                     ) : (
                         <>
+                            {state.loadError && (
+                                <div
+                                    role="alert"
+                                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-4 py-3 text-xs"
+                                >
+                                    <span className="flex items-center gap-2 font-medium text-[var(--text-main)]">
+                                        <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
+                                        {state.loadError}
+                                    </span>
+                                    <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
+                                        Reintentar
+                                    </Button>
+                                </div>
+                            )}
                             {state.activeTab === "kanban" && (
                                 <TasksKanban
                                     tasks={state.tasks}

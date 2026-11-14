@@ -14,7 +14,7 @@ for (const locale of ["es", "en"] as const) for (const width of [390, 768, 1440]
             const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
             let body: unknown = [];
             if (path.endsWith("/users/me")) body = { id: 1, full_name: "QA Admin", company_id: 1, role: { name: "admin" }, is_active: true };
-            else if (path.endsWith("/users")) body = [{ id: 1, full_name: "QA Admin", company_id: 1, is_active: true }, { id: 2, full_name: "QA Equipo", company_id: 1, is_active: true }];
+            else if (path.endsWith("/users") || path.endsWith("/users/assignable")) body = [{ id: 1, full_name: "QA Admin", company_id: 1, is_active: true }, { id: 2, full_name: "QA Equipo", company_id: 1, is_active: true }];
             else if (path.endsWith("/companies/1")) body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
             else if (path.endsWith("/locations/1/templates")) body = [{ id: 1, template_task_id: 7, custom_price: null, template }];
             else if (path.endsWith("/template-tasks")) body = [template];

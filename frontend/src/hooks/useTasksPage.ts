@@ -44,7 +44,9 @@ export function useTasksPage() {
     const [templates, setTemplates] = useState<TemplateTask[]>([]);
     const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
     const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const bootstrappedRef = useRef(false);
+    const hasLoadedTasksRef = useRef(false);
 
     const {
         selectedStatus,
@@ -83,8 +85,13 @@ export function useTasksPage() {
 
             const data = await TaskService.getAllTaskItems(filters);
             setTasks(data);
+            hasLoadedTasksRef.current = true;
+            setLoadError(null);
         } catch (error) {
             console.error("Error loading tasks list", error);
+            if (!silent || !hasLoadedTasksRef.current) {
+                setLoadError(dict.tasks?.error_update || "No se pudieron cargar las tareas.");
+            }
             if (!silent) toast.error(dict.tasks.error_update);
         } finally {
             setLoadingTasks(false);
@@ -94,6 +101,7 @@ export function useTasksPage() {
     const loadCatalogEvent = useEffectEvent(async () => {
         if (!currentUser) return;
 
+        setLoadError(null);
         setCatalogStatus("loading");
         try {
             const canManageTasks = canManageCompanyTasks(currentUser);
@@ -133,9 +141,19 @@ export function useTasksPage() {
         } catch (error) {
             console.error("Error loading initial tasks page data", error);
             toast.error(dict.tasks.error_update);
+            setLoadError(dict.tasks?.error_update || "No se pudieron cargar las tareas.");
             setCatalogStatus("error");
         }
     });
+
+    const retryLoad = () => {
+        if (catalogStatus === "error") {
+            setLoadError(null);
+            setCatalogStatus("idle");
+            return;
+        }
+        void loadTasks();
+    };
 
     useEffect(() => {
         if (userLoading || !currentUser) return;
@@ -277,6 +295,8 @@ export function useTasksPage() {
         setActiveTab,
         loadingData,
         loadingTasks,
+        loadError,
+        retryLoad,
         selectedStatus,
         setSelectedStatus,
         selectedLocationId,

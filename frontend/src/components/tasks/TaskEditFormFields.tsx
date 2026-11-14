@@ -3,6 +3,7 @@
 import type { Dictionary } from "@/lib/dictionary-context";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { Location } from "@/services/location.service";
 import type { TaskItem } from "@/services/task.service";
@@ -32,6 +33,7 @@ type TaskEditFormFieldsProps = {
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
+    editUserId?: string;
     editNotes: string;
     editPlanningTime: string;
     editPrice: string;
@@ -48,6 +50,7 @@ type TaskEditFormFieldsProps = {
     selectedTask: TaskItem;
     setEditCreatedAt: (value: string) => void;
     setEditDescription: (value: string) => void;
+    setEditUserId?: (value: string) => void;
     setEditNotes: (value: string) => void;
     setEditPlanningTime: (value: string) => void;
     setEditPrice: (value: string) => void;
@@ -68,6 +71,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         editCreatedAt,
         editDescription,
         editLocationId,
+        editUserId = "",
         editNotes,
         editPlanningTime,
         checklistUpdates,
@@ -86,6 +90,7 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
         selectedTask,
         setEditCreatedAt,
         setEditDescription,
+        setEditUserId,
         setEditNotes,
         setEditPlanningTime,
         setEditPrice,
@@ -170,6 +175,36 @@ export function TaskEditFormFields(props: TaskEditFormFieldsProps) {
                             className={`${taskFormControlClass} cursor-pointer`}
                         />
                     </div>
+                    {!isReceiverCompany && setEditUserId && (
+                        <div className="space-y-1.5">
+                            <label htmlFor="task-edit-assignee" className={taskFormLabelClass}>
+                                {dict.tasks?.dialog?.assignee_label || "Responsable"}
+                            </label>
+                            <Select
+                                value={editUserId || "unassigned"}
+                                onValueChange={(value) => setEditUserId(value === "unassigned" ? "" : value)}
+                                disabled={!managerEditable}
+                            >
+                                <SelectTrigger id="task-edit-assignee" className={taskFormControlClass}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">{dict.tasks?.dialog?.unassigned_option || "Sin asignar"}</SelectItem>
+                                    {editUserId && !users.some((user) => user.id.toString() === editUserId) && (
+                                        <SelectItem value={editUserId}>
+                                            {selectedTask.assignments?.find((item) => item.user_id.toString() === editUserId)?.user_name
+                                                || `ID: ${editUserId}`}
+                                        </SelectItem>
+                                    )}
+                                    {users.map((user) => (
+                                        <SelectItem key={user.id} value={user.id.toString()}>
+                                            {user.full_name || user.email}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                 </div>
             </section>
 

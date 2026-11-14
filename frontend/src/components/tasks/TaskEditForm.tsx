@@ -18,6 +18,7 @@ interface TaskEditFormProps {
     editCreatedAt: string;
     editDescription: string;
     editLocationId: string;
+    editUserId?: string;
     editNotes: string;
     editPlanningTime: string;
     editPrice: string;
@@ -41,6 +42,7 @@ interface TaskEditFormProps {
     setEditDescription: (value: string) => void;
     setEditLocationId: (value: string) => void;
     setEditNotes: (value: string) => void;
+    setEditUserId?: (value: string) => void;
     setEditPlanningTime: (value: string) => void;
     setEditPrice: (value: string) => void;
     setEditPricingMode: (value: TaskPricingMode) => void;
@@ -58,6 +60,7 @@ export function TaskEditForm({
     editCreatedAt,
     editDescription,
     editLocationId,
+    editUserId = "",
     editNotes,
     editPlanningTime,
     editPrice,
@@ -79,6 +82,7 @@ export function TaskEditForm({
     selectedTask,
     setEditCreatedAt,
     setEditDescription,
+    setEditUserId,
     setEditNotes,
     setEditPlanningTime,
     setEditPrice,
@@ -114,6 +118,7 @@ export function TaskEditForm({
                     editCreatedAt={editCreatedAt}
                     editDescription={editDescription}
                     editLocationId={editLocationId}
+                    editUserId={editUserId}
                     editNotes={editNotes}
                     editPlanningTime={editPlanningTime}
                     editPrice={editPrice}
@@ -130,6 +135,7 @@ export function TaskEditForm({
                     selectedTask={selectedTask}
                     setEditCreatedAt={setEditCreatedAt}
                     setEditDescription={setEditDescription}
+                    setEditUserId={setEditUserId}
                     setEditNotes={setEditNotes}
                     setEditPlanningTime={setEditPlanningTime}
                     setEditPrice={setEditPrice}

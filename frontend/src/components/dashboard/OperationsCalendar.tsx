@@ -258,6 +258,7 @@ export function OperationsCalendar({
                 editLocationId={state.editLocationId}
                 setEditLocationId={state.setEditLocationId}
                 editUserId={state.editUserId}
+                setEditUserId={state.setEditUserId}
                 editStatus={state.editStatus}
                 setEditStatus={state.setEditStatus}
                 editTitle={state.editTitle}

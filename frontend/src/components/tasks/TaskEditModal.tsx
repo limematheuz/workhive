@@ -54,6 +54,7 @@ interface TaskEditModalProps {
     editLocationId: string;
     setEditLocationId: (val: string) => void;
     editUserId?: string;
+    setEditUserId?: (val: string) => void;
     editStatus: TaskStatus;
     setEditStatus: (val: TaskStatus) => void;
     editTitle: string;
@@ -96,6 +97,8 @@ export function TaskEditModal({
     setEditUnit,
     editLocationId,
     setEditLocationId,
+    editUserId = "",
+    setEditUserId,
     editStatus,
     setEditStatus,
     editTitle,
@@ -188,6 +191,7 @@ export function TaskEditModal({
                             editCreatedAt={editCreatedAt}
                             editDescription={editDescription}
                             editLocationId={editLocationId}
+                            editUserId={editUserId}
                             editNotes={editNotes}
                             editPlanningTime={editPlanningTime}
                             editPrice={editPrice}
@@ -210,6 +214,7 @@ export function TaskEditModal({
                             setEditCreatedAt={setEditCreatedAt}
                             setEditDescription={setEditDescription}
                             setEditLocationId={setEditLocationId}
+                            setEditUserId={setEditUserId}
                             setEditNotes={setEditNotes}
                             setEditPlanningTime={setEditPlanningTime}
                             setEditPrice={setEditPrice}
