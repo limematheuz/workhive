@@ -18,8 +18,8 @@ function DashboardOverviewContent() {
     const { dict } = useDictionary();
     const { user, loading: loadingUser } = useUser();
 
-    const { tasks, locations, loadingData, failed, taskFailed, loadDashboardData, loadDashboardTasks, loadDashboardLocations } = useDashboardOverviewData(user);
-    const error = failed ? dict.dashboard.error_load_data : null;
+    const { tasks, locations, loadingData, failed, accessDenied, taskFailed, loadDashboardData, loadDashboardTasks, loadDashboardLocations } = useDashboardOverviewData(user);
+    const error = [failed ? dict.dashboard.error_load_data : null, accessDenied ? dict.dashboard.access_denied : null].filter(Boolean).join(" ");
     const [showGuidedTour, setShowGuidedTour] = useState<boolean>(false);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
     useBackgroundPolling(
@@ -96,7 +96,7 @@ function DashboardOverviewContent() {
                     <div role="alert" data-dashboard-read-error className="flex flex-wrap items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-500">
                         <AlertCircle className="h-4 w-4 shrink-0" />
                         <span className="min-w-0 [overflow-wrap:anywhere]">{error}</span>
-                        <Button type="button" variant="outline" size="sm" onClick={() => void loadDashboardData()}>{dict.dashboard.retry_load_data}</Button>
+                        {failed && <Button type="button" variant="outline" size="sm" onClick={() => void loadDashboardData()}>{dict.dashboard.retry_load_data}</Button>}
                     </div>
                 </div>
             )}

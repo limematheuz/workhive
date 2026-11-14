@@ -60,6 +60,7 @@
     "syncing": "Syncing WorkHive hive...",
     "login_required": "Please sign in to see your operational overview.",
     "error_load_data": "Could not load all operational data. Please check your connection.",
+    "access_denied": "You do not have permission to view some operational information. Contact your administrator if you need access.",
     "retry_load_data": "Retry",
     "invoices_loading": "Loading invoices...",
     "invoices_details_loading": "Loading invoice details...",

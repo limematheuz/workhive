@@ -60,6 +60,7 @@
     "syncing": "Sincronizando colmena de WorkHive...",
     "login_required": "Inicia sesión para ver tu resumen de operaciones.",
     "error_load_data": "No se pudieron cargar todos los datos operativos. Revisa tu conexión.",
+    "access_denied": "No tienes permiso para consultar parte de la información operativa. Contacta con la persona administradora si necesitas acceso.",
     "retry_load_data": "Reintentar",
     "invoices_loading": "Cargando facturas...",
     "invoices_details_loading": "Cargando detalles de factura...",
