@@ -132,3 +132,20 @@ test("quote snapshots convert tax-inclusive entered prices to taxable bases", ()
         { description: "Servicio", quantity: 1, unit_price: 314.05 },
     ]);
 });
+
+test("quote items keep explicit 0% tax rate instead of falling back to 21%", () => {
+    const quote = {
+        tax_rate: 0,
+        items: [
+            { id: 8, description: "Exento", unit_price: 100, quantity: 2 },
+        ],
+    } as Quote;
+
+    assert.deepEqual(mapQuoteItemsToConceptRows(quote), [{
+        id: "8",
+        description: "Exento",
+        unitPrice: 100,
+        quantity: 2,
+        taxRate: 0,
+    }]);
+});

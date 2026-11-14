@@ -164,10 +164,10 @@ export function useQuoteForm({
                     setSelectedClientId(quoteToEdit.client_id?.toString() || "");
                     setValidUntil(formatQuoteValidUntilDate(quoteToEdit.valid_until));
                     
-                    setDiscount(quoteToEdit.discount || 0);
-                    setTaxRateGlobal(quoteToEdit.tax_rate || DEFAULT_QUOTE_TAX_RATE);
-                    setEquivalenceSurcharge(quoteToEdit.equivalence_surcharge || 0);
-                    setRetention(quoteToEdit.retention || 0);
+                    setDiscount(quoteToEdit.discount ?? 0);
+                    setTaxRateGlobal(quoteToEdit.tax_rate ?? DEFAULT_QUOTE_TAX_RATE);
+                    setEquivalenceSurcharge(quoteToEdit.equivalence_surcharge ?? 0);
+                    setRetention(quoteToEdit.retention ?? 0);
                     
                     setNotesEnabled(quoteToEdit.notes !== null);
                     setNotes(quoteToEdit.notes || "");

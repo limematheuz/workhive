@@ -31,7 +31,7 @@ interface QuoteDetailSheetProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     clients: Client[]
-    onQuoteUpdated: () => void
+    onQuoteUpdated: (updatedQuote?: Quote) => void
     companyName?: string
     canManage: boolean
     onRevisionCreated: (quote: Quote) => void
@@ -129,8 +129,9 @@ export function QuoteDetailSheet({
         setIsSendingEmail(true)
         try {
             await QuoteService.sendQuoteEmail(quote.id, data)
+            const fresh = await QuoteService.getQuote(quote.id).catch(() => undefined)
             toast.success("Presupuesto enviado por email")
-            onQuoteUpdated()
+            onQuoteUpdated(fresh)
             return true
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, "No se pudo enviar el presupuesto"))

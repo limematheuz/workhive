@@ -49,6 +49,7 @@ function QuotesPageContent() {
     const [quoteToEdit, setQuoteToEdit] = useState<Quote | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const quoteToDeleteIdRef = useRef<number | null>(null);
     const canViewQuotes = canViewFinance(user);
     const canManageQuotes = canManageFinance(user);
@@ -62,18 +63,16 @@ function QuotesPageContent() {
         let cancelled = false;
 
         const load = async () => {
-            try {
-                const [clientsData] = await Promise.all([ClientService.getClients()]);
-                if (cancelled) return;
-                setClients(clientsData);
-
-                if (user.company_id) {
-                    const company = await CompanyService.getCompany(user.company_id);
-                    if (cancelled) return;
-                    setCompanyName(company.name);
-                }
-            } catch (err) {
-                console.error(err);
+            const [clientsResult, companyResult] = await Promise.allSettled([
+                ClientService.getClients(),
+                user.company_id ? CompanyService.getCompany(user.company_id) : Promise.resolve(null),
+            ]);
+            if (cancelled) return;
+            if (clientsResult.status === "fulfilled") {
+                setClients(clientsResult.value);
+            }
+            if (companyResult.status === "fulfilled" && companyResult.value) {
+                setCompanyName(companyResult.value.name);
             }
         };
         void load();
@@ -86,18 +85,23 @@ function QuotesPageContent() {
         if (userLoading || !user || !canViewQuotes) return;
         try {
             setLoading(true);
+            setLoadError(null);
             const data = await QuoteService.getQuotes({
                 clientId: selectedClientId ? parseInt(selectedClientId) : undefined,
                 status: selectedStatus || undefined,
             });
             setQuotes(data);
-
-            if (user.company_id) {
-                const company = await CompanyService.getCompany(user.company_id);
-                setCompanyName(company.name);
-            }
-        } catch {
-            toast.error(dict.quotes?.error_load ?? "Error al cargar presupuestos");
+            setSelectedQuote((current) =>
+                current ? (data.find((item) => item.id === current.id) ?? current) : null,
+            );
+        } catch (error: unknown) {
+            const message = getErrorMessage(
+                error,
+                dict.quotes?.error_load ?? "Error al cargar presupuestos",
+            );
+            setQuotes([]);
+            setLoadError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -118,8 +122,12 @@ function QuotesPageContent() {
             await QuoteService.deleteQuote(quoteToDeleteId);
             toast.success(dict.quotes?.deleted ?? "Presupuesto eliminado");
             setIsDeleteDialogOpen(false);
+            if (selectedQuote?.id === quoteToDeleteId) {
+                setSelectedQuote(null);
+                setIsDetailOpen(false);
+            }
             quoteToDeleteIdRef.current = null;
-            loadQuotes();
+            void loadQuotes();
         } catch (error: unknown) {
             toast.error(getErrorMessage(error, "Error al eliminar el presupuesto"));
         } finally {
@@ -131,10 +139,10 @@ function QuotesPageContent() {
         try {
             const fresh = await QuoteService.getQuote(quote.id);
             setSelectedQuote(fresh);
-        } catch {
-            setSelectedQuote(quote);
+            setIsDetailOpen(true);
+        } catch (error: unknown) {
+            toast.error(getErrorMessage(error, dict.quotes?.error_load ?? "No se pudo cargar el presupuesto"));
         }
-        setIsDetailOpen(true);
     };
 
     const handleEditQuote = (quote: Quote) => {
@@ -231,7 +239,7 @@ function QuotesPageContent() {
             <QuotesListSection
                 quotes={quotes}
                 statusLabels={STATUS_LABELS}
-                emptyLabel={dict.quotes?.empty ?? "No hay presupuestos. Crea el primero."}
+                emptyLabel={loadError ?? (dict.quotes?.empty ?? "No hay presupuestos. Crea el primero.")}
                 columnLabels={{
                     title: dict.quotes?.col_title ?? "Title",
                     client: dict.quotes?.col_client ?? "Client",
@@ -269,7 +277,10 @@ function QuotesPageContent() {
                     if (!open) setSelectedQuote(null);
                 }}
                 clients={clients}
-                onQuoteUpdated={loadQuotes}
+                onQuoteUpdated={(updatedQuote) => {
+                    if (updatedQuote) setSelectedQuote(updatedQuote);
+                    void loadQuotes();
+                }}
                 companyName={companyName}
                 canManage={canManageQuotes}
                 onRevisionCreated={(quote) => {

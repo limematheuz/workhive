@@ -73,7 +73,7 @@ export function mapQuoteItemsToConceptRows(
     fallbackTaxRate: number = DEFAULT_QUOTE_TAX_RATE,
 ): QuoteFormConceptRow[] {
     if (!quote.items?.length) return [createQuoteConceptRow(fallbackTaxRate)];
-    const taxRate = quote.tax_rate || fallbackTaxRate;
+    const taxRate = quote.tax_rate ?? fallbackTaxRate;
     return quote.items.map(item => ({
         id: item.id.toString(),
         description: item.description,

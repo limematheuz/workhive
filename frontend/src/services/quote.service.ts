@@ -83,7 +83,7 @@ export const QuoteService = {
             method: "GET",
             cache: "no-store",
         })
-        await assertApiResponseOk(response, "Error fetching quotes")
+        await assertApiResponseOk(response, "No se pudieron cargar los presupuestos")
         return await response.json()
     },
 
@@ -92,7 +92,7 @@ export const QuoteService = {
             method: "GET",
             cache: "no-store",
         })
-        await assertApiResponseOk(response, "Error fetching quote")
+        await assertApiResponseOk(response, "No se pudo cargar el presupuesto")
         return await response.json()
     },
 
@@ -100,7 +100,7 @@ export const QuoteService = {
         const response = await apiFetch(`/api/v1/quotes/${id}/pdf`, {
             method: "GET",
         })
-        await assertApiResponseOk(response, "Error downloading quote PDF")
+        await assertApiResponseOk(response, "No se pudo descargar el PDF del presupuesto")
         return await response.blob()
     },
 
@@ -109,10 +109,7 @@ export const QuoteService = {
             method: "POST",
             body: JSON.stringify(data),
         })
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}))
-            throw new Error(err.detail || "Error creating quote")
-        }
+        await assertApiResponseOk(response, "No se pudo crear el presupuesto")
         return await response.json()
     },
 
@@ -121,10 +118,7 @@ export const QuoteService = {
             method: "PATCH",
             body: JSON.stringify(data),
         })
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}))
-            throw new Error(err.detail || "Error updating quote")
-        }
+        await assertApiResponseOk(response, "No se pudo actualizar el presupuesto")
         return await response.json()
     },
 
@@ -133,7 +127,7 @@ export const QuoteService = {
             method: "POST",
             body: JSON.stringify(data),
         })
-        await assertApiResponseOk(response, "Error accepting quote")
+        await assertApiResponseOk(response, "No se pudo aceptar el presupuesto")
         return await response.json()
     },
 
@@ -142,7 +136,7 @@ export const QuoteService = {
             method: "GET",
             cache: "no-store",
         })
-        await assertApiResponseOk(response, "Error fetching quote revisions")
+        await assertApiResponseOk(response, "No se pudo cargar el historial de versiones")
         return await response.json()
     },
 
@@ -151,7 +145,7 @@ export const QuoteService = {
             method: "POST",
             body: JSON.stringify({}),
         })
-        await assertApiResponseOk(response, "Error creating quote revision")
+        await assertApiResponseOk(response, "No se pudo crear la revisión")
         return await response.json()
     },
 
@@ -163,7 +157,7 @@ export const QuoteService = {
             method: "POST",
             body: JSON.stringify(data),
         })
-        await assertApiResponseOk(response, "Error sending quote email")
+        await assertApiResponseOk(response, "No se pudo enviar el presupuesto por email")
         return await response.json()
     },
 
@@ -171,10 +165,7 @@ export const QuoteService = {
         const response = await apiFetch(`/api/v1/quotes/${id}`, {
             method: "DELETE",
         })
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}))
-            throw new Error(err.detail || "Error deleting quote")
-        }
+        await assertApiResponseOk(response, "No se pudo eliminar el presupuesto")
     },
 
     // Items
@@ -183,10 +174,7 @@ export const QuoteService = {
             method: "POST",
             body: JSON.stringify(data),
         })
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}))
-            throw new Error(err.detail || "Error adding item")
-        }
+        await assertApiResponseOk(response, "No se pudo añadir el concepto")
         return await response.json()
     },
 
@@ -195,10 +183,7 @@ export const QuoteService = {
             method: "PATCH",
             body: JSON.stringify(data),
         })
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}))
-            throw new Error(err.detail || "Error updating item")
-        }
+        await assertApiResponseOk(response, "No se pudo actualizar el concepto")
         return await response.json()
     },
 
@@ -206,9 +191,6 @@ export const QuoteService = {
         const response = await apiFetch(`/api/v1/quotes/${quoteId}/items/${itemId}`, {
             method: "DELETE",
         })
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}))
-            throw new Error(err.detail || "Error deleting item")
-        }
+        await assertApiResponseOk(response, "No se pudo eliminar el concepto")
     },
 }
