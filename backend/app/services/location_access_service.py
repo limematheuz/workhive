@@ -80,6 +80,11 @@ def require_location_capability(
     permission_code: str | None = None,
     allow_partner_portal_owner: bool = False,
 ) -> Location:
+    if permission_code is not None and is_platform_superadmin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform administrators must not use a customer company context",
+        )
     location = require_accessible_location(db, current_user, location_id)
     if is_platform_superadmin(current_user):
         return location
