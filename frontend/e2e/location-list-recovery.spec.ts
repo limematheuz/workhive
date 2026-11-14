@@ -114,3 +114,30 @@ test("location read errors and retry are localized in English", async ({ context
     await page.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(page.getByRole("row", { name: "View Ubicación QA 1", exact: true })).toBeVisible();
 });
+
+for (const width of [390, 768, 1440]) {
+    for (const locale of ["es", "en"]) {
+        test(`forbidden task counts explain permissions and clear stale totals at ${width}px in ${locale}`, async ({ context, page }) => {
+            test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
+            const state = await setup(context, page, width, locale);
+            state.tasksStatus = 403;
+            await page.goto("/dashboard/locations");
+            const alert = page.locator("main").getByRole("alert");
+            const message = locale === "es" ? "No tienes permiso para consultar el recuento de tareas. Las ubicaciones siguen disponibles." : "You do not have permission to view task counts. Locations remain available.";
+            const row = page.getByRole("row", { name: /Ubicación QA 1/ });
+            await expect(alert).toHaveText(message);
+            await expect(alert.getByRole("button")).toHaveCount(0);
+            await expect(row).toContainText("—");
+            state.tasksStatus = 200;
+            await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+            await expect(alert).toHaveCount(0);
+            await expect(row).toContainText("2");
+            await expect(row).not.toContainText("—");
+            state.tasksStatus = 403;
+            await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+            await expect(alert).toHaveText(message);
+            await expect(alert.getByRole("button")).toHaveCount(0);
+            await expect(row).toContainText("—");
+        });
+    }
+}

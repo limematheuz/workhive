@@ -237,7 +237,7 @@ function LocationsWorkspace({ user }: { user: User }) {
                         )}
                     </div>
 
-                    {readError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4"><p className="text-sm text-[var(--text-muted)]">{dict.locations.list_state[readError]}</p><Button variant="outline" disabled={loading} onClick={() => void loadLocations()}>{dict.locations.list_state.retry}</Button></div>}
+                    {readError && <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4"><p className="text-sm text-[var(--text-muted)]">{dict.locations.list_state[readError]}</p>{readError !== "tasks_denied" && <Button variant="outline" disabled={loading} onClick={() => void loadLocations()}>{dict.locations.list_state.retry}</Button>}</div>}
                     {loading && !loaded && <p role="status" className="p-4 text-sm text-[var(--text-muted)]">{dict.locations.list_state.loading}</p>}
                     {loaded && <LocationsGrid
                         locations={activeTab === "own" ? ownLocations : sharedLocations}

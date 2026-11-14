@@ -6,7 +6,7 @@ import { LocationService, type Location } from "@/services/location.service";
 import { TaskService, type TaskItem } from "@/services/task.service";
 
 type ClientFilter = number | "ALL";
-type ReadError = "locations" | "denied" | "tasks" | null;
+type ReadError = "locations" | "denied" | "tasks" | "tasks_denied" | null;
 interface ListState {
     filter: ClientFilter;
     locations: Location[];
@@ -30,9 +30,12 @@ export function useLocationList(clientFilter: ClientFilter) {
             const locations = await LocationService.getLocations(clientFilter === "ALL" ? undefined : clientFilter);
             if (request.current.generation !== generation) return;
             let tasks: TaskItem[] | null = null;
-            try { tasks = await TaskService.getTaskItems(); } catch { /* Counts stay unknown when task reading fails. */ }
+            let taskError: ReadError = null;
+            try { tasks = await TaskService.getTaskItems(); } catch (error) {
+                taskError = error instanceof ApiResponseError && error.status === 403 ? "tasks_denied" : "tasks";
+            }
             if (request.current.generation !== generation) return;
-            setState({ filter: clientFilter, locations, tasks, loaded: true, loading: false, error: tasks === null ? "tasks" : null });
+            setState({ filter: clientFilter, locations, tasks, loaded: true, loading: false, error: taskError });
         } catch (error) {
             if (request.current.generation !== generation) return;
             const denied = error instanceof ApiResponseError && [401, 403, 404].includes(error.status);
