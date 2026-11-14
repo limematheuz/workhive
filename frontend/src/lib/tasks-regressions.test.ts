@@ -9,9 +9,14 @@ test("tasks page exposes loadError and retry instead of falling back to a false 
     const page = read("../app/dashboard/tasks/page.tsx");
 
     assert.match(hook, /const \[loadError, setLoadError\]/);
-    assert.match(hook, /setLoadError\(/);
+    assert.match(hook, /isAccessDeniedError/);
+    assert.match(hook, /setLoadError\(denied \? "denied" : "unavailable"\)/);
+    assert.match(hook, /dict\.tasks\?\.error_denied/);
+    assert.match(hook, /dict\.tasks\?\.error_load/);
+    assert.doesNotMatch(hook, /error_update/);
     assert.match(hook, /retryLoad/);
     assert.match(page, /state\.loadError/);
+    assert.match(page, /state\.loadErrorMessage/);
     assert.match(page, /state\.retryLoad/);
 });
 

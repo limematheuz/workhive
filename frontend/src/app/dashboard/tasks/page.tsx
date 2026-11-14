@@ -76,9 +76,9 @@ function TasksPageContent() {
                             className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-secondary)] px-6 py-16 text-center"
                         >
                             <AlertTriangle className="h-8 w-8 text-amber-500" aria-hidden="true" />
-                            <p className="text-sm font-semibold text-[var(--text-main)]">{state.loadError}</p>
+                            <p className="text-sm font-semibold text-[var(--text-main)]">{state.loadErrorMessage}</p>
                             <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
-                                Reintentar
+                                {state.dict.tasks?.retry || "Reintentar"}
                             </Button>
                         </div>
                     ) : (
@@ -90,10 +90,10 @@ function TasksPageContent() {
                                 >
                                     <span className="flex items-center gap-2 font-medium text-[var(--text-main)]">
                                         <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
-                                        {state.loadError}
+                                        {state.loadErrorMessage}
                                     </span>
                                     <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
-                                        Reintentar
+                                        {state.dict.tasks?.retry || "Reintentar"}
                                     </Button>
                                 </div>
                             )}

@@ -6,6 +6,7 @@ import {
     TaskItem,
     type TaskItemFilters,
 } from "@/services/task.service";
+import { ApiResponseError } from "@/lib/api";
 import { LocationService, Location } from "@/services/location.service";
 import { UserService } from "@/services/user.service";
 import { User } from "@/types/user";
@@ -35,6 +36,13 @@ export type {
     TemplateTask,
 } from "@/types/template";
 
+export type TasksLoadErrorKind = "denied" | "unavailable";
+
+function isAccessDeniedError(error: unknown): boolean {
+    return error instanceof ApiResponseError
+        && (error.status === 401 || error.status === 403 || error.status === 404);
+}
+
 export function useTasksPage() {
     const { dict } = useDictionary();
     const { user: currentUser, loading: userLoading } = useUser();
@@ -44,9 +52,12 @@ export function useTasksPage() {
     const [templates, setTemplates] = useState<TemplateTask[]>([]);
     const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
     const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
-    const [loadError, setLoadError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<TasksLoadErrorKind | null>(null);
     const bootstrappedRef = useRef(false);
     const hasLoadedTasksRef = useRef(false);
+    const loadedFilterKeyRef = useRef<string | null>(null);
+    const taskRequestIdRef = useRef(0);
+    const catalogRequestIdRef = useRef(0);
 
     const {
         selectedStatus,
@@ -59,8 +70,34 @@ export function useTasksPage() {
         setActiveTab,
     } = useTaskFilters();
 
+    const workspaceKey = currentUser
+        ? `${currentUser.id}:${currentUser.company_id ?? "none"}:${currentUser.role?.name ?? "none"}`
+        : "anonymous";
+    const activeWorkspaceKeyRef = useRef(workspaceKey);
+
+    useEffect(() => {
+        if (activeWorkspaceKeyRef.current === workspaceKey) return;
+        activeWorkspaceKeyRef.current = workspaceKey;
+        taskRequestIdRef.current += 1;
+        catalogRequestIdRef.current += 1;
+        bootstrappedRef.current = false;
+        hasLoadedTasksRef.current = false;
+        loadedFilterKeyRef.current = null;
+        setTasks([]);
+        setLocations([]);
+        setUsers([]);
+        setTemplates([]);
+        setLoadError(null);
+        setCatalogStatus("idle");
+    }, [workspaceKey]);
+
     const isAdminOrManager = canManageCompanyTasks(currentUser);
     const loadingData = userLoading || catalogStatus === "idle" || catalogStatus === "loading";
+    const loadErrorMessage = loadError === "denied"
+        ? (dict.tasks?.error_denied || "No tienes permiso para consultar estas tareas.")
+        : loadError === "unavailable"
+            ? (dict.tasks?.error_load || "No se pudieron cargar las tareas.")
+            : null;
 
     const loadTasks = async (
         silent = false,
@@ -73,26 +110,59 @@ export function useTasksPage() {
         const effectiveUser = overrides?.currentUser ?? currentUser;
         if (!bootstrappedRef.current || !effectiveUser) return;
 
-        try {
-            if (!silent) setLoadingTasks(true);
-            const filters: TaskItemFilters = buildTaskListFilters({
-                currentUser: effectiveUser,
-                activeTab: overrides?.activeTab ?? activeTab,
-                selectedLocationId,
-                selectedStatus,
-                selectedUserId: overrides?.selectedUserId ?? selectedUserId,
-            });
+        const effectiveTab = overrides?.activeTab ?? activeTab;
+        const effectiveSelectedUserId = overrides?.selectedUserId ?? selectedUserId;
+        const filters: TaskItemFilters = buildTaskListFilters({
+            currentUser: effectiveUser,
+            activeTab: effectiveTab,
+            selectedLocationId,
+            selectedStatus,
+            selectedUserId: effectiveSelectedUserId,
+        });
+        const requestWorkspaceKey = `${effectiveUser.id}:${effectiveUser.company_id ?? "none"}:${effectiveUser.role?.name ?? "none"}`;
+        const filterKey = `${requestWorkspaceKey}|${effectiveTab}|${filters.locationId ?? "all"}|${filters.userId ?? "all"}|${filters.status ?? "all"}`;
+        const requestId = ++taskRequestIdRef.current;
 
+        try {
+            if (!silent) {
+                setLoadingTasks(true);
+                setLoadError(null);
+            }
             const data = await TaskService.getAllTaskItems(filters);
+            if (
+                requestId !== taskRequestIdRef.current
+                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
+            ) {
+                return;
+            }
             setTasks(data);
             hasLoadedTasksRef.current = true;
+            loadedFilterKeyRef.current = filterKey;
             setLoadError(null);
         } catch (error) {
-            console.error("Error loading tasks list", error);
-            if (!silent || !hasLoadedTasksRef.current) {
-                setLoadError(dict.tasks?.error_update || "No se pudieron cargar las tareas.");
+            if (
+                requestId !== taskRequestIdRef.current
+                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
+            ) {
+                return;
             }
-            if (!silent) toast.error(dict.tasks.error_update);
+            console.error("Error loading tasks list", error);
+            const denied = isAccessDeniedError(error);
+            const hasSameContextSnapshot = hasLoadedTasksRef.current
+                && loadedFilterKeyRef.current === filterKey;
+            if (denied || !hasSameContextSnapshot) {
+                setTasks([]);
+                hasLoadedTasksRef.current = false;
+                loadedFilterKeyRef.current = null;
+            }
+            setLoadError(denied ? "denied" : "unavailable");
+            if (!silent) {
+                toast.error(
+                    denied
+                        ? (dict.tasks?.error_denied || "No tienes permiso para consultar estas tareas.")
+                        : (dict.tasks?.error_load || "No se pudieron cargar las tareas."),
+                );
+            }
         } finally {
             setLoadingTasks(false);
         }
@@ -100,6 +170,8 @@ export function useTasksPage() {
 
     const loadCatalogEvent = useEffectEvent(async () => {
         if (!currentUser) return;
+        const requestWorkspaceKey = `${currentUser.id}:${currentUser.company_id ?? "none"}:${currentUser.role?.name ?? "none"}`;
+        const catalogRequestId = ++catalogRequestIdRef.current;
 
         setLoadError(null);
         setCatalogStatus("loading");
@@ -115,6 +187,12 @@ export function useTasksPage() {
                     ? TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[])
                     : Promise.resolve([] as TemplateTask[])
             ]);
+            if (
+                catalogRequestId !== catalogRequestIdRef.current
+                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
+            ) {
+                return;
+            }
 
             const filteredUsers = isSuperadmin(currentUser)
                 ? usrs
@@ -139,9 +217,23 @@ export function useTasksPage() {
                 selectedUserId: nextUserId,
             });
         } catch (error) {
+            if (
+                catalogRequestId !== catalogRequestIdRef.current
+                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
+            ) {
+                return;
+            }
             console.error("Error loading initial tasks page data", error);
-            toast.error(dict.tasks.error_update);
-            setLoadError(dict.tasks?.error_update || "No se pudieron cargar las tareas.");
+            const denied = isAccessDeniedError(error);
+            setTasks([]);
+            hasLoadedTasksRef.current = false;
+            loadedFilterKeyRef.current = null;
+            setLoadError(denied ? "denied" : "unavailable");
+            toast.error(
+                denied
+                    ? (dict.tasks?.error_denied || "No tienes permiso para consultar estas tareas.")
+                    : (dict.tasks?.error_load || "No se pudieron cargar las tareas."),
+            );
             setCatalogStatus("error");
         }
     });
@@ -198,7 +290,15 @@ export function useTasksPage() {
     const {
         newLocationId,
         setNewLocationId,
+        selectedTask,
+        setSelectedTask,
     } = crud;
+
+    useEffect(() => {
+        if (loadError === "denied" && selectedTask) {
+            setSelectedTask(null);
+        }
+    }, [loadError, selectedTask, setSelectedTask]);
 
     const applyCreateFormDefaults = () => {
         const ownLocations = currentUser?.company_id
@@ -296,6 +396,7 @@ export function useTasksPage() {
         loadingData,
         loadingTasks,
         loadError,
+        loadErrorMessage,
         retryLoad,
         selectedStatus,
         setSelectedStatus,
