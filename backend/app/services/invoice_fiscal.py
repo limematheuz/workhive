@@ -41,15 +41,7 @@ SPANISH_TAX_ID_RE = re.compile(
     r"^(?:[0-9]{8}[A-Z]|[XYZ][0-9]{7}[A-Z]|[ABCDEFGHJKLMNPQRSUVW][0-9]{7}[0-9A-J])$"
 )
 MISSING_TAX_ID_VALUES = {
-    "",
-    "-",
-    "NA",
-    "N/A",
-    "NOINFORMADO",
-    "SINDNI",
-    "SINNIF",
-    "SINCIF",
-    "PARTICULAR",
+    "", "-", "NA", "N/A", "NOINFORMADO", "SINDNI", "SINNIF", "SINCIF", "PARTICULAR",
 }
 
 
@@ -215,33 +207,25 @@ def _software_identity(
     issuer_snapshot: dict | None = None,
 ) -> dict:
     readiness = get_verifactu_readiness()
-    configured_producer_tax_id = settings.VERIFACTU_SOFTWARE_PRODUCER_TAX_ID
-    issuer_tax_id = (issuer_snapshot or {}).get("tax_id") or company.tax_id
-    issuer_name = (issuer_snapshot or {}).get("name") or company.name
+    configured_tax_id = settings.VERIFACTU_SOFTWARE_PRODUCER_TAX_ID
+    issuer = issuer_snapshot or {}
     producer_tax_id = _normalize_tax_id(
-        configured_producer_tax_id or issuer_tax_id
+        configured_tax_id or issuer.get("tax_id") or company.tax_id
     )
     if not _valid_nif(producer_tax_id):
         detail = (
             "Cannot issue invoice. Invalid: software producer tax ID"
-            if configured_producer_tax_id
+            if configured_tax_id
             else "Cannot issue invoice. Invalid: issuer tax ID"
         )
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=detail,
-        )
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=detail)
     return {
-        "producer_name": (
-            settings.VERIFACTU_SOFTWARE_PRODUCER_NAME or issuer_name
-        ),
+        "producer_name": settings.VERIFACTU_SOFTWARE_PRODUCER_NAME or issuer.get("name") or company.name,
         "producer_tax_id": producer_tax_id,
         "software_name": settings.PROJECT_NAME,
         "software_id": settings.VERIFACTU_SOFTWARE_ID,
         "software_version": settings.APP_VERSION,
-        "installation_id": (
-            f"{settings.VERIFACTU_INSTALLATION_ID}-{company.id}"
-        ),
+        "installation_id": f"{settings.VERIFACTU_INSTALLATION_ID}-{company.id}",
         "test_identity_fallback": not readiness.producer_configured,
     }
 
