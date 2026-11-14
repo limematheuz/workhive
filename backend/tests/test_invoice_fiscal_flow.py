@@ -680,3 +680,60 @@ def test_invoice_email_api_allows_external_recipient(client, db, monkeypatch):
         "external@example.com",
     ]
     assert saved_contacts[0]["name"] is None
+
+
+def test_issue_invoice_with_valid_custom_issuer_tax_id_when_company_tax_id_placeholder(
+    db, monkeypatch
+):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "VERIFACTU_SOFTWARE_PRODUCER_TAX_ID", None)
+    monkeypatch.setattr(settings, "VERIFACTU_SOFTWARE_PRODUCER_NAME", None)
+    company = _company(db, "Placeholder Issuer Co", "QA-PRIV-20261111")
+    client = _billing_client(db, company)
+    draft = invoice_service.create_invoice_draft(
+        db, company.id, _draft_payload(client.id)
+    )
+    invoice_service.update_invoice(
+        db,
+        company.id,
+        draft.id,
+        InvoiceUpdate(
+            custom_issuer_info=(
+                "Placeholder Issuer Co\n"
+                "NIF/CIF: B12345674\n"
+                "Dirección: Calle QA 14\n"
+                "CP: 08001\n"
+                "Ciudad: Barcelona"
+            )
+        ),
+    )
+
+    issued = invoice_service.issue_invoice(db, company.id, draft.id)
+
+    assert issued.status == "issued"
+    assert issued.issuer_snapshot["tax_id"] == "B12345674"
+    record = (
+        db.query(FiscalInvoiceRecord)
+        .filter(FiscalInvoiceRecord.invoice_id == issued.id)
+        .first()
+    )
+    assert record is not None
+    assert record.payload["official"]["producer_tax_id"] == "B12345674"
+
+
+def test_issue_invoice_rejects_invalid_configured_producer_tax_id(db, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "VERIFACTU_SOFTWARE_PRODUCER_TAX_ID", "INVALID-NIF")
+    company = _company(db, "Valid Issuer SL", "A12345678")
+    client = _billing_client(db, company)
+    draft = invoice_service.create_invoice_draft(
+        db, company.id, _draft_payload(client.id)
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        invoice_service.issue_invoice(db, company.id, draft.id)
+
+    assert exc.value.status_code == 422
+    assert exc.value.detail == "Cannot issue invoice. Invalid: software producer tax ID"
