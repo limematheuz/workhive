@@ -86,6 +86,18 @@ class UserResponse(UserBase):
     can_manage_work_reports: bool = False
 
 
+class AssignableUserResponse(BaseModel):
+    id: int
+    email: EmailStr
+    full_name: str | None = None
+    is_active: bool = True
+    company_id: int | None
+    role_id: int
+    role: RoleResponse | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserStatsResponse(BaseModel):
     total_hours_worked: float
     tasks_completed: int

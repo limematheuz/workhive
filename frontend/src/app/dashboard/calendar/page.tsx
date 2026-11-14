@@ -13,6 +13,7 @@ import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import {
+    canManageCompanyTasks,
     canViewCompanyCalendar,
     isSuperadmin,
 } from "@/domain/access/roles";
@@ -37,7 +38,9 @@ export default function CalendarPage() {
         const [loadedTasks, loadedLocations, loadedUsers] = await Promise.all([
             TaskService.getTaskItems({ limit: 500 }),
             LocationService.getLocations(),
-            UserService.getUsers(0, 500).catch(() => [me]),
+            canManageCompanyTasks(me)
+                ? UserService.getAssignableUsers(0, 500).catch(() => [me])
+                : Promise.resolve([me]),
         ]);
         setTasks(loadedTasks);
         setLocations(loadedLocations);

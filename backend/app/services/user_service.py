@@ -19,7 +19,10 @@ from app.services import organization_bootstrap_service
 from app.services.external_access_policy import EXTERNAL_PORTAL_ROLE_NAME
 from app.services.user_scope import is_superadmin
 from app.services.user_scope import is_platform_superadmin, require_company_context
-from app.services.organization_authorization_service import require_capability
+from app.services.organization_authorization_service import (
+    has_capability,
+    require_capability,
+)
 from app.services.organization_member_service import active_admin_count
 from app.services.user_stats_service import get_user_stats as _get_user_stats
 from app.services.user_session_policy import requires_session_revocation
@@ -50,6 +53,34 @@ def get_users(
     return user_repo.get_all_users(
         db, require_company_context(current_user), skip, limit
     )
+
+
+_ASSIGNABLE_DIRECTORY_CAPABILITIES = (
+    "access.members.read",
+    "work.manage",
+    "time.read",
+    "time.approve",
+)
+
+
+def get_assignable_users(
+    db: Session, current_user: User, skip: int = 0, limit: int = 200
+) -> list[User]:
+    if is_platform_superadmin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Platform administrators must not use a customer company context",
+        )
+    company_id = require_company_context(current_user)
+    if not any(
+        has_capability(db, current_user, capability)
+        for capability in _ASSIGNABLE_DIRECTORY_CAPABILITIES
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions",
+        )
+    return user_repo.get_assignable_users(db, company_id, skip, limit)
 
 
 def get_user(db: Session, user_id: int, current_user: User) -> User:
