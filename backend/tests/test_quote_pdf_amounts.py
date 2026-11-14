@@ -11,6 +11,8 @@ from app.services.quote_pdf_amounts import (
 def test_quote_pdf_amounts_keep_spanish_display_format():
     assert format_quote_money(Decimal("1234.50")) == "1.234,50 EUR"
     assert format_quote_quantity(Decimal("2.500")) == "2.5"
+    assert format_quote_quantity(Decimal("10")) == "10"
+    assert format_quote_quantity(Decimal("20.00")) == "20"
     assert format_quote_quantity(Decimal("0")) == "0"
 
 
@@ -47,4 +49,44 @@ def test_quote_pdf_breakdown_without_optional_adjustments():
         ["Base imponible", "10,00 EUR"],
         ["IVA (21%)", "2,10 EUR"],
         ["TOTAL PRESUPUESTO", "12,10 EUR"],
+    ]
+
+
+def test_quote_pdf_breakdown_includes_subtotal_and_discount_when_discounted():
+    quote = SimpleNamespace(
+        items=[SimpleNamespace(subtotal=Decimal("200.00"))],
+        discount=Decimal("10"),
+        base_amount=Decimal("180.00"),
+        tax_amount=Decimal("37.80"),
+        tax_rate=Decimal("0.21"),
+        equivalence_surcharge=None,
+        retention=None,
+        total_amount=Decimal("217.80"),
+    )
+
+    assert quote_total_rows(quote) == [
+        ["Subtotal", "200,00 EUR"],
+        ["Descuento (10%)", "-20,00 EUR"],
+        ["Base imponible", "180,00 EUR"],
+        ["IVA (21%)", "37,80 EUR"],
+        ["TOTAL PRESUPUESTO", "217,80 EUR"],
+    ]
+
+    quote_without_items = SimpleNamespace(
+        items=[],
+        discount=Decimal("10"),
+        base_amount=Decimal("180.00"),
+        tax_amount=Decimal("0.00"),
+        tax_rate=Decimal("0.0"),
+        equivalence_surcharge=None,
+        retention=None,
+        total_amount=Decimal("180.00"),
+    )
+
+    assert quote_total_rows(quote_without_items) == [
+        ["Subtotal", "200,00 EUR"],
+        ["Descuento (10%)", "-20,00 EUR"],
+        ["Base imponible", "180,00 EUR"],
+        ["IVA (0%)", "0,00 EUR"],
+        ["TOTAL PRESUPUESTO", "180,00 EUR"],
     ]

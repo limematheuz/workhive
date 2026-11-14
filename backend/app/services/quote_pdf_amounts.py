@@ -11,11 +11,36 @@ def format_quote_money(value: Decimal | float | int | None) -> str:
 
 
 def format_quote_quantity(value: Decimal | float | int | None) -> str:
-    return f"{Decimal(str(value or 0)):f}".rstrip("0").rstrip(".") or "0"
+    formatted = f"{Decimal(str(value or 0)):f}"
+    if "." in formatted:
+        formatted = formatted.rstrip("0").rstrip(".")
+    return formatted or "0"
 
 
 def quote_total_rows(quote: Quote) -> list[list[str]]:
-    rows = [["Base imponible", format_quote_money(quote.base_amount)]]
+    rows: list[list[str]] = []
+    discount_pct = Decimal(str(getattr(quote, "discount", 0) or 0))
+    if discount_pct > 0:
+        items = getattr(quote, "items", None) or []
+        if items:
+            lines_subtotal = sum(
+                (Decimal(str(getattr(item, "subtotal", 0) or 0)) for item in items),
+                Decimal("0"),
+            )
+        elif discount_pct < Decimal("100"):
+            lines_subtotal = Decimal(str(quote.base_amount or 0)) / (
+                Decimal("1") - discount_pct / Decimal("100")
+            )
+        else:
+            lines_subtotal = Decimal("0")
+        discount_amount = lines_subtotal * (discount_pct / Decimal("100"))
+        rows.append(["Subtotal", format_quote_money(lines_subtotal)])
+        rows.append([
+            f"Descuento ({format_quote_quantity(discount_pct)}%)",
+            f"-{format_quote_money(discount_amount)}",
+        ])
+
+    rows.append(["Base imponible", format_quote_money(quote.base_amount)])
     surcharge_amount = Decimal("0")
     if quote.equivalence_surcharge:
         surcharge_amount = (

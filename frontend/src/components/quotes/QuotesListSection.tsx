@@ -46,10 +46,10 @@ export function QuotesListSection({
     const actions = (quote: Quote) => [
         { label: "Ver", icon: Eye, onClick: () => onViewQuote(quote) },
         ...(canManage && isQuoteContentEditable(quote.status)
-            ? [{ label: "Editar", icon: Edit3, onClick: () => onEditQuote(quote), variant: "edit" as const }]
-            : []),
-        ...(canManage
-            ? [{ label: "Eliminar", icon: Trash2, onClick: () => onDeleteQuote(quote.id), variant: "delete" as const }]
+            ? [
+                { label: "Editar", icon: Edit3, onClick: () => onEditQuote(quote), variant: "edit" as const },
+                { label: "Eliminar", icon: Trash2, onClick: () => onDeleteQuote(quote.id), variant: "delete" as const },
+            ]
             : []),
     ];
 
