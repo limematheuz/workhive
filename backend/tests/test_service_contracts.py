@@ -125,6 +125,7 @@ def test_accepted_quote_creates_one_draft_contract_with_immutable_service_lines(
     assert contract["status"] == "draft"
     assert contract["source_quote_id"] == quote["id"]
     assert contract["source_quote_revision_id"] == quote["accepted_revision_id"]
+    assert contract["source_quote_revision_version"] == 1
     assert contract["service_lines"] == [
         {
             "id": contract["service_lines"][0]["id"],
@@ -370,3 +371,64 @@ def test_contract_coverage_can_be_removed_and_restored_without_losing_zones(clie
     assert repeated.status_code == 200, repeated.text
     assert repeated.json()["covered_locations"] == [link]
     assert db.query(TaskItem).count() == 0
+
+
+def test_contract_exposes_commercial_revision_version_distinct_from_revision_id(client):
+    headers = _authenticated_company(
+        client,
+        email="contract-rev-version@example.com",
+        name="Contratos Version Comercial",
+        tax_id="B10000057",
+    )
+    customer = _client(client, headers)
+    _accepted_quote(client, headers, customer["id"])
+
+    second_quote = client.post(
+        "/api/v1/quotes/",
+        json={
+            "client_id": customer["id"],
+            "title": "Servicio integral v1",
+            "items": [{"description": "Mantenimiento base", "quantity": 1, "unit_price": 100.0}],
+        },
+        headers=headers,
+    )
+    assert second_quote.status_code == 201, second_quote.text
+    second_id = second_quote.json()["id"]
+    assert client.patch(f"/api/v1/quotes/{second_id}", json={"status": "sent"}, headers=headers).status_code == 200
+    assert (
+        client.post(
+            f"/api/v1/quotes/{second_id}/revisions",
+            json={},
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    assert (
+        client.patch(
+            f"/api/v1/quotes/{second_id}",
+            json={
+                "title": "Servicio integral v2",
+                "items": [{"description": "Mantenimiento ampliado", "quantity": 2, "unit_price": 100.0}],
+                "status": "sent",
+            },
+            headers=headers,
+        ).status_code
+        == 200
+    )
+    accepted = client.post(
+        f"/api/v1/quotes/{second_id}/accept",
+        json={"register_client": False},
+        headers=headers,
+    )
+    assert accepted.status_code == 200, accepted.text
+
+    contracts = client.get("/api/v1/service-contracts/", headers=headers)
+    assert contracts.status_code == 200, contracts.text
+    second_contract = next(item for item in contracts.json() if item["source_quote_id"] == second_id)
+    assert second_contract["source_quote_revision_id"] == accepted.json()["accepted_revision_id"]
+    assert second_contract["source_quote_revision_version"] == 2
+    assert second_contract["source_quote_revision_id"] != second_contract["source_quote_revision_version"]
+
+    detail = client.get(f"/api/v1/service-contracts/{second_contract['id']}", headers=headers)
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["source_quote_revision_version"] == 2

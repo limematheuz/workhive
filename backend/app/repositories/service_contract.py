@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import text
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.service_contract import (
     ServiceContract,
@@ -42,6 +42,7 @@ def _generate_contract_number(db: Session, company_id: int) -> str:
 
 def _contract_options():
     return (
+        joinedload(ServiceContract.source_quote_revision),
         selectinload(ServiceContract.service_lines),
         selectinload(ServiceContract.covered_locations).selectinload(
             ServiceContractLocation.location

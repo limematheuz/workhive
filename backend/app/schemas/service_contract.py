@@ -95,6 +95,7 @@ class ServiceContractResponse(BaseModel):
     client_id: int | None
     source_quote_id: int
     source_quote_revision_id: int
+    source_quote_revision_version: int | None = None
     starts_at: datetime | None
     ends_at: datetime | None
     renewal_mode: str

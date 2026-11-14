@@ -3480,5 +3480,10 @@
         "in_hours": "en {count} h",
         "in_days": "en {count} días"
       }
+    },
+    "contracts": {
+      "error_load": "No se pudieron cargar los contratos.",
+      "error_denied": "No tienes permisos para consultar contratos.",
+      "retry": "Reintentar"
     }
 }

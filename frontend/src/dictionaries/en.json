@@ -3480,5 +3480,10 @@
         "in_hours": "in {count} h",
         "in_days": "in {count} days"
       }
+    },
+    "contracts": {
+      "error_load": "Could not load contracts.",
+      "error_denied": "You do not have permission to view contracts.",
+      "retry": "Retry"
     }
 }
