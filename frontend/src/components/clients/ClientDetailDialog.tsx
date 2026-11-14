@@ -29,14 +29,27 @@ type ClientDetailDialogProps = {
     permissions?: Partial<ClientDetailPermissions>;
 };
 
+type ResolvedClientDetailProps = Omit<ClientDetailDialogProps, "client" | "workspaceRow"> & { client: Client; workspaceRow: ClientWorkspaceRow };
+type ClientDetailNavigation = { activeTab: ClientDetailTab; taskSearch: string; taskStatusFilter: string };
+const INITIAL_NAVIGATION: ClientDetailNavigation = { activeTab: "overview", taskSearch: "", taskStatusFilter: "ALL" };
+
 export function ClientDetailDialog(props: ClientDetailDialogProps) {
-    const { client, workspaceRow, open, onOpenChange, ...bodyProps } = props;
+    const { client, workspaceRow } = props;
     if (!client || !workspaceRow) return null;
+    return <ClientDetailDialogSession key={client.id} {...props} client={client} workspaceRow={workspaceRow} />;
+}
+
+function ClientDetailDialogSession({ client, workspaceRow, open, onOpenChange, ...bodyProps }: ResolvedClientDetailProps) {
+    const [navigation, setNavigation] = useState(INITIAL_NAVIGATION);
+    const changeOpen = (nextOpen: boolean) => {
+        if (!nextOpen) setNavigation(INITIAL_NAVIGATION);
+        onOpenChange(nextOpen);
+    };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={changeOpen}>
             <DialogContent className="flex max-h-[92vh] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[86rem]">
-                {open && <ClientDetailDialogBody key={client.id} {...bodyProps} client={client} workspaceRow={workspaceRow} onOpenChange={onOpenChange} />}
+                {open && <ClientDetailDialogBody {...bodyProps} client={client} workspaceRow={workspaceRow} onOpenChange={changeOpen} navigation={navigation} onNavigationChange={(patch) => setNavigation(current => ({ ...current, ...patch }))} onNavigateAway={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
     );
@@ -55,8 +68,15 @@ function ClientDetailDialogBody({
     onEditClient,
     onToggleActiveClient,
     onDeleteClient,
+    navigation,
+    onNavigationChange,
+    onNavigateAway,
     permissions: providedPermissions = {},
-}: Omit<ClientDetailDialogProps, "client" | "workspaceRow" | "open"> & { client: Client; workspaceRow: ClientWorkspaceRow }) {
+}: Omit<ResolvedClientDetailProps, "open"> & {
+    navigation: ClientDetailNavigation;
+    onNavigationChange: (patch: Partial<ClientDetailNavigation>) => void;
+    onNavigateAway: () => void;
+}) {
     const permissions: ClientDetailPermissions = {
         canManage: false,
         canReadCommercialFollowUps: false,
@@ -64,9 +84,7 @@ function ClientDetailDialogBody({
         canManageClientPortal: false,
         ...providedPermissions,
     };
-    const [activeTab, setActiveTab] = useState<ClientDetailTab>("overview");
-    const [taskSearch, setTaskSearch] = useState("");
-    const [taskStatusFilter, setTaskStatusFilter] = useState("ALL");
+    const { activeTab, taskSearch, taskStatusFilter } = navigation;
     const clientLocations = useMemo(() => locations.filter((location) => location.client_id === client.id), [client.id, locations]);
     const clientLocationIds = useMemo(() => new Set(clientLocations.map((location) => location.id)), [clientLocations]);
     const clientTasks = useMemo(() => tasks.filter((task) => clientLocationIds.has(task.location_id)), [clientLocationIds, tasks]);
@@ -86,11 +104,11 @@ function ClientDetailDialogBody({
     }), [clientTasks, taskSearch, taskStatusFilter]);
 
     const closeAndOpenLocationTasks = (location: Location) => {
-        onOpenChange(false);
+        onNavigateAway();
         onViewLocationTasks(location);
     };
     const closeAndOpenTaskDetails = (task: TaskItem) => {
-        onOpenChange(false);
+        onNavigateAway();
         onViewTaskDetails(task);
     };
 
@@ -107,7 +125,7 @@ function ClientDetailDialogBody({
             <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
                 <ClientDetailDialogTabsSection
                     activeTab={activeTab}
-                    onActiveTabChange={setActiveTab}
+                    onActiveTabChange={(activeTab) => onNavigationChange({ activeTab })}
                     client={client}
                     row={workspaceRow}
                     locations={clientLocations}
@@ -117,12 +135,12 @@ function ClientDetailDialogBody({
                     financialDataAvailable={financialDataAvailable}
                     permissions={permissions}
                     taskSearch={taskSearch}
-                    onTaskSearchChange={setTaskSearch}
+                    onTaskSearchChange={(taskSearch) => onNavigationChange({ taskSearch })}
                     taskStatusFilter={taskStatusFilter}
-                    onTaskStatusFilterChange={setTaskStatusFilter}
+                    onTaskStatusFilterChange={(taskStatusFilter) => onNavigationChange({ taskStatusFilter })}
                     onViewLocationTasks={closeAndOpenLocationTasks}
                     onViewTaskDetails={closeAndOpenTaskDetails}
-                    onClose={() => onOpenChange(false)}
+                    onClose={onNavigateAway}
                 />
             </div>
         </>

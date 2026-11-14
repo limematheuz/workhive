@@ -34,12 +34,14 @@ for (const width of [1440, 768, 390]) {
             await expect(parent.getByRole("button", { name: "Editar", exact: true })).toHaveCount(0);
             await expect(parent.getByRole("button", { name: "Añadir persona", exact: true })).toHaveCount(0);
             const expectedTabs = ["Resumen", ...(commercialRead ? ["Seguimiento"] : []), "Ubicaciones (0)", "Trabajos (0)"];
-            if (width >= 1024) {
+            const navigation = parent.locator('[data-tab-navigation][data-tabs-ready="true"]').filter({ visible: true });
+            await expect(navigation).toBeVisible();
+            if (await navigation.getByRole("tab").count()) {
                 await expect(parent.getByRole("tab")).toHaveCount(expectedTabs.length);
                 for (let index = 0; index < expectedTabs.length; index++) {
-                    await expect(parent.getByRole("tab").nth(index)).toHaveAccessibleName(expectedTabs[index]);
+                    await expect(navigation.getByRole("tab").nth(index)).toHaveAccessibleName(expectedTabs[index]);
                 }
-                if (commercialRead) await parent.getByRole("tab", { name: "Seguimiento", exact: true }).click();
+                if (commercialRead) await navigation.getByRole("tab", { name: "Seguimiento", exact: true }).click();
             } else {
                 await parent.getByRole("combobox", { name: "Seleccionar sección", exact: true }).click();
                 expect(await page.getByRole("option").allTextContents()).toEqual(expectedTabs);
