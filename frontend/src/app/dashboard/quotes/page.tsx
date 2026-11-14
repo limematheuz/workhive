@@ -14,6 +14,7 @@ import { QuotesFiltersSection } from "@/components/quotes/QuotesFiltersSection";
 import { QuotesListSection } from "@/components/quotes/QuotesListSection";
 import { useDictionary } from "@/lib/dictionary-context";
 import { canManageFinance, canViewFinance } from "@/domain/access/roles";
+import { ApiResponseError } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
@@ -21,6 +22,15 @@ import { ClientService, Client } from "@/services/client.service";
 import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
+
+type QuotesLoadErrorKind = "denied" | "unavailable";
+
+function isAccessDeniedError(error: unknown): boolean {
+    return (
+        error instanceof ApiResponseError
+        && (error.status === 401 || error.status === 403 || error.status === 404)
+    );
+}
 
 function QuotesPageLoading() {
     return (
@@ -33,6 +43,10 @@ function QuotesPageLoading() {
 
 function QuotesPageContent() {
     const { dict } = useDictionary();
+    const dictRef = useRef(dict);
+    useEffect(() => {
+        dictRef.current = dict;
+    }, [dict]);
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -49,14 +63,34 @@ function QuotesPageContent() {
     const [quoteToEdit, setQuoteToEdit] = useState<Quote | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-    const [loadError, setLoadError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<QuotesLoadErrorKind | null>(null);
     const quoteToDeleteIdRef = useRef<number | null>(null);
+    const requestIdRef = useRef(0);
+    const hasLoadedQuotesRef = useRef(false);
+    const loadedFilterKeyRef = useRef<string | null>(null);
     const canViewQuotes = canViewFinance(user);
     const canManageQuotes = canManageFinance(user);
+    const workspaceKey = user
+        ? `${user.id}:${user.company_id ?? "none"}:${user.role?.name ?? "none"}`
+        : "anonymous";
+    const filterKey = `${workspaceKey}|client:${selectedClientId}|status:${selectedStatus}`;
 
     if (!userLoading && (!user || !canViewQuotes)) {
         redirect("/dashboard");
     }
+
+    useEffect(() => {
+        requestIdRef.current += 1;
+        hasLoadedQuotesRef.current = false;
+        loadedFilterKeyRef.current = null;
+        startTransition(() => {
+            setQuotes([]);
+            setClients([]);
+            setSelectedQuote(null);
+            setIsDetailOpen(false);
+            setLoadError(null);
+        });
+    }, [workspaceKey]);
 
     useEffect(() => {
         if (userLoading || !user || !canViewQuotes) return;
@@ -79,39 +113,82 @@ function QuotesPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [canViewQuotes, user, userLoading]);
+    }, [canViewQuotes, user, userLoading, workspaceKey]);
 
-    const loadQuotes = useCallback(async () => {
+    const loadQuotes = useCallback(async (options?: { silent?: boolean }) => {
         if (userLoading || !user || !canViewQuotes) return;
+        const requestId = ++requestIdRef.current;
+        const canReuseCurrentSnapshot = (
+            hasLoadedQuotesRef.current
+            && loadedFilterKeyRef.current === filterKey
+        );
         try {
-            setLoading(true);
-            setLoadError(null);
+            if (!options?.silent) {
+                setLoading(true);
+                if (!canReuseCurrentSnapshot) {
+                    setQuotes([]);
+                }
+            }
             const data = await QuoteService.getQuotes({
                 clientId: selectedClientId ? parseInt(selectedClientId) : undefined,
                 status: selectedStatus || undefined,
             });
+            if (requestId !== requestIdRef.current) return;
+            hasLoadedQuotesRef.current = true;
+            loadedFilterKeyRef.current = filterKey;
+            setLoadError(null);
             setQuotes(data);
             setSelectedQuote((current) =>
-                current ? (data.find((item) => item.id === current.id) ?? current) : null,
+                current ? (data.find((item) => item.id === current.id) ?? null) : null,
             );
         } catch (error: unknown) {
-            const message = getErrorMessage(
-                error,
-                dict.quotes?.error_load ?? "Error al cargar presupuestos",
-            );
-            setQuotes([]);
-            setLoadError(message);
-            toast.error(message);
+            if (requestId !== requestIdRef.current) return;
+            const denied = isAccessDeniedError(error);
+            const errorKind: QuotesLoadErrorKind = denied ? "denied" : "unavailable";
+            setLoadError(errorKind);
+            if (denied || !canReuseCurrentSnapshot) {
+                hasLoadedQuotesRef.current = false;
+                loadedFilterKeyRef.current = null;
+                setQuotes([]);
+                setSelectedQuote(null);
+                setIsDetailOpen(false);
+            }
+            if (!options?.silent) {
+                toast.error(
+                    denied
+                        ? (dictRef.current.quotes?.error_denied ?? "No tienes permisos para consultar presupuestos.")
+                        : (dictRef.current.quotes?.error_load ?? "No se pudieron cargar los presupuestos."),
+                );
+            }
         } finally {
             setLoading(false);
         }
-    }, [canViewQuotes, dict.quotes?.error_load, selectedClientId, selectedStatus, user, userLoading]);
+    }, [canViewQuotes, filterKey, selectedClientId, selectedStatus, user, userLoading]);
 
     useEffect(() => {
         if (!canViewQuotes) return;
         startTransition(() => {
             void loadQuotes();
         });
+    }, [canViewQuotes, loadQuotes]);
+
+    useEffect(() => {
+        if (!canViewQuotes) return;
+        const handleRefresh = () => {
+            void loadQuotes({ silent: true });
+        };
+        const handleRealtimeInvalidation = (event: Event) => {
+            const detail = (event as CustomEvent<{ domains?: string[] }>).detail;
+            if (!detail?.domains || detail.domains.includes("quotes")) {
+                handleRefresh();
+            }
+        };
+        window.addEventListener("focus", handleRefresh);
+        window.addEventListener("workhive:realtime-invalidation", handleRealtimeInvalidation);
+        return () => {
+            window.removeEventListener("focus", handleRefresh);
+            window.removeEventListener("workhive:realtime-invalidation", handleRealtimeInvalidation);
+        };
     }, [canViewQuotes, loadQuotes]);
 
     const handleDeleteConfirm = async () => {
@@ -197,7 +274,14 @@ function QuotesPageContent() {
         return clients.find((c: Client) => c.id === q.client_id)?.name ?? `#${q.client_id}`;
     };
 
-    if (userLoading || (canViewQuotes && loading)) {
+    const loadErrorMessage = loadError === "denied"
+        ? (dict.quotes?.error_denied ?? "No tienes permisos para consultar presupuestos.")
+        : loadError === "unavailable"
+            ? (dict.quotes?.error_load ?? "No se pudieron cargar los presupuestos.")
+            : null;
+    const retryLabel = dict.quotes?.retry ?? "Reintentar";
+
+    if (userLoading || (canViewQuotes && loading && quotes.length === 0 && !loadError)) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />
@@ -239,7 +323,10 @@ function QuotesPageContent() {
             <QuotesListSection
                 quotes={quotes}
                 statusLabels={STATUS_LABELS}
-                emptyLabel={loadError ?? (dict.quotes?.empty ?? "No hay presupuestos. Crea el primero.")}
+                emptyLabel={dict.quotes?.empty ?? "No hay presupuestos. Crea el primero."}
+                errorMessage={loadErrorMessage}
+                retryLabel={retryLabel}
+                onRetry={() => void loadQuotes()}
                 columnLabels={{
                     title: dict.quotes?.col_title ?? "Title",
                     client: dict.quotes?.col_client ?? "Client",

@@ -82,6 +82,9 @@ test.describe("Quotes QA regressions", () => {
 
         const dialog = page.getByRole("dialog");
         await expect(dialog).toBeVisible();
+        await dialog.getByText("Opciones avanzadas").click();
+        await expect(dialog.getByLabel("Notas de Pago")).toHaveValue("");
+        await expect(dialog.getByLabel("Términos y condiciones")).toHaveValue("");
         await dialog.locator("input").first().fill("Borrador con cambios");
         await dialog.getByRole("button", { name: "Cancelar" }).click();
 
@@ -98,10 +101,10 @@ test.describe("Quotes QA regressions", () => {
         await expect(editDialog.getByRole("combobox", { name: "Tipo de IVA" })).toContainText("No aplica (0%)");
     });
 
-    test("QuotesPage avoids false empty state on 503 and does not open stale detail", async ({ page }) => {
+    test("QuotesPage avoids false empty state on 503, localizes error, preserves same-context snapshot, and clears on 403 or filter change", async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 844 });
         let detailFails = false;
-        let listFails = true;
+        let listMode: "ok" | "503" | "403" = "503";
 
         await page.route("**/api/v1/**", async (route) => {
             const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
@@ -127,7 +130,8 @@ test.describe("Quotes QA regressions", () => {
                 return route.fulfill({ status: 403, json: { detail: "Not enough permissions" } });
             }
             if (path === "/api/v1/quotes") {
-                if (listFails) return route.fulfill({ status: 503, json: { detail: "Unavailable" } });
+                if (listMode === "503") return route.fulfill({ status: 503, json: { detail: "Unavailable" } });
+                if (listMode === "403") return route.fulfill({ status: 403, json: { detail: "Forbidden" } });
                 return route.fulfill({ json: [baseQuote] });
             }
             if (path === "/api/v1/quotes/10") {
@@ -139,20 +143,47 @@ test.describe("Quotes QA regressions", () => {
         });
 
         await page.goto("/dashboard/quotes");
+        const mainAlert = page.locator("main").getByRole("alert");
         await expect(page.getByText(/No hay presupuestos/i)).toHaveCount(0);
-        await expect(page.getByText(/No se pudieron cargar los presupuestos/i).first()).toBeVisible();
+        await expect(mainAlert).toContainText("No se pudieron cargar los presupuestos.");
+        await expect(mainAlert.getByRole("button", { name: "Reintentar", exact: true })).toBeVisible();
 
         const hasOverflow = await page.evaluate(
             () => document.documentElement.scrollWidth > window.innerWidth,
         );
         expect(hasOverflow).toBe(false);
 
-        listFails = false;
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.getByRole("button", { name: "Cambiar idioma a inglés", exact: true }).click();
+        await expect(mainAlert).toContainText("Could not load quotes.");
+        await expect(mainAlert.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+
+        await page.getByRole("button", { name: "Cambiar idioma a español", exact: true }).click();
+        await expect(mainAlert).toContainText("No se pudieron cargar los presupuestos.");
+        await page.setViewportSize({ width: 390, height: 844 });
+
+        listMode = "ok";
         detailFails = true;
-        await page.reload();
+        await mainAlert.getByRole("button", { name: "Reintentar", exact: true }).click();
         const quoteCardButton = page.getByRole("button", { name: /QUO-2026-0010/i });
         await expect(quoteCardButton).toBeVisible();
         await quoteCardButton.click();
         await expect(page.getByRole("dialog")).toHaveCount(0);
+
+        // Transient 503 in same context preserves snapshot + shows alert banner
+        listMode = "503";
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent("workhive:realtime-invalidation", { detail: { domains: ["quotes"] } }));
+        });
+        await expect(mainAlert).toContainText("No se pudieron cargar los presupuestos.");
+        await expect(quoteCardButton).toBeVisible();
+
+        // 403 revocation clears snapshot immediately
+        listMode = "403";
+        await page.evaluate(() => {
+            window.dispatchEvent(new CustomEvent("workhive:realtime-invalidation", { detail: { domains: ["quotes"] } }));
+        });
+        await expect(mainAlert).toContainText("No tienes permisos para consultar presupuestos.");
+        await expect(quoteCardButton).toHaveCount(0);
     });
 });

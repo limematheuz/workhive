@@ -98,14 +98,9 @@ export function useQuoteForm({
     const [retention, setRetention] = useState<number>(0);
 
     const [notesEnabled, setNotesEnabled] = useState<boolean>(true);
-    const [notes, setNotes] = useState<string>(
-        () => dict.quotes.notes_placeholder
-            || "Términos, condiciones, notas adicionales..."
-    );
+    const [notes, setNotes] = useState<string>("");
     const [termsEnabled, setTermsEnabled] = useState<boolean>(true);
-    const [terms, setTerms] = useState<string>(
-        () => "El presupuesto tiene una validez de 15 días desde la fecha de emisión. Para cualquier consulta, póngase en contacto con nosotros."
-    );
+    const [terms, setTerms] = useState<string>("");
     const [signatureUrl, setSignatureUrl] = useState<string | null>(null);
 
     const [loadingClients, setLoadingClients] = useState<boolean>(false);
@@ -232,16 +227,8 @@ export function useQuoteForm({
                         setIssuerEmail(issuer.email);
                         setIssuerBank(issuer.bank || "");
                         setIssuerSwiftBic(issuer.swiftBic || "");
-                        setNotes(
-                            comp.default_payment_notes
-                            || dict.quotes.notes_placeholder
-                            || ""
-                        );
-                        setTerms(
-                            comp.default_document_terms
-                            || dict.quotes.terms_placeholder
-                            || ""
-                        );
+                        setNotes(comp.default_payment_notes || "");
+                        setTerms(comp.default_document_terms || "");
                         setCustomIssuerInfo(formatBillingParty(issuer));
                     }
                 }
