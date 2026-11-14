@@ -39,7 +39,7 @@ export function CompanyPlanAccessDialog({ company, onOpenChange, onUpdated }: Pr
                             <DialogTitle className="flex items-center gap-2 text-left"><ShieldCheck className="h-5 w-5 text-accent" aria-hidden="true" />Plan y acceso</DialogTitle>
                             <DialogDescription className="text-left">{companyName}. Solo los administradores de plataforma de WorkHive pueden cambiar esta configuración.</DialogDescription>
                         </DialogHeader>
-                        {loading || !access ? <LoadingState /> : <DialogBody controller={controller} />}
+                        {loading ? <LoadingState /> : !access ? <LoadErrorState message={controller.loadError} onRetry={controller.reload} /> : <DialogBody controller={controller} />}
                     </div>
                 </DialogContent>
             </Dialog>
@@ -73,6 +73,10 @@ export function CompanyPlanAccessDialog({ company, onOpenChange, onUpdated }: Pr
 
 function LoadingState() {
     return <div className="flex min-h-52 flex-1 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-accent" aria-label="Cargando plan y acceso" /></div>;
+}
+
+function LoadErrorState({ message, onRetry }: { message: string | null; onRetry: () => void }) {
+    return <div role="alert" className="m-5 flex flex-col items-start justify-between gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-4 sm:m-6 sm:flex-row sm:items-center"><p className="text-sm text-[var(--text-main)]">{message || "No se ha podido cargar el plan y acceso."}</p><Button type="button" size="sm" variant="outline" onClick={onRetry}>Reintentar</Button></div>;
 }
 
 function DialogBody({ controller }: { controller: Controller }) {

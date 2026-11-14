@@ -67,13 +67,14 @@ export function CompanyPlanSummary({ companyId }: { companyId: number }) {
     };
     const labelFor = (item: Entitlement) =>
         dict.subscription.entitlements[item.code as keyof typeof dict.subscription.entitlements] ?? item.label;
-    const planCode = displayPlanCode(snapshot?.company.subscription_plan);
+    const activeSnapshot = snapshot?.company.id === companyId ? snapshot : null;
+    const planCode = displayPlanCode(activeSnapshot?.company.subscription_plan);
     const planName = planCode === "custom" ? copy.custom
         : planCode ? dict.subscription.plan_names[planCode] : copy.noPlan;
-    const { features, limits } = visibleCompanyPlanEntitlements(snapshot?.entitlements ?? []);
-    const status = snapshot?.company.subscription_status ?? "inactive";
+    const { features, limits } = visibleCompanyPlanEntitlements(activeSnapshot?.entitlements ?? []);
+    const status = activeSnapshot?.company.subscription_status ?? "inactive";
     const statusLabel = copy.status[status as keyof typeof copy.status] ?? status;
-    const trialEndLabel = formatCompanyPlanTrialEnd(snapshot?.company.trial_ends_at, locale);
+    const trialEndLabel = formatCompanyPlanTrialEnd(activeSnapshot?.company.trial_ends_at, locale);
 
     return (
         <section className="billing-surface rounded-[24px] p-5 md:p-6" aria-labelledby="company-plan-title">
@@ -82,14 +83,14 @@ export function CompanyPlanSummary({ companyId }: { companyId: number }) {
                     <h2 id="company-plan-title" className="text-base font-semibold">{copy.title}</h2>
                     <p className="mt-1 text-xs leading-5 text-[var(--text-muted)]">{copy.description}</p>
                 </div>
-                {snapshot && <Badge variant="outline">{statusLabel}</Badge>}
+                {activeSnapshot && !failed && <Badge variant="outline">{statusLabel}</Badge>}
             </div>
 
-            {loading ? (
+            {loading || (!failed && !activeSnapshot) ? (
                 <p className="mt-5 flex items-center gap-2 text-sm text-[var(--text-muted)]" role="status">
                     <Loader2 className="size-4 animate-spin" aria-hidden="true" />{copy.loading}
                 </p>
-            ) : failed || !snapshot ? (
+            ) : failed || !activeSnapshot ? (
                 <div className="mt-5 flex flex-wrap items-center gap-3 text-sm">
                     <p role="alert">{copy.error}</p>
                     <Button type="button" variant="outline" size="sm" onClick={() => { setLoading(true); setRetry((value) => value + 1); }}>{copy.retry}</Button>
@@ -97,7 +98,7 @@ export function CompanyPlanSummary({ companyId }: { companyId: number }) {
             ) : (
                 <div className="mt-5 space-y-5">
                     <div>
-                        <p className="text-lg font-semibold">{snapshot.company.name} · {planName}</p>
+                        <p className="text-lg font-semibold">{activeSnapshot.company.name} · {planName}</p>
                         {status === "trialing" && trialEndLabel && (
                             <p className="mt-1 text-xs text-[var(--text-muted)]">{copy.trialEnd.replace("{date}", trialEndLabel)}</p>
                         )}

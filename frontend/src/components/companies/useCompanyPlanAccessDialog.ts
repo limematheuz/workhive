@@ -31,6 +31,7 @@ type State = {
     access: CompanyPlanAccess | null;
     activeTab: CompanyPlanAccessTab;
     loading: boolean;
+    loadError: string | null;
     submitting: boolean;
     planCode: PlanCode;
     planStatus: "active" | "trialing";
@@ -45,7 +46,7 @@ type State = {
 type Action =
     | { type: "load" }
     | { type: "loaded"; catalogue: PlanCatalogueItem[]; access: CompanyPlanAccess }
-    | { type: "load-failed" }
+    | { type: "load-failed"; message: string }
     | { type: "tab"; value: CompanyPlanAccessTab }
     | { type: "submitting"; value: boolean }
     | { type: "plan-code"; value: PlanCode }
@@ -64,6 +65,7 @@ const INITIAL_STATE: State = {
     access: null,
     activeTab: "plan",
     loading: false,
+    loadError: null,
     submitting: false,
     planCode: "top",
     planStatus: "active",
@@ -104,10 +106,11 @@ function accessStatusLabel(status: "active" | "trialing"): string {
 
 function reducer(state: State, action: Action): State {
     switch (action.type) {
-        case "load": return { ...state, loading: true, access: null, activeTab: "plan" };
+        case "load": return { ...state, loading: true, loadError: null, access: null, activeTab: "plan" };
         case "loaded": return {
             ...state,
             loading: false,
+            loadError: null,
             catalogue: action.catalogue,
             access: action.access,
             planCode: action.access.subscription.plan_code,
@@ -117,7 +120,7 @@ function reducer(state: State, action: Action): State {
             customValues: valuesFromEntitlements(action.access.entitlements),
             customEndsAt: sharedCustomizationEndDate(action.access.overrides),
         };
-        case "load-failed": return { ...state, loading: false };
+        case "load-failed": return { ...state, loading: false, loadError: action.message };
         case "tab": return { ...state, activeTab: action.value };
         case "submitting": return { ...state, submitting: action.value };
         case "plan-code": return { ...state, planCode: action.value };
@@ -167,6 +170,7 @@ export function useCompanyPlanAccessDialog({
 }) {
     const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
     const [confirmation, setConfirmation] = useState<"plan" | "custom" | null>(null);
+    const [reloadKey, setReloadKey] = useState(0);
     const { access, catalogue, commercialTerms, customEndsAt, customReason, customValues, planCode, planReason, planStatus, trialEndsAt } = state;
     const selectedPlan = useMemo(() => catalogue.find((plan) => plan.code === planCode) || null, [catalogue, planCode]);
     const baseValues = useMemo(() => valuesFromEntitlements(access?.base_entitlements || []), [access?.base_entitlements]);
@@ -229,12 +233,13 @@ export function useCompanyPlanAccessDialog({
             })
             .catch((error) => {
                 if (!cancelled) {
-                    dispatch({ type: "load-failed" });
-                    toast.error(error instanceof Error ? error.message : "No se ha podido cargar el plan y acceso");
+                    const message = error instanceof Error ? error.message : "No se ha podido cargar el plan y acceso";
+                    dispatch({ type: "load-failed", message });
+                    toast.error(message);
                 }
             });
         return () => { cancelled = true; };
-    }, [company]);
+    }, [company, reloadKey]);
 
     const savePlan = async () => {
         if (!company) return;
@@ -326,6 +331,7 @@ export function useCompanyPlanAccessDialog({
         planFeatures,
         planLimits,
         selectablePlans,
+        reload: () => setReloadKey((value) => value + 1),
         close: () => onOpenChange(false),
         dismissConfirmation: () => setConfirmation(null),
         setActiveTab: (value: CompanyPlanAccessTab) => dispatch({ type: "tab", value }),
