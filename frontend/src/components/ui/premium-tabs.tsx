@@ -57,7 +57,7 @@ export function PremiumTabsNavigation<T extends string>({ tabs, activeTab, onCha
                 </SelectContent>
             </Select>
         </div> : <TabsList aria-label={pickerLabel} className={tabListClass}>
-            {tabs.map(tab => <TabsTrigger key={tab.id} value={tab.id} title={typeof tab.label === "string" ? tab.label : undefined} className={premiumTabTriggerClass(activeTab === tab.id)}>
+            {tabs.map(tab => <TabsTrigger key={tab.id} value={tab.id} aria-label={typeof tab.label === "string" ? tab.label : undefined} title={typeof tab.label === "string" ? tab.label : undefined} className={premiumTabTriggerClass(activeTab === tab.id)}>
                 <PremiumTabLabel tab={tab} active={activeTab === tab.id} />
             </TabsTrigger>)}
         </TabsList>}
