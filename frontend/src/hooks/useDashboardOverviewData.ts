@@ -7,15 +7,16 @@ import { LocationService, type Location } from "@/services/location.service";
 import { TaskService, type TaskItem } from "@/services/task.service";
 import type { User } from "@/types/user";
 
+type ReadFailure = "denied" | "unavailable" | null;
 type Snapshot = {
     context: string;
     tasks: TaskItem[];
     locations: Location[];
     tasksLoaded: boolean;
-    taskFailed: boolean;
-    locationFailed: boolean;
+    taskError: ReadFailure;
+    locationError: ReadFailure;
 };
-const emptySnapshot = (context: string): Snapshot => ({ context, tasks: [], locations: [], tasksLoaded: false, taskFailed: false, locationFailed: false });
+const emptySnapshot = (context: string): Snapshot => ({ context, tasks: [], locations: [], tasksLoaded: false, taskError: null, locationError: null });
 const isTransient = (error: unknown) => !(error instanceof ApiResponseError) || error.status >= 500 || error.status === 408 || error.status === 429;
 const mergeLocations = (base: Location[], extra: Location[]) => Array.from(new Map([...base, ...extra].map(location => [location.id, location])).values());
 
@@ -56,14 +57,14 @@ export function useDashboardOverviewData(user: User | null) {
             if (!current()) return;
             setSnapshot(previous => {
                 const own = previous?.context === context ? previous : emptySnapshot(context);
-                return { ...own, tasks, tasksLoaded: true, taskFailed: false,
+                return { ...own, tasks, tasksLoaded: true, taskError: null,
                     locations: locationsAtStart === locationVersion.current ? mergeLocations(own.locations, details) : own.locations };
             });
         } catch (error) {
             if (!current()) return;
             setSnapshot(previous => {
                 const own = previous?.context === context ? previous : emptySnapshot(context);
-                return { ...own, tasks: isTransient(error) ? own.tasks : [], tasksLoaded: true, taskFailed: true };
+                return { ...own, tasks: isTransient(error) ? own.tasks : [], tasksLoaded: true, taskError: error instanceof ApiResponseError && error.status === 403 ? "denied" : "unavailable" };
             });
         }
     }, [context]);
@@ -76,12 +77,12 @@ export function useDashboardOverviewData(user: User | null) {
         try {
             const locations = await LocationService.getLocations(undefined, readContext);
             if (!current()) return;
-            setSnapshot(previous => ({ ...(previous?.context === context ? previous : emptySnapshot(context)), locations, locationFailed: false }));
+            setSnapshot(previous => ({ ...(previous?.context === context ? previous : emptySnapshot(context)), locations, locationError: null }));
         } catch (error) {
             if (!current()) return;
             setSnapshot(previous => {
                 const own = previous?.context === context ? previous : emptySnapshot(context);
-                return { ...own, locations: isTransient(error) ? own.locations : [], locationFailed: true };
+                return { ...own, locations: isTransient(error) ? own.locations : [], locationError: error instanceof ApiResponseError && error.status === 403 ? "denied" : "unavailable" };
             });
         }
     }, [context]);
@@ -96,8 +97,9 @@ export function useDashboardOverviewData(user: User | null) {
     return {
         tasks: own?.tasks ?? [], locations: own?.locations ?? [],
         loadingData: Boolean(context && !own?.tasksLoaded),
-        failed: own?.taskFailed === true || own?.locationFailed === true,
-        taskFailed: own?.taskFailed === true,
+        failed: own?.taskError === "unavailable" || own?.locationError === "unavailable",
+        accessDenied: own?.taskError === "denied" || own?.locationError === "denied",
+        taskFailed: own?.taskError != null,
         loadDashboardData, loadDashboardTasks, loadDashboardLocations,
     };
 }

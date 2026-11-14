@@ -84,3 +84,48 @@ test("an old dashboard response cannot appear after changing identity and tenant
         expect(await page.evaluate(() => (window as unknown as { qaOldDashboardExposed: boolean }).qaOldDashboardExposed)).toBe(false);
     } finally { release(); }
 });
+
+for (const width of [390, 768, 1440]) for (const locale of ["es", "en"] as const) {
+    test(`dashboard explains denied operational reads without a connection retry at ${width}px in ${locale}`, async ({ context, page }) => {
+        await page.setViewportSize({ width, height: 1000 });
+        await setupNotificationWorkspace(context, page, true, "/dashboard", { locale });
+        await page.getByRole("tab", { name: /Todo|All/i }).click();
+        const task = page.getByRole("button", { name: "QA tarea de aviso", exact: true });
+        await expect(task).toBeVisible();
+        await page.route("**/api/v1/task-items/**", route => route.fulfill({ status: 403, json: { detail: "Not enough permissions" } }));
+        await page.evaluate(() => window.dispatchEvent(new CustomEvent("workhive:realtime-invalidation", { detail: ["tasks"] })));
+        const alert = page.locator('[data-dashboard-read-error]');
+        const permissionText = locale === "es" ? "No tienes permiso para consultar parte de la información operativa. Contacta con la persona administradora si necesitas acceso." : "You do not have permission to view some operational information. Contact your administrator if you need access.";
+        await expect(alert).toHaveText(permissionText);
+        await expect(alert.getByRole("button")).toHaveCount(0);
+        await expect(task).toHaveCount(0);
+        await expect(page.getByText(locale === "es" ? "No tienes tareas programadas para este periodo." : "You have no tasks scheduled for this period.", { exact: true })).toHaveCount(0);
+        await page.unroute("**/api/v1/task-items/**");
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+        await expect(alert).toHaveCount(0);
+        await expect(task).toBeVisible();
+    });
+}
+
+test("location denial preserves authorized tasks and independent transient errors still retry", async ({ context, page }) => {
+    const state = await setupNotificationWorkspace(context, page, true, "/dashboard");
+    await page.getByRole("tab", { name: /Todo/i }).click();
+    const task = page.getByRole("button", { name: "QA tarea de aviso", exact: true });
+    await expect(task).toBeVisible();
+    state.allowed = false;
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("workhive:realtime-invalidation", { detail: ["locations"] })));
+    const alert = page.locator('[data-dashboard-read-error]');
+    await expect(alert).toContainText("No tienes permiso");
+    await expect(alert.getByRole("button")).toHaveCount(0);
+    await expect(task).toBeVisible();
+    await page.route("**/api/v1/task-items/**", route => route.fulfill({ status: 503, json: { detail: "Unavailable" } }));
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent("workhive:realtime-invalidation", { detail: ["tasks"] })));
+    await expect(alert).toContainText("No se pudieron cargar");
+    await expect(alert).toContainText("No tienes permiso");
+    await expect(task).toBeVisible();
+    state.allowed = true;
+    await page.unroute("**/api/v1/task-items/**");
+    await alert.getByRole("button", { name: "Reintentar", exact: true }).click();
+    await expect(alert).toHaveCount(0);
+    await expect(task).toBeVisible();
+});
