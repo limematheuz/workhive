@@ -46,6 +46,8 @@ type PlanCatalogState = {
     draftValues: EntitlementValues;
     reason: string;
     loading: boolean;
+    loadError: string | null;
+    reloadKey: number;
     saving: boolean;
     confirmationOpen: boolean;
 };
@@ -53,6 +55,8 @@ type PlanCatalogState = {
 type PlanCatalogAction =
     | { type: "loading"; value: boolean }
     | { type: "loaded"; catalogue: PlanCatalogueItem[]; selectedCode: StandardPlanCode; draftValues: EntitlementValues }
+    | { type: "load-failed"; message: string }
+    | { type: "reload" }
     | { type: "select"; code: StandardPlanCode; draftValues: EntitlementValues }
     | { type: "value"; code: string; value: boolean | number }
     | { type: "reason"; value: string }
@@ -66,14 +70,18 @@ const INITIAL_STATE: PlanCatalogState = {
     draftValues: {},
     reason: "",
     loading: false,
+    loadError: null,
+    reloadKey: 0,
     saving: false,
     confirmationOpen: false,
 };
 
 function reducer(state: PlanCatalogState, action: PlanCatalogAction): PlanCatalogState {
     switch (action.type) {
-        case "loading": return { ...state, loading: action.value };
-        case "loaded": return { ...state, ...action, loading: false };
+        case "loading": return { ...state, loading: action.value, ...(action.value ? { loadError: null } : {}) };
+        case "loaded": return { ...state, ...action, loading: false, loadError: null };
+        case "load-failed": return { ...state, loading: false, loadError: action.message };
+        case "reload": return { ...state, reloadKey: state.reloadKey + 1 };
         case "select": return { ...state, selectedCode: action.code, draftValues: action.draftValues, reason: "" };
         case "value": return { ...state, draftValues: { ...state.draftValues, [action.code]: action.value } };
         case "reason": return { ...state, reason: action.value };
@@ -115,14 +123,18 @@ export function PlanCatalogEditorDialog({ open, onOpenChange }: PlanCatalogEdito
                 });
             }
         }).catch((error) => {
-            if (!cancelled) toast.error(error instanceof Error ? error.message : "No se han podido cargar los planes");
+            if (!cancelled) {
+                const message = error instanceof Error ? error.message : "No se han podido cargar los planes";
+                dispatch({ type: "load-failed", message });
+                toast.error(message);
+            }
         }).finally(() => {
             if (!cancelled) dispatch({ type: "loading", value: false });
         });
         return () => {
             cancelled = true;
         };
-    }, [open]);
+    }, [open, state.reloadKey]);
 
     const selectPlan = (code: string) => {
         const nextCode = code as StandardPlanCode;
@@ -182,8 +194,10 @@ export function PlanCatalogEditorDialog({ open, onOpenChange }: PlanCatalogEdito
                     </DialogDescription>
                 </DialogHeader>
 
-                {loading || !selectedPlan ? (
+                {loading ? (
                     <div className="flex min-h-52 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-accent" aria-label="Cargando planes" /></div>
+                ) : !selectedPlan ? (
+                    <div role="alert" className="m-5 flex flex-col items-start justify-between gap-3 rounded-xl border border-red-500/25 bg-red-500/10 p-4 sm:m-6 sm:flex-row sm:items-center"><p className="text-sm text-[var(--text-main)]">{state.loadError || "No se han podido cargar los planes."}</p><Button type="button" size="sm" variant="outline" onClick={() => dispatch({ type: "reload" })}>Reintentar</Button></div>
                 ) : (
                     <form className="flex min-h-0 flex-1 flex-col" onSubmit={requestSave}>
                         <div className="shrink-0 px-5 pt-3 sm:px-6">

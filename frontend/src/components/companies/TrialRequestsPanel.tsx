@@ -80,6 +80,7 @@ export function TrialRequestsPanel() {
     const { user } = useUser();
     const [requests, setRequests] = useState<TrialRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const [selectedRequest, setSelectedRequest] = useState<TrialRequest | null>(null);
     const [approvalForm, setApprovalForm] = useState<ApprovalForm>(() => defaultApprovalForm(null));
     const [rejectTarget, setRejectTarget] = useState<TrialRequest | null>(null);
@@ -97,10 +98,14 @@ export function TrialRequestsPanel() {
 
     const loadRequests = useCallback(async () => {
         try {
+            setLoading(true);
+            setLoadError(null);
             const data = await TrialRequestService.list();
             setRequests(data);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : COPY.loadError);
+            const message = error instanceof Error ? error.message : COPY.loadError;
+            setLoadError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -183,6 +188,13 @@ export function TrialRequestsPanel() {
 
             {loading ? (
                 <p className="py-4 text-center text-xs text-[var(--text-muted)]">{COPY.loading}</p>
+            ) : loadError && visibleRequests.length === 0 ? (
+                <div role="alert" className="billing-block flex flex-col items-start justify-between gap-3 rounded-2xl px-4 py-4 sm:flex-row sm:items-center">
+                    <p className="text-sm text-[var(--text-main)]">{loadError}</p>
+                    <Button type="button" size="sm" variant="outline" onClick={() => void loadRequests()}>
+                        Reintentar
+                    </Button>
+                </div>
             ) : visibleRequests.length === 0 ? (
                 <div className="billing-block rounded-2xl px-4 py-6 text-center">
                     <p className="text-sm text-[var(--text-muted)]">{COPY.empty}</p>

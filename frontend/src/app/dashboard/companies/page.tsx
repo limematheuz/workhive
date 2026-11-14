@@ -58,6 +58,7 @@ function useCompaniesAdminController() {
     const [companyPage, setCompanyPage] = useState(1);
     const [companyPageSize, setCompanyPageSize] = useState(10);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState<string | null>(null);
     const selectedCompanyRef = useRef<Company | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [isProvisionOpen, setIsProvisionOpen] = useState(false);
@@ -78,8 +79,11 @@ function useCompaniesAdminController() {
             const data = await CompanyService.getCompaniesPage((page - 1) * pageSize, pageSize);
             setCompanies(data.items);
             setCompanyTotal(data.total);
+            setLoadError(null);
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se han podido cargar las empresas");
+            const message = error instanceof Error ? error.message : "No se han podido cargar las empresas";
+            setLoadError(message);
+            toast.error(message);
         } finally {
             setLoading(false);
         }
@@ -285,6 +289,7 @@ function useCompaniesAdminController() {
         companyTotal,
         deleteTarget,
         expandedCompanyId,
+        fetchCompanies,
         formData,
         getCompanyActions,
         handleDeleteCompany,
@@ -298,6 +303,7 @@ function useCompaniesAdminController() {
         isEditOpen,
         isProvisionOpen,
         isPlanCatalogOpen,
+        loadError,
         loading,
         loadingCompanyId,
         membersByCompany,
@@ -322,7 +328,7 @@ function useCompaniesAdminController() {
 export default function CompaniesAdminPage() {
     const controller = useCompaniesAdminController();
 
-    if (controller.userLoading || controller.loading) {
+    if (controller.userLoading || (controller.loading && controller.companies.length === 0 && !controller.loadError)) {
         return (
             <div className="flex h-64 items-center justify-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-accent"></div>
@@ -349,6 +355,7 @@ function CompaniesAdminPageContent({
         companyTotal,
         deleteTarget,
         expandedCompanyId,
+        fetchCompanies,
         formData,
         getCompanyActions,
         handleDeleteCompany,
@@ -362,6 +369,7 @@ function CompaniesAdminPageContent({
         isEditOpen,
         isProvisionOpen,
         isPlanCatalogOpen,
+        loadError,
         loadingCompanyId,
         membersByCompany,
         provisionData,
@@ -406,40 +414,51 @@ function CompaniesAdminPageContent({
 
             <TrialRequestsPanel />
 
-            <CompaniesListSection
-                companies={companies}
-                total={companyTotal}
-                page={companyPage}
-                pageSize={companyPageSize}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-                emptyLabel="Todavía no se ha activado ninguna empresa."
-                labels={{
-                    listTitle: "Empresas activadas",
-                    listSubtitle: "Pulsa el nombre de una empresa para ver a sus administradores y trabajadores.",
-                    countOne: "empresa",
-                    countMany: "empresas",
-                    name: "Empresa",
-                    cif: "CIF / NIF",
-                    email: "Contacto principal",
-                    phone: "Teléfono",
-                    status: "Plan y estado",
-                    actions: "Acciones",
-                    active: "Activa",
-                    inactive: "Sin acceso",
-                    viewTeam: "Ver personas",
-                    admins: "Administradores",
-                    workers: "Trabajadores",
-                    noAdmins: "No hay administradores",
-                    noWorkers: "No hay trabajadores",
-                    memberInactive: "Inactiva",
-                }}
-                getCompanyActions={getCompanyActions}
-                expandedCompanyId={expandedCompanyId}
-                loadingCompanyId={loadingCompanyId}
-                membersByCompany={membersByCompany}
-                onToggleMembers={(company) => void handleToggleMembers(company)}
-            />
+            {loadError && (
+                <div role="alert" className="billing-surface flex flex-col items-start justify-between gap-3 rounded-[24px] p-4 sm:flex-row sm:items-center">
+                    <p className="text-sm text-[var(--text-main)]">{loadError}</p>
+                    <Button type="button" size="sm" variant="outline" onClick={() => void fetchCompanies()}>
+                        Reintentar
+                    </Button>
+                </div>
+            )}
+
+            {(!loadError || companies.length > 0) && (
+                <CompaniesListSection
+                    companies={companies}
+                    total={companyTotal}
+                    page={companyPage}
+                    pageSize={companyPageSize}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    emptyLabel="Todavía no se ha activado ninguna empresa."
+                    labels={{
+                        listTitle: "Empresas activadas",
+                        listSubtitle: "Pulsa el nombre de una empresa para ver a sus administradores y trabajadores.",
+                        countOne: "empresa",
+                        countMany: "empresas",
+                        name: "Empresa",
+                        cif: "CIF / NIF",
+                        email: "Contacto principal",
+                        phone: "Teléfono",
+                        status: "Plan y estado",
+                        actions: "Acciones",
+                        active: "Activa",
+                        inactive: "Sin acceso",
+                        viewTeam: "Ver personas",
+                        admins: "Administradores",
+                        workers: "Trabajadores",
+                        noAdmins: "No hay administradores",
+                        noWorkers: "No hay trabajadores",
+                        memberInactive: "Inactiva",
+                    }}
+                    getCompanyActions={getCompanyActions}
+                    expandedCompanyId={expandedCompanyId}
+                    loadingCompanyId={loadingCompanyId}
+                    membersByCompany={membersByCompany}
+                    onToggleMembers={(company) => void handleToggleMembers(company)}
+                />
+            )}
 
             <CompanyProvisionDialog
                 open={isProvisionOpen}
