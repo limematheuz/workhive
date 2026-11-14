@@ -181,7 +181,12 @@ export function useTasksPage() {
             const [locs, usrs, tmpls] = await Promise.all([
                 LocationService.getLocations(),
                 canManageTasks
-                    ? UserService.getAssignableUsers().catch(() => [currentUser] as User[])
+                    ? UserService.getAssignableUsers().catch((err) => {
+                        if (err instanceof ApiResponseError && err.status === 403) {
+                            return [currentUser] as User[];
+                        }
+                        throw err;
+                    })
                     : Promise.resolve([currentUser] as User[]),
                 canManageTasks
                     ? TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[])

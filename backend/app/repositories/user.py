@@ -47,9 +47,15 @@ def get_all_users(
 
 
 def get_assignable_users(
-    db: Session, company_id: int, skip: int = 0, limit: int = 200
+    db: Session,
+    company_id: int,
+    skip: int = 0,
+    limit: int = 200,
+    allowed_user_ids: set[int] | None = None,
 ) -> list[User]:
-    return (
+    if allowed_user_ids is not None and not allowed_user_ids:
+        return []
+    query = (
         db.query(User)
         .options(selectinload(User.role))
         .join(User.role)
@@ -57,9 +63,15 @@ def get_assignable_users(
             User.company_id == company_id,
             User.is_active.is_(True),
             ~User.email.endswith("@invalid.workhive.local"),
-            Role.name != "superadmin",
+            Role.name.notin_(
+                ("superadmin", "external_portal", "partner_portal", "client_portal")
+            ),
         )
-        .order_by(User.full_name.asc(), User.email.asc(), User.id.asc())
+    )
+    if allowed_user_ids is not None:
+        query = query.filter(User.id.in_(allowed_user_ids))
+    return (
+        query.order_by(User.full_name.asc(), User.email.asc(), User.id.asc())
         .offset(skip)
         .limit(limit)
         .all()

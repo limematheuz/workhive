@@ -1,11 +1,5 @@
 from fastapi import (
-    APIRouter,
-    Depends,
-    File,
-    HTTPException,
-    Request,
-    UploadFile,
-    status,
+    APIRouter, Depends, File, HTTPException, Query, Request, UploadFile, status,
 )
 from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -108,11 +102,14 @@ async def read_all_users(
 async def read_assignable_users(
     skip: PaginationOffset = 0,
     limit: PaginationLimit = 200,
+    location_id: int | None = Query(None, ge=1),
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
-        lambda sync_db: user_service.get_assignable_users(sync_db, current_user, skip, limit)
+        lambda sync_db: user_service.get_assignable_users(
+            sync_db, current_user, skip, limit, location_id=location_id
+        )
     )
 
 

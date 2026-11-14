@@ -10,8 +10,10 @@ test("operational tasks and calendar pages load assignable company workers via /
     const calendarPage = read("../app/dashboard/calendar/page.tsx");
 
     assert.match(userService, /getAssignableUsers/);
+    assert.match(userService, /collectPaginated/);
     assert.match(userService, /\/api\/v1\/users\/assignable/);
     assert.match(tasksHook, /UserService\.getAssignableUsers/);
+    assert.doesNotMatch(tasksHook, /getAssignableUsers\(\)\.catch\(\(\) => \[currentUser\]/);
     assert.match(calendarPage, /UserService\.getAssignableUsers/);
     assert.match(tasksHook, /task\.assignments/);
     assert.match(tasksHook, /checklist_items/);

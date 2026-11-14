@@ -22,10 +22,8 @@ from app.services.user_scope import is_platform_superadmin, require_company_cont
 from app.services.organization_authorization_service import require_capability
 from app.services.organization_member_service import active_admin_count
 from app.services.user_stats_service import get_user_stats as _get_user_stats
-from app.services.user_session_policy import (
-    require_assignable_directory_access,
-    requires_session_revocation,
-)
+from app.services.user_assignable_policy import list_assignable_users as get_assignable_users  # noqa: F401
+from app.services.user_session_policy import requires_session_revocation
 
 
 USER_DELETE_RELATED_DATA_ERROR = {
@@ -53,13 +51,6 @@ def get_users(
     return user_repo.get_all_users(
         db, require_company_context(current_user), skip, limit
     )
-
-
-def get_assignable_users(
-    db: Session, current_user: User, skip: int = 0, limit: int = 200
-) -> list[User]:
-    company_id = require_assignable_directory_access(db, current_user)
-    return user_repo.get_assignable_users(db, company_id, skip, limit)
 
 
 def get_user(db: Session, user_id: int, current_user: User) -> User:

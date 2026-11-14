@@ -88,7 +88,7 @@ class UserResponse(UserBase):
 
 class AssignableUserResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     full_name: str | None = None
     is_active: bool = True
     company_id: int | None
