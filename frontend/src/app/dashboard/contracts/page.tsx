@@ -8,6 +8,7 @@ import { ServiceContractDetailDialog } from "@/components/contracts/ServiceContr
 import { Badge } from "@/components/ui/badge"
 import { DataListTable } from "@/components/ui/data-list-table"
 import { PageHeader } from "@/components/ui/page-header"
+import { Button } from "@/components/ui/button"
 import { canManageFinance, canViewFinance, canViewLaborCosts, isPlatformSuperadmin } from "@/domain/access/roles"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
@@ -35,6 +36,7 @@ function ContractsPageContent() {
     const [contracts, setContracts] = React.useState<ServiceContract[]>([])
     const [clients, setClients] = React.useState<Client[]>([])
     const [loading, setLoading] = React.useState(true)
+    const [loadError, setLoadError] = React.useState<string | null>(null)
     const [selectedContract, setSelectedContract] = React.useState<ServiceContract | null>(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
     const canViewContracts = canViewFinance(user) && !isPlatformSuperadmin(user)
@@ -48,6 +50,7 @@ function ContractsPageContent() {
     const loadContracts = React.useCallback(async () => {
         if (!canViewContracts) return
         setLoading(true)
+        setLoadError(null)
         try {
             const [contractData, clientData] = await Promise.all([
                 ServiceContractService.getContracts(),
@@ -56,7 +59,10 @@ function ContractsPageContent() {
             setContracts(contractData)
             setClients(clientData)
         } catch (error: unknown) {
-            toast.error(getErrorMessage(error, "No se pudieron cargar los contratos"))
+            const message = getErrorMessage(error, "No se pudieron cargar los contratos")
+            setContracts([])
+            setLoadError(message)
+            toast.error(message)
         } finally {
             setLoading(false)
         }
@@ -80,7 +86,7 @@ function ContractsPageContent() {
 
     const sourceQuoteId = Number(searchParams.get("quote"))
     React.useEffect(() => {
-        if (loading || !Number.isSafeInteger(sourceQuoteId) || sourceQuoteId < 1) return
+        if (loading || loadError || !Number.isSafeInteger(sourceQuoteId) || sourceQuoteId < 1) return
 
         const contract = contracts.find((item) => item.source_quote_id === sourceQuoteId)
         const timer = window.setTimeout(() => {
@@ -88,7 +94,7 @@ function ContractsPageContent() {
         }, 0)
         router.replace("/dashboard/contracts", { scroll: false })
         return () => window.clearTimeout(timer)
-    }, [contracts, loading, openContract, router, sourceQuoteId])
+    }, [contracts, loadError, loading, openContract, router, sourceQuoteId])
 
     const receiveContractUpdate = (updated: ServiceContract) => {
         setContracts((current) => current.map((contract) => contract.id === updated.id ? updated : contract))
@@ -162,7 +168,16 @@ function ContractsPageContent() {
                 )}
                 onRowClick={(contract) => void openContract(contract)}
                 rowAriaLabel={(contract) => `Abrir contrato ${contract.contract_number}`}
-                empty={<div><FileSignature className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" aria-hidden="true" /><p className="text-sm font-medium text-[var(--text-muted)]">Los contratos aparecerán cuando aceptes un presupuesto.</p></div>}
+                empty={loadError ? (
+                    <div className="space-y-3 py-4 text-center">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">{loadError}</p>
+                        <Button type="button" variant="outline" size="sm" onClick={() => void loadContracts()}>
+                            Reintentar
+                        </Button>
+                    </div>
+                ) : (
+                    <div><FileSignature className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" aria-hidden="true" /><p className="text-sm font-medium text-[var(--text-muted)]">Los contratos aparecerán cuando aceptes un presupuesto.</p></div>
+                )}
             />
 
             <ServiceContractDetailDialog
