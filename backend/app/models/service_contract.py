@@ -91,6 +91,14 @@ class ServiceContract(Base):
     source_quote = relationship("Quote", back_populates="service_contract")
     source_quote_revision = relationship("QuoteRevision")
     created_by = relationship("User")
+
+    @property
+    def source_quote_revision_version(self) -> int | None:
+        return (
+            self.source_quote_revision.version
+            if self.source_quote_revision is not None
+            else None
+        )
     service_lines = relationship(
         "ServiceContractLine",
         back_populates="contract",

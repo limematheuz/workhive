@@ -10,6 +10,8 @@ import { DataListTable } from "@/components/ui/data-list-table"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { canManageFinance, canViewFinance, canViewLaborCosts, isPlatformSuperadmin } from "@/domain/access/roles"
+import { ApiResponseError } from "@/lib/api"
+import { useDictionary } from "@/lib/dictionary-context"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
@@ -17,6 +19,13 @@ import { useUser } from "@/lib/user-context"
 import { ClientService, type Client } from "@/services/client.service"
 import { ServiceContractService } from "@/services/service-contract.service"
 import type { ServiceContract } from "@/types/service-contract"
+
+type ContractsLoadErrorKind = "denied" | "unavailable"
+
+function isAccessDeniedError(error: unknown): boolean {
+    return error instanceof ApiResponseError
+        && (error.status === 401 || error.status === 403 || error.status === 404)
+}
 
 const statusCopy = {
     draft: "Borrador",
@@ -30,13 +39,18 @@ function contractClientName(contract: ServiceContract, clients: Client[]) {
 }
 
 function ContractsPageContent() {
+    const { dict } = useDictionary()
+    const dictRef = React.useRef(dict)
+    React.useEffect(() => {
+        dictRef.current = dict
+    }, [dict])
     const { user, loading: userLoading } = useUser()
     const router = useRouter()
     const searchParams = useSearchParams()
     const [contracts, setContracts] = React.useState<ServiceContract[]>([])
     const [clients, setClients] = React.useState<Client[]>([])
     const [loading, setLoading] = React.useState(true)
-    const [loadError, setLoadError] = React.useState<string | null>(null)
+    const [loadError, setLoadError] = React.useState<ContractsLoadErrorKind | null>(null)
     const [selectedContract, setSelectedContract] = React.useState<ServiceContract | null>(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
     const canViewContracts = canViewFinance(user) && !isPlatformSuperadmin(user)
@@ -59,9 +73,13 @@ function ContractsPageContent() {
             setContracts(contractData)
             setClients(clientData)
         } catch (error: unknown) {
-            const message = getErrorMessage(error, "No se pudieron cargar los contratos")
+            const denied = isAccessDeniedError(error)
+            const errorKind: ContractsLoadErrorKind = denied ? "denied" : "unavailable"
+            const message = denied
+                ? (dictRef.current.contracts?.error_denied ?? "No tienes permisos para consultar contratos.")
+                : (dictRef.current.contracts?.error_load ?? "No se pudieron cargar los contratos.")
             setContracts([])
-            setLoadError(message)
+            setLoadError(errorKind)
             toast.error(message)
         } finally {
             setLoading(false)
@@ -169,10 +187,14 @@ function ContractsPageContent() {
                 onRowClick={(contract) => void openContract(contract)}
                 rowAriaLabel={(contract) => `Abrir contrato ${contract.contract_number}`}
                 empty={loadError ? (
-                    <div className="space-y-3 py-4 text-center">
-                        <p className="text-sm font-medium text-[var(--text-primary)]">{loadError}</p>
+                    <div role="alert" className="space-y-3 py-4 text-center">
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                            {loadError === "denied"
+                                ? (dict.contracts?.error_denied ?? "No tienes permisos para consultar contratos.")
+                                : (dict.contracts?.error_load ?? "No se pudieron cargar los contratos.")}
+                        </p>
                         <Button type="button" variant="outline" size="sm" onClick={() => void loadContracts()}>
-                            Reintentar
+                            {dict.contracts?.retry ?? "Reintentar"}
                         </Button>
                     </div>
                 ) : (

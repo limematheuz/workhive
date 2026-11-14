@@ -17,6 +17,7 @@ function buildContract(overrides: Record<string, unknown> = {}) {
         client_id: 187,
         source_quote_id: 5,
         source_quote_revision_id: 8,
+        source_quote_revision_version: 2,
         starts_at: "2026-11-14T08:00:00Z",
         ends_at: "2027-11-14T08:00:00Z",
         renewal_mode: "automatic",
@@ -125,12 +126,72 @@ test("503 on contracts list shows error state with Retry instead of false empty 
     });
 
     await page.goto("/dashboard/contracts?quote=5");
-    await expect(page.getByRole("button", { name: "Reintentar", exact: true })).toBeVisible();
+    const mainAlert = page.locator("main").getByRole("alert");
+    await expect(mainAlert).toContainText("No se pudieron cargar los contratos.");
+    await expect(mainAlert.getByRole("button", { name: "Reintentar", exact: true })).toBeVisible();
     await expect(page.getByText("Los contratos aparecerán cuando aceptes un presupuesto.")).toHaveCount(0);
 
-    await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+    await page.getByRole("button", { name: "Cambiar idioma a inglés", exact: true }).click();
+    await expect(mainAlert).toContainText("Could not load contracts.");
+    await expect(mainAlert.getByRole("button", { name: "Retry", exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Cambiar idioma a español", exact: true }).click();
+    await expect(mainAlert).toContainText("No se pudieron cargar los contratos.");
+
+    await mainAlert.getByRole("button", { name: "Reintentar", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByRole("dialog").getByText("CON-2026-0001")).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("#5 · v2", { exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("#5 · v8")).toHaveCount(0);
+});
+
+test("contract detail falls back to revision id label when commercial version is absent", async ({ page }) => {
+    const contract = buildContract({ source_quote_revision_version: null });
+
+    await page.route("**/api/v1/**", async (route) => {
+        const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
+        if (path === "/api/v1/users/me") {
+            return route.fulfill({
+                json: {
+                    id: 46,
+                    full_name: "QA Admin",
+                    role: { name: "admin" },
+                    company_id: 11,
+                    is_active: true,
+                    can_view_finance: true,
+                    can_manage_finance: true,
+                    can_view_labor_costs: false,
+                },
+            });
+        }
+        if (path === "/api/v1/companies/11") {
+            return route.fulfill({ json: { id: 11, name: "QA Company", onboarding_completed: true, subscription_status: "active" } });
+        }
+        if (path.includes("entitlements")) {
+            return route.fulfill({ json: { entitlements: [{ code: "features.quotes", value_type: "boolean", value: true }] } });
+        }
+        if (path === "/api/v1/service-contracts") {
+            return route.fulfill({ json: [contract] });
+        }
+        if (path === "/api/v1/service-contracts/4") {
+            return route.fulfill({ json: contract });
+        }
+        if (path === "/api/v1/service-contracts/4/location-candidates") {
+            return route.fulfill({ json: [] });
+        }
+        if (path === "/api/v1/clients") {
+            return route.fulfill({ json: [{ id: 187, name: "QA Cliente Presupuestos 20261114" }] });
+        }
+        if (path.includes("alert-count")) {
+            return route.fulfill({ json: { pending_requests: 0, pending_tasks: 0, unread_reports: 0 } });
+        }
+        return route.fulfill({ json: [] });
+    });
+
+    await page.goto("/dashboard/contracts?quote=5");
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("#5 · revisión #8", { exact: true })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText("#5 · v8")).toHaveCount(0);
 });
 
 for (const width of [1440, 768, 390]) {

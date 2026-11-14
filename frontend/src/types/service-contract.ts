@@ -35,6 +35,7 @@ export interface ServiceContract {
     client_id: number | null
     source_quote_id: number
     source_quote_revision_id: number
+    source_quote_revision_version?: number | null
     starts_at: string | null
     ends_at: string | null
     renewal_mode: ServiceContractRenewalMode

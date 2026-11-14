@@ -217,7 +217,11 @@ function ServiceContractDetailDialogContent({
                     <section className="grid gap-4 border-b border-[var(--border-soft)] pb-5 sm:grid-cols-3">
                         <div>
                             <p className="text-xs font-medium text-[var(--text-muted)]">Presupuesto aceptado</p>
-                            <p className="mt-1 font-mono text-sm font-semibold text-accent">#{contract.source_quote_id} · v{contract.source_quote_revision_id}</p>
+                            <p className="mt-1 font-mono text-sm font-semibold text-accent">
+                                #{contract.source_quote_id} · {contract.source_quote_revision_version != null
+                                    ? `v${contract.source_quote_revision_version}`
+                                    : `revisión #${contract.source_quote_revision_id}`}
+                            </p>
                         </div>
                         <div>
                             <p className="text-xs font-medium text-[var(--text-muted)]">Importe acordado</p>
