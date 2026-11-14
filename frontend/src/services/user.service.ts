@@ -1,5 +1,6 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { compressImageForUpload } from "@/lib/image";
+import { collectPaginated } from "@/lib/pagination";
 import { buildWorkerInvitationPayload } from "@/lib/user-invitation";
 import { UserStatsResponse, WorkSession, TaskItem, User } from "@/types/user";
 
@@ -33,13 +34,38 @@ export const UserService = {
     /**
      * Gets active same-company users eligible for operational task/schedule assignment.
      */
-    getAssignableUsers: async (skip: number = 0, limit: number = 200): Promise<User[]> => {
-        const response = await apiFetch(`/api/v1/users/assignable?skip=${skip}&limit=${limit}`, {
+    getAssignableUsersPage: async (
+        skip: number = 0,
+        limit: number = 200,
+        locationId?: number,
+    ): Promise<User[]> => {
+        const params = new URLSearchParams({
+            skip: String(skip),
+            limit: String(limit),
+        });
+        if (locationId !== undefined) {
+            params.set("location_id", String(locationId));
+        }
+        const response = await apiFetch(`/api/v1/users/assignable?${params.toString()}`, {
             method: "GET",
             cache: "no-store"
         });
         await assertApiResponseOk(response, "Error fetching assignable users");
         return await response.json();
+    },
+
+    getAssignableUsers: async (
+        skip?: number,
+        limit?: number,
+        locationId?: number,
+    ): Promise<User[]> => {
+        if (skip !== undefined || limit !== undefined) {
+            return UserService.getAssignableUsersPage(skip ?? 0, limit ?? 200, locationId);
+        }
+        return collectPaginated(
+            (pageSkip, pageLimit) => UserService.getAssignableUsersPage(pageSkip, pageLimit, locationId),
+            200,
+        );
     },
 
     /**

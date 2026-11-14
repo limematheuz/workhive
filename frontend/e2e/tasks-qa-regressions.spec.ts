@@ -398,3 +398,73 @@ test("manager can assign a worker directly when editing a general task", async (
 
     await expect.poll(() => capturedPatch?.user_id).toBe(43);
 });
+
+test("assignable directory 503 fails closed with Retry instead of silently masking as [currentUser], and paginates >200 candidates", async ({ page }) => {
+    let failDirectory = true;
+    const page1Users = Array.from({ length: 200 }, (_, idx) => ({
+        id: 1000 + idx,
+        email: `worker-${idx}@example.com`,
+        full_name: `Trabajador Pag1 ${idx}`,
+        is_active: true,
+        role_id: 3,
+        role: { id: 3, name: "viewer" },
+        company_id: 11,
+    }));
+    const page2User = {
+        id: 2500,
+        email: "worker-page2@example.com",
+        full_name: "Trabajadora Página 2",
+        is_active: true,
+        role_id: 3,
+        role: { id: 3, name: "viewer" },
+        company_id: 11,
+    };
+
+    await page.route("**/api/v1/**", async (route) => {
+        const url = new URL(route.request().url());
+        const path = url.pathname.replace(/\/$/, "");
+        if (path === "/api/v1/users/me") {
+            return route.fulfill({ json: buildManager() });
+        }
+        if (path === "/api/v1/companies/11") {
+            return route.fulfill({ json: { id: 11, name: "QA Company 11", onboarding_completed: true, subscription_status: "active" } });
+        }
+        if (path === "/api/v1/locations") {
+            return route.fulfill({ json: [{ id: 19, name: "QA Ubicación Contrato 20261114", is_active: true, owner_company_id: 11, managing_company_id: 11 }] });
+        }
+        if (path === "/api/v1/users/assignable") {
+            if (failDirectory) {
+                return route.fulfill({ status: 503, json: { detail: "Directory unavailable" } });
+            }
+            const skip = Number(url.searchParams.get("skip") || "0");
+            return route.fulfill({ json: skip === 0 ? page1Users : [page2User] });
+        }
+        if (path === "/api/v1/template-tasks") {
+            return route.fulfill({ json: [] });
+        }
+        if (path === "/api/v1/task-items") {
+            return route.fulfill({ json: [buildTask({ user_id: 2500 })] });
+        }
+        if (path === "/api/v1/work-sessions/active") {
+            return route.fulfill({ json: null });
+        }
+        if (path.includes("alert-count")) {
+            return route.fulfill({ json: { pending_requests: 0, pending_tasks: 0, unread_reports: 0 } });
+        }
+        if (path === "/api/v1/notifications/unread-count") {
+            return route.fulfill({ json: { count: 0 } });
+        }
+        return route.fulfill({ json: [] });
+    });
+
+    await page.goto("/dashboard/tasks");
+    const mainAlert = page.locator("main").getByRole("alert");
+    await expect(mainAlert).toContainText("No se pudieron cargar las tareas.");
+
+    failDirectory = false;
+    await mainAlert.getByRole("button", { name: "Reintentar", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Abrir tarea: QA Ciclo orden 20261112", exact: true })).toBeVisible();
+
+    await page.getByRole("tab", { name: "Lista" }).click();
+    await expect(page.getByText("Trabajadora Página 2")).toBeVisible();
+});
