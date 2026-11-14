@@ -210,19 +210,30 @@ def _tax_breakdown(invoice: Invoice) -> list[dict]:
     return result
 
 
-def _software_identity(company: Company) -> dict:
+def _software_identity(
+    company: Company,
+    issuer_snapshot: dict | None = None,
+) -> dict:
     readiness = get_verifactu_readiness()
+    configured_producer_tax_id = settings.VERIFACTU_SOFTWARE_PRODUCER_TAX_ID
+    issuer_tax_id = (issuer_snapshot or {}).get("tax_id") or company.tax_id
+    issuer_name = (issuer_snapshot or {}).get("name") or company.name
     producer_tax_id = _normalize_tax_id(
-        settings.VERIFACTU_SOFTWARE_PRODUCER_TAX_ID or company.tax_id
+        configured_producer_tax_id or issuer_tax_id
     )
     if not _valid_nif(producer_tax_id):
+        detail = (
+            "Cannot issue invoice. Invalid: software producer tax ID"
+            if configured_producer_tax_id
+            else "Cannot issue invoice. Invalid: issuer tax ID"
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="Cannot issue invoice. Invalid: software producer tax ID",
+            detail=detail,
         )
     return {
         "producer_name": (
-            settings.VERIFACTU_SOFTWARE_PRODUCER_NAME or company.name
+            settings.VERIFACTU_SOFTWARE_PRODUCER_NAME or issuer_name
         ),
         "producer_tax_id": producer_tax_id,
         "software_name": settings.PROJECT_NAME,
@@ -289,7 +300,7 @@ def _base_official_data(
         "generated_at": generated_at.isoformat(timespec="seconds"),
         "previous_record": _previous_record_data(previous),
         "external_reference": f"workhive-invoice-{invoice.id}",
-        **_software_identity(company),
+        **_software_identity(company, issuer_snapshot),
     }
 
 
@@ -464,7 +475,7 @@ def create_cancellation_record(
         "generated_at": generated_at.isoformat(timespec="seconds"),
         "previous_record": _previous_record_data(previous),
         "external_reference": f"workhive-cancellation-{invoice.id}",
-        **_software_identity(company),
+        **_software_identity(company, issuer),
     }
     if not _valid_nif(official["issuer_tax_id"]):
         raise HTTPException(
