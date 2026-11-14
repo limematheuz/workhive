@@ -100,12 +100,7 @@ async def read_all_users(
     current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
-        lambda sync_db: user_service.get_users(
-            sync_db,
-            current_user,
-            skip,
-            limit,
-        )
+        lambda sync_db: user_service.get_users(sync_db, current_user, skip, limit)
     )
 
 
@@ -117,12 +112,7 @@ async def read_assignable_users(
     current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
-        lambda sync_db: user_service.get_assignable_users(
-            sync_db,
-            current_user,
-            skip,
-            limit,
-        )
+        lambda sync_db: user_service.get_assignable_users(sync_db, current_user, skip, limit)
     )
 
 
