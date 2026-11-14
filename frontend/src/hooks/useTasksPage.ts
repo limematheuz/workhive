@@ -101,7 +101,7 @@ export function useTasksPage() {
             const [locs, usrs, tmpls] = await Promise.all([
                 LocationService.getLocations(),
                 canManageTasks
-                    ? UserService.getUsers().catch(() => [currentUser] as User[])
+                    ? UserService.getAssignableUsers().catch(() => [currentUser] as User[])
                     : Promise.resolve([currentUser] as User[]),
                 canManageTasks
                     ? TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[])
@@ -217,6 +217,14 @@ export function useTasksPage() {
         }
         if (currentUser && currentUser.id === userId) {
             return currentUser.full_name || currentUser.email;
+        }
+        for (const task of tasks) {
+            const direct = task.assignments?.find(assignment => assignment.user_id === userId);
+            if (direct?.user_name) return direct.user_name;
+            for (const item of task.checklist_items ?? []) {
+                const stepAssignee = item.assignments?.find(assignment => assignment.user_id === userId);
+                if (stepAssignee?.user_name) return stepAssignee.user_name;
+            }
         }
         return `ID: ${userId}`;
     };

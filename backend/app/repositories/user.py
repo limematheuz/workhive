@@ -46,6 +46,26 @@ def get_all_users(
     )
 
 
+def get_assignable_users(
+    db: Session, company_id: int, skip: int = 0, limit: int = 200
+) -> list[User]:
+    return (
+        db.query(User)
+        .options(selectinload(User.role))
+        .join(User.role)
+        .filter(
+            User.company_id == company_id,
+            User.is_active.is_(True),
+            ~User.email.endswith("@invalid.workhive.local"),
+            Role.name != "superadmin",
+        )
+        .order_by(User.full_name.asc(), User.email.asc(), User.id.asc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 def get_company_members(db: Session, company_id: int) -> list[User]:
     # Permanently removed legacy users retain an invalid placeholder address so
     # their historical foreign keys stay intact. They are not people who can be

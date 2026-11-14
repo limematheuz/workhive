@@ -31,6 +31,18 @@ export const UserService = {
     },
 
     /**
+     * Gets active same-company users eligible for operational task/schedule assignment.
+     */
+    getAssignableUsers: async (skip: number = 0, limit: number = 200): Promise<User[]> => {
+        const response = await apiFetch(`/api/v1/users/assignable?skip=${skip}&limit=${limit}`, {
+            method: "GET",
+            cache: "no-store"
+        });
+        await assertApiResponseOk(response, "Error fetching assignable users");
+        return await response.json();
+    },
+
+    /**
      * Gets aggregate statistics for a specific user.
      */
     getUserStats: async (userId: number): Promise<UserStatsResponse> => {

@@ -22,7 +22,12 @@ from app.api.pagination import PaginationLimit, PaginationOffset
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
-from app.schemas.user import UserResponse, UserStatsResponse, UserUpdate
+from app.schemas.user import (
+    AssignableUserResponse,
+    UserResponse,
+    UserStatsResponse,
+    UserUpdate,
+)
 from app.services.image_service import MAX_IMAGE_BYTES, store_image
 from app.services import user_service
 from app.services import audit_service
@@ -96,6 +101,23 @@ async def read_all_users(
 ):
     return await db.run_sync(
         lambda sync_db: user_service.get_users(
+            sync_db,
+            current_user,
+            skip,
+            limit,
+        )
+    )
+
+
+@router.get("/assignable", response_model=list[AssignableUserResponse])
+async def read_assignable_users(
+    skip: PaginationOffset = 0,
+    limit: PaginationLimit = 200,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    return await db.run_sync(
+        lambda sync_db: user_service.get_assignable_users(
             sync_db,
             current_user,
             skip,
