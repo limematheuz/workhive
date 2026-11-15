@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { AuditLog } from "@/types/audit-log";
 
 export const AuditLogService = {
@@ -7,9 +7,7 @@ export const AuditLogService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error loading audit logs"));
-        }
+        await assertApiResponseOk(response, "Error loading audit logs");
         return await response.json();
     },
 };

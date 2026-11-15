@@ -1,12 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Loader2, Shield } from "lucide-react";
 
 import { TrafficAnalyticsPanel } from "@/components/traffic/TrafficAnalyticsPanel";
 import { TrafficEventsTable } from "@/components/traffic/TrafficEventsTable";
 import { PageHeader } from "@/components/ui/page-header";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { useDictionary } from "@/lib/dictionary-context";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import { authService } from "@/services/auth.service";
 import { AuditLogService } from "@/services/audit-log.service";
 import { AuditLog } from "@/types/audit-log";
@@ -30,27 +37,58 @@ export default function TrafficPage() {
     const [loginPage, setLoginPage] = useState(1);
     const [urlOnlyPage, setUrlOnlyPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [readErrorKind, setReadErrorKind] = useState<ReadErrorKind | null>(null);
+    const [hasLoadedEvents, setHasLoadedEvents] = useState(false);
+    const requestIdRef = useRef(0);
+    const loadedWorkspaceRef = useRef<number | null>(null);
+
+    const loadTraffic = useCallback(async () => {
+        const requestId = ++requestIdRef.current;
+        if (loadedWorkspaceRef.current === null) {
+            setLoading(true);
+        }
+        try {
+            const me = await authService.getMe();
+            if (requestIdRef.current !== requestId) return;
+            setCurrentUser(me);
+            if (!isPlatformSuperadmin(me)) {
+                loadedWorkspaceRef.current = null;
+                setHasLoadedEvents(false);
+                setEvents([]);
+                setReadErrorKind(null);
+                return;
+            }
+            if (loadedWorkspaceRef.current !== null && loadedWorkspaceRef.current !== me.id) {
+                setHasLoadedEvents(false);
+                setEvents([]);
+            }
+            const auditEvents = await AuditLogService.getAuditLogs(500);
+            if (requestIdRef.current !== requestId) return;
+            loadedWorkspaceRef.current = me.id;
+            setHasLoadedEvents(true);
+            setEvents(auditEvents.filter((event) => event.action === "auth.login" || event.action === "public.page_view"));
+            setReadErrorKind(null);
+        } catch (error) {
+            if (requestIdRef.current !== requestId) return;
+            const kind = classifyReadError(error);
+            setReadErrorKind(kind);
+            if (kind === "denied" || loadedWorkspaceRef.current === null) {
+                loadedWorkspaceRef.current = null;
+                setHasLoadedEvents(false);
+                setEvents([]);
+            }
+        } finally {
+            setLoading((current) => (requestIdRef.current === requestId ? false : current));
+        }
+    }, []);
 
     useEffect(() => {
-        let mounted = true;
-        async function loadData() {
-            try {
-                const me = await authService.getMe();
-                if (!mounted) return;
-                setCurrentUser(me);
-                if (!isPlatformSuperadmin(me)) return;
-                const auditEvents = await AuditLogService.getAuditLogs(500);
-                if (!mounted) return;
-                setEvents(auditEvents.filter((event) => event.action === "auth.login" || event.action === "public.page_view"));
-            } finally {
-                if (mounted) setLoading(false);
-            }
-        }
-        void loadData();
+        const timer = window.setTimeout(() => { void loadTraffic(); }, 0);
         return () => {
-            mounted = false;
+            window.clearTimeout(timer);
+            requestIdRef.current += 1;
         };
-    }, []);
+    }, [loadTraffic]);
 
     const loginEvents = useMemo(
         () => events.filter((event) => event.action === "auth.login"),
@@ -196,6 +234,11 @@ export default function TrafficPage() {
         else setUrlOnlyPage(page);
     };
 
+    const recoveryMessage = getReadRecoveryMessage(readErrorKind, {
+        unavailable: dict.dashboard.error_load_data,
+        denied: dict.dashboard.access_denied,
+    });
+
     if (loading) {
         return (
             <div className="flex min-h-[60vh] items-center justify-center gap-3">
@@ -205,13 +248,34 @@ export default function TrafficPage() {
         );
     }
 
-    if (!isPlatformSuperadmin(currentUser)) {
+    if (currentUser && !isPlatformSuperadmin(currentUser)) {
         return (
             <div className="dashboard-page-content px-[3%] py-6 md:p-8">
                 <div className="billing-block rounded-2xl border border-[var(--border-soft)] px-5 py-10 text-center">
                     <Shield className="mx-auto h-8 w-8 text-[var(--text-muted)]" />
                     <h1 className="mt-4 text-lg font-bold text-[var(--text-main)]">{traffic.restricted_title}</h1>
                     <p className="mt-2 text-sm text-[var(--text-muted)]">{traffic.restricted_desc}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (recoveryMessage && !hasLoadedEvents) {
+        return (
+            <div className="dashboard-page-content px-[3%] py-6 md:p-8">
+                <PageHeader
+                    icon={Activity}
+                    title={traffic.title}
+                    subtitle={traffic.subtitle}
+                    className="mb-6"
+                />
+                <div data-traffic-read-error="">
+                    <ReadRecoveryBanner
+                        kind={readErrorKind ?? "unavailable"}
+                        message={recoveryMessage}
+                        retryLabel={dict.dashboard.retry_load_data}
+                        onRetry={shouldShowReadRetry(readErrorKind) ? () => { void loadTraffic(); } : undefined}
+                    />
                 </div>
             </div>
         );
@@ -225,6 +289,16 @@ export default function TrafficPage() {
                 subtitle={traffic.subtitle}
                 className="mb-6"
             />
+            {recoveryMessage && (
+                <div className="mb-4" data-traffic-read-error="">
+                    <ReadRecoveryBanner
+                        kind={readErrorKind ?? "unavailable"}
+                        message={recoveryMessage}
+                        retryLabel={dict.dashboard.retry_load_data}
+                        onRetry={shouldShowReadRetry(readErrorKind) ? () => { void loadTraffic(); } : undefined}
+                    />
+                </div>
+            )}
 
             <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
                 <div className="space-y-4">
