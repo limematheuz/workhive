@@ -13,7 +13,7 @@ import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
 import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
-import { isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
+import { canViewFinance, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
 import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant-dashboard";
 import { canAccessPartnerPortalDashboardPath } from "@/domain/access/partner-portal-dashboard";
 import { canAccessClientPortalDashboardPath } from "@/domain/access/client-portal-dashboard";
@@ -98,6 +98,12 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
 
     if (user.company_id == null && user.role?.name !== "superadmin" && !isClientPortal) {
         return <NoWorkspaceAccount onLogout={() => { void handleLogout(); }} />;
+    }
+
+    if (isExternalPortal && !canViewFinance(user)) {
+        if (pathname !== "/dashboard/profile") {
+            redirect("/dashboard/profile");
+        }
     }
 
     if (isExternalPortal && !canAccessExternalPortalDashboardPath(pathname)) {
