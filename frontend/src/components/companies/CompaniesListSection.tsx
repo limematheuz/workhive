@@ -112,7 +112,8 @@ export function CompaniesListSection({
             <Button
                 type="button"
                 variant="ghost"
-                className="h-auto min-w-0 justify-start gap-2 p-0 text-left font-normal shadow-none hover:bg-transparent hover:text-[var(--text-main)] hover:shadow-none"
+                title={company.name}
+                className="h-auto max-w-full min-w-0 justify-start gap-2 overflow-hidden p-0 text-left font-normal shadow-none hover:bg-transparent hover:text-[var(--text-main)] hover:shadow-none"
                 onClick={() => onToggleMembers(company)}
                 aria-expanded={expanded}
                 aria-label={`${labels.viewTeam}: ${company.name}`}
@@ -126,7 +127,7 @@ export function CompaniesListSection({
                     />
                 )}
                 <Building2 className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                <span className="truncate text-sm font-semibold text-[var(--text-main)]">{company.name}</span>
+                <span className="min-w-0 truncate text-sm font-semibold text-[var(--text-main)]">{company.name}</span>
             </Button>
         );
     };
@@ -166,12 +167,12 @@ export function CompaniesListSection({
                         <Table className="min-w-[760px] table-fixed text-left">
                             <TableHeader>
                                 <TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] hover:bg-[var(--bg-secondary)]/40">
-                                    <TableHead>{labels.name}</TableHead>
-                                    <TableHead>{labels.cif}</TableHead>
-                                    <TableHead>{labels.email}</TableHead>
-                                    <TableHead>{labels.phone}</TableHead>
-                                    <TableHead>{labels.status}</TableHead>
-                                    <TableHead className="text-right">{labels.actions}</TableHead>
+                                    <TableHead className="w-[27%]">{labels.name}</TableHead>
+                                    <TableHead className="w-[16%]">{labels.cif}</TableHead>
+                                    <TableHead className="w-[21%]">{labels.email}</TableHead>
+                                    <TableHead className="w-[13%]">{labels.phone}</TableHead>
+                                    <TableHead className="w-[13%]">{labels.status}</TableHead>
+                                    <TableHead className="w-[10%] text-right">{labels.actions}</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -180,10 +181,22 @@ export function CompaniesListSection({
                                         <TableRow
                                             className="bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55"
                                         >
-                                            <TableCell>{nameCell(company)}</TableCell>
-                                            <TableCell className="font-mono text-xs text-[var(--text-muted)]">{company.tax_id || company.cif || "—"}</TableCell>
-                                            <TableCell className="max-w-56 truncate text-sm text-[var(--text-muted)]">{getCompanyContactEmail(company) || "—"}</TableCell>
-                                            <TableCell className="text-sm text-[var(--text-muted)]">{company.phone || "—"}</TableCell>
+                                            <TableCell className="overflow-hidden">{nameCell(company)}</TableCell>
+                                            <TableCell
+                                                className="truncate font-mono text-xs text-[var(--text-muted)]"
+                                                title={company.tax_id || company.cif || undefined}
+                                            >
+                                                {company.tax_id || company.cif || "—"}
+                                            </TableCell>
+                                            <TableCell
+                                                className="truncate text-sm text-[var(--text-muted)]"
+                                                title={getCompanyContactEmail(company) || undefined}
+                                            >
+                                                {getCompanyContactEmail(company) || "—"}
+                                            </TableCell>
+                                            <TableCell className="truncate text-sm text-[var(--text-muted)]">
+                                                {company.phone || "—"}
+                                            </TableCell>
                                             <TableCell>{statusBadge(company)}</TableCell>
                                             <TableCell className="text-right"><ActionPopover align="end" triggerLabel={labels.actions} options={getCompanyActions(company)} /></TableCell>
                                         </TableRow>

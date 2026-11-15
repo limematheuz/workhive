@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { formatCompanyPlanLimit } from "@/lib/company-plan-summary";
 import type { CompanyPlanAccess, Entitlement, PlanCode } from "@/services/company-plan-access.service";
 import type { Company } from "@/services/company.service";
 import { CommercialChangeConfirmationDialog } from "./CommercialChangeConfirmationDialog";
@@ -143,7 +144,7 @@ function CustomTab({ controller }: { controller: Controller }) {
 
 function PlanSummary({ features, limits, usage }: { features: Entitlement[]; limits: Entitlement[]; usage: CompanyPlanAccess["usage"] }) {
     const usageByLabel: Record<string, number> = { Administradores: usage.administrators, Responsables: usage.managers, Trabajadores: usage.workers, Departamentos: usage.departments, Equipos: usage.teams };
-    return <div className="grid gap-4 lg:grid-cols-2"><section className="min-w-0 rounded-xl border border-[var(--border-soft)] p-3"><h3 className="text-sm font-semibold text-[var(--text-main)]">Funciones incluidas</h3><div className="mt-3 flex flex-wrap gap-1.5">{features.map((item) => <Badge key={item.code} variant="outline" className="border-accent/30 bg-accent/10 text-accent">{item.label}</Badge>)}</div></section><section className="min-w-0 rounded-xl border border-[var(--border-soft)] p-3"><h3 className="text-sm font-semibold text-[var(--text-main)]">Capacidad</h3><p className="mt-1 text-xs text-[var(--text-muted)]">Uso actual frente al límite del plan.</p><dl className="mt-2 space-y-1.5 text-xs">{limits.map((item) => <div className="flex items-center justify-between gap-3" key={item.code}><dt className="min-w-0 truncate text-[var(--text-muted)]">{item.label}</dt><dd className="shrink-0 font-semibold text-[var(--text-main)]">{usageByLabel[item.label] ?? "—"} / {item.value}</dd></div>)}</dl></section></div>;
+    return <div className="grid gap-4 lg:grid-cols-2"><section className="min-w-0 rounded-xl border border-[var(--border-soft)] p-3"><h3 className="text-sm font-semibold text-[var(--text-main)]">Funciones incluidas</h3><div className="mt-3 flex flex-wrap gap-1.5">{features.map((item) => <Badge key={item.code} variant="outline" className="border-accent/30 bg-accent/10 text-accent">{item.label}</Badge>)}</div></section><section className="min-w-0 rounded-xl border border-[var(--border-soft)] p-3"><h3 className="text-sm font-semibold text-[var(--text-main)]">Capacidad</h3><p className="mt-1 text-xs text-[var(--text-muted)]">Uso actual frente al límite del plan.</p><dl className="mt-2 space-y-1.5 text-xs">{limits.map((item) => <div className="flex items-center justify-between gap-3" key={item.code}><dt className="min-w-0 truncate text-[var(--text-muted)]">{item.label}</dt><dd className="shrink-0 font-semibold text-[var(--text-main)]">{usageByLabel[item.label] ?? "—"} / {typeof item.value === "number" ? formatCompanyPlanLimit(item.code, item.value, "es") : item.value}</dd></div>)}</dl></section></div>;
 }
 
 function OverrideList({ overrides }: { overrides: CompanyPlanAccess["overrides"] }) {
