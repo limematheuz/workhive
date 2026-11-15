@@ -1,27 +1,12 @@
 """Scoped authorization policy for the operational task-assignee directory."""
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
-from app.models.company_membership import (
-    CompanyMembership,
-    DepartmentMembership,
-    TeamMembership,
-)
-from app.models.location import Location
-from app.models.permission_profile import (
-    MembershipPermissionProfileAssignment,
-    MembershipPermissionProfileScope,
-    PermissionDefinition,
-    PermissionProfile,
-    PermissionProfilePermission,
-)
-from app.models.task_item import TaskItem
-from app.models.task_structure import TaskAssignment
 from app.models.user import User
 from app.repositories import organization as organization_repo
 from app.repositories import user as user_repo
+from app.repositories import user_assignable as user_assignable_repo
 from app.services.organization_authorization_service import (
     has_capability,
     permitted_location_ids,
@@ -49,149 +34,14 @@ def _resolve_scoped_candidate_user_ids(
 ) -> set[int]:
     if not target_location_ids and not extra_department_ids and not extra_team_ids:
         return set()
-
-    department_ids = set(extra_department_ids)
-    team_ids = set(extra_team_ids)
-    if target_location_ids:
-        location_rows = (
-            db.query(Location.department_id, Location.team_id)
-            .filter(
-                Location.id.in_(target_location_ids),
-                Location.is_active.is_(True),
-                or_(
-                    Location.owner_company_id == company_id,
-                    Location.managing_company_id == company_id,
-                ),
-            )
-            .all()
-        )
-        for dept_id, tm_id in location_rows:
-            if dept_id is not None:
-                department_ids.add(dept_id)
-            if tm_id is not None:
-                team_ids.add(tm_id)
-
-    candidate_ids: set[int] = {current_user.id}
-
-    if department_ids:
-        dept_users = (
-            db.query(CompanyMembership.user_id)
-            .join(
-                DepartmentMembership,
-                DepartmentMembership.company_membership_id == CompanyMembership.id,
-            )
-            .filter(
-                CompanyMembership.company_id == company_id,
-                CompanyMembership.status == "active",
-                DepartmentMembership.company_id == company_id,
-                DepartmentMembership.is_active.is_(True),
-                DepartmentMembership.department_id.in_(department_ids),
-            )
-            .all()
-        )
-        candidate_ids.update(user_id for (user_id,) in dept_users)
-
-    if team_ids:
-        team_users = (
-            db.query(CompanyMembership.user_id)
-            .join(
-                TeamMembership,
-                TeamMembership.company_membership_id == CompanyMembership.id,
-            )
-            .filter(
-                CompanyMembership.company_id == company_id,
-                CompanyMembership.status == "active",
-                TeamMembership.company_id == company_id,
-                TeamMembership.is_active.is_(True),
-                TeamMembership.team_id.in_(team_ids),
-            )
-            .all()
-        )
-        candidate_ids.update(user_id for (user_id,) in team_users)
-
-    scope_clauses = []
-    if target_location_ids:
-        scope_clauses.append(
-            (MembershipPermissionProfileScope.scope_type == "location")
-            & MembershipPermissionProfileScope.scope_id.in_(target_location_ids)
-        )
-    if department_ids:
-        scope_clauses.append(
-            (MembershipPermissionProfileScope.scope_type == "department")
-            & MembershipPermissionProfileScope.scope_id.in_(department_ids)
-        )
-    if team_ids:
-        scope_clauses.append(
-            (MembershipPermissionProfileScope.scope_type == "team")
-            & MembershipPermissionProfileScope.scope_id.in_(team_ids)
-        )
-
-    if scope_clauses:
-        scoped_profile_users = (
-            db.query(CompanyMembership.user_id)
-            .join(
-                MembershipPermissionProfileAssignment,
-                MembershipPermissionProfileAssignment.company_membership_id
-                == CompanyMembership.id,
-            )
-            .join(
-                PermissionProfile,
-                PermissionProfile.id
-                == MembershipPermissionProfileAssignment.permission_profile_id,
-            )
-            .join(
-                PermissionProfilePermission,
-                PermissionProfilePermission.permission_profile_id
-                == PermissionProfile.id,
-            )
-            .join(
-                PermissionDefinition,
-                PermissionDefinition.id
-                == PermissionProfilePermission.permission_definition_id,
-            )
-            .join(
-                MembershipPermissionProfileScope,
-                MembershipPermissionProfileScope.profile_assignment_id
-                == MembershipPermissionProfileAssignment.id,
-            )
-            .filter(
-                CompanyMembership.company_id == company_id,
-                CompanyMembership.status == "active",
-                MembershipPermissionProfileAssignment.company_id == company_id,
-                MembershipPermissionProfileAssignment.is_active.is_(True),
-                PermissionProfile.is_active.is_(True),
-                PermissionDefinition.is_active.is_(True),
-                PermissionDefinition.code.in_(OPERATIONAL_SCOPE_CAPABILITIES),
-                or_(*scope_clauses),
-            )
-            .all()
-        )
-        candidate_ids.update(user_id for (user_id,) in scoped_profile_users)
-
-    if target_location_ids:
-        direct_task_users = (
-            db.query(TaskItem.user_id)
-            .filter(
-                TaskItem.company_id == company_id,
-                TaskItem.location_id.in_(target_location_ids),
-                TaskItem.user_id.isnot(None),
-            )
-            .all()
-        )
-        candidate_ids.update(user_id for (user_id,) in direct_task_users if user_id)
-
-        structured_task_users = (
-            db.query(TaskAssignment.user_id)
-            .join(TaskItem, TaskItem.id == TaskAssignment.task_id)
-            .filter(
-                TaskItem.company_id == company_id,
-                TaskItem.location_id.in_(target_location_ids),
-            )
-            .all()
-        )
-        candidate_ids.update(user_id for (user_id,) in structured_task_users if user_id)
-
-    return candidate_ids
+    return {current_user.id} | user_assignable_repo.get_scoped_candidate_user_ids(
+        db,
+        company_id=company_id,
+        operational_scope_capabilities=OPERATIONAL_SCOPE_CAPABILITIES,
+        target_location_ids=target_location_ids,
+        extra_department_ids=extra_department_ids,
+        extra_team_ids=extra_team_ids,
+    )
 
 
 def resolve_assignable_directory_scope(
