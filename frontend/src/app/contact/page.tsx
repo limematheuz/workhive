@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useEffectEvent, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     getContactValidationMessages,
+    type ContactFormState,
     getInitialContactForm,
     prepareContactSubmission,
     syncContactFormLocale,
@@ -19,18 +20,34 @@ import { TrialRequestService } from "@/services/trial-request.service";
 import { getContactSubmissionErrorMessage } from "@/lib/contact-submission-error";
 import { toast } from "sonner";
 
+type ContactFeedback =
+    | { kind: "validation"; form: ContactFormState; trial: boolean }
+    | { kind: "submission"; cause: unknown }
+    | { kind: "verification"; message: string };
+
 function ContactPageContent() {
     const { locale, dict } = useDictionary();
     const searchParams = useSearchParams();
     const reasonParam = searchParams.get("reason");
-    const trialVerificationToken = searchParams.get("trial_verification");
+    // Keep the one-time token after history cleanup updates the search parameters.
+    const [trialVerificationToken] = useState(() => searchParams.get("trial_verification"));
     const isTrialRequest = reasonParam === "trial";
 
     const [form, setForm] = useState(() => getInitialContactForm(reasonParam, locale));
     const [submitting, setSubmitting] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [error, setError] = useState("");
-    const [verificationStatus, setVerificationStatus] = useState("");
+    const [error, setError] = useState<ContactFeedback | null>(null);
+    const errorMessage = error?.kind === "submission"
+        ? getContactSubmissionErrorMessage(error.cause, locale)
+        : error?.kind === "validation"
+            ? prepareContactSubmission(error.form, error.trial, getContactValidationMessages(locale)).error ?? ""
+            : error?.message ?? "";
+    const [verified, setVerified] = useState(false);
+    const verificationStatus = verified
+        ? locale === "es"
+            ? "Email verificado. Revisaremos tu solicitud y te avisaremos si el acceso es aprobado."
+            : "Email verified. We will review your request and notify you if access is approved."
+        : "";
     const supportPhone = process.env.NEXT_PUBLIC_SUPPORT_PHONE;
 
     useEffect(() => {
@@ -44,40 +61,31 @@ function ContactPageContent() {
         };
     }, [locale, reasonParam]);
 
+    const reportVerified = useEffectEvent(() => {
+        setSubmitted(true);
+        setVerified(true);
+        toast.success(locale === "es" ? "Email verificado" : "Email verified");
+    });
+    const reportVerificationError = useEffectEvent((verificationError: unknown) => {
+        const message = verificationError instanceof Error ? verificationError.message
+            : locale === "es" ? "No se pudo verificar la solicitud" : "The request could not be verified";
+        setError({ kind: "verification", message });
+        toast.error(message);
+    });
+
     useEffect(() => {
         if (!trialVerificationToken) return;
         let cancelled = false;
-        if (typeof window !== "undefined") {
+        const timer = window.setTimeout(() => {
             const url = new URL(window.location.href);
             url.searchParams.delete("trial_verification");
             window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
-        }
-        TrialRequestService.verify(trialVerificationToken)
-            .then(() => {
-                if (cancelled) return;
-                setSubmitted(true);
-                setVerificationStatus(
-                    locale === "es"
-                        ? "Email verificado. Revisaremos tu solicitud y te avisaremos si el acceso es aprobado."
-                        : "Email verified. We will review your request and notify you if access is approved.",
-                );
-                toast.success(locale === "es" ? "Email verificado" : "Email verified");
-            })
-            .catch((verificationError) => {
-                if (cancelled) return;
-                const message =
-                    verificationError instanceof Error
-                        ? verificationError.message
-                        : locale === "es"
-                          ? "No se pudo verificar la solicitud"
-                          : "The request could not be verified";
-                setError(message);
-                toast.error(message);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [locale, trialVerificationToken]);
+            TrialRequestService.verify(trialVerificationToken)
+                .then(() => { if (!cancelled) reportVerified(); })
+                .catch((cause) => { if (!cancelled) reportVerificationError(cause); });
+        }, 0);
+        return () => { cancelled = true; window.clearTimeout(timer); };
+    }, [trialVerificationToken]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -88,13 +96,13 @@ function ContactPageContent() {
             getContactValidationMessages(locale),
         );
         if (prepared.error !== null || prepared.submission === null) {
-            setError(prepared.error ?? "");
+            setError({ kind: "validation", form: { ...form }, trial: isTrialRequest });
             toast.error(prepared.error ?? "");
             return;
         }
 
         setSubmitting(true);
-        setError("");
+        setError(null);
         try {
             if (prepared.submission.kind === "trial") {
                 await TrialRequestService.create(prepared.submission.payload);
@@ -113,7 +121,7 @@ function ContactPageContent() {
             );
         } catch (submissionError) {
             const message = getContactSubmissionErrorMessage(submissionError, locale);
-            setError(message);
+            setError({ kind: "submission", cause: submissionError });
             toast.error(message);
         } finally {
             setSubmitting(false);
@@ -146,7 +154,7 @@ function ContactPageContent() {
                     setForm={setForm}
                     submitting={submitting}
                     submitted={submitted}
-                    error={error}
+                    error={errorMessage}
                     verificationStatus={verificationStatus}
                     onSubmit={handleSubmit}
                     onResetSubmitted={() => setSubmitted(false)}
