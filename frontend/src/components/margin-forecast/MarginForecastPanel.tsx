@@ -7,11 +7,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { SummaryMetricCard, SummaryMetricGrid, type SummaryMetricTone } from "@/components/ui/summary-metric-card";
 import { useDialogFormGuardReset } from "@/components/ui/dialog-form-guard";
 import { Textarea } from "@/components/ui/textarea";
+import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
 import { getErrorMessage } from "@/lib/errors";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import { toast } from "@/lib/toast";
 import { MarginForecastService } from "@/services/margin-forecast.service";
 import type { MarginForecastScopeType, MarginForecast } from "@/types/margin-forecast";
@@ -31,30 +39,54 @@ function marginTone(value: number | null): SummaryMetricTone {
 export function MarginForecastPanel({ scopeType, scopeId, canManage, className = "" }: MarginForecastPanelProps) {
     const panelRef = React.useRef<HTMLElement>(null);
     const resetDialogDirty = useDialogFormGuardReset();
+    const { dict, locale } = useDictionary();
+    const financeText = dict.finance_analytics;
     const [forecast, setForecast] = React.useState<MarginForecast | null>(null);
     const [loading, setLoading] = React.useState(true);
+    const [errorKind, setErrorKind] = React.useState<ReadErrorKind | null>(null);
+    const requestIdRef = React.useRef(0);
+    const loadedScopeRef = React.useRef<string | null>(null);
+    const scopeKey = `${scopeType}:${scopeId}`;
     const [saving, setSaving] = React.useState(false);
     const [plannedCost, setPlannedCost] = React.useState("");
     const [notes, setNotes] = React.useState("");
 
     const load = React.useCallback(async () => {
+        const requestId = ++requestIdRef.current;
+        if (loadedScopeRef.current !== scopeKey) {
+            setForecast(null);
+        }
         setLoading(true);
+        setErrorKind(null);
         try {
             const next = await MarginForecastService.get(scopeType, scopeId);
+            if (requestId !== requestIdRef.current) return;
+            loadedScopeRef.current = scopeKey;
             setForecast(next);
             setPlannedCost(next.budget?.planned_direct_cost_amount.toString() ?? "");
             setNotes(next.budget?.notes ?? "");
+            setErrorKind(null);
         } catch (error: unknown) {
-            toast.error(getErrorMessage(error, "No se pudo cargar el margen previsto"));
+            if (requestId !== requestIdRef.current) return;
+            const kind = classifyReadError(error);
+            if (kind === "denied" || loadedScopeRef.current !== scopeKey) {
+                loadedScopeRef.current = null;
+                setForecast(null);
+            }
+            setErrorKind(kind);
         } finally {
-            setLoading(false);
+            setLoading((current) => (requestId === requestIdRef.current ? false : current));
         }
-    }, [scopeId, scopeType]);
+    }, [scopeId, scopeKey, scopeType]);
+
+    const syncLoad = React.useEffectEvent(() => {
+        void load();
+    });
 
     React.useEffect(() => {
-        const timer = window.setTimeout(() => void load(), 0);
+        const timer = window.setTimeout(() => syncLoad(), 0);
         return () => window.clearTimeout(timer);
-    }, [load]);
+    }, [scopeKey]);
 
     const save = async () => {
         const amount = Number(plannedCost);
@@ -80,8 +112,28 @@ export function MarginForecastPanel({ scopeType, scopeId, canManage, className =
         }
     };
 
-    if (loading) return <div className={`flex min-h-32 items-center justify-center text-[var(--text-muted)] ${className}`}><Loader2 className="size-5 animate-spin" aria-label="Cargando margen" /></div>;
-    if (!forecast) return null;
+    const unavailableMessage = locale === "en"
+        ? "Could not load the forecast margin."
+        : "No se pudo cargar el margen previsto.";
+    const errorMessage = getReadRecoveryMessage(errorKind, {
+        unavailable: unavailableMessage,
+        denied: financeText.error_denied,
+    });
+
+    if (loading && !forecast) return <div className={`flex min-h-32 items-center justify-center text-[var(--text-muted)] ${className}`}><Loader2 className="size-5 animate-spin" aria-label={financeText.loading} /></div>;
+    if (!forecast) {
+        return errorKind && errorMessage ? (
+            <div className={className}>
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={errorMessage}
+                    retryLabel={financeText.retry}
+                    onRetry={shouldShowReadRetry(errorKind) ? () => void load() : undefined}
+                    retrying={loading}
+                />
+            </div>
+        ) : null;
+    }
 
     const scopeLabel = scopeType === "contract" ? "contrato" : "orden";
     return (

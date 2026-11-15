@@ -3,10 +3,15 @@
 import * as React from "react";
 import { ChartNoAxesCombined, CircleDollarSign, HandCoins, Loader2, ReceiptText } from "lucide-react";
 
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { SummaryMetricCard, SummaryMetricGrid, type SummaryMetricTone } from "@/components/ui/summary-metric-card";
-import { getErrorMessage } from "@/lib/errors";
 import { formatCurrency } from "@/lib/format";
-import { toast } from "@/lib/toast";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import { ServiceMarginService } from "@/services/service-margin.service";
 import type { ServiceMargin } from "@/types/margin-forecast";
 
@@ -22,27 +27,66 @@ function marginTone(value: number): SummaryMetricTone {
 export function ServiceMarginPanel({ serviceCatalogVersionId, copy }: ServiceMarginPanelProps) {
     const [margin, setMargin] = React.useState<ServiceMargin | null>(null);
     const [loading, setLoading] = React.useState(true);
+    const [errorKind, setErrorKind] = React.useState<ReadErrorKind | null>(null);
+    const requestIdRef = React.useRef(0);
+    const loadedServiceRef = React.useRef<number | null>(null);
 
     const load = React.useCallback(async () => {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
-        try {
-            setMargin(await ServiceMarginService.get(serviceCatalogVersionId));
-        } catch (error) {
-            toast.error(getErrorMessage(error, copy.operational_margin_service_error_load));
-        } finally {
-            setLoading(false);
+        if (loadedServiceRef.current !== serviceCatalogVersionId) {
+            setMargin(null);
         }
-    }, [copy.operational_margin_service_error_load, serviceCatalogVersionId]);
+        setErrorKind(null);
+        try {
+            const next = await ServiceMarginService.get(serviceCatalogVersionId);
+            if (requestId !== requestIdRef.current) return;
+            loadedServiceRef.current = serviceCatalogVersionId;
+            setMargin(next);
+            setErrorKind(null);
+        } catch (error) {
+            if (requestId !== requestIdRef.current) return;
+            const kind = classifyReadError(error);
+            if (kind === "denied" || loadedServiceRef.current !== serviceCatalogVersionId) {
+                loadedServiceRef.current = null;
+                setMargin(null);
+            }
+            setErrorKind(kind);
+        } finally {
+            setLoading((current) => (requestId === requestIdRef.current ? false : current));
+        }
+    }, [serviceCatalogVersionId]);
+
+    const syncLoad = React.useEffectEvent(() => {
+        void load();
+    });
 
     React.useEffect(() => {
-        const timer = window.setTimeout(() => void load(), 0);
+        const timer = window.setTimeout(() => syncLoad(), 0);
         return () => window.clearTimeout(timer);
-    }, [load]);
+    }, [serviceCatalogVersionId]);
 
-    if (loading) {
+    const errorMessage = getReadRecoveryMessage(errorKind, {
+        unavailable: copy.operational_margin_service_error_load,
+        denied: copy.operational_margin_service_error_denied,
+    });
+
+    if (loading && !margin) {
         return <div className="flex min-h-32 items-center justify-center text-[var(--text-muted)]"><Loader2 className="size-5 animate-spin" aria-label={copy.loading} /></div>;
     }
-    if (!margin) return null;
+    if (!margin) {
+        return errorKind && errorMessage ? (
+            <div className="mt-5">
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={errorMessage}
+                    retryLabel={copy.retry}
+                    onRetry={shouldShowReadRetry(errorKind) ? () => void load() : undefined}
+                    retrying={loading}
+                />
+            </div>
+        ) : null;
+    }
 
     return (
         <section className="border-b border-[var(--border-soft)] py-5" aria-label={copy.operational_margin_service_title}>
