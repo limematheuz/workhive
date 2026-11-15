@@ -10,10 +10,18 @@ import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { ApiResponseError } from "@/lib/api";
 import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    getReadWorkspaceKey,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import {
     buildExpensePayload,
     DEFAULT_EXPENSE_FORM,
@@ -60,6 +68,8 @@ export default function ExpensesPage() {
     const [contracts, setContracts] = useState<ServiceContract[]>([]);
     const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
     const [loading, setLoading] = useState(true);
+    const [errorKind, setErrorKind] = useState<ReadErrorKind | null>(null);
+    const [hasLoadedAnyMonth, setHasLoadedAnyMonth] = useState(false);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("");
@@ -71,11 +81,29 @@ export default function ExpensesPage() {
     const [receiptExpense, setReceiptExpense] = useState<Expense | null>(null);
     const [receiptUploading, setReceiptUploading] = useState(false);
     const [confirmedDuplicate, setConfirmedDuplicate] = useState<{ key: string; expense: Expense | null } | null>(null);
+    const [loadedContext, setLoadedContext] = useState<string | null>(null);
     const loadRequestRef = useRef(0);
+    const loadedContextRef = useRef<string | null>(null);
+    const loadedWorkspaceRef = useRef<string | null>(null);
+    const workspaceKey = getReadWorkspaceKey(user);
+    const contextKey = `${workspaceKey}|${month}`;
 
     const loadExpenses = useCallback(async () => {
         if (!canViewExpenses) return;
         const requestId = ++loadRequestRef.current;
+        const targetWorkspace = workspaceKey;
+        const targetContext = `${targetWorkspace}|${month}`;
+        if (loadedWorkspaceRef.current !== targetWorkspace) {
+            setHasLoadedAnyMonth(false);
+        }
+        if (loadedContextRef.current !== targetContext) {
+            setExpenses([]);
+            setClients([]);
+            setContracts([]);
+            setWorkOrders([]);
+            loadedContextRef.current = null;
+            setLoadedContext(null);
+        }
         try {
             setLoading(true);
             const [expenseResult, clientResult, contractResult, workOrderResult] = await Promise.allSettled([
@@ -99,24 +127,47 @@ export default function ExpensesPage() {
             }
             setContracts(contractResult.status === "fulfilled" ? contractResult.value : []);
             setWorkOrders(workOrderResult.status === "fulfilled" ? workOrderResult.value : []);
+            loadedWorkspaceRef.current = targetWorkspace;
+            loadedContextRef.current = targetContext;
+            setLoadedContext(targetContext);
+            setHasLoadedAnyMonth(true);
+            setErrorKind(null);
         } catch (error) {
             if (requestId === loadRequestRef.current) {
                 console.error("Error loading expenses", error);
-                toast.error(text.error_load);
+                const kind = classifyReadError(error);
+                setErrorKind(kind);
+                if (kind === "denied" || loadedContextRef.current !== targetContext) {
+                    setExpenses([]);
+                    setClients([]);
+                    setContracts([]);
+                    setWorkOrders([]);
+                    loadedContextRef.current = null;
+                    setLoadedContext(null);
+                }
+                if (kind === "denied") {
+                    setHasLoadedAnyMonth(false);
+                    loadedWorkspaceRef.current = null;
+                }
+                toast.error(kind === "denied" ? text.error_denied : text.error_load);
             }
         } finally {
             setLoading((current) => requestId === loadRequestRef.current ? false : current);
         }
-    }, [canManageExpenses, canViewExpenses, month, text.error_load]);
+    }, [canManageExpenses, canViewExpenses, month, text.error_denied, text.error_load, workspaceKey]);
 
     const loadExpensesEvent = useEffectEvent(loadExpenses);
 
     useEffect(() => {
-        if (userLoading) return;
+        if (userLoading || !canViewExpenses) return;
         queueMicrotask(() => {
             void loadExpensesEvent();
         });
-    }, [userLoading, month]);
+    }, [canViewExpenses, userLoading, month, workspaceKey]);
+
+    useRealtimeInvalidation(["dashboard"], () => {
+        void loadExpenses();
+    });
 
     const filteredExpenses = useMemo(() => {
         return filterExpenses(expenses.filter((expense) => getMonthKey(expense.expense_date) === month), search, categoryFilter);
@@ -248,7 +299,7 @@ export default function ExpensesPage() {
 
     if (!userLoading && !canViewExpenses) redirect("/dashboard");
 
-    if (userLoading || loading) {
+    if (userLoading || (loading && !hasLoadedAnyMonth && !errorKind)) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
                 <Loader2 className="h-5 w-5 animate-spin text-accent" />
@@ -259,6 +310,13 @@ export default function ExpensesPage() {
 
     if (!canViewExpenses) return null;
 
+    const hasValidSnapshot = loadedContext === contextKey && errorKind !== "denied";
+    const errorMessage = getReadRecoveryMessage(errorKind, {
+        unavailable: text.error_load,
+        denied: text.error_denied,
+    });
+    const showListSection = hasLoadedAnyMonth && errorKind !== "denied";
+
     return (
         <div className="min-h-full px-3 py-4 sm:px-5 lg:px-7">
             <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-5">
@@ -266,7 +324,7 @@ export default function ExpensesPage() {
                     icon={Wallet}
                     title={text.title}
                     subtitle={canManageExpenses ? text.subtitle : text.readonly_subtitle}
-                    actions={canManageExpenses ? (
+                    actions={canManageExpenses && errorKind !== "denied" ? (
                         <Button
                             type="button"
                             onClick={openCreateForm}
@@ -277,23 +335,50 @@ export default function ExpensesPage() {
                         </Button>
                     ) : undefined}
                 />
-                <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} />
 
-                <ExpensesListSection
-                    expenses={filteredExpenses}
-                    hasAnyExpenses={expenses.length > 0}
-                    search={search}
-                    onSearchChange={setSearch}
-                    categoryFilter={categoryFilter}
-                    onCategoryFilterChange={setCategoryFilter}
-                    month={month}
-                    onMonthChange={setMonth}
-                    onEdit={startEdit}
-                    onDelete={(expense) => void handleDelete(expense)}
-                    onUploadReceipt={setReceiptExpense}
-                    onDownloadReceipt={(expense) => void handleReceiptDownload(expense)}
-                    canManage={canManageExpenses}
-                />
+                {!showListSection && errorKind && errorMessage && (
+                    <ReadRecoveryBanner
+                        kind={errorKind}
+                        message={errorMessage}
+                        retryLabel={text.retry}
+                        onRetry={errorKind === "unavailable" ? () => void loadExpenses() : undefined}
+                        retrying={loading}
+                    />
+                )}
+
+                {hasValidSnapshot && (
+                    <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} />
+                )}
+
+                {showListSection && (
+                    <ExpensesListSection
+                        expenses={filteredExpenses}
+                        hasAnyExpenses={expenses.length > 0}
+                        search={search}
+                        onSearchChange={setSearch}
+                        categoryFilter={categoryFilter}
+                        onCategoryFilterChange={setCategoryFilter}
+                        month={month}
+                        onMonthChange={(nextMonth) => {
+                            if (nextMonth !== month) {
+                                setExpenses([]);
+                                setLoadedContext(null);
+                                loadedContextRef.current = null;
+                            }
+                            setMonth(nextMonth);
+                        }}
+                        onEdit={startEdit}
+                        onDelete={(expense) => void handleDelete(expense)}
+                        onUploadReceipt={setReceiptExpense}
+                        onDownloadReceipt={(expense) => void handleReceiptDownload(expense)}
+                        canManage={canManageExpenses}
+                        errorKind={errorKind}
+                        errorMessage={errorMessage}
+                        retryLabel={text.retry}
+                        onRetry={errorKind === "unavailable" ? () => void loadExpenses() : undefined}
+                        retrying={loading}
+                    />
+                )}
 
                 {canManageExpenses && <ExpenseReceiptDialog
                     key={receiptExpense?.id ?? "none"}

@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 
 export type PlanCode = "basic" | "medium" | "top" | "mega" | "custom";
 export type PlanStatus = "trialing" | "active";
@@ -146,9 +146,7 @@ export const CompanyPlanAccessService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "No se han podido cargar las funciones del plan"));
-        }
+        await assertApiResponseOk(response, "No se han podido cargar las funciones del plan");
         return response.json();
     },
 

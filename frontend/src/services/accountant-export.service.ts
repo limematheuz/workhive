@@ -3,7 +3,7 @@ import {
     accountantExportPath,
     type AccountantExportPeriod,
 } from "@/lib/accountant-export";
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 
 
 export const AccountantExportService = {
@@ -15,11 +15,7 @@ export const AccountantExportService = {
         const response = await apiFetch(accountantExportPath(year, period, periodNumber), {
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error(
-                await extractErrorMessage(response, "Could not export accountant package"),
-            );
-        }
+        await assertApiResponseOk(response, "Could not export accountant package");
 
         const disposition = response.headers.get("Content-Disposition") || "";
         const filename = disposition.match(/filename="([^\"]+)"/)?.[1]
