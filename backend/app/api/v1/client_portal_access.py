@@ -1,6 +1,6 @@
 """Transport for the customer portal invitation and grant lifecycle."""
 
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveAdmin, get_db
@@ -15,14 +15,18 @@ from app.schemas.client_portal import (
     ClientPortalInvitationResponse,
 )
 from app.services import audit_service, client_portal_invitation_service
+from app.services.user_scope import is_platform_superadmin
 
 
 router = APIRouter()
 
 
 def _company_id(current_user: User) -> int:
-    if current_user.company_id is None:
-        raise RuntimeError("Active admin must have a company")
+    if is_platform_superadmin(current_user) or current_user.company_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Company admin required",
+        )
     return current_user.company_id
 
 

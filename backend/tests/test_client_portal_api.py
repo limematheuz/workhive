@@ -447,3 +447,22 @@ def test_client_portal_keeps_documents_visible_when_quality_is_not_entitled(clie
         headers=headers,
         json={"confirmed": True, "signer_name": "Representante Cliente"},
     ).status_code == 403
+
+
+def test_client_portal_access_endpoints_return_403_for_platform_superadmin(client, db):
+    super_role = db.query(Role).filter(Role.name == "superadmin").one()
+    superadmin = User(
+        email="superadmin-portal-access@example.com",
+        hashed_password=get_password_hash(TEST_SECRET_B),
+        full_name="Platform Superadmin",
+        company_id=None,
+        role_id=super_role.id,
+        is_active=True,
+    )
+    db.add(superadmin)
+    db.commit()
+    token = create_access_token({"sub": superadmin.email, "ver": superadmin.session_version})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    assert client.get("/api/v1/client-portal/clients/1/invitations", headers=headers).status_code == 403
+    assert client.get("/api/v1/client-portal/clients/1/grants", headers=headers).status_code == 403

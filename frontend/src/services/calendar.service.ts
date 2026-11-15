@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 
 export interface CalendarConnectionStatus {
     enabled: boolean;
@@ -57,9 +57,7 @@ export const CalendarService = {
         const response = await apiFetch("/api/v1/calendar/status", {
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Error loading calendar status"));
-        }
+        await assertApiResponseOk(response, "Error loading calendar status");
         return response.json();
     },
 
@@ -67,9 +65,7 @@ export const CalendarService = {
         const response = await apiFetch("/api/v1/calendar/google/oauth/start", {
             method: "POST",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not start Google authorization"));
-        }
+        await assertApiResponseOk(response, "Could not start Google authorization");
         const data = await response.json();
         window.location.assign(data.authorization_url);
     },
@@ -78,9 +74,7 @@ export const CalendarService = {
         const response = await apiFetch("/api/v1/calendar/sync", {
             method: "POST",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Calendar synchronization failed"));
-        }
+        await assertApiResponseOk(response, "Calendar synchronization failed");
         return response.json();
     },
 
@@ -88,18 +82,14 @@ export const CalendarService = {
         const response = await apiFetch("/api/v1/calendar/google", {
             method: "DELETE",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not disconnect Google Calendar"));
-        }
+        await assertApiResponseOk(response, "Could not disconnect Google Calendar");
     },
 
     requestOwnership: async (): Promise<CalendarOwnershipRequest> => {
         const response = await apiFetch("/api/v1/calendar/ownership-requests", {
             method: "POST",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not request calendar control"));
-        }
+        await assertApiResponseOk(response, "Could not request calendar control");
         return response.json();
     },
 
@@ -111,9 +101,7 @@ export const CalendarService = {
             `/api/v1/calendar/ownership-requests/${requestId}/${decision}`,
             { method: "POST" },
         );
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not review calendar request"));
-        }
+        await assertApiResponseOk(response, "Could not review calendar request");
         return response.json();
     },
 
@@ -121,9 +109,7 @@ export const CalendarService = {
         const response = await apiFetch("/api/v1/calendar/platform/status", {
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not load Google Calendar configuration"));
-        }
+        await assertApiResponseOk(response, "Could not load Google Calendar configuration");
         return response.json();
     },
 
@@ -136,9 +122,7 @@ export const CalendarService = {
                 company_connections_enabled: companyConnectionsEnabled,
             }),
         });
-        if (!response.ok) {
-            throw new Error(await extractErrorMessage(response, "Could not update Google Calendar availability"));
-        }
+        await assertApiResponseOk(response, "Could not update Google Calendar availability");
         return response.json();
     },
 
