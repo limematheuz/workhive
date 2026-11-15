@@ -12,9 +12,12 @@ test("contracts page avoids false empty states on read failures and preserves de
         "utf8",
     );
 
-    assert.match(page, /const \[loadError, setLoadError\] = React\.useState<ContractsLoadErrorKind \| null>\(null\)/);
-    assert.match(page, /setLoadError\(null\)/);
-    assert.match(page, /setContracts\(\[\]\)\s*\n\s*setLoadError\(errorKind\)/);
+    const hook = readFileSync(new URL("../hooks/useContractList.ts", import.meta.url), "utf8");
+    assert.match(page, /<ContractsWorkspace key=/);
+    assert.match(page, /useContractList/);
+    assert.match(hook, /version !== request.current.version/);
+    assert.match(hook, /kind === "denied" \? emptySnapshot\(\)/);
+    assert.match(hook, /error: null/);
     assert.match(page, /if \(loading \|\| loadError \|\| !Number\.isSafeInteger\(sourceQuoteId\)/);
     assert.match(page, /empty=\{loadError \? \(/);
     assert.match(page, /dict\.contracts\?\.retry \?\? "Reintentar"/);

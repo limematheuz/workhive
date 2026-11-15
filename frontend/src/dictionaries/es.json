@@ -491,6 +491,9 @@
     "restricted_description": "El calendario fiscal se configura a nivel de empresa."
   },
   "calendar": {
+    "error_load": "No se pudo cargar el calendario. Inténtalo de nuevo.",
+    "error_denied": "No tienes permiso para consultar el calendario.",
+    "retry": "Reintentar",
     "title": "Calendario de empresa",
     "subtitle": "Planificación compartida de las tareas y sincronización bidireccional con Google Calendar.",
     "connected_success": "Google Calendar se ha conectado correctamente.",

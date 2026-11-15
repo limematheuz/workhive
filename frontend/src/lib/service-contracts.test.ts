@@ -12,7 +12,7 @@ test("contracts are a finance-gated agreement workspace, not a task shortcut", (
     const quoteActions = source("../components/quotes/QuoteDetailActions.tsx")
 
     assert.match(sidebar, /href: "\/dashboard\/contracts"/)
-    assert.match(page, /const canViewContracts = canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/)
+    assert.match(page, /if \(!user \|\| !canViewFinance\(user\) \|\| isPlatformSuperadmin\(user\)\) redirect/)
     assert.match(page, /Activarlos nunca crea trabajos automáticamente/)
     assert.match(detail, /ContractLocationPicker/)
     assert.match(detail, /Ubicaciones cubiertas/)

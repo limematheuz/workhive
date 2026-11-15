@@ -7,7 +7,7 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("operational tasks and calendar pages load assignable company workers via /users/assignable", () => {
     const userService = read("../services/user.service.ts");
     const tasksHook = read("../hooks/useTasksPage.ts");
-    const calendarPage = read("../app/dashboard/calendar/page.tsx");
+    const calendarPage = read("../hooks/useCalendarWorkspaceData.ts");
 
     assert.match(userService, /getAssignableUsers/);
     assert.match(userService, /collectPaginated/);
@@ -15,6 +15,7 @@ test("operational tasks and calendar pages load assignable company workers via /
     assert.match(tasksHook, /UserService\.getAssignableUsers/);
     assert.doesNotMatch(tasksHook, /getAssignableUsers\(\)\.catch\(\(\) => \[currentUser\]/);
     assert.match(calendarPage, /UserService\.getAssignableUsers/);
+    assert.doesNotMatch(calendarPage, /getAssignableUsers[^;]*\.catch/);
     assert.match(tasksHook, /task\.assignments/);
     assert.match(tasksHook, /checklist_items/);
 });

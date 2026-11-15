@@ -48,13 +48,14 @@ export const ClientService = {
         return await response.json();
     },
 
-    getClients: async (isActive: boolean | null = true): Promise<Client[]> => {
+    getClients: async (isActive: boolean | null = true, readContext?: string): Promise<Client[]> => {
         const query = isActive === null
             ? "include_inactive=true"
             : `is_active=${isActive}`
         const response = await apiFetch(`/api/v1/clients/?${query}`, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
         // Several workspaces use this only to populate an optional client
         // selector. A denied client capability is not an application failure:

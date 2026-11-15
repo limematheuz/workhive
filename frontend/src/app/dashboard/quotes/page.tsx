@@ -22,6 +22,7 @@ import { ClientService, Client } from "@/services/client.service";
 import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
+import type { User } from "@/types/user";
 
 type QuotesLoadErrorKind = "denied" | "unavailable";
 
@@ -42,12 +43,18 @@ function QuotesPageLoading() {
 }
 
 function QuotesPageContent() {
+    const { user, loading } = useUser();
+    if (loading) return <QuotesPageLoading />;
+    if (!user || !canViewFinance(user)) redirect("/dashboard");
+    return <QuotesWorkspace key={`${user.id}:${user.company_id}:${user.role?.name}`} user={user} />;
+}
+
+function QuotesWorkspace({ user }: { user: User }) {
     const { dict } = useDictionary();
     const dictRef = useRef(dict);
     useEffect(() => {
         dictRef.current = dict;
     }, [dict]);
-    const { user, loading: userLoading } = useUser();
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -75,10 +82,6 @@ function QuotesPageContent() {
         : "anonymous";
     const filterKey = `${workspaceKey}|client:${selectedClientId}|status:${selectedStatus}`;
 
-    if (!userLoading && (!user || !canViewQuotes)) {
-        redirect("/dashboard");
-    }
-
     useEffect(() => {
         requestIdRef.current += 1;
         hasLoadedQuotesRef.current = false;
@@ -93,12 +96,12 @@ function QuotesPageContent() {
     }, [workspaceKey]);
 
     useEffect(() => {
-        if (userLoading || !user || !canViewQuotes) return;
+        if (!canViewQuotes) return;
         let cancelled = false;
 
         const load = async () => {
             const [clientsResult, companyResult] = await Promise.allSettled([
-                ClientService.getClients(),
+                ClientService.getClients(true, `quotes:${workspaceKey}:clients`),
                 user.company_id ? CompanyService.getCompany(user.company_id) : Promise.resolve(null),
             ]);
             if (cancelled) return;
@@ -113,10 +116,10 @@ function QuotesPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [canViewQuotes, user, userLoading, workspaceKey]);
+    }, [canViewQuotes, user, workspaceKey]);
 
     const loadQuotes = useCallback(async (options?: { silent?: boolean }) => {
-        if (userLoading || !user || !canViewQuotes) return;
+        if (!canViewQuotes) return;
         const requestId = ++requestIdRef.current;
         const canReuseCurrentSnapshot = (
             hasLoadedQuotesRef.current
@@ -132,7 +135,7 @@ function QuotesPageContent() {
             const data = await QuoteService.getQuotes({
                 clientId: selectedClientId ? parseInt(selectedClientId) : undefined,
                 status: selectedStatus || undefined,
-            });
+            }, `quotes:${filterKey}:${requestId}`);
             if (requestId !== requestIdRef.current) return;
             hasLoadedQuotesRef.current = true;
             loadedFilterKeyRef.current = filterKey;
@@ -161,9 +164,9 @@ function QuotesPageContent() {
                 );
             }
         } finally {
-            setLoading(false);
+            setLoading(current => requestId === requestIdRef.current ? false : current);
         }
-    }, [canViewQuotes, filterKey, selectedClientId, selectedStatus, user, userLoading]);
+    }, [canViewQuotes, filterKey, selectedClientId, selectedStatus]);
 
     useEffect(() => {
         if (!canViewQuotes) return;
@@ -214,7 +217,7 @@ function QuotesPageContent() {
 
     const handleViewQuote = async (quote: Quote) => {
         try {
-            const fresh = await QuoteService.getQuote(quote.id);
+            const fresh = await QuoteService.getQuote(quote.id, `quotes:${workspaceKey}:detail`);
             setSelectedQuote(fresh);
             setIsDetailOpen(true);
         } catch (error: unknown) {
@@ -234,7 +237,7 @@ function QuotesPageContent() {
         if (!Number.isSafeInteger(quoteId) || quoteId < 1) return;
 
         let cancelled = false;
-        void QuoteService.getQuote(quoteId)
+        void QuoteService.getQuote(quoteId, `quotes:${workspaceKey}:deep-link`)
             .then((quote) => {
                 if (cancelled) return;
                 if (canManageQuotes && searchParams.get("edit") === "true") {
@@ -254,7 +257,7 @@ function QuotesPageContent() {
         return () => {
             cancelled = true;
         };
-    }, [canManageQuotes, dict.quotes?.error_load, router, searchParams]);
+    }, [canManageQuotes, dict.quotes?.error_load, router, searchParams, workspaceKey]);
 
     const STATUS_LABELS: Record<string, string> = {
         draft: dict.quotes?.status_draft ?? "Borrador",
@@ -281,7 +284,7 @@ function QuotesPageContent() {
             : null;
     const retryLabel = dict.quotes?.retry ?? "Reintentar";
 
-    if (userLoading || (canViewQuotes && loading && quotes.length === 0 && !loadError)) {
+    if (canViewQuotes && loading && quotes.length === 0 && !loadError) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
                 <Loader2 className="w-8 h-8 animate-spin text-[var(--text-muted)]" />

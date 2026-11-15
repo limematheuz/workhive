@@ -491,6 +491,9 @@
     "restricted_description": "The tax calendar is configured at company level."
   },
   "calendar": {
+    "error_load": "Could not load the calendar. Please try again.",
+    "error_denied": "You do not have permission to view the calendar.",
+    "retry": "Retry",
     "title": "Company calendar",
     "subtitle": "Shared task planning with two-way Google Calendar synchronization.",
     "connected_success": "Google Calendar was connected successfully.",
