@@ -25,9 +25,7 @@ export const UserService = {
             method: "GET",
             cache: "no-store"
         });
-        if (!response.ok) {
-            throw new Error("Error fetching users");
-        }
+        await assertApiResponseOk(response, "Error fetching users");
         return await response.json();
     },
 

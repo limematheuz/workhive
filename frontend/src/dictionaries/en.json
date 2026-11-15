@@ -2779,6 +2779,8 @@
       "active_description": "The advisor can read authorized financial information.",
       "revoked_description": "The advisor's access is revoked.",
       "load_error": "Could not load external financial access.",
+      "load_denied": "You do not have permission to view external financial access.",
+      "retry": "Retry",
       "no_permission": "Only company administrators can manage external financial access."
     }
   },
@@ -2825,6 +2827,7 @@
     "sponsored_invitations": "Property-manager portal invitations",
     "sponsored_invitations_description": "Awaiting the property manager to create its limited portal.",
     "sponsored_invitations_load_error": "Could not load property-manager portal invitations.",
+    "sponsored_invitations_load_denied": "You do not have permission to view property-manager portal invitations.",
     "email_invitations": "Email invitations",
     "email_invitations_description": "Awaiting confirmation from the invited company.",
     "pending": "Pending",
@@ -2848,6 +2851,8 @@
     "company_unlinked": "Company unlinked",
     "invite_revoked": "Company invitation revoked",
     "load_error": "Could not load partner companies",
+    "load_denied": "You do not have permission to view partner companies.",
+    "retry": "Retry",
     "invite_error": "Could not send company invitation",
     "unlink_error": "Could not unlink company",
     "revoke_error": "Could not revoke company invitation",

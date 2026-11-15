@@ -8,7 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    getReadWorkspaceKey,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import { useUser } from "@/lib/user-context";
 import { ClientPortalOverviewSummary } from "@/components/client-portal/ClientPortalOverviewSummary";
 import { ClientPortalInspections } from "@/components/client-portal/ClientPortalInspections";
@@ -82,50 +90,111 @@ function Invoices({ invoices, workspaceId }: { invoices: ClientPortalInvoice[]; 
 }
 
 export function ClientPortalWorkspace({ initialTab }: { initialTab: ClientPortalTab }) {
-    const { user } = useUser();
+    const { user, loading: userLoading } = useUser();
+    const workspaceKey = getReadWorkspaceKey(user);
     const [activeTab, setActiveTab] = useState<ClientPortalTab>(initialTab);
     const [workspaces, setWorkspaces] = useState<ClientPortalWorkspaceData[]>([]);
     const [workspaceId, setWorkspaceId] = useState<number | null>(null);
     const [overview, setOverview] = useState<ClientPortalOverview | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const loadStarted = useRef(false);
+    const [retrying, setRetrying] = useState(false);
+    const [errorKind, setErrorKind] = useState<ReadErrorKind | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
+    const workspaceIdRef = useRef<number | null>(null);
+    const requestIdRef = useRef(0);
+    const loadedWorkspaceRef = useRef<string | null>(null);
 
-    const load = useCallback(async (requestedWorkspaceId?: number) => {
-        setLoading(true);
-        setError(null);
+    const load = useCallback(async (requestedWorkspaceId?: number, isRetry = false) => {
+        const requestId = ++requestIdRef.current;
+        const workspaceChanged = loadedWorkspaceRef.current !== workspaceKey;
+        loadedWorkspaceRef.current = workspaceKey;
+        if (workspaceChanged) {
+            workspaceIdRef.current = null;
+            setWorkspaces([]);
+            setWorkspaceId(null);
+            setOverview(null);
+            setErrorKind(null);
+            setErrorDetail(null);
+            setLoading(true);
+        } else if (isRetry) {
+            setRetrying(true);
+        } else {
+            setLoading(true);
+        }
+        setErrorKind(null);
+        setErrorDetail(null);
         try {
             const nextWorkspaces = await ClientPortalService.getWorkspaces();
+            if (requestId !== requestIdRef.current) return;
             setWorkspaces(nextWorkspaces);
-            const selectedId = requestedWorkspaceId ?? workspaceId ?? nextWorkspaces[0]?.id ?? null;
+            const selectedId = requestedWorkspaceId ?? workspaceIdRef.current ?? nextWorkspaces[0]?.id ?? null;
             if (selectedId == null || !nextWorkspaces.some((workspace) => workspace.id === selectedId)) {
+                workspaceIdRef.current = null;
                 setWorkspaceId(null);
                 setOverview(null);
                 return;
             }
+            workspaceIdRef.current = selectedId;
             setWorkspaceId(selectedId);
-            setOverview(await ClientPortalService.getOverview(selectedId));
+            const nextOverview = await ClientPortalService.getOverview(selectedId);
+            if (requestId !== requestIdRef.current) return;
+            setOverview(nextOverview);
         } catch (cause) {
-            setError(cause instanceof Error ? cause.message : "No se pudo abrir el portal.");
+            if (requestId !== requestIdRef.current) return;
+            const kind = classifyReadError(cause);
+            setErrorKind(kind);
+            setErrorDetail(cause instanceof Error ? cause.message : null);
+            if (kind === "denied") {
+                workspaceIdRef.current = null;
+                setWorkspaces([]);
+                setWorkspaceId(null);
+                setOverview(null);
+            }
         } finally {
-            setLoading(false);
+            setLoading((current) => requestId === requestIdRef.current ? false : current);
+            setRetrying((current) => requestId === requestIdRef.current ? false : current);
         }
-    }, [workspaceId]);
+    }, [workspaceKey]);
 
     useEffect(() => {
-        if (loadStarted.current) return;
-        loadStarted.current = true;
-        void load();
-    }, [load]);
+        if (userLoading) return;
+        const timer = window.setTimeout(() => void load(), 0);
+        return () => window.clearTimeout(timer);
+    }, [load, userLoading]);
 
     const currentWorkspace = useMemo(() => workspaces.find((workspace) => workspace.id === workspaceId) ?? overview?.workspace ?? null, [overview?.workspace, workspaceId, workspaces]);
     const changeWorkspace = (value: string) => void load(Number(value));
 
     if (loading) return <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="size-7 animate-spin text-accent" /><span className="sr-only">Cargando portal de cliente</span></div>;
-    if (error) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No se pudo abrir el portal" description={error} /><div className="mt-4 text-center"><Button type="button" variant="outline" onClick={() => void load()}>Reintentar</Button></div></div>;
+    const errorMessage = getReadRecoveryMessage(errorKind, {
+        unavailable: errorDetail || "No se pudo abrir el portal ahora mismo.",
+        denied: errorDetail || "Tu acceso al portal de cliente ya no está disponible.",
+    });
+    if (errorKind && errorMessage && (!currentWorkspace || !overview || workspaceId == null)) {
+        return (
+            <div className="mx-auto max-w-xl px-[3%] py-8">
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={errorMessage}
+                    retryLabel="Reintentar"
+                    onRetry={shouldShowReadRetry(errorKind) ? () => void load(workspaceId ?? undefined, true) : undefined}
+                    retrying={retrying}
+                />
+            </div>
+        );
+    }
     if (!currentWorkspace || !overview || workspaceId == null) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No tienes accesos activos" description="Pide a tu proveedor que te invite al portal documental de tu empresa." /></div>;
 
     return <div className="mx-auto max-w-6xl space-y-5 px-[3%] py-6 pb-12 md:p-8">
+        {errorKind && errorMessage && (
+            <ReadRecoveryBanner
+                kind={errorKind}
+                message={errorMessage}
+                retryLabel="Reintentar"
+                onRetry={shouldShowReadRetry(errorKind) ? () => void load(workspaceId, true) : undefined}
+                retrying={retrying}
+            />
+        )}
         <header className="billing-surface billing-surface-accent-pad rounded-[24px]"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Portal de cliente</p><h1 className="mt-1 text-2xl font-bold tracking-tight">{currentWorkspace.client_name}</h1><p className="mt-2 text-sm text-[var(--text-muted)]">Documentos comerciales, calidad y reclamaciones emitidos por {currentWorkspace.company_name}.</p></div>{workspaces.length > 1 && <div className="w-full sm:w-72"><Select value={String(workspaceId)} onValueChange={changeWorkspace}><SelectTrigger aria-label="Seleccionar empresa" className="bg-[var(--bg-primary)]/65"><SelectValue /></SelectTrigger><SelectContent>{workspaces.map((workspace) => <SelectItem key={workspace.id} value={String(workspace.id)}>{workspace.company_name} · {workspace.client_name}</SelectItem>)}</SelectContent></Select></div>}</div></header>
         <PremiumTabs tabs={PORTAL_TABS} activeTab={activeTab} onChange={setActiveTab} mobileLabel="Sección del portal" />
         {activeTab === "overview" && <ClientPortalOverviewSummary overview={overview} clientName={currentWorkspace.client_name} />}
