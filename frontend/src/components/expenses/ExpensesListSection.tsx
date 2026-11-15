@@ -8,11 +8,13 @@ import { Button } from "@/components/ui/button";
 import { DataListTable } from "@/components/ui/data-list-table";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatExpenseDate, getExpenseNotes } from "@/lib/expense-form";
 import { isPrivateExpenseReceipt } from "@/lib/expense-receipt";
 import { formatCurrency } from "@/lib/format";
+import type { ReadErrorKind } from "@/lib/read-recovery";
 import type { Expense } from "@/types/expense";
 import { CATEGORY_OPTIONS } from "./expense-options";
 
@@ -30,6 +32,11 @@ type ExpensesListSectionProps = {
     onUploadReceipt: (expense: Expense) => void;
     onDownloadReceipt: (expense: Expense) => void;
     canManage: boolean;
+    errorKind?: ReadErrorKind | null;
+    errorMessage?: string | null;
+    retryLabel?: string;
+    onRetry?: () => void;
+    retrying?: boolean;
 };
 
 export function ExpensesListSection({
@@ -46,6 +53,11 @@ export function ExpensesListSection({
     onUploadReceipt,
     onDownloadReceipt,
     canManage,
+    errorKind = null,
+    errorMessage = null,
+    retryLabel,
+    onRetry,
+    retrying = false,
 }: ExpensesListSectionProps) {
     const { dict } = useDictionary();
     const text = dict.expenses;
@@ -87,10 +99,14 @@ export function ExpensesListSection({
             header={{
                 title: text.list_title,
                 subtitle: text.list_subtitle,
-                countLabel: `${expenses.length} ${expenses.length === 1 ? "gasto" : "gastos"}`,
+                countLabel: (errorKind || retrying) && expenses.length === 0 ? undefined : `${expenses.length} ${expenses.length === 1 ? "gasto" : "gastos"}`,
             }}
+            loading={retrying && expenses.length === 0}
+            loadingLabel={text.loading}
+            pagination={!((errorKind || retrying) && expenses.length === 0)}
             toolbar={(
-                <div className="mb-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_14rem_11rem]">
+                <div className="space-y-3">
+                    <div className="mb-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_14rem_11rem]">
                     <label className="relative block min-w-0 sm:col-span-2 xl:col-span-1">
                         <span className="sr-only">{text.search}</span>
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" aria-hidden="true" />
@@ -129,6 +145,16 @@ export function ExpensesListSection({
                             className="h-11 w-full rounded-xl text-sm font-semibold"
                         />
                     </label>
+                    </div>
+                    {errorKind && errorMessage && expenses.length > 0 && (
+                        <ReadRecoveryBanner
+                            kind={errorKind}
+                            message={errorMessage}
+                            retryLabel={retryLabel}
+                            onRetry={onRetry}
+                            retrying={retrying}
+                        />
+                    )}
                 </div>
             )}
             columns={[
@@ -138,7 +164,15 @@ export function ExpensesListSection({
                 { key: "total", label: text.total, className: "w-32 text-right" },
                 { key: "actions", label: <span className="sr-only">{text.actions}</span>, className: "w-16 overflow-visible" },
             ]}
-            empty={(
+            empty={errorKind && errorMessage ? (
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={errorMessage}
+                    retryLabel={retryLabel}
+                    onRetry={onRetry}
+                    retrying={retrying}
+                />
+            ) : (
                 <>
                     <Receipt className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
                     <p className="mt-3 text-sm text-[var(--text-muted)]">{hasAnyExpenses ? text.empty_filtered : text.empty}</p>
