@@ -10,22 +10,17 @@ import { DataListTable } from "@/components/ui/data-list-table"
 import { PageHeader } from "@/components/ui/page-header"
 import { Button } from "@/components/ui/button"
 import { canManageFinance, canViewFinance, canViewLaborCosts, isPlatformSuperadmin } from "@/domain/access/roles"
-import { ApiResponseError } from "@/lib/api"
+import { useContractList } from "@/hooks/useContractList"
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner"
+import type { User } from "@/types/user"
 import { useDictionary } from "@/lib/dictionary-context"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
 import { toast } from "@/lib/toast"
 import { useUser } from "@/lib/user-context"
-import { ClientService, type Client } from "@/services/client.service"
+import type { Client } from "@/services/client.service"
 import { ServiceContractService } from "@/services/service-contract.service"
 import type { ServiceContract } from "@/types/service-contract"
-
-type ContractsLoadErrorKind = "denied" | "unavailable"
-
-function isAccessDeniedError(error: unknown): boolean {
-    return error instanceof ApiResponseError
-        && (error.status === 401 || error.status === 403 || error.status === 404)
-}
 
 const statusCopy = {
     draft: "Borrador",
@@ -39,63 +34,32 @@ function contractClientName(contract: ServiceContract, clients: Client[]) {
 }
 
 function ContractsPageContent() {
+    const { user, loading } = useUser()
+    if (loading) return <ContractsPageLoading />
+    if (!user || !canViewFinance(user) || isPlatformSuperadmin(user)) redirect("/dashboard")
+    return <ContractsWorkspace key={`${user.id}:${user.company_id}:${user.role?.name}`} user={user} />
+}
+
+function ContractsWorkspace({ user }: { user: User }) {
     const { dict } = useDictionary()
-    const dictRef = React.useRef(dict)
-    React.useEffect(() => {
-        dictRef.current = dict
-    }, [dict])
-    const { user, loading: userLoading } = useUser()
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [contracts, setContracts] = React.useState<ServiceContract[]>([])
-    const [clients, setClients] = React.useState<Client[]>([])
-    const [loading, setLoading] = React.useState(true)
-    const [loadError, setLoadError] = React.useState<ContractsLoadErrorKind | null>(null)
+    const { contracts, clients, loading, refreshing, error: loadError, reload: loadContracts, updateContract } = useContractList(`${user.id}:${user.company_id}:${user.role?.name}`)
     const [selectedContract, setSelectedContract] = React.useState<ServiceContract | null>(null)
     const [detailOpen, setDetailOpen] = React.useState(false)
-    const canViewContracts = canViewFinance(user) && !isPlatformSuperadmin(user)
-    const canManageContracts = canManageFinance(user) && !isPlatformSuperadmin(user)
-    const canViewMargin = canViewLaborCosts(user) && canViewContracts
-
-    if (!userLoading && (!user || !canViewContracts)) {
-        redirect("/dashboard")
-    }
-
-    const loadContracts = React.useCallback(async () => {
-        if (!canViewContracts) return
-        setLoading(true)
-        setLoadError(null)
-        try {
-            const [contractData, clientData] = await Promise.all([
-                ServiceContractService.getContracts(),
-                ClientService.getClients().catch(() => [] as Client[]),
-            ])
-            setContracts(contractData)
-            setClients(clientData)
-        } catch (error: unknown) {
-            const denied = isAccessDeniedError(error)
-            const errorKind: ContractsLoadErrorKind = denied ? "denied" : "unavailable"
-            const message = denied
-                ? (dictRef.current.contracts?.error_denied ?? "No tienes permisos para consultar contratos.")
-                : (dictRef.current.contracts?.error_load ?? "No se pudieron cargar los contratos.")
-            setContracts([])
-            setLoadError(errorKind)
-            toast.error(message)
-        } finally {
-            setLoading(false)
-        }
-    }, [canViewContracts])
+    const canManageContracts = canManageFinance(user)
+    const canViewMargin = canViewLaborCosts(user)
 
     const openContract = React.useCallback(async (contract: ServiceContract) => {
         try {
-            setSelectedContract(await ServiceContractService.getContract(contract.id))
+            setSelectedContract(await ServiceContractService.getContract(contract.id, `contracts:${user.id}:${user.company_id}:${user.role?.name}:detail`))
             setDetailOpen(true)
         } catch (error: unknown) {
             setSelectedContract(null)
             setDetailOpen(false)
             toast.error(getErrorMessage(error, "No se pudo cargar el contrato"))
         }
-    }, [])
+    }, [user])
 
     React.useEffect(() => {
         const timer = window.setTimeout(() => void loadContracts(), 0)
@@ -115,11 +79,11 @@ function ContractsPageContent() {
     }, [contracts, loadError, loading, openContract, router, sourceQuoteId])
 
     const receiveContractUpdate = (updated: ServiceContract) => {
-        setContracts((current) => current.map((contract) => contract.id === updated.id ? updated : contract))
+        updateContract(updated)
         setSelectedContract(updated)
     }
 
-    if (userLoading || loading) {
+    if (loading) {
         return (
             <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
                 <Loader2 className="size-8 animate-spin text-accent" aria-hidden="true" />
@@ -136,6 +100,8 @@ function ContractsPageContent() {
                 subtitle="Acuerdos generados desde presupuestos aceptados. Activarlos nunca crea trabajos automáticamente."
                 className="mb-8"
             />
+
+            {loadError && contracts.length > 0 && <ReadRecoveryBanner kind={loadError} message={loadError === "denied" ? dict.contracts.error_denied : dict.contracts.error_load} retryLabel={dict.contracts.retry} onRetry={() => void loadContracts()} retrying={refreshing} />}
 
             <DataListTable
                 items={contracts}
@@ -193,9 +159,9 @@ function ContractsPageContent() {
                                 ? (dict.contracts?.error_denied ?? "No tienes permisos para consultar contratos.")
                                 : (dict.contracts?.error_load ?? "No se pudieron cargar los contratos.")}
                         </p>
-                        <Button type="button" variant="outline" size="sm" onClick={() => void loadContracts()}>
+                        {loadError === "unavailable" && <Button type="button" variant="outline" size="sm" disabled={refreshing} onClick={() => void loadContracts()}>
                             {dict.contracts?.retry ?? "Reintentar"}
-                        </Button>
+                        </Button>}
                     </div>
                 ) : (
                     <div><FileSignature className="mx-auto mb-3 size-10 text-[var(--text-muted)] opacity-50" aria-hidden="true" /><p className="text-sm font-medium text-[var(--text-muted)]">Los contratos aparecerán cuando aceptes un presupuesto.</p></div>

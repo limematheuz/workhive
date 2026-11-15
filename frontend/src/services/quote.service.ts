@@ -72,7 +72,7 @@ export const QuoteService = {
         status?: string;
         skip?: number;
         limit?: number;
-    } = {}): Promise<Quote[]> => {
+    } = {}, readContext?: string): Promise<Quote[]> => {
         const params = new URLSearchParams()
         if (filters.clientId) params.set("client_id", filters.clientId.toString())
         if (filters.status) params.set("quote_status", filters.status)
@@ -81,15 +81,17 @@ export const QuoteService = {
 
         const response = await apiFetch(`/api/v1/quotes/?${params.toString()}`, {
             method: "GET",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
             cache: "no-store",
         })
         await assertApiResponseOk(response, "No se pudieron cargar los presupuestos")
         return await response.json()
     },
 
-    getQuote: async (id: number): Promise<Quote> => {
+    getQuote: async (id: number, readContext?: string): Promise<Quote> => {
         const response = await apiFetch(`/api/v1/quotes/${id}`, {
             method: "GET",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
             cache: "no-store",
         })
         await assertApiResponseOk(response, "No se pudo cargar el presupuesto")

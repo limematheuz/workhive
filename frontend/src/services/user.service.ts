@@ -36,6 +36,7 @@ export const UserService = {
         skip: number = 0,
         limit: number = 200,
         locationId?: number,
+        readContext?: string,
     ): Promise<User[]> => {
         const params = new URLSearchParams({
             skip: String(skip),
@@ -46,7 +47,8 @@ export const UserService = {
         }
         const response = await apiFetch(`/api/v1/users/assignable?${params.toString()}`, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
         await assertApiResponseOk(response, "Error fetching assignable users");
         return await response.json();
@@ -56,12 +58,13 @@ export const UserService = {
         skip?: number,
         limit?: number,
         locationId?: number,
+        readContext?: string,
     ): Promise<User[]> => {
         if (skip !== undefined || limit !== undefined) {
-            return UserService.getAssignableUsersPage(skip ?? 0, limit ?? 200, locationId);
+            return UserService.getAssignableUsersPage(skip ?? 0, limit ?? 200, locationId, readContext);
         }
         return collectPaginated(
-            (pageSkip, pageLimit) => UserService.getAssignableUsersPage(pageSkip, pageLimit, locationId),
+            (pageSkip, pageLimit) => UserService.getAssignableUsersPage(pageSkip, pageLimit, locationId, readContext),
             200,
         );
     },

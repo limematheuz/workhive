@@ -10,7 +10,7 @@ export const ServiceContractService = {
         status?: string
         skip?: number
         limit?: number
-    } = {}): Promise<ServiceContract[]> => {
+    } = {}, readContext?: string): Promise<ServiceContract[]> => {
         const params = new URLSearchParams()
         if (filters.status) params.set("contract_status", filters.status)
         if (filters.skip) params.set("skip", String(filters.skip))
@@ -18,15 +18,17 @@ export const ServiceContractService = {
         const response = await apiFetch(`/api/v1/service-contracts/?${params.toString()}`, {
             method: "GET",
             cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
         await assertApiResponseOk(response, "No se pudieron cargar los contratos")
         return await response.json()
     },
 
-    getContract: async (id: number): Promise<ServiceContract> => {
+    getContract: async (id: number, readContext?: string): Promise<ServiceContract> => {
         const response = await apiFetch(`/api/v1/service-contracts/${id}`, {
             method: "GET",
             cache: "no-store",
+            headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         })
         await assertApiResponseOk(response, "No se pudo cargar el contrato")
         return await response.json()
