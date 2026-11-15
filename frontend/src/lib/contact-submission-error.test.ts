@@ -26,7 +26,27 @@ test("contact network failures and unknown errors remain safe and actionable", (
     }
 });
 
-test("contact preserves actionable client errors such as a duplicate account", () => {
-    const error = new ApiResponseError("Esta cuenta ya existe.", 409);
-    assert.equal(getContactSubmissionErrorMessage(error, "es"), "Esta cuenta ya existe.");
+test("contact preserves actionable client errors and localizes backend duplicate/rate-limit messages", () => {
+    const customError = new ApiResponseError("Esta cuenta ya existe.", 409);
+    assert.equal(getContactSubmissionErrorMessage(customError, "es"), "Esta cuenta ya existe.");
+
+    const duplicateBackendError = new ApiResponseError("This email already has a WorkHive account", 409);
+    assert.equal(
+        getContactSubmissionErrorMessage(duplicateBackendError, "es"),
+        "Este correo ya tiene una cuenta en WorkHive.",
+    );
+    assert.equal(
+        getContactSubmissionErrorMessage(duplicateBackendError, "en"),
+        "This email already has a WorkHive account.",
+    );
+
+    const rateLimitError = new ApiResponseError("Too many requests. Please retry later.", 429);
+    assert.equal(
+        getContactSubmissionErrorMessage(rateLimitError, "es"),
+        "Demasiados intentos. Espera un momento e inténtalo de nuevo.",
+    );
+    assert.equal(
+        getContactSubmissionErrorMessage(rateLimitError, "en"),
+        "Too many attempts. Wait a moment and try again.",
+    );
 });
