@@ -3,7 +3,9 @@
 import {
     useCallback,
     useEffect,
+    useEffectEvent,
     useMemo,
+    useRef,
     useState,
 } from "react";
 import { redirect } from "next/navigation";
@@ -26,6 +28,15 @@ import {
 import { canManageFinance, canViewFinance, canViewLaborCosts, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    getReadWorkspaceKey,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
+import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import {
     buildFinanceSeries,
     groupExpensesByCategory,
@@ -102,6 +113,10 @@ export default function FinanceAnalyticsPage() {
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [payments, setPayments] = useState<FinancePaymentRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    const [financeErrorKind, setFinanceErrorKind] = useState<ReadErrorKind | null>(null);
+    const [hasFinanceSnapshot, setHasFinanceSnapshot] = useState(false);
+    const financeRequestIdRef = useRef(0);
+    const financeLoadedWorkspaceRef = useRef<string | null>(null);
     const [exportYear, setExportYear] = useState(() => new Date().getFullYear());
     const [exportPeriod, setExportPeriod] = useState<AccountantExportPeriod>("month");
     const [exportPeriodNumber, setExportPeriodNumber] = useState(() => new Date().getMonth() + 1);
@@ -109,35 +124,67 @@ export default function FinanceAnalyticsPage() {
     const [profitabilityPeriod, setProfitabilityPeriod] = useState<ClientProfitabilityPeriod>("month");
     const [profitability, setProfitability] = useState<ClientProfitability | null>(null);
     const [profitabilityLoading, setProfitabilityLoading] = useState(false);
+    const [profitabilityErrorKind, setProfitabilityErrorKind] = useState<ReadErrorKind | null>(null);
+    const profitabilityRequestIdRef = useRef(0);
+    const profitabilityLoadedKeyRef = useRef<string | null>(null);
     const [enabledFeatures, setEnabledFeatures] = useState<Set<string> | null>(null);
+    const [entitlementsErrorKind, setEntitlementsErrorKind] = useState<ReadErrorKind | null>(null);
+    const entitlementsRequestIdRef = useRef(0);
+    const entitlementsLoadedWorkspaceRef = useRef<string | null>(null);
     const [marginContracts, setMarginContracts] = useState<ServiceContract[]>([]);
     const [marginWorkOrders, setMarginWorkOrders] = useState<WorkOrder[]>([]);
     const [marginLocations, setMarginLocations] = useState<Location[]>([]);
     const [marginServices, setMarginServices] = useState<ServiceMarginScope[]>([]);
     const [marginTeamLaborCosts, setMarginTeamLaborCosts] = useState<TeamLaborCost[]>([]);
     const [marginCatalogsLoading, setMarginCatalogsLoading] = useState(false);
+    const [marginCatalogsErrorKind, setMarginCatalogsErrorKind] = useState<ReadErrorKind | null>(null);
+    const marginCatalogsRequestIdRef = useRef(0);
+    const marginCatalogsLoadedWorkspaceRef = useRef<string | null>(null);
+
+    const workspaceKey = getReadWorkspaceKey(user);
+    const isSuperadmin = isPlatformSuperadmin(user);
+    const companyId = user?.company_id ?? null;
+    const profitabilitySnapshotKey = `${workspaceKey}:${profitabilityPeriod}`;
+
+    const loadEntitlements = useCallback(async () => {
+        if (userLoading || isSuperadmin || !companyId) return;
+        const requestId = ++entitlementsRequestIdRef.current;
+        if (entitlementsLoadedWorkspaceRef.current !== workspaceKey) {
+            setEnabledFeatures(null);
+        }
+        setEntitlementsErrorKind(null);
+        try {
+            const access = await CompanyPlanAccessService.getCurrentEntitlements();
+            if (requestId !== entitlementsRequestIdRef.current) return;
+            const nextEnabledFeatures = new Set<string>();
+            access.entitlements.forEach((entitlement) => {
+                if (entitlement.value_type === "boolean" && entitlement.value === true) {
+                    nextEnabledFeatures.add(entitlement.code);
+                }
+            });
+            entitlementsLoadedWorkspaceRef.current = workspaceKey;
+            setEnabledFeatures(nextEnabledFeatures);
+            setEntitlementsErrorKind(null);
+        } catch (error) {
+            if (requestId !== entitlementsRequestIdRef.current) return;
+            const kind = classifyReadError(error);
+            if (kind === "denied" || entitlementsLoadedWorkspaceRef.current !== workspaceKey) {
+                entitlementsLoadedWorkspaceRef.current = null;
+                setEnabledFeatures(null);
+            }
+            setEntitlementsErrorKind(kind);
+        }
+    }, [companyId, isSuperadmin, userLoading, workspaceKey]);
+
+    const syncEntitlements = useEffectEvent(() => {
+        void loadEntitlements();
+    });
 
     useEffect(() => {
-        if (userLoading || isPlatformSuperadmin(user) || !user?.company_id) return;
-        let cancelled = false;
-        void CompanyPlanAccessService.getCurrentEntitlements()
-            .then((access) => {
-                if (cancelled) return;
-                const nextEnabledFeatures = new Set<string>();
-                access.entitlements.forEach((entitlement) => {
-                    if (entitlement.value_type === "boolean" && entitlement.value === true) {
-                        nextEnabledFeatures.add(entitlement.code);
-                    }
-                });
-                setEnabledFeatures(nextEnabledFeatures);
-            })
-            .catch(() => {
-                if (!cancelled) setEnabledFeatures(null);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [user, userLoading]);
+        if (userLoading || isSuperadmin || !companyId) return;
+        const timer = window.setTimeout(() => syncEntitlements(), 0);
+        return () => window.clearTimeout(timer);
+    }, [companyId, isSuperadmin, userLoading, workspaceKey]);
 
     const companyFeatures = userLoading || isPlatformSuperadmin(user) || !user?.company_id
         ? null
@@ -147,14 +194,23 @@ export default function FinanceAnalyticsPage() {
 
     const loadAnalytics = useCallback(async () => {
         if (!canViewAnalytics) return;
+        const requestId = ++financeRequestIdRef.current;
+        if (financeLoadedWorkspaceRef.current !== workspaceKey) {
+            setRevenueRecords([]);
+            setExpenses([]);
+            setPayments([]);
+            setHasFinanceSnapshot(false);
+        }
+        setLoading(true);
+        setFinanceErrorKind(null);
         try {
-            setLoading(true);
             const [invoiceData, expenseData, salesLedgerEntries, customerPayments] = await Promise.all([
                 InvoiceService.getAllInvoices(),
                 ExpenseService.getAllExpenses(),
                 collectPaginated((skip, limit) => SalesLedgerService.getEntries({ skip, limit })),
                 CustomerPaymentService.getPayments(),
             ]);
+            if (requestId !== financeRequestIdRef.current) return;
             setRevenueRecords([
                 ...invoiceData,
                 ...manualSalesLedgerEntriesWithoutWorkHiveInvoices(
@@ -165,31 +221,67 @@ export default function FinanceAnalyticsPage() {
             ]);
             setExpenses(expenseData);
             setPayments(customerPayments);
+            financeLoadedWorkspaceRef.current = workspaceKey;
+            setHasFinanceSnapshot(true);
+            setFinanceErrorKind(null);
         } catch (error) {
+            if (requestId !== financeRequestIdRef.current) return;
             console.error("Error loading finance analytics", error);
-            toast.error(text.error_load);
+            const kind = classifyReadError(error);
+            if (kind === "denied" || financeLoadedWorkspaceRef.current !== workspaceKey) {
+                financeLoadedWorkspaceRef.current = null;
+                setRevenueRecords([]);
+                setExpenses([]);
+                setPayments([]);
+                setHasFinanceSnapshot(false);
+            }
+            setFinanceErrorKind(kind);
         } finally {
-            setLoading(false);
+            setLoading((current) => (requestId === financeRequestIdRef.current ? false : current));
         }
-    }, [canViewAnalytics, text.error_load]);
+    }, [canViewAnalytics, workspaceKey]);
 
     const loadProfitability = useCallback(async () => {
         if (!canViewAnalytics || !canViewProfitability) return;
-        try {
-            setProfitabilityLoading(true);
-            setProfitability(await ClientProfitabilityService.getProfitability(profitabilityPeriod));
-        } catch (error) {
-            console.error("Error loading client profitability", error);
-            toast.error(text.profitability_error_load);
-        } finally {
-            setProfitabilityLoading(false);
+        const requestId = ++profitabilityRequestIdRef.current;
+        if (profitabilityLoadedKeyRef.current !== profitabilitySnapshotKey) {
+            setProfitability(null);
         }
-    }, [canViewAnalytics, canViewProfitability, profitabilityPeriod, text.profitability_error_load]);
+        setProfitabilityLoading(true);
+        setProfitabilityErrorKind(null);
+        try {
+            const next = await ClientProfitabilityService.getProfitability(profitabilityPeriod);
+            if (requestId !== profitabilityRequestIdRef.current) return;
+            profitabilityLoadedKeyRef.current = profitabilitySnapshotKey;
+            setProfitability(next);
+            setProfitabilityErrorKind(null);
+        } catch (error) {
+            if (requestId !== profitabilityRequestIdRef.current) return;
+            console.error("Error loading client profitability", error);
+            const kind = classifyReadError(error);
+            if (kind === "denied" || profitabilityLoadedKeyRef.current !== profitabilitySnapshotKey) {
+                profitabilityLoadedKeyRef.current = null;
+                setProfitability(null);
+            }
+            setProfitabilityErrorKind(kind);
+        } finally {
+            setProfitabilityLoading((current) => (requestId === profitabilityRequestIdRef.current ? false : current));
+        }
+    }, [canViewAnalytics, canViewProfitability, profitabilityPeriod, profitabilitySnapshotKey]);
 
     const loadOperationalMarginCatalogs = useCallback(async () => {
         if (!canViewOperationalMargin || !canViewProfitability) return;
+        const requestId = ++marginCatalogsRequestIdRef.current;
+        if (marginCatalogsLoadedWorkspaceRef.current !== workspaceKey) {
+            setMarginContracts([]);
+            setMarginWorkOrders([]);
+            setMarginLocations([]);
+            setMarginServices([]);
+            setMarginTeamLaborCosts([]);
+        }
+        setMarginCatalogsLoading(true);
+        setMarginCatalogsErrorKind(null);
         try {
-            setMarginCatalogsLoading(true);
             const [contractsResult, workOrdersResult, locationsResult, servicesResult, teamCostsResult] = await Promise.allSettled([
                 ServiceContractService.getContracts(),
                 WorkOrderService.getWorkOrders(),
@@ -197,47 +289,76 @@ export default function FinanceAnalyticsPage() {
                 ServiceMarginService.getScopes(),
                 TeamLaborCostService.getSummaries(),
             ]);
+            if (requestId !== marginCatalogsRequestIdRef.current) return;
             if (contractsResult.status === "rejected") throw contractsResult.reason;
             if (workOrdersResult.status === "rejected") throw workOrdersResult.reason;
             if (locationsResult.status === "rejected") throw locationsResult.reason;
             if (servicesResult.status === "rejected") throw servicesResult.reason;
             if (teamCostsResult.status === "rejected") throw teamCostsResult.reason;
+            marginCatalogsLoadedWorkspaceRef.current = workspaceKey;
             setMarginContracts(contractsResult.value);
             setMarginWorkOrders(workOrdersResult.value);
             setMarginLocations(locationsResult.value);
             setMarginServices(servicesResult.value);
             setMarginTeamLaborCosts(teamCostsResult.value);
+            setMarginCatalogsErrorKind(null);
         } catch (error) {
+            if (requestId !== marginCatalogsRequestIdRef.current) return;
             console.error("Error loading operational margin catalogs", error);
-            toast.error(text.operational_margin_error_load);
+            const kind = classifyReadError(error);
+            if (kind === "denied" || marginCatalogsLoadedWorkspaceRef.current !== workspaceKey) {
+                marginCatalogsLoadedWorkspaceRef.current = null;
+                setMarginContracts([]);
+                setMarginWorkOrders([]);
+                setMarginLocations([]);
+                setMarginServices([]);
+                setMarginTeamLaborCosts([]);
+            }
+            setMarginCatalogsErrorKind(kind);
         } finally {
-            setMarginCatalogsLoading(false);
+            setMarginCatalogsLoading((current) => (requestId === marginCatalogsRequestIdRef.current ? false : current));
         }
-    }, [canViewOperationalMargin, canViewProfitability, text.operational_margin_error_load]);
+    }, [canViewOperationalMargin, canViewProfitability, workspaceKey]);
+
+    const syncAnalytics = useEffectEvent(() => {
+        void loadAnalytics();
+    });
+    const syncProfitability = useEffectEvent(() => {
+        void loadProfitability();
+    });
+    const syncOperationalMarginCatalogs = useEffectEvent(() => {
+        void loadOperationalMarginCatalogs();
+    });
 
     useEffect(() => {
-        if (userLoading) return;
+        if (userLoading || !canViewAnalytics) return;
         const timer = window.setTimeout(() => {
-            void loadAnalytics();
+            syncAnalytics();
         }, 0);
         return () => window.clearTimeout(timer);
-    }, [loadAnalytics, userLoading]);
+    }, [canViewAnalytics, userLoading, workspaceKey]);
 
     useEffect(() => {
         if (userLoading || !canViewProfitability || activeTab !== "profitability") return;
         const timer = window.setTimeout(() => {
-            void loadProfitability();
+            syncProfitability();
         }, 0);
         return () => window.clearTimeout(timer);
-    }, [activeTab, canViewProfitability, loadProfitability, userLoading]);
+    }, [activeTab, canViewProfitability, profitabilitySnapshotKey, userLoading]);
 
     useEffect(() => {
-        if (userLoading || activeTab !== "operational_margin") return;
+        if (userLoading || !canViewProfitability || activeTab !== "operational_margin") return;
         const timer = window.setTimeout(() => {
-            void loadOperationalMarginCatalogs();
+            syncOperationalMarginCatalogs();
         }, 0);
         return () => window.clearTimeout(timer);
-    }, [activeTab, loadOperationalMarginCatalogs, userLoading]);
+    }, [activeTab, canViewProfitability, userLoading, workspaceKey]);
+
+    useRealtimeInvalidation(["dashboard"], () => {
+        void loadAnalytics();
+        if (activeTab === "profitability") void loadProfitability();
+        if (activeTab === "operational_margin") void loadOperationalMarginCatalogs();
+    });
 
     useEffect(() => {
         if (
@@ -291,9 +412,24 @@ export default function FinanceAnalyticsPage() {
         [expenses, period],
     );
 
+    const financeErrorMessage = getReadRecoveryMessage(financeErrorKind, {
+        unavailable: text.error_load,
+        denied: text.error_denied,
+    });
+    const entitlementsErrorMessage = getReadRecoveryMessage(entitlementsErrorKind, {
+        unavailable: text.entitlements_error_load,
+        denied: text.error_denied,
+    });
+    const retryFinanceScope = () => {
+        void loadAnalytics();
+        if (entitlementsErrorKind !== null) {
+            void loadEntitlements();
+        }
+    };
+
     if (!userLoading && !canViewAnalytics) redirect("/dashboard");
 
-    if (userLoading || loading) {
+    if (userLoading || (loading && !hasFinanceSnapshot && !financeErrorKind)) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
                 <Loader2 className="h-5 w-5 animate-spin text-accent" />
@@ -328,6 +464,15 @@ export default function FinanceAnalyticsPage() {
                         />
                     )}
                 />
+
+                {entitlementsErrorKind && entitlementsErrorMessage && (activeTab !== "finance" || !financeErrorKind) ? (
+                    <ReadRecoveryBanner
+                        kind={entitlementsErrorKind}
+                        message={entitlementsErrorMessage}
+                        retryLabel={text.retry}
+                        onRetry={shouldShowReadRetry(entitlementsErrorKind) ? () => void loadEntitlements() : undefined}
+                    />
+                ) : null}
 
                 {activeTab === "finance" && canDownloadAccountantPackage ? (
                     <div className="flex flex-wrap items-center justify-end gap-2">
@@ -387,20 +532,35 @@ export default function FinanceAnalyticsPage() {
                 ) : null}
 
                 {activeTab === "finance" ? (
-                    <FinanceDashboard
-                        text={text}
-                        series={series}
-                        comparison={comparison}
-                        categoryTotals={categoryTotals}
-                        categoryLabels={dict.expenses.categories}
-                        period={period}
-                        setPeriod={setPeriod}
-                    />
+                    <>
+                        {financeErrorKind && financeErrorMessage ? (
+                            <ReadRecoveryBanner
+                                kind={financeErrorKind}
+                                message={financeErrorMessage}
+                                retryLabel={text.retry}
+                                onRetry={shouldShowReadRetry(financeErrorKind) ? retryFinanceScope : undefined}
+                                retrying={loading}
+                            />
+                        ) : null}
+                        {hasFinanceSnapshot ? (
+                            <FinanceDashboard
+                                text={text}
+                                series={series}
+                                comparison={comparison}
+                                categoryTotals={categoryTotals}
+                                categoryLabels={dict.expenses.categories}
+                                period={period}
+                                setPeriod={setPeriod}
+                            />
+                        ) : null}
+                    </>
                 ) : activeTab === "profitability" ? (
                     <ClientProfitabilityDashboard
                         text={text}
                         data={profitability}
                         loading={profitabilityLoading}
+                        errorKind={profitabilityErrorKind}
+                        onRetry={() => void loadProfitability()}
                         period={profitabilityPeriod}
                         setPeriod={setProfitabilityPeriod}
                     />
@@ -412,6 +572,8 @@ export default function FinanceAnalyticsPage() {
                         services={marginServices}
                         teamLaborCosts={marginTeamLaborCosts}
                         loading={marginCatalogsLoading}
+                        errorKind={marginCatalogsErrorKind}
+                        onRetry={() => void loadOperationalMarginCatalogs()}
                         canManage={canManageAnalytics}
                         copy={text}
                     />
@@ -681,74 +843,70 @@ function ClientProfitabilityDashboard({
     text,
     data,
     loading,
+    errorKind,
+    onRetry,
     period,
     setPeriod,
 }: {
     text: Record<string, string>;
     data: ClientProfitability | null;
     loading: boolean;
+    errorKind: ReadErrorKind | null;
+    onRetry: () => void;
     period: ClientProfitabilityPeriod;
     setPeriod: (period: ClientProfitabilityPeriod) => void;
 }) {
-    if (loading && !data) {
-        return (
-            <div className="billing-surface flex items-center justify-center gap-3 rounded-[28px] py-20 text-sm font-semibold text-[var(--text-muted)]">
-                <Loader2 className="h-5 w-5 animate-spin text-accent" />
-                {text.loading}
-            </div>
-        );
-    }
-
-    if (!data) {
-        return (
-            <div className="billing-surface rounded-[28px] p-8 text-center text-sm text-[var(--text-muted)]">
-                {text.profitability_empty}
-            </div>
-        );
-    }
-
-    const { current, previous } = data;
-    const hasUnassignedMaterial = (
-        current.unassigned_material_cost_base_amount > 0
-        || previous.unassigned_material_cost_base_amount > 0
+    const errorMessage = getReadRecoveryMessage(errorKind, {
+        unavailable: text.profitability_error_load,
+        denied: text.profitability_error_denied,
+    });
+    const current = data?.current;
+    const previous = data?.previous;
+    const hasUnassignedMaterial = Boolean(
+        current
+        && previous
+        && (current.unassigned_material_cost_base_amount > 0
+            || previous.unassigned_material_cost_base_amount > 0),
     );
-    const metrics = [
-        {
-            label: text.profitability_revenue,
-            value: current.revenue_base_amount,
-            previous: previous.revenue_base_amount,
-            icon: ReceiptText,
-            comparisonDirection: "higher" as const,
-        },
-        {
-            label: text.profitability_direct_costs,
-            value: current.direct_cost_base_amount,
-            previous: previous.direct_cost_base_amount,
-            icon: ArrowDownRight,
-            comparisonDirection: "lower" as const,
-        },
-        {
-            label: text.profitability_known_margin,
-            value: current.known_margin_amount,
-            previous: previous.known_margin_amount,
-            icon: BarChart3,
-            comparisonDirection: "higher" as const,
-        },
-        {
-            label: text.profitability_unassigned_expenses,
-            value: current.unassigned_expense_base_amount,
-            previous: previous.unassigned_expense_base_amount,
-            icon: Inbox,
-            comparisonDirection: "lower" as const,
-        },
-        ...(hasUnassignedMaterial ? [{
-            label: text.profitability_unassigned_material,
-            value: current.unassigned_material_cost_base_amount,
-            previous: previous.unassigned_material_cost_base_amount,
-            icon: Package,
-            comparisonDirection: "lower" as const,
-        }] : []),
-    ];
+    const metrics = current && previous
+        ? [
+            {
+                label: text.profitability_revenue,
+                value: current.revenue_base_amount,
+                previous: previous.revenue_base_amount,
+                icon: ReceiptText,
+                comparisonDirection: "higher" as const,
+            },
+            {
+                label: text.profitability_direct_costs,
+                value: current.direct_cost_base_amount,
+                previous: previous.direct_cost_base_amount,
+                icon: ArrowDownRight,
+                comparisonDirection: "lower" as const,
+            },
+            {
+                label: text.profitability_known_margin,
+                value: current.known_margin_amount,
+                previous: previous.known_margin_amount,
+                icon: BarChart3,
+                comparisonDirection: "higher" as const,
+            },
+            {
+                label: text.profitability_unassigned_expenses,
+                value: current.unassigned_expense_base_amount,
+                previous: previous.unassigned_expense_base_amount,
+                icon: Inbox,
+                comparisonDirection: "lower" as const,
+            },
+            ...(hasUnassignedMaterial ? [{
+                label: text.profitability_unassigned_material,
+                value: current.unassigned_material_cost_base_amount,
+                previous: previous.unassigned_material_cost_base_amount,
+                icon: Package,
+                comparisonDirection: "lower" as const,
+            }] : []),
+        ]
+        : [];
     const columns: DataListColumn[] = [
         { key: "client", label: text.profitability_client },
         { key: "invoices", label: text.profitability_invoices, className: "text-right" },
@@ -794,7 +952,30 @@ function ClientProfitabilityDashboard({
                 </div>
             </section>
 
-            {data ? (
+            {errorKind && errorMessage ? (
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={errorMessage}
+                    retryLabel={text.retry}
+                    onRetry={shouldShowReadRetry(errorKind) ? onRetry : undefined}
+                    retrying={loading}
+                />
+            ) : null}
+
+            {loading && !data ? (
+                <div className="billing-surface flex items-center justify-center gap-3 rounded-[28px] py-20 text-sm font-semibold text-[var(--text-muted)]">
+                    <Loader2 className="h-5 w-5 animate-spin text-accent" />
+                    {text.loading}
+                </div>
+            ) : null}
+
+            {!loading && !data && !errorKind ? (
+                <div className="billing-surface rounded-[28px] p-8 text-center text-sm text-[var(--text-muted)]">
+                    {text.profitability_empty}
+                </div>
+            ) : null}
+
+            {current ? (
                 <>
                     <SummaryMetricGrid desktopColumns={hasUnassignedMaterial ? 5 : 4} className="gap-2.5">
                         {metrics.map(({ label, value, previous: previousValue, icon, comparisonDirection }) => {

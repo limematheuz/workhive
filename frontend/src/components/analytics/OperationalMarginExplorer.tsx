@@ -6,7 +6,13 @@ import { LocationMarginPanel } from "@/components/analytics/LocationMarginPanel"
 import { ServiceMarginPanel } from "@/components/analytics/ServiceMarginPanel";
 import { TeamLaborCostPanel } from "@/components/analytics/TeamLaborCostPanel";
 import { MarginForecastPanel } from "@/components/margin-forecast/MarginForecastPanel";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    getReadRecoveryMessage,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import type { MarginForecastScopeType, ServiceMarginScope, TeamLaborCost } from "@/types/margin-forecast";
 import type { Location } from "@/types/location";
 import type { ServiceContract } from "@/types/service-contract";
@@ -19,6 +25,8 @@ type OperationalMarginExplorerProps = {
     services: ServiceMarginScope[];
     teamLaborCosts: TeamLaborCost[];
     loading: boolean;
+    errorKind?: ReadErrorKind | null;
+    onRetry?: () => void;
     canManage: boolean;
     copy: Record<string, string>;
 };
@@ -30,6 +38,8 @@ export function OperationalMarginExplorer({
     services,
     teamLaborCosts,
     loading,
+    errorKind = null,
+    onRetry,
     canManage,
     copy,
 }: OperationalMarginExplorerProps) {
@@ -125,6 +135,20 @@ export function OperationalMarginExplorer({
                 </div>
             </div>
 
+            {errorKind ? (
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={getReadRecoveryMessage(errorKind, {
+                        unavailable: copy.operational_margin_error_load,
+                        denied: copy.operational_margin_error_denied,
+                    }) ?? copy.operational_margin_error_load}
+                    retryLabel={copy.retry}
+                    onRetry={shouldShowReadRetry(errorKind) ? onRetry : undefined}
+                    retrying={loading}
+                    className="mt-5"
+                />
+            ) : null}
+
             {loading ? (
                 <p className="py-12 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>
             ) : selectedScope && resolvedScopeId !== null && scopeType === "location" ? (
@@ -152,7 +176,7 @@ export function OperationalMarginExplorer({
                     canManage={canManage}
                     className="border-b-0"
                 />
-            ) : (
+            ) : errorKind ? null : (
                 <p className="py-12 text-center text-sm text-[var(--text-muted)]">{copy.operational_margin_empty}</p>
             )}
         </section>
