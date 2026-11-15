@@ -77,9 +77,9 @@ function TasksPageContent() {
                         >
                             <AlertTriangle className="h-8 w-8 text-amber-500" aria-hidden="true" />
                             <p className="text-sm font-semibold text-[var(--text-main)]">{state.loadErrorMessage}</p>
-                            <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
+                            {state.loadError === "unavailable" && <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
                                 {state.dict.tasks?.retry || "Reintentar"}
-                            </Button>
+                            </Button>}
                         </div>
                     ) : (
                         <>
@@ -92,9 +92,9 @@ function TasksPageContent() {
                                         <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" aria-hidden="true" />
                                         {state.loadErrorMessage}
                                     </span>
-                                    <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
+                                    {state.loadError === "unavailable" && <Button type="button" variant="outline" size="sm" onClick={state.retryLoad}>
                                         {state.dict.tasks?.retry || "Reintentar"}
-                                    </Button>
+                                    </Button>}
                                 </div>
                             )}
                             {state.activeTab === "kanban" && (

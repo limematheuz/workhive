@@ -185,7 +185,8 @@ test("revoking task read clears board on SSE/polling while transient 5xx preserv
 
     // 3. Recovery then background polling (focus) 403 revocation also clears the board
     taskStatusMode = "ok";
-    await mainAlert.getByRole("button", { name: "Reintentar", exact: true }).click();
+    await expect(mainAlert.getByRole("button", { name: "Reintentar", exact: true })).toHaveCount(0);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await expect(taskButton).toBeVisible();
 
     taskStatusMode = "403";
@@ -197,7 +198,8 @@ test("revoking task read clears board on SSE/polling while transient 5xx preserv
 
     // 4. Recovery then 401 revocation also clears the board immediately
     taskStatusMode = "ok";
-    await mainAlert.getByRole("button", { name: "Reintentar", exact: true }).click();
+    await expect(mainAlert.getByRole("button", { name: "Reintentar", exact: true })).toHaveCount(0);
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await expect(taskButton).toBeVisible();
 
     taskStatusMode = "401";
@@ -467,4 +469,23 @@ test("assignable directory 503 fails closed with Retry instead of silently maski
 
     await page.getByRole("tab", { name: "Lista" }).click();
     await expect(page.getByText("Trabajadora Página 2")).toBeVisible();
+});
+
+test("assignable directory denial is visible instead of a fabricated self-only directory", async ({ page }) => {
+    await page.route("**/api/v1/**", async route => {
+        const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
+        let body: unknown = [];
+        if (path.endsWith("/users/me")) body = buildManager();
+        else if (path.endsWith("/companies/11")) body = { id: 11, name: "QA", onboarding_completed: true, subscription_status: "active" };
+        else if (path.endsWith("/locations")) body = [{ id: 19, name: "QA site", owner_company_id: 11, managing_company_id: 11, is_active: true }];
+        else if (path.endsWith("/users/assignable")) return route.fulfill({ status: 403, json: { detail: "Not enough permissions" } });
+        else if (path.endsWith("/task-items")) body = [buildTask()];
+        else if (path.endsWith("/work-sessions/active")) body = null;
+        await route.fulfill({ json: body });
+    });
+    await page.goto("/dashboard/tasks");
+    const alert = page.locator("main").getByRole("alert");
+    await expect(alert).toContainText(/No tienes permiso/);
+    await expect(alert.getByRole("button", { name: "Reintentar", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Abrir tarea: QA Ciclo orden 20261112", exact: true })).toHaveCount(0);
 });
