@@ -28,6 +28,7 @@ for (const width of [1440, 768, 390]) {
 
         const entitlements = [
             { code: "limits.internal_workers", label: "Trabajadores", group: "Capacidad", value_type: "integer", value: 100, source: "plan", availability: "available" },
+            { code: "limits.location_document_storage_bytes", label: "Almacenamiento de documentos de ubicación", group: "Capacidad", value_type: "integer", value: 10485760, source: "plan", availability: "available" },
             { code: "features.invoices", label: "Facturación", group: "Funciones", value_type: "boolean", value: true, source: "plan", availability: "available" },
         ];
 
@@ -146,6 +147,7 @@ for (const width of [1440, 768, 390]) {
         await planAccessDialog.getByRole("button", { name: "Reintentar", exact: true }).click();
         await expect(planAccessDialog.getByRole("heading", { name: "Capacidad", exact: true })).toBeVisible();
         await expect(planAccessDialog.getByText("5 / 100")).toBeVisible();
+        await expect(planAccessDialog.getByText("— / 10 MB")).toBeVisible();
         await planAccessDialog.getByRole("button", { name: "Cancelar", exact: true }).click();
 
         // 3. PlanCatalogEditorDialog should render an alert + Reintentar instead of stuck loading on 503
@@ -158,5 +160,97 @@ for (const width of [1440, 768, 390]) {
         failPlanCatalog = false;
         await catalogDialog.getByRole("button", { name: "Reintentar", exact: true }).click();
         await expect(catalogDialog.getByRole("button", { name: "Publicar nueva versión", exact: true })).toBeVisible();
+    });
+}
+
+for (const width of [1440, 768, 390]) {
+    test(`companies list contains long company names without overlapping CIF or blocking member toggle at ${width}px`, async ({ context, page }) => {
+        test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local intercepted UI only");
+        await page.setViewportSize({ width, height: 900 });
+        const payload = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
+        await context.addCookies([{ name: "auth_token", value: `fixture.${payload}.not-a-backend-token`, url: process.env.E2E_BASE_URL! }]);
+
+        const company11 = {
+            id: 11,
+            name: "QA Privacidad desechable 20261111",
+            tax_id: "QA-PRIV-20261111",
+            address: "Calle QA 11",
+            phone: "+34 600 000 011",
+            contact_email: "admin-muy-largo@empresa-qa.example.com",
+            is_active: true,
+            onboarding_completed: true,
+            subscription_plan: "top",
+            subscription_status: "active",
+            trial_ends_at: null,
+        };
+
+        await page.route("**/api/v1/**", async (route) => {
+            const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
+            if (path === "/api/v1/users/me") {
+                return route.fulfill({
+                    json: {
+                        id: 3,
+                        full_name: "Superadmin QA",
+                        email: "superadmin@workhive.test",
+                        company_id: null,
+                        role: { id: 4, name: "superadmin" },
+                        role_id: 4,
+                        is_active: true,
+                    },
+                });
+            }
+            if (path === "/api/v1/companies") {
+                return route.fulfill({ json: [company11] });
+            }
+            if (path === "/api/v1/companies/11/members") {
+                return route.fulfill({
+                    json: [
+                        {
+                            id: 46,
+                            full_name: "Ana QA Admin",
+                            email: "ana.qa@empresa-qa.example.com",
+                            role: { name: "admin" },
+                            is_active: true,
+                        },
+                    ],
+                });
+            }
+            return route.fulfill({ json: [] });
+        });
+
+        await page.goto("/dashboard/companies", { waitUntil: "domcontentloaded" });
+
+        const container = width >= 768 ? page.locator("tbody").first() : page.locator("article").first();
+        const toggleButton = container.getByRole("button", { name: `Ver personas: ${company11.name}`, exact: true });
+        await expect(toggleButton).toBeVisible();
+
+        const hasHorizontalOverflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+        expect(hasHorizontalOverflow).toBe(false);
+
+        const buttonBox = await toggleButton.boundingBox();
+        expect(buttonBox).not.toBeNull();
+
+        if (width >= 768) {
+            const row = page.locator("tbody tr").first();
+            const cells = row.locator("td");
+            const nameCellBox = await cells.nth(0).boundingBox();
+            const cifCellBox = await cells.nth(1).boundingBox();
+            const emailCellBox = await cells.nth(2).boundingBox();
+            expect(nameCellBox).not.toBeNull();
+            expect(cifCellBox).not.toBeNull();
+            expect(emailCellBox).not.toBeNull();
+            expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(nameCellBox!.x + nameCellBox!.width + 1);
+            expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(cifCellBox!.x + 1);
+            expect(nameCellBox!.x + nameCellBox!.width).toBeLessThanOrEqual(cifCellBox!.x + 1);
+            expect(cifCellBox!.x + cifCellBox!.width).toBeLessThanOrEqual(emailCellBox!.x + 1);
+        } else {
+            const cardBox = await page.locator("article").first().boundingBox();
+            expect(cardBox).not.toBeNull();
+            expect(buttonBox!.x + buttonBox!.width).toBeLessThanOrEqual(cardBox!.x + cardBox!.width + 1);
+        }
+
+        // Click at the visible button center without force:true so overlapping cells would fail
+        await toggleButton.click({ timeout: 5000 });
+        await expect(container.getByText("Ana QA Admin")).toBeVisible();
     });
 }
