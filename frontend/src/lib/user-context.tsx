@@ -10,15 +10,13 @@ import React, {
 } from "react";
 import { authService } from "@/services/auth.service";
 import { User } from "@/types/user";
+import { USER_CACHE_KEY, LEGACY_USER_CACHE_KEY } from "@/lib/auth";
 
 interface UserContextType {
     user: User | null;
     loading: boolean;
     refreshUser: () => Promise<void>;
 }
-
-const USER_CACHE_KEY = "workhive_user_cache:v1";
-const USER_CACHE_KEY_LEGACY = "workhive_user_cache";
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
@@ -28,12 +26,12 @@ function readCachedUser(): User | null {
         const raw = sessionStorage.getItem(USER_CACHE_KEY);
         if (raw) return JSON.parse(raw) as User;
 
-        const legacyRaw = sessionStorage.getItem(USER_CACHE_KEY_LEGACY);
+        const legacyRaw = sessionStorage.getItem(LEGACY_USER_CACHE_KEY);
         if (!legacyRaw) return null;
 
         const legacyUser = JSON.parse(legacyRaw) as User;
         sessionStorage.setItem(USER_CACHE_KEY, legacyRaw);
-        sessionStorage.removeItem(USER_CACHE_KEY_LEGACY);
+        sessionStorage.removeItem(LEGACY_USER_CACHE_KEY);
         return legacyUser;
     } catch {
         return null;
@@ -47,7 +45,7 @@ function writeCachedUser(user: User | null): void {
     } else {
         sessionStorage.removeItem(USER_CACHE_KEY);
     }
-    sessionStorage.removeItem(USER_CACHE_KEY_LEGACY);
+    sessionStorage.removeItem(LEGACY_USER_CACHE_KEY);
 }
 
 export function UserProvider({ children }: { children: React.ReactNode }) {

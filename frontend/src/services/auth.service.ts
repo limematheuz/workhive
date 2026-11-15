@@ -30,6 +30,7 @@ export const authService = {
         });
 
         await assertApiResponseOk(response, "Could not sign in.");
+        clearSessionCache();
         const data = await response.json() as { csrf_token?: string };
         if (data.csrf_token) {
             setCsrfToken(data.csrf_token);

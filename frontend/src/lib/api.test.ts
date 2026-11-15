@@ -300,3 +300,50 @@ test("apiFetch redirects dashboard users on authentication denial but keeps vali
     assert.equal(second.sessionStorage.getItem("workhive_user_cache"), "{}");
     restoreBrowser();
 });
+
+test("authentication denial removes the current version of the cached user", async () => {
+    const browser = installBrowser("/dashboard/tasks");
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ id: 1, company_id: 11 }));
+    globalThis.fetch = async () => jsonResponse({}, { status: 401 });
+    try {
+        await apiFetch("/api/v1/session-cache-check");
+        assert.equal(browser.sessionStorage.getItem("workhive_user_cache:v1"), null);
+    } finally { restoreBrowser(); }
+});
+
+test("a new identity cannot adopt the previous identity's pending GET", async () => {
+    const browser = installBrowser("/dashboard/expenses");
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ id: 1, company_id: 11 }));
+    let release!: (response: Response) => void;
+    let calls = 0;
+    globalThis.fetch = async () => {
+        calls++;
+        if (calls === 1) return new Promise<Response>(resolve => { release = resolve; });
+        return jsonResponse({ owner: 2 });
+    };
+    const previous = apiFetch("/api/v1/session-read-partition");
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ id: 2, company_id: 22 }));
+    const current = apiFetch("/api/v1/session-read-partition");
+    release(jsonResponse({ owner: 1 }));
+    try {
+        assert.equal((await (await current).json()).owner, 2);
+        await previous;
+        assert.equal(calls, 2);
+    } finally { restoreBrowser(); }
+});
+
+test("a late 401 from another identity does not clear or redirect the current session", async () => {
+    const browser = installBrowser("/dashboard/expenses");
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ id: 1, company_id: 11 }));
+    let release!: (response: Response) => void;
+    globalThis.fetch = async () => new Promise<Response>(resolve => { release = resolve; });
+    const previous = apiFetch("/api/v1/late-auth-denial");
+    const currentUser = JSON.stringify({ id: 2, company_id: 22 });
+    browser.sessionStorage.setItem("workhive_user_cache:v1", currentUser);
+    release(jsonResponse({}, { status: 401 }));
+    try {
+        await previous;
+        assert.deepEqual(browser.replaceCalls, []);
+        assert.equal(browser.sessionStorage.getItem("workhive_user_cache:v1"), currentUser);
+    } finally { restoreBrowser(); }
+});
