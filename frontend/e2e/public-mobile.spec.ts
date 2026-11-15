@@ -49,7 +49,7 @@ async function expectAuthDocumentScrollOwner(page: import("@playwright/test").Pa
     }
 }
 
-test("register fits a mobile viewport and opens the trial contact form", async ({
+test("register fits a mobile viewport and opens the contact channel", async ({
     page,
 }) => {
     await page.goto("/register");
@@ -61,7 +61,8 @@ test("register fits a mobile viewport and opens the trial contact form", async (
     await expectAuthDocumentScrollOwner(page);
 
     await page.getByRole("link", { name: /^Contactar$/i }).click();
-    await expect(page).toHaveURL(/\/contact\?reason=trial$/);
+    await expect(page).toHaveURL(/\/contact$/);
+    await expect(page.getByRole("heading", { name: "Escríbenos", exact: true })).toBeVisible();
 });
 
 test("trial contact form is prefilled and fits a mobile viewport", async ({
@@ -116,7 +117,7 @@ test("login distinguishes an unavailable backend from invalid credentials", asyn
     await page.locator("#login-password").fill("valid-looking-password");
     await page.locator('form').getByRole("button", { name: /Iniciar sesión/i }).click();
 
-    await expect(page.getByText(/authentication service is temporarily unavailable/i)).toBeVisible();
+    await expect(page.getByText(/El acceso no está disponible temporalmente/i)).toBeVisible();
     await expect(page.getByText(/Invalid Credentials/i)).not.toBeVisible();
 });
 
