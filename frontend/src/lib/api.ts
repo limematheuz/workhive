@@ -1,4 +1,4 @@
-import { clearSessionCache, getCsrfToken, setCsrfToken } from "./auth.ts";
+import { clearSessionCache, getCsrfToken, getSessionReadContext, setCsrfToken } from "./auth.ts";
 import { createInflightRequestDeduper } from "./inflight-request.ts";
 
 let activeMutationsCount = 0;
@@ -49,6 +49,7 @@ async function ensureCsrfToken(baseUrl: string): Promise<string | null> {
 
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
     const baseUrl = getApiBaseUrl();
+    const sessionContext = getSessionReadContext();
 
     const cleanPath = path.startsWith("/") ? path : `/${path}`;
     const url = `${baseUrl}${cleanPath}`;
@@ -81,7 +82,7 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
             .map(([name, value]) => `${name}:${value}`)
             .join("|");
         let response = method === "GET"
-            ? (await dedupeRead(`${method}:${url}:${headerKey}`, execute)).clone()
+            ? (await dedupeRead(`${sessionContext}:${method}:${url}:${headerKey}`, execute)).clone()
             : await execute();
 
         if (isMutation && response.status === 403) {
@@ -101,7 +102,7 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
             }
         }
 
-        if (response.status === 401) {
+        if (response.status === 401 && sessionContext === getSessionReadContext()) {
             clearSessionCache();
             if (typeof window !== "undefined" && window.location.pathname.startsWith("/dashboard")) {
                 window.location.replace("/login");
