@@ -9,7 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { ActionPopover } from "@/components/ui/action-popover";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { ReadRecoveryBanner } from "@/components/ui/read-recovery-banner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+    classifyReadError,
+    getReadRecoveryMessage,
+    getReadWorkspaceKey,
+    shouldShowReadRetry,
+    type ReadErrorKind,
+} from "@/lib/read-recovery";
 import { useUser } from "@/lib/user-context";
 import { PartnerPortalService } from "@/services/partner-portal.service";
 import type { Location } from "@/types/location";
@@ -83,13 +91,16 @@ function RequestsTable({ reservations, locations, onEdit, onDelete }: { reservat
 }
 
 export function PartnerPortalWorkspace({ initialTab }: { initialTab: PartnerPortalTab }) {
-    const { user } = useUser();
+    const { user, loading: userLoading } = useUser();
+    const workspaceKey = getReadWorkspaceKey(user);
     const [activeTab, setActiveTab] = useState<PartnerPortalTab>(initialTab);
     const [overview, setOverview] = useState<PartnerPortalOverview | null>(null);
     const [locations, setLocations] = useState<Location[]>([]);
     const [reservations, setReservations] = useState<PortalReservation[]>([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const [retrying, setRetrying] = useState(false);
+    const [errorKind, setErrorKind] = useState<ReadErrorKind | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
     const [propertyDialogOpen, setPropertyDialogOpen] = useState(false);
     const [requestDialogOpen, setRequestDialogOpen] = useState(false);
     const [editingLocation, setEditingLocation] = useState<Location | null>(null);
@@ -100,13 +111,29 @@ export function PartnerPortalWorkspace({ initialTab }: { initialTab: PartnerPort
     const [portalOpenedAt] = useState(() => Date.now());
     const initialLoadStartedRef = useRef(false);
     const loadPromiseRef = useRef<Promise<void> | null>(null);
+    const requestIdRef = useRef(0);
+    const loadedWorkspaceRef = useRef<string | null>(null);
 
-    const load = useCallback(async () => {
-        if (loadPromiseRef.current) return loadPromiseRef.current;
+    const load = useCallback(async (isRetry = false) => {
+        const workspaceChanged = loadedWorkspaceRef.current !== workspaceKey;
+        if (!workspaceChanged && loadPromiseRef.current) return loadPromiseRef.current;
 
-        setLoading(true);
-        setError(null);
+        const requestId = ++requestIdRef.current;
+        loadedWorkspaceRef.current = workspaceKey;
+        if (workspaceChanged) {
+            setOverview(null);
+            setLocations([]);
+            setReservations([]);
+            setLoading(true);
+        } else if (isRetry) {
+            setRetrying(true);
+        } else {
+            setLoading(true);
+        }
+        setErrorKind(null);
+        setErrorDetail(null);
         const request = Promise.all([PartnerPortalService.getOverview(), PartnerPortalService.getLocations(), PartnerPortalService.getReservations()]).then(([nextOverview, nextLocations, nextReservations]) => {
+            if (requestId !== requestIdRef.current) return;
             setOverview(nextOverview);
             setLocations(nextLocations);
             setReservations(nextReservations.map(toPortalReservation));
@@ -115,18 +142,29 @@ export function PartnerPortalWorkspace({ initialTab }: { initialTab: PartnerPort
         try {
             await request;
         } catch (cause) {
-            setError(cause instanceof Error ? cause.message : "No se pudo cargar el portal.");
+            if (requestId !== requestIdRef.current) return;
+            const kind = classifyReadError(cause);
+            setErrorKind(kind);
+            setErrorDetail(cause instanceof Error ? cause.message : null);
+            if (kind === "denied") {
+                setOverview(null);
+                setLocations([]);
+                setReservations([]);
+            }
         } finally {
             if (loadPromiseRef.current === request) loadPromiseRef.current = null;
-            setLoading(false);
+            setLoading((current) => requestId === requestIdRef.current ? false : current);
+            setRetrying((current) => requestId === requestIdRef.current ? false : current);
         }
-    }, []);
+    }, [workspaceKey]);
 
     useEffect(() => {
-        if (initialLoadStartedRef.current) return;
+        if (userLoading) return;
+        if (initialLoadStartedRef.current && loadedWorkspaceRef.current === workspaceKey) return;
         initialLoadStartedRef.current = true;
-        void load();
-    }, [load]);
+        const timer = window.setTimeout(() => void load(), 0);
+        return () => window.clearTimeout(timer);
+    }, [load, userLoading, workspaceKey]);
 
     const upcomingReservations = useMemo(() => reservations.filter(reservation => new Date(reservation.check_out_at).getTime() >= portalOpenedAt), [portalOpenedAt, reservations]);
     const pendingCleaningCount = useMemo(() => reservations.filter(reservation => !["completed", "cancelled"].includes(reservation.cleaning_status ?? "")).length, [reservations]);
@@ -176,9 +214,34 @@ export function PartnerPortalWorkspace({ initialTab }: { initialTab: PartnerPort
     };
 
     if (loading) return <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="size-7 animate-spin text-accent" /><span className="sr-only">Cargando portal</span></div>;
-    if (error) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No se pudo abrir el portal" description={error} /><div className="mt-4 text-center"><Button type="button" variant="outline" onClick={() => void load()}>Reintentar</Button></div></div>;
+    const errorMessage = getReadRecoveryMessage(errorKind, {
+        unavailable: errorDetail || "No se pudo cargar el portal ahora mismo.",
+        denied: errorDetail || "Tu acceso al portal ya no está activo.",
+    });
+    if (errorKind && errorMessage && !overview) {
+        return (
+            <div className="mx-auto max-w-xl px-[3%] py-8">
+                <ReadRecoveryBanner
+                    kind={errorKind}
+                    message={errorMessage}
+                    retryLabel="Reintentar"
+                    onRetry={shouldShowReadRetry(errorKind) ? () => void load(true) : undefined}
+                    retrying={retrying}
+                />
+            </div>
+        );
+    }
 
     return <div className="mx-auto max-w-6xl space-y-5 px-[3%] py-6 pb-12 md:p-8">
+        {errorKind && errorMessage && (
+            <ReadRecoveryBanner
+                kind={errorKind}
+                message={errorMessage}
+                retryLabel="Reintentar"
+                onRetry={shouldShowReadRetry(errorKind) ? () => void load(true) : undefined}
+                retrying={retrying}
+            />
+        )}
         <header className="billing-surface billing-surface-accent-pad rounded-[24px]"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Portal de colaboradores</p><h1 className="mt-1 text-2xl font-bold tracking-tight">{overview?.partner_company_name ?? "Tus propiedades"}</h1><p className="mt-2 text-sm text-[var(--text-muted)]">Solicita limpiezas a {overview?.host_company_name ?? "tu proveedor"} sin acceder a su espacio de trabajo.</p></div></header>
         <PremiumTabs tabs={PARTNER_PORTAL_TABS} activeTab={activeTab} onChange={changeTab} mobileLabel="Sección del portal" />
         {activeTab === "overview" && <section className="space-y-5"><div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"><Card><CardContent><MapPin className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Propiedades activas</p><p className="mt-1 text-3xl font-bold">{overview?.location_count ?? 0}</p></CardContent></Card><Card><CardContent><CalendarClock className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Próximas estancias</p><p className="mt-1 text-3xl font-bold">{upcomingReservations.length}</p></CardContent></Card><Card><CardContent><ClipboardList className="mb-4 size-5 text-accent" /><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">Limpiezas pendientes</p><p className="mt-1 text-3xl font-bold">{pendingCleaningCount}</p></CardContent></Card></div><Card><CardContent><div className="mb-4 flex items-center justify-between gap-3"><div><h2 className="font-semibold">Próximas solicitudes</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Solo ves las limpiezas solicitadas desde tus propiedades.</p></div><Button type="button" variant="outline" onClick={() => changeTab("requests")}>Ver todas</Button></div><RequestsTable reservations={upcomingReservations.slice(0, 5)} locations={locations} /></CardContent></Card></section>}

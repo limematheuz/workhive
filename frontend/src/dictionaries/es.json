@@ -2779,6 +2779,8 @@
       "active_description": "La asesoría puede consultar las finanzas autorizadas.",
       "revoked_description": "El acceso de la asesoría está revocado.",
       "load_error": "No se pudo cargar el acceso financiero externo.",
+      "load_denied": "No tienes permiso para consultar los accesos financieros externos.",
+      "retry": "Reintentar",
       "no_permission": "Solo la administración de la empresa puede gestionar el acceso financiero externo."
     }
   },
@@ -2825,6 +2827,7 @@
     "sponsored_invitations": "Invitaciones a portales de inmobiliaria",
     "sponsored_invitations_description": "Pendientes de que la inmobiliaria cree su portal limitado.",
     "sponsored_invitations_load_error": "No se pudieron cargar las invitaciones al portal de inmobiliaria.",
+    "sponsored_invitations_load_denied": "No tienes permiso para consultar las invitaciones al portal de inmobiliaria.",
     "email_invitations": "Invitaciones por correo",
     "email_invitations_description": "Pendientes de confirmación por la empresa invitada.",
     "pending": "Pendiente",
@@ -2848,6 +2851,8 @@
     "company_unlinked": "Empresa desvinculada",
     "invite_revoked": "Invitación a empresa revocada",
     "load_error": "No se pudieron cargar las empresas colaboradoras",
+    "load_denied": "No tienes permiso para consultar las empresas colaboradoras.",
+    "retry": "Reintentar",
     "invite_error": "No se pudo enviar la invitación a la empresa",
     "unlink_error": "No se pudo desvincular la empresa",
     "revoke_error": "No se pudo revocar la invitación a la empresa",

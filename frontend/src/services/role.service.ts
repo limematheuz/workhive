@@ -1,4 +1,4 @@
-import { apiFetch } from "@/lib/api";
+import { apiFetch, assertApiResponseOk } from "@/lib/api";
 import { Role } from "@/types/role";
 
 export type { Role };
@@ -9,9 +9,7 @@ export const RoleService = {
             method: "GET",
             cache: "no-store",
         });
-        if (!response.ok) {
-            throw new Error("Error fetching roles");
-        }
+        await assertApiResponseOk(response, "Error fetching roles");
         return await response.json();
     },
 
