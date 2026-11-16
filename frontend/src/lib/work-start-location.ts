@@ -1,3 +1,19 @@
+class UnsupportedWorkLocationError extends Error {
+    constructor() {
+        super("Geolocation is not supported");
+        this.name = "UnsupportedWorkLocationError";
+    }
+}
+
+export function getWorkLocationErrorKey(error: unknown): "location_required" | "location_unavailable" | "location_timeout" | "location_unsupported" {
+    if (error instanceof UnsupportedWorkLocationError) return "location_unsupported";
+    if (error && typeof error === "object" && "code" in error) {
+        if (error.code === 1) return "location_required";
+        if (error.code === 3) return "location_timeout";
+    }
+    return "location_unavailable";
+}
+
 export interface WorkStartLocation {
     start_latitude: number;
     start_longitude: number;
@@ -12,7 +28,7 @@ export interface WorkEndLocation {
 
 export function getCurrentWorkStartLocation(): Promise<WorkStartLocation> {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
-        return Promise.reject(new Error("Geolocation is not supported"));
+        return Promise.reject(new UnsupportedWorkLocationError());
     }
 
     return new Promise((resolve, reject) => {

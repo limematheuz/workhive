@@ -8,6 +8,7 @@ import { toast } from "@/lib/toast";
 import {
     getCurrentWorkEndLocation,
     getCurrentWorkStartLocation,
+    getWorkLocationErrorKey,
 } from "@/lib/work-start-location";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -129,11 +130,8 @@ export function useTechTaskWorkSession({
             let startLocation;
             try {
                 startLocation = await getCurrentWorkStartLocation();
-            } catch {
-                toast.error(
-                    dict.work_sessions?.location_required
-                    || "Debes permitir la ubicación para iniciar el fichaje."
-                );
+            } catch (error) {
+                toast.error(dict.work_sessions[getWorkLocationErrorKey(error)]);
                 return;
             }
             await TaskService.startTaskWork(taskId, startLocation);
