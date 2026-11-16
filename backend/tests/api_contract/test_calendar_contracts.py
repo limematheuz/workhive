@@ -1,5 +1,7 @@
 from urllib.parse import parse_qs, urlparse
 
+from cryptography.fernet import Fernet
+
 from app.core.config import settings
 from app.core.security import create_access_token
 from app.integrations.google import calendar_client
@@ -12,6 +14,9 @@ def test_oauth_callback_sync_and_disconnect_with_provider_transport_stub(
 ):
     qa = api_workspace
     monkeypatch.setattr(settings, "GOOGLE_CALENDAR_ENABLED", True)
+    monkeypatch.setattr(
+        settings, "GOOGLE_TOKEN_ENCRYPTION_KEY", Fernet.generate_key().decode()
+    )
     monkeypatch.setattr(settings, "GOOGLE_CALENDAR_CLIENT_ID", "qa-client")
     monkeypatch.setattr(
         settings, "GOOGLE_CALENDAR_CLIENT_SECRET", "qa-provider-simulation-only"
