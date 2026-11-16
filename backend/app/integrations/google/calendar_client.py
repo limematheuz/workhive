@@ -276,6 +276,23 @@ def update_event(
     )
 
 
+def patch_event(
+    db: Session,
+    connection: GoogleCalendarConnection,
+    event_id: str,
+    payload: dict,
+) -> dict:
+    calendar_id = quote(connection.calendar_id, safe="")
+    encoded_event = quote(event_id, safe="")
+    return _request(
+        db,
+        connection,
+        "PATCH",
+        f"/calendars/{calendar_id}/events/{encoded_event}",
+        json=payload,
+    )
+
+
 def delete_event(
     db: Session,
     connection: GoogleCalendarConnection,
