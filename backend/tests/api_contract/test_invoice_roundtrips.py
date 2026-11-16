@@ -40,6 +40,10 @@ def test_draft_items_issue_documents_and_rectification_over_http(client, api_wor
     editable = f"{root}/{created.json()['id']}"
     added = client.post(editable + "/items", headers=headers, json=item)
     assert added.status_code == 201, added.text
+    items = client.get(editable + "/items", headers=headers)
+    assert items.status_code == 200 and items.json()[0]["id"] == added.json()["id"], (
+        items.text
+    )
     item_path = f"{editable}/items/{added.json()['id']}"
     changed = client.patch(item_path, headers=headers, json={"quantity": 2})
     assert changed.status_code == 200 and changed.json()["quantity"] == 2, changed.text

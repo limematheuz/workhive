@@ -74,6 +74,11 @@ def test_expense_and_collaboration_removal_are_authorized(client, db, api_worksp
     )
     db.add(link)
     db.commit()
+    partners = client.get(
+        "/api/v1/collaborations/service-providers", headers=qa.headers["admin"]
+    )
+    assert partners.status_code == 200, partners.text
+    assert any(row["id"] == qa.other.id for row in partners.json())
     assert (
         client.delete(
             f"/api/v1/collaborations/{link.id}", headers=qa.headers["worker"]
@@ -119,3 +124,23 @@ def test_unassigned_organization_structures_can_be_changed_and_archived(
         ).status_code
         == 204
     )
+
+
+def test_quote_items_are_readable_only_inside_their_company(client, api_workspace):
+    qa = api_workspace
+    quote = client.post(
+        "/api/v1/quotes/",
+        headers=qa.headers["admin"],
+        json={
+            "client_id": qa.client.id,
+            "title": "QA items transport",
+            "items": [{"description": "QA item", "quantity": 1, "unit_price": 10}],
+        },
+    )
+    assert quote.status_code == 201, quote.text
+    path = f"/api/v1/quotes/{quote.json()['id']}/items"
+    items = client.get(path, headers=qa.headers["admin"])
+    assert items.status_code == 200 and items.json()[0]["description"] == "QA item", (
+        items.text
+    )
+    assert client.get(path, headers=qa.headers["outsider"]).status_code == 404

@@ -74,6 +74,9 @@ def test_shift_endpoints_persist_pause_resume_summaries_and_denials(
     assert stopped.status_code == 200 and stopped.json()["end_time"], stopped.text
     assert client.get("/api/v1/work-sessions/active", headers=worker).json() is None
     assert stopped.json()["end_latitude"] == 0
+    assert (
+        client.post("/api/v1/work-sessions/resume", headers=worker).status_code == 404
+    )
 
 
 def test_service_catalog_and_location_overrides_roundtrip(client, db, api_workspace):
@@ -116,6 +119,11 @@ def test_service_catalog_and_location_overrides_roundtrip(client, db, api_worksp
         path, headers=headers, json={"template_task_id": service_id, "custom_price": 11}
     )
     assert linked.status_code == 201, linked.text
+    assert client.get(path, headers=headers).status_code == 200
+    detail = client.get(f"{path}/{service_id}", headers=headers)
+    assert (
+        detail.status_code == 200 and detail.json()["template_task_id"] == service_id
+    ), detail.text
     changed = client.patch(
         f"{path}/{service_id}", headers=headers, json={"custom_price": 13}
     )
