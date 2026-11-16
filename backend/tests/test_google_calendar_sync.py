@@ -499,12 +499,12 @@ def test_import_external_google_event_creates_task(db, monkeypatch):
         }
 
     patched_payloads = []
-    def update_event(_db, _connection, event_id, payload):
+    def patch_event(_db, _connection, event_id, payload):
         patched_payloads.append((event_id, payload))
         return {"id": event_id}
 
     monkeypatch.setattr(calendar_client, "list_events", list_events)
-    monkeypatch.setattr(calendar_client, "update_event", update_event)
+    monkeypatch.setattr(calendar_client, "patch_event", patch_event)
 
     imported_count = calendar_sync_service.pull_google_changes(db, company.id)
     assert imported_count == 1

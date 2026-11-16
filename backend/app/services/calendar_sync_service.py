@@ -514,7 +514,6 @@ def _import_event(
             )
             db.add(task)
             _save_mapping(db, task, connection.owner_user_id, event)
-            return True
         else:
             task = TaskItem(
                 title=event.get("summary") or "Tarea importada de Google Calendar",
@@ -540,32 +539,33 @@ def _import_event(
             )
             _save_mapping(db, task, connection.owner_user_id, event)
 
-            # Patch Google Calendar event to link it
-            try:
-                calendar_client.update_event(
-                    db,
-                    connection,
-                    event["id"],
-                    {
-                        "extendedProperties": {
-                            "private": {
-                                "workhive_task_id": str(task.id),
-                                "workhive_company_id": str(connection.company_id),
-                                "workhive_user_id": str(connection.owner_user_id),
-                            }
+        # Patch Google Calendar event to link it
+        try:
+            calendar_client.patch_event(
+                db,
+                connection,
+                event["id"],
+                {
+                    "extendedProperties": {
+                        "private": {
+                            **private,
+                            "workhive_task_id": str(task.id),
+                            "workhive_company_id": str(connection.company_id),
+                            "workhive_user_id": str(connection.owner_user_id),
                         }
-                    },
-                )
-            except GoogleCalendarError as exc:
-                logger.warning(
-                    "Imported Google event could not be linked remotely",
-                    extra={
-                        "company_id": connection.company_id,
-                        "event_id": event["id"],
-                        "detail": str(exc),
-                    },
-                )
-            return True
+                    }
+                },
+            )
+        except GoogleCalendarError as exc:
+            logger.warning(
+                "Imported Google event could not be linked remotely",
+                extra={
+                    "company_id": connection.company_id,
+                    "event_id": event["id"],
+                    "detail": str(exc),
+                },
+            )
+        return True
 
     if company_id != str(connection.company_id):
         return False
