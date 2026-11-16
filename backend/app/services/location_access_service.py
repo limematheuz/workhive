@@ -95,6 +95,8 @@ def require_location_capability(
         and _is_direct_company_location(location, current_user.company_id)
     ):
         return location
+    if capability == "can_manage_reservations" and permission_code is None:
+        permission_code = "work.manage"
     if permission_code:
         require_capability(
             db,
@@ -162,7 +164,10 @@ def has_location_capability(
 ) -> bool:
     if is_platform_superadmin(current_user):
         return True
-    if not can_manage_company(current_user):
+    if capability in {"can_manage_reservations", "can_manage_tasks"}:
+        if not has_capability(db, current_user, "work.manage", scope_type="location", scope_id=location.id):
+            return False
+    elif not can_manage_company(current_user):
         return False
     if _is_direct_company_location(location, current_user.company_id):
         return True
@@ -184,10 +189,15 @@ def has_location_capability_loaded(
     current_user: User,
     location: Location,
     capability: str,
+    *,
+    profile_allows_work: bool = False,
 ) -> bool:
     if is_platform_superadmin(current_user):
         return True
-    if not can_manage_company(current_user):
+    if capability in {"can_manage_reservations", "can_manage_tasks"}:
+        if not profile_allows_work:
+            return False
+    elif not can_manage_company(current_user):
         return False
     if _is_direct_company_location(location, current_user.company_id):
         return True
