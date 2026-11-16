@@ -21,6 +21,7 @@ import {
 } from "@/features/reservations/ReservationsPageLayout";
 import {
     createEmptyReservationForm,
+    canEditReservation,
     createReservationForm,
     createReservationPayload,
     filterReservations,
@@ -197,10 +198,11 @@ function ReservationsPageContent() {
     };
 
     const openEdit = useCallback((reservation: Reservation) => {
+        if (!canEditReservation(reservation, locationMap.get(reservation.location_id), user?.company_id)) return;
         setEditing(reservation);
         setForm(createReservationForm(reservation));
         setOpen(true);
-    }, []);
+    }, [locationMap, user?.company_id]);
 
     useEffect(() => {
         const reservationId = searchParams.get("reservationId");

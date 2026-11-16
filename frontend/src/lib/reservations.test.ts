@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
     canLinkTaskReservations,
+    canEditReservation,
     canManageLocationReservations,
     createReservationForm,
     createReservationPayload,
@@ -88,6 +89,31 @@ test("task reservation links fail closed unless the API grants the issuer capabi
         false,
     );
     assert.equal(canLinkTaskReservations(location({})), false);
+});
+
+test("reservation editing requires ownership and the current location capability", () => {
+    const stay = reservation({});
+    assert.equal(canEditReservation(stay, location({ can_manage_reservations: true }), 10), true);
+    assert.equal(canEditReservation(stay, location({ can_manage_reservations: false }), 10), false);
+    assert.equal(canEditReservation(stay, location({}), 10), false);
+    assert.equal(canEditReservation(stay, undefined, 10), false);
+    assert.equal(canEditReservation(stay, location({ id: 2, can_manage_reservations: true }), 10), false);
+    assert.equal(canEditReservation(stay, location({ can_manage_reservations: true }), 20), false);
+    assert.equal(canEditReservation(stay, location({ can_manage_reservations: true }), null), false);
+});
+
+test("read-only company reservations stay visible without editing permission", () => {
+    const start = new Date(Date.now() + 86_400_000);
+    const end = new Date(Date.now() + 172_800_000);
+    const stay = reservation({ check_in_at: start.toISOString(), check_out_at: end.toISOString() });
+    const rows = filterReservations({
+        reservations: [stay],
+        locationMap: new Map([[1, location({ can_manage_reservations: false, owner_company_id: 10 })]]),
+        companyId: 10,
+        filters: { location: "ALL", provider: "ALL", cleaning: "ALL", date: "UPCOMING", year: "ALL", month: "ALL", search: "", showCancelled: false },
+        viewMode: "active",
+    });
+    assert.deepEqual(rows.map(row => row.id), [stay.id]);
 });
 
 test("reservation form preserves editable values and payload nulls optional fields", () => {

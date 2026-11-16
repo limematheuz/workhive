@@ -13,6 +13,7 @@ from app.schemas.company import CompanyPartnerResponse
 from app.schemas.user import UserResponse
 from app.services import (
     location_service,
+    location_response_service,
     organization_authorization_service,
 )
 from app.models.user import User
@@ -32,10 +33,8 @@ async def read_locations(
         return []
 
     def operation(sync_db: Session):
-        permitted_location_ids = organization_authorization_service.permitted_location_ids(
-            sync_db,
-            current_user,
-            "locations.read",
+        permitted_location_ids, work_manage_location_ids, _ = organization_authorization_service.resolve_location_capabilities(
+            sync_db, current_user, read_capability="locations.read", manage_capability="work.manage"
         )
         locations = location_service.get_locations(
             sync_db,
@@ -45,33 +44,13 @@ async def read_locations(
             limit,
             permitted_location_ids,
         )
-        responses = []
-        for location in locations:
-            response = LocationResponse.model_validate(location)
-            response.can_manage_reservations = (
-                location_access_service.has_location_capability_loaded(
-                    current_user,
-                    location,
-                    "can_manage_reservations",
-                )
+        return [
+            location_response_service.build_location_response(
+                sync_db, current_user, location,
+                work_manage_location_ids=work_manage_location_ids,
             )
-            response.can_manage_tasks = (
-                location_access_service.has_location_capability_loaded(
-                    current_user,
-                    location,
-                    "can_manage_tasks",
-                )
-            )
-            response.can_manage_location = location_access_service.can_manage_owned_location(
-                sync_db, current_user, location
-            )
-            response.shared_companies = [
-                access.company_id for access in location.company_access
-            ]
-            if not location_access_service.can_view_sensitive_loaded(current_user, location):
-                response.access = None
-            responses.append(response)
-        return responses
+            for location in locations
+        ]
 
     return await db.run_sync(operation)
 
@@ -98,30 +77,13 @@ async def read_location(
             location_id,
             scoped_company_id(current_user),
         )
-        response = LocationResponse.model_validate(location)
-        response.can_manage_reservations = (
-            location_access_service.has_location_capability_loaded(
-                current_user,
-                location,
-                "can_manage_reservations",
-            )
+        _, work_manage_location_ids, _ = organization_authorization_service.resolve_location_capabilities(
+            sync_db, current_user, read_capability="locations.read", manage_capability="work.manage"
         )
-        response.can_manage_tasks = (
-            location_access_service.has_location_capability_loaded(
-                current_user,
-                location,
-                "can_manage_tasks",
-            )
+        return location_response_service.build_location_response(
+            sync_db, current_user, location,
+            work_manage_location_ids=work_manage_location_ids,
         )
-        response.can_manage_location = location_access_service.can_manage_owned_location(
-            sync_db, current_user, location
-        )
-        response.shared_companies = [
-            access.company_id for access in location.company_access
-        ]
-        if not location_access_service.can_view_sensitive_loaded(current_user, location):
-            response.access = None
-        return response
 
     return await db.run_sync(operation)
 

@@ -314,7 +314,12 @@ def resolve_location_capabilities(
             )
             else set()
         )
-        return None, legacy_manage_locations, True
+        legacy_read_locations = (
+            list_legacy_viewer_location_ids(db, company_id=company_id, user_id=current_user.id)
+            if read_capability == "locations.read" and role_name(current_user) == "viewer"
+            else None
+        )
+        return legacy_read_locations, legacy_manage_locations, True
     return (
         resolve_permitted_location_ids(
             db,

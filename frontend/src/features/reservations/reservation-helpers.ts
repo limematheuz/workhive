@@ -109,6 +109,17 @@ export function canLinkTaskReservations(location: Location): boolean {
     return location.can_manage_reservations === true;
 }
 
+export function canEditReservation(
+    reservation: Reservation,
+    location: Location | undefined,
+    companyId?: number | null,
+): boolean {
+    return Boolean(companyId
+        && reservation.owner_company_id === companyId
+        && location?.id === reservation.location_id
+        && location.can_manage_reservations === true);
+}
+
 export function getReservableLocations(
     locations: Location[],
     companyId?: number | null
@@ -159,12 +170,13 @@ export function filterReservations({
     nextWeek.setDate(nextWeek.getDate() + 7);
     const query = filters.search.trim().toLocaleLowerCase("es");
 
-    const matchesManageable = (reservation: Reservation) => {
+    const matchesCompanyVisibility = (reservation: Reservation) => {
         const location = locationMap.get(reservation.location_id);
         return Boolean(
             location
             && (
-                canManageLocationReservations(location, companyId)
+                Boolean(companyId && reservation.owner_company_id === companyId)
+                || canManageLocationReservations(location, companyId)
                 || reservation.assigned_company_id === companyId
             )
         );
@@ -248,7 +260,7 @@ export function filterReservations({
 
     return reservations
         .filter((reservation) =>
-            matchesManageable(reservation)
+            matchesCompanyVisibility(reservation)
             && matchesLocation(reservation)
             && matchesProvider(reservation)
             && matchesCleaning(reservation)

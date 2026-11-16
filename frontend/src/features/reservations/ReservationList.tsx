@@ -25,7 +25,7 @@ import {
     formatReservationDateTime,
     formatReservationTime,
 } from "./reservation-display";
-import { hasReservationCheckedOut } from "./reservation-helpers";
+import { canEditReservation, hasReservationCheckedOut } from "./reservation-helpers";
 
 const subscribeToTimeZone = () => () => {};
 const getBrowserTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -97,7 +97,7 @@ export function ReservationList({
                     dict={dict}
                     locale={locale}
                     timeZone={timeZone}
-                    canEdit={reservation.owner_company_id === companyId}
+                    canEdit={canEditReservation(reservation, locationMap.get(reservation.location_id), companyId)}
                     onEdit={onEdit}
                     onCancel={onCancel}
                 />
