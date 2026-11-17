@@ -8,7 +8,6 @@ from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.repositories import reservation as reservation_repo
-from app.repositories import task_item as task_item_repo
 from app.schemas.reservation import ReservationCreate, ReservationUpdate
 from app.services import task_lifecycle_notification_service  # noqa: F401 - compatibility re-export
 from app.services.reservation_mutation_access import ReservationMutationAccess, require_reservation_mutation_access
@@ -25,6 +24,7 @@ from app.services.reservation_lifecycle_policy_service import (
     require_provider_change_allowed,
 )
 from app.services.task_work_activity_service import has_recorded_activity
+from app.services.task_removal_service import remove_task
 from app.services.reservation_planning_policy import changes_cleaning_plan
 from app.services.reservation_query_service import (
     build_reservation_response,  # noqa: F401 - public compatibility re-export
@@ -140,7 +140,7 @@ def dispatch_cleaning_request(db: Session, current_user: User, reservation_id: i
                 checkout_task,
                 has_persisted_activity=has_recorded_activity(db, checkout_task),
             )
-            task_item_repo.delete_task_item(db, checkout_task)
+            remove_task(db, checkout_task)
 
         ensure_location_access(
             db, reservation.location_id, reservation.assigned_company_id
@@ -245,7 +245,7 @@ def _discard_checkout_task_for_assignment_change(
         checkout_task,
         has_persisted_activity=has_recorded_activity(db, checkout_task),
     )
-    task_item_repo.delete_task_item(db, checkout_task)
+    remove_task(db, checkout_task)
     reservation.service_request_sent_at = None
     return None
 
@@ -258,7 +258,7 @@ def _cancel_updated_reservation(
     if checkout_task:
         require_linked_work_removable(checkout_task, operation="cancel")
         if not has_recorded_activity(db, checkout_task):
-            task_item_repo.delete_task_item(db, checkout_task)
+            remove_task(db, checkout_task)
     sync_location_reservation_chain(db, reservation.location_id)
     db.commit()
     db.refresh(reservation)
@@ -329,7 +329,7 @@ def _remove_updated_reservation_cleaning(
         operation="disable_cleaning",
         has_persisted_activity=has_recorded_activity(db, checkout_task),
     )
-    task_item_repo.delete_task_item(db, checkout_task)
+    remove_task(db, checkout_task)
     reservation.service_request_sent_at = None
     db.add(reservation)
 
@@ -438,7 +438,7 @@ def delete_reservation(db: Session, current_user: User, reservation_id: int, *, 
             },
         )
         for task in checkout_tasks:
-            task_item_repo.delete_task_item(db, task)
+            remove_task(db, task)
         reservation_repo.delete_reservation(db, reservation)
         sync_location_reservation_chain(db, location_id)
         db.commit()

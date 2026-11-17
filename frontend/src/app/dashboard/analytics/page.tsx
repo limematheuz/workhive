@@ -40,9 +40,7 @@ import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import {
     buildFinanceSeries,
     groupExpensesByCategory,
-    manualSalesLedgerEntriesWithoutWorkHiveInvoices,
     summarizeFinancePeriod,
-    manualSalesLedgerToFinanceRevenue,
     type FinancePeriod,
     type FinancePeriodSummary,
     type FinanceRevenueRecord,
@@ -55,10 +53,7 @@ import { getPercentageChange } from "@/lib/metric-trend";
 import { useUser } from "@/lib/user-context";
 import { useProfile, type TaskChartStats } from "@/hooks/useProfile";
 import { InteractiveLineChart } from "@/components/dashboard/InteractiveLineChart";
-import { ExpenseService } from "@/services/expense.service";
-import { InvoiceService } from "@/services/invoice.service";
-import { SalesLedgerService } from "@/services/sales-ledger.service";
-import { collectPaginated } from "@/lib/pagination";
+import { FinanceOverviewService } from "@/services/finance-overview.service";
 import type { Expense } from "@/types/expense";
 import { toast } from "@/lib/toast";
 import { accountantExportYears, type AccountantExportPeriod } from "@/lib/accountant-export";
@@ -74,7 +69,6 @@ import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-me
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
-import { CustomerPaymentService } from "@/services/customer-payment.service";
 import { BankReconciliationSection } from "@/components/analytics/BankReconciliationSection";
 import { OperationalMarginExplorer } from "@/components/analytics/OperationalMarginExplorer";
 import { ServiceContractService } from "@/services/service-contract.service";
@@ -192,8 +186,11 @@ export default function FinanceAnalyticsPage() {
     const canViewProfitability = companyFeatures?.has("features.profitability") ?? false;
     const canDownloadAccountantPackage = companyFeatures?.has("features.accountant_portal") ?? false;
 
+    const financePlanReady = companyFeatures !== null;
+    const invoicesEnabled = companyFeatures?.has("features.invoices") ?? false;
+
     const loadAnalytics = useCallback(async () => {
-        if (!canViewAnalytics) return;
+        if (!canViewAnalytics || !financePlanReady) return;
         const requestId = ++financeRequestIdRef.current;
         if (financeLoadedWorkspaceRef.current !== workspaceKey) {
             setRevenueRecords([]);
@@ -204,23 +201,11 @@ export default function FinanceAnalyticsPage() {
         setLoading(true);
         setFinanceErrorKind(null);
         try {
-            const [invoiceData, expenseData, salesLedgerEntries, customerPayments] = await Promise.all([
-                InvoiceService.getAllInvoices(),
-                ExpenseService.getAllExpenses(),
-                collectPaginated((skip, limit) => SalesLedgerService.getEntries({ skip, limit })),
-                CustomerPaymentService.getPayments(),
-            ]);
+            const snapshot = await FinanceOverviewService.getSnapshot({ includeInvoices: invoicesEnabled });
             if (requestId !== financeRequestIdRef.current) return;
-            setRevenueRecords([
-                ...invoiceData,
-                ...manualSalesLedgerEntriesWithoutWorkHiveInvoices(
-                    salesLedgerEntries.filter((entry) => entry.source_type === "manual"),
-                    invoiceData,
-                )
-                    .map(manualSalesLedgerToFinanceRevenue),
-            ]);
-            setExpenses(expenseData);
-            setPayments(customerPayments);
+            setRevenueRecords(snapshot.revenue);
+            setExpenses(snapshot.expenses);
+            setPayments(snapshot.payments);
             financeLoadedWorkspaceRef.current = workspaceKey;
             setHasFinanceSnapshot(true);
             setFinanceErrorKind(null);
@@ -239,7 +224,7 @@ export default function FinanceAnalyticsPage() {
         } finally {
             setLoading((current) => (requestId === financeRequestIdRef.current ? false : current));
         }
-    }, [canViewAnalytics, workspaceKey]);
+    }, [canViewAnalytics, financePlanReady, invoicesEnabled, workspaceKey]);
 
     const loadProfitability = useCallback(async () => {
         if (!canViewAnalytics || !canViewProfitability) return;
@@ -331,12 +316,12 @@ export default function FinanceAnalyticsPage() {
     });
 
     useEffect(() => {
-        if (userLoading || !canViewAnalytics) return;
+        if (userLoading || !canViewAnalytics || !financePlanReady) return;
         const timer = window.setTimeout(() => {
             syncAnalytics();
         }, 0);
         return () => window.clearTimeout(timer);
-    }, [canViewAnalytics, userLoading, workspaceKey]);
+    }, [canViewAnalytics, financePlanReady, invoicesEnabled, userLoading, workspaceKey]);
 
     useEffect(() => {
         if (userLoading || !canViewProfitability || activeTab !== "profitability") return;
@@ -429,7 +414,7 @@ export default function FinanceAnalyticsPage() {
 
     if (!userLoading && !canViewAnalytics) redirect("/dashboard");
 
-    if (userLoading || (loading && !hasFinanceSnapshot && !financeErrorKind)) {
+    if (userLoading || (loading && !hasFinanceSnapshot && !financeErrorKind && !entitlementsErrorKind)) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
                 <Loader2 className="h-5 w-5 animate-spin text-accent" />

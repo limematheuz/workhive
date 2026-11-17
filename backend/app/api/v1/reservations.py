@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import (
     ActiveUser,
-    AsyncActiveManagerOrAdmin,
     AsyncActiveUser,
     get_async_db,
     get_db,
@@ -30,7 +29,7 @@ async def read_reservations(
     date_from: datetime | None = None,
     date_to: datetime | None = None,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
 ):
     def operation(sync_db: Session):
         reservations = reservation_query_service.list_reservations(
@@ -56,7 +55,7 @@ async def read_reservations(
 async def read_upcoming_arrivals(
     days: int = 3,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
         lambda sync_db: reservation_query_service.list_upcoming_arrivals(

@@ -14,6 +14,10 @@ export interface User {
     active_location_id?: number | null;
     active_location_name?: string | null;
     can_view_finance?: boolean;
+    can_view_tasks?: boolean;
+    can_manage_tasks?: boolean;
+    can_view_locations?: boolean;
+    can_manage_service_catalog?: boolean;
     can_manage_finance?: boolean;
     can_view_labor_costs?: boolean;
     can_manage_labor_costs?: boolean;

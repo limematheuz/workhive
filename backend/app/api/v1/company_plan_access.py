@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveUser, get_db
+from app.api.deps import ActiveApplicationUser, ActiveUser, get_db
 from app.models.user import User
 from app.schemas.company_entitlement_management import (
     CompanyEntitlementOverrideCreate,
@@ -60,7 +60,7 @@ def update_standard_plan(
 @router.get("/current/entitlements", response_model=CurrentCompanyEntitlementsResponse)
 def read_current_company_entitlements(
     db: Session = Depends(get_db),
-    current_user: User = ActiveUser,
+    current_user: User = ActiveApplicationUser,
 ):
     return company_entitlement_management_service.get_current_company_entitlements(
         db, current_user

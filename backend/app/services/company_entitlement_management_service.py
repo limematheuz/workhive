@@ -42,7 +42,8 @@ from app.services.entitlement_management_support import (
     entitlement_response,
     utcnow,
 )
-from app.services.user_scope import require_company_context, require_platform_superadmin
+from app.services.organization_authorization_service import require_capability
+from app.services.user_scope import require_company_context, require_platform_superadmin, role_name
 
 
 def _get_company(db: Session, *, company_id: int) -> Company:
@@ -69,12 +70,16 @@ def get_current_company_entitlements(
     db: Session, current_user: User
 ) -> CurrentCompanyEntitlementsResponse:
     company_id = require_company_context(current_user)
+    codes = ALL_ENTITLEMENT_CODES
+    if role_name(current_user) == "external_portal":
+        require_capability(db, current_user, "finance.read")
+        codes = {"features.invoices", "features.profitability", "features.accountant_portal"}
     company = _get_company(db, company_id=company_id)
     effective = entitlement_service.resolve_effective_entitlements(db, company)
     return CurrentCompanyEntitlementsResponse(
         entitlements=[
             entitlement_response(code, effective.values[code], source="plan")
-            for code in sorted(ALL_ENTITLEMENT_CODES)
+            for code in sorted(codes)
         ]
     )
 

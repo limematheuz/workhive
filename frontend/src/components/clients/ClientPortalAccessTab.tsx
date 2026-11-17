@@ -21,6 +21,7 @@ import {
 import { useUser } from "@/lib/user-context";
 import { ClientPortalService } from "@/services/client-portal.service";
 import type { ClientPortalGrant, ClientPortalInvitation } from "@/types/client-portal";
+import { useClientPortalInvitationAccess } from "./useClientPortalInvitationAccess";
 
 const invitationExpiryFormatter = new Intl.DateTimeFormat("es-ES", {
     dateStyle: "medium",
@@ -41,6 +42,7 @@ function AccessStatus({ status }: { status: string }) {
 
 export function ClientPortalAccessTab({ clientId, clientName }: ClientPortalAccessTabProps) {
     const { user } = useUser();
+    const canInvite = useClientPortalInvitationAccess(user?.id, user?.company_id);
     const { locale } = useDictionary();
     const scopeKey = `${getReadWorkspaceKey(user)}:${clientId}`;
     const [email, setEmail] = useState("");
@@ -101,7 +103,7 @@ export function ClientPortalAccessTab({ clientId, clientName }: ClientPortalAcce
 
     const invite = async () => {
         const normalizedEmail = email.trim();
-        if (!normalizedEmail || submitting) return;
+        if (!normalizedEmail || submitting || !canInvite) return;
         try {
             setSubmitting(true);
             await ClientPortalService.invite(clientId, normalizedEmail);
@@ -161,7 +163,7 @@ export function ClientPortalAccessTab({ clientId, clientName }: ClientPortalAcce
             />
         )}
         {errorKind !== "denied" && (
-            <Card><CardContent><div className="flex items-start gap-3"><UsersRound className="mt-0.5 size-5 shrink-0 text-accent" /><div><h2 className="font-semibold">Portal de cliente</h2><p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">Invita a las personas de {clientName} para consultar únicamente sus presupuestos enviados, contratos y facturas. No recibirán una plaza, membresía ni acceso a otros clientes.</p></div></div><div className="mt-5 flex flex-col gap-2 sm:flex-row"><div className="min-w-0 flex-1"><Label htmlFor="client-portal-email" className="sr-only">Email de la persona</Label><Input id="client-portal-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="persona@cliente.com" autoComplete="email" /></div><Button type="button" onClick={() => void invite()} disabled={!email.trim() || submitting}><UserPlus className="size-4" />{submitting ? "Enviando…" : "Invitar al portal"}</Button></div></CardContent></Card>
+            <Card><CardContent><div className="flex items-start gap-3"><UsersRound className="mt-0.5 size-5 shrink-0 text-accent" /><div><h2 className="font-semibold">Portal de cliente</h2><p className="mt-1 text-sm leading-6 text-[var(--text-muted)]">Invita a las personas de {clientName} para consultar únicamente sus presupuestos enviados, contratos y facturas. No recibirán una plaza, membresía ni acceso a otros clientes.</p></div></div>{!canInvite && <p role="status" className="mt-3 text-sm text-[var(--text-muted)]">{locale === "en" ? "New invitations require the client portal in the current plan. Existing access can still be revoked." : "Para enviar invitaciones, el plan actual debe incluir el portal de cliente. Puedes seguir revocando los accesos existentes."}</p>}<div className="mt-5 flex flex-col gap-2 sm:flex-row"><div className="min-w-0 flex-1"><Label htmlFor="client-portal-email" className="sr-only">Email de la persona</Label><Input id="client-portal-email" type="email" disabled={!canInvite} value={email} onChange={(event) => setEmail(event.target.value)} placeholder="persona@cliente.com" autoComplete="email" /></div><Button type="button" onClick={() => void invite()} disabled={!canInvite || !email.trim() || submitting}><UserPlus className="size-4" />{submitting ? "Enviando…" : "Invitar al portal"}</Button></div></CardContent></Card>
         )}
         {hasLoadedSnapshot && <>
             <section className="space-y-3"><div><h2 className="font-semibold">Accesos activos</h2><p className="mt-1 text-sm text-[var(--text-muted)]">Puedes revocar el acceso en cualquier momento.</p></div>{grants.length === 0 ? <Card><CardContent className="py-8 text-center text-sm text-[var(--text-muted)]">Aún no hay personas con acceso al portal.</CardContent></Card> : <div className="grid gap-3">{grants.map((grant) => <Card key={grant.id}><CardContent className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate font-semibold">{grant.full_name || grant.email}</p><AccessStatus status={grant.status} /></div><p className="mt-1 truncate text-sm text-[var(--text-muted)]">{grant.email}</p></div>{grant.status === "active" && <Button type="button" variant="outline" size="sm" onClick={() => void revokeGrant(grant)}><Ban className="size-4" />Revocar</Button>}</CardContent></Card>)}</div>}</section>

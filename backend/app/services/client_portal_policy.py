@@ -9,6 +9,7 @@ from app.models.client_portal_grant import ClientPortalGrant
 from app.models.user import User
 from app.repositories import client_portal as client_portal_repo
 from app.services.subscription_policy import require_company_access
+from app.services.entitlement_service import company_feature_enabled, require_company_feature
 
 
 CLIENT_PORTAL_ROLE_NAME = "client_portal"
@@ -53,6 +54,7 @@ def require_active_client_portal(
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     require_company_access(grant.company)
+    require_company_feature(db, company_id=grant.company_id, code="features.client_portal")
     return grant
 
 
@@ -72,11 +74,18 @@ def list_active_client_portal_grants(
         user_id=current_user.id,
         now=utcnow(),
     )
+    # Several customer workspaces can belong to the same provider. Resolve its
+    # entitlement once per provider rather than once per grant.
+    enabled_companies = {
+        company_id for company_id in {grant.company_id for grant in grants}
+        if company_feature_enabled(db, company_id=company_id, code="features.client_portal")
+    }
     return [
         grant
         for grant in grants
         if (
             grant.company is not None
+            and grant.company_id in enabled_companies
             and grant.company.is_active
             and grant.client is not None
             and grant.client.is_active

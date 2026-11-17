@@ -58,6 +58,8 @@
     "no_role": "Sin Rol",
     "welcome_back": "Bienvenido de vuelta, {name}. Aquí tienes un resumen operativo de la jornada.",
     "syncing": "Sincronizando colmena de WorkHive...",
+    "workspace_title": "Tu espacio de trabajo",
+    "workspace_description": "Accede desde el menú a las herramientas disponibles para tu perfil. Puedes consultar tus datos y privacidad en tu perfil.",
     "login_required": "Inicia sesión para ver tu resumen de operaciones.",
     "error_load_data": "No se pudieron cargar todos los datos operativos. Revisa tu conexión.",
     "access_denied": "No tienes permiso para consultar parte de la información operativa. Contacta con la persona administradora si necesitas acceso.",

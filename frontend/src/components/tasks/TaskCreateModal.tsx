@@ -86,7 +86,6 @@ export function TaskCreateModal(props: TaskCreateModalProps) {
 function TaskCreateWizard({
     dict,
     adminOrManager,
-    currentUser,
     locations,
     users,
     templates,
@@ -139,13 +138,7 @@ function TaskCreateWizard({
         if (step !== "review") { goToStep(step === "plan" ? "work" : "review"); return; }
         if (planReady && workReady && !saving) handleCreateTask(event);
     };
-    const currentCompanyId = currentUser?.company_id;
-    const ownLocations = locations.filter(location => (
-        !currentCompanyId
-        || location.owner_company_id === currentCompanyId
-        || location.managing_company_id === currentCompanyId
-        || (!location.owner_company_id && !location.managing_company_id)
-    ));
+    const ownLocations = locations.filter(location => location.can_manage_tasks === true);
     const selectedLocation = locations.find(
         (location) => location.id.toString() === newLocationId,
     );

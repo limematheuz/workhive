@@ -21,7 +21,7 @@ from app.schemas.reservation import ReservationResponse
 from app.schemas.work_session import WorkSessionStartLocationResponse
 from app.services import location_access_service
 from app.services import organization_authorization_service
-from app.services.planning_access_service import require_user_planning
+from app.services.planning_access_service import require_user_planning, reservation_reader_location_scope
 from app.services.user_scope import (
     can_manage_company,
     is_platform_superadmin,
@@ -119,8 +119,6 @@ def _accessible_location_ids(
         company_location_ids.update(
             location_id for (location_id,) in linked_location_ids
         )
-    if current_user.role and current_user.role.name == "admin":
-        return sorted(company_location_ids)
     permitted_ids = organization_authorization_service.permitted_location_ids(
         db, current_user, "locations.read"
     )
@@ -161,7 +159,10 @@ def list_reservations(
     require_user_planning(db, current_user)
     if is_platform_superadmin(current_user):
         return []
+    planning_scope = reservation_reader_location_scope(db, current_user)
     location_ids = _accessible_location_ids(db, current_user)
+    if planning_scope is not None:
+        location_ids = [location_id for location_id in location_ids if location_id in planning_scope]
     if location_id is not None and location_id not in location_ids:
         raise HTTPException(status_code=404, detail="Location not found")
     return reservation_repo.list_reservations(
@@ -178,6 +179,7 @@ def list_upcoming_arrivals(
     db: Session, current_user: User, days: int = 3
 ) -> list[Reservation]:
     require_user_planning(db, current_user)
+    planning_scope = reservation_reader_location_scope(db, current_user)
     now = datetime.now(timezone.utc)
     until = now + timedelta(days=max(1, min(days, 3)))
     query = (
@@ -203,6 +205,8 @@ def list_upcoming_arrivals(
         location_ids = _accessible_location_ids(
             db, current_user, include_task_links=True
         )
+        if planning_scope is not None:
+            location_ids = [location_id for location_id in location_ids if location_id in planning_scope]
         if not location_ids:
             return []
         linked_reservation_ids = (

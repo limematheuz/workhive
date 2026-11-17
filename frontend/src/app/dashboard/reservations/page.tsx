@@ -1,5 +1,7 @@
 "use client";
 
+import { canManageCompanyTasks } from "@/domain/access/roles";
+
 import {
     FormEvent,
     startTransition,
@@ -91,7 +93,7 @@ function ReservationsPageContent() {
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
     const reservationToCancelRef = useRef<Reservation | null>(null);
 
-    const canManage = ["admin", "manager", "superadmin"].includes(user?.role?.name || "");
+    const canManage = ["admin", "manager", "superadmin"].includes(user?.role?.name || "") || canManageCompanyTasks(user);
     const [activeTab, setActiveTab] = useState<"reservations" | "requests">(defaultTab);
     const { planningEnabled, hasPlanningAccess } = usePlanningFeatureAccess(user);
     const {

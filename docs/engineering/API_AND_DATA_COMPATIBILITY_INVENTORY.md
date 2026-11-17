@@ -32,6 +32,28 @@ respuestas) es el router y los esquemas asociados; el OpenAPI generado por la
 aplicación es la referencia de integración. Este documento inventaría la
 superficie y sus transiciones, no duplica a mano cada payload.
 
+### Ampliaciones compatibles de notificaciones y portales
+
+- `GET /api/v1/notifications/` conserva su respuesta de lista y añade `skip`
+  no negativo para recorrer todas las páginas (máximo 200 elementos por
+  petición).
+- `GET /api/v1/notifications/task-items/acknowledged` devuelve pares
+  `task_item_id`/`read_at` exclusivamente del destinatario y compañía actuales.
+  Permite conservar las lecturas al reconstruir avisos derivados de tareas.
+- Los grants del portal de cliente requieren además el entitlement efectivo
+  `features.client_portal` de la empresa proveedora. Las invitaciones nuevas,
+  aceptaciones y accesos documentales lo comprueban en el servicio; la consulta
+  y revocación administrativa de grants sigue disponible tras un downgrade.
+- `GET /api/v1/users/assignable` y las asignaciones directas o de checklist
+  seleccionan personas internas activas con `work.read` en el ámbito de la
+  tarea. La selección explícita vacía y el historial de perfiles revocados
+  deshabilitan el puente de roles heredados. El filtro precede a la paginación.
+  Las solicitudes de servicio se notifican a gestores con `work.manage` en la
+  ubicación; las asignaciones se entregan únicamente a destinatarios legibles.
+- `GET /api/v1/companies/current/entitlements` permite a gestoría con grant y
+  `finance.read` vigentes consultar solo los indicadores efectivos de facturas,
+  rentabilidad y portal de gestoría. No expone cuotas, precios ni auditoría.
+
 ## 2. Superficie API registrada
 
 El listado siguiente contiene todos los prefijos registrados directamente por

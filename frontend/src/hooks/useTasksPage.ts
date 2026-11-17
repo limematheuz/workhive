@@ -24,6 +24,7 @@ import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
 import {
     canManageCompanyTasks,
+    canManageServiceCatalog,
     isSuperadmin,
 } from "@/domain/access/roles";
 import { buildTaskListFilters } from "@/domain/tasks/task-list";
@@ -92,6 +93,7 @@ export function useTasksPage() {
     }, [workspaceKey]);
 
     const isAdminOrManager = canManageCompanyTasks(currentUser);
+    const canManageCatalog = canManageServiceCatalog(currentUser);
     const loadingData = userLoading || catalogStatus === "idle" || catalogStatus === "loading";
     const loadErrorMessage = loadError === "denied"
         ? (dict.tasks?.error_denied || "No tienes permiso para consultar estas tareas.")
@@ -183,7 +185,7 @@ export function useTasksPage() {
                 canManageTasks
                     ? UserService.getAssignableUsers()
                     : Promise.resolve([currentUser] as User[]),
-                canManageTasks
+                canManageServiceCatalog(currentUser)
                     ? TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[])
                     : Promise.resolve([] as TemplateTask[])
             ]);
@@ -203,11 +205,11 @@ export function useTasksPage() {
             setTemplates(tmpls);
 
             const nextUserId = !canManageTasks ? currentUser.id.toString() : selectedUserId;
-            const nextTab = !canManageTasks ? "kanban" as const : activeTab;
+            const nextTab = !canManageTasks || (activeTab === "templates" && !canManageServiceCatalog(currentUser)) ? "kanban" as const : activeTab;
             if (!canManageTasks) {
                 setSelectedUserId(nextUserId);
-                setActiveTab(nextTab);
             }
+            if (nextTab !== activeTab) setActiveTab(nextTab);
 
             bootstrappedRef.current = true;
             setCatalogStatus("ready");
@@ -378,6 +380,7 @@ export function useTasksPage() {
         } catch (error) {
             console.error("Error rejecting task:", error);
             toast.error("No se pudo rechazar la solicitud");
+            throw error;
         }
     };
 
@@ -405,6 +408,7 @@ export function useTasksPage() {
         selectedUserId,
         setSelectedUserId,
         isAdminOrManager,
+        canManageCatalog,
         adminOrManager: isAdminOrManager,
         loadTasks,
         getAssigneeName,

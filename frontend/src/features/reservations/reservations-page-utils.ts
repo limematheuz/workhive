@@ -49,7 +49,7 @@ export async function loadInitialTaskDataForPage(
 ) {
     try {
         const [loadedUsers, loadedTemplates] = await Promise.all([
-            UserService.getUsers().catch(() => [] as User[]),
+            UserService.getAssignableUsers().catch(() => [] as User[]),
             TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[]),
         ]);
         const filteredUsers =

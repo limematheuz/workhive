@@ -6,6 +6,14 @@ from app.models.location import Location
 from app.models.user import User
 from app.schemas.location import LocationResponse
 from app.services import location_access_service
+from app.services.planning_access_service import company_planning_enabled
+
+
+def build_location_responses(db: Session, user: User, locations: list[Location], *, work_manage_location_ids: set[int] | None) -> list[LocationResponse]:
+    planning_enabled = bool(user.company_id and company_planning_enabled(db, user.company_id))
+    return [build_location_response(db, user, location,
+            work_manage_location_ids=work_manage_location_ids, planning_enabled=planning_enabled)
+            for location in locations]
 
 
 def build_location_response(
@@ -14,10 +22,13 @@ def build_location_response(
     location: Location,
     *,
     work_manage_location_ids: set[int] | None,
+    planning_enabled: bool | None = None,
 ) -> LocationResponse:
+    if planning_enabled is None:
+        planning_enabled = bool(user.company_id and company_planning_enabled(db, user.company_id))
     response = LocationResponse.model_validate(location)
     response.can_manage_reservations = (
-        location_access_service.has_location_capability_loaded(
+        planning_enabled and location_access_service.has_location_capability_loaded(
             user,
             location,
             "can_manage_reservations",

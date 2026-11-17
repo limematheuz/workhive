@@ -149,7 +149,7 @@ def lock_company(db: Session, *, company_id: int) -> Company | None:
 
 
 def get_company(db: Session, *, company_id: int) -> Company | None:
-    return db.query(Company).filter(Company.id == company_id).first()
+    return db.get(Company, company_id)
 
 
 def list_active_overrides(

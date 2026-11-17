@@ -1,7 +1,7 @@
 import { expect, type Page, type BrowserContext } from "@playwright/test";
 import { qualityAccessFixture } from "./quality-access";
 
-export async function setupNotificationWorkspace(context: BrowserContext, page: Page, initialAccess: boolean, destination = "/dashboard/quality", options: { failInbox?: boolean; hasTasks?: boolean; locale?: "es" | "en" } = {}) {
+export async function setupNotificationWorkspace(context: BrowserContext, page: Page, initialAccess: boolean, destination = "/dashboard/quality", options: { failInbox?: boolean; hasTasks?: boolean; locale?: "es" | "en"; deferNavigation?: boolean } = {}) {
     const token = Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString("base64url");
     await context.addCookies([{ name: "auth_token", value: `fixture.${token}.not-a-backend-token`, url: "http://localhost:3000" }]);
     await page.addInitScript(locale => localStorage.setItem("locale", locale), options.locale ?? "es");
@@ -33,7 +33,9 @@ export async function setupNotificationWorkspace(context: BrowserContext, page: 
         }
         await route.fulfill({ json: body });
     });
-    await page.goto(destination);
-    if (destination === "/dashboard/quality") await expect(page.getByRole("heading", { name: "Incidencias y acciones correctivas", exact: true })).toBeVisible();
+    if (!options.deferNavigation) {
+        await page.goto(destination);
+        if (destination === "/dashboard/quality") await expect(page.getByRole("heading", { name: "Incidencias y acciones correctivas", exact: true })).toBeVisible();
+    }
     return state;
 }

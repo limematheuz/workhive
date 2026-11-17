@@ -10,7 +10,7 @@ import { useSidebarTaskCounts } from "./notifications/useSidebarTaskCounts";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewCompanyTasks, canViewLocations, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, isCompanyTaskManagerRole, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { ClientService } from "@/services/client.service";
 import { OrganizationService } from "@/services/organization.service";
@@ -36,7 +36,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         values: Set<string> | null;
     } | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-    const [organizationAccess, setOrganizationAccess] = useState<{ context: string; allowed: boolean } | null>(null);
+    const [organizationAccess, setOrganizationAccess] = useState<{ context: string; allowed: boolean; capabilities: Record<string, boolean> } | null>(null);
     const [clientAccess, setClientAccess] = useState<{ context: string; canRead: boolean } | null>(null);
     const isAdminOrManager = canManageCompanyTasks(user);
     const isCompanyAdmin = canAdministerCompany(user);
@@ -53,9 +53,9 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         if (!featureContext) return;
         let cancelled = false;
         void OrganizationService.getAccess().then(access => {
-            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: ["access.members.read", "access.profiles.read", "organization.departments.read", "organization.teams.read"].some(code => access[code] === true) });
+            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: ["access.members.read", "access.profiles.read", "organization.departments.read", "organization.teams.read"].some(code => access[code] === true), capabilities: access });
         }).catch(() => {
-            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: false });
+            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: false, capabilities: {} });
         });
         return () => { cancelled = true; };
     }, [featureContext]);
@@ -94,7 +94,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         : null;
 
     const { pendingRequestsCount, taskPendingCount, refreshPending, refreshTasks } = useSidebarTaskCounts(
-        Boolean(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
+        canViewCompanyTasks(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
         user?.id, user?.company_id, isAdminOrManager, user?.role?.name,
     );
     const { reportAlertsCount, refreshReports } = useNotificationReportCount(
@@ -115,7 +115,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         void refreshReports();
     });
 
-    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, isCompanyAdmin, canReadClients: clientAccess?.context === featureContext && clientAccess.canRead === true, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewQuality: canViewQuality(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, isClientPortal, userIsPlatformSuperadmin, enabledFeatures });
+    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, canViewPlanning: (isCompanyTaskManagerRole(user?.role?.name) || isAdminOrManager) && canViewLocations(user), canManageExternalNetwork: isCompanyTaskManagerRole(user?.role?.name), canViewTasks: canViewCompanyTasks(user), canViewLocations: canViewLocations(user), canReadInventory: organizationAccess?.context === featureContext && organizationAccess?.capabilities["inventory.read"] === true, isCompanyAdmin, canReadClients: clientAccess?.context === featureContext && clientAccess.canRead === true, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewQuality: canViewQuality(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, isClientPortal, userIsPlatformSuperadmin, enabledFeatures });
     const expanded = state === "expanded";
     return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>

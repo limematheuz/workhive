@@ -16,6 +16,7 @@ def list_notifications(
     *,
     unread_only: bool,
     limit: int,
+    skip: int = 0,
 ) -> list[Notification]:
     query = db.query(Notification).filter(
         Notification.user_id == user_id, Notification.company_id == company_id
@@ -24,6 +25,7 @@ def list_notifications(
         query = query.filter(Notification.read_at.is_(None))
     return (
         query.order_by(Notification.created_at.desc(), Notification.id.desc())
+        .offset(skip)
         .limit(limit)
         .all()
     )
@@ -99,16 +101,21 @@ async def list_notifications_async(
     *,
     unread_only: bool,
     limit: int,
+    skip: int = 0,
 ) -> list[Notification]:
     statement = select(Notification).where(
         Notification.user_id == user_id, Notification.company_id == company_id
     )
     if unread_only:
         statement = statement.where(Notification.read_at.is_(None))
-    statement = statement.order_by(
-        Notification.created_at.desc(),
-        Notification.id.desc(),
-    ).limit(limit)
+    statement = (
+        statement.order_by(
+            Notification.created_at.desc(),
+            Notification.id.desc(),
+        )
+        .offset(skip)
+        .limit(limit)
+    )
     result = await db.scalars(statement)
     return list(result.all())
 

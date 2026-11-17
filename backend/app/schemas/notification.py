@@ -3,6 +3,11 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
+class TaskNotificationAcknowledgement(BaseModel):
+    task_item_id: int
+    read_at: datetime
+
+
 class NotificationResponse(BaseModel):
     id: int
     event_type: str

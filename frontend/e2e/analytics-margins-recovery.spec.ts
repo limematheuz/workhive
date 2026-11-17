@@ -87,6 +87,7 @@ for (const width of [1440, 768, 390]) {
                 return route.fulfill({
                     json: {
                         entitlements: [
+                            { code: "features.invoices", value_type: "boolean", value: true },
                             { code: "features.profitability", value_type: "boolean", value: true },
                             { code: "features.accountant_portal", value_type: "boolean", value: true },
                         ],
@@ -394,3 +395,41 @@ for (const width of [1440, 768, 390]) {
         await expectNoHorizontalOverflow(page);
     });
 }
+
+for (const width of [390, 1440]) test(`finance remains usable when a custom plan excludes invoices at ${width}px`, async ({ page }) => {
+    test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
+    await page.setViewportSize({ width, height: 900 });
+    await setupAuthAndLocale(page);
+    const forbiddenReads: string[] = [];
+    const now = new Date().toISOString().slice(0, 10);
+    await page.route("**/api/v1/**", async route => {
+        const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
+        if (path === "/api/v1/users/me") return route.fulfill({ json: {
+            id: 41, full_name: "Finanzas QA", company_id: 1, role: { name: "viewer" },
+            is_active: true, can_view_finance: true, can_manage_finance: false,
+        } });
+        if (path === "/api/v1/companies/1") return route.fulfill({ json: { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" } });
+        if (path === "/api/v1/companies/current/entitlements") return route.fulfill({ json: { entitlements: [{ code: "features.invoices", value_type: "boolean", value: false }] } });
+        if (path === "/api/v1/invoices" || path === "/api/v1/customer-payments") {
+            forbiddenReads.push(path);
+            return route.fulfill({ status: 403, json: { detail: "Module disabled" } });
+        }
+        if (path === "/api/v1/sales-ledger") return route.fulfill({ json: [{
+            source_type: "manual", source_id: 1, document_number: "QA-MANUAL", entry_date: now,
+            client_name: "Cliente QA", base_amount: 1000, tax_amount: 210, total_amount: 1210,
+            payment_status: "paid", invoice_status: "issued", is_rectification: false, collected_amount: 1210,
+        }] });
+        if (path === "/api/v1/expenses") return route.fulfill({ json: [{
+            id: 1, expense_date: now, description: "QA gasto", category: "supplies",
+            base_amount: 200, tax_amount: 42, total_amount: 242, is_active: true,
+        }] });
+        return route.fulfill({ json: [] });
+    });
+    await page.goto("/dashboard/analytics");
+    const main = page.locator("main");
+    await expect(main.getByText("1000,00 €").filter({ visible: true }).first()).toBeVisible();
+    await expect(main.getByText("800,00 €").filter({ visible: true }).first()).toBeVisible();
+    expect(forbiddenReads).toEqual([]);
+    await expect(main.getByRole("alert")).toHaveCount(0);
+    await expectNoHorizontalOverflow(page);
+});

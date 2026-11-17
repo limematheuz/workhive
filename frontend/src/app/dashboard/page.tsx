@@ -3,6 +3,7 @@
 import React, { useEffect, useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { TechDashboard } from "@/components/dashboard/TechDashboard";
+import { WorkspaceOverview } from "@/components/dashboard/WorkspaceOverview";
 import { SuperadminDashboard } from "@/components/dashboard/superadmin/SuperadminDashboard";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -12,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { isPlatformSuperadmin } from "@/domain/access/roles";
+import { canViewCompanyTasks, isPlatformSuperadmin } from "@/domain/access/roles";
 
 function DashboardOverviewContent() {
     const { dict } = useDictionary();
@@ -88,6 +89,8 @@ function DashboardOverviewContent() {
     if (userIsPlatformSuperadmin) {
         return <SuperadminDashboard />;
     }
+
+    if (!canViewCompanyTasks(user)) return <WorkspaceOverview />;
 
     return (
         <>

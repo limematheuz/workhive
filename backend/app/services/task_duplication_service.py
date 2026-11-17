@@ -66,7 +66,7 @@ def duplicate_task_item(db: Session, current_user: User, task_id: int) -> TaskIt
     )
     if source.user_id is not None:
         assignee_ids.add(source.user_id)
-    task_structure_service.validate_assignee_ids(db, source.company_id, assignee_ids)
+    task_structure_service.validate_assignee_ids(db, source.company_id, assignee_ids, source.location_id)
     payload = TaskItemCreate(
         title=f"{source.title} (Copia)",
         description=pending_description(source.description),

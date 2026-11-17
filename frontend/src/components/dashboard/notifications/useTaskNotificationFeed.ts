@@ -23,9 +23,9 @@ export function useTaskNotificationFeed(enabled: boolean, userId: number | undef
         const readContext = `notification-tasks:${context}:${request}`;
         const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
         const [tasks, requested, rejected] = await Promise.all([
-            TaskService.getTaskItems({ userId }, readContext).catch(() => [] as TaskItem[]),
-            isManagerOrAdmin ? TaskService.getTaskItems({ status: "requested" }, readContext).catch(() => [] as TaskItem[]) : Promise.resolve([]),
-            isManagerOrAdmin ? TaskService.getTaskItems({ status: "rejected" }, readContext).catch(() => [] as TaskItem[]) : Promise.resolve([]),
+            TaskService.getAllTaskItems({ userId }, readContext).catch(() => [] as TaskItem[]),
+            isManagerOrAdmin ? TaskService.getAllTaskItems({ status: "requested" }, readContext).catch(() => [] as TaskItem[]) : Promise.resolve([]),
+            isManagerOrAdmin ? TaskService.getAllTaskItems({ status: "rejected" }, readContext).catch(() => [] as TaskItem[]) : Promise.resolve([]),
         ]);
         if (request === version.current && activeContext.current === context) {
             const byId = new Map([...tasks, ...requested, ...rejected].map(task => [task.id, task]));

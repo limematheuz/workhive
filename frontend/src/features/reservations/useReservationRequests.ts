@@ -88,6 +88,7 @@ export function useReservationRequests({
         } catch (error) {
             console.error("Error rejecting task:", error);
             toast.error("No se pudo rechazar la solicitud");
+            throw error;
         }
     };
     const handleAcceptTask = async (taskId: number, input: TaskAcceptanceInput) => {

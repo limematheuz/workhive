@@ -5,7 +5,7 @@ from app.api.pagination import PaginationLimit, PaginationOffset
 from app.api.deps import (
     ActiveAdmin,
     ActiveUser,
-    AsyncActiveManagerOrAdmin,
+    AsyncActiveFinancialReader,
     AsyncActiveUser,
     get_async_db,
     get_db,
@@ -107,7 +107,7 @@ async def read_company_members(
 async def read_company_expenses(
     company_id: int,
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncActiveManagerOrAdmin,
+    current_user: User = AsyncActiveFinancialReader,
 ):
     return await db.run_sync(
         lambda sync_db: company_service.get_company_expenses(

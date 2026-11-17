@@ -11,8 +11,7 @@ from app.models.task_structure import (
     TaskChecklistItem,
 )
 from app.models.user import User
-from app.repositories import user as user_repo
-from app.services import task_assignment_service
+from app.services import task_assignment_service, operational_recipient_service
 
 
 STATUS_PRIORITY = {
@@ -51,18 +50,19 @@ def validate_description_assignees(
     db: Session,
     company_id: int,
     description: str | None,
+    location_id: int | None = None,
 ) -> None:
-    validate_assignee_ids(db, company_id, description_assignee_ids(description))
+    validate_assignee_ids(db, company_id, description_assignee_ids(description), location_id)
 
 
-def validate_assignee_ids(db: Session, company_id: int, ids: set[int]) -> None:
+def validate_assignee_ids(db: Session, company_id: int, ids: set[int], location_id: int | None = None) -> None:
     if not ids:
         return
-    valid_ids = user_repo.get_active_company_user_ids(db, company_id, ids)
+    valid_ids = operational_recipient_service.eligible_ids(db, company_id, ids, location_id=location_id)
     if valid_ids != ids:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Checklist assignees must be active users in the task company",
+            detail="Checklist assignees must be active company users with work access at this location",
         )
 
 
@@ -74,7 +74,7 @@ def sync_from_description(
     include_embedded_assignments: bool = True,
 ) -> TaskItem:
     if strict:
-        validate_description_assignees(db, task.company_id, task.description)
+        validate_description_assignees(db, task.company_id, task.description, task.location_id)
 
     company_users = {
         user.id: user

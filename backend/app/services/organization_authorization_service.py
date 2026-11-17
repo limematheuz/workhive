@@ -227,6 +227,14 @@ def permitted_location_ids(
     current_user: User,
     capability: str,
 ) -> set[int] | None:
+    return resolve_location_read_scope(db, current_user, capability)[0]
+
+
+def resolve_location_read_scope(
+    db: Session,
+    current_user: User,
+    capability: str,
+) -> tuple[set[int] | None, bool]:
     """Resolve a capability to all locations or a finite explicit set.
 
     ``None`` means a company-wide assignment. Department and team scopes map
@@ -253,14 +261,14 @@ def permitted_location_ids(
         if capability == "locations.read" and role_name(current_user) == "viewer":
             return list_legacy_viewer_location_ids(
                 db, company_id=company_id, user_id=current_user.id
-            )
-        return None
+            ), True
+        return None, True
     return resolve_permitted_location_ids(
         db,
         company_id=company_id,
         membership=membership,
         capability=capability,
-    )
+    ), False
 
 
 def resolve_location_capabilities(

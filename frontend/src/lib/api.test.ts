@@ -347,3 +347,44 @@ test("a late 401 from another identity does not clear or redirect the current se
         assert.equal(browser.sessionStorage.getItem("workhive_user_cache:v1"), currentUser);
     } finally { restoreBrowser(); }
 });
+
+test("a mutation waiting for csrf never executes with a replacement session", async () => {
+    const browser = installBrowser();
+    browser.sessionStorage.setItem("workhive_user_cache:v1", "first-user");
+    let release!: (response: Response) => void;
+    const calls: string[] = [];
+    globalThis.fetch = async url => {
+        calls.push(String(url));
+        if (String(url).endsWith("/auth/csrf")) return new Promise<Response>(resolve => { release = resolve; });
+        return jsonResponse({ ok: true });
+    };
+    const pending = apiFetch("/api/v1/auth/logout", { method: "POST" });
+    browser.sessionStorage.setItem("workhive_user_cache:v1", "second-user");
+    browser.sessionStorage.setItem("workhive_csrf_token", "new-session-csrf");
+    release(jsonResponse({ csrf_token: "old-session-csrf" }));
+    try {
+        await assert.rejects(pending, { name: "AbortError" });
+        assert.deepEqual(calls, ["/api/v1/auth/csrf"]);
+        assert.equal(browser.sessionStorage.getItem("workhive_csrf_token"), "new-session-csrf");
+        assert.equal(hasActiveMutations(), false);
+    } finally { restoreBrowser(); }
+});
+
+test("a csrf retry from another identity cannot replay a mutation or reset its token", async () => {
+    const browser = installBrowser();
+    browser.sessionStorage.setItem("workhive_user_cache:v1", "first-user");
+    browser.sessionStorage.setItem("workhive_csrf_token", "old-session-csrf");
+    const calls: string[] = [];
+    globalThis.fetch = async url => {
+        calls.push(String(url));
+        browser.sessionStorage.setItem("workhive_user_cache:v1", "second-user");
+        browser.sessionStorage.setItem("workhive_csrf_token", "new-session-csrf");
+        return jsonResponse({ detail: "Invalid or missing CSRF token" }, { status: 403 });
+    };
+    try {
+        await assert.rejects(apiFetch("/api/v1/tasks/1", { method: "PATCH", body: "{}" }), { name: "AbortError" });
+        assert.deepEqual(calls, ["/api/v1/tasks/1"]);
+        assert.equal(browser.sessionStorage.getItem("workhive_csrf_token"), "new-session-csrf");
+        assert.equal(hasActiveMutations(), false);
+    } finally { restoreBrowser(); }
+});

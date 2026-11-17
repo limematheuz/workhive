@@ -424,7 +424,8 @@ def test_client_portal_accepts_only_its_completed_inspection_with_a_snapshot(cli
 
 def test_client_portal_keeps_documents_visible_when_quality_is_not_entitled(client, db):
     company = _company(db, "QUALITY-DISABLED")
-    company.subscription_plan = "basic"
+    # Medium includes the customer portal but does not include Quality.
+    company.subscription_plan = "medium"
     admin, _ = _internal_user(db, company=company, suffix="QUALITY-DISABLED")
     customer = _client(db, company=company, suffix="QUALITY-DISABLED")
     portal_user, headers = _portal_user(

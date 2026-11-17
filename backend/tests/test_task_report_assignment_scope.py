@@ -67,6 +67,27 @@ def _workspace(db):
     return users, reports, foreign
 
 
+@pytest.mark.parametrize("profile_name", ["Operaciones", "Consulta"])
+def test_explicit_work_profiles_read_reports_in_their_company_scope(client, db, profile_name):
+    from app.services import organization_bootstrap_service
+    from test_assignable_users import _assign_profile
+
+    users, reports, _ = _workspace(db)
+    for key in ("admin", "other"):
+        organization_bootstrap_service.ensure_user_membership(db, users[key])
+    db.commit()
+    _assign_profile(db, company=users["admin"].company, admin=users["admin"],
+                    target_user=users["other"], profile_name=profile_name)
+    headers = _headers(users["other"])
+    response = client.get("/api/v1/task-reports/", headers=headers)
+    assert response.status_code == 200, response.text
+    expected = {reports[key].id for key in ("direct", "structured", "reassigned", "unassigned")}
+    assert {row["id"] for row in response.json()} == expected
+    for report_id in expected:
+        assert client.get(f"/api/v1/task-reports/{report_id}", headers=headers).status_code == 200
+    assert client.get(f"/api/v1/task-reports/{reports['foreign'].id}", headers=headers).status_code == 404
+
+
 @pytest.mark.parametrize(
     "actor,expected",
     [

@@ -146,6 +146,12 @@ una plaza de cliente.
 | Colaborador patrocinado | `PartnerPortalGrant`; consume `limits.partner_portals`, no una plaza interna. Exige `features.partner_portal`. | Operación patrocinada entre empresa anfitriona y colaboradora; no hereda perfiles internos. |
 | Cliente | `ClientPortalGrant`; no es un `ExternalAccessGrant` ni una membresía. | Queda ligado a un cliente concreto y a su workspace; `features.client_portal` continúa `coming_soon`. |
 
+El portal de cliente comprueba `features.client_portal` de la empresa
+proveedora al crear y aceptar una invitación, listar workspaces y abrir sus
+documentos. Un grant anterior no sustituye el entitlement vigente. La
+administración conserva la consulta y revocación de concesiones tras retirar
+la función. Esto no cambia su clasificación comercial `coming_soon`.
+
 `limits.external_portals` sigue siendo una capacidad genérica de catálogo,
 pero no hay un contador/flujo de alta independiente que la aplique todavía.
 No se debe usar para vender o implementar un nuevo portal: primero se crea su

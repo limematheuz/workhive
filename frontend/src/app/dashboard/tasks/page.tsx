@@ -25,7 +25,7 @@ function TasksPageContent() {
                 className="mb-6"
                 actions={(
                     <>
-                        {state.activeTab === "templates" && state.isAdminOrManager && (
+                        {state.activeTab === "templates" && state.canManageCatalog && (
                             <Button
                                 onClick={() => state.handleOpenTemplateModal(null)}
                                 className={PAGE_ACTION_BUTTON_PRIMARY}
@@ -57,9 +57,9 @@ function TasksPageContent() {
                             ...(state.isAdminOrManager
                                 ? [
                                     { id: "list" as const, label: state.dict.tasks?.tab_list || "Lista", icon: ListTodo },
-                                    { id: "templates" as const, label: state.dict.tasks?.tab_templates || "Catálogo de servicios", icon: Library }
                                   ]
-                                : [])
+                                : []),
+                            ...(state.canManageCatalog ? [{ id: "templates" as const, label: state.dict.tasks?.tab_templates || "Catálogo de servicios", icon: Library }] : [])
                         ]}
                         activeTab={state.activeTab}
                         onChange={state.setActiveTab}
@@ -130,7 +130,7 @@ function TasksPageContent() {
                                 />
                             )}
 
-                            {state.activeTab === "templates" && state.isAdminOrManager && (
+                            {state.activeTab === "templates" && state.canManageCatalog && (
                                 <TasksTemplates
                                     templates={state.templates}
                                     handleOpenTemplateModal={state.handleOpenTemplateModal}

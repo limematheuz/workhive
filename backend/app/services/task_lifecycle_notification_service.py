@@ -5,11 +5,12 @@ from app.models.role import Role
 from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
-from app.services import notification_service
+from app.repositories.notification_acknowledgement import retire_task_assignments, retire_task_requests
+from app.services import notification_service, task_assignment_service
+from app.services import operational_recipient_service
 
 
 MANAGEMENT_ROLES = {"admin", "manager"}
-OPERATIONAL_ROLES = {"admin", "manager", "viewer"}
 
 
 def _active_company_users(
@@ -30,8 +31,23 @@ def _active_company_users(
     )
 
 
-def operational_users(db: Session, company_id: int) -> list[User]:
-    return _active_company_users(db, company_id, OPERATIONAL_ROLES)
+def operational_users(db: Session, company_id: int, location_id: int | None = None) -> list[User]:
+    return operational_recipient_service.eligible_users(db, company_id, location_id=location_id)
+
+
+def reconcile_assignment_notifications(
+    db: Session, task: TaskItem, *, deleted: bool = False
+) -> None:
+    active = (
+        set()
+        if deleted or task.status in {"requested", "rejected", "completed"}
+        else task_assignment_service.assigned_user_ids(task)
+    )
+    retire_task_assignments(
+        db, company_id=task.company_id, task_id=task.id, active_user_ids=active
+    )
+    if deleted or task.status != "requested":
+        retire_task_requests(db, company_id=task.company_id, task_id=task.id)
 
 
 def notify_task_assignees(
@@ -41,15 +57,8 @@ def notify_task_assignees(
 ) -> None:
     if not user_ids or task.status in {"requested", "rejected", "completed"}:
         return
-    recipients = (
-        db.query(User)
-        .filter(
-            User.id.in_(user_ids),
-            User.company_id == task.company_id,
-            User.is_active.is_(True),
-        )
-        .all()
-    )
+    recipients = [user for user in operational_users(db, task.company_id, task.location_id)
+                  if user.id in user_ids]
     if not recipients:
         return
     notification_service.notify_users(
@@ -85,7 +94,9 @@ def notify_request_sent(
     *,
     commit: bool = True,
 ) -> None:
-    recipients = _active_company_users(db, task.company_id, MANAGEMENT_ROLES)
+    recipients = operational_recipient_service.eligible_users(
+        db, task.company_id, location_id=task.location_id, capabilities=("work.manage",)
+    )
     notification_service.notify_users_once(
         db,
         users=recipients,
@@ -165,6 +176,8 @@ def notify_work_started(
 
 
 def notify_task_completed(db: Session, task: TaskItem) -> None:
+    reconcile_assignment_notifications(db, task)
+    db.commit()
     reservation = _external_reservation(task)
     if reservation is None:
         return

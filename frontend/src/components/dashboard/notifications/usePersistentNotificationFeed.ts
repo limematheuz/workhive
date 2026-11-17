@@ -2,19 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
 import { ApiResponseError } from "@/lib/api";
-import { NotificationService, type PersistentNotification } from "@/services/notification.service";
+import { NotificationService, type PersistentNotification, type TaskNotificationAcknowledgement } from "@/services/notification.service";
 
 type Snapshot = {
     context: string | null;
     items: PersistentNotification[];
     loading: boolean;
     failed: boolean;
+    taskAcknowledgements: TaskNotificationAcknowledgement[];
 };
 
 export function usePersistentNotificationFeed(enabled: boolean, userId: number | undefined,
     companyId: number | undefined, pendingAcknowledgements: Set<number>) {
     const context = enabled && userId && companyId ? `${userId}:${companyId}` : null;
-    const [snapshot, setSnapshot] = useState<Snapshot>({ context: null, items: [], loading: false, failed: false });
+    const [snapshot, setSnapshot] = useState<Snapshot>({ context: null, items: [], loading: false, failed: false, taskAcknowledgements: [] });
     const activeContext = useRef<string | null>(null);
     const version = useRef(0);
     const readRevision = useRef(0);
@@ -36,7 +37,8 @@ export function usePersistentNotificationFeed(enabled: boolean, userId: number |
             if (activeContext.current !== context) return previous;
             const items = previous.context === context ? previous.items : [];
             return { context, items: typeof update === "function" ? update(items) : update,
-                loading: false, failed: previous.context === context && previous.failed };
+                loading: false, failed: previous.context === context && previous.failed,
+                taskAcknowledgements: previous.context === context ? previous.taskAcknowledgements : [] };
         });
     }, [context]);
 
@@ -44,22 +46,28 @@ export function usePersistentNotificationFeed(enabled: boolean, userId: number |
         if (!context || activeContext.current !== context) return;
         const request = ++version.current;
         setSnapshot(previous => ({ context, items: previous.context === context ? previous.items : [],
+            taskAcknowledgements: previous.context === context ? previous.taskAcknowledgements : [],
             loading: true, failed: previous.context === context && previous.failed }));
         try {
-            const items = await NotificationService.listUnread(`${context}:${readRevision.current}`);
+            const [items, taskAcknowledgements] = await Promise.all([
+                NotificationService.listUnread(`${context}:${readRevision.current}`),
+                NotificationService.listTaskAcknowledgements(`${context}:${readRevision.current}`),
+            ]);
             if (request === version.current && activeContext.current === context) setSnapshot({ context, items: items.filter(notification => !(
                 notification.entity_type === "task_item" && typeof notification.entity_id === "number"
                 && pendingAcknowledgements.has(notification.entity_id)
-            )), loading: false, failed: false });
+            )), taskAcknowledgements, loading: false, failed: false });
         } catch (error) {
             const transient = !(error instanceof ApiResponseError) || error.status >= 500 || error.status === 408 || error.status === 429;
-            if (request === version.current && activeContext.current === context) setSnapshot(previous => ({ context, items: transient && previous.context === context ? previous.items : [], loading: false, failed: true }));
+            if (request === version.current && activeContext.current === context) setSnapshot(previous => ({ context, items: transient && previous.context === context ? previous.items : [],
+                taskAcknowledgements: transient && previous.context === context ? previous.taskAcknowledgements : [], loading: false, failed: true }));
         }
     }, [context, pendingAcknowledgements]);
 
     const owned = Boolean(context && snapshot.context === context);
     return {
         persistentNotifications: owned ? snapshot.items : [],
+        taskAcknowledgements: owned ? snapshot.taskAcknowledgements : [],
         setPersistentNotifications, loadPersistentNotifications,
         persistentLoadFailed: owned && snapshot.failed,
         persistentLoading: Boolean(context && (!owned || snapshot.loading)),

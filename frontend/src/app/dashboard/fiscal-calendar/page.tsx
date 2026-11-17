@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { canManageFinance, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     buildUpcomingFiscalDeadlines,
@@ -49,6 +49,7 @@ export default function FiscalCalendarPage() {
     const { dict, locale } = useDictionary();
     const text = dict.fiscal_calendar;
     const { user, loading: userLoading } = useUser();
+    const canView = canViewFinance(user) && !isPlatformSuperadmin(user);
     const canManage = canManageFinance(user) && !isPlatformSuperadmin(user);
     const [settings, setSettings] = useState<CompanyFiscalSettings | null>(null);
     const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export default function FiscalCalendarPage() {
     const [reminderDays, setReminderDays] = useState("7");
 
     useEffect(() => {
-        if (userLoading || !canManage) return;
+        if (userLoading || !canView) return;
 
         let cancelled = false;
 
@@ -77,7 +78,7 @@ export default function FiscalCalendarPage() {
         return () => {
             cancelled = true;
         };
-    }, [canManage, text.error_load, userLoading]);
+    }, [canView, text.error_load, userLoading]);
 
     const deadlines = useMemo(
         () => settings
@@ -91,7 +92,7 @@ export default function FiscalCalendarPage() {
     };
 
     const save = async () => {
-        if (!settings) return;
+        if (!canManage || !settings) return;
         const parsedReminderDays = Number(reminderDays);
         if (!Number.isInteger(parsedReminderDays) || parsedReminderDays < 1 || parsedReminderDays > 30) {
             toast.error(text.invalid_reminder);
@@ -115,9 +116,9 @@ export default function FiscalCalendarPage() {
         }
     };
 
-    if (!userLoading && !canManage) redirect("/dashboard");
+    if (!userLoading && !canView) redirect("/dashboard");
 
-    if (userLoading || (loading && canManage)) {
+    if (userLoading || (loading && canView)) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
                 <Loader2 className="h-5 w-5 animate-spin text-accent" />
@@ -126,7 +127,7 @@ export default function FiscalCalendarPage() {
         );
     }
 
-    if (!canManage) return null;
+    if (!canView) return null;
 
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
@@ -146,19 +147,21 @@ export default function FiscalCalendarPage() {
                             </div>
                             <p className="mt-1 max-w-3xl text-sm text-[var(--text-muted)]">{text.settings_description}</p>
                         </div>
-                        <Button type="button" size="sm" onClick={save} disabled={saving}>
+                        {canManage && <Button type="button" size="sm" onClick={save} disabled={saving}>
                             {saving ? text.saving : text.save}
-                        </Button>
+                        </Button>}
                     </div>
 
                     <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_13rem]">
                         <PreferenceToggle
+                            disabled={!canManage}
                             id="quarterly-vat"
                             checked={Boolean(settings?.quarterly_vat_enabled)}
                             label={text.vat_label}
                             onCheckedChange={(checked) => updatePreference("quarterly_vat_enabled", checked)}
                         />
                         <PreferenceToggle
+                            disabled={!canManage}
                             id="quarterly-withholding"
                             checked={Boolean(settings?.quarterly_withholding_enabled)}
                             label={text.withholding_label}
@@ -170,6 +173,7 @@ export default function FiscalCalendarPage() {
                             </span>
                             <span className="mt-1.5 flex items-center gap-2">
                                 <Input
+                                    disabled={!canManage}
                                     aria-label={text.reminder_label}
                                     className="h-auto w-12 border-0 bg-transparent px-0 text-center text-base font-bold text-[var(--text-main)] shadow-none"
                                     inputMode="numeric"
@@ -219,11 +223,13 @@ export default function FiscalCalendarPage() {
 }
 
 function PreferenceToggle({
+    disabled,
     id,
     checked,
     label,
     onCheckedChange,
 }: {
+    disabled: boolean;
     id: string;
     checked: boolean;
     label: string;
@@ -231,7 +237,7 @@ function PreferenceToggle({
 }) {
     return (
         <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3.5 py-3">
-            <Checkbox id={id} checked={checked} onCheckedChange={(value) => onCheckedChange(value === true)} />
+            <Checkbox disabled={disabled} id={id} checked={checked} onCheckedChange={(value) => onCheckedChange(value === true)} />
             <Label htmlFor={id} className="cursor-pointer text-sm font-semibold text-[var(--text-main)]">{label}</Label>
         </div>
     );
