@@ -74,6 +74,10 @@ class UserResponse(UserBase):
     active_location_name: str | None = None
     # Presentation hints from the canonical resolver. Backend endpoints still
     # enforce capabilities independently for every request.
+    can_view_tasks: bool = False
+    can_manage_tasks: bool = False
+    can_view_locations: bool = False
+    can_manage_service_catalog: bool = False
     can_view_finance: bool = False
     can_manage_finance: bool = False
     can_view_labor_costs: bool = False

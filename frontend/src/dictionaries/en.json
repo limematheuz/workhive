@@ -58,6 +58,8 @@
     "no_role": "No Role",
     "welcome_back": "Welcome back, {name}. Here is an operations summary for the day.",
     "syncing": "Syncing WorkHive hive...",
+    "workspace_title": "Your workspace",
+    "workspace_description": "Use the menu to open the tools available to your profile. You can view your details and privacy settings in your profile.",
     "login_required": "Please sign in to see your operational overview.",
     "error_load_data": "Could not load all operational data. Please check your connection.",
     "access_denied": "You do not have permission to view some operational information. Contact your administrator if you need access.",

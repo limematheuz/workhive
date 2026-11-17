@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
+import { collectPaginated } from "@/lib/pagination";
 
 
 export interface PersistentNotification {
@@ -14,15 +15,32 @@ export interface PersistentNotification {
     created_at: string;
 }
 
+export interface TaskNotificationAcknowledgement {
+    task_item_id: number;
+    read_at: string;
+}
+
 export const NotificationService = {
     listUnread: async (readContext?: string): Promise<PersistentNotification[]> => {
-        const response = await apiFetch("/api/v1/notifications/?unread_only=true&limit=200", {
+        const items = await collectPaginated<PersistentNotification>(async (skip, limit) => {
+            const response = await apiFetch(`/api/v1/notifications/?unread_only=true&limit=${limit}&skip=${skip}`, {
+                cache: "no-store",
+                // Separates client-side in-flight reads; the backend still authorizes the session.
+                headers: readContext ? { "X-Notification-Context": readContext } : undefined,
+            });
+            await assertApiResponseOk(response, "Could not load notifications");
+            return response.json();
+        }, 200);
+        return [...new Map(items.map(item => [item.id, item])).values()];
+    },
+
+    listTaskAcknowledgements: async (readContext?: string): Promise<TaskNotificationAcknowledgement[]> => {
+        const response = await apiFetch("/api/v1/notifications/task-items/acknowledged", {
             cache: "no-store",
-            // Separates client-side in-flight reads; the backend still authorizes the session.
             headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
-        await assertApiResponseOk(response, "Could not load notifications");
-        return await response.json();
+        await assertApiResponseOk(response, "Could not load notification read state");
+        return response.json();
     },
 
     markRead: async (id: number): Promise<void> => {

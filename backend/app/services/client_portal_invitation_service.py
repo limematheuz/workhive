@@ -27,6 +27,7 @@ from app.services import email_service, privacy_service
 from app.services.client_portal_policy import CLIENT_PORTAL_ROLE_NAME
 from app.services.company_collaboration_invitation_tokens import hash_invitation_secret
 from app.services.subscription_policy import require_company_access
+from app.services.entitlement_service import require_company_feature
 
 
 PENDING_STATUS = "pending"
@@ -102,13 +103,14 @@ def create_invitation(
     payload: ClientPortalInvitationCreate,
     inviter: User,
 ) -> ClientPortalInvitation:
-    if not settings.smtp_is_configured:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Invitation email delivery is not configured")
     if inviter.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     if inviter.company is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     require_company_access(inviter.company)
+    require_company_feature(db, company_id=company_id, code="features.client_portal")
+    if not settings.smtp_is_configured:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Invitation email delivery is not configured")
     client = _require_managed_active_client(db, company_id=company_id, client_id=client_id)
     email = normalize_email(str(payload.email))
     if email == normalize_email(inviter.email):
@@ -188,6 +190,7 @@ def accept_invitation(
     if company is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     require_company_access(company)
+    require_company_feature(db, company_id=company.id, code="features.client_portal")
 
     existing_user = _validate_existing_user_for_portal(user_repo.get_user_by_email(db, invitation.email))
     if existing_user is None:

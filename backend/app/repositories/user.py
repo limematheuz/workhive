@@ -52,6 +52,7 @@ def get_assignable_users(
     skip: int = 0,
     limit: int = 200,
     allowed_user_ids: set[int] | None = None,
+    eligible_user_ids=None,
 ) -> list[User]:
     if allowed_user_ids is not None and not allowed_user_ids:
         return []
@@ -70,6 +71,8 @@ def get_assignable_users(
     )
     if allowed_user_ids is not None:
         query = query.filter(User.id.in_(allowed_user_ids))
+    if eligible_user_ids is not None:
+        query = query.filter(User.id.in_(eligible_user_ids))
     return (
         query.order_by(User.full_name.asc(), User.email.asc(), User.id.asc())
         .offset(skip)

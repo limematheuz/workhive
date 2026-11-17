@@ -2,7 +2,7 @@
 
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { ApiResponseError } from "@/lib/api";
-import { isPlatformSuperadmin } from "@/domain/access/roles";
+import { canViewCompanyTasks, canViewLocations, isPlatformSuperadmin } from "@/domain/access/roles";
 import { LocationService, type Location } from "@/services/location.service";
 import { TaskService, type TaskItem } from "@/services/task.service";
 import type { User } from "@/types/user";
@@ -22,7 +22,9 @@ const mergeLocations = (base: Location[], extra: Location[]) => Array.from(new M
 
 /** Owns only the authorized operational snapshot; presentation owns tour and copy. */
 export function useDashboardOverviewData(user: User | null) {
-    const context = user && !isPlatformSuperadmin(user) ? `${user.id}:${user.company_id ?? "none"}:${user.role?.name ?? "none"}` : null;
+    const readTasks = canViewCompanyTasks(user);
+    const readLocations = canViewLocations(user);
+    const context = user && !isPlatformSuperadmin(user) ? `${user.id}:${user.company_id ?? "none"}:${user.role?.name ?? "none"}:${readTasks}:${readLocations}` : null;
     const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
     const snapshotRef = useRef(snapshot);
     const activeContext = useRef<string | null>(null);
@@ -41,7 +43,7 @@ export function useDashboardOverviewData(user: User | null) {
     }, [context, invalidateRequests]);
 
     const loadDashboardTasks = useCallback(async () => {
-        if (!context || activeContext.current !== context) return;
+        if (!context || !readTasks || activeContext.current !== context) return;
         const version = ++taskVersion.current;
         const locationsAtStart = locationVersion.current;
         const readContext = `dashboard-tasks:${context}:${version}`;
@@ -51,7 +53,7 @@ export function useDashboardOverviewData(user: User | null) {
             if (!current()) return;
             const known = snapshotRef.current?.context === context ? snapshotRef.current.locations : [];
             const knownIds = new Set(known.map(location => location.id));
-            const missing = [...new Set(tasks.map(task => task.location_id))].filter(id => !knownIds.has(id));
+            const missing = readLocations ? [...new Set(tasks.map(task => task.location_id))].filter(id => !knownIds.has(id)) : [];
             const details = (await Promise.all(missing.map(id => LocationService.getLocation(id, readContext).catch(() => null))))
                 .filter((location): location is Location => location !== null);
             if (!current()) return;
@@ -67,10 +69,10 @@ export function useDashboardOverviewData(user: User | null) {
                 return { ...own, tasks: isTransient(error) ? own.tasks : [], tasksLoaded: true, taskError: error instanceof ApiResponseError && error.status === 403 ? "denied" : "unavailable" };
             });
         }
-    }, [context]);
+    }, [context, readTasks, readLocations]);
 
     const loadDashboardLocations = useCallback(async () => {
-        if (!context || activeContext.current !== context) return;
+        if (!context || !readLocations || activeContext.current !== context) return;
         const version = ++locationVersion.current;
         const readContext = `dashboard-locations:${context}:${version}`;
         const current = () => activeContext.current === context && version === locationVersion.current;
@@ -85,7 +87,7 @@ export function useDashboardOverviewData(user: User | null) {
                 return { ...own, locations: isTransient(error) ? own.locations : [], locationError: error instanceof ApiResponseError && error.status === 403 ? "denied" : "unavailable" };
             });
         }
-    }, [context]);
+    }, [context, readLocations]);
 
     const loadDashboardData = useCallback(async () => {
         await Promise.all([loadDashboardLocations(), loadDashboardTasks()]);
@@ -96,7 +98,7 @@ export function useDashboardOverviewData(user: User | null) {
     const own = snapshot?.context === context ? snapshot : null;
     return {
         tasks: own?.tasks ?? [], locations: own?.locations ?? [],
-        loadingData: Boolean(context && !own?.tasksLoaded),
+        loadingData: Boolean(context && readTasks && !own?.tasksLoaded),
         failed: own?.taskError === "unavailable" || own?.locationError === "unavailable",
         accessDenied: own?.taskError === "denied" || own?.locationError === "denied",
         taskFailed: own?.taskError != null,

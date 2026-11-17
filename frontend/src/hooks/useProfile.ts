@@ -12,7 +12,7 @@ import { ActiveCompanySession, UserStatsResponse, WorkSession, TaskItem } from "
 import { WorkSessionService } from "@/services/work-session.service";
 import { Invoice } from "@/types/invoice";
 import { getErrorMessage } from "@/lib/errors";
-import { isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageTime, canViewCompanyTasks, canViewFinance, canViewLocations, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import type { CompanyExpense } from "@/types/company";
 import { buildCompanyTaskStats } from "@/lib/operations-analytics";
 
@@ -254,8 +254,10 @@ export function useProfile() {
     const isViewer = user?.role?.name === "viewer";
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
-    const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin;
-    const canViewActiveTeam = (isAdminOrSuperadmin || isManager) && !userIsPlatformSuperadmin;
+    const canReadProfileTasks = canViewCompanyTasks(user);
+    const canReadProfileTime = canManageTime(user);
+    const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin && (canReadProfileTasks || canReadProfileTime);
+    const canViewActiveTeam = (isAdminOrSuperadmin || isManager) && canLoadOperationalData && canReadProfileTime;
 
     // Load all profile data
     const loadProfileData = async () => {
@@ -271,12 +273,12 @@ export function useProfile() {
                 canLoadOperationalData
                     ? UserService.getUserStats(user.id).catch(() => null)
                     : Promise.resolve(null),
-                canLoadOperationalData ? UserService.getUserWorkSessions(10) : Promise.resolve([]),
-                canLoadOperationalData ? UserService.getUserTasks(user.id, 100).catch(() => [] as TaskItem[]) : Promise.resolve([]),
-                canLoadOperationalData ? LocationService.getLocations() : Promise.resolve([]),
-                isAdm && canLoadOperationalData ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
-                (isAdm || isMgr) && canLoadOperationalData ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
-                isAdm && user.company_id && canLoadOperationalData
+                canLoadOperationalData && canReadProfileTime ? UserService.getUserWorkSessions(10) : Promise.resolve([]),
+                canLoadOperationalData && canReadProfileTasks ? UserService.getUserTasks(user.id, 100).catch(() => [] as TaskItem[]) : Promise.resolve([]),
+                canLoadOperationalData && canViewLocations(user) ? LocationService.getLocations() : Promise.resolve([]),
+                isAdm && canLoadOperationalData && canViewFinance(user) ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
+                (isAdm || isMgr) && canLoadOperationalData && canReadProfileTasks ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
+                isAdm && user.company_id && canLoadOperationalData && canViewFinance(user)
                     ? CompanyService.getCompanyExpenses(user.company_id).catch(() => [] as CompanyExpense[])
                     : Promise.resolve([] as CompanyExpense[])
             ]);
@@ -289,7 +291,7 @@ export function useProfile() {
             setAllCompanyTasks(fetchedCompanyTasks);
             setCompanyExpenses(fetchedExpenses);
 
-            if (user.company_id && canLoadOperationalData) {
+            if (user.company_id && !isAccountant && !userIsPlatformSuperadmin) {
                 try {
                     const comp = await CompanyService.getCompany(user.company_id);
                     setCompanyName(comp.name);
@@ -425,6 +427,7 @@ export function useProfile() {
         isViewer,
         isAccountant,
         canViewActiveTeam,
+        canLoadOperationalData,
         loadProfileData,
         locationsMap,
         activeSession,

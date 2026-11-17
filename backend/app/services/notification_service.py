@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.models.notification import Notification
 from app.models.user import User
 from app.repositories import notification_delivery, notification_inbox
+from app.repositories.notification_acknowledgement import list_task_acknowledgements
 from app.services.user_scope import require_company_context
 
 
@@ -124,11 +125,20 @@ def mark_all_read(db: Session, user: User) -> None:
 
 
 async def list_notifications_async(
-    db: AsyncSession, user: User, *, unread_only: bool, limit: int
+    db: AsyncSession, user: User, *, unread_only: bool, limit: int, skip: int = 0
 ) -> list[Notification]:
     return await notification_inbox.list_notifications_async(
-        db, user.id, require_company_context(user), unread_only=unread_only, limit=limit
+        db,
+        user.id,
+        require_company_context(user),
+        unread_only=unread_only,
+        limit=limit,
+        skip=skip,
     )
+
+
+async def list_task_acknowledgements_async(db: AsyncSession, user: User) -> list[dict]:
+    return await list_task_acknowledgements(db, user.id, require_company_context(user))
 
 
 async def mark_read_async(

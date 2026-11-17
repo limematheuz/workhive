@@ -5,6 +5,7 @@ import {
     canManageFinance,
     canManageLaborCosts,
     canManageWorkReports,
+    canManageCompanyTasks,
     canViewFinance,
     canViewLaborCosts,
     canViewFinanceRole,
@@ -29,6 +30,11 @@ const commercialWithoutFinance = {
     can_view_finance: false,
     can_manage_finance: false,
 } satisfies User;
+
+test("task planning uses canonical access even when the technical role is viewer or manager", () => {
+    assert.equal(canManageCompanyTasks({ ...commercialWithoutFinance, role: { id: 3, name: "viewer" }, can_manage_tasks: true } as User), true);
+    assert.equal(canManageCompanyTasks({ ...commercialWithoutFinance, role: { id: 2, name: "manager" }, can_manage_tasks: false } as User), false);
+});
 
 test("company privacy administration excludes managers and viewers", () => {
     assert.equal(isCompanyAdminRole("admin"), true);

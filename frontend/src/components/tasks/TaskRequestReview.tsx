@@ -64,6 +64,8 @@ export function TaskRequestReview({
     const checkoutDate = toTaskPlanningDateInput(task.checkout_reservation?.check_out_at);
     const minPlanningDate = checkoutDate > today ? checkoutDate : today;
     const [pricing, setPricing] = useState(() => acceptancePricingValuesForTask(task));
+    const [processing, setProcessing] = useState(false);
+    const busy = isSaving || processing;
     const hasValidPricing = hasValidTaskAcceptancePricing(pricing);
 
     const acceptRequest = async () => {
@@ -76,9 +78,16 @@ export function TaskRequestReview({
     };
 
     const rejectRequest = async () => {
-        if (!onReject) return;
-        await onReject(task.id);
-        onClose();
+        if (!onReject || busy) return;
+        setProcessing(true);
+        try {
+            await onReject(task.id);
+            onClose();
+        } catch {
+            // The action owner reports the error; keep the request available to retry.
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -111,12 +120,12 @@ export function TaskRequestReview({
             {isAdminOrManager && (
                 <div className={`${taskDialogFooterClass} justify-end`}>
                     {!hasValidPricing && <p className="mr-auto text-xs font-semibold text-amber-700 dark:text-amber-300">Indica el precio acordado antes de aceptar.</p>}
-                    <Button type="button" variant="dangerSoft" disabled={isSaving || !hasValidPricing} onClick={() => void rejectRequest()} className="flex-1 sm:flex-none">
+                    <Button type="button" variant="dangerSoft" disabled={busy || !onReject} onClick={() => void rejectRequest()} className="flex-1 sm:flex-none">
                         <X className="h-4 w-4" />
                         Rechazar
                     </Button>
-                    <Button type="button" disabled={isSaving || !hasValidPricing} onClick={() => void acceptRequest()} className="flex-1 sm:flex-none">
-                        {isSaving ? <><Loader2 className="h-4 w-4 animate-spin" />Procesando...</> : <><Check className="h-4 w-4 stroke-[3px]" />Aceptar</>}
+                    <Button type="button" disabled={busy || !hasValidPricing} onClick={() => void acceptRequest()} className="flex-1 sm:flex-none">
+                        {busy ? <><Loader2 className="h-4 w-4 animate-spin" />Procesando...</> : <><Check className="h-4 w-4 stroke-[3px]" />Aceptar</>}
                     </Button>
                 </div>
             )}

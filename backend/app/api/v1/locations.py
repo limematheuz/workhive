@@ -44,13 +44,9 @@ async def read_locations(
             limit,
             permitted_location_ids,
         )
-        return [
-            location_response_service.build_location_response(
-                sync_db, current_user, location,
-                work_manage_location_ids=work_manage_location_ids,
-            )
-            for location in locations
-        ]
+        return location_response_service.build_location_responses(
+            sync_db, current_user, locations, work_manage_location_ids=work_manage_location_ids,
+        )
 
     return await db.run_sync(operation)
 

@@ -178,7 +178,7 @@ export default function ProfilePage() {
                 canManageRequests={state.isAdminOrSuperadmin}
             />
 
-            {!state.isAccountant && (
+            {state.canLoadOperationalData && (
                 <>
                     <ProfileStats
                         stats={state.stats}

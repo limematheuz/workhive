@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import AsyncActiveUser, get_async_db
 from app.models.user import User
-from app.schemas.notification import NotificationResponse
+from app.schemas.notification import (
+    NotificationResponse,
+    TaskNotificationAcknowledgement,
+)
 from app.services import notification_service
 
 
@@ -14,12 +17,27 @@ router = APIRouter()
 async def read_notifications(
     unread_only: bool = True,
     limit: int = 100,
+    skip: int = Query(default=0, ge=0),
     db: AsyncSession = Depends(get_async_db),
     current_user: User = AsyncActiveUser,
 ):
     return await notification_service.list_notifications_async(
-        db, current_user, unread_only=unread_only, limit=min(max(limit, 1), 200)
+        db,
+        current_user,
+        unread_only=unread_only,
+        limit=min(max(limit, 1), 200),
+        skip=skip,
     )
+
+
+@router.get(
+    "/task-items/acknowledged", response_model=list[TaskNotificationAcknowledgement]
+)
+async def read_task_acknowledgements(
+    db: AsyncSession = Depends(get_async_db),
+    current_user: User = AsyncActiveUser,
+):
+    return await notification_service.list_task_acknowledgements_async(db, current_user)
 
 
 @router.patch("/read-all", status_code=status.HTTP_204_NO_CONTENT)

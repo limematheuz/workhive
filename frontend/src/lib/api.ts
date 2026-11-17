@@ -30,7 +30,13 @@ function getApiBaseUrl(): string {
     return "";
 }
 
-async function ensureCsrfToken(baseUrl: string): Promise<string | null> {
+function requireCurrentSession(context: string): void {
+    if (context !== getSessionReadContext()) {
+        throw new DOMException("The session changed before the request could be sent", "AbortError");
+    }
+}
+
+async function ensureCsrfToken(baseUrl: string, context: string): Promise<string | null> {
     const cachedToken = getCsrfToken();
     if (cachedToken) return cachedToken;
 
@@ -42,6 +48,7 @@ async function ensureCsrfToken(baseUrl: string): Promise<string | null> {
     if (!response.ok) return null;
 
     const data = await response.json() as { csrf_token?: string };
+    requireCurrentSession(context);
     if (!data.csrf_token) return null;
     setCsrfToken(data.csrf_token);
     return data.csrf_token;
@@ -66,17 +73,16 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
         if (isMutation) {
             const csrfToken = CSRF_EXEMPT_PATHS.has(cleanPath)
                 ? getCsrfToken()
-                : await ensureCsrfToken(baseUrl);
+                : await ensureCsrfToken(baseUrl, sessionContext);
             if (csrfToken && !headers.has("X-CSRF-Token")) {
                 headers.set("X-CSRF-Token", csrfToken);
             }
         }
 
-        const execute = () => fetch(url, {
-            ...options,
-            headers,
-            credentials: "include",
-        });
+        const execute = () => {
+            requireCurrentSession(sessionContext);
+            return fetch(url, { ...options, headers, credentials: "include" });
+        };
         const headerKey = Array.from(headers.entries())
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([name, value]) => `${name}:${value}`)
@@ -89,15 +95,12 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
             const clonedResponse = response.clone();
             const errorData = await clonedResponse.json().catch(() => ({})) as { detail?: string };
             if (errorData.detail === "Invalid or missing CSRF token") {
+                requireCurrentSession(sessionContext);
                 setCsrfToken("");
-                const freshToken = await ensureCsrfToken(baseUrl);
+                const freshToken = await ensureCsrfToken(baseUrl, sessionContext);
                 if (freshToken) {
                     headers.set("X-CSRF-Token", freshToken);
-                    response = await fetch(url, {
-                        ...options,
-                        headers,
-                        credentials: "include",
-                    });
+                    response = await execute();
                 }
             }
         }

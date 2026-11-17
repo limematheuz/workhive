@@ -136,7 +136,15 @@ test("duplicating a task is blocked for invoiced tasks and viewers", () => {
     assert.equal(canDuplicateTask(null, movableTask), false);
 });
 
-test("task list filters prevent viewers from querying another user", () => {
+test("explicit read scope is preserved without offering management filters", () => {
+    assert.deepEqual(buildTaskListFilters({
+        currentUser: { ...viewer, can_view_tasks: true, can_manage_tasks: false },
+        activeTab: "kanban", selectedLocationId: "", selectedStatus: "",
+        selectedUserId: manager.id.toString(),
+    }), {});
+});
+
+test("task list filters prevent legacy viewers from querying another user", () => {
     assert.deepEqual(
         buildTaskListFilters({
             currentUser: admin,

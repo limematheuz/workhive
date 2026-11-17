@@ -173,6 +173,7 @@ def test_assignable_users_allows_operations_and_blocks_narrow_roles(
         assert inactive_worker.id not in ids
         assert foreign.id not in ids
         assert platform.id not in ids
+        assert finance.id not in ids
 
     # Narrow permission profile without work.manage/time.read/time.approve is denied too.
     narrow_user = _user(db, company, "narrow@example.com", role_id=2, full_name="Narrow Ops")
@@ -260,8 +261,8 @@ def test_scoped_work_manager_sees_only_scoped_candidates_and_time_only_is_denied
         db,
         PermissionProfileCreate(
             name="Scoped Work Manager",
-            description="work.manage on a location",
-            permission_codes=["work.manage"],
+            description="Read and manage work on a location",
+            permission_codes=["work.read", "work.manage"],
         ),
         admin,
     )

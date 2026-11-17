@@ -30,6 +30,13 @@ _LEGACY_ROLE_CAPABILITIES = {
 }
 
 
+def legacy_roles_for_capabilities(capabilities: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(
+        role for role, granted in _LEGACY_ROLE_CAPABILITIES.items()
+        if granted.intersection(capabilities)
+    )
+
+
 def has_explicit_profile_assignments(
     db: Session,
     *,

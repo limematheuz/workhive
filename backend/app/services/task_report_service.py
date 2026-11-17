@@ -21,8 +21,7 @@ from app.schemas.task_report import (
 from app.services import notification_service, task_assignment_service
 from app.services.task_report_serializer import serialize_task_report as _response
 from app.services.task_report_access_service import (
-    assigned_report_user_id,
-    permitted_report_location_ids,
+    report_read_scope,
     require_report_management,
     require_report_read,
 )
@@ -312,14 +311,14 @@ async def list_reports(
 ) -> list[TaskReportResponse]:
     if current_user.company_id is None:
         return []
-    location_ids = await permitted_report_location_ids(db, current_user)
+    location_ids, assigned_user_id = await report_read_scope(db, current_user)
     reports = await task_report_repo.list_for_company(
         db,
         current_user.company_id,
         skip=skip,
         limit=limit,
         location_ids=location_ids,
-        assigned_user_id=assigned_report_user_id(current_user),
+        assigned_user_id=assigned_user_id,
     )
     return [_response(report) for report in reports]
 
@@ -330,8 +329,9 @@ async def get_report(
     report_id: int,
 ) -> TaskReport:
     company_id = require_company_context(current_user)
+    _, assigned_user_id = await report_read_scope(db, current_user)
     report = await task_report_repo.get_for_company(
-        db, company_id, report_id, assigned_user_id=assigned_report_user_id(current_user)
+        db, company_id, report_id, assigned_user_id=assigned_user_id
     )
     if report is None:
         raise HTTPException(
@@ -418,11 +418,12 @@ async def bulk_delete_reports(
     payload: TaskReportBulkDelete,
 ) -> None:
     company_id = require_company_context(current_user)
+    _, assigned_user_id = await report_read_scope(db, current_user)
     reports = await task_report_repo.list_by_ids_for_company(
         db,
         company_id,
         payload.ids,
-        assigned_user_id=assigned_report_user_id(current_user),
+        assigned_user_id=assigned_user_id,
     )
     if len(reports) != len(payload.ids):
         raise HTTPException(

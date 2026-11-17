@@ -67,7 +67,23 @@ export function isCalendarViewerRole(
 }
 
 export function canManageCompanyTasks(user?: User | null): boolean {
+    if (typeof user?.can_manage_tasks === "boolean") return user.can_manage_tasks;
     return isCompanyTaskManagerRole(getRoleName(user));
+}
+
+export function canManageServiceCatalog(user?: User | null): boolean {
+    if (typeof user?.can_manage_service_catalog === "boolean") return user.can_manage_service_catalog;
+    return canManageCompanyTasks(user);
+}
+
+export function canViewCompanyTasks(user?: User | null): boolean {
+    if (typeof user?.can_view_tasks === "boolean") return user.can_view_tasks;
+    return isCalendarViewerRole(getRoleName(user));
+}
+
+export function canViewLocations(user?: User | null): boolean {
+    if (typeof user?.can_view_locations === "boolean") return user.can_view_locations;
+    return isCalendarViewerRole(getRoleName(user));
 }
 
 export function canAdministerCompany(user?: User | null): boolean {

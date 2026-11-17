@@ -40,7 +40,7 @@ def apply_checklist_edits(
                 status_code=400, detail="This checklist item belongs to the description"
             )
         assignee_ids.update(edit.assigned_user_ids or [])
-    task_structure_service.validate_assignee_ids(db, task.company_id, assignee_ids)
+    task_structure_service.validate_assignee_ids(db, task.company_id, assignee_ids, task.location_id)
 
     evidence = dict(task.checklist_evidence or {})
     for edit in edits:

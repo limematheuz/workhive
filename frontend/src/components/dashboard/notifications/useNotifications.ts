@@ -44,6 +44,8 @@ const ACTIVE_PRIVACY_REQUEST_STATUSES = new Set(["pending", "processing"]);
 
 interface UseNotificationsParams {
     enabled?: boolean;
+    taskDataEnabled?: boolean;
+    reservationDataEnabled?: boolean;
     userId: number | undefined;
     companyId: number | undefined;
     roleName: string | undefined;
@@ -53,6 +55,8 @@ interface UseNotificationsParams {
 
 export function useNotifications({
     enabled = true,
+    taskDataEnabled = true,
+    reservationDataEnabled = true,
     userId,
     companyId,
     roleName,
@@ -65,15 +69,15 @@ export function useNotifications({
     const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<string[]>([]);
     const [openingNotificationKey, setOpeningNotificationKey] = useState<string | null>(null);
     const [pendingTaskAcknowledgements] = useState(() => new Set<number>());
-    const { persistentNotifications, setPersistentNotifications, loadPersistentNotifications,
+    const { persistentNotifications, taskAcknowledgements, setPersistentNotifications, loadPersistentNotifications,
         persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
     const { notificationTasks, loadTaskNotifications } = useTaskNotificationFeed(
-        enabled, userId, companyId, roleName, setNotificationReferenceTime,
+        enabled && taskDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
     );
 
     const { notificationReservations, upcomingArrivals, loadReservationNotifications } = useReservationNotificationFeed(
-        enabled, userId, companyId, roleName, setNotificationReferenceTime,
+        enabled && reservationDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
     );
     const { privacyRequests, loadPrivacyNotifications } = usePrivacyNotificationFeed(enabled, userId, companyId, roleName);
 
@@ -202,6 +206,9 @@ export function useNotifications({
         if (!userId) return [];
         return notificationTasks.filter(task => {
             if (persistentTaskNotificationIds.has(task.id)) return false;
+            if (pendingTaskAcknowledgements.has(task.id)) return false;
+            if (taskAcknowledgements.some(ack => ack.task_item_id === task.id
+                && new Date(ack.read_at).getTime() >= new Date(task.updated_at || task.created_at).getTime())) return false;
             const status = getUserTaskStatus(task, userId);
             if (task.status === "rejected" && companyId) {
                 const ownerCompanyId = task.checkout_reservation?.owner_company_id;
@@ -226,6 +233,8 @@ export function useNotifications({
         companyId,
         dismissedNotificationKeySet,
         persistentTaskNotificationIds,
+        pendingTaskAcknowledgements,
+        taskAcknowledgements,
         isAlertTask,
     ]);
 
@@ -357,6 +366,14 @@ export function useNotifications({
                 ...secondaryReservationNotifications.map(getReservationNotificationKey),
             ];
 
+        const persistent = activeNotificationTab === "primary"
+            ? primaryPersistentNotifications : alertPersistentNotifications;
+        for (const notification of persistent) {
+            const task = notification.entity_type === "task_item" && notification.entity_id
+                ? tasksById.get(notification.entity_id) : undefined;
+            if (task) keys.push(getTaskNotificationKey(task));
+        }
+
         dismissNotifications(keys);
         acknowledgePersistentNotifications(
             activeNotificationTab === "primary"
@@ -374,6 +391,7 @@ export function useNotifications({
         primaryPersistentNotifications,
         alertPersistentNotifications,
         acknowledgePersistentNotifications,
+        tasksById,
     ]);
 
     const handlePersistentNotificationClick = useCallback((notification: PersistentNotification) => {

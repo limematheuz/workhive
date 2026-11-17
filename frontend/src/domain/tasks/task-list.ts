@@ -59,6 +59,10 @@ export function buildTaskListFilters({
         return filters;
     }
 
+    // The server applies the explicit read scope, including read-only company
+    // profiles. Legacy workers are still restricted to their assignments there.
+    if (currentUser?.can_view_tasks === true) return filters;
+
     if (currentUser) {
         filters.userId = currentUser.id;
     }

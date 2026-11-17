@@ -12,7 +12,6 @@ from app.models.task_item import TaskItem
 from app.models.user import User
 from app.repositories import reservation as reservation_repo
 from app.repositories import task_item as task_item_repo
-from app.repositories import user as user_repo
 from app.repositories import work_session as work_session_repo
 from app.schemas.task_item import TaskItemUpdate
 from app.services.task_edit_completion_policy import normalize_task_completion  # noqa: F401
@@ -257,7 +256,7 @@ def validate_task_update_relations(
             target_location_id,
             "can_manage_reservations",
         )
-    validate_direct_assignee(db, current_user.company_id, task_data.user_id)
+    validate_direct_assignee(db, current_user.company_id, task_data.user_id, target_location_id)
     validate_reservation_links(
         db,
         target_location_id,
@@ -273,21 +272,19 @@ def validate_task_update_relations(
             db,
             task.company_id,
             task_data.description,
+            target_location_id,
         )
 
 
-def validate_direct_assignee(db: Session, company_id: int, user_id: int | None) -> None:
+def validate_direct_assignee(db: Session, company_id: int, user_id: int | None, location_id: int | None = None) -> None:
     if user_id is None:
         return
-    assigned_user = user_repo.get_user_by_id(db, user_id)
-    if (
-        not assigned_user
-        or assigned_user.company_id != company_id
-        or not assigned_user.is_active
-    ):
+    from app.services.operational_recipient_service import eligible_ids
+
+    if user_id not in eligible_ids(db, company_id, {user_id}, location_id=location_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Assigned user must be active and belong to your company",
+            detail="Assigned user must be active and have work access at this location in your company",
         )
 
 

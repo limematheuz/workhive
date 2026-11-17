@@ -38,6 +38,7 @@ from app.services.task_work_completion_service import (
     require_work_orders_feature as _require_work_orders_feature,
 )
 from app.services.task_work_activity_service import has_recorded_activity
+from app.services.task_removal_service import remove_task
 from app.services.work_session_pause_service import close_open_pause
 from app.services.task_item_read_service import (
     build_loaded_task_response,  # noqa: F401 - public compatibility re-export
@@ -111,7 +112,7 @@ def create_task_item(
         permission_code="work.manage",
     )
     task_update_policy_service.validate_direct_assignee(
-        db, current_user.company_id, task_item_data.user_id,
+        db, current_user.company_id, task_item_data.user_id, task_item_data.location_id,
     )
     if (
         task_item_data.checkout_reservation_id is not None
@@ -150,6 +151,7 @@ def create_task_item(
         db,
         current_user.company_id,
         task_item_data.description,
+        task_item_data.location_id,
     )
     service_catalog_version_id = None
     if task_item_data.template_task_id is not None:
@@ -314,6 +316,7 @@ def update_task_item(
             updated_task,
             was_completed=was_completed,
         )
+    task_lifecycle_notification_service.reconcile_assignment_notifications(db, updated_task)
     db.commit()
     db.refresh(updated_task)
     task_lifecycle_notification_service.notify_task_assignees(
@@ -525,6 +528,7 @@ def accept_task_item(
     receiver_users = task_lifecycle_notification_service.operational_users(
         db,
         task.company_id,
+        task.location_id,
     )
     assigned_description = task_assignment_service.assign_to_users(
         live_snapshot.get("description", task.description),
@@ -542,6 +546,7 @@ def accept_task_item(
         ),
     )
     task_structure_service.sync_from_description(db, updated_task)
+    task_lifecycle_notification_service.reconcile_assignment_notifications(db, updated_task)
     if (
         updated_task.checkout_reservation
         and updated_task.checkout_reservation.owner_company_id
@@ -705,5 +710,5 @@ def delete_task_item(db: Session, current_user: User, task_item_id: int) -> None
             },
         )
     calendar_sync_service.enqueue_task_deletion(db, db_task_item)
-    task_item_repo.delete_task_item(db, db_task_item)
+    remove_task(db, db_task_item)
     db.commit()

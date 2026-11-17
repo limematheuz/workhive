@@ -5,7 +5,7 @@ import { Bell } from "lucide-react";
 
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
-import { isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
+import { canManageCompanyTasks, canViewCompanyTasks, canViewLocations, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
 import {
     HEADER_ALERT_BADGE_CLASS,
     HEADER_UPDATE_BADGE_CLASS,
@@ -32,6 +32,8 @@ export function NotificationPanel() {
         && !isClientPortalRole(user?.role?.name);
     const notifications = useNotifications({
         enabled,
+        taskDataEnabled: canViewCompanyTasks(user),
+        reservationDataEnabled: canManageCompanyTasks(user) && canViewLocations(user),
         userId: user?.id,
         companyId: user?.company_id ?? undefined,
         roleName: user?.role?.name,

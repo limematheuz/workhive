@@ -12,6 +12,7 @@ from app.services.organization_authorization_service import (
     permitted_location_ids,
 )
 from app.services.user_scope import is_platform_superadmin, require_company_context
+from app.services.operational_recipient_service import eligible_ids_query
 
 OPERATIONAL_SCOPE_CAPABILITIES = (
     "work.read",
@@ -149,5 +150,6 @@ def list_assignable_users(
         db, current_user, location_id=location_id
     )
     return user_repo.get_assignable_users(
-        db, company_id, skip, limit, allowed_user_ids=allowed_ids
+        db, company_id, skip, limit, allowed_user_ids=allowed_ids,
+        eligible_user_ids=eligible_ids_query(company_id, location_id=location_id),
     )

@@ -8,6 +8,11 @@ export const SIDEBAR_LOGO_STYLE: CSSProperties = { filter: "var(--logo-filter)" 
 
 export type SidebarNavUserFlags = {
     isAdminOrManager: boolean;
+    canViewTasks?: boolean;
+    canViewLocations?: boolean;
+    canReadInventory?: boolean;
+    canViewPlanning?: boolean;
+    canManageExternalNetwork?: boolean;
     isCompanyAdmin: boolean;
     canReadClients: boolean;
     canManageTime: boolean;
@@ -32,17 +37,25 @@ const NAVIGATION_FEATURES: Record<string, string> = {
 function allLinks(dict: Dictionary, flags: SidebarNavUserFlags): NavLink[] {
     return [
         { href: "/dashboard", label: dict.dashboard.overview, exact: true, icon: <Gauge /> },
-        { href: "/dashboard/calendar", label: dict.dashboard.calendar, exact: false, icon: <CalendarDays /> },
-        { href: "/dashboard/tasks", label: dict.dashboard.tasks, exact: false, icon: <ClipboardList /> },
-        { href: "/dashboard/work-orders", label: "Órdenes", exact: false, icon: <Repeat2 /> },
-        { href: "/dashboard/locations", label: dict.dashboard.locations, exact: false, icon: <MapPin /> },
-        { href: "/dashboard/documents", label: "Documentos", exact: false, icon: <FileText /> },
-        { href: "/dashboard/assets", label: "Activos", exact: false, icon: <PackagePlus /> },
-        ...(flags.isAdminOrManager ? [{ href: "/dashboard/inventory", label: "Inventario", exact: false, icon: <Boxes /> }] : []),
+        ...(flags.canViewTasks !== false ? [
+            { href: "/dashboard/calendar", label: dict.dashboard.calendar, exact: false, icon: <CalendarDays /> },
+            { href: "/dashboard/tasks", label: dict.dashboard.tasks, exact: false, icon: <ClipboardList /> },
+            { href: "/dashboard/work-orders", label: "Órdenes", exact: false, icon: <Repeat2 /> },
+        ] : []),
+        ...(flags.canViewLocations !== false ? [
+            { href: "/dashboard/locations", label: dict.dashboard.locations, exact: false, icon: <MapPin /> },
+            { href: "/dashboard/documents", label: "Documentos", exact: false, icon: <FileText /> },
+            { href: "/dashboard/assets", label: "Activos", exact: false, icon: <PackagePlus /> },
+        ] : []),
+        ...((flags.canReadInventory ?? flags.isAdminOrManager) ? [{ href: "/dashboard/inventory", label: "Inventario", exact: false, icon: <Boxes /> }] : []),
         ...(flags.canManageTime ? [{ href: "/dashboard/time-corrections", label: "Fichajes", exact: false, icon: <ClipboardCheck /> }] : []),
-        ...(flags.isAdminOrManager ? [
+        ...((flags.canViewPlanning ?? flags.isAdminOrManager) ? [
             { href: "/dashboard/reservations", label: dict.dashboard.reservations || "Planificación", exact: false, icon: <Workflow /> },
+        ] : []),
+        ...(flags.isAdminOrManager ? [
             { href: "/dashboard/live-work", label: dict.dashboard.live_work || "Fichajes en vivo", exact: false, icon: <Workflow /> },
+        ] : []),
+        ...((flags.canManageExternalNetwork ?? flags.isAdminOrManager) ? [
             { href: "/dashboard/external-network", label: dict.external_network.title, exact: false, icon: <Network /> },
         ] : []),
         ...(flags.canViewWorkReports ? [
@@ -109,7 +122,7 @@ export function buildSidebarNavLinks(dict: Dictionary, flags: SidebarNavUserFlag
     }
     const all = allLinks(dict, flags);
     const linksForRole = flags.userIsPlatformSuperadmin ? all.filter(link => PLATFORM_SUPERADMIN_HREFS.has(link.href)) : flags.isAccountant ? all.filter(link => ACCOUNTANT_HREFS.has(link.href)) : all;
-    const visibleNavLinks = flags.enabledFeatures == null || flags.userIsPlatformSuperadmin || flags.isAccountant ? linksForRole : linksForRole.filter(link => !NAVIGATION_FEATURES[link.href] || flags.enabledFeatures?.has(NAVIGATION_FEATURES[link.href]));
+    const visibleNavLinks = flags.userIsPlatformSuperadmin || flags.isAccountant ? linksForRole : linksForRole.filter(link => !NAVIGATION_FEATURES[link.href] || flags.enabledFeatures?.has(NAVIGATION_FEATURES[link.href]));
     const byHref = new Map(visibleNavLinks.map(link => [link.href, link]));
     const group = (id: string, label: string, icon: ReactNode, hrefs: string[]): NavGroup | null => {
         const children = hrefs.flatMap(href => byHref.get(href) ? [byHref.get(href)!] : []);
