@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getApiErrorStatus } from "@/lib/read-recovery";
+import { ApiResponseError } from "@/lib/api";
 
 /** Owns one recipient's read lifecycle; loaders keep their domain-specific queries. */
 export function useNotificationSnapshot<T>(context: string | null, read: (readContext: string) => Promise<T>, onLoaded?: (now: number) => void) {
@@ -27,10 +28,13 @@ export function useNotificationSnapshot<T>(context: string | null, read: (readCo
         } catch (error) {
             const status = getApiErrorStatus(error);
             const transient = status === null || status >= 500 || status === 408 || status === 429;
+            const moduleDisabled = status === 402 || (status === 403
+                && error instanceof ApiResponseError
+                && error.code === "entitlement.feature_not_in_plan");
             if (request === version.current && activeContext.current === context) {
                 setSnapshot(previous => ({ context, value: transient && previous?.context === context ? previous.value : undefined,
                     // A disabled plan module contributes no fallback alerts.
-                    failed: status !== 402, loading: false }));
+                    failed: !moduleDisabled, loading: false }));
             }
         }
     }, [context, onLoaded, read]);
