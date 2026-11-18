@@ -243,12 +243,14 @@ def plan_label(plan_code: str | None) -> str:
 def entitlement_availability(code: str) -> FeatureAvailability:
     """Return commercial delivery status for an entitlement.
 
-    Capacity limits are always part of an active commercial plan. Every feature
-    is classified explicitly so a newly added feature cannot silently appear in
-    the public purchase catalogue.
+    Implemented capacity limits are part of an active commercial plan. Reserved
+    capacity must not advertise a delivered workflow. Every feature is classified
+    explicitly before it can appear in the public purchase catalogue.
     """
     if code not in ALL_ENTITLEMENT_CODES:
         raise ValueError(f"Unknown entitlement code: {code}")
+    if code == "limits.external_portals":
+        return "coming_soon"
     if code in QUOTA_CODES:
         return "available"
     return _FEATURE_AVAILABILITY[code]
