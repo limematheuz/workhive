@@ -22,6 +22,41 @@ from tests.test_task_security_delivery import _headers
 assignment_setup = direct_assignment.assignment_setup
 
 
+@pytest.mark.parametrize("mode", ["direct", "description"])
+@pytest.mark.parametrize("replace_assignee", [False, True])
+def test_moving_work_validates_retained_assignees_at_the_destination(
+    client, db, configured_assignment, mode, replace_assignee
+):
+    from tests.test_task_security_delivery import _location
+    from app.services.task_assignment_service import assign_to_users
+
+    admin, scoped, unrestricted, location = configured_assignment
+    _assign_profile(db, company=admin.company, admin=admin, target_user=scoped,
+                    profile_name=OPERATIONS_PROFILE_NAME)
+    membership = db.query(CompanyMembership).filter_by(user_id=scoped.id, company_id=admin.company_id).one()
+    assignment = db.query(MembershipPermissionProfileAssignment).filter_by(
+        company_membership_id=membership.id, is_active=True).one()
+    scope = db.query(MembershipPermissionProfileScope).filter_by(profile_assignment_id=assignment.id).one()
+    scope.scope_type, scope.scope_id = "location", location.id
+    target = _location(db, admin.company)
+    db.commit()
+    payload = {"title": "Move scoped assignment", "unit": "service", "location_id": location.id}
+    payload.update({"user_id": scoped.id} if mode == "direct" else
+                   {"description": assign_to_users("- [ ] Requirement", {scoped.id})})
+    created = client.post("/api/v1/task-items/", headers=_headers(admin), json=payload)
+    assert created.status_code == 201, created.text
+    task_id = created.json()["id"]
+    update = {"location_id": target.id}
+    if replace_assignee:
+        update.update({"user_id": unrestricted.id} if mode == "direct" else
+                      {"description": assign_to_users("- [ ] Requirement", {unrestricted.id})})
+    response = client.patch(f"/api/v1/task-items/{task_id}", headers=_headers(admin), json=update)
+    assert response.status_code == (200 if replace_assignee else 400), response.text
+    after = client.get(f"/api/v1/task-items/{task_id}", headers=_headers(admin))
+    assert after.status_code == 200
+    assert after.json()["location_id"] == (target.id if replace_assignee else location.id)
+
+
 def test_manage_without_read_does_not_make_a_person_an_assignable_recipient(client, db, configured_assignment):
     from app.schemas.organization import PermissionProfileCreate
     from app.services import organization_service
