@@ -1,38 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import { isCompanyTaskManagerRole } from "@/domain/access/roles";
-import { TaskService, type TaskItem } from "@/services/task.service";
+import { TaskService } from "@/services/task.service";
+import { useNotificationSnapshot } from "./useNotificationSnapshot";
 
 export function useTaskNotificationFeed(enabled: boolean, userId: number | undefined,
     companyId: number | undefined, roleName: string | undefined, onLoaded: (now: number) => void) {
     const context = enabled && userId && companyId ? `${userId}:${companyId}:${roleName ?? "none"}` : null;
-    const [snapshot, setSnapshot] = useState<{ context: string; items: TaskItem[] } | null>(null);
-    const activeContext = useRef<string | null>(null);
-    const version = useRef(0);
-    const invalidateRequests = useCallback(() => { activeContext.current = null; version.current++; }, []);
-
-    useEffect(() => {
-        activeContext.current = context;
-        return invalidateRequests;
-    }, [context, invalidateRequests]);
-
-    const loadTaskNotifications = useCallback(async () => {
-        if (!context || !userId || activeContext.current !== context) return;
-        const request = ++version.current;
-        const readContext = `notification-tasks:${context}:${request}`;
+    const read = useCallback(async (readContext: string) => {
         const isManagerOrAdmin = isCompanyTaskManagerRole(roleName);
+        const notificationContext = `notification-tasks:${readContext}`;
         const [tasks, requested, rejected] = await Promise.all([
-            TaskService.getAllTaskItems({ userId }, readContext).catch(() => [] as TaskItem[]),
-            isManagerOrAdmin ? TaskService.getAllTaskItems({ status: "requested" }, readContext).catch(() => [] as TaskItem[]) : Promise.resolve([]),
-            isManagerOrAdmin ? TaskService.getAllTaskItems({ status: "rejected" }, readContext).catch(() => [] as TaskItem[]) : Promise.resolve([]),
+            TaskService.getAllTaskItems({ userId }, notificationContext),
+            isManagerOrAdmin ? TaskService.getAllTaskItems({ status: "requested" }, notificationContext) : Promise.resolve([]),
+            isManagerOrAdmin ? TaskService.getAllTaskItems({ status: "rejected" }, notificationContext) : Promise.resolve([]),
         ]);
-        if (request === version.current && activeContext.current === context) {
-            const byId = new Map([...tasks, ...requested, ...rejected].map(task => [task.id, task]));
-            setSnapshot({ context, items: Array.from(byId.values()).sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime()) });
-            onLoaded(Date.now());
-        }
-    }, [context, onLoaded, roleName, userId]);
-
-    return { notificationTasks: context && snapshot?.context === context ? snapshot.items : [], loadTaskNotifications };
+        const byId = new Map([...tasks, ...requested, ...rejected].map(task => [task.id, task]));
+        return Array.from(byId.values()).sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
+    }, [roleName, userId]);
+    const feed = useNotificationSnapshot(context, read, onLoaded);
+    return { notificationTasks: feed.value ?? [], loadTaskNotifications: feed.load,
+        taskLoadFailed: feed.failed, taskLoading: feed.loading };
 }

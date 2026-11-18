@@ -72,14 +72,14 @@ export function useNotifications({
     const { persistentNotifications, taskAcknowledgements, setPersistentNotifications, loadPersistentNotifications,
         persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
-    const { notificationTasks, loadTaskNotifications } = useTaskNotificationFeed(
+    const { notificationTasks, loadTaskNotifications, taskLoadFailed, taskLoading } = useTaskNotificationFeed(
         enabled && taskDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
     );
 
-    const { notificationReservations, upcomingArrivals, loadReservationNotifications } = useReservationNotificationFeed(
+    const { notificationReservations, upcomingArrivals, loadReservationNotifications, reservationLoadFailed, reservationLoading } = useReservationNotificationFeed(
         enabled && reservationDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
     );
-    const { privacyRequests, loadPrivacyNotifications } = usePrivacyNotificationFeed(enabled, userId, companyId, roleName);
+    const { privacyRequests, loadPrivacyNotifications, privacyLoadFailed, privacyLoading } = usePrivacyNotificationFeed(enabled, userId, companyId, roleName);
 
     const loadNotifications = useCallback(async () => {
         await Promise.all([
@@ -504,7 +504,8 @@ export function useNotifications({
 
     return {
         loadNotifications,
-        persistentLoadFailed, persistentLoading,
+        persistentLoadFailed: persistentLoadFailed || taskLoadFailed || reservationLoadFailed || privacyLoadFailed,
+        persistentLoading: persistentLoading || taskLoading || reservationLoading || privacyLoading,
         primaryPersistentNotifications,
         alertPersistentNotifications,
         primaryTaskNotifications,

@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 import { buildPrivacyResolutionPayload } from "@/lib/privacy-request";
 
 export type PrivacyRequestType =
@@ -60,11 +60,7 @@ export const PrivacyService = {
             cache: "no-store",
             headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
-        if (!response.ok) {
-            throw new Error(
-                await extractErrorMessage(response, "Could not load company requests"),
-            );
-        }
+        await assertApiResponseOk(response, "Could not load company requests");
         return await response.json();
     },
 
