@@ -3,6 +3,7 @@ from alembic.config import Config
 from sqlalchemy import (
     Boolean,
     Column,
+    DateTime,
     Float,
     Integer,
     MetaData,
@@ -38,6 +39,8 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         metadata,
         Column("id", Integer, primary_key=True),
         Column("template_task_id", Integer, nullable=True),
+        Column("company_id", Integer, nullable=False),
+        Column("status", String(30), nullable=False),
     )
     # These are established tables at the historical revision under test.
     # They let the fixture exercise migrations all the way to the current head
@@ -78,10 +81,12 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         metadata,
         Column("id", Integer, primary_key=True),
         Column("user_id", Integer, nullable=False),
+        Column("company_id", Integer, nullable=False),
         Column("event_type", String(100), nullable=False),
         Column("entity_type", String(100), nullable=False),
         Column("entity_id", Integer, nullable=False),
         Column("metadata_json", String(1000), nullable=True),
+        Column("read_at", DateTime(timezone=True), nullable=True),
     )
     Table(
         "permission_definitions",
@@ -177,7 +182,9 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
                 )
             )
             connection.execute(alembic_version.insert().values(version_num="i2j3k4l5m6n"))
-            connection.execute(task_items.insert().values(id=9, template_task_id=7))
+            connection.execute(task_items.insert().values(
+                id=9, template_task_id=7, company_id=3, status="pending"
+            ))
 
         command.upgrade(Config("alembic.ini"), "head")
 
