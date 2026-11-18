@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { setupNotificationWorkspace } from "./helpers/notification-workspace";
 
 for (const source of ["tasks", "reservations", "privacy"] as const) {
-    for (const width of [1440, 390]) for (const status of [503, 403, 402]) {
+    for (const width of [1440, 390]) for (const status of [503, 403, 402, "feature_disabled"] as const) {
         test(`${source} refresh ${status} preserves transient data and clears denied data at ${width}px`, async ({ context, page }, testInfo) => {
             test.skip(process.env.E2E_BASE_URL !== "http://localhost:3000", "Local UI regression only");
             await page.setViewportSize({ width, height: 1000 });
@@ -21,7 +21,7 @@ for (const source of ["tasks", "reservations", "privacy"] as const) {
                     : path.endsWith("privacy/requests");
                 if (!matches) { await route.fallback(); return; }
                 reads++;
-                if (failed) { await route.fulfill({ status, json: { detail: "Private source failure" } }); return; }
+                if (failed) { await route.fulfill({ status: status === "feature_disabled" ? 403 : status, headers: status === "feature_disabled" ? { "X-WorkHive-Error-Code": "entitlement.feature_not_in_plan" } : {}, json: { detail: "Private source failure" } }); return; }
                 const body = source === "tasks"
                     ? [{ id: 5, title: "QA tarea recuperable", user_id: 1, location_id: 15, status: "pending", priority: "medium", created_at: now, updated_at: now, unit: "servicio", is_invoiced: false }]
                     : source === "reservations"
@@ -38,7 +38,7 @@ for (const source of ["tasks", "reservations", "privacy"] as const) {
             await bell.click(); await bell.click();
             await expect.poll(() => reads).toBeGreaterThan(before);
             const warning = page.getByRole("alert").filter({ hasText: "No se pudieron actualizar los avisos." });
-            if (status === 402) await expect(warning).toHaveCount(0);
+            if ((status === 402 || status === "feature_disabled")) await expect(warning).toHaveCount(0);
             else await expect(warning).toBeVisible();
             const target = source === "tasks" ? page.getByRole("button").filter({ hasText: "QA tarea recuperable" })
                 : page.getByRole("button").filter({ hasText: source === "privacy" ? /supresi|eliminaci/i : /llegada/i });
@@ -46,7 +46,7 @@ for (const source of ["tasks", "reservations", "privacy"] as const) {
             else await expect(target).toHaveCount(0);
             if (status === 503) await page.screenshot({ path: testInfo.outputPath("retained-source.png") });
             failed = false;
-            if (status === 402) { await bell.click(); await bell.click(); }
+            if ((status === 402 || status === "feature_disabled")) { await bell.click(); await bell.click(); }
             else await page.getByRole("button", { name: "Reintentar", exact: true }).click();
             await expect(page.getByText("2 avisos pendientes de atender", { exact: true })).toBeVisible();
             await expect(page.getByRole("alert").filter({ hasText: "No se pudieron actualizar los avisos." })).toHaveCount(0);
