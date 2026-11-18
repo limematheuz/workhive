@@ -310,6 +310,12 @@ def update_task_item(
             )
         if structure_changed or checklist_changed:
             task_structure_service.sync_from_description(db, updated_task)
+        if "location_id" in task_data.model_fields_set:
+            task_structure_service.validate_assignee_ids(
+                db, updated_task.company_id,
+                task_assignment_service.assigned_user_ids(updated_task),
+                updated_task.location_id,
+            )
         _complete_task_when_checklist_is_done(db, updated_task)
         task_completion_service.apply_update_side_effects(
             db,
