@@ -37,7 +37,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
 
     const { pendingRequestsCount, taskPendingCount, refreshPending, refreshTasks } = useSidebarTaskCounts(
-        Boolean(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
+        canViewWorkReports(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
         user?.id, user?.company_id, isAdminOrManager, user?.role?.name,
     );
     const { reportAlertsCount, refreshReports } = useNotificationReportCount(

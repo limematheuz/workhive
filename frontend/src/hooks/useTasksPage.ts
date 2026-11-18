@@ -14,6 +14,8 @@ import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
 import { useTaskFilters } from "./useTaskFilters";
 import { useTaskCrud } from "./useTaskCrud";
+import { useTaskLocations } from "./useTaskLocations";
+import { taskWorkspaceKey } from "@/lib/task-locations";
 import { useTemplateCrud } from "./useTemplateCrud";
 import { TemplateTaskService } from "@/services/template.service";
 import type { TemplateTask } from "@/types/template";
@@ -39,12 +41,21 @@ export function useTasksPage() {
     const { dict } = useDictionary();
     const { user: currentUser, loading: userLoading } = useUser();
     const [tasks, setTasks] = useState<TaskItem[]>([]);
+    const [taskReadScope, setTaskReadScope] = useState<string | null>(null);
+    const [catalogScope, setCatalogScope] = useState<string | null>(null);
     const [locations, setLocations] = useState<Location[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [templates, setTemplates] = useState<TemplateTask[]>([]);
     const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
     const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
     const bootstrappedRef = useRef(false);
+    const versions = useRef({ task: 0, catalog: 0 });
+    const workspace = taskWorkspaceKey(currentUser);
+
+    useEffect(() => {
+        const pending = versions.current;
+        return () => { pending.task++; pending.catalog++; };
+    }, []);
 
     const {
         selectedStatus,
@@ -70,6 +81,8 @@ export function useTasksPage() {
     ) => {
         const effectiveUser = overrides?.currentUser ?? currentUser;
         if (!bootstrappedRef.current || !effectiveUser) return;
+        const owner = taskWorkspaceKey(effectiveUser);
+        const version = ++versions.current.task;
 
         try {
             if (!silent) setLoadingTasks(true);
@@ -82,17 +95,23 @@ export function useTasksPage() {
             });
 
             const data = await TaskService.getAllTaskItems(filters);
+            if (version !== versions.current.task) return;
             setTasks(data);
+            setTaskReadScope(`${owner}|${version}`);
         } catch (error) {
+            if (version !== versions.current.task) return;
+            setTasks([]); setTaskReadScope(null);
             console.error("Error loading tasks list", error);
             if (!silent) toast.error(dict.tasks.error_update);
         } finally {
-            setLoadingTasks(false);
+            if (version === versions.current.task) setLoadingTasks(false);
         }
     };
 
     const loadCatalogEvent = useEffectEvent(async () => {
         if (!currentUser) return;
+        const owner = workspace;
+        const version = ++versions.current.catalog;
 
         setCatalogStatus("loading");
         try {
@@ -107,12 +126,14 @@ export function useTasksPage() {
                     ? TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[])
                     : Promise.resolve([] as TemplateTask[])
             ]);
+            if (version !== versions.current.catalog) return;
 
             const filteredUsers = isSuperadmin(currentUser)
                 ? usrs
                 : usrs.filter(u => u.role?.name !== "superadmin");
 
             setLocations(locs);
+            setCatalogScope(owner);
             setUsers(filteredUsers);
             setTemplates(tmpls);
 
@@ -131,6 +152,8 @@ export function useTasksPage() {
                 selectedUserId: nextUserId,
             });
         } catch (error) {
+            if (version !== versions.current.catalog) return;
+            setCatalogScope(null); setTaskReadScope(null); setTasks([]); setLocations([]);
             console.error("Error loading initial tasks page data", error);
             toast.error(dict.tasks.error_update);
             setCatalogStatus("error");
@@ -222,12 +245,15 @@ export function useTasksPage() {
     };
 
     const getLocationName = (locId: number) => {
-        const l = locations.find(loc => loc.id === locId);
+        const l = taskLocations.find(loc => loc.id === locId);
         return l ? l.name : `Location ID: ${locId}`;
     };
 
-    const activeTasks = tasks.filter(t => t.status !== "requested" && t.status !== "rejected");
-    const requestedTasks = tasks.filter(t => t.status === "requested");
+    const authorizedRead = taskReadScope?.startsWith(workspace + "|") ? taskReadScope : null;
+    const taskLocations = useTaskLocations(tasks, locations, authorizedRead);
+    const visibleTasks = authorizedRead ? tasks : [];
+    const activeTasks = visibleTasks.filter(t => t.status !== "requested" && t.status !== "rejected");
+    const requestedTasks = visibleTasks.filter(t => t.status === "requested");
 
     const handleAcceptTask = async (taskId: number, input: TaskAcceptanceInput) => {
         if (input.scheduledStartAt && isTaskPlanningDateBeforeToday(input.scheduledStartAt)) {
@@ -261,9 +287,10 @@ export function useTasksPage() {
         requestedTasks,
         handleAcceptTask,
         handleRejectTask,
-        locations,
-        users,
-        templates,
+        locations: catalogScope === workspace ? locations : [],
+        taskLocations,
+        users: catalogScope === workspace ? users : [],
+        templates: catalogScope === workspace ? templates : [],
         currentUser,
         activeTab,
         setActiveTab,
@@ -284,11 +311,11 @@ export function useTasksPage() {
         // Tasks CRUD
         isSaving: crud.isSaving,
         saving: crud.isSaving,
-        isCreateOpen: crud.isCreateOpen,
-        createOpen: crud.isCreateOpen,
+        isCreateOpen: catalogScope === workspace && crud.isCreateOpen,
+        createOpen: catalogScope === workspace && crud.isCreateOpen,
         setIsCreateOpen: openCreateTask,
         setCreateOpen: openCreateTask,
-        selectedTask: crud.selectedTask,
+        selectedTask: authorizedRead ? crud.selectedTask : null,
         setSelectedTask: crud.setSelectedTask,
         houseTemplates: crud.houseTemplates,
         loadingHouseTemplates: crud.loadingHouseTemplates,

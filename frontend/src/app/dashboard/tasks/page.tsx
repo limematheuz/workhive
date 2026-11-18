@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { useTasksPage } from "@/hooks/useTasksPage";
+import { useUser } from "@/lib/user-context";
+import { taskWorkspaceKey } from "@/lib/task-locations";
 import { TasksKanban } from "@/components/tasks/TasksKanban";
 import { TasksList } from "@/components/tasks/TasksList";
 import { TasksTemplates } from "@/components/tasks/TasksTemplates";
@@ -15,6 +17,11 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 
 function TasksPageContent() {
+    const { user } = useUser();
+    return <TasksWorkspace key={taskWorkspaceKey(user)} />;
+}
+
+function TasksWorkspace() {
     const state = useTasksPage();
 
     return (
@@ -76,7 +83,7 @@ function TasksPageContent() {
                             {state.activeTab === "kanban" && (
                                 <TasksKanban
                                     tasks={state.tasks}
-                                    locations={state.locations}
+                                    locations={state.taskLocations}
                                     users={state.users}
                                     onTaskUpdate={state.loadTasks}
                                     currentUser={state.currentUser}
@@ -88,7 +95,7 @@ function TasksPageContent() {
                                 <TasksList
                                     dict={state.dict}
                                     tasks={state.tasks}
-                                    locations={state.locations}
+                                    locations={state.taskLocations}
                                     users={state.users}
                                     isAdminOrManager={state.isAdminOrManager}
                                     currentUser={state.currentUser}

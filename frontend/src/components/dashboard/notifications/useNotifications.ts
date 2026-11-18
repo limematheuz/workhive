@@ -44,6 +44,7 @@ const ACTIVE_PRIVACY_REQUEST_STATUSES = new Set(["pending", "processing"]);
 
 interface UseNotificationsParams {
     enabled?: boolean;
+    canReadTasks?: boolean;
     userId: number | undefined;
     companyId: number | undefined;
     roleName: string | undefined;
@@ -53,6 +54,7 @@ interface UseNotificationsParams {
 
 export function useNotifications({
     enabled = true,
+    canReadTasks = false,
     userId,
     companyId,
     roleName,
@@ -69,7 +71,7 @@ export function useNotifications({
         persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
     const { notificationTasks, loadTaskNotifications } = useTaskNotificationFeed(
-        enabled, userId, companyId, roleName, setNotificationReferenceTime,
+        enabled && canReadTasks, userId, companyId, roleName, setNotificationReferenceTime,
     );
 
     const { notificationReservations, upcomingArrivals, loadReservationNotifications } = useReservationNotificationFeed(

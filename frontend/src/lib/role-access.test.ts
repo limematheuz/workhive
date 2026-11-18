@@ -77,6 +77,24 @@ test("explicit work-report capabilities control report visibility and mutations"
     assert.equal(canManageWorkReports(manager), true);
 });
 
+test("finance and quality readers have no operational task feed without its explicit capability", () => {
+    const reader = {
+        ...commercialWithoutFinance,
+        role: { id: 3, name: "viewer" },
+        can_view_work_reports: false,
+        can_manage_work_reports: false,
+    } satisfies User;
+    const finance = { ...reader, can_view_finance: true };
+    const quality = { ...reader, can_view_quality: true };
+    assert.equal(canViewFinance(finance), true);
+    assert.equal(canViewQuality(quality), true);
+    for (const account of [finance, quality]) {
+        assert.equal(canViewWorkReports(account), false);
+        assert.equal(canManageWorkReports(account), false);
+    }
+    assert.equal(canViewWorkReports({ ...reader, can_view_work_reports: true }), true);
+});
+
 test("labour-cost workspace requires the explicit reserved capability", () => {
     const viewer = {
         ...commercialWithoutFinance,

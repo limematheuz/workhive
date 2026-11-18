@@ -14,6 +14,7 @@ import { cachedDay } from "@/services/offline-work.service";
 import { readWorkerSnapshot,type WorkerLocation } from "@/services/worker-offline-storage";
 import { sortWorkerTasks,workerTaskProjection } from "@/domain/tasks/worker-day";
 import {CompanySwitcher} from "@/components/dashboard/CompanySwitcher";
+import {readTaskLocationDetails,taskLocationIds} from "@/lib/task-locations";
 
 type WorkspaceData={context:WorkerContext;tasks:TaskItem[];locations:WorkerLocation[];liveLocations:Location[];taskError:string;locationError:string};
 type WorkerWorkspaceValue=WorkspaceData&{online:boolean;reload:()=>void;openTask:(task:TaskItem)=>void;locationName:(id:number)=>string};
@@ -34,7 +35,13 @@ function WorkerSession({userId,companyId,children}:{userId:number;companyId:numb
         if(!online){const [day,snapshot]=await Promise.all([cachedDay(userId,companyId),readWorkerSnapshot(userId,companyId)]);if(!snapshot)throw new Error("Esta cuenta todavía no ha preparado su jornada en este dispositivo. Conéctate para descargarla.");return{context:snapshot.context,tasks:day.tasks,locations:snapshot.locations,liveLocations:[],taskError:"",locationError:""};}
         const context=await readWorkerContext();
         const [tasks,locations]=await Promise.allSettled([context.features.includes("features.work_orders")?TaskService.getAllTaskItems({userId}):Promise.resolve<TaskItem[]>([]),LocationService.getLocations()]);
-        return {context,tasks:tasks.status==="fulfilled"?sortWorkerTasks(tasks.value.map(workerTaskProjection)):[],liveLocations:locations.status==="fulfilled"?locations.value:[],locations:locations.status==="fulfilled"?locations.value:[],taskError:tasks.status==="rejected"?(tasks.reason instanceof Error?tasks.reason.message:"No se pudieron consultar tus trabajos."):"",locationError:locations.status==="rejected"?"No se pueden consultar los detalles de las ubicaciones con este acceso.":""};
+        const ownTasks=tasks.status==="fulfilled"?sortWorkerTasks(tasks.value.map(workerTaskProjection)):[];
+        const master=locations.status==="fulfilled"?locations.value:[];
+        const ids=taskLocationIds(ownTasks);
+        const details=await readTaskLocationDetails(ids,master,id=>LocationService.getLocation(id));
+        const liveLocations=[...master,...details];
+        const known=new Set(liveLocations.map(location=>location.id));
+        return {context,tasks:ownTasks,liveLocations,locations:liveLocations,taskError:tasks.status==="rejected"?(tasks.reason instanceof Error?tasks.reason.message:"No se pudieron consultar tus trabajos."):"",locationError:locations.status==="rejected"||ids.some(id=>!known.has(id))?"No se pueden consultar todos los detalles de las ubicaciones con este acceso.":""};
     },[online,userId,companyId]);
     const receive=useCallback((value:WorkspaceData)=>{setData(value);setError("");},[]);
     const failed=useCallback((cause:unknown)=>{setData(null);setError(cause instanceof Error?cause.message:"No se pudo cargar tu espacio de trabajador.");},[]);
