@@ -1,12 +1,14 @@
 """Safety checks for commercial changes that can reduce a company's capacity."""
 
 from collections.abc import Mapping
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.subscription_entitlement import CompanyEntitlementOverride
 from app.repositories import subscription_entitlement as entitlement_repo
+from app.repositories import location_assets as location_assets_repo
 from app.services.entitlement_catalog import EntitlementValue, entitlement_presentation
 
 
@@ -26,6 +28,13 @@ _USAGE_COUNTERS = {
     "limits.teams": lambda db, company_id: entitlement_repo.count_active_teams(
         db, company_id=company_id
     ),
+    "limits.accountant_portals": lambda db, company_id: entitlement_repo.count_active_external_access_grants(
+        db, company_id=company_id, access_type="accountant", now=datetime.now(timezone.utc)
+    ),
+    "limits.partner_portals": lambda db, company_id: entitlement_repo.count_active_partner_portal_grants(
+        db, host_company_id=company_id, now=datetime.now(timezone.utc)
+    ),
+    "limits.location_document_storage_bytes": location_assets_repo.active_document_bytes_for_company,
 }
 
 
@@ -59,9 +68,8 @@ def reject_capacity_below_current_usage(
 ) -> None:
     """Prevent a commercial edit from leaving known company resources over quota.
 
-    Portal capacities do not have a corresponding active-resource model yet, so
-    they are intentionally not inferred as zero here. Their creation flows keep
-    enforcing their own quota once those resources exist.
+    Count only implemented resources, using the same active-resource counters as
+    their creation flows. Generic reserved portal capacity has no usage model.
     """
 
     violations: list[str] = []
