@@ -11,6 +11,7 @@ from app.models.subscription_entitlement import (
 )
 from app.models.user import User
 from app.services import company_entitlement_service, entitlement_service
+from app.services.entitlement_catalog import default_plan_values, entitlement_availability
 from app.services import (
     client_service,
     invoice_service,
@@ -19,6 +20,14 @@ from app.services import (
     task_item_read_service,
     work_session_service,
 )
+
+
+@pytest.mark.parametrize("plan,capacity", [("basic", 5), ("medium", 25), ("top", 100), ("mega", 500)])
+def test_reserved_generic_portal_capacity_is_not_advertised_as_delivered(plan, capacity):
+    assert default_plan_values(plan)["limits.external_portals"] == capacity
+    assert entitlement_availability("limits.external_portals") == "coming_soon"
+    for implemented in ("limits.accountant_portals", "limits.partner_portals", "limits.location_document_storage_bytes"):
+        assert entitlement_availability(implemented) == "available"
 
 
 def make_company(db, *, suffix: str, plan: str = "trial", status: str = "trialing"):

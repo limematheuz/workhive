@@ -36,8 +36,7 @@ def list_purchasable_plans(db: Session) -> list[PublicPlanCatalogResponse]:
                     value=entitlement_value_from_row(item),
                 )
                 for item in sorted(plan.entitlements, key=lambda item: item.code)
-                if not item.code.startswith("features.")
-                or is_commercially_available(item.code)
+                if is_commercially_available(item.code)
             ],
             prices=[
                 PublicPlanPrice(
