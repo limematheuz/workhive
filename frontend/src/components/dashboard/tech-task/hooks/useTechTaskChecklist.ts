@@ -12,6 +12,8 @@ import { parseTaskChecklistItems } from "@/lib/format";
 import { filterVisibleChecklistItems } from "@/lib/task-checklist-view";
 import { toast } from "@/lib/toast";
 import type { Dictionary } from "@/lib/dictionary-context";
+import {useResourceEffect} from "@/hooks/useResourceEffect";
+import {spaceWorkforce,type SpaceWorker} from "@/services/workforce-execution.service";
 
 export interface ChecklistItem {
     id: string;
@@ -25,6 +27,8 @@ export interface ChecklistItem {
 }
 
 interface UseTechTaskChecklistParams {
+    workerMode?: boolean;
+    workerEmployeeId?: number | null;
     task: TaskItem;
     currentUser: User;
     isCurrentTaskSessionActive: boolean;
@@ -117,6 +121,8 @@ function mergeParsedChecklist(parsed: ChecklistItem[], previous: ChecklistItem[]
 }
 
 export function useTechTaskChecklist({
+    workerMode = false,
+    workerEmployeeId,
     task,
     currentUser,
     isCurrentTaskSessionActive,
@@ -128,12 +134,20 @@ export function useTechTaskChecklist({
     const [activeCategory, setActiveCategory] = useState<"General" | "Baño" | "Cocina">("General");
     const [uploadingChecklistItem, setUploadingChecklistItem] = useState<string | null>(null);
     const [teamAssignees, setTeamAssignees] = useState<User[]>([]);
-    const canAssignTeam = currentUser?.id ? canManageCompanyTasks(currentUser) : false;
+    const canAssignTeam = !workerMode && currentUser?.id ? canManageCompanyTasks(currentUser) : false;
     const availableAssignees = canAssignTeam
         ? teamAssignees
         : currentUser?.id
             ? [currentUser]
             : [];
+    const allocationKey=task.id+":"+(workerEmployeeId??"unlinked");
+    const [workforce,setWorkforce]=useState<{key:string;rows:SpaceWorker[];failed:boolean}|null>(null);
+    const requestWorkforce=useCallback(()=>spaceWorkforce(task.id),[task.id]);
+    useResourceEffect(workerMode,allocationKey+":"+isCurrentTaskSessionActive,requestWorkforce,
+        rows=>setWorkforce({key:allocationKey,rows,failed:false}),()=>setWorkforce({key:allocationKey,rows:[],failed:true}));
+    const ownAllocationRows=useMemo(()=>workforce?.key===allocationKey?workforce.rows.filter(row=>row.employee_id===workerEmployeeId):[],[workforce,allocationKey,workerEmployeeId]);
+    const ownAnswers=useMemo(()=>{const answers=new Map<number,"yes"|"no"|null>();for(const row of ownAllocationRows)for(const step of row.tasks)answers.set(step.id,step.completed?(step.answer==="no"?"no":"yes"):null);return answers;},[ownAllocationRows]);
+    const structuredById=useMemo(()=>new Map((task.checklist_items??[]).map(item=>[item.id,item])),[task.checklist_items]);
 
     useEffect(() => {
         if (!currentUser?.id || !canAssignTeam) return;
@@ -146,9 +160,15 @@ export function useTechTaskChecklist({
 
     const parseDescriptionChecklist = useCallback((): ChecklistItem[] | null => {
         const usesStructuredChecklist = Boolean(task.checklist_items?.length);
-        const items = parseTaskChecklistItems(task).map((item, index) => {
+        const visible=parseTaskChecklistItems(task).filter(item=>{
+            if(!workerMode)return true;
+            const structured=item.structuredId?structuredById.get(item.structuredId):undefined;
+            return structured?!structured.assignments.length||structured.assignments.some(row=>row.user_id===currentUser.id):!item.assignedUserId||item.assignedUserId===currentUser.id;
+        });
+        const items = visible.map((item, index) => {
             const itemId = item.structuredId ? `item_${item.structuredId}` : `parsed_${index + 1}`;
             const recordedAnswer = task.checklist_evidence?.[itemId]?.answer ?? null;
+            const personal=workerMode&&item.structuredId?structuredById.get(item.structuredId)?.assignments.find(row=>row.user_id===currentUser.id):undefined;
             return {
                 id: itemId,
                 category: "General" as const,
@@ -156,7 +176,7 @@ export function useTechTaskChecklist({
                 // Structured rows and their evidence are both persisted task
                 // state. A legacy answer is still a valid completed step until
                 // the database migration materialises it in `completed`.
-                answer: item.checked
+                answer: workerMode&&item.structuredId&&ownAnswers.has(item.structuredId)?ownAnswers.get(item.structuredId)??null:personal?.status==="completed"?"yes" as const:item.checked
                     ? "yes" as const
                     : usesStructuredChecklist
                         ? (recordedAnswer === "yes" || recordedAnswer === "no"
@@ -165,12 +185,12 @@ export function useTechTaskChecklist({
                         : recordedAnswer,
                 note: task.checklist_evidence?.[itemId]?.note || "",
                 photoAttached: Boolean(task.checklist_evidence?.[itemId]?.photoUrl),
-                assignedUserId: item.assignedUserId,
-                assignedUserName: item.assignedUserName,
+                assignedUserId: personal?.user_id??item.assignedUserId,
+                assignedUserName: personal?.user_name??item.assignedUserName,
             };
         });
         return items.length > 0 ? items : null;
-    }, [task]);
+    }, [task,workerMode,structuredById,currentUser.id,ownAnswers]);
 
     const isParsedChecklist = useMemo(() => {
         return !!parseDescriptionChecklist();
@@ -179,10 +199,10 @@ export function useTechTaskChecklist({
     const resolveChecklist = useCallback((previous: ChecklistItem[] = []) => {
         const parsed = parseDescriptionChecklist();
         if (parsed) return mergeParsedChecklist(parsed, previous);
-        return readStoredChecklist(task.id);
-    }, [task.id, parseDescriptionChecklist]);
+        return workerMode?[]:readStoredChecklist(task.id);
+    }, [task.id, parseDescriptionChecklist,workerMode]);
 
-    const checklistSourceKey = useMemo(() => getChecklistSourceKey(task), [task]);
+    const checklistSourceKey = useMemo(() => getChecklistSourceKey(task)+(workerMode?JSON.stringify([...ownAnswers]):""), [task,workerMode,ownAnswers]);
     const [checklistStore, setChecklistStore] = useState<ChecklistStore>(() => ({
         sourceKey: checklistSourceKey,
         items: resolveChecklist(),
@@ -211,6 +231,7 @@ export function useTechTaskChecklist({
 
     const ownChecklistItems = useMemo(() => {
         if (!currentUser?.id) return checklist;
+        if(workerMode)return checklist.filter(item=>!item.assignedUserId||item.assignedUserId===currentUser.id);
         const assignedToUser = checklist.filter(item => item.assignedUserId === currentUser.id);
         if (assignedToUser.length > 0) return assignedToUser;
         const hasExplicitAssignments = checklist.some(item => item.assignedUserId);
@@ -220,7 +241,7 @@ export function useTechTaskChecklist({
                 : checklist;
         }
         return [];
-    }, [checklist, currentUser, task.user_id]);
+    }, [checklist, currentUser, task.user_id,workerMode]);
 
     const ownCompletedCount = useMemo(() => ownChecklistItems.filter(item => item.answer !== null).length, [ownChecklistItems]);
     const ownTotalCount = ownChecklistItems.length;
@@ -241,6 +262,15 @@ export function useTechTaskChecklist({
         if (!isCurrentTaskSessionActive) {
             toast.error(dict.tech.toast_start_first);
             return;
+        }
+        if(workerMode){
+            if(workforce?.key!==allocationKey||workforce.failed){toast.error("No se pudo comprobar tu reparto de tareas. Actualiza el trabajo antes de continuar.");return;}
+            if(workforce.rows.length){
+                const id=Number(itemId.replace("item_","")),targets=ownAllocationRows.filter(row=>row.tasks.some(step=>step.id===id));
+                if(!targets.length){toast.error("Esta tarea no está repartida a tu ficha de trabajador.");return;}
+                try{let rows:SpaceWorker[]=workforce.rows;for(const target of targets)rows=await spaceWorkforce(task.id,target.id,id,true,answer);setWorkforce({key:allocationKey,rows,failed:false});onStatusUpdate();}catch(cause){toast.error(cause instanceof Error?cause.message:"No se pudo guardar tu respuesta.");}
+                return;
+            }
         }
 
         const item = checklist.find(i => i.id === itemId);
@@ -323,7 +353,7 @@ export function useTechTaskChecklist({
             item.id === itemId ? { ...item, note } : item
         );
         setChecklist(updated);
-        localStorage.setItem(`workhive_checklist_task_${task.id}`, JSON.stringify(updated));
+        if (!workerMode) localStorage.setItem(`workhive_checklist_task_${task.id}`, JSON.stringify(updated));
     };
 
     const persistChecklistNote = async (itemId: string, note: string) => {
@@ -378,6 +408,7 @@ export function useTechTaskChecklist({
     };
 
     const handleResetChecklist = async () => {
+        if (workerMode) return;
         const structuredItems = checklist.filter(item => item.id.startsWith("item_"));
         if (structuredItems.length > 0) {
             try {
@@ -420,6 +451,7 @@ export function useTechTaskChecklist({
     };
 
     const handleAddChecklistItem = async (question: string, assigneeId: number): Promise<boolean> => {
+        if (workerMode) return false;
         const assignee = availableAssignees.find(user => user.id === assigneeId);
         if (!question.trim()) return false;
         if (!assignee) {

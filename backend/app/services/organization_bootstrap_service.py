@@ -44,6 +44,8 @@ def ensure_legacy_membership(
 
     if user.company_id is None:
         return None
+    if getattr(user,"base_company_id",user.company_id)!=user.company_id:
+        return existing_membership
     access_class = legacy_role_access_class(user)
     if access_class is None:
         return None
@@ -63,24 +65,19 @@ def ensure_legacy_membership(
         db.add(membership)
         db.flush()
     else:
-        membership.access_class = access_class
-        membership.status = "active" if user.is_active else "suspended"
-        if membership.status == "active":
-            membership.ended_at = None
-        db.add(membership)
-        db.flush()
+        return membership
     return membership
 
 
 def ensure_user_membership(db: Session, user: User) -> CompanyMembership | None:
     membership = ensure_legacy_membership(db, user)
-    if membership is None or user.company_id is None:
+    if membership is None or user.company_id is None or membership.status!="active":
         return membership
 
     ensure_company_permission_profiles(db, user.company_id)
 
     system_profile_name = (
-        ADMIN_PROFILE_NAME if user.role and user.role.name == "admin" else None
+        ADMIN_PROFILE_NAME if membership.access_class == "admin" else None
     )
     system_profiles = {
         profile.name: profile

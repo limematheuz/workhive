@@ -4,7 +4,7 @@ import smtplib
 from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlparse
 
-from app.core.security import get_password_hash
+from app.core.security import create_access_token, get_password_hash
 from app.models.company import Company
 from app.models.external_access_grant import ExternalAccessGrant
 from app.models.privacy_consent import PrivacyConsent
@@ -499,7 +499,7 @@ def test_former_member_can_join_again_without_creating_a_second_identity(
     )
     assert removed.status_code == 204, removed.text
     db.refresh(worker)
-    assert worker.company_id is None
+    assert worker.company_id == company_id
 
     second_delivery = _capture_invitation(monkeypatch)
     reinvited = client.post("/api/v1/user-invitations/", headers=headers, json=payload)
@@ -509,6 +509,7 @@ def test_former_member_can_join_again_without_creating_a_second_identity(
 
     rejoined = client.post(
         "/api/v1/user-invitations/accept",
+        headers={"Authorization": f"Bearer {create_access_token({'sub': worker.email, 'ver': worker.session_version})}"},
         json=_accept_payload(
             _invitation_token(second_delivery),
             str(second_delivery["verification_code"]),

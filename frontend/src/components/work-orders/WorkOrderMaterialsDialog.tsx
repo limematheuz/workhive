@@ -1,4 +1,5 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, PackageMinus, RotateCcw } from "lucide-react";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { WorkOrderMaterialPlan } from "./WorkOrderMaterialPlan";
 import { WorkOrderMaterialCorrectionDialog } from "@/components/work-orders/WorkOrderMaterialCorrectionDialog";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
@@ -40,7 +42,7 @@ function quantity(value: string) {
 }
 
 export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: WorkOrderMaterialsDialogProps) {
-    const canConsume = workOrder.status === "active" || workOrder.status === "paused";
+    const [canConsume,setCanConsume] = useState(workOrder.status === "active" || workOrder.status === "paused");
     const [materials, setMaterials] = useState<InventoryMaterial[]>([]);
     const [warehouses, setWarehouses] = useState<InventoryWarehouse[]>([]);
     const [lots, setLots] = useState<InventoryLot[]>([]);
@@ -58,12 +60,14 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
     const reload = useCallback(async () => {
         setLoading(true);
         try {
-            const [nextMaterials, nextWarehouses, nextLots, nextMovements] = await Promise.all([
+            const [nextMaterials, nextWarehouses, nextLots, nextMovements,execution] = await Promise.all([
                 InventoryService.getMaterials(),
                 InventoryService.getWarehouses(),
                 InventoryService.getLots(),
                 WorkOrderService.getMaterialConsumptions(workOrder.id),
+                WorkOrderService.consumptionState(workOrder.id),
             ]);
+            setCanConsume(execution.can_consume);
             setMaterials(nextMaterials);
             setWarehouses(nextWarehouses);
             setLots(nextLots);
@@ -137,11 +141,12 @@ export function WorkOrderMaterialsDialog({ workOrder, open, onOpenChange }: Work
         <DialogContent compact className="max-w-4xl" confirmDiscard>
             <DialogHeader><DialogTitle>Material consumido</DialogTitle><DialogDescription>{workOrder.title}. Cada registro es un movimiento inmutable de salida; las correcciones añaden una entrada de ajuste.</DialogDescription></DialogHeader>
             <div className="grid gap-5 py-2">
+                <WorkOrderMaterialPlan order={workOrder.id} materials={materials} version={movements.map(m=>m.id).join(",")} editable={canConsume||workOrder.status==="draft"}/>
                 <div className="grid gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)]/55 p-4">
                     <div><p className="text-sm font-semibold text-[var(--text-main)]">Registrar consumo</p>{!canConsume && <p className="mt-1 text-xs text-[var(--text-muted)]">La orden está cerrada; conserva su historial pero no admite nuevas salidas.</p>}</div>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(11rem,1fr)_minmax(11rem,1fr)_minmax(10rem,1fr)_7rem]">
-                        <Select value={materialId} onValueChange={(value) => { setMaterialId(value); setLotId("none"); }} disabled={!canConsume}><SelectTrigger aria-label="Material consumido"><SelectValue placeholder="Material" /></SelectTrigger><SelectContent>{materials.map((material) => <SelectItem key={material.id} value={String(material.id)}>{material.name}</SelectItem>)}</SelectContent></Select>
-                        <Select value={warehouseId} onValueChange={(value) => { setWarehouseId(value); setLotId("none"); }} disabled={!canConsume}><SelectTrigger aria-label="Almacén de salida"><SelectValue placeholder="Almacén" /></SelectTrigger><SelectContent>{warehouses.map((warehouse) => <SelectItem key={warehouse.id} value={String(warehouse.id)}>{warehouse.name}</SelectItem>)}</SelectContent></Select>
+                        <FormSelect searchable aria-label="Material consumido"  placeholder="Material" value={materialId} onValueChange={(value) => { setMaterialId(value); setLotId("none"); }} disabled={!canConsume}>{materials.map((material) => <option key={material.id} value={String(material.id)}>{material.name}</option>)}</FormSelect>
+                        <FormSelect searchable aria-label="Almacén de salida"  placeholder="Almacén" value={warehouseId} onValueChange={(value) => { setWarehouseId(value); setLotId("none"); }} disabled={!canConsume}>{warehouses.map((warehouse) => <option key={warehouse.id} value={String(warehouse.id)}>{warehouse.name}</option>)}</FormSelect>
                         <Select value={lotId} onValueChange={setLotId} disabled={!canConsume || !materialId || !warehouseId}><SelectTrigger aria-label="Lote consumido"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sin lote</SelectItem>{availableLots.map((lot) => <SelectItem key={lot.id} value={String(lot.id)}>{lot.code} · {quantity(lot.available_quantity)}{lot.expiry_status === "expired" ? " · Caducado" : lot.expiry_status === "expiring" ? " · Próxima caducidad" : ""}</SelectItem>)}</SelectContent></Select>
                         <Input type="number" min="0.001" step="0.001" disabled={!canConsume} value={consumedQuantity} onChange={(event) => setConsumedQuantity(event.target.value)} placeholder="Cantidad" aria-label="Cantidad consumida" />
                     </div>

@@ -60,10 +60,15 @@ def test_external_snapshot_freezes_only_when_work_starts_or_finishes():
 def test_invoiced_task_remains_immutable_at_policy_boundary(monkeypatch, db):
     task = SimpleNamespace(company_id=7, is_invoiced=True)
     current_user = SimpleNamespace(company_id=7)
+
+    def get_locked_task(_db, _company_id, _task_item_id, *, for_update):
+        assert for_update is True
+        return task
+
     monkeypatch.setattr(
         task_update_policy_service.task_item_repo,
         "get_task_item",
-        lambda *_args: task,
+        get_locked_task,
     )
 
     with pytest.raises(HTTPException) as error:

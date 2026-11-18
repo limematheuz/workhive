@@ -1,11 +1,15 @@
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.services.organization_authorization_service import has_capability
+from app.services.organization_authorization_service import has_capability,permitted_location_ids
 from app.services.quality_workspace_access_service import quality_workspace_access
 
 
 ORGANIZATION_CAPABILITIES = (
+    "work.read", "work.manage", "time.read", "time.manage", "time.approve",
+    "finance.read", "finance.manage", "labor_costs.read", "labor_costs.manage",
+    "clients.read", "clients.manage", "commercial.follow_ups.read", "commercial.follow_ups.manage",
     "access.members.read", "access.members.manage",
     "access.profiles.read", "access.profiles.manage",
     "organization.departments.read", "organization.departments.manage",
@@ -30,6 +34,13 @@ def access_summary(db: Session, current_user: User) -> dict[str, bool]:
             summary[code] = scope.can_read if operation == "read" else scope.can_manage
         elif code == "locations.read":
             summary[code] = quality.can_read_locations
+        elif code.startswith(("work.","time.")):
+            try:
+                locations=permitted_location_ids(db,current_user,code)
+                summary[code]=locations is None or bool(locations)
+            except HTTPException as error:
+                if error.status_code not in {403,404}:raise
+                summary[code]=False
         else:
             summary[code] = has_capability(db, current_user, code)
     return summary

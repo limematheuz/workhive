@@ -246,6 +246,7 @@ def can_manage_owned_location(
 
 
 def can_view_sensitive(db: Session, current_user: User, location_id: int) -> bool:
+    if getattr(current_user,"initial_operational_role",None):return False
     if is_platform_superadmin(current_user):
         return True
     if not can_manage_company(current_user):
@@ -263,6 +264,7 @@ def can_view_sensitive(db: Session, current_user: User, location_id: int) -> boo
 
 def can_view_sensitive_loaded(current_user: User, location: Location) -> bool:
     """Evaluate visibility from eagerly loaded location relationships."""
+    if getattr(current_user,"initial_operational_role",None):return False
     if is_platform_superadmin(current_user):
         return True
     if not can_manage_company(current_user):

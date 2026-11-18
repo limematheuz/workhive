@@ -25,6 +25,7 @@ from app.services.organization_authorization_service import (
     has_capability,
     require_capability,
 )
+from app.services.allocated_task_update_policy import require_consistent_scope
 
 
 def require_active_task_session(db: Session, task: TaskItem, current_user: User) -> None:
@@ -70,6 +71,7 @@ def require_mutable_task_for_update(
         db,
         current_user.company_id,
         task_item_id,
+        for_update=True,
     )
     if not task or task.company_id != current_user.company_id:
         raise HTTPException(
@@ -174,6 +176,11 @@ def validate_task_update_scope(
     task_data: TaskItemUpdate,
 ) -> bool:
     _validate_task_report_fields(task_data)
+    from app.services.initial_membership_policy import capabilities as initial_capabilities
+    if initial_capabilities(db,current_user) is not None:
+        for field in ("price","quantity","unit","pricing_mode"):
+            if field in task_data.model_fields_set and getattr(task_data,field)!=getattr(task,field):
+                raise HTTPException(403,"La autorización operativa inicial no permite cambiar la facturación del trabajo.")
     is_external = is_external_reservation_task(task, current_user)
     if is_external:
         # A receiving company can manage an accepted shared work order without
@@ -241,6 +248,7 @@ def validate_task_update_relations(
     current_user: User,
     task_data: TaskItemUpdate,
 ) -> None:
+    require_consistent_scope(db, task, task_data)
     target_location_id = task_data.location_id or task.location_id
     if task_data.location_id is not None:
         location_access_service.require_location_capability(
@@ -279,12 +287,7 @@ def validate_task_update_relations(
 def validate_direct_assignee(db: Session, company_id: int, user_id: int | None) -> None:
     if user_id is None:
         return
-    assigned_user = user_repo.get_user_by_id(db, user_id)
-    if (
-        not assigned_user
-        or assigned_user.company_id != company_id
-        or not assigned_user.is_active
-    ):
+    if user_id not in user_repo.get_active_company_user_ids(db,company_id,{user_id}):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Assigned user must be active and belong to your company",

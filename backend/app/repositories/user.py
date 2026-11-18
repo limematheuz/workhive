@@ -21,12 +21,11 @@ from app.models.user import User
 from app.models.work_session import WorkSession
 from app.schemas.user import UserCreate, UserUpdate
 from app.core.security import get_password_hash
+from app.repositories.company_membership_scope import active_member_predicate
 
 
-def user_response_load_options():
-    return (
-        selectinload(User.role),
-        selectinload(User.company),
+def user_response_load_options(*,identity_relationships=True):
+    return ((selectinload(User.role),selectinload(User.company)) if identity_relationships else ()) + (
         selectinload(User.work_sessions).selectinload(WorkSession.location),
         with_loader_criteria(WorkSession, WorkSession.end_time.is_(None)),
     )
@@ -38,7 +37,7 @@ def get_all_users(
     return (
         db.query(User)
         .options(*user_response_load_options())
-        .filter(User.company_id == company_id)
+        .filter(User.company_id.is_(None) if company_id is None else active_member_predicate(company_id))
         .filter(User.is_active.is_(True))
         .offset(skip)
         .limit(limit)
@@ -54,7 +53,7 @@ def get_company_members(db: Session, company_id: int) -> list[User]:
     return (
         db.query(User)
         .options(*user_response_load_options())
-        .filter(User.company_id == company_id)
+        .filter(active_member_predicate(company_id))
         .filter(~User.email.endswith("@invalid.workhive.local"))
         .join(User.role)
         .filter(Role.name != "superadmin")
@@ -86,9 +85,13 @@ def get_active_company_user_ids(db: Session, company_id: int, user_ids: set[int]
         return set()
     return {
         row[0] for row in db.query(User.id).filter(
-            User.id.in_(user_ids), User.company_id == company_id, User.is_active.is_(True),
+            User.id.in_(user_ids), active_member_predicate(company_id), User.is_active.is_(True),
         )
     }
+
+
+def is_active_company_member(db,company_id,user_id):
+    return db.query(User.id).filter(User.id==user_id,User.is_active.is_(True),active_member_predicate(company_id)).first() is not None
 
 
 def get_latest_company_membership(db: Session, user_id: int) -> CompanyMembership | None:

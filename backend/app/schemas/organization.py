@@ -98,6 +98,7 @@ class OrganizationMemberAccessUpdate(OrganizationMemberUpdate):
 
 
 class DepartmentCreate(BaseModel):
+    unit_type: Literal["area","branch"] = "area"
     name: str = Field(min_length=1, max_length=120)
     code: str | None = Field(default=None, max_length=50)
     parent_department_id: int | None = Field(default=None, gt=0)
@@ -117,6 +118,7 @@ class DepartmentCreate(BaseModel):
 
 
 class DepartmentUpdate(BaseModel):
+    unit_type: Literal["area","branch"] | None = None
     name: str | None = Field(default=None, min_length=1, max_length=120)
     code: str | None = Field(default=None, max_length=50)
     parent_department_id: int | None = Field(default=None, gt=0)
@@ -139,6 +141,7 @@ class DepartmentUpdate(BaseModel):
 
     @model_validator(mode="after")
     def reject_explicit_null_name(self) -> "DepartmentUpdate":
+        if "unit_type" in self.model_fields_set and self.unit_type is None:raise ValueError("Unit type cannot be null")
         if "name" in self.model_fields_set and self.name is None:
             raise ValueError("Name cannot be null")
         if "is_active" in self.model_fields_set and self.is_active is None:
@@ -156,6 +159,7 @@ class DepartmentUsage(BaseModel):
 
 
 class DepartmentResponse(BaseModel):
+    unit_type: Literal["area","branch"] = "area"
     id: int
     name: str
     code: str | None

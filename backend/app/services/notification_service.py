@@ -20,7 +20,7 @@ def notify_users(
     metadata: dict | None = None,
     commit: bool = True,
 ) -> None:
-    unique_users = {user.id: user for user in users if user.is_active and user.company_id}
+    unique_users = {(user.id,user.company_id): user for user in users if user.is_active and user.company_id}
     db.add_all([
         Notification(
             user_id=user.id,
@@ -61,7 +61,7 @@ def notify_users_once(
     than once. The explicit key prevents duplicate user notifications without
     coupling deduplication to translated titles or messages.
     """
-    unique_users = {user.id: user for user in users if user.is_active and user.company_id}
+    unique_users = {(user.id,user.company_id): user for user in users if user.is_active and user.company_id}
     if not unique_users:
         return 0
 

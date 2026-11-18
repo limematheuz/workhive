@@ -1,4 +1,5 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import {
     DocumentFormInput,
@@ -8,13 +9,7 @@ import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { DatePicker } from "@/components/ui/date-picker";
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Client } from "@/services/client.service";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+
 
 type QuoteFormDetailsSectionProps = {
     dict: Dictionary;
@@ -57,29 +52,23 @@ export function QuoteFormDetailsSection({
 
                 <div className="grid w-full min-w-0 grid-cols-1 gap-4 @[28rem]:grid-cols-2">
                     <DocumentFormField id="quote-client" label={dict.quotes?.client_label || "Cliente *"}>
-                        <Select
+                        <FormSelect searchable aria-label={dict.quotes?.client_label || "Cliente"} id="quote-client" className="h-11 w-full rounded-xl px-3 text-sm" placeholder={dict.quotes?.new_unregistered_client || "-- Nuevo Cliente / No registrado --"}
                             value={selectedClientId}
                             onValueChange={(value) => setSelectedClientId(value === "__new-client__" ? "" : value)}
                         >
-                            <SelectTrigger
-                                id="quote-client"
-                                aria-label={dict.quotes?.client_label || "Cliente"}
-                                className="h-11 w-full rounded-xl px-3 text-sm"
-                            >
-                                <SelectValue placeholder={dict.quotes?.new_unregistered_client || "-- Nuevo Cliente / No registrado --"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="__new-client__">
+
+
+                                <option value="__new-client__">
                                     {dict.quotes?.new_unregistered_client || "-- Nuevo Cliente / No registrado --"}
-                                </SelectItem>
+                                </option>
                                 {clients.map((client) => (
-                                    <SelectItem key={client.id} value={client.id.toString()}>
+                                    <option key={client.id} value={client.id.toString()}>
                                         {client.name}
                                         {client.legal_number?.trim() ? ` (${client.legal_number.trim()})` : ""}
-                                    </SelectItem>
+                                    </option>
                                 ))}
-                            </SelectContent>
-                        </Select>
+
+                        </FormSelect>
                     </DocumentFormField>
 
                     <DocumentFormField

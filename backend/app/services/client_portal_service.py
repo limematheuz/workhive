@@ -6,6 +6,7 @@ from app.models.quote import Quote
 from app.models.service_contract import ServiceContract
 from app.repositories import client_portal as client_portal_repo
 from app.services import quality_client_acceptance_service, quality_complaint_service
+from app.services.client_portal_currency_projection import public_currency_snapshot
 
 
 def _line(*, description: str, quantity: float, unit_price: float, subtotal: float, tax_rate: float | None = None, total: float | None = None) -> dict:
@@ -43,6 +44,7 @@ def serialize_invoice(invoice: Invoice) -> dict:
         "original_invoice_id": invoice.original_invoice_id,
         "payment_method": invoice.payment_method,
         "paid_at": invoice.paid_at,
+        "currency_snapshot": public_currency_snapshot(invoice.currency_snapshot),
         "lines": [
             _line(
                 description=item.description,

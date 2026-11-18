@@ -19,6 +19,8 @@ import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import type { Role } from "@/services/role.service";
 import { UserService } from "@/services/user.service";
+import { InvitationLinkDialog } from "@/components/invitations/InvitationLinkDialog";
+import { SelectField } from "@/components/ui/select-field";
 
 import { getRoleText } from "./user-role-utils";
 
@@ -79,6 +81,8 @@ export function UserCreateDialog({
         ...EMPTY_CREATE_FORM,
         roleId: defaultRoleId,
     }));
+    const [delivery, setDelivery] = useState<"email" | "link">("email");
+    const [createdLink, setCreatedLink] = useState<{ email: string; invitationUrl: string; verificationCode: string; expiresAt: string } | null>(null);
 
     useEffect(() => {
         if (!open) return;
@@ -105,11 +109,16 @@ export function UserCreateDialog({
 
         try {
             setForm((current) => ({ ...current, submitting: true }));
-            await UserService.inviteUser({
+            const result = await UserService.inviteUser({
                 email: form.email,
                 full_name: form.fullName || undefined,
                 role_id: parseInt(form.roleId, 10),
+                delivery,
             });
+            if (result.delivery === "link" && result.invitation_url && result.verification_code) {
+                setCreatedLink({ email: result.email, invitationUrl: result.invitation_url, verificationCode: result.verification_code, expiresAt: result.expires_at });
+                return;
+            }
             toast.success(labels.success_create);
             setForm({
                 ...EMPTY_CREATE_FORM,
@@ -123,6 +132,12 @@ export function UserCreateDialog({
             setForm((current) => ({ ...current, submitting: false }));
         }
     };
+
+    if (createdLink) return <InvitationLinkDialog {...createdLink} onClose={() => {
+        setCreatedLink(null);
+        onOpenChange(false);
+        onCreated();
+    }} />;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -178,6 +193,7 @@ export function UserCreateDialog({
                                 <SelectContent>{roles.map((r) => <SelectItem key={r.id} value={String(r.id)}>{getRoleText(r.name, roleLabels)}</SelectItem>)}</SelectContent>
                             </Select>
                         </div>}
+                        <div className="space-y-2"><Label htmlFor="user-invite-delivery">Entrega de la invitación</Label><SelectField id="user-invite-delivery" aria-label="Entrega de la invitación" value={delivery} onValueChange={value => setDelivery(value === "link" ? "link" : "email")} options={[{value:"email",label:"Enviar por correo"},{value:"link",label:"Crear enlace y código para compartir"}]} /><p className="text-xs text-muted-foreground">{delivery === "link" ? "No requiere correo configurado. El enlace y el código se mostrarán una sola vez." : "La persona debe aceptar. Si ya tiene cuenta, conserva su contraseña y los accesos a otras empresas."}</p></div>
                     </div>
 
                     <div className="dialog-glass-chrome flex shrink-0 gap-3 border-t border-[var(--border-soft)] px-6 py-4">
@@ -196,7 +212,7 @@ export function UserCreateDialog({
                         >
                             {form.submitting ? (
                                 <><Loader2 className="w-4 h-4 animate-spin mr-2" />{labels.submitting}</>
-                            ) : labels.submit_create}
+                            ) : delivery === "link" ? "Crear enlace" : labels.submit_create}
                         </Button>
                     </div>
                 </form>

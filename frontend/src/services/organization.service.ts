@@ -42,6 +42,7 @@ export type OrganizationDepartmentUsage = {
 };
 
 export type OrganizationDepartment = {
+    unit_type?:"area"|"branch";
     id: number;
     name: string;
     code: string | null;
@@ -116,12 +117,13 @@ export const OrganizationService = {
     getTeams: () => request<OrganizationTeam[]>("/teams", { cache: "no-store" }),
     getPermissionDefinitions: () => request<PermissionDefinition[]>("/permission-definitions", { cache: "no-store" }),
     getPermissionProfiles: () => request<PermissionProfile[]>("/permission-profiles", { cache: "no-store" }),
-    createDepartment: (payload: { name: string; code?: string; parent_department_id?: number }) =>
+    createDepartment: (payload: { unit_type?:"area"|"branch"; name: string; code?: string; parent_department_id?: number }) =>
         request<OrganizationDepartment>("/departments", {
             method: "POST",
             body: JSON.stringify(payload),
         }),
     updateDepartment: (departmentId: number, payload: {
+        unit_type?:"area"|"branch";
         name?: string;
         code?: string | null;
         parent_department_id?: number | null;

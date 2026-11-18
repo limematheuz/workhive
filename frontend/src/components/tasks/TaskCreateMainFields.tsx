@@ -1,7 +1,8 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { DatePicker } from "@/components/ui/date-picker";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { Location } from "@/services/location.service";
 import { getDefaultTaskDate } from "@/domain/tasks/task-create";
@@ -37,19 +38,17 @@ export function TaskCreateMainFields({
                     <span className="block text-2xs font-black uppercase tracking-wider text-[var(--text-muted)]">
                         {dict.tasks?.create_dialog?.select_location || "Ubicación *"}
                     </span>
-                    <Select
+                    <FormSelect searchable aria-label="Ubicación" id="task-create-location" className="h-11 w-full text-sm font-semibold" placeholder="Elige una ubicación"
                         value={newLocationId}
                         onValueChange={setNewLocationId}
                     >
-                        <SelectTrigger id="task-create-location" className="h-11 w-full text-sm font-semibold">
-                            <SelectValue placeholder="Elige una ubicación" />
-                        </SelectTrigger>
-                        <SelectContent>
+
+
                             {ownLocations.map((location) => (
-                                <SelectItem key={location.id} value={location.id.toString()}>{location.name}</SelectItem>
+                                <option key={location.id} value={location.id.toString()}>{location.name}</option>
                             ))}
-                        </SelectContent>
-                    </Select>
+
+                    </FormSelect>
                 </div>
 
                 <div className="block space-y-2">

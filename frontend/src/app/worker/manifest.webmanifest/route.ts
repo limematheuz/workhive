@@ -1,0 +1,1 @@
+export function GET(){return Response.json({id:"/worker",name:"Mi WorkHive · Trabajador",short_name:"Mi WorkHive",start_url:"/worker",scope:"/worker",display:"standalone",background_color:"#ffffff",theme_color:"#6545e5",lang:"es",icons:[{src:"/icon.png",sizes:"1024x1024",type:"image/png",purpose:"any"}]},{headers:{"Cache-Control":"public, max-age=3600"}});}

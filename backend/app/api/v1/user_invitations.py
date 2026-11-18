@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import ActiveUser, get_db
+from app.api.deps import ActiveUser, OptionalAuthenticatedIdentity, get_db
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
@@ -9,6 +9,7 @@ from app.schemas.user_invitation import (
     UserInvitationAccept,
     UserInvitationAccepted,
     UserInvitationCreate,
+    UserInvitationCreated,
     UserInvitationResponse,
 )
 from app.services import (
@@ -47,13 +48,13 @@ def list_worker_invitations(
     return [invitation_response(invitation) for invitation in invitations]
 
 
-@router.post("/", response_model=UserInvitationAccepted, status_code=status.HTTP_202_ACCEPTED)
+@router.post("/", response_model=UserInvitationCreated, response_model_exclude_none=True, status_code=status.HTTP_202_ACCEPTED)
 def invite_worker(
     payload: UserInvitationCreate,
     request: Request,
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
-) -> UserInvitationAccepted:
+) -> UserInvitationCreated:
     enforce_rate_limit(
         request,
         "worker-invitation",
@@ -61,7 +62,8 @@ def invite_worker(
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
         identity=str(payload.email),
     )
-    invitation = user_invitation_service.create_invitation(db, payload, current_user)
+    result = user_invitation_service.create_invitation(db, payload, current_user)
+    invitation = result.invitation
     audit_service.record_event(
         db,
         actor=current_user,
@@ -72,7 +74,10 @@ def invite_worker(
         request=request,
         details={"role_id": invitation.role_id},
     )
-    return UserInvitationAccepted()
+    return UserInvitationCreated(
+        delivery=result.delivery, email=invitation.email, expires_at=invitation.expires_at,
+        invitation_url=result.invitation_url, verification_code=result.verification_code,
+    )
 
 
 @router.delete("/{invitation_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -103,6 +108,7 @@ def accept_worker_invitation(
     payload: UserInvitationAccept,
     request: Request,
     db: Session = Depends(get_db),
+    authenticated_identity: User | None = OptionalAuthenticatedIdentity,
 ) -> UserInvitationAccepted:
     enforce_rate_limit(
         request,
@@ -111,11 +117,12 @@ def accept_worker_invitation(
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
         identity=payload.token,
     )
-    user = user_invitation_service.accept_invitation(db, payload, request)
+    result = user_invitation_service.accept_invitation(db, payload, request, authenticated_identity)
+    user = result.user
     audit_service.record_event(
         db,
         actor=user,
-        company_id=user.company_id,
+        company_id=result.company_id,
         action="user.invitation_accepted",
         entity_type="user",
         entity_id=user.id,

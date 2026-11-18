@@ -13,6 +13,7 @@ interface UseTemplateCrudParams {
 }
 
 export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
+    const [isSavingTemplate,setIsSavingTemplate] = useState(false);
     const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
     const [tmplName, setTmplName] = useState<string>("");
     const [tmplDescription, setTmplDescription] = useState<string>("");
@@ -26,7 +27,8 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
 
     const handleSaveTemplate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!tmplName.trim()) return;
+        if (!tmplName.trim() || isSavingTemplate) return;
+        setIsSavingTemplate(true);
 
         try {
             const payload: TemplateTaskInput = {
@@ -54,7 +56,7 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
         } catch (error: unknown) {
             console.error("Error saving template", error);
             toast.error(getErrorMessage(error, "Error operativo con plantillas"));
-        }
+        } finally { setIsSavingTemplate(false); }
     };
 
     const handleOpenTemplateModal = (template: TemplateTask | null) => {
@@ -87,9 +89,11 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
 
             const freshTemplates = await TemplateTaskService.getTemplates();
             setTemplates(freshTemplates);
+            return true;
         } catch (error: unknown) {
             console.error("Error deleting template", error);
             toast.error(getErrorMessage(error, "Error al eliminar la plantilla"));
+            return false;
         } finally {
             setIsDeletingTemplate(false);
         }
@@ -119,6 +123,7 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
     };
 
     return {
+        isSavingTemplate,
         isTemplateModalOpen,
         setIsTemplateModalOpen,
         tmplName,

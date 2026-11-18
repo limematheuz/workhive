@@ -1,0 +1,19 @@
+"use client";
+import {useCallback,useState} from "react";
+import {FileCheck,ExternalLink} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {useResourceEffect} from "@/hooks/useResourceEffect";
+import {readStaffDocumentation,acknowledgeStaffDocument,type StaffDocument} from "@/services/staff-documentation.service";
+import {useWorkerWorkspace} from "./WorkerWorkspace";
+import {DocumentRegisterWorkspace} from "@/components/documents/DocumentRegisterWorkspace";
+export function WorkerDocuments(){
+ const workspace=useWorkerWorkspace();
+ return <main className="space-y-4"><div><h1 className="text-2xl font-semibold tracking-tight">Mis documentos</h1><p className="mt-1 text-sm text-muted-foreground">Documentos vinculados a tu ficha, firmas y confirmación de recepción.</p></div>{!workspace.context.employee?<p className="rounded-xl border border-orange-400/40 p-4 text-sm text-orange-700">La empresa debe vincular esta cuenta a tu ficha para mostrar tus documentos.</p>:!workspace.context.features.includes("features.hr")?<p className="rounded-xl border border-orange-400/40 p-4 text-sm text-orange-700">La documentación personal no está habilitada en el módulo de Personal.</p>:!workspace.online?<p role="status" className="rounded-xl border border-orange-400/40 p-4 text-sm text-orange-700">Los documentos personales requieren conexión. Sus archivos no se guardan en la caché de la app.</p>:<><DocumentRegisterWorkspace ownerType="staff" ownerId={workspace.context.employee.id} selfService embedded/><details className="rounded-xl border bg-card p-4"><summary className="cursor-pointer text-sm font-medium">Documentos anteriores de mi ficha</summary><div className="mt-4"><OwnDocuments/></div></details></>}</main>;
+}
+function OwnDocuments(){
+ const [rows,setRows]=useState<StaffDocument[]>([]),[revision,setRevision]=useState(0),[error,setError]=useState(""),[loaded,setLoaded]=useState(false),[busy,setBusy]=useState("");
+ const request=useCallback(()=>readStaffDocumentation(true),[]);
+ useResourceEffect(true,String(revision),request,result=>{setRows(result);setLoaded(true);setError("");},cause=>{setError(cause instanceof Error?cause.message:"No se pudieron consultar tus documentos.");setLoaded(true);});
+ async function acknowledge(id:string){setBusy(id);setError("");try{await acknowledgeStaffDocument(id);setRevision(value=>value+1);}catch(cause){setError(cause instanceof Error?cause.message:"No se pudo confirmar la recepción.");}finally{setBusy("");}}
+ return <section className="space-y-3">{error&&<p role="alert" className="text-sm text-orange-700">{error}</p>}{!loaded?<p role="status" className="text-sm text-muted-foreground">Cargando tus documentos…</p>:!rows.length&&!error?<p className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">Tu empresa todavía no ha vinculado documentos a tu ficha.</p>:rows.map(row=><article key={row.digest} className="space-y-3 rounded-2xl border bg-card p-4"><div><h2 className="break-words text-sm font-semibold">{row.name}</h2><p className="text-xs text-muted-foreground">Versión {row.version??"1"}{row.expires_on?" · Caduca el "+row.expires_on:""}</p></div>{row.expired&&<p className="text-xs text-orange-700">Documento caducado: solicita a tu empresa la versión actualizada.</p>}<p className={row.acknowledged_at?"text-xs text-muted-foreground":"text-xs text-orange-700"}>{row.acknowledged_at?"Recepción confirmada el "+new Date(row.acknowledged_at).toLocaleDateString("es-ES"):"Pendiente de confirmar recepción"}</p><div className="flex flex-wrap gap-2"><Button asChild variant="outline" size="sm"><a href={row.url} target="_blank" rel="noopener noreferrer">Abrir documento<ExternalLink className="size-3.5"/></a></Button>{!row.acknowledged_at&&<Button size="sm" disabled={Boolean(busy)} onClick={()=>void acknowledge(row.digest)}><FileCheck className="size-3.5"/>Confirmar recepción</Button>}</div></article>)}</section>;
+}

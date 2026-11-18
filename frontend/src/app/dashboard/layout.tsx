@@ -18,6 +18,8 @@ import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant
 import { canAccessPartnerPortalDashboardPath } from "@/domain/access/partner-portal-dashboard";
 import { canAccessClientPortalDashboardPath } from "@/domain/access/client-portal-dashboard";
 import { NoWorkspaceAccount } from "@/components/dashboard/NoWorkspaceAccount";
+import {WorkspaceNavigationProvider} from "@/components/dashboard/WorkspaceNavigationProvider";
+import {WorkspaceRouteGuard} from "@/components/dashboard/WorkspaceRouteGuard";
 import { useRealtimeEvents } from "@/hooks/useRealtimeEvents";
 
 export default function DashboardLayoutWrapper({ children }: { children: React.ReactNode }) {
@@ -96,12 +98,12 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (user.company_id == null && user.role?.name !== "superadmin" && !isClientPortal) {
+    if (user.company_id == null && user.role?.name !== "superadmin" && !isClientPortal && !isExternalPortal) {
         return <NoWorkspaceAccount onLogout={() => { void handleLogout(); }} />;
     }
 
     if (isExternalPortal && !canAccessExternalPortalDashboardPath(pathname)) {
-        redirect("/dashboard/analytics");
+        redirect("/dashboard/advisory");
     }
 
     if (isPartnerPortal && !canAccessPartnerPortalDashboardPath(pathname)) {
@@ -112,9 +114,9 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
         redirect("/dashboard/client");
     }
 
-    return <SidebarProvider defaultOpen>
+    return <WorkspaceNavigationProvider><SidebarProvider defaultOpen>
         <DashboardLayoutShell theme={theme} onThemeChange={setTheme} onLogout={handleLogout} showOnboarding={showOnboarding} onOnboardingComplete={() => setShowOnboarding(false)} user={user}>{children}</DashboardLayoutShell>
-    </SidebarProvider>;
+    </SidebarProvider></WorkspaceNavigationProvider>;
 }
 
 function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOnboarding, onOnboardingComplete, user }: { children: React.ReactNode; theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => void; showOnboarding: boolean; onOnboardingComplete: () => void; user: NonNullable<ReturnType<typeof useUser>["user"]> }) {
@@ -133,8 +135,8 @@ function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOn
         <>
             <Sidebar theme={theme} onThemeChange={onThemeChange} onLogout={onLogout} />
 
-            <div className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:py-4 lg:pl-0 lg:pr-4">
-                <div className="relative flex min-h-dvh min-w-0 flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:rounded-3xl lg:border lg:border-[var(--border-soft)]">
+            <div className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:p-0">
+                <div className="relative flex min-h-dvh min-w-0 flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:border-l lg:border-[var(--border-soft)]">
                     {/* Clip backlight bleed without making this shell a touch scrollport (AuthShell pattern). */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
                         <div className="dashboard-shell-backlight" />
@@ -142,8 +144,8 @@ function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOn
                     <DashboardHeader
                     />
 
-                    <main className="dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 min-w-0 flex-1 overflow-x-hidden p-0 lg:overflow-y-auto">
-                        {children}
+                    <main className="wh-compact-workspace dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 min-w-0 flex-1 overflow-x-hidden p-0 lg:overflow-y-auto">
+                        <WorkspaceRouteGuard>{children}</WorkspaceRouteGuard>
                     </main>
                 </div>
             </div>

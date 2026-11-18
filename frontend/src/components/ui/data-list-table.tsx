@@ -1,8 +1,9 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { Children, Fragment, isValidElement, type KeyboardEvent, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, useRef, type KeyboardEvent, type ReactNode } from "react";
 
+import {useListScroll} from "@/hooks/useListScroll";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -43,6 +44,7 @@ type DataListTableProps<T> = {
     footer?: ReactNode;
     /** Disable the shared footer only for compact status summaries, not data lists. */
     pagination?: boolean;
+    persistenceKey?: string;
 };
 
 export function DataListRow({
@@ -117,13 +119,17 @@ export function DataListTable<T>({
     toolbar,
     footer,
     pagination: showPagination = true,
+    persistenceKey,
 }: DataListTableProps<T>) {
+    const tableElement=useRef<HTMLElement|null>(null);
+    const listKey=persistenceKey??("list."+(header?.title??columns.map(column=>column.key).join(".")));
+    const rememberPosition=useListScroll(listKey,!loading&&items.length>0,tableElement);
     const compactHidden = desktopFrom === "lg" ? "lg:hidden" : "md:hidden";
     const desktopHidden = desktopFrom === "lg" ? "hidden lg:block" : "hidden md:block";
     const shellClass = variant === "surface"
         ? "billing-surface overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--border-color)_32%,transparent)]"
         : "overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--border-color)_32%,transparent)]";
-    const pagination = useDataTablePagination(items, 10);
+    const pagination = useDataTablePagination(items, 10, listKey);
     const pageItems = pagination.pageItems;
     const defaultFooter = showPagination ? (
         <DataTablePagination
@@ -149,9 +155,9 @@ export function DataListTable<T>({
     }
 
     return (
-        <section className={cn(shellClass, className)}>
+        <section ref={tableElement} onClickCapture={event=>{if((event.target as HTMLElement).closest("a[href]"))rememberPosition();}} onKeyDownCapture={event=>{if(event.key==="Enter"&&(event.target as HTMLElement).closest("a[href]"))rememberPosition();}} className={cn(shellClass, className)}>
             {header && (
-                <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <header className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-sm font-semibold text-[var(--text-main)]">{header.title}</h2>
                         {header.subtitle && (
@@ -166,10 +172,10 @@ export function DataListTable<T>({
                 </header>
             )}
 
-            {toolbar && <div className="border-t border-[var(--table-divider)] px-4 py-3 sm:px-5">{toolbar}</div>}
+            {toolbar && <div className="border-t border-[var(--table-divider)] px-4 py-3 sm:px-4">{toolbar}</div>}
 
             {items.length === 0 ? (
-                <div className="px-5 py-16 text-center">
+                <div className="px-4 py-10 text-center">
                     {empty ?? <p className="text-sm text-[var(--text-muted)]">No hay resultados.</p>}
                 </div>
             ) : (
@@ -179,7 +185,7 @@ export function DataListTable<T>({
                     <DataListRow
                         key={getRowKey(item)}
                         compact
-                        onClick={onRowClick ? () => onRowClick(item) : undefined}
+                        onClick={onRowClick ? () => {rememberPosition();onRowClick(item);} : undefined}
                         ariaLabel={rowAriaLabel?.(item)}
                     >
                         {renderCompactRow(item)}
@@ -192,7 +198,7 @@ export function DataListTable<T>({
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
                             {columns.map((column) => (
-                                <TableHead key={column.key} className={cn("bg-muted/50 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-accent", column.className)}>
+                                <TableHead key={column.key} className={cn("bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-accent", column.className)}>
                                     {column.label}
                                 </TableHead>
                             ))}
@@ -217,13 +223,13 @@ export function DataListTable<T>({
                                 <TableRow
                                     key={getRowKey(item)}
                                     className={cn(interactive && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40")}
-                                    onClick={onRowClick ? () => onRowClick(item) : undefined}
+                                    onClick={onRowClick ? () => {rememberPosition();onRowClick(item);} : undefined}
                                     onKeyDown={openWithKeyboard}
                                     tabIndex={interactive ? 0 : undefined}
                                     aria-label={rowAriaLabel?.(item)}
                                 >
                                     {columns.map((column, index) => (
-                                        <TableCell key={column.key} className={cn("min-w-0 overflow-hidden px-4 py-3", column.className)}>
+                                        <TableCell key={column.key} className={cn("min-w-0 whitespace-normal break-words px-3 py-2.5", column.className)}>
                                             {desktopCells[index]}
                                         </TableCell>
                                     ))}

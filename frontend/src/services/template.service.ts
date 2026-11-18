@@ -1,3 +1,4 @@
+import { collectPaginated } from "@/lib/pagination";
 import { apiFetch, extractErrorMessage } from "@/lib/api";
 import type {
     LocationTemplate,
@@ -24,8 +25,8 @@ export interface LocationTemplateOverrides {
 }
 
 export const TemplateTaskService = {
-    getTemplates: async (): Promise<TemplateTask[]> => {
-        const response = await apiFetch("/api/v1/template-tasks/", {
+    getTemplates: async (): Promise<TemplateTask[]> => collectPaginated(async (skip,limit) => {
+        const response = await apiFetch(`/api/v1/template-tasks/?skip=${skip}&limit=${limit}`, {
             method: "GET",
             cache: "no-store",
         });
@@ -33,7 +34,7 @@ export const TemplateTaskService = {
             throw new Error(await extractErrorMessage(response, "Error loading templates"));
         }
         return response.json();
-    },
+    }),
 
     createTemplate: async (input: TemplateTaskInput): Promise<TemplateTask> => {
         const response = await apiFetch("/api/v1/template-tasks/", {

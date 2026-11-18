@@ -80,6 +80,11 @@ def upload_receipt(
 
 def download_receipt(db: Session, *, user: User, expense_id: int) -> tuple[StoredObject, str]:
     company_id = _company_id(db, user, "finance.read")
+    return download_authorized_receipt(db,company_id=company_id,expense_id=expense_id)
+
+
+def download_authorized_receipt(db: Session, *, company_id: int, expense_id: int) -> tuple[StoredObject, str]:
+    """Read after the internal capability or the scoped adviser grant was verified."""
     expense = expense_service.get_expense(db, company_id, expense_id)
     reference = expense.receipt_url or ""
     key = reference.removeprefix(_PRIVATE_PREFIX)

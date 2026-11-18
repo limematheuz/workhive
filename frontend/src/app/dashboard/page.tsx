@@ -2,7 +2,11 @@
 
 import React, { startTransition, useCallback, useEffect, useRef, useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import {FinancePriorities} from "@/components/dashboard/role-home/FinancePriorities";
+import {OfficePriorities} from "@/components/dashboard/role-home/OfficePriorities";
 import { TechDashboard } from "@/components/dashboard/TechDashboard";
+import { OperationsDashboard } from "@/components/dashboard/overview/OperationsDashboard";
+import { Button } from "@/components/ui/button";
 import { SuperadminDashboard } from "@/components/dashboard/superadmin/SuperadminDashboard";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -12,7 +16,7 @@ import { TaskService, TaskItem } from "@/services/task.service";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageCompanyTasks, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, canManageTime, isPlatformSuperadmin } from "@/domain/access/roles";
 
 const mergeLocations = (base: Location[], extra: Location[]) => {
     const byId = new Map<number, Location>();
@@ -20,8 +24,8 @@ const mergeLocations = (base: Location[], extra: Location[]) => {
     return Array.from(byId.values());
 };
 
-function DashboardOverviewContent() {
-    const { dict } = useDictionary();
+function OperationalHome() {
+    const { dict, locale } = useDictionary();
     const { user, loading: loadingUser } = useUser();
 
     const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -53,7 +57,7 @@ function DashboardOverviewContent() {
 
             const [fetchedLocs, fetchedTasks] = await Promise.all([
                 LocationService.getLocations().catch(() => [] as Location[]),
-                TaskService.getAllTaskItems().catch(() => [] as TaskItem[]),
+                TaskService.getAllTaskItems(),
             ]);
 
             const knownLocationIds = new Set(fetchedLocs.map((location) => location.id));
@@ -74,9 +78,10 @@ function DashboardOverviewContent() {
 
             setLocations(mergeLocations(fetchedLocs, missingLocations));
             setTasks(fetchedTasks);
+            setError(null);
         } catch (err) {
             console.error("Error loading dashboard data", err);
-            if (!silent) setError(dict.dashboard.error_load_data);
+            setError(dict.dashboard.error_load_data);
         } finally {
             setLoadingData(false);
         }
@@ -192,6 +197,8 @@ function DashboardOverviewContent() {
         return <SuperadminDashboard />;
     }
 
+    if (error && tasks.length === 0) return <div role="alert" className="p-5"><p>{error}</p><Button type="button" variant="outline" className="mt-3" onClick={() => void loadDashboardData()}>{locale === "en" ? "Retry" : "Reintentar"}</Button></div>;
+
     return (
         <>
             {error && (
@@ -203,12 +210,12 @@ function DashboardOverviewContent() {
                 </div>
             )}
 
-            <TechDashboard
+            {canManageCompanyTasks(user) ? <OperationsDashboard currentUser={user} tasks={tasks} locations={locations} onTaskUpdate={() => void loadDashboardData(true)} /> : <TechDashboard
                 currentUser={user}
                 tasks={tasks}
                 locations={locations}
                 onTaskUpdate={loadDashboardData}
-            />
+            />}
 
             {showGuidedTour && (
                 <GuidedTour
@@ -218,6 +225,16 @@ function DashboardOverviewContent() {
             )}
         </>
     );
+}
+
+function DashboardOverviewContent(){
+    const {user,loading}=useUser();
+    if(loading||!user)return <p role="status" className="p-6 text-sm text-muted-foreground">Cargando tu espacio de trabajo…</p>;
+    if(isPlatformSuperadmin(user)||canManageCompanyTasks(user))return <OperationalHome/>;
+    if(canViewFinance(user))return <div className="dashboard-page-content p-4 sm:p-6"><FinancePriorities/></div>;
+    if(canViewLaborCosts(user)||canViewQuality(user))return <OfficePriorities/>;
+    if(canViewWorkReports(user)||canManageTime(user))return <OperationalHome/>;
+    return <OfficePriorities/>;
 }
 
 export default function DashboardOverview() {

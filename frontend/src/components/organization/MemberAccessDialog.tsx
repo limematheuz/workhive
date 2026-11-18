@@ -1,4 +1,5 @@
 "use client";
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel";
 
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -202,6 +203,7 @@ export function MemberAccessDialog({
                         </Button>
                     </DialogFooter>
                 </form>
+                {member && <RecordHistoryPanel entityType="company_membership" entityId={member.id} />}
             </DialogContent>
         </Dialog>
     );

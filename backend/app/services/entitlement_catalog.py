@@ -79,21 +79,21 @@ _FEATURE_AVAILABILITY: dict[str, FeatureAvailability] = {
     "features.accountant_portal": "available",
     # Kept out of the commercial catalogue until the customer module and its
     # entitlement enforcement are complete.
-    "features.service_catalog": "coming_soon",
-    "features.recurrence": "coming_soon",
+    "features.service_catalog": "available",
+    "features.recurrence": "available",
     # The operational task calendar remains part of the core work-order flow.
     # This entitlement protects the advanced planning tools: reservations and
     # the company Google Calendar connection/synchronization workflow.
     "features.planning": "available",
-    "features.basic_exports": "coming_soon",
-    "features.client_portal": "coming_soon",
-    "features.quality": "coming_soon",
-    "features.inventory": "coming_soon",
-    "features.hr": "coming_soon",
+    "features.basic_exports": "available",
+    "features.client_portal": "available",
+    "features.quality": "available",
+    "features.inventory": "available",
+    "features.hr": "available",
     "features.partner_portal": "available",
-    "features.approvals": "coming_soon",
-    "features.branches": "coming_soon",
-    "features.corporate_structure": "coming_soon",
+    "features.approvals": "available",
+    "features.branches": "available",
+    "features.corporate_structure": "available",
     "features.api": "available",
     # These currently configure WorkHive's platform integrations; they are not
     # a tenant-ready integration product and must not be advertised for sale.

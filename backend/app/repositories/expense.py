@@ -60,10 +60,10 @@ def create_expense(
     return expense
 
 
-def update_expense(db: Session, expense: Expense, **data) -> Expense:
+def update_expense(db: Session, expense: Expense, *, commit: bool = True, **data) -> Expense:
     for key, value in data.items():
         setattr(expense, key, value)
-    db.commit()
+    db.commit() if commit else db.flush()
     db.refresh(expense)
     return expense
 

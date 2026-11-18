@@ -17,6 +17,8 @@ from app.schemas.work_session import (
 )
 from app.services import task_assignment_service
 from app.services.work_session_duration_service import elapsed_seconds
+from app.services.initial_membership_policy import is_initial_worker
+from app.repositories.work_session_scope import company_labels
 from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import (
     require_capability,
@@ -40,16 +42,17 @@ def _get_visible_task_or_404(db: Session, current_user: User, task_item_id: int)
     task = task_item_repo.get_task_item(db, current_user.company_id, task_item_id)
     if task is None:
         raise HTTPException(status_code=404, detail="Task Item not found")
+    permission="time.manage" if is_initial_worker(db,current_user) else "time.read"
     require_capability(
         db,
         current_user,
-        "time.read",
+        permission,
         scope_type="location",
         scope_id=task.location_id,
     )
     if (
         current_user.role.name == "viewer"
-        and uses_legacy_role_authorization(db, current_user, "time.read")
+        and uses_legacy_role_authorization(db, current_user, "time.manage" if is_initial_worker(db,current_user) else "time.read")
         and not task_assignment_service.is_user_assigned(task, current_user.id)
     ):
         raise HTTPException(status_code=404, detail="Task Item not found")
@@ -64,6 +67,7 @@ def get_task_work_summary(
 
     now = datetime.now(timezone.utc)
     sessions = work_session_repo.get_sessions_by_task(db, task_item_id)
+    if is_initial_worker(db,current_user):sessions=[session for session in sessions if session.user_id==current_user.id]
     total_seconds = 0
     active_workers: set[int] = set()
     for work_session in sessions:
@@ -90,11 +94,10 @@ def get_active_company_sessions(
 
     now = datetime.now(timezone.utc)
     responses: list[ActiveCompanySessionResponse] = []
-    for work_session in work_session_repo.get_visible_active_sessions(
-        db,
-        current_user.company_id,
-        location_ids,
-    ):
+    sessions=work_session_repo.get_visible_active_sessions(db,current_user.company_id,location_ids)
+    labels=company_labels(db,[session.id for session in sessions])
+    for work_session in sessions:
+        operating_company,operating_name=labels.get(work_session.id,(current_user.company_id,getattr(getattr(current_user,"company",None),"name","Empresa")))
         responses.append(
             ActiveCompanySessionResponse(
                 id=work_session.id,
@@ -113,11 +116,11 @@ def get_active_company_sessions(
                 updated_at=work_session.updated_at,
                 user_name=work_session.user.full_name or work_session.user.email,
                 user_email=work_session.user.email,
-                worker_company_id=work_session.user.company_id,
-                worker_company_name=work_session.user.company.name,
+                worker_company_id=operating_company,
+                worker_company_name=operating_name,
                 visibility_scope=(
                     "own"
-                    if work_session.user.company_id == current_user.company_id
+                    if operating_company == current_user.company_id
                     else "collaborator"
                 ),
                 location_name=work_session.location.name,
@@ -145,6 +148,7 @@ def get_task_work_detailed_summary(
             task_item_id,
         )
 
+    if is_initial_worker(db,current_user):sessions=[session for session in sessions if session.user_id==current_user.id]
     return _build_task_work_detailed_summary(
         task_item_id,
         sessions,
@@ -167,7 +171,7 @@ def get_task_work_detailed_summaries(
         user_id=(
             current_user.id
             if current_user.role.name == "viewer"
-            and uses_legacy_role_authorization(db, current_user, "time.read")
+            and uses_legacy_role_authorization(db, current_user, "time.manage" if is_initial_worker(db,current_user) else "time.read")
             else None
         ),
     )
@@ -175,7 +179,7 @@ def get_task_work_detailed_summaries(
         require_capability(
             db,
             current_user,
-            "time.read",
+            "time.manage" if is_initial_worker(db,current_user) else "time.read",
             scope_type="location",
             scope_id=task.location_id,
         )
@@ -195,7 +199,9 @@ def get_task_work_detailed_summaries(
     sessions_by_task: dict[int, list[WorkSession]] = {
         task_id: [] for task_id in visible_ids
     }
+    own_only=is_initial_worker(db,current_user)
     for session in sessions:
+        if own_only and session.user_id!=current_user.id:continue
         if session.task_item_id in sessions_by_task:
             sessions_by_task[session.task_item_id].append(session)
 

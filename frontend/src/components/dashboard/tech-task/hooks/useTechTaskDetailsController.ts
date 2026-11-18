@@ -24,6 +24,8 @@ import {
 import type { TechTaskWorkMode } from "../TechTaskWorkControls";
 
 type UseTechTaskDetailsControllerParams = {
+    workerMode?: boolean;
+    workerEmployeeId?: number | null;
     task: TaskItem;
     location: Location | null;
     locationName: string;
@@ -43,6 +45,8 @@ const DEFAULT_EXPANDED_PANELS = {
 };
 
 export function useTechTaskDetailsController({
+    workerMode = false,
+    workerEmployeeId,
     task,
     location,
     locationName,
@@ -64,6 +68,8 @@ export function useTechTaskDetailsController({
     });
 
     const checklistState = useTechTaskChecklist({
+        workerMode,
+        workerEmployeeId,
         task,
         currentUser,
         isCurrentTaskSessionActive: workSession.isCurrentTaskSessionActive,
@@ -182,7 +188,7 @@ export function useTechTaskDetailsController({
                 features: propertyFeatures.features,
                 isEditingFeatures: propertyFeatures.isEditingFeatures,
                 setIsEditingFeatures: propertyFeatures.setIsEditingFeatures,
-                canEditLocationDetails: propertyFeatures.canEditLocationDetails,
+                canEditLocationDetails: !workerMode && propertyFeatures.canEditLocationDetails,
                 onSaveFeatures: propertyFeatures.handleSaveFeatures,
             },
         },
@@ -199,6 +205,7 @@ export function useTechTaskDetailsController({
             }),
         },
         dialogsProps: {
+            workerMode,
             requisitosOpen,
             setRequisitosOpen,
             adjuntosOpen,

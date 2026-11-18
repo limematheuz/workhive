@@ -137,7 +137,7 @@ export const authService = {
     acceptWorkerInvitation: async (
         token: string,
         code: string,
-        password: string,
+        password?: string,
     ): Promise<void> => {
         const response = await apiFetch("/api/v1/user-invitations/accept", {
             method: "POST",

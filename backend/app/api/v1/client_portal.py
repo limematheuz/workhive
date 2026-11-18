@@ -12,7 +12,10 @@ from app.schemas.client_portal import (
     ClientPortalInspectionResponse,
     ClientPortalOverviewResponse,
     ClientPortalWorkspaceResponse,
+    ClientPortalQuoteResponse,
 )
+from app.schemas.client_portal_quote import ClientPortalQuoteAccept
+from app.services import client_portal_quote_service
 from app.services import (
     audit_service,
     client_portal_policy,
@@ -24,6 +27,19 @@ from app.services import (
 
 
 router = APIRouter()
+
+
+@router.post("/workspaces/{grant_id}/quotes/{quote_id}/accept", response_model=ClientPortalQuoteResponse)
+def accept_client_quote(quote_id: int, payload: ClientPortalQuoteAccept, request: Request,
+    db: Session = Depends(get_db), principal: ClientPortalPrincipal = ActiveClientPortal):
+    return client_portal_quote_service.accept(db, principal, quote_id, payload, request)
+
+
+@router.get("/workspaces/{grant_id}/quotes/{quote_id}/pdf", response_class=Response)
+def download_client_quote(quote_id: int, db: Session = Depends(get_db), principal: ClientPortalPrincipal = ActiveClientPortal):
+    contents = client_portal_quote_service.pdf(db, principal, quote_id)
+    return Response(content=contents, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="presupuesto-{quote_id}.pdf"', "Cache-Control": "private, no-store"})
 
 
 @router.get("/workspaces", response_model=list[ClientPortalWorkspaceResponse])

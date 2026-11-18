@@ -30,7 +30,7 @@ interface PremiumTabsProps<T extends string> {
     mobileLabel?: string;
 }
 
-const tabListClass = "flex h-auto w-full items-center gap-1 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1";
+const tabListClass = "flex h-auto w-full items-center gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-primary)]/40 p-1";
 
 /** Navigation inside an existing Tabs root, such as a wizard with TabsContent. */
 export function PremiumTabsNavigation<T extends string>({ tabs, activeTab, onChange, className, mobileLabel }: PremiumTabsProps<T>) {
@@ -39,19 +39,19 @@ export function PremiumTabsNavigation<T extends string>({ tabs, activeTab, onCha
     const pickerLabel = mobileLabel || dict.tabNavigation.select;
 
     // Radix also emits native select changes inside forms; view changes are not edits.
-    return <div ref={containerRef} data-tab-navigation data-form-guard-ignore data-tabs-ready={ready} className={cn("relative mb-4 w-full min-w-0", className)}>
+    return <div ref={containerRef} data-tab-navigation data-form-guard-ignore data-tabs-ready={ready} className={cn("relative mb-3 w-full min-w-0", className)}>
         <div aria-hidden="true" inert className="pointer-events-none invisible absolute inset-0 overflow-hidden">
             <div ref={measurementRef} className={cn(tabListClass, "w-max")}>
                 {tabs.map(tab => <span key={tab.id} className={premiumTabTriggerClass(activeTab === tab.id)}><PremiumTabLabel tab={tab} active={activeTab === tab.id} /></span>)}
             </div>
         </div>
-        {dropdown ? <div className="space-y-1.5">
-            <p className="flex items-center gap-1.5 px-1 text-xs font-medium text-[var(--text-muted)]">
+        {dropdown ? <div className="relative">
+            <p className="sr-only flex items-center gap-1.5 px-1 text-xs font-medium text-[var(--text-muted)]">
                 <Layers3 className="size-3.5 shrink-0" aria-hidden="true" />
                 {dict.tabNavigation.change} · {dict.tabNavigation.options.replace("{count}", String(tabs.length))}
             </p>
             <Select value={activeTab} onValueChange={(id) => onChange(id as T)}>
-                <SelectTrigger aria-label={pickerLabel} className="h-11 rounded-2xl bg-[var(--bg-primary)]/45 font-semibold text-[var(--text-main)]"><SelectValue /></SelectTrigger>
+                <SelectTrigger aria-label={pickerLabel} className="h-11 rounded-xl bg-[var(--bg-primary)]/45 font-semibold text-[var(--text-main)]"><SelectValue /></SelectTrigger>
                 <SelectContent data-form-guard-ignore>
                     {tabs.map(tab => <SelectItem key={tab.id} value={tab.id}><span className="flex min-w-0 items-center gap-2"><PremiumTabLabel tab={tab} compact={false} /></span></SelectItem>)}
                 </SelectContent>

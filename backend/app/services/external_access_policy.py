@@ -60,6 +60,10 @@ def require_external_capability(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
         )
+    from app.repositories.advisory import area
+    settings = area(db, grant.id)
+    if capability == "finance.read" and settings is not None and not settings.accounting:
+        raise HTTPException(status_code=403, detail="El área contable está desactivada.")
     require_company_feature(
         db,
         company_id=company_id,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Clock3, MailCheck, RefreshCw, X } from "lucide-react";
+import { Clock3, MailCheck, RefreshCw, X, Link2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/lib/toast";
 import { UserService, type UserInvitation } from "@/services/user.service";
+import { InvitationLinkDialog } from "@/components/invitations/InvitationLinkDialog";
 
 export function PendingInvitationsPanel({
     invitations,
@@ -23,6 +24,8 @@ export function PendingInvitationsPanel({
     const [cancelTarget, setCancelTarget] = useState<UserInvitation | null>(null);
     const [resendTarget, setResendTarget] = useState<UserInvitation | null>(null);
     const [workingId, setWorkingId] = useState<number | null>(null);
+    const [resendDelivery, setResendDelivery] = useState<"email" | "link">("email");
+    const [createdLink, setCreatedLink] = useState<{ email: string; invitationUrl: string; verificationCode: string; expiresAt: string } | null>(null);
     const dateFormatter = useMemo(
         () => new Intl.DateTimeFormat(locale, {
             day: "2-digit",
@@ -53,11 +56,17 @@ export function PendingInvitationsPanel({
         if (!resendTarget) return;
         try {
             setWorkingId(resendTarget.id);
-            await UserService.inviteUser({
+            const result = await UserService.inviteUser({
                 email: resendTarget.email,
                 full_name: resendTarget.full_name || undefined,
                 role_id: resendTarget.role_id,
+                delivery: resendDelivery,
             });
+            if (result.delivery === "link" && result.invitation_url && result.verification_code) {
+                setCreatedLink({ email: result.email, invitationUrl: result.invitation_url, verificationCode: result.verification_code, expiresAt: result.expires_at });
+                setResendTarget(null);
+                return;
+            }
             await onChanged();
             setResendTarget(null);
             toast.success(copy.resend_success);
@@ -106,10 +115,11 @@ export function PendingInvitationsPanel({
                                 <p className="mt-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)]"><Clock3 className="h-3.5 w-3.5" aria-hidden="true" />{isPending ? copy.expires.replace("{date}", dateFormatter.format(new Date(invitation.expires_at))) : copy.created.replace("{date}", dateFormatter.format(new Date(invitation.created_at)))}</p>
                             </div>
                             <div className="flex shrink-0 gap-2">
-                                <Button type="button" variant="outline" size="sm" disabled={workingId === invitation.id} onClick={() => setResendTarget(invitation)}>
+                                <Button type="button" variant="outline" size="sm" disabled={workingId === invitation.id} onClick={() => { setResendDelivery("email"); setResendTarget(invitation); }}>
                                     <RefreshCw className="h-3.5 w-3.5" />
                                     {copy.resend}
                                 </Button>
+                                <Button type="button" variant="outline" size="sm" disabled={workingId === invitation.id} onClick={() => { setResendDelivery("link"); setResendTarget(invitation); }}><Link2 className="size-3.5"/>Crear enlace</Button>
                                 {isPending && <Button type="button" variant="ghost" size="sm" disabled={workingId === invitation.id} onClick={() => setCancelTarget(invitation)}>
                                     <X className="h-3.5 w-3.5" />
                                     {copy.cancel}
@@ -134,15 +144,16 @@ export function PendingInvitationsPanel({
             <DeleteConfirmDialog
                 open={resendTarget !== null}
                 onOpenChange={(open) => !open && setResendTarget(null)}
-                title={copy.resend_title}
-                description={copy.resend_description.replace("{email}", resendTarget?.email || "")}
+                title={resendDelivery === "link" ? "Crear un nuevo enlace de invitación" : copy.resend_title}
+                description={resendDelivery === "link" ? "Se creará un enlace y un código nuevos para "+(resendTarget?.email || "")+". La invitación anterior dejará de funcionar y no se enviará correo." : copy.resend_description.replace("{email}", resendTarget?.email || "")}
                 onConfirm={() => void resendInvitation()}
                 isDeleting={workingId === resendTarget?.id}
-                confirmText={copy.resend_confirm}
+                confirmText={resendDelivery === "link" ? "Crear nuevo enlace" : copy.resend_confirm}
                 cancelText={dict.organization.actions.cancel}
                 confirmIcon={RefreshCw}
                 confirmVariant="primary"
             />
+            {createdLink && <InvitationLinkDialog {...createdLink} onClose={() => { setCreatedLink(null); void onChanged(); }} />}
         </section>
     );
 }

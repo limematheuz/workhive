@@ -72,6 +72,6 @@ test("external portal routes redirect before protected dashboard pages mount", (
 
     assert.match(layout, /canAccessExternalPortalDashboardPath/);
     assert.match(layout, /isExternalPortalRole\(user\?\.role\?\.name\)/);
-    assert.match(layout, /redirect\("\/dashboard\/analytics"\)/);
+    assert.match(layout, /redirect\("\/dashboard\/advisory"\)/);
     assert.match(layout, /if \(isExternalPortal && !canAccessExternalPortalDashboardPath\(pathname\)\)/);
 });

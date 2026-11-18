@@ -7,14 +7,14 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("shared buttons use the profile export dimensions and semantic palette", () => {
     const button = read("../components/ui/button-variants.ts");
 
-    assert.match(button, /rounded-xl text-xs font-semibold/);
+    assert.match(button, /rounded-lg text-xs font-semibold/);
     assert.match(button, /default: "px-5 py-2.5/);
-    assert.match(button, /gap-1\.5 rounded-xl text-xs font-semibold/);
+    assert.match(button, /gap-1\.5 rounded-lg text-xs font-semibold/);
     assert.match(button, /dangerSoft:/);
     assert.match(button, /cancel:/);
     assert.match(button, /--btn-primary-bg/);
     assert.match(button, /--btn-secondary-bg/);
-    assert.match(button, /--btn-cancel-bg/);
+    assert.match(button, /--btn-neutral-bg/);
 });
 
 test("calendar controls use the shared button sizes and semantic variants", () => {

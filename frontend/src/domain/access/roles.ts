@@ -67,6 +67,7 @@ export function isCalendarViewerRole(
 }
 
 export function canManageCompanyTasks(user?: User | null): boolean {
+    if (typeof user?.can_manage_work === "boolean") return user.can_manage_work;
     return isCompanyTaskManagerRole(getRoleName(user));
 }
 

@@ -61,7 +61,7 @@ export function ClientsTable({
 }: ClientsTableProps) {
     const { dict } = useDictionary();
     const workspace = dict.clients.workspace;
-    const pagination = useDataTablePagination(rows, 10);
+    const pagination = useDataTablePagination(rows, 10, "ClientsTable.rows.0");
 
     const statusBadge = (client: Client) => (
         <Badge

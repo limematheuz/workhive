@@ -11,7 +11,7 @@ const profileForm = readFileSync(new URL("../components/profile/ProfileDetailsFo
 const signatureUpload = readFileSync(new URL("../components/billing/SignatureUpload.tsx", import.meta.url), "utf8");
 const companyDetails = readFileSync(new URL("../components/profile/CompanyDetailsFormFields.tsx", import.meta.url), "utf8");
 const qualityEvidence = readFileSync(new URL("../components/quality/QualityEvidenceSection.tsx", import.meta.url), "utf8");
-const documentLibrary = readFileSync(new URL("../app/dashboard/documents/page.tsx", import.meta.url), "utf8");
+const documentLibrary = readFileSync(new URL("../components/documents/LocationDocumentLibrary.tsx", import.meta.url), "utf8");
 const certificateDialog = readFileSync(new URL("../components/invoices/FiscalSettingsConfigureDialog.tsx", import.meta.url), "utf8");
 const salesLedgerImport = readFileSync(new URL("../components/invoices/SalesLedgerImportDialog.tsx", import.meta.url), "utf8");
 const locationBulkImport = readFileSync(new URL("../components/locations/LocationBulkImportDialog.tsx", import.meta.url), "utf8");
@@ -29,6 +29,12 @@ test("every photo upload uses the shared browser compressor", () => {
 });
 
 test("file selection uses the shared Input component without changing upload boundaries", () => {
+    const registerUpload = readFileSync(new URL("../components/documents/DocumentUploadDialog.tsx", import.meta.url), "utf8");
+    assert.match(registerUpload, /<DocumentFormInput[^>]*type="file"/);
+    assert.doesNotMatch(registerUpload, /<input\b/);
+    const controls=readFileSync(new URL("../components/billing/DocumentFormControls.tsx", import.meta.url), "utf8");
+    assert.match(controls, /from "@\/components\/ui\/input"/);
+    assert.match(controls, /<Input/);
     for (const source of [signatureUpload, companyDetails, qualityEvidence, documentLibrary, certificateDialog, salesLedgerImport, locationBulkImport, profileForm]) {
         assert.match(source, /from "@\/components\/ui\/input"/);
         assert.match(source, /<Input[\s\S]*type="file"/);

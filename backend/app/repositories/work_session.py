@@ -7,6 +7,7 @@ from app.models.task_item import TaskItem
 from app.models.work_session import WorkSession
 from app.models.work_session_pause import WorkSessionPause
 from app.models.user import User
+from app.repositories.work_session_scope import company_scope,visible_company_scope
 
 
 def get_active_session_by_user(db: Session, user_id: int) -> WorkSession | None:
@@ -59,6 +60,7 @@ def get_work_session_by_id(
     user_id: int,
     location_ids: set[int] | None = None,
     for_update: bool = False,
+    company_id: int | None = None,
 ) -> WorkSession | None:
     location_loader = (
         selectinload(WorkSession.location)
@@ -74,6 +76,7 @@ def get_work_session_by_id(
         .filter(WorkSession.id == session_id)
         .filter(WorkSession.user_id == user_id)
     )
+    if company_id is not None:query=query.filter(company_scope(company_id))
     if location_ids is not None:
         query = query.filter(WorkSession.location_id.in_(location_ids))
     if for_update:
@@ -87,12 +90,14 @@ def get_work_session_by_user(
     skip: int = 0,
     limit: int = 100,
     location_ids: set[int] | None = None,
+    company_id: int | None = None,
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
         .options(selectinload(WorkSession.pauses), joinedload(WorkSession.location))
         .filter(WorkSession.user_id == user_id)
     )
+    if company_id is not None:query=query.filter(company_scope(company_id))
     if location_ids is not None:
         query = query.filter(WorkSession.location_id.in_(location_ids))
     return query.offset(skip).limit(limit).all()
@@ -125,6 +130,7 @@ def get_closed_sessions_by_user(
     user_id: int,
     start_date: datetime | None = None,
     location_ids: set[int] | None = None,
+    company_id: int | None = None,
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
@@ -132,6 +138,7 @@ def get_closed_sessions_by_user(
         .filter(WorkSession.user_id == user_id)
         .filter(WorkSession.end_time.isnot(None))
     )
+    if company_id is not None:query=query.filter(company_scope(company_id))
     if start_date:
         query = query.filter(WorkSession.start_time >= start_date)
     if location_ids is not None:
@@ -144,12 +151,14 @@ def get_distinct_location_ids_by_user(
     user_id: int,
     start_date: datetime | None = None,
     location_ids: set[int] | None = None,
+    company_id: int | None = None,
 ) -> list[int]:
     query = (
         db.query(WorkSession.location_id)
         .filter(WorkSession.user_id == user_id)
         .filter(WorkSession.location_id.isnot(None))
     )
+    if company_id is not None:query=query.filter(company_scope(company_id))
     if start_date:
         query = query.filter(WorkSession.start_time >= start_date)
     if location_ids is not None:
@@ -204,14 +213,7 @@ def get_visible_sessions_by_task(
         .filter(
             WorkSession.task_item_id == task_item_id,
             User.is_active.is_(True),
-            or_(
-                User.company_id == company_id,
-                and_(
-                    User.company_id != company_id,
-                    TaskItem.company_id == User.company_id,
-                    Reservation.owner_company_id == company_id,
-                ),
-            ),
+            visible_company_scope(company_id),
         )
         .order_by(WorkSession.start_time.asc())
         .all()
@@ -235,14 +237,7 @@ def get_visible_sessions_by_tasks(
         .filter(
             WorkSession.task_item_id.in_(task_item_ids),
             User.is_active.is_(True),
-            or_(
-                User.company_id == company_id,
-                and_(
-                    User.company_id != company_id,
-                    TaskItem.company_id == User.company_id,
-                    Reservation.owner_company_id == company_id,
-                ),
-            ),
+            visible_company_scope(company_id),
         )
         .order_by(WorkSession.task_item_id.asc(), WorkSession.start_time.asc())
         .all()
@@ -256,7 +251,7 @@ def get_visible_active_sessions(
 ) -> list[WorkSession]:
     query = (
         db.query(WorkSession)
-        .options(selectinload(WorkSession.pauses))
+        .options(selectinload(WorkSession.pauses),joinedload(WorkSession.user),joinedload(WorkSession.location),joinedload(WorkSession.task_item))
         .join(User, WorkSession.user_id == User.id)
         .outerjoin(TaskItem, WorkSession.task_item_id == TaskItem.id)
         .outerjoin(
@@ -266,16 +261,13 @@ def get_visible_active_sessions(
         .filter(
             User.is_active.is_(True),
             WorkSession.end_time.is_(None),
-            or_(
-                User.company_id == company_id,
-                and_(
-                    User.company_id != company_id,
-                    TaskItem.company_id == User.company_id,
-                    Reservation.owner_company_id == company_id,
-                ),
-            ),
+            visible_company_scope(company_id),
         )
     )
     if location_ids is not None:
         query = query.filter(WorkSession.location_id.in_(location_ids))
     return query.order_by(User.company_id.asc(), WorkSession.start_time.asc()).all()
+
+
+def get_active_session_for_company(db,user_id,company_id):
+    return db.query(WorkSession).options(selectinload(WorkSession.pauses),joinedload(WorkSession.location)).filter(WorkSession.user_id==user_id,WorkSession.end_time.is_(None),company_scope(company_id)).order_by(WorkSession.id.desc()).first()

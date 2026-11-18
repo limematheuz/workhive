@@ -6,6 +6,7 @@ from app.models.task_item import TaskItem
 from app.models.user import User
 from app.models.work_session import WorkSession
 from app.services import notification_service
+from app.services.company_notification_recipients import recipients as company_recipients
 
 
 MANAGEMENT_ROLES = {"admin", "manager"}
@@ -17,17 +18,7 @@ def _active_company_users(
     company_id: int,
     role_names: set[str],
 ) -> list[User]:
-    return (
-        db.query(User)
-        .join(Role, User.role_id == Role.id)
-        .filter(
-            User.company_id == company_id,
-            User.is_active.is_(True),
-            Role.name.in_(role_names),
-        )
-        .order_by(User.id)
-        .all()
-    )
+    return company_recipients(db,{company_id},role_names)
 
 
 def operational_users(db: Session, company_id: int) -> list[User]:
@@ -41,15 +32,7 @@ def notify_task_assignees(
 ) -> None:
     if not user_ids or task.status in {"requested", "rejected", "completed"}:
         return
-    recipients = (
-        db.query(User)
-        .filter(
-            User.id.in_(user_ids),
-            User.company_id == task.company_id,
-            User.is_active.is_(True),
-        )
-        .all()
-    )
+    recipients = company_recipients(db,{task.company_id},OPERATIONAL_ROLES,user_ids)
     if not recipients:
         return
     notification_service.notify_users(
@@ -67,7 +50,7 @@ def notify_task_assignees(
 def _issuer_recipients(db: Session, reservation: Reservation) -> list[User]:
     users = _active_company_users(db, reservation.owner_company_id, MANAGEMENT_ROLES)
     if reservation.created_by and reservation.created_by.is_active:
-        users.append(reservation.created_by)
+        users.extend(company_recipients(db,{reservation.owner_company_id},None,{reservation.created_by.id}))
     return list({user.id: user for user in users}.values())
 
 

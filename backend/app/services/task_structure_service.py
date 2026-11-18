@@ -1,3 +1,5 @@
+from app.services.company_member_user_views import views as member_user_views
+from app.repositories.company_membership_scope import active_member_predicate
 import re
 from collections import defaultdict, deque
 
@@ -76,13 +78,8 @@ def sync_from_description(
     if strict:
         validate_description_assignees(db, task.company_id, task.description)
 
-    company_users = {
-        user.id: user
-        for user in db.query(User).filter(
-            User.company_id == task.company_id,
-            User.is_active.is_(True),
-        )
-    }
+    people=db.query(User).filter(active_member_predicate(task.company_id),User.is_active.is_(True)).all()
+    company_users={user.id:user for user in member_user_views(db,people,task.company_id)}
     existing_by_text: dict[str, deque[TaskChecklistItem]] = defaultdict(deque)
     stored_items: list[TaskChecklistItem] = []
     for existing in list(task.checklist_items):
@@ -223,6 +220,8 @@ def update_checklist_item(
     current_user: User,
     completed: bool,
     answer: str | None = None,
+    *,
+    commit: bool = True,
 ) -> TaskItem:
     if item.task_id != task.id:
         raise HTTPException(status_code=404, detail="Checklist item not found")
@@ -259,6 +258,9 @@ def update_checklist_item(
         if current_user.role.name != "viewer" or assignment.user_id == current_user.id:
             assignment.status = "completed" if completed else "pending"
 
+    from app.services.workforce_execution_service import from_account
+    has_workforce=from_account(db,task,item,current_user,completed or answer=="no",answer)
+
     lines = (task.description or "").splitlines()
     if item.source_line_index is not None and item.source_line_index < len(lines):
         parsed = task_assignment_service.parse_checklist_line(lines[item.source_line_index])
@@ -280,7 +282,7 @@ def update_checklist_item(
     evidence_key = f"item_{item.id}"
     evidence[evidence_key] = {
         **(evidence.get(evidence_key) or {}),
-        "answer": answer or ("yes" if completed else None),
+        "answer": has_workforce if has_workforce in {"yes","no"} else None if has_workforce else answer or ("yes" if completed else None),
     }
     task.checklist_evidence = evidence
     for task_assignment in task.assignments:
@@ -308,6 +310,7 @@ def update_checklist_item(
                 else "progress"
             )
     db.add(task)
-    db.commit()
-    db.refresh(task)
+    if commit:
+        db.commit()
+        db.refresh(task)
     return task

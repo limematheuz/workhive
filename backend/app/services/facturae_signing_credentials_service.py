@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterator
 
 from app.core.config import settings
+from app.core.private_file_permissions import restrict_to_owner
 
 
 class FacturaeSigningCredentialsError(RuntimeError):
@@ -100,11 +101,16 @@ def facturae_signing_credentials() -> Iterator[tuple[str, str]]:
         suffix=".p12",
     )
     try:
-        with os.fdopen(descriptor, "wb") as temporary_file:
-            temporary_file.write(certificate)
-        descriptor = None
         temporary = Path(temporary_name)
-        temporary.chmod(0o600)
+        try:
+            restrict_to_owner(temporary)
+        except OSError as error:
+            raise FacturaeSigningCredentialsError(
+                "Facturae signing certificate cannot be protected"
+            ) from error
+        with os.fdopen(descriptor, "wb") as temporary_file:
+            descriptor = None
+            temporary_file.write(certificate)
         yield temporary_name, certificate_password
     finally:
         if descriptor is not None:

@@ -145,6 +145,8 @@ def ensure_contract_from_accepted_quote(
             unit_price=unit_price,
             subtotal=subtotal,
         )
+    from app.services.quote_cost_estimate_service import inherit_contract_budget
+    inherit_contract_budget(db,contract,accepted_revision)
     return contract, True
 
 

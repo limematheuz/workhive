@@ -13,6 +13,8 @@ import { TechTaskDetailsView } from "./tech-task/TechTaskDetailsView";
 import { useTechTaskDetailsController } from "./tech-task/hooks/useTechTaskDetailsController";
 
 interface TechTaskDetailsProps {
+    workerMode?: boolean;
+    workerEmployeeId?: number | null;
     task: TaskItem;
     location: Location | null;
     locationName: string;
@@ -22,6 +24,8 @@ interface TechTaskDetailsProps {
 }
 
 export function TechTaskDetails({
+    workerMode = false,
+    workerEmployeeId,
     task,
     location,
     locationName,
@@ -30,6 +34,8 @@ export function TechTaskDetails({
     onStatusUpdate,
 }: TechTaskDetailsProps) {
     const viewProps = useTechTaskDetailsController({
+        workerMode,
+        workerEmployeeId,
         task,
         location,
         locationName,
@@ -53,7 +59,7 @@ export function TechTaskDetails({
                 <DialogDescription className="sr-only">
                     {locationName}
                 </DialogDescription>
-                <TechTaskDetailsView {...viewProps} />
+                <TechTaskDetailsView {...viewProps} workerMode={workerMode} workerEmployeeId={workerEmployeeId} workforceUpdated={onStatusUpdate} />
             </DialogContent>
         </Dialog>
     );

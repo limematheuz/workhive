@@ -20,6 +20,7 @@ from app.schemas.organization import (
 from app.services import organization_department_policy as department_policy
 from app.services.entitlement_service import (
     require_department_capacity,
+    require_company_feature,
     require_team_capacity,
 )
 from app.services.organization_service_shared import (
@@ -41,6 +42,7 @@ def department_response(db: Session, department: Department) -> DepartmentRespon
     return DepartmentResponse(
         id=department.id,
         name=department.name,
+        unit_type=department.unit_type,
         code=department.code,
         parent_department_id=department.parent_department_id,
         is_active=department.is_active,
@@ -127,6 +129,8 @@ def create_department(
     db: Session, payload: DepartmentCreate, current_user: User
 ) -> DepartmentResponse:
     company_id = require_capability(db, current_user, CAPABILITY_DEPARTMENTS_MANAGE)
+    if payload.unit_type == "branch":
+        require_company_feature(db, company_id=company_id, code="features.branches")
     require_department_capacity(db, company_id=company_id)
     department_policy.validate_department_parent(
         db,
@@ -160,6 +164,9 @@ def update_department(
     )
     if not department:
         not_found("Department")
+    next_kind = payload.unit_type or department.unit_type
+    if next_kind == "branch":
+        require_company_feature(db, company_id=company_id, code="features.branches")
     updates = payload.model_dump(exclude_unset=True)
     if updates.get("is_active") is False and department.is_active:
         usage = department_repo.get_department_usage(

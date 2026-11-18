@@ -11,6 +11,10 @@ import type {
 } from "@/types/inventory";
 
 export const WorkOrderService = {
+    async consumptionState(id:number):Promise<{can_consume:boolean}>{
+        const response=await apiFetch(`/api/v1/work-orders/${id}/materials/state`,{cache:"no-store"});
+        await assertApiResponseOk(response,"No se pudo consultar el estado de ejecución.");return response.json();
+    },
     getWorkOrders: async (): Promise<WorkOrder[]> => {
         const response = await apiFetch("/api/v1/work-orders/", {
             method: "GET",

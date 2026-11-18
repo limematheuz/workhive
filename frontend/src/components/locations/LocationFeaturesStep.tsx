@@ -1,249 +1,53 @@
-import { ClipboardList, Plus, Settings2, Trash2, UserRound } from "lucide-react";
+"use client";
 
+import { useState } from "react";
+import { Building2, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createEditableLineKey } from "@/lib/editable-line-key";
 import { Textarea } from "@/components/ui/textarea";
-import type { LocationContact, LocationContactRole } from "@/types/location";
+import { readLocationFloors, withLocationFloors, type LocationFloor } from "@/domain/locations/location-setup";
 import type { LocationFeaturesStepProps } from "./location-workspace-types";
+import { LocationSpaceCharacteristics } from "./LocationSpaceCharacteristics";
 import { LocationRisksSection } from "./LocationRisksSection";
 import { LocationServiceWindowsSection } from "./LocationServiceWindowsSection";
 
-const CONTACT_ROLE_LABELS: Record<LocationContactRole, string> = {
-    operations: "Operaciones",
-    access: "Acceso",
-    emergency: "Emergencias",
-    quality: "Calidad",
-    general: "General",
-};
-
-const EMPTY_CONTACT: LocationContact = {
-    full_name: "",
-    email: "",
-    phone: "",
-    role: "operations",
-    is_primary: false,
-    is_active: true,
-};
-
-export function LocationFeaturesStep({
-    profile,
-    catalog,
-    setProfile,
-    setAttribute,
-    contacts,
-    setContacts,
-    risks,
-    setRisks,
-    serviceWindows,
-    setServiceWindows,
-}: LocationFeaturesStepProps) {
-    const siteType = catalog?.site_types.find((item) => item.id === profile.site_type);
-    const updateContact = (index: number, changes: Partial<LocationContact>) => {
-        setContacts(contacts.map((contact, contactIndex) => (
-            contactIndex === index ? { ...contact, ...changes } : contact
-        )));
-    };
-    const setPrimaryContact = (index: number, isPrimary: boolean) => {
-        setContacts(contacts.map((contact, contactIndex) => ({
-            ...contact,
-            is_primary: isPrimary && contactIndex === index,
-        })));
+export function LocationFeaturesStep({ profile, catalog, setProfile, risks, setRisks, serviceWindows, setServiceWindows }: LocationFeaturesStepProps) {
+    const [selectedId, setSelectedId] = useState("floor-0");
+    const floors = readLocationFloors(profile);
+    const selected = floors.find(floor => floor.id === selectedId) || floors[0];
+    const site = catalog?.site_types.find(item => item.id === profile.site_type);
+    const templates = site?.space_templates || [];
+    const spaceCount = Object.values(selected.counts).reduce((sum, count) => sum + count, 0);
+    const updateFloor = (changes: Partial<LocationFloor>) => setProfile(withLocationFloors(profile, floors.map(floor => floor.id === selected.id ? { ...floor, ...changes } : floor)));
+    const updateCount = (key: string, value: number) => updateFloor({ counts: { ...selected.counts, [key]: Number.isFinite(value) ? Math.min(100, Math.max(0, Math.floor(value))) : 0 } });
+    const addFloor = () => {
+        const level = Math.max(...floors.map(floor => floor.level)) + 1;
+        const floor = { id: crypto.randomUUID(), name: `Planta ${level}`, level, surface: 0, counts: {} };
+        setProfile(withLocationFloors(profile, [...floors, floor]));
+        setSelectedId(floor.id);
     };
 
-    return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-lg font-bold text-[var(--text-main)]">
-                    3. Características {siteType ? `— ${siteType.label}` : ""}
-                </h3>
-                <p className="mt-1 text-sm text-[var(--text-muted)]">
-                    Son opcionales. Nos ayudan a preparar el servicio y a ubicar a la persona adecuada cuando haga falta.
-                </p>
-            </div>
-
-            <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)] p-4 sm:p-5">
-                <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
-                    <Settings2 className="h-4 w-4 text-accent" />
-                    Datos de referencia
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-1.5">
-                        <Label htmlFor="location-workspace-code">Código interno</Label>
-                        <Input
-                            id="location-workspace-code"
-                            value={profile.internal_code || ""}
-                            onChange={(event) => setProfile({ ...profile, internal_code: event.target.value })}
-                            placeholder="Ej.: OFI-BCN-001"
-                        />
-                    </div>
-                    <div className="space-y-1.5">
-                        <Label htmlFor="location-workspace-reference">Referencia en el sitio</Label>
-                        <Input
-                            id="location-workspace-reference"
-                            value={profile.site_reference || ""}
-                            onChange={(event) => setProfile({ ...profile, site_reference: event.target.value })}
-                            placeholder="Ej.: Planta 2, puerta A"
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {siteType && siteType.attributes.length > 0 && (
-                <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)] p-4 sm:p-5">
-                    <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
-                        <ClipboardList className="h-4 w-4 text-accent" />
-                        Estructura y espacios
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        {siteType.attributes.map((attribute) => (
-                            <label
-                                key={attribute.id}
-                                className="flex min-h-14 cursor-pointer items-center justify-between gap-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] px-3 py-2.5 text-sm text-[var(--text-main)]"
-                            >
-                                <span className="font-medium">{attribute.label}</span>
-                                {attribute.kind === "boolean" ? (
-                                    <Checkbox
-                                        checked={profile.attributes[attribute.id] === true}
-                                        onCheckedChange={(checked) => setAttribute(attribute.id, checked === true)}
-                                    />
-                                ) : (
-                                    <Input
-                                        aria-label={attribute.label}
-                                        type="number"
-                                        min="0"
-                                        value={typeof profile.attributes[attribute.id] === "number" ? String(profile.attributes[attribute.id]) : ""}
-                                        onChange={(event) => setAttribute(attribute.id, event.target.value === "" ? "" : Number(event.target.value))}
-                                        className="h-9 w-24 text-right"
-                                    />
-                                )}
-                            </label>
-                        ))}
-                    </div>
-                </section>
-            )}
-
-            <section className="rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-primary)] p-4 sm:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--text-main)]">
-                            <UserRound className="h-4 w-4 text-accent" />
-                            Contactos operativos
-                        </div>
-                        <p className="mt-1 text-sm text-[var(--text-muted)]">
-                            Personas del lugar para acceso, operación, calidad o emergencias. No sustituyen los contactos comerciales o de facturación de la cuenta.
-                        </p>
-                    </div>
-                    <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setContacts([...contacts, { ...EMPTY_CONTACT, draft_id: createEditableLineKey("location-contact") }])}
-                    >
-                        <Plus className="h-4 w-4" /> Añadir contacto
-                    </Button>
-                </div>
-
-                {contacts.length === 0 ? (
-                    <p className="mt-4 rounded-xl bg-[var(--bg-secondary)] px-3 py-3 text-sm text-[var(--text-muted)]">
-                        Aún no hay contactos operativos para esta ubicación.
-                    </p>
-                ) : (
-                    <div className="mt-4 space-y-3">
-                        {contacts.map((contact, index) => (
-                            <div key={contact.id ?? contact.draft_id} className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] p-3 sm:p-4">
-                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor={`location-contact-name-${index}`}>Nombre</Label>
-                                        <Input
-                                            id={`location-contact-name-${index}`}
-                                            value={contact.full_name}
-                                            onChange={(event) => updateContact(index, { full_name: event.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor={`location-contact-role-${index}`}>Responsabilidad</Label>
-                                        <Select value={contact.role} onValueChange={(value) => updateContact(index, { role: value as LocationContactRole })}>
-                                            <SelectTrigger id={`location-contact-role-${index}`}><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                {Object.entries(CONTACT_ROLE_LABELS).map(([value, label]) => (
-                                                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor={`location-contact-phone-${index}`}>Teléfono</Label>
-                                        <Input
-                                            id={`location-contact-phone-${index}`}
-                                            type="tel"
-                                            value={contact.phone || ""}
-                                            onChange={(event) => updateContact(index, { phone: event.target.value })}
-                                        />
-                                    </div>
-                                    <div className="space-y-1.5">
-                                        <Label htmlFor={`location-contact-email-${index}`}>Email</Label>
-                                        <Input
-                                            id={`location-contact-email-${index}`}
-                                            type="email"
-                                            value={contact.email || ""}
-                                            onChange={(event) => updateContact(index, { email: event.target.value })}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                                    <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--text-muted)]">
-                                        <label className="flex cursor-pointer items-center gap-2">
-                                            <Checkbox
-                                                checked={contact.is_primary}
-                                                disabled={!contact.is_active}
-                                                onCheckedChange={(checked) => setPrimaryContact(index, checked === true)}
-                                            />
-                                            Contacto principal
-                                        </label>
-                                        <label className="flex cursor-pointer items-center gap-2">
-                                            <Checkbox
-                                                checked={contact.is_active}
-                                                onCheckedChange={(checked) => updateContact(index, {
-                                                    is_active: checked === true,
-                                                    ...(checked === true ? {} : { is_primary: false }),
-                                                })}
-                                            />
-                                            Activo
-                                        </label>
-                                    </div>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="sm"
-                                        className="text-[var(--text-muted)] hover:text-destructive"
-                                        onClick={() => setContacts(contacts.filter((_, contactIndex) => contactIndex !== index))}
-                                    >
-                                        <Trash2 className="h-4 w-4" /> Eliminar
-                                    </Button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                <LocationRisksSection risks={risks} setRisks={setRisks} />
-                <LocationServiceWindowsSection serviceWindows={serviceWindows} setServiceWindows={setServiceWindows} />
-
-                <div className="mt-5 space-y-1.5">
-                    <Label htmlFor="location-service-notes">Observaciones operativas</Label>
-                    <Textarea
-                        id="location-service-notes"
-                        value={profile.service_notes || ""}
-                        onChange={(event) => setProfile({ ...profile, service_notes: event.target.value })}
-                        placeholder="Materiales especiales, zonas delicadas o cualquier nota útil para el equipo."
-                        className="min-h-24"
-                    />
-                </div>
-            </section>
-        </div>
-    );
+    return <div className="space-y-5">
+        <div><h3 className="text-xl font-semibold">3. Características de la ubicación</h3><p className="wh-panel-subtitle">Selecciona una planta y marca los espacios que tiene. Usa los botones − y + para indicar cuántos hay.</p></div>
+        <section className="wh-panel">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h4 className="wh-panel-title">Plantas del edificio</h4><Button type="button" variant="secondary" size="sm" onClick={addFloor} disabled={floors.length >= 100}><Plus className="size-4" />Añadir planta</Button></div>
+            <div className="wh-floor-configuration"><div className="wh-floor-selector" role="group" aria-label="Seleccionar planta">{floors.map(floor => <Button key={floor.id} type="button" variant="outline" aria-pressed={floor.id === selected.id} onClick={() => setSelectedId(floor.id)} className="h-auto min-h-14 justify-start gap-3 whitespace-normal px-3 py-2.5 text-left">
+                <Building2 className="size-4 shrink-0" /><span><span className="block font-semibold">{floor.name}</span><span className="mt-1 block text-[11px] font-normal text-[var(--text-muted)]">{Object.values(floor.counts).reduce((sum, count) => sum + count, 0)} espacios{floor.surface ? ` · ${floor.surface} m²` : ""}</span></span>
+            </Button>)}</div>
+            <div className="min-w-0"><div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_75px_minmax(100px,.65fr)]">
+                <div className="space-y-1.5"><Label htmlFor="location-floor-name">Nombre de planta</Label><Input id="location-floor-name" value={selected.name} onChange={event => updateFloor({ name: event.target.value })} maxLength={80} /></div>
+                <div className="space-y-1.5"><Label htmlFor="location-floor-level">Nivel</Label><Input id="location-floor-level" type="number" min={0} value={selected.level} onChange={event => updateFloor({ level: Math.max(0, Number(event.target.value)) })} /></div>
+                <div className="space-y-1.5"><Label htmlFor="location-floor-area">Superficie (m²)</Label><Input id="location-floor-area" type="number" min={0} value={selected.surface || ""} placeholder="Opcional" onChange={event => updateFloor({ surface: Math.max(0, Number(event.target.value)) })} /></div>
+            </div><div className="mt-2 flex items-center justify-between gap-2"><p className="text-xs text-[var(--text-muted)]">{spaceCount} espacios seleccionados · {selected.name}</p>{floors.length > 1 && <Button type="button" variant="ghost" size="xs" aria-label={`Quitar ${selected.name} de la configuración`} onClick={() => setProfile(withLocationFloors(profile, floors.filter(floor => floor.id !== selected.id)))}><Trash2 className="size-3.5" />Quitar planta</Button>}</div></div></div>
+        </section>
+        <section aria-label="Características y cantidad de espacios">
+            <div className="mb-3"><h4 className="wh-panel-title">¿Qué espacios hay en esta planta?</h4><p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">Cada espacio tendrá las tareas comunes de su tipo. No necesitas definir mobiliario.</p></div>
+            <LocationSpaceCharacteristics templates={templates} counts={selected.counts} attributes={profile.attributes} floorName={selected.name} onCountChange={updateCount} onFeatureChange={(key, value) => setProfile({ ...profile, attributes: { ...profile.attributes, [key]: value } })} />
+            {!templates.length && <p className="wh-note">Selecciona el tipo de ubicación para ver sus espacios habituales.</p>}
+        </section>
+        {site?.guidance && <details className="wh-note"><summary className="cursor-pointer font-medium">Recomendaciones para {site.label.toLocaleLowerCase()}</summary><p className="mt-2">{site.guidance}</p></details>}
+        <details className="wh-panel"><summary className="cursor-pointer text-sm font-semibold">Más características y operativa <span className="ml-1 font-normal text-[var(--text-muted)]">· Opcional</span></summary><div className="mt-4"><LocationRisksSection risks={risks} setRisks={setRisks} /><LocationServiceWindowsSection serviceWindows={serviceWindows} setServiceWindows={setServiceWindows} /><div className="mt-4 space-y-2"><Label htmlFor="location-service-notes">Observaciones operativas</Label><Textarea id="location-service-notes" value={profile.service_notes || ""} onChange={event => setProfile({ ...profile, service_notes: event.target.value })} placeholder="Zonas delicadas, materiales especiales o instrucciones." /></div></div></details>
+        <p className="wh-note">En Espacios y tareas podrás generar y revisar las tareas comunes de los espacios seleccionados. Las zonas compartidas también están disponibles en la biblioteca.</p>
+    </div>;
 }

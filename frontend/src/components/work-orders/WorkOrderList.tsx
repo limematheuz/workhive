@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarPlus, ChartNoAxesCombined, ClipboardList, MapPin, PackageMinus, Pencil, Repeat2 } from "lucide-react";
+import { CalendarPlus, ChartNoAxesCombined, ClipboardList, MapPin, PackageMinus, Pencil, Repeat2, UsersRound } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ type WorkOrderListProps = {
     generatingId: number | null;
     canViewMargin: boolean;
     onEdit: (order: WorkOrder) => void;
+    onScope: (order: WorkOrder) => void;
     onMaterials: (order: WorkOrder) => void;
     onMargin: (order: WorkOrder) => void;
     onGenerate: (order: WorkOrder) => void;
@@ -49,10 +50,11 @@ function WorkOrderSummary({ order }: { order: WorkOrder }) {
     </div>;
 }
 
-export function WorkOrderList({ workOrders, loading, locationName, generatingId, canViewMargin, onEdit, onMaterials, onMargin, onGenerate }: WorkOrderListProps) {
+export function WorkOrderList({ workOrders, loading, locationName, generatingId, canViewMargin, onEdit, onScope, onMaterials, onMargin, onGenerate }: WorkOrderListProps) {
     const actions = (order: WorkOrder) => {
         const options: PopoverOption[] = [
             { label: "Editar", icon: Pencil, variant: "edit", onClick: () => onEdit(order) },
+            { label: "Espacios y personas", icon: UsersRound, onClick: () => onScope(order) },
             { label: "Material", icon: PackageMinus, onClick: () => onMaterials(order) },
         ];
         if (canViewMargin) options.push({ label: "Margen", icon: ChartNoAxesCombined, onClick: () => onMargin(order) });

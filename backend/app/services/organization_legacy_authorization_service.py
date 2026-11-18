@@ -58,6 +58,8 @@ def legacy_role_allows(
     revocation. Removing permission must never restore a broader legacy role.
     """
 
+    if getattr(current_user,"base_company_id",current_user.company_id)!=company_id:
+        return False
     if capability not in _LEGACY_ROLE_CAPABILITIES.get(role_name(current_user), ()):
         return False
     if membership.permissions_configured:

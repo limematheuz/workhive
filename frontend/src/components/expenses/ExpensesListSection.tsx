@@ -1,6 +1,8 @@
 "use client";
 
-import { Download, FileUp, Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { RecordHistoryDialog } from "@/components/history/RecordHistoryDialog";
+import { History, Download, FileUp, Pencil, Receipt, Search, StickyNote, Trash2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
 import { Badge } from "@/components/ui/badge";
@@ -49,9 +51,10 @@ export function ExpensesListSection({
 }: ExpensesListSectionProps) {
     const { dict } = useDictionary();
     const text = dict.expenses;
+    const [history,setHistory]=useState<Expense|null>(null);
 
     const getExpenseActions = (expense: Expense): PopoverOption[] => {
-        const actions: PopoverOption[] = [];
+        const actions: PopoverOption[] = [{label:"Historial de cambios",icon:History,onClick:()=>setHistory(expense)}];
         if (isPrivateExpenseReceipt(expense.receipt_url)) {
             actions.push({
                 label: text.receipt_download,
@@ -80,6 +83,7 @@ export function ExpensesListSection({
             : null;
 
     return (
+        <>
         <DataListTable
             items={expenses}
             getRowKey={(expense) => expense.id}
@@ -191,6 +195,8 @@ export function ExpensesListSection({
                 </>
             )}
         />
+        <RecordHistoryDialog entityType="expense" record={history?{id:history.id,label:history.description}:null} close={()=>setHistory(null)}/>
+        </>
     );
 }
 

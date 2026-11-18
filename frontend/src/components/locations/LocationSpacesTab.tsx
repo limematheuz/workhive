@@ -15,6 +15,7 @@ interface LocationSpacesTabProps {
     locationId: number;
     open: boolean;
     canManage: boolean;
+    onSpacesChange?: (spaces: LocationSpace[]) => void;
 }
 
 function moveSpace(spaces: LocationSpace[], sourceId: number, targetId: number) {
@@ -27,7 +28,7 @@ function moveSpace(spaces: LocationSpace[], sourceId: number, targetId: number) 
     return next;
 }
 
-export function LocationSpacesTab({ locationId, open, canManage }: LocationSpacesTabProps) {
+export function LocationSpacesTab({ locationId, open, canManage, onSpacesChange }: LocationSpacesTabProps) {
     const [spaces, setSpaces] = useState<LocationSpace[]>([]);
     const [loading, setLoading] = useState(false);
     const [spaceName, setSpaceName] = useState("");
@@ -41,14 +42,17 @@ export function LocationSpacesTab({ locationId, open, canManage }: LocationSpace
         if (!open) return;
         try {
             setLoading(true);
-            setSpaces(await LocationService.getSpaces(locationId));
+            const items = await LocationService.getSpaces(locationId);
+            setSpaces(items);
+            onSpacesChange?.(items);
         } catch (error) {
             setSpaces([]);
+            onSpacesChange?.([]);
             toast.error(getErrorMessage(error, "No se pudieron cargar los espacios."));
         } finally {
             setLoading(false);
         }
-    }, [locationId, open]);
+    }, [locationId, open, onSpacesChange]);
 
     useEffect(() => {
         void Promise.resolve().then(reload);

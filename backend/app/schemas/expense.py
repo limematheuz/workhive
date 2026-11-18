@@ -42,6 +42,7 @@ class ExpenseUpdate(BaseModel):
 
 
 class ExpenseResponse(ExpenseBase):
+    currency_snapshot: dict | None = None
     id: int
     company_id: int
     created_by_user_id: int | None

@@ -163,6 +163,8 @@ export function TaskCreateModal({
 
                         {newLocationId && (
                             <TaskCreateZonesSection
+                                key={newLocationId}
+                                locationId={Number(newLocationId)}
                                 zones={locationZones}
                                 loading={loadingLocationZones}
                                 selectedZoneIds={selectedZoneIds}

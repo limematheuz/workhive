@@ -1,4 +1,6 @@
 "use client";
+import {useCompanyModules} from "@/hooks/useCompanyModules";
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel";
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Loader2 } from "lucide-react";
@@ -36,11 +38,13 @@ export function CreateOrganizationDialog({
     onCreated: () => Promise<void>;
 }) {
     const { dict } = useDictionary();
+    const modules=useCompanyModules();
     const copy = dict.organization.create_dialog;
     const profileCopy = dict.organization.profiles;
     const isProfile = kind === "profile" || profile !== null;
     const [name, setName] = useState(profile?.name ?? "");
     const [code, setCode] = useState("");
+    const [unitType,setUnitType]=useState<"area"|"branch">("area");
     const [departmentId, setDepartmentId] = useState<string>("");
     const [description, setDescription] = useState(profile?.description ?? "");
     const [permissionCodes, setPermissionCodes] = useState<string[]>(profile?.permission_codes ?? []);
@@ -85,6 +89,7 @@ export function CreateOrganizationDialog({
         try {
             setSaving(true);
             if (kind === "department") await OrganizationService.createDepartment({
+                unit_type:unitType,
                 name,
                 code: code || undefined,
                 parent_department_id: departmentId && departmentId !== "none" ? Number(departmentId) : undefined,
@@ -112,7 +117,7 @@ export function CreateOrganizationDialog({
                         <DialogTitle>{title}</DialogTitle>
                         <DialogDescription>{profile?.is_system ? profileCopy.default_edit_description : profile ? profileCopy.edit_description : isProfile ? copy.profile_description : copy.structure_description}</DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 px-5 py-4 sm:px-6">
+                    <div className="max-h-[calc(100dvh-12rem)] space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
                         <div className="space-y-2">
                             <Label htmlFor="organization-name">{copy.name}</Label>
                             <Input
@@ -130,6 +135,7 @@ export function CreateOrganizationDialog({
                                 <Input id="organization-code" value={code} onChange={(event) => setCode(event.target.value)} />
                             </div>
                         )}
+                        {kind === "department"&&<div className="space-y-2"><Label>Tipo de unidad</Label><Select value={unitType} onValueChange={value=>setUnitType(value as "area"|"branch")}><SelectTrigger aria-label="Tipo de unidad organizativa"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="area">Área</SelectItem><SelectItem value="branch" disabled={!modules.enabled.has("features.branches")}>Delegación{!modules.enabled.has("features.branches")?" · módulo no activo":""}</SelectItem></SelectContent></Select></div>}
                         {kind === "department" && (
                             <div className="space-y-2">
                                 <Label>{copy.parent_department_optional}</Label>
@@ -180,6 +186,7 @@ export function CreateOrganizationDialog({
                                 </FieldSet>
                             </>
                         )}
+                        {profile && <RecordHistoryPanel entityType="permission_profile" entityId={profile.id} />}
                     </div>
                     <DialogFooter className="dialog-glass-chrome border-t border-[var(--border-soft)] px-5 py-4 sm:px-6">
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>

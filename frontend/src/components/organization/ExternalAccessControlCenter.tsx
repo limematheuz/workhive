@@ -73,7 +73,7 @@ export function ExternalAccessControlCenter({ embedded = false }: ExternalAccess
         if (!userLoading) startTransition(() => { void loadEvent(); });
     }, [userLoading]);
 
-    const pagination = useDataTablePagination(accesses, 10);
+    const pagination = useDataTablePagination(accesses, 10, "ExternalAccessControlCenter.accesses.0");
     const summary = copyPagination(dict.organization.pagination.summary, pagination.page, pagination.pageSize, accesses.length);
     const externalRoles = useMemo(() => externalRole ? [externalRole] : [], [externalRole]);
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const sourceRoot = new URL("../", import.meta.url);
 
@@ -20,7 +21,7 @@ function tsxSources(directory: string): string[] {
 }
 
 test("application forms use the shared calendar controls instead of browser date fields", () => {
-    for (const content of tsxSources(sourceRoot.pathname)) {
+    for (const content of tsxSources(fileURLToPath(sourceRoot))) {
         assert.doesNotMatch(content, /type="(?:date|datetime-local)"/);
     }
 
@@ -36,10 +37,10 @@ test("application forms use the shared calendar controls instead of browser date
     for (const formSource of [
         source("../app/dashboard/labor-costs/page.tsx"),
         source("../components/quality/CorrectiveActionsDialog.tsx"),
-        source("../app/dashboard/work-orders/page.tsx"),
+        source("../components/operations/ServicePlanner.tsx"),
         source("../components/contracts/ServiceContractDetailDialog.tsx"),
         source("../components/expenses/ExpenseFormDialog.tsx"),
-        source("../components/inventory/InventoryPurchasesSection.tsx"),
+        source("../components/inventory/InventoryPurchaseDialog.tsx"),
         source("../components/invoices/CustomerPaymentSection.tsx"),
         source("../components/partner-portal/PartnerPortalRequestDialog.tsx"),
         source("../features/reservations/ReservationFormCleaningSection.tsx"),
@@ -47,4 +48,5 @@ test("application forms use the shared calendar controls instead of browser date
     ]) {
         assert.match(formSource, /(?:DatePicker|DateTimePicker)/);
     }
+    assert.match(source("../components/inventory/InventoryPurchasesSection.tsx"), /<InventoryPurchaseDialog/);
 });

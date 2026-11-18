@@ -6,10 +6,12 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 from app.schemas.user import validate_user_password
+from app.schemas.client_portal_currency import ClientPortalCurrencySnapshot
 
 
 class ClientPortalInvitationCreate(BaseModel):
     email: EmailStr
+    delivery: Literal["email", "link"] = "email"
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
@@ -45,6 +47,14 @@ class ClientPortalInvitationResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ClientPortalInvitationCreated(ClientPortalInvitationResponse):
+    """One-time creation result; secrets are never part of list/revoke DTOs."""
+
+    delivery: Literal["email", "link"]
+    invitation_url: str | None = None
+    verification_code: str | None = None
 
 
 class ClientPortalGrantResponse(BaseModel):
@@ -91,6 +101,7 @@ class ClientPortalInvoiceResponse(BaseModel):
     payment_method: str | None
     paid_at: datetime | None
     lines: list[ClientPortalLineResponse]
+    currency_snapshot: ClientPortalCurrencySnapshot | None = None
 
 
 class ClientPortalQuoteResponse(BaseModel):

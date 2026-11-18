@@ -14,35 +14,15 @@ from app.schemas.user import (
 from app.services import audit_service, auth_service, email_change_service
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import create_access_token
+from app.api.session_cookies import cookie_options as _cookie_options, delete_cookie_options as _delete_cookie_options, set_session_cookies
+from app.services import company_session_service
+from app.services.company_session_principal import identity as session_identity
 from app.core.config import settings
 from app.core.rate_limit import enforce_rate_limit
 from app.models.user import User
 from app.services.request_context import get_request_location_details
 
 router = APIRouter()
-
-
-def _cookie_options() -> dict[str, object]:
-    options: dict[str, object] = {
-        "secure": settings.is_production or settings.FORCE_HTTPS,
-        "samesite": settings.SESSION_COOKIE_SAMESITE,
-        "path": "/",
-        "max_age": settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    }
-    if settings.SESSION_COOKIE_DOMAIN:
-        options["domain"] = settings.SESSION_COOKIE_DOMAIN
-    return options
-
-
-def _delete_cookie_options() -> dict[str, object]:
-    options: dict[str, object] = {
-        "path": "/",
-        "secure": settings.is_production or settings.FORCE_HTTPS,
-        "samesite": settings.SESSION_COOKIE_SAMESITE,
-    }
-    if settings.SESSION_COOKIE_DOMAIN:
-        options["domain"] = settings.SESSION_COOKIE_DOMAIN
-    return options
 
 
 @router.post(
@@ -77,24 +57,12 @@ def login(
         settings.AUTH_RATE_LIMIT_WINDOW_SECONDS,
         identity=form_data.username,
     )
-    user = auth_service.authenticate_user(db, form_data.username, form_data.password)
+    user = company_session_service.login_context(db,auth_service.authenticate_user(db, form_data.username, form_data.password))
     access_token = create_access_token(
-        data={"sub": user.email, "ver": user.session_version}
+        data=company_session_service.token_claims(user)
     )
     csrf_token = secrets.token_urlsafe(32)
-    cookie_options = _cookie_options()
-    response.set_cookie(
-        key=settings.SESSION_COOKIE_NAME,
-        value=access_token,
-        httponly=True,
-        **cookie_options,
-    )
-    response.set_cookie(
-        key=settings.CSRF_COOKIE_NAME,
-        value=csrf_token,
-        httponly=False,
-        **cookie_options,
-    )
+    set_session_cookies(response,access_token,csrf_token)
     audit_service.record_event(
         db,
         actor=user,
@@ -144,8 +112,9 @@ def logout(
     db: Session = Depends(get_db),
     current_user: User = AuthenticatedUser,
 ) -> None:
-    current_user.session_version += 1
-    db.add(current_user)
+    person=session_identity(current_user)
+    person.session_version += 1
+    db.add(person)
     db.commit()
     delete_options = _delete_cookie_options()
     response.delete_cookie(settings.SESSION_COOKIE_NAME, **delete_options)

@@ -87,8 +87,16 @@ test("quote and invoice form controls use the local shadcn primitives", () => {
         assert.match(inputSource, /@\/components\/ui\/input/);
     }
     for (const selectSource of selectSources) {
-        assert.match(selectSource, /@\/components\/ui\/select/);
-        assert.match(selectSource, /<SelectTrigger/);
+        if (selectSource.includes("<FormSelect")) {
+            assert.match(selectSource, /@\/components\/ui\/form-select/);
+            assert.match(selectSource, /<FormSelect searchable/);
+            const adapter=source("../components/ui/form-select.tsx");
+            assert.match(adapter, /<SearchableSelect/);
+            assert.match(adapter, /<SelectField/);
+        } else {
+            assert.match(selectSource, /@\/components\/ui\/select/);
+            assert.match(selectSource, /<SelectTrigger/);
+        }
     }
 });
 

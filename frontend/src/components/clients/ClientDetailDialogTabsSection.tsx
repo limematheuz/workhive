@@ -16,8 +16,10 @@ import { ClientDetailOverview } from "./ClientDetailOverview";
 import { ClientDetailTasksTab } from "./ClientDetailTasksTab";
 import { ClientOpportunitiesTab } from "./ClientOpportunitiesTab";
 import { ClientPortalAccessTab } from "./ClientPortalAccessTab";
+import { DocumentRegisterWorkspace } from "@/components/documents/DocumentRegisterWorkspace";
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel";
 
-export type ClientDetailTab = "overview" | "commercial" | "locations" | "tasks" | "billing" | "portal";
+export type ClientDetailTab = "overview" | "commercial" | "locations" | "tasks" | "billing" | "portal" | "documents";
 
 export type ClientDetailPermissions = {
     canManage: boolean;
@@ -74,6 +76,7 @@ export function ClientDetailDialogTabsSection({
         { id: "locations" as const, label: `${workspace.locations} (${locations.length})`, compactLabel: "Ubi.", icon: MapPin },
         { id: "tasks" as const, label: `${workspace.jobs} (${tasks.length})`, compactLabel: "Trab.", icon: ListChecks },
         ...(financialDataAvailable ? [{ id: "billing" as const, label: `${dict.invoices.title} (${invoices.length})`, compactLabel: "Fact.", icon: FileText }] : []),
+        { id: "documents" as const, label: "Documentación", compactLabel: "Docs.", icon: FileText },
         ...(canManageClientPortal ? [{ id: "portal" as const, label: "Portal", compactLabel: "Portal", icon: UsersRound }] : []),
     ];
 
@@ -86,7 +89,9 @@ export function ClientDetailDialogTabsSection({
                 {activeTab === "locations" && <ClientDetailLocationsTab locations={locations} onViewLocationTasks={onViewLocationTasks} onClose={onClose} />}
                 {activeTab === "tasks" && <ClientDetailTasksTab filteredTasks={filteredTasks} locations={locations} taskSearch={taskSearch} onTaskSearchChange={onTaskSearchChange} taskStatusFilter={taskStatusFilter} onTaskStatusFilterChange={onTaskStatusFilterChange} getAssigneeName={(userId) => userId == null ? workspace.unassigned : workspace.assigned} onViewTaskDetails={onViewTaskDetails} onClose={onClose} labels={{ search_task: dict.clients.details.search_task, all_statuses: dict.clients.details.all_statuses, status_pending: dict.clients.details.status_pending, status_in_progress: dict.clients.details.status_in_progress, status_completed: dict.clients.details.status_completed, no_tasks: dict.clients.details.no_tasks, task: workspace.task, assignment: workspace.assignment, open_task: workspace.open_task }} />}
                 {activeTab === "billing" && financialDataAvailable && <ClientDetailBillingTab invoices={invoices} />}
+                {activeTab === "documents" && <DocumentRegisterWorkspace ownerType="client" ownerId={client.id} embedded />}
                 {activeTab === "portal" && canManageClientPortal && <ClientPortalAccessTab clientId={client.id} clientName={client.name} />}
+                {activeTab === "overview" && <RecordHistoryPanel entityType="client" entityId={client.id} />}
             </div>
         </>
     );

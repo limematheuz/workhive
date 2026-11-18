@@ -1,3 +1,4 @@
+from app.services.work_order_execution_policy import accepts_execution_costs
 """Immutable material consumption linked to operational work orders."""
 
 from fastapi import HTTPException, status
@@ -25,7 +26,6 @@ INVENTORY_READ = "inventory.read"
 INVENTORY_MANAGE = "inventory.manage"
 WORK_READ = "work.read"
 WORK_MANAGE = "work.manage"
-CONSUMABLE_WORK_ORDER_STATUSES = frozenset({"active", "paused"})
 
 
 def _company_id(db: Session, current_user: User, *, inventory: str, work: str) -> int:
@@ -142,7 +142,7 @@ def create_consumption(
         work_order_id=work_order_id,
         permission_code=WORK_MANAGE,
     )
-    if work_order.status not in CONSUMABLE_WORK_ORDER_STATUSES:
+    if not accepts_execution_costs(db,work_order):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="La orden no admite consumos en su estado actual",
@@ -293,3 +293,9 @@ def reverse_consumption(
         recorded_by_user_id=current_user.id,
     )
     return _commit(db, reversal.id)
+
+
+def consumption_state(db,current_user,work_order_id):
+    company=_company_id(db,current_user,inventory=INVENTORY_READ,work=WORK_READ)
+    order=_work_order_or_404(db,current_user,company_id=company,work_order_id=work_order_id,permission_code=WORK_READ)
+    return {"can_consume":accepts_execution_costs(db,order)}

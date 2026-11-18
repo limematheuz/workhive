@@ -24,7 +24,7 @@ interface WorkSessionWidgetProps {
     allowedLocations?: Location[];
 }
 
-function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
+export function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {}) {
     const { dict } = useDictionary()
     const { user } = useUser()
     const [activeSession, setActiveSession] = useState<WorkSession | null>(null)
@@ -32,6 +32,7 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
     const allLocations = allowedLocations ?? fetchedLocations
     const [availableTasks, setAvailableTasks] = useState<TaskItem[]>([])
     const [loading, setLoading] = useState<boolean>(true)
+    const [sessionError, setSessionError] = useState("")
     const [actionLoading, setActionLoading] = useState<boolean>(false)
     const [elapsedTime, setElapsedTime] = useState<string>("00:00:00")
 
@@ -87,11 +88,13 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
             ])
 
             setActiveSession(session)
+            setSessionError("")
             void syncMonitoredTasks(session)
             if (!allowedLocations) {
                 setFetchedLocations(baseLocs)
             }
         } catch (error) {
+            setSessionError(getErrorMessage(error, "No se pudo consultar el fichaje. Comprueba la conexión y tus permisos."))
             console.error("Error loading work session initial data", error)
         } finally {
             setLoading(false)
@@ -326,6 +329,7 @@ function useWorkSessionWidget({ allowedLocations }: WorkSessionWidgetProps = {})
     }
 
     return {
+        sessionError,
         actionLoading,
         activeSession,
         allLocations,

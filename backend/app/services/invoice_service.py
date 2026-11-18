@@ -21,7 +21,7 @@ from app.schemas.invoice import (
     InvoiceUpdate,
     RectificationCreate,
 )
-from app.schemas.invoice_item import InvoiceItemCreate, RectificationInvoiceItemCreate
+from app.schemas.invoice_item import InvoiceItemCreate
 from app.services import (
     email_service,
     fiscal_submission_service,
@@ -144,7 +144,7 @@ def create_invoice(
 
 
 def create_invoice_draft(
-    db: Session, company_id: int, data: InvoiceDraftCreate
+    db: Session, company_id: int, data: InvoiceDraftCreate, *, commit: bool = True
 ) -> Invoice:
     _require_invoices_feature(db, company_id)
     try:
@@ -174,7 +174,7 @@ def create_invoice_draft(
         db.flush()
         db.refresh(invoice)
         invoice_item_repo.recalculate_invoice_totals(db, invoice)
-        db.commit()
+        db.commit() if commit else db.flush()
         db.refresh(invoice)
         return invoice
     except Exception:
@@ -477,7 +477,7 @@ def _normalize_invoice_update_number(
 
 
 def update_invoice(
-    db: Session, company_id: int, invoice_id: int, invoice_data: InvoiceUpdate
+    db: Session, company_id: int, invoice_id: int, invoice_data: InvoiceUpdate, *, commit: bool = True
 ) -> Invoice:
     invoice = get_invoice(db, company_id, invoice_id)
     changes = invoice_data.model_dump(exclude_unset=True)
@@ -529,7 +529,7 @@ def update_invoice(
         invoice_repo.update_invoice(db, invoice, invoice_data)
         if replacement_items is not None and requested_status != "cancelled":
             invoice_item_repo.recalculate_invoice_totals(db, invoice)
-        db.commit()
+        db.commit() if commit else db.flush()
         db.refresh(invoice)
         db.expire(invoice, ["items"])
         return invoice
@@ -538,100 +538,7 @@ def update_invoice(
         raise
 
 
-def create_rectification_invoice(
-    db: Session,
-    company_id: int,
-    original_invoice_id: int,
-    data: RectificationCreate,
-) -> Invoice:
-    _require_invoices_feature(db, company_id)
-    original = (
-        db.query(Invoice)
-        .filter(
-            Invoice.company_id == company_id,
-            Invoice.id == original_invoice_id,
-        )
-        .with_for_update()
-        .first()
-    )
-    if not original:
-        raise HTTPException(status_code=404, detail="Original invoice not found")
-    if original.is_rectification:
-        raise HTTPException(
-            status_code=400, detail="A rectification invoice cannot be rectified"
-        )
-    if original.status not in RECTIFIABLE_STATUSES:
-        raise HTTPException(
-            status_code=400,
-            detail="Only issued, paid, or overdue invoices can be rectified",
-        )
-    if not original.items:
-        raise HTTPException(status_code=400, detail="The original invoice has no lines")
-    if (
-        db.query(Invoice)
-        .filter(
-            Invoice.original_invoice_id == original.id,
-            Invoice.is_rectification.is_(True),
-            Invoice.status != "cancelled",
-        )
-        .first()
-    ):
-        raise HTTPException(
-            status_code=409, detail="This invoice already has a rectification"
-        )
-
-    generated_path = None
-    try:
-        notes = f"Factura original {original.invoice_number}"
-        if data.notes:
-            notes = f"{notes}\n{data.notes}"
-        rectification = Invoice(
-            company_id=company_id,
-            client_id=original.client_id,
-            invoice_number=f"DRAFT-{uuid.uuid4().hex[:12].upper()}",
-            issue_date=data.issue_date,
-            due_date=data.due_date,
-            status="draft",
-            is_rectification=True,
-            original_invoice_id=original.id,
-            rectification_reason=data.reason,
-            rectification_reason_code=data.reason_code,
-            notes=notes,
-            discount=original.discount,
-            equivalence_surcharge=original.equivalence_surcharge,
-            retention=original.retention,
-            shipping_address=original.shipping_address,
-            custom_issuer_info=original.custom_issuer_info,
-            custom_recipient_info=original.custom_recipient_info,
-        )
-        db.add(rectification)
-        db.flush()
-
-        for original_item in original.items:
-            invoice_item_repo.create_invoice_item(
-                db,
-                rectification.id,
-                RectificationInvoiceItemCreate(
-                    task_item_id=None,
-                    description=original_item.description,
-                    quantity=float(original_item.quantity),
-                    unit_price=-float(original_item.unit_price),
-                    tax_rate=float(original_item.tax_rate),
-                ),
-            )
-        db.flush()
-        db.refresh(rectification)
-        invoice_item_repo.recalculate_invoice_totals(db, rectification)
-        issue_invoice_in_transaction(db, rectification, series="R")
-        generated_path = generate_invoice_pdf(rectification)
-        db.add(rectification)
-        original.status = "rectified"
-        db.add(original)
-        db.commit()
-        db.refresh(rectification)
-        return rectification
-    except Exception:
-        db.rollback()
-        if generated_path:
-            generated_path.unlink(missing_ok=True)
-        raise
+def create_rectification_invoice(db: Session, company_id: int, original_invoice_id: int, data: RectificationCreate) -> Invoice:
+    from app.services.invoice_rectification_service import create
+    return create(db,company_id,original_invoice_id,data,require_feature=_require_invoices_feature,
+        statuses=RECTIFIABLE_STATUSES,issue=issue_invoice_in_transaction,render=generate_invoice_pdf)

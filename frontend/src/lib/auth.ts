@@ -6,7 +6,10 @@ export function clearSessionCache(): void {
 
     // Remove credentials created by versions prior to HttpOnly sessions.
     localStorage.removeItem("token");
+    localStorage.removeItem("workhive_offline_identity");
+    localStorage.removeItem("workhive_offline_identity:v1");
     sessionStorage.removeItem(USER_CACHE_KEY);
+    sessionStorage.removeItem("workhive_user_cache:v1");
     sessionStorage.removeItem(CSRF_CACHE_KEY);
 }
 

@@ -1,3 +1,4 @@
+from app.repositories.company_membership_scope import company_role_predicate
 from sqlalchemy.orm import Session
 
 from app.models.google_calendar_connection import GoogleCalendarConnection
@@ -35,7 +36,6 @@ def resolve_calendar_owner_user_id(
             GoogleCalendarConnection.company_id == company_id,
             GoogleCalendarConnection.status == "connected",
             User.is_active.is_(True),
-            Role.name.in_(CALENDAR_OWNER_ROLES),
         )
         .order_by(GoogleCalendarConnection.id.asc())
         .first()
@@ -50,10 +50,9 @@ def resolve_calendar_owner_user_id(
             .join(Role, Role.id == User.role_id)
             .filter(
                 User.id == preferred_user_id,
-                User.company_id == company_id,
+                company_role_predicate(company_id,CALENDAR_OWNER_ROLES),
                 User.is_active.is_(True),
-                Role.name.in_(CALENDAR_OWNER_ROLES),
-            )
+                )
             .first()
         )
     if preferred_admin:
@@ -63,9 +62,8 @@ def resolve_calendar_owner_user_id(
         db.query(User.id)
         .join(Role, Role.id == User.role_id)
         .filter(
-            User.company_id == company_id,
+            company_role_predicate(company_id,CALENDAR_OWNER_ROLES),
             User.is_active.is_(True),
-            Role.name.in_(CALENDAR_OWNER_ROLES),
         )
         .order_by(User.id.asc())
         .first()

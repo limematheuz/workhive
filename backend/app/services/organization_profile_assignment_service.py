@@ -15,6 +15,7 @@ from app.schemas.organization import (
 from app.services.organization_member_service import member_response
 from app.services.organization_profile_scope_policy import validate_profile_scopes
 from app.services.organization_bootstrap_service import ADMIN_PROFILE_NAME
+from app.services.record_history_permissions import assignment_snapshot, record_permission_change
 from app.services.organization_service_shared import (
     CAPABILITY_MEMBERS_MANAGE,
     CAPABILITY_SCOPES_MANAGE,
@@ -63,6 +64,7 @@ def replace_member_profile_assignments(
         company_id=company_id,
         membership_id=membership.id,
     )
+    previous_assignments = assignment_snapshot(existing_assignments)
     existing_scopes = {
         assignment.permission_profile_id: {
             (scope.scope_type, scope.scope_id) for scope in assignment.scopes
@@ -139,6 +141,10 @@ def replace_member_profile_assignments(
                     scope_id=scope.scope_id,
                 )
             )
+    selected_assignments = sorted(profiles[item.permission_profile_id].name + " [" + ", ".join(sorted(f"{scope.scope_type}:{scope.scope_id}" for scope in item.scopes)) + "]" for item in payload.assignments)
+    preserved_admin = [item.permission_profile.name + " [" + ", ".join(sorted(f"{scope.scope_type}:{scope.scope_id}" for scope in item.scopes)) + "]" for item in existing_assignments if item.permission_profile.is_system and item.permission_profile.name == ADMIN_PROFILE_NAME]
+    record_permission_change(db, current_user, company_id, "company_membership", membership.id,
+        "profile_assignments", previous_assignments, "; ".join(sorted(selected_assignments + preserved_admin)))
     if commit:
         db.commit()
     else:

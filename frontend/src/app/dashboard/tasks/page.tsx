@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import React, { Suspense } from "react";
 import { Plus, Columns3, ListTodo, Library, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,13 +37,13 @@ function TasksPageContent() {
                         )}
 
                     {state.activeTab !== "templates" && state.isAdminOrManager && (
-                        <Button
+                        <><Button asChild className={PAGE_ACTION_BUTTON_PRIMARY}><Link href="/dashboard/planificar"><Plus className="size-4"/>Planificar trabajo</Link></Button><Button
                             onClick={() => state.setIsCreateOpen(true)}
-                            className={PAGE_ACTION_BUTTON_PRIMARY}
+                            variant="outline"
                         >
                             <Plus className="w-4 h-4" />
-                            {state.dict.tasks?.new_task || "Nueva Tarea"}
-                        </Button>
+                            Tarea de catálogo
+                        </Button></>
                     )}
                     </>
                 )}

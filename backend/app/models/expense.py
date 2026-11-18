@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     Column,
@@ -17,6 +18,7 @@ from app.db.session import Base
 
 class Expense(Base):
     __tablename__ = "expenses"
+    currency_snapshot = Column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint(
             "NOT (service_contract_id IS NOT NULL AND work_order_id IS NOT NULL)",

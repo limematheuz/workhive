@@ -1,6 +1,7 @@
 """Customer cash receipts and their immutable invoice allocations."""
 
 from sqlalchemy import (
+    JSON,
     CheckConstraint,
     Column,
     DateTime,
@@ -25,6 +26,7 @@ class CustomerPayment(Base):
     """
 
     __tablename__ = "customer_payments"
+    currency_snapshot = Column(JSON, nullable=True)
     __table_args__ = (
         CheckConstraint("amount > 0", name="ck_customer_payment_amount_positive"),
         CheckConstraint(
@@ -105,6 +107,9 @@ class CustomerPaymentAllocation(Base):
         index=True,
     )
     amount = Column(Numeric(14, 2), nullable=False)
+    exchange_difference_eur = Column(Numeric(14, 2), nullable=False, default=0)
+    native_amount = Column(Numeric(18, 6), nullable=True)
+    native_currency = Column(String(3), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     payment = relationship("CustomerPayment", back_populates="allocations")

@@ -15,7 +15,7 @@ const LOCATION_TYPE_LABELS = { private: "Particular", real_estate: "Inmueble", b
 type ClientDetailLocationsTabProps = { locations: Location[]; onViewLocationTasks: (location: Location) => void; onClose: () => void; };
 
 export function ClientDetailLocationsTab({ locations, onViewLocationTasks, onClose }: ClientDetailLocationsTabProps) {
-    const pagination = useDataTablePagination(locations, 10);
+    const pagination = useDataTablePagination(locations, 10, "ClientDetailLocationsTab.locations.0");
     const openTasks = (location: Location) => { onClose(); onViewLocationTasks(location); };
     return <section className="billing-surface overflow-hidden rounded-[22px]">
         <header className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="text-sm font-semibold text-[var(--text-main)]">Ubicaciones del cliente</h3><p className="mt-1 text-xs text-[var(--text-muted)]">Localiza cada centro y abre sus tareas directamente.</p></div><p className="text-sm font-medium text-[var(--text-muted)]">{locations.length} {locations.length === 1 ? "ubicación" : "ubicaciones"}</p></header>

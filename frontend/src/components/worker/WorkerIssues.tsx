@@ -1,0 +1,27 @@
+"use client";
+import {useCallback,useMemo,useState} from "react";
+import {ShieldAlert} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {Input} from "@/components/ui/input";
+import {Textarea} from "@/components/ui/textarea";
+import {SearchableSelect} from "@/components/ui/searchable-select";
+import {SelectField} from "@/components/ui/select-field";
+import {useUser} from "@/lib/user-context";
+import {useResourceEffect} from "@/hooks/useResourceEffect";
+import {TaskReportService,type TaskReport} from "@/services/task-report.service";
+import {useWorkerWorkspace} from "./WorkerWorkspace";
+export function WorkerIssues(){
+ const {user}=useUser(),workspace=useWorkerWorkspace();
+ const [rows,setRows]=useState<TaskReport[]>([]),[revision,setRevision]=useState(0),[loaded,setLoaded]=useState(false),[error,setError]=useState("");
+ const [task,setTask]=useState(""),[kind,setKind]=useState("limpieza"),[title,setTitle]=useState(""),[description,setDescription]=useState(""),[busy,setBusy]=useState(false),[message,setMessage]=useState("");
+ const request=useCallback(()=>TaskReportService.list(),[]);
+ const receive=useCallback((result:TaskReport[])=>{setRows(result);setLoaded(true);setError("");},[]);
+ const failed=useCallback((cause:unknown)=>{setError(cause instanceof Error?cause.message:"No se pudieron cargar tus incidencias.");setLoaded(true);},[]);
+ useResourceEffect(workspace.online&&Boolean(workspace.context.features.includes("features.work_orders")),String(revision),request,receive,failed);
+ const taskIds=useMemo(()=>new Set(workspace.tasks.map(task=>task.id)),[workspace.tasks]);
+ const own=useMemo(()=>rows.filter(row=>row.report_type==="issue"&&row.reporter_user_id===user?.id&&taskIds.has(row.task_item_id)),[rows,user?.id,taskIds]);
+ const options=useMemo(()=>workspace.tasks.flatMap(task=>["rejected","cancelled"].includes(task.status)?[]:[{value:String(task.id),label:task.title,description:workspace.locationName(task.location_id)}]),[workspace]);
+ async function submit(){if(busy||!task||!title.trim())return;setBusy(true);setError("");setMessage("");try{await TaskReportService.create({task_item_id:Number(task),report_type:"issue",issue_type:kind,title:title.trim(),description:description.trim()||undefined});setTitle("");setDescription("");setRevision(value=>value+1);setMessage("Incidencia enviada al responsable y vinculada al trabajo.");}catch(cause){failed(cause);}finally{setBusy(false);}}
+ return <main className="space-y-4"><div><h1 className="text-2xl font-semibold tracking-tight">Mis incidencias</h1><p className="mt-1 text-sm text-muted-foreground">Comunica un problema del trabajo y consulta los reportes que has enviado.</p></div>{!workspace.online?<p role="status" className="rounded-xl border border-orange-400/40 p-4 text-sm text-orange-700">La comunicación inmediata necesita conexión. Puedes guardar fotos y una descripción en un parte desde Jornada para sincronizarlas después.</p>:!workspace.context.features.includes("features.work_orders")?<p role="status" className="text-sm text-orange-700">Las incidencias de trabajo requieren el módulo de trabajos.</p>:<><form action={()=>void submit()} className="grid gap-3 rounded-2xl border bg-card p-4 sm:grid-cols-2"><div className="space-y-1 sm:col-span-2"><label className="text-sm font-medium" htmlFor="worker-issue-task">Trabajo</label><SearchableSelect id="worker-issue-task" aria-label="Trabajo de la incidencia" value={task} onValueChange={setTask} options={options} required placeholder="Buscar mi trabajo o ubicación…"/></div><div className="space-y-1"><label className="text-sm font-medium" htmlFor="worker-issue-kind">Tipo</label><SelectField id="worker-issue-kind" aria-label="Tipo de incidencia" value={kind} onValueChange={setKind} options={[{value:"limpieza",label:"Limpieza"},{value:"mantenimiento",label:"Mantenimiento"},{value:"inspeccion",label:"Revisión"}]}/></div><label className="space-y-1 text-sm">Título<Input required maxLength={160} value={title} onChange={event=>setTitle(event.target.value)}/></label><label className="space-y-1 text-sm sm:col-span-2">Qué ha ocurrido<Textarea maxLength={4000} rows={3} value={description} onChange={event=>setDescription(event.target.value)}/></label><Button disabled={busy||!task||!title.trim()}><ShieldAlert className="size-4"/>Enviar incidencia</Button></form>{!options.length&&!workspace.taskError&&<p className="text-sm text-orange-700">Todavía no tienes trabajos asignados a los que vincular una incidencia.</p>}{error&&<p role="alert" className="text-sm text-orange-700">{error}</p>}{message&&<p role="status" className="text-sm">{message}</p>}<section className="space-y-2"><h2 className="font-semibold">Incidencias enviadas</h2>{!loaded?<p role="status" className="text-sm text-muted-foreground">Cargando reportes…</p>:!own.length&&!error?<p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">No has enviado incidencias de tus trabajos.</p>:own.map(row=><article key={row.id} className="space-y-1 rounded-xl border bg-card p-4"><h3 className="break-words text-sm font-semibold">{row.title}</h3><p className="break-words text-xs text-muted-foreground">{row.task_title} · {row.location_name}</p>{row.description&&<p className="break-words text-sm">{row.description}</p>}<p className="text-xs text-muted-foreground">Enviada el {new Date(row.created_at).toLocaleString("es-ES")}</p></article>)}</section></>}
+ </main>;
+}

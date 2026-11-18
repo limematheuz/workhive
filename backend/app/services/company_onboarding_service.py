@@ -128,8 +128,8 @@ def complete_company_onboarding(
                 db,
                 company_id,
                 LocationCreate(
-                    **data.location.model_dump(),
-                    client_id=None,
+                    **data.location.model_dump(exclude={"client_id"}),
+                    client_id=data.location.client_id,
                     default_service_provider_id=None,
                     is_active=True,
                 ),

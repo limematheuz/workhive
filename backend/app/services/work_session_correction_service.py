@@ -45,6 +45,7 @@ def _get_own_closed_session(
         work_session_id,
         current_user.id,
         for_update=True,
+        company_id=current_user.company_id,
     )
     if work_session is None:
         raise HTTPException(status_code=404, detail="Fichaje no encontrado")

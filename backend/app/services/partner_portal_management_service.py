@@ -219,6 +219,7 @@ def grant_portal_access(
             {
                 CompanyMembership.status: "archived",
                 CompanyMembership.ended_at: now,
+                CompanyMembership.session_version: CompanyMembership.session_version+1,
             },
             synchronize_session=False,
         )
