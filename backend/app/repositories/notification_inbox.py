@@ -17,9 +17,12 @@ def list_notifications(
     unread_only: bool,
     limit: int,
     skip: int = 0,
+    visibility=None,
 ) -> list[Notification]:
     query = db.query(Notification).filter(
-        Notification.user_id == user_id, Notification.company_id == company_id
+        Notification.user_id == user_id,
+        Notification.company_id == company_id,
+        visibility if visibility is not None else True,
     )
     if unread_only:
         query = query.filter(Notification.read_at.is_(None))
@@ -37,12 +40,14 @@ def list_unread_task_notifications(
     company_id: int,
     *,
     limit: int = 200,
+    visibility=None,
 ) -> list[Notification]:
     return (
         db.query(Notification)
         .filter(
             Notification.user_id == user_id,
             Notification.company_id == company_id,
+            visibility if visibility is not None else True,
             Notification.entity_type == "task_item",
             Notification.read_at.is_(None),
         )
@@ -52,12 +57,15 @@ def list_unread_task_notifications(
     )
 
 
-def count_unread_task_notifications(db: Session, user_id: int, company_id: int) -> int:
+def count_unread_task_notifications(
+    db: Session, user_id: int, company_id: int, *, visibility=None
+) -> int:
     return (
         db.query(Notification)
         .filter(
             Notification.user_id == user_id,
             Notification.company_id == company_id,
+            visibility if visibility is not None else True,
             Notification.entity_type == "task_item",
             Notification.read_at.is_(None),
         )
@@ -66,12 +74,13 @@ def count_unread_task_notifications(db: Session, user_id: int, company_id: int) 
 
 
 def mark_read(
-    db: Session, user_id: int, company_id: int, notification_id: int
+    db: Session, user_id: int, company_id: int, notification_id: int, *, visibility=None
 ) -> Notification | None:
     notification = (
         db.query(Notification)
         .filter(
             Notification.id == notification_id,
+            visibility if visibility is not None else True,
             Notification.user_id == user_id,
             Notification.company_id == company_id,
         )
@@ -102,9 +111,12 @@ async def list_notifications_async(
     unread_only: bool,
     limit: int,
     skip: int = 0,
+    visibility=None,
 ) -> list[Notification]:
     statement = select(Notification).where(
-        Notification.user_id == user_id, Notification.company_id == company_id
+        Notification.user_id == user_id,
+        Notification.company_id == company_id,
+        visibility if visibility is not None else True,
     )
     if unread_only:
         statement = statement.where(Notification.read_at.is_(None))
@@ -125,9 +137,12 @@ async def mark_read_async(
     user_id: int,
     company_id: int,
     notification_id: int,
+    *,
+    visibility=None,
 ) -> Notification | None:
     statement = select(Notification).where(
         Notification.id == notification_id,
+        visibility if visibility is not None else True,
         Notification.user_id == user_id,
         Notification.company_id == company_id,
     )

@@ -1,4 +1,4 @@
-from sqlalchemy import and_, or_, select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -8,6 +8,7 @@ from app.models.location_template import LocationTemplate
 from app.models.reservation import Reservation
 from app.models.task_item import TaskItem
 from app.repositories.task_assignment_scope import assigned_task_condition
+from app.repositories.task_company_scope import company_task_condition
 from app.models.task_structure import (
     TaskAssignment,
     TaskChecklistAssignment,
@@ -44,18 +45,6 @@ def _load_options():
     )
 
 
-def _company_scope(company_id: int):
-    return or_(
-        and_(TaskItem.status != "rejected", TaskItem.company_id == company_id),
-        and_(
-            TaskItem.status == "rejected",
-            TaskItem.checkout_reservation_id.is_(None),
-            TaskItem.company_id == company_id,
-        ),
-        TaskItem.checkout_reservation.has(Reservation.owner_company_id == company_id),
-    )
-
-
 async def get_task_items(
     db: AsyncSession,
     company_id: int,
@@ -73,7 +62,7 @@ async def get_task_items(
         .join(Location)
         .outerjoin(Client)
         .options(*_load_options())
-        .where(_company_scope(company_id))
+        .where(company_task_condition(company_id))
     )
     if user_id:
         statement = statement.where(assigned_task_condition(user_id))
@@ -112,7 +101,7 @@ async def get_task_item(
         .outerjoin(Client)
         .options(*_load_options())
         .where(
-            _company_scope(company_id),
+            company_task_condition(company_id),
             TaskItem.id == task_item_id,
         )
     )

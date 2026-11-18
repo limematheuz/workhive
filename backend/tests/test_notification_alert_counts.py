@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from app.models.company import Company
 from app.models.notification import Notification
 from app.models.user import User
+from app.models.task_item import TaskItem
+from tests.test_task_security_delivery import _location
 from app.services import notification_service
 
 
@@ -68,6 +70,21 @@ def test_count_unread_task_notifications_ignores_read_and_non_task_items(db):
     company = _company(db, "AlertCo")
     user = _user(db, company, "viewer@alerts.test", role_id=3)
     other = _user(db, company, "other@alerts.test", role_id=3)
+
+    location = _location(db, company)
+    for task_id in range(1, 6):
+        db.add(
+            TaskItem(
+                id=task_id,
+                company_id=company.id,
+                location_id=location.id,
+                user_id=other.id if task_id == 5 else user.id,
+                title=f"Authorized task {task_id}",
+                unit="service",
+                status="pending",
+            )
+        )
+    db.commit()
 
     _notification(db, user=user, entity_type="task_item", entity_id=1)
     _notification(db, user=user, entity_type="task_item", entity_id=2)

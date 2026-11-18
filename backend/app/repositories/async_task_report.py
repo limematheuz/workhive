@@ -7,6 +7,11 @@ from app.models.task_report import TaskReport
 from app.repositories.task_assignment_scope import assigned_task_condition
 
 
+def report_company_condition(company_id: int):
+    return or_(TaskReport.reporter_company_id == company_id,
+               TaskReport.requesting_company_id == company_id)
+
+
 def _load_options():
     return (
         selectinload(TaskReport.task_item).selectinload(TaskItem.location),
@@ -45,10 +50,7 @@ async def list_for_company(
         select(TaskReport)
         .options(*_load_options())
         .where(
-            or_(
-                TaskReport.reporter_company_id == company_id,
-                TaskReport.requesting_company_id == company_id,
-            )
+            report_company_condition(company_id)
         )
         .order_by(TaskReport.created_at.desc(), TaskReport.id.desc())
         .offset(skip)
@@ -78,10 +80,7 @@ async def get_for_company(
         .options(*_load_options())
         .where(
             TaskReport.id == report_id,
-            or_(
-                TaskReport.reporter_company_id == company_id,
-                TaskReport.requesting_company_id == company_id,
-            ),
+            report_company_condition(company_id),
         )
     )
     if assigned_user_id is not None:
@@ -105,10 +104,7 @@ async def list_by_ids_for_company(
         .options(*_load_options())
         .where(
             TaskReport.id.in_(report_ids),
-            or_(
-                TaskReport.reporter_company_id == company_id,
-                TaskReport.requesting_company_id == company_id,
-            ),
+            report_company_condition(company_id),
         )
     )
     if assigned_user_id is not None:

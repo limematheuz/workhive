@@ -24,12 +24,48 @@ def select_users(db: Session, query) -> list[User]:
     return list(db.scalars(select(User).where(User.id.in_(query)).order_by(User.id)))
 
 
+def legacy_access_condition(company_id: int, role_names: tuple[str, ...]):
+    history = exists().where(
+        Assignment.company_membership_id == CompanyMembership.id,
+        Assignment.company_id == company_id,
+    )
+    return and_(
+        Role.name.in_(role_names),
+        or_(
+            CompanyMembership.id.is_(None),
+            and_(
+                CompanyMembership.permissions_configured.is_(False),
+                ~history,
+            ),
+        ),
+    )
+
+
+def legacy_viewer_ids(company_id: int):
+    return (
+        select(User.id)
+        .join(Role, Role.id == User.role_id)
+        .outerjoin(
+            CompanyMembership,
+            and_(
+                CompanyMembership.user_id == User.id,
+                CompanyMembership.company_id == company_id,
+            ),
+        )
+        .where(
+            User.company_id == company_id,
+            legacy_access_condition(company_id, ("viewer",)),
+        )
+    )
+
+
 def eligible_user_ids(
     *,
     company_id: int,
     capabilities: tuple[str, ...],
     legacy_roles: tuple[str, ...],
     location_id: int | None = None,
+    company_scope_only: bool = False,
 ):
     """Return a selectable, applied before directory pagination or notification fanout.
 
@@ -37,19 +73,9 @@ def eligible_user_ids(
     scopes follow the resolver's owned-location rule; direct location scopes
     remain exact. This selects candidates, never authorizes a caller's action.
     """
-    history = exists().where(
-        Assignment.company_membership_id == CompanyMembership.id,
-        Assignment.company_id == company_id,
-    )
-    legacy = and_(
-        Role.name.in_(legacy_roles),
-        or_(
-            CompanyMembership.id.is_(None),
-            and_(CompanyMembership.permissions_configured.is_(False), ~history),
-        ),
-    )
+    legacy = legacy_access_condition(company_id, legacy_roles)
     scope_matches = [and_(Scope.scope_type == "company", Scope.scope_id == company_id)]
-    if location_id is None:
+    if not company_scope_only and location_id is None:
         scope_matches.extend(
             [
                 and_(
@@ -80,13 +106,14 @@ def eligible_user_ids(
                 ),
             ]
         )
-    else:
+    elif not company_scope_only:
         scope_matches.extend(
             [
                 and_(Scope.scope_type == "location", Scope.scope_id == location_id),
                 and_(
                     Scope.scope_type.in_(("department", "team")),
-                    exists().where(
+                    exists()
+                    .where(
                         Location.id == location_id,
                         Location.owner_company_id == company_id,
                         Location.is_active.is_(True),
@@ -100,7 +127,8 @@ def eligible_user_ids(
                                 Scope.scope_id == Location.team_id,
                             ),
                         ),
-                    ),
+                    )
+                    .correlate_except(Location),
                 ),
             ]
         )
@@ -129,6 +157,13 @@ def eligible_user_ids(
             PermissionDefinition.code.in_(capabilities),
             Scope.company_id == company_id,
             or_(*scope_matches),
+        )
+        .correlate_except(
+            Assignment,
+            PermissionProfile,
+            PermissionProfilePermission,
+            PermissionDefinition,
+            Scope,
         )
         .exists()
     )
