@@ -379,7 +379,7 @@ def test_partner_portal_cannot_change_provider_or_remove_cleaning_request(client
     assert cleaning_change.status_code == 422
 
 
-@pytest.mark.parametrize("task_status,invoiced", [("in_progress", False), ("completed", False), ("pending", True)])
+@pytest.mark.parametrize("task_status,invoiced", [("in_progress", False), ("progress", False), ("review", False), ("completed", False), ("pending", True)])
 def test_portal_cannot_destroy_or_reschedule_started_or_billed_work(client, db, task_status, invoiced):
     context = _portal_context(db, suffix="PROTECTED-WORK")
     created = client.post("/api/v1/partner-portal/reservations", headers=context["partner_headers"], json=_reservation_payload(context["location"].id))
