@@ -1,4 +1,4 @@
-import { apiFetch, extractErrorMessage } from "@/lib/api";
+import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api";
 import { Reservation, ReservationInput } from "@/types/reservation";
 
 export const ReservationService = {
@@ -8,7 +8,7 @@ export const ReservationService = {
             cache: "no-store",
             headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
-        if (!response.ok) throw new Error("No se pudieron cargar las próximas entradas");
+        await assertApiResponseOk(response, "No se pudieron cargar las próximas entradas");
         return response.json();
     },
 
@@ -26,7 +26,7 @@ export const ReservationService = {
             cache: "no-store",
             headers: readContext ? { "X-Notification-Context": readContext } : undefined,
         });
-        if (!response.ok) throw new Error("No se pudieron cargar las reservas");
+        await assertApiResponseOk(response, "No se pudieron cargar las reservas");
         return response.json();
     },
 
