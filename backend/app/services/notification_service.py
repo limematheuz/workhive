@@ -2,6 +2,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from app.models.notification import Notification
+from app.repositories.notification_visibility import operational_visibility
+from app.services.organization_legacy_authorization_service import legacy_roles_for_capabilities
 from app.models.user import User
 from app.repositories import notification_delivery, notification_inbox
 from app.repositories.notification_acknowledgement import list_task_acknowledgements
@@ -87,11 +89,25 @@ def notify_users_once(
     return notification_count
 
 
+def _read_visibility(user: User):
+    return operational_visibility(
+        require_company_context(user),
+        user.id,
+        legacy_roles_for_capabilities(("work.read",)),
+        legacy_roles_for_capabilities(("work.manage",)),
+    )
+
+
 def list_notifications(
     db: Session, user: User, *, unread_only: bool, limit: int
 ) -> list[Notification]:
     return notification_inbox.list_notifications(
-        db, user.id, require_company_context(user), unread_only=unread_only, limit=limit
+        db,
+        user.id,
+        require_company_context(user),
+        unread_only=unread_only,
+        limit=limit,
+        visibility=_read_visibility(user),
     )
 
 
@@ -99,19 +115,27 @@ def list_unread_task_notifications(
     db: Session, user: User, *, limit: int = 200
 ) -> list[Notification]:
     return notification_inbox.list_unread_task_notifications(
-        db, user.id, require_company_context(user), limit=limit
+        db,
+        user.id,
+        require_company_context(user),
+        limit=limit,
+        visibility=_read_visibility(user),
     )
 
 
 def count_unread_task_notifications(db: Session, user: User) -> int:
     return notification_inbox.count_unread_task_notifications(
-        db, user.id, require_company_context(user)
+        db, user.id, require_company_context(user), visibility=_read_visibility(user)
     )
 
 
 def mark_read(db: Session, user: User, notification_id: int) -> Notification | None:
     notification = notification_inbox.mark_read(
-        db, user.id, require_company_context(user), notification_id
+        db,
+        user.id,
+        require_company_context(user),
+        notification_id,
+        visibility=_read_visibility(user),
     )
     if notification is not None:
         db.commit()
@@ -134,6 +158,7 @@ async def list_notifications_async(
         unread_only=unread_only,
         limit=limit,
         skip=skip,
+        visibility=_read_visibility(user),
     )
 
 
@@ -145,7 +170,11 @@ async def mark_read_async(
     db: AsyncSession, user: User, notification_id: int
 ) -> Notification | None:
     notification = await notification_inbox.mark_read_async(
-        db, user.id, require_company_context(user), notification_id
+        db,
+        user.id,
+        require_company_context(user),
+        notification_id,
+        visibility=_read_visibility(user),
     )
     if notification is not None:
         await db.commit()

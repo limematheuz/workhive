@@ -8,8 +8,10 @@ from sqlalchemy.pool import NullPool
 
 from app.core.database_url import to_async_database_url
 from app.models.company import Company
+from app.models.location import Location
 from app.models.notification import Notification
 from app.models.role import Role
+from app.models.task_item import TaskItem
 from app.models.user import User
 from app.repositories import async_user as async_user_repo
 from app.services import notification_service
@@ -29,6 +31,8 @@ async def test_async_notification_vertical_is_tenant_and_user_scoped():
     suffix = uuid4().hex[:12]
     company_ids: list[int] = []
     user_ids: list[int] = []
+    location_ids: list[int] = []
+    task_ids: list[int] = []
     notification_ids: list[int] = []
     try:
         async with factory() as session:
@@ -75,6 +79,29 @@ async def test_async_notification_vertical_is_tenant_and_user_scoped():
             await session.flush()
             user_ids.extend([own_user.id, foreign_user.id])
 
+            own_location = Location(
+                name=f"Async Location {suffix}",
+                address="Async Location Street 1",
+                city="Girona",
+                owner_company_id=own_company.id,
+                managing_company_id=own_company.id,
+            )
+            session.add(own_location)
+            await session.flush()
+            location_ids.append(own_location.id)
+
+            own_task = TaskItem(
+                company_id=own_company.id,
+                location_id=own_location.id,
+                user_id=own_user.id,
+                title="Own task",
+                unit="service",
+                status="pending",
+            )
+            session.add(own_task)
+            await session.flush()
+            task_ids.append(own_task.id)
+
             own_notification = Notification(
                 user_id=own_user.id,
                 company_id=own_company.id,
@@ -82,8 +109,8 @@ async def test_async_notification_vertical_is_tenant_and_user_scoped():
                 title="Own task",
                 message="Visible",
                 entity_type="task_item",
-                entity_id=1,
-                href="/dashboard?taskId=1",
+                entity_id=own_task.id,
+                href=f"/dashboard?taskId={own_task.id}",
             )
             foreign_notification = Notification(
                 user_id=foreign_user.id,
@@ -127,6 +154,14 @@ async def test_async_notification_vertical_is_tenant_and_user_scoped():
             if notification_ids:
                 await cleanup.execute(
                     delete(Notification).where(Notification.id.in_(notification_ids))
+                )
+            if task_ids:
+                await cleanup.execute(
+                    delete(TaskItem).where(TaskItem.id.in_(task_ids))
+                )
+            if location_ids:
+                await cleanup.execute(
+                    delete(Location).where(Location.id.in_(location_ids))
                 )
             if user_ids:
                 await cleanup.execute(delete(User).where(User.id.in_(user_ids)))

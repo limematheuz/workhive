@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.task_item import TaskItem
 from app.repositories.task_assignment_scope import assigned_task_condition
+from app.repositories.task_company_scope import company_task_condition
 from app.models.task_report import TaskReport
 from app.models.location import Location
 from app.models.client import Client
@@ -31,20 +32,7 @@ def get_task_items(
         .join(Location)
         .outerjoin(Client)
         .filter(
-            or_(
-                and_(
-                    TaskItem.status != "rejected",
-                    TaskItem.company_id == company_id,
-                ),
-                and_(
-                    TaskItem.status == "rejected",
-                    TaskItem.checkout_reservation_id.is_(None),
-                    TaskItem.company_id == company_id,
-                ),
-                TaskItem.checkout_reservation.has(
-                    Reservation.owner_company_id == company_id
-                ),
-            )
+            company_task_condition(company_id)
         )
     )
     if user_id:
