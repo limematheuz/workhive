@@ -154,6 +154,9 @@ la función. Esto no cambia su clasificación comercial `coming_soon`.
 
 `limits.external_portals` sigue siendo una capacidad genérica de catálogo,
 pero no hay un contador/flujo de alta independiente que la aplique todavía.
+Su disponibilidad es `coming_soon`; su valor reservado no representa una
+capacidad entregada. Las cuotas concretas de gestoría y colaboradores
+conservan su clasificación y sus límites efectivos.
 No se debe usar para vender o implementar un nuevo portal: primero se crea su
 modelo, concesión revocable, contador y prueba de aislamiento. En cambio,
 gestoría, colaboradores y almacenamiento documental sí tienen comprobaciones
