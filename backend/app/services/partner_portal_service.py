@@ -13,6 +13,7 @@ from app.schemas.reservation import ReservationCreate, ReservationResponse, Rese
 from app.services import partner_portal_location_service, reservation_query_service, reservation_service
 from app.services.planning_access_service import require_company_planning
 from app.services.reservation_mutation_access import ReservationMutationAccess
+from app.services.task_work_activity_service import has_recorded_activity
 
 
 def _owned_reservation(
@@ -53,8 +54,9 @@ def _reservation_response(
     )
 
 
-def _require_request_mutable(reservation: Reservation) -> None:
-    if any(task.is_invoiced or task.status in {"in_progress", "completed"} or task.work_sessions for task in reservation.checkout_tasks):
+def _require_request_mutable(db: Session, reservation: Reservation) -> None:
+    if any(task.is_invoiced or task.status == "in_progress" or has_recorded_activity(db, task)
+           for task in reservation.checkout_tasks):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="This request is linked to started or invoiced work. Contact your service provider.",
@@ -132,7 +134,7 @@ def update_reservation(
     data: ReservationUpdate,
 ) -> ReservationResponse:
     require_company_planning(db, grant.host_company_id)
-    _require_request_mutable(_owned_reservation(db, grant, reservation_id))
+    _require_request_mutable(db, _owned_reservation(db, grant, reservation_id))
     if data.cleaning_required is False:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -172,7 +174,7 @@ def delete_reservation(
     reservation_id: int,
 ) -> None:
     require_company_planning(db, grant.host_company_id)
-    _require_request_mutable(_owned_reservation(db, grant, reservation_id))
+    _require_request_mutable(db, _owned_reservation(db, grant, reservation_id))
     reservation_service.delete_reservation(
         db,
         current_user,
