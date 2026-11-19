@@ -32,6 +32,8 @@ def require_active_client_portal(
     authenticated user before any documents are queried.
     """
 
+    if getattr(current_user, "application_grant_id", grant_id) != grant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     if (
         not current_user.role
         or current_user.role.name != CLIENT_PORTAL_ROLE_NAME
@@ -69,11 +71,16 @@ def list_active_client_portal_grants(
         or current_user.company_id is not None
     ):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
-    grants = client_portal_repo.list_active_grants_for_user(
-        db,
-        user_id=current_user.id,
-        now=utcnow(),
-    )
+    context_grant = getattr(current_user, "application_grant_id", None)
+    if context_grant is not None:
+        grant = client_portal_repo.get_active_grant_for_user(
+            db, grant_id=context_grant, user_id=current_user.id, now=utcnow(),
+        )
+        grants = [grant] if grant is not None else []
+    else:
+        grants = client_portal_repo.list_active_grants_for_user(
+            db, user_id=current_user.id, now=utcnow(),
+        )
     # Several customer workspaces can belong to the same provider. Resolve its
     # entitlement once per provider rather than once per grant.
     enabled_companies = {
@@ -84,6 +91,8 @@ def list_active_client_portal_grants(
         grant
         for grant in grants
         if (
+            getattr(current_user, "application_grant_id", grant.id) == grant.id
+            and
             grant.company is not None
             and grant.company_id in enabled_companies
             and grant.company.is_active

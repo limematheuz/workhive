@@ -2,7 +2,7 @@ import secrets
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
-from app.api.deps import AuthenticatedUser, get_db
+from app.api.deps import AuthenticatedUser, AuthenticatedIdentity, get_db
 from app.schemas.user import (
     EmailChangeConfirm,
     EmailChangeRequest,
@@ -110,7 +110,7 @@ def get_csrf_token(
 def logout(
     response: Response,
     db: Session = Depends(get_db),
-    current_user: User = AuthenticatedUser,
+    current_user: User = AuthenticatedIdentity,
 ) -> None:
     person=session_identity(current_user)
     person.session_version += 1

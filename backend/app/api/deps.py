@@ -2,8 +2,6 @@ from dataclasses import dataclass
 
 from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
-from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -21,7 +19,8 @@ from app.services import partner_portal_policy
 from app.models.client_portal_grant import ClientPortalGrant
 from app.services import client_portal_policy
 from app.repositories import company_session as company_session_repo
-from app.services.company_session_principal import bind as bind_company_session
+from app.services.session_token_claims import session_claims
+from app.services import application_session_service
 
 
 def get_db():
@@ -48,32 +47,15 @@ def _session_identity(
     bearer_token: str | None,
     session_token: str | None,
 ) -> tuple[str, int, int | None, int]:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    token = bearer_token or session_token
-    if not token:
-        raise credentials_exception
+    claims = session_claims(bearer_token, session_token)
+    return claims.email, claims.version, claims.company_id, claims.membership_version
 
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        email = payload.get("sub")
-        session_version = payload.get("ver")
-        company_id = payload.get("company_id")
-        membership_version=payload.get("membership_version",0)
-        if email is None or type(session_version) is not int:
-            raise credentials_exception
-        if company_id is not None and (type(company_id) is not int or company_id<1):
-            raise credentials_exception
-        if type(membership_version) is not int or membership_version<0 or ("membership_version" in payload and company_id is None):
-            raise credentials_exception
-    except PyJWTError:
-        raise credentials_exception
-    return email, session_version, company_id,membership_version
+
+def get_session_claims(
+    bearer_token: str | None = Depends(oauth2_scheme),
+    session_token: str | None = Cookie(default=None, alias=settings.SESSION_COOKIE_NAME),
+):
+    return session_claims(bearer_token, session_token)
 
 
 def _validate_authenticated_user(user: User | None, session_version: int, *, check_company=True) -> User:
@@ -110,10 +92,14 @@ def get_authenticated_user(
 ) -> User:
     from app.services.record_history_capture import bind_actor, clear_actor
     clear_actor(db)
-    email, session_version, company_id,membership_version = _session_identity(bearer_token, session_token)
-    row = company_session_repo.authenticate(db,email,company_id)
-    _validate_authenticated_user(row[0] if row else None,session_version,check_company=False)
-    user = _validate_authenticated_user(bind_company_session(row,company_id,session_version,membership_version),session_version)
+    claims = session_claims(bearer_token, session_token)
+    if claims.application_kind in {"client", "adviser"}:
+        person = _validate_authenticated_user(user_repo.get_user_by_email(db, claims.email), claims.version, check_company=False)
+        user = application_session_service.bind_portal(db, person, claims)
+    else:
+        row = company_session_repo.authenticate(db, claims.email, claims.company_id)
+        _validate_authenticated_user(row[0] if row else None, claims.version, check_company=False)
+        user = _validate_authenticated_user(application_session_service.bind_internal_application(db, row, claims), claims.version)
     bind_actor(db, user)
     return user
 
@@ -167,10 +153,15 @@ async def get_authenticated_user_async(
 ) -> User:
     from app.services.record_history_capture import bind_actor, clear_actor
     clear_actor(db)
-    email, session_version, company_id,membership_version = _session_identity(bearer_token, session_token)
-    row = await company_session_repo.authenticate_async(db,email,company_id)
-    _validate_authenticated_user(row[0] if row else None,session_version,check_company=False)
-    user = _validate_authenticated_user(bind_company_session(row,company_id,session_version,membership_version),session_version)
+    claims = session_claims(bearer_token, session_token)
+    if claims.application_kind in {"client", "adviser"}:
+        person = _validate_authenticated_user(await async_user_repo.get_user_by_email(db, claims.email), claims.version, check_company=False)
+        user = await db.run_sync(lambda sync: application_session_service.bind_portal(sync, person, claims))
+    else:
+        row = await company_session_repo.authenticate_async(db, claims.email, claims.company_id)
+        _validate_authenticated_user(row[0] if row else None, claims.version, check_company=False)
+        user = await db.run_sync(lambda sync: _validate_authenticated_user(
+            application_session_service.bind_internal_application(sync, row, claims), claims.version))
     bind_actor(db, user)
     return user
 

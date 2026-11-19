@@ -1,11 +1,5 @@
-import Link from "next/link";
-import {WorkHiveLogo} from "@/components/brand/WorkHiveLogo";
-import {Building2,BriefcaseBusiness,Landmark,Smartphone,ArrowUpRight} from "lucide-react";
-import {Button} from "@/components/ui/button";
-const entries=[
- {title:"Administración de la empresa",description:"Planifica servicios y gestiona centros, personal, costes y resultados.",href:"/login?next=/dashboard",icon:Building2},
- {title:"App del trabajador",description:"Tu jornada, trabajos asignados, fichaje, tareas, fotografías e incidencias.",href:"/worker",icon:Smartphone},
- {title:"Portal del cliente",description:"Tus servicios, partes publicados, presupuestos y facturas en un mismo lugar.",href:"/portal-cliente",icon:BriefcaseBusiness},
- {title:"Portal de gestoría",description:"Acceso contable y laboral a las empresas que te han autorizado.",href:"/gestoria",icon:Landmark},
-];
-export default function ApplicationAccessPage(){return <main className="min-h-dvh bg-background px-4 py-8 text-foreground sm:px-8 sm:py-14"><div className="mx-auto max-w-5xl"><header className="mb-8 space-y-3"><Link className="mb-5 inline-block" href="/"><WorkHiveLogo className="w-40" priority/></Link><h1 className="text-3xl font-semibold tracking-tight">Cada persona, su espacio de trabajo</h1><p className="max-w-2xl text-sm leading-6 text-muted-foreground">Elige tu acceso. Utiliza la cuenta que te ha habilitado la empresa; verás únicamente la información y las acciones que tengas autorizadas.</p></header><div className="grid gap-4 sm:grid-cols-2">{entries.map(entry=><article key={entry.href} className="flex flex-col rounded-2xl border bg-card p-6"><entry.icon aria-hidden="true" className="mb-5 size-6 text-accent"/><h2 className="text-lg font-semibold">{entry.title}</h2><p className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">{entry.description}</p><Button className="mt-6 self-start" variant="outline" asChild><Link href={entry.href}>Entrar<ArrowUpRight className="size-4"/></Link></Button></article>)}</div><p className="mt-6 text-xs leading-5 text-muted-foreground">Tener una ficha de trabajador o de cliente no crea una cuenta de acceso automáticamente. La empresa gestiona sus autorizaciones desde Portales y aplicaciones.</p></div></main>}
+import { ApplicationAccessHub } from "@/components/applications/ApplicationAccessHub";
+
+export default function ApplicationAccessPage() {
+    return <ApplicationAccessHub />;
+}

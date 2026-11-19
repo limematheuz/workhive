@@ -44,7 +44,8 @@ export function resolvePostLoginPath(
     const pathname = candidate.pathname;
     const isSupported =
         requiresAuthenticatedSession(pathname) ||
-        pathname === "/accept-company-invitation";
+        pathname === "/accept-company-invitation" ||
+        pathname === "/accesos";
 
     return isSupported
         ? `${pathname}${candidate.search}`

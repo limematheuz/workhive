@@ -9,11 +9,12 @@ from app.models.service_hours_review import ServiceHoursReview
 from app.models.task_item import TaskItem
 
 
-def grants(db, user_id, now):
-    return db.query(ExternalAccessGrant).filter(
+def grants(db, user_id, now, *, grant_id=None):
+    query = db.query(ExternalAccessGrant).filter(
         ExternalAccessGrant.user_id == user_id, ExternalAccessGrant.access_type == "accountant",
         ExternalAccessGrant.status == "active",
         or_(ExternalAccessGrant.expires_at.is_(None), ExternalAccessGrant.expires_at > now))
+    return query.filter(ExternalAccessGrant.id == grant_id) if grant_id is not None else query
 
 
 def company_grants(db, company):

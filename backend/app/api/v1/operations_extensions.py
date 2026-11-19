@@ -104,6 +104,8 @@ from app.api.v1.labor_communications import router as labor_communications_route
 api_router.include_router(labor_communications_router,tags=["labor-communications"])
 from app.api.v1.company_session import router as company_session_router
 api_router.include_router(company_session_router,tags=["company-session"])
+from app.api.v1.application_session import router as application_session_router
+api_router.include_router(application_session_router, tags=["application-session"])
 
 from app.api.v1.quick_work import router as quick_work_router
 api_router.include_router(quick_work_router,tags=["workforce-execution"])
