@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -59,7 +59,7 @@ function assertLineBudgets(directory, extension, defaultLimit, label) {
     const violations = filesRecursively(resolve(repositoryRoot, directory), extension)
         .filter((filePath) => !filePath.endsWith(`__init__${extension}`))
         .flatMap((filePath) => {
-            const repositoryPath = relative(repositoryRoot, filePath);
+            const repositoryPath = relative(repositoryRoot, filePath).replaceAll("\\", "/");
             const limit = LEGACY_LINE_LIMITS[repositoryPath] ?? defaultLimit;
             const lineCount = sourceLines(filePath);
             return lineCount > limit
@@ -76,7 +76,7 @@ function directPersistenceCalls(source) {
 function assertRoutePersistenceBoundary() {
     const routeDirectory = resolve(repositoryRoot, "backend/app/api/v1");
     const violations = filesRecursively(routeDirectory, ".py").flatMap((filePath) => {
-        const repositoryPath = relative(repositoryRoot, filePath);
+        const repositoryPath = relative(repositoryRoot, filePath).replaceAll("\\", "/");
         const actual = directPersistenceCalls(readFileSync(filePath, "utf8"));
         const expected = ROUTE_PERSISTENCE_DEBT[repositoryPath] ?? [];
         return actual.length === expected.length
@@ -101,7 +101,7 @@ function assertFrontendServiceBoundary() {
         .concat(filesRecursively(frontendSource, ".tsx"))
         .filter((filePath) => !filePath.endsWith(".test.ts"))
         .filter((filePath) => !allowedFiles.has(filePath))
-        .filter((filePath) => !allowedDirectories.some((directory) => filePath.startsWith(`${directory}/`)))
+        .filter((filePath) => !allowedDirectories.some((directory) => filePath.startsWith(`${directory}${sep}`)))
         .filter((filePath) => /\b(?:apiFetch|fetch)\(/.test(readFileSync(filePath, "utf8")))
         .map((filePath) => `${relative(repositoryRoot, filePath)}: call the API through frontend/src/services`);
     if (violations.length) throw new Error(violations.join("\n"));

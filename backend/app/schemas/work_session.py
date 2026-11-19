@@ -1,5 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
 from datetime import datetime
+from app.core.datetime import as_utc
 
 
 class WorkSessionBase(BaseModel):
@@ -48,6 +49,11 @@ class WorkSessionResponse(WorkSessionBase):
     location_name: str | None = None
     created_at: datetime
     updated_at: datetime
+
+    @field_validator("start_time", "end_time", "paused_at", "created_at", "updated_at")
+    @classmethod
+    def normalize_instants(cls, value):
+        return as_utc(value) if value is not None else None
 
 
 class TaskWorkSummaryResponse(BaseModel):

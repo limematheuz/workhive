@@ -66,11 +66,13 @@ def refresh_work_session_labor_cost(
     )
     work_session.labor_cost_company_id = company_id
     work_session.labor_cost_membership_id = membership.id
-    if rate is None:
+    from app.repositories.staff_account import historical_hourly_cost
+    hourly_cost = Decimal(rate.hourly_cost) if rate else historical_hourly_cost(
+        db,company_id,work_session.user_id,work_session.end_time.date())
+    if hourly_cost is None:
         work_session.labor_cost_rate_snapshot = None
         work_session.labor_cost_amount_snapshot = None
         return
-    hourly_cost = Decimal(rate.hourly_cost)
     amount = (
         hourly_cost * Decimal(_worked_seconds(work_session)) / Decimal(3600)
     ).quantize(MONEY_QUANTUM, rounding=ROUND_HALF_UP)

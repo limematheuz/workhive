@@ -28,6 +28,8 @@ from app.services.task_report_access_service import (
 from app.services.task_report_media_service import copy_report_media
 from app.services.storage_service import ObjectNotFoundError, get_object_storage
 from app.services.user_scope import require_company_context, role_name
+from app.services.company_session_principal import identity as session_identity
+from app.services.company_notification_recipients import recipients as company_recipients
 
 
 logger = logging.getLogger(__name__)
@@ -176,27 +178,10 @@ async def _notification_recipients(db: AsyncSession, task) -> list[User]:
         emitter_user_id = task.checkout_reservation.created_by_user_id
         company_ids.add(requesting_company_id)
 
-    statement = (
-        select(User)
-        .join(Role, User.role_id == Role.id)
-        .where(
-            User.company_id.in_(company_ids),
-            User.is_active.is_(True),
-            Role.name == "admin",
-        )
-    )
-    recipients = list((await db.scalars(statement)).all())
+    recipients = await db.run_sync(lambda sync_db: company_recipients(sync_db,company_ids,{"admin"}))
     if emitter_user_id:
-        emitter = await db.scalar(
-            select(User).where(
-                User.id == emitter_user_id,
-                User.company_id == requesting_company_id,
-                User.is_active.is_(True),
-            )
-        )
-        if emitter:
-            recipients.append(emitter)
-    return list({user.id: user for user in recipients}.values())
+        recipients.extend(await db.run_sync(lambda sync_db: company_recipients(sync_db,{requesting_company_id},None,{emitter_user_id})))
+    return list({(user.id,user.company_id):user for user in recipients}.values())
 
 
 async def create_report(
@@ -288,9 +273,9 @@ async def create_report(
         if media_key:
             await asyncio.to_thread(_delete_media_keys, [media_key])
         duplicate = await task_report_repo.get_by_user_event(db, reporter_id, event_id)
-        await db.refresh(current_user)
+        await db.refresh(session_identity(current_user))
         await db.run_sync(
-            lambda sync_db: sync_db.refresh(current_user, attribute_names=["role"])
+            lambda sync_db: sync_db.refresh(session_identity(current_user), attribute_names=["role"])
         )
         if duplicate:
             return _response(await get_report(db, current_user, duplicate.id))

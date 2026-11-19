@@ -2,8 +2,10 @@ import json
 from datetime import datetime
 from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from app.core.datetime import as_utc
 from app.schemas.reservation import ReservationOperationalResponse
 from app.schemas.location_zone import TaskZoneResponse
+from app.schemas.workforce_plan import SpaceAllocation
 
 
 MAX_REPORT_COLLECTION_ITEMS = 200
@@ -63,6 +65,7 @@ class TaskItemBase(BaseModel):
 
 
 class TaskItemCreate(TaskItemBase):
+    space_allocations:list[SpaceAllocation]=Field(default_factory=list,max_length=100)
     status: TaskStatus = "pending"
     created_at: datetime | None = None
     zone_ids: list[int] = Field(default_factory=list, max_length=100)
@@ -220,6 +223,13 @@ class TaskItemResponse(TaskItemBase):
     assignments: list[TaskAssignmentResponse] = Field(default_factory=list)
     zones: list[TaskZoneResponse] = Field(default_factory=list)
     spaces: list[TaskZoneResponse] = Field(default_factory=list)
+
+    # SQLite returns UTC instants without tzinfo; an explicit zone keeps all
+    # task and workforce views on the same local time, including date-only markers.
+    _normalize_response_dates = field_validator(
+        "scheduled_start_at", "due_at", "date_done", "pricing_locked_at",
+        "created_at", "updated_at",
+    )(as_utc)
 
 
 class InvoiceableWorkerHours(BaseModel):

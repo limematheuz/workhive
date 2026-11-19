@@ -52,7 +52,7 @@ def create_zone(db: Session, zone: LocationZone) -> LocationZone:
 
 def replace_task_zones(db: Session, task_id: int, zones: list[LocationZone]) -> None:
     db.query(TaskZone).filter(TaskZone.task_id == task_id).delete(
-        synchronize_session=False
+        synchronize_session="fetch"
     )
     db.add_all(
         [

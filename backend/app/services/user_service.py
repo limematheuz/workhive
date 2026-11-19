@@ -9,6 +9,7 @@ from app.schemas.user import UserStatsResponse, UserUpdate
 from app.repositories import user as user_repo
 from app.repositories import role as role_repo
 from app.repositories import organization as organization_repo
+from app.services.company_member_user_views import views as member_user_views
 from app.core.security import get_password_hash, verify_password
 from app.services.entitlement_service import (
     require_accountant_portal_capacity,
@@ -48,9 +49,8 @@ def get_users(
     if is_platform_superadmin(current_user):
         return user_repo.get_all_users(db, None, skip, limit)
     require_capability(db, current_user, "access.members.read")
-    return user_repo.get_all_users(
-        db, require_company_context(current_user), skip, limit
-    )
+    company=require_company_context(current_user)
+    return member_user_views(db,user_repo.get_all_users(db,company,skip,limit),company)
 
 
 def get_user(db: Session, user_id: int, current_user: User) -> User:
@@ -62,12 +62,23 @@ def get_user(db: Session, user_id: int, current_user: User) -> User:
     if existing_user.id == current_user.id or is_platform_superadmin(current_user):
         return existing_user
     require_capability(db, current_user, "access.members.read")
-    if existing_user.company_id != require_company_context(current_user):
+    if existing_user.company_id != require_company_context(current_user) and not user_repo.is_active_company_member(db,current_user.company_id,existing_user.id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions to access this user",
         )
     return existing_user
+
+
+def get_user_view(db,user_id,current_user):
+    person=get_user(db,user_id,current_user)
+    if person.id==current_user.id:return current_user
+    return member_user_views(db,[person],current_user.company_id)[0] if not is_platform_superadmin(current_user) else person
+
+
+def require_primary_identity_management(current_user,person):
+    if current_user.id!=person.id and not is_platform_superadmin(current_user) and person.company_id!=current_user.company_id:
+        raise HTTPException(403,"Gestiona el acceso de esta persona desde su membresía de empresa. Su identidad pertenece a otra sociedad.")
 
 
 def update_user(
@@ -103,7 +114,7 @@ def update_user(
                 detail="Not enough permissions to manage this user",
             )
 
-    if not is_platform_superadmin(current_user) and db_user.company_id is None:
+    if not is_own_profile and not is_platform_superadmin(current_user) and db_user.company_id is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Platform identities can only be managed by platform superadmins",

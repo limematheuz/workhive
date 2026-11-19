@@ -1,4 +1,5 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import React from "react";
 import { Plus, Loader2, Check, Lock, Info } from "lucide-react";
@@ -150,21 +151,19 @@ export function LocationHistoryTab({
 
                             <div className="space-y-1">
                                 <Label className="text-2xs uppercase font-bold text-[var(--text-muted)]">Asignar a un trabajador de tu equipo</Label>
-                                <Select
+                                <FormSelect searchable aria-label="Asignar a un trabajador de tu equipo" className="h-9 text-xs" placeholder="Selecciona un trabajador"
                                     value={assignedUserId}
                                     onValueChange={setAssignedUserId}
                                 >
-                                    <SelectTrigger aria-label="Asignar a un trabajador de tu equipo" aria-required="true" className="h-9 text-xs">
-                                        <SelectValue placeholder="Selecciona un trabajador" />
-                                    </SelectTrigger>
-                                    <SelectContent>
+
+
                                         {users.map(u => (
-                                            <SelectItem key={u.id} value={u.id.toString()}>
+                                            <option key={u.id} value={u.id.toString()}>
                                             {u.full_name || u.email}
-                                            </SelectItem>
+                                            </option>
                                         ))}
-                                    </SelectContent>
-                                </Select>
+
+                                </FormSelect>
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">

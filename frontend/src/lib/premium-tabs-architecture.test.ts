@@ -15,7 +15,7 @@ test("PremiumTabs shares adaptive navigation, labels and guarded shadcn selectio
     assert.match(source, /dict.tabNavigation.change/);
     assert.match(source, /dict.tabNavigation.options/);
     assert.match(source, /aria-hidden="true" inert/);
-    assert.match(labels, /text-xs font-bold uppercase tracking-wider/);
+    assert.match(labels, /text-xs font-semibold/);
     assert.match(labels, /h-3\.5 w-3\.5/);
     assert.match(labels, /gap-1\.5/);
     assert.match(labels, /--btn-cancel-hover-bg/);

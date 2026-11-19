@@ -9,8 +9,6 @@ from app.schemas.task_item import (
     TaskChecklistItemUpdate,
 )
 from app.repositories import task_item as task_item_repo
-from app.repositories import service_catalog_version as service_catalog_version_repo
-from app.repositories import template_task as template_task_repo
 from app.services import location_access_service
 from app.services.organization_authorization_service import require_capability
 from app.models.user import User
@@ -31,6 +29,8 @@ from app.services import (
 )
 from app.services.company_client_service import ensure_company_as_client
 from app.models.task_structure import TaskChecklistItem
+from app.services.task_catalog_policy import _resolve_current_catalog_version_id
+from app.services import space_workforce_policy,task_space_workforce_service
 from app.services.calendar_task_owner_service import resolve_calendar_owner_user_id
 from app.services.task_work_completion_service import (
     complete_task_when_checklist_is_done as _complete_task_when_checklist_is_done,
@@ -64,36 +64,6 @@ def _freeze_live_external_snapshot(db: Session, task: TaskItem) -> None:
         setattr(task, field, value)
 
 
-def _resolve_current_catalog_version_id(
-    db: Session,
-    *,
-    template_task_id: int,
-    company_id: int | None,
-) -> int:
-    """Resolve an active service in the caller's company to its immutable revision."""
-    template = template_task_repo.get_template_task_by_id(
-        db,
-        template_task_id,
-        company_id,
-    )
-    if not template or not template.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Service catalog entry not found",
-        )
-
-    version = service_catalog_version_repo.get_current_for_template(
-        db,
-        template_task_id=template.id,
-        version=template.catalog_version,
-    )
-    # The migration creates this record for every legacy template. Keeping this
-    # repair path protects a partially migrated local database without ever
-    # altering an existing immutable version.
-    if version is None:
-        version = service_catalog_version_repo.create_from_template(db, template)
-    return version.id
-
 
 def create_task_item(
     db: Session,
@@ -102,8 +72,12 @@ def create_task_item(
     *,
     work_order_id: int | None = None,
     checklist_source: TaskItem | None = None,
+    commit: bool = True,
 ) -> TaskItem:
     _require_work_orders_feature(db, current_user)
+    from app.services.initial_membership_policy import capabilities as initial_capabilities
+    if work_order_id is None and initial_capabilities(db,current_user) is not None and (task_item_data.price is not None or task_item_data.quantity not in (None,1)):
+        raise HTTPException(403,"La autorización operativa inicial no permite establecer importes de facturación.")
     location_access_service.require_location_capability(
         db,
         current_user,
@@ -147,6 +121,7 @@ def create_task_item(
             task_item_data.space_task_template_ids,
         )
     )
+    workforce=space_workforce_policy.resolve(db,current_user.company_id,task_item_data.location_id,task_item_data.space_allocations,selected_space_ids,selected_space_task_templates) if task_item_data.space_allocations else []
     task_structure_service.validate_description_assignees(
         db,
         current_user.company_id,
@@ -198,18 +173,26 @@ def create_task_item(
         task,
         selected_space_task_templates,
     )
+    task_space_workforce_service.apply(db,current_user,task,workforce)
     if checklist_source is not None:
         task_structure_service.copy_pending_structure(db, checklist_source, task)
     _complete_task_when_checklist_is_done(db, task)
+    if not commit:
+        db.flush()
+        return task
     db.commit()
     db.refresh(task)
+    publish_created_task(db, task)
+    return task
+
+
+def publish_created_task(db: Session, task: TaskItem) -> None:
     task_lifecycle_notification_service.notify_task_assignees(
         db,
         task,
         task_assignment_service.assigned_user_ids(task),
     )
     calendar_sync_service.enqueue_task_sync(db, task)
-    return task
 
 
 def update_task_item(
@@ -261,6 +244,8 @@ def update_task_item(
             db_task_item,
             task_data,
         )
+        from app.services.workflow_approval_policy import normalize_update
+        task_data=normalize_update(db,db_task_item,task_data)
         if "pricing_mode" in task_data.model_fields_set and task_data.pricing_mode is not None:
             mode = task_billing_service.normalize_pricing_mode(task_data.pricing_mode)
             updates = {"pricing_mode": mode}
@@ -316,6 +301,10 @@ def update_task_item(
                 task_assignment_service.assigned_user_ids(updated_task),
                 updated_task.location_id,
             )
+        from app.services.workflow_approval_policy import enforce_current_approval
+        enforce_current_approval(
+            db, updated_task, reopened=was_completed and updated_task.status != "completed"
+        )
         _complete_task_when_checklist_is_done(db, updated_task)
         task_completion_service.apply_update_side_effects(
             db,
@@ -357,6 +346,7 @@ def start_task_work(
             detail="A precise start location is required to begin work",
         )
     task = get_task_item(db, current_user, task_item_id)
+    task = task_item_repo.get_task_item(db, task.company_id, task.id, for_update=True)
     require_capability(
         db,
         current_user,
@@ -431,6 +421,7 @@ def start_task_work(
     task.date_done = None
 
     session = WorkSession(
+        company_id=current_user.company_id,
         user_id=current_user.id,
         location_id=task.location_id,
         task_item_id=task.id,

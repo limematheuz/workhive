@@ -22,7 +22,12 @@ from app.repositories import client_portal as client_portal_repo
 from app.repositories import client_portal_invitation as invitation_repo
 from app.repositories import role as role_repo
 from app.repositories import user as user_repo
-from app.schemas.client_portal import ClientPortalInvitationAccept, ClientPortalInvitationCreate
+from app.schemas.client_portal import (
+    ClientPortalInvitationAccept,
+    ClientPortalInvitationCreate,
+    ClientPortalInvitationCreated,
+    ClientPortalInvitationResponse,
+)
 from app.services import email_service, privacy_service
 from app.services.client_portal_policy import CLIENT_PORTAL_ROLE_NAME
 from app.services.company_collaboration_invitation_tokens import hash_invitation_secret
@@ -102,14 +107,14 @@ def create_invitation(
     client_id: int,
     payload: ClientPortalInvitationCreate,
     inviter: User,
-) -> ClientPortalInvitation:
+) -> ClientPortalInvitationCreated:
     if inviter.company_id != company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     if inviter.company is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
     require_company_access(inviter.company)
     require_company_feature(db, company_id=company_id, code="features.client_portal")
-    if not settings.smtp_is_configured:
+    if payload.delivery == "email" and not settings.smtp_is_configured:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Invitation email delivery is not configured")
     client = _require_managed_active_client(db, company_id=company_id, client_id=client_id)
     email = normalize_email(str(payload.email))
@@ -153,23 +158,29 @@ def create_invitation(
     )
     db.add(invitation)
     invitation_url = f"{settings.FRONTEND_URL.rstrip('/')}/accept-client-portal-invitation#token={token}"
-    try:
-        sent = email_service.send_client_portal_invitation_email(
-            recipient_email=email,
-            inviter_company_name=inviter.company.name,
-            client_name=client.name,
-            invitation_url=invitation_url,
-            verification_code=verification_code,
-            expires_at=invitation.expires_at,
-        )
-    except (OSError, TimeoutError, ConnectionError, smtplib.SMTPException):
-        sent = False
-    if not sent:
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Invitation email delivery is temporarily unavailable")
+    if payload.delivery == "email":
+        try:
+            sent = email_service.send_client_portal_invitation_email(
+                recipient_email=email,
+                inviter_company_name=inviter.company.name,
+                client_name=client.name,
+                invitation_url=invitation_url,
+                verification_code=verification_code,
+                expires_at=invitation.expires_at,
+            )
+        except (OSError, TimeoutError, ConnectionError, smtplib.SMTPException):
+            sent = False
+        if not sent:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Invitation email delivery is temporarily unavailable")
     db.commit()
     db.refresh(invitation)
-    return invitation
+    return ClientPortalInvitationCreated(
+        **ClientPortalInvitationResponse.model_validate(invitation).model_dump(),
+        delivery=payload.delivery,
+        invitation_url=invitation_url if payload.delivery == "link" else None,
+        verification_code=verification_code if payload.delivery == "link" else None,
+    )
 
 
 def accept_invitation(

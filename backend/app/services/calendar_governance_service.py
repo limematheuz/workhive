@@ -1,3 +1,4 @@
+from app.repositories.company_membership_scope import company_role_predicate
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
@@ -102,9 +103,8 @@ def _active_admin_query(db: Session, company_id: int):
         db.query(User)
         .join(Role, Role.id == User.role_id)
         .filter(
-            User.company_id == company_id,
+            company_role_predicate(company_id,{COMPANY_CALENDAR_ADMIN_ROLE}),
             User.is_active.is_(True),
-            Role.name == COMPANY_CALENDAR_ADMIN_ROLE,
         )
     )
 

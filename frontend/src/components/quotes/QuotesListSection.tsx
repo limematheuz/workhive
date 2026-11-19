@@ -48,7 +48,7 @@ export function QuotesListSection({
     onDeleteQuote,
     canManage,
 }: QuotesListSectionProps) {
-    const pagination = useDataTablePagination(quotes, 10);
+    const pagination = useDataTablePagination(quotes, 10, "QuotesListSection.quotes.0");
     const actions = (quote: Quote) => [
         { label: "Ver", icon: Eye, onClick: () => onViewQuote(quote) },
         ...(canManage && isQuoteContentEditable(quote.status)

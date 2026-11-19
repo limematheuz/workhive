@@ -7,6 +7,7 @@ class WorkSession(Base):
     __tablename__ = "work_sessions"
 
     id = Column(Integer, primary_key=True)
+    company_id = Column(Integer, ForeignKey("companies.id", name="fk_work_session_company_context", ondelete="SET NULL"), nullable=True, index=True)
     start_time = Column(DateTime(timezone=True), nullable=False)
     end_time = Column(DateTime(timezone=True), nullable=True)
     notes = Column(String(500), nullable=True)

@@ -20,6 +20,7 @@ interface TaskFormModalsProps {
     dict: Dictionary;
     currentUser: User | null;
     locations: Location[];
+    taskLocations?: Location[];
     users: User[];
     templates: TemplateTask[];
     adminOrManager: boolean;
@@ -123,6 +124,7 @@ interface TaskFormModalsProps {
      dict,
      currentUser,
      locations,
+     taskLocations,
      users,
      templates,
      adminOrManager,
@@ -266,7 +268,7 @@ interface TaskFormModalsProps {
              <TaskEditModal
                  dict={dict}
                  currentUser={currentUser}
-                 locations={locations}
+                 locations={taskLocations ?? locations}
                  users={users}
                  adminOrManager={adminOrManager}
                  saving={saving}

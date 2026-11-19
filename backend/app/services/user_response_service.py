@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.user import UserResponse
 from app.services import organization_authorization_service
+from app.services.initial_membership_policy import is_initial_worker
 from app.services.quality_workspace_access_service import quality_workspace_access
 
 
@@ -73,5 +74,7 @@ def build_current_user_response(db: Session, current_user: User) -> UserResponse
             "can_manage_work_reports": organization_authorization_service.has_capability(
                 db, current_user, "work.manage"
             ),
+            "can_manage_work": catalog_manage,
+            "is_initial_worker": is_initial_worker(db, current_user),
         }
     )

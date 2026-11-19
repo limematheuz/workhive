@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
-import jwt
-from jwt.exceptions import PyJWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
@@ -20,6 +18,9 @@ from app.models.partner_portal_grant import PartnerPortalGrant
 from app.services import partner_portal_policy
 from app.models.client_portal_grant import ClientPortalGrant
 from app.services import client_portal_policy
+from app.repositories import company_session as company_session_repo
+from app.services.session_token_claims import session_claims
+from app.services import application_session_service
 
 
 def get_db():
@@ -27,6 +28,7 @@ def get_db():
     try:
         yield db
     finally:
+        db.info.pop("record_history_actor", None)
         db.close()
 
 
@@ -44,30 +46,19 @@ oauth2_scheme = OAuth2PasswordBearer(
 def _session_identity(
     bearer_token: str | None,
     session_token: str | None,
-) -> tuple[str, int]:
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    token = bearer_token or session_token
-    if not token:
-        raise credentials_exception
-
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        email = payload.get("sub")
-        session_version = payload.get("ver")
-        if email is None or not isinstance(session_version, int):
-            raise credentials_exception
-    except PyJWTError:
-        raise credentials_exception
-    return email, session_version
+) -> tuple[str, int, int | None, int]:
+    claims = session_claims(bearer_token, session_token)
+    return claims.email, claims.version, claims.company_id, claims.membership_version
 
 
-def _validate_authenticated_user(user: User | None, session_version: int) -> User:
+def get_session_claims(
+    bearer_token: str | None = Depends(oauth2_scheme),
+    session_token: str | None = Cookie(default=None, alias=settings.SESSION_COOKIE_NAME),
+):
+    return session_claims(bearer_token, session_token)
+
+
+def _validate_authenticated_user(user: User | None, session_version: int, *, check_company=True) -> User:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -84,7 +75,7 @@ def _validate_authenticated_user(user: User | None, session_version: int) -> Use
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    if not is_superadmin(user) and user.company and not user.company.is_active:
+    if check_company and not is_superadmin(user) and user.company and not user.company.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Company account is inactive",
@@ -99,9 +90,58 @@ def get_authenticated_user(
         default=None, alias=settings.SESSION_COOKIE_NAME
     ),
 ) -> User:
-    email, session_version = _session_identity(bearer_token, session_token)
-    user = user_repo.get_user_by_email(db, email)
-    return _validate_authenticated_user(user, session_version)
+    from app.services.record_history_capture import bind_actor, clear_actor
+    clear_actor(db)
+    claims = session_claims(bearer_token, session_token)
+    if claims.application_kind in {"client", "adviser"}:
+        person = _validate_authenticated_user(user_repo.get_user_by_email(db, claims.email), claims.version, check_company=False)
+        user = application_session_service.bind_portal(db, person, claims)
+    else:
+        row = company_session_repo.authenticate(db, claims.email, claims.company_id)
+        _validate_authenticated_user(row[0] if row else None, claims.version, check_company=False)
+        user = _validate_authenticated_user(application_session_service.bind_internal_application(db, row, claims), claims.version)
+    bind_actor(db, user)
+    return user
+
+
+def get_optional_authenticated_identity(
+    request: Request,
+    db: Session = Depends(get_db),
+    session_token: str | None = Cookie(default=None, alias=settings.SESSION_COOKIE_NAME),
+) -> User | None:
+    """Identity consent for invitations; never grants any company capability."""
+    from app.services.record_history_capture import clear_actor
+    clear_actor(db)
+    auth_header = request.headers.get("authorization") or ""
+    bearer_token = auth_header[7:].strip() if auth_header.lower().startswith("bearer ") else None
+    if not bearer_token and not session_token:
+        return None
+    email, version, _, _ = _session_identity(bearer_token, session_token)
+    return _validate_authenticated_user(user_repo.get_user_by_email(db, email), version, check_company=False)
+
+
+def get_authenticated_identity(
+    db: Session = Depends(get_db),
+    bearer_token: str | None = Depends(oauth2_scheme),
+    session_token: str | None = Cookie(default=None,alias=settings.SESSION_COOKIE_NAME),
+) -> User:
+    """Authenticate only identity for personal rights, without granting tenant access."""
+    from app.services.record_history_capture import clear_actor
+    clear_actor(db)
+    email,version,_,_ = _session_identity(bearer_token,session_token)
+    return _validate_authenticated_user(user_repo.get_user_by_email(db,email),version,check_company=False)
+
+
+async def get_authenticated_identity_async(
+    db: AsyncSession = Depends(get_async_db),
+    bearer_token: str | None = Depends(oauth2_scheme),
+    session_token: str | None = Cookie(default=None,alias=settings.SESSION_COOKIE_NAME),
+) -> User:
+    from app.services.record_history_capture import clear_actor
+    clear_actor(db)
+    email,version,_,_ = _session_identity(bearer_token,session_token)
+    person=await async_user_repo.get_user_by_email(db,email)
+    return _validate_authenticated_user(person,version,check_company=False)
 
 
 async def get_authenticated_user_async(
@@ -111,9 +151,19 @@ async def get_authenticated_user_async(
         default=None, alias=settings.SESSION_COOKIE_NAME
     ),
 ) -> User:
-    email, session_version = _session_identity(bearer_token, session_token)
-    user = await async_user_repo.get_user_by_email(db, email)
-    return _validate_authenticated_user(user, session_version)
+    from app.services.record_history_capture import bind_actor, clear_actor
+    clear_actor(db)
+    claims = session_claims(bearer_token, session_token)
+    if claims.application_kind in {"client", "adviser"}:
+        person = _validate_authenticated_user(await async_user_repo.get_user_by_email(db, claims.email), claims.version, check_company=False)
+        user = await db.run_sync(lambda sync: application_session_service.bind_portal(sync, person, claims))
+    else:
+        row = await company_session_repo.authenticate_async(db, claims.email, claims.company_id)
+        _validate_authenticated_user(row[0] if row else None, claims.version, check_company=False)
+        user = await db.run_sync(lambda sync: _validate_authenticated_user(
+            application_session_service.bind_internal_application(sync, row, claims), claims.version))
+    bind_actor(db, user)
+    return user
 
 
 def get_current_user(
@@ -300,6 +350,9 @@ AsyncActiveManagerOrAdmin = Depends(require_role_async("admin", "manager"))
 AsyncAuthenticatedUser = Depends(get_authenticated_user_async)
 AsyncAuthenticatedAdmin = Depends(require_authenticated_role_async("admin"))
 AuthenticatedUser = Depends(get_authenticated_user)
+OptionalAuthenticatedIdentity = Depends(get_optional_authenticated_identity)
+AuthenticatedIdentity = Depends(get_authenticated_identity)
+AsyncAuthenticatedIdentity = Depends(get_authenticated_identity_async)
 AuthenticatedAdmin = Depends(require_authenticated_role("admin"))
 ActivePartnerPortal = Depends(require_partner_portal_principal)
 ActiveClientPortal = Depends(require_client_portal_principal)

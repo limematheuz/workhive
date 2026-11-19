@@ -1,5 +1,6 @@
 "use client";
 
+import {useCompanyModules} from "@/hooks/useCompanyModules";
 import { useMemo, useState } from "react";
 import { useOrganizationPermission } from "@/components/organization/organization-access-context";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
@@ -67,7 +68,7 @@ export function OrganizationDepartmentsPanel({ departments, onChanged }: Organiz
         () => filterOrganizationDepartments(departments, filters),
         [departments, filters],
     );
-    const pagination = useDataTablePagination(filteredDepartments, DEPARTMENTS_PAGE_SIZE);
+    const pagination = useDataTablePagination(filteredDepartments, DEPARTMENTS_PAGE_SIZE, "OrganizationDepartmentsPanel.filteredDepartments.0");
     const hasActiveFilters = filters.search.trim() !== "" || filters.status !== "all" || filters.parentDepartmentId !== "all";
     const updateFilters = (update: Partial<DepartmentFilters>) => {
         setFilters((current) => ({ ...current, ...update }));
@@ -210,7 +211,7 @@ function DepartmentCard({ department, departments, onEdit, onDelete }: { departm
     const usage = departmentUsage(department);
     const parentName = departments.find((item) => item.id === department.parent_department_id)?.name ?? copy.no_parent;
     const actionOptions = [{ label: dict.organization.actions.edit, icon: Pencil, variant: "edit" as const, onClick: onEdit }, ...(usage.can_delete ? [{ label: dict.organization.actions.delete, icon: Trash2, variant: "delete" as const, onClick: onDelete }] : [])];
-    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{department.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{department.code || copy.no_code}</p></div>{canManage && <ActionPopover align="end" triggerLabel={`${copy.actions}: ${department.name}`} options={actionOptions} />}</div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={department.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{department.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{parentName}</span></div></CardContent></Card>;
+    return <Card><CardContent className="space-y-3"><div className="flex items-start gap-3"><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{department.name}</p><p className="mt-1 truncate text-xs text-[var(--text-muted)]">{department.code || copy.no_code} · {department.unit_type==="branch"?"Delegación":"Área"}</p></div>{canManage && <ActionPopover align="end" triggerLabel={`${copy.actions}: ${department.name}`} options={actionOptions} />}</div><div className="flex flex-wrap items-center gap-2 border-t border-[var(--border-soft)] pt-3"><Badge variant="outline" className={department.is_active ? "border-accent/60 bg-accent/10 text-accent" : "border-[color:var(--text-muted)]/45 text-[var(--text-muted)]"}>{department.is_active ? dict.organization.access.active : dict.organization.access.inactive}</Badge><span className="text-xs text-[var(--text-muted)]">{parentName}</span></div></CardContent></Card>;
 }
 
 function DepartmentRow({
@@ -245,7 +246,7 @@ function DepartmentRow({
         >
             <TableCell>
                 <p className="truncate font-semibold text-[var(--text-main)]">{department.name}</p>
-                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)] xl:hidden">{department.code || copy.no_code} · {parentName}</p>
+                <p className="mt-0.5 truncate text-xs text-[var(--text-muted)] xl:hidden">{department.unit_type==="branch"?"Delegación":"Área"} · {department.code || copy.no_code} · {parentName}</p>
             </TableCell>
             <TableCell className="hidden text-sm text-[var(--text-muted)] xl:table-cell">{department.code || "—"}</TableCell>
             <TableCell className="hidden text-sm text-[var(--text-muted)] 2xl:table-cell">{parentName}</TableCell>
@@ -283,10 +284,12 @@ function DepartmentEditDialog({
     onSaved: () => Promise<void>;
     onRequestDelete: () => void;
 }) {
+    const modules=useCompanyModules();
     const { dict } = useDictionary();
     const copy = dict.organization.departments;
     const [name, setName] = useState(department.name);
     const [code, setCode] = useState(department.code ?? "");
+    const [unitType,setUnitType]=useState<"area"|"branch">(department.unit_type??"area");
     const [parentId, setParentId] = useState(department.parent_department_id ? String(department.parent_department_id) : "none");
     const [isActive, setIsActive] = useState(department.is_active ? "active" : "inactive");
     const [saving, setSaving] = useState(false);
@@ -313,6 +316,7 @@ function DepartmentEditDialog({
             await OrganizationService.updateDepartment(department.id, {
                 name: name.trim(),
                 code: code.trim() || null,
+                unit_type:unitType,
                 parent_department_id: parentId === "none" ? null : Number(parentId),
                 is_active: isActive === "active",
             });
@@ -341,6 +345,7 @@ function DepartmentEditDialog({
                         <Label htmlFor="department-code">{dict.organization.create_dialog.code_optional}</Label>
                         <Input id="department-code" value={code} onChange={(event) => setCode(event.target.value)} />
                     </div>
+                    <div className="space-y-2"><Label>Tipo de unidad</Label><Select value={unitType} onValueChange={value=>setUnitType(value as "area"|"branch")}><SelectTrigger aria-label="Tipo de unidad organizativa"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="area">Área</SelectItem><SelectItem value="branch" disabled={!modules.enabled.has("features.branches")}>Delegación{!modules.enabled.has("features.branches")?" · módulo no activo":""}</SelectItem></SelectContent></Select></div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <Label>{copy.parent_optional}</Label>

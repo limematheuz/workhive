@@ -299,7 +299,6 @@ def test_removed_person_keeps_a_privacy_request_linked_to_their_last_company(cli
         access_class="worker",
         status="archived",
     )
-    worker.company_id = None
     db.add(membership)
     db.commit()
 
@@ -313,6 +312,7 @@ def test_removed_person_keeps_a_privacy_request_linked_to_their_last_company(cli
     )
     assert created.status_code == 201, created.text
     assert created.json()["company_id"] == company_id
+    assert db.get(User,worker.id).company_id == company_id
 
     company_requests = client.get("/api/v1/privacy/requests", headers=admin_headers)
     assert company_requests.status_code == 200, company_requests.text

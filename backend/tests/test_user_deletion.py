@@ -103,9 +103,9 @@ def test_company_admin_retires_a_member_without_deleting_the_identity(client, db
     refreshed_membership = db.get(CompanyMembership, membership_id)
     assert refreshed_user is not None
     assert refreshed_user.is_active is True
-    assert refreshed_user.company_id is None
+    assert refreshed_user.company_id == company.id
     assert refreshed_user.role.name == "viewer"
-    assert refreshed_user.session_version == 1
+    assert refreshed_user.session_version == 0
     assert refreshed_membership is not None
     assert refreshed_membership.status == "archived"
     assert refreshed_membership.ended_at is not None

@@ -42,6 +42,7 @@ async def read_work_sessions(
                 current_user,
                 "time.manage",
             ),
+            current_user=current_user,
         )
     )
 
@@ -55,6 +56,7 @@ async def active_work_session(
         active_session = work_session_service.get_active_session(
             sync_db,
             current_user.id,
+            current_user=current_user,
         )
         if active_session:
             organization_authorization_service.require_capability(
@@ -157,6 +159,7 @@ async def read_work_session(
                 current_user,
                 "time.manage",
             ),
+            current_user=current_user,
         )
     )
 
@@ -169,7 +172,7 @@ def start_work_session(
     db: Session = Depends(get_db),
     current_user: User = ActiveUser,
 ):
-    return work_session_service.start_work_session(db, current_user.id, session_data)
+    return work_session_service.start_work_session(db, current_user.id, session_data,current_user=current_user)
 
 
 @router.post(

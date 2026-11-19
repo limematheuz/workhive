@@ -1,0 +1,28 @@
+"use client";
+import {useCallback,useMemo,useState} from "react";
+import {Clock3,Pause,Play,Square} from "lucide-react";
+import {Button} from "@/components/ui/button";
+import {SearchableSelect} from "@/components/ui/searchable-select";
+import {useWorkSessionWidget} from "@/components/dashboard/WorkSessionWidget";
+import {WorkSessionStopWarningDialog} from "@/components/dashboard/work-session/WorkSessionStopWarningDialog";
+import {useResourceEffect} from "@/hooks/useResourceEffect";
+import {WorkSessionService,type WorkSession} from "@/services/work-session.service";
+import {formatSpanishShortDateTime} from "@/lib/format";
+import {useWorkerWorkspace} from "./WorkerWorkspace";
+export function WorkerClock(){
+ const workspace=useWorkerWorkspace();
+ return <main className="space-y-4"><div><h1 className="text-2xl font-semibold tracking-tight">Mi fichaje</h1><p className="mt-1 text-sm text-muted-foreground">Inicia el trabajo, registra pausas y consulta tus fichajes.</p></div>{!workspace.online?<p role="status" className="rounded-xl border border-orange-400/40 p-4 text-sm text-orange-700">El fichaje en directo necesita conexión. En Jornada puedes guardar un parte con horas y fotos para enviarlo al recuperar la conexión.</p>:!workspace.context.features.includes("features.time_tracking")||!workspace.context.can_track_time?<p role="status" className="rounded-xl border border-orange-400/40 p-4 text-sm text-orange-700">Tu cuenta no tiene el fichaje habilitado en este ámbito. Consulta el módulo y los permisos con tu empresa.</p>:<WorkerClockContent/>}</main>;
+}
+function WorkerClockContent(){
+ const workspace=useWorkerWorkspace(),controller=useWorkSessionWidget({allowedLocations:workspace.liveLocations});
+ const [selected,setSelected]=useState(""),[rows,setRows]=useState<WorkSession[]|null>(null),[error,setError]=useState("");
+ const request=useCallback(()=>WorkSessionService.getWorkSessions(0,100),[]);
+ useResourceEffect(true,controller.activeSession?.id+":"+controller.activeSession?.end_time,request,result=>{setRows(result);setError("");},cause=>setError(cause instanceof Error?cause.message:"No se pudieron cargar los fichajes."));
+ const choices=useMemo(()=>workspace.tasks.flatMap(task=>["completed","cancelled","rejected"].includes(task.status)?[]:[{value:String(task.id),label:task.title,description:workspace.locationName(task.location_id)}]),[workspace]);
+ const task=workspace.tasks.find(task=>String(task.id)===selected);
+ if(controller.loading)return <p role="status" className="rounded-xl border p-6 text-sm text-muted-foreground">Cargando el fichaje actual…</p>;
+ return <><section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-6">{controller.sessionError?<p role="alert" className="text-sm text-orange-700">{controller.sessionError}</p>:controller.activeSession?<><div className="flex items-center gap-2"><Clock3 className="size-4 text-accent"/><span className="text-sm font-medium">{controller.activeSession.paused_at?"Jornada pausada":"Trabajo en curso"}</span></div><p className="font-mono text-4xl font-semibold tracking-tight">{controller.elapsedTime}</p><p className="break-words text-sm text-muted-foreground">{workspace.locationName(controller.activeSession.location_id)}</p><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={controller.actionLoading} onClick={()=>void controller.togglePause()}>{controller.activeSession.paused_at?<Play className="size-4"/>:<Pause className="size-4"/>}{controller.activeSession.paused_at?"Reanudar":"Pausar"}</Button><Button disabled={controller.actionLoading} onClick={()=>void controller.preStopShift()}><Square className="size-4"/>Finalizar fichaje</Button></div></>:<><h2 className="font-semibold">No hay un fichaje activo</h2><p className="text-sm text-muted-foreground">Elige uno de tus trabajos. Su ficha permite comenzar, completar las tareas y terminar con las mismas comprobaciones de ubicación y permisos.</p><SearchableSelect aria-label="Trabajo para iniciar fichaje" placeholder="Buscar mi trabajo…" value={selected} onValueChange={setSelected} options={choices}/><Button disabled={!task} onClick={()=>{if(task)workspace.openTask(task);}}><Play className="size-4"/>Abrir trabajo para comenzar</Button>{!choices.length&&<p className="text-sm text-orange-700">No hay trabajos propios pendientes disponibles para comenzar.</p>}</>}</section>
+  <section className="space-y-2"><h2 className="font-semibold">Últimos fichajes</h2>{error?<p role="alert" className="text-sm text-orange-700">{error}</p>:rows===null?<p role="status" className="text-sm text-muted-foreground">Cargando tus fichajes…</p>:!rows.length?<p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">Todavía no hay fichajes registrados en este ámbito.</p>:rows.map(row=><article key={row.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-card p-3 text-sm"><div className="min-w-0"><p className="break-words font-medium">{workspace.locationName(row.location_id)}</p><p className="text-xs text-muted-foreground">{formatSpanishShortDateTime(row.start_time)}{row.end_time?" → "+formatSpanishShortDateTime(row.end_time):" · En curso"}</p></div><span className="text-xs">{row.end_time?Math.max(0,Math.round(((new Date(row.end_time).getTime()-new Date(row.start_time).getTime())/1000-(row.paused_seconds??0))/60))+" min trabajados":"Fichaje abierto"}</span></article>)}</section>
+  <WorkSessionStopWarningDialog open={controller.showStopWarning} onOpenChange={controller.setShowStopWarning} pendingTasksCount={controller.pendingTasksCount} dict={controller.dict} onConfirmStop={()=>void controller.confirmStopShift()}/>
+ </>;
+}

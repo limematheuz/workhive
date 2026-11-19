@@ -38,9 +38,9 @@ export function EditLocationSheet({ location, clients, open, onOpenChange, onLoc
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex h-[min(92vh,980px)] w-[calc(100vw-1.5rem)] !max-w-[calc(100vw-1.5rem)] flex-col gap-0 overflow-hidden rounded-[24px] border border-[var(--border-soft)] p-0 sm:w-[calc(100vw-3rem)] sm:!max-w-[calc(100vw-3rem)] 2xl:!max-w-[1380px]">
+            <DialogContent className="wh-location-dialog flex flex-col gap-0 overflow-hidden p-0">
                 {location && <div className="flex min-h-0 flex-1 flex-col">
-                    <DialogHeader className="shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] px-5 py-4 sm:px-7 sm:py-5">
+                    <DialogHeader className="wh-location-dialog-header shrink-0 border-b border-[var(--border-soft)] bg-[var(--bg-primary)] pr-16 text-left">
                         <div className="flex items-start gap-3">
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent"><PencilLine className="h-5 w-5" /></div>
                             <div className="min-w-0 flex-1">

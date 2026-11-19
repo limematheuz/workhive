@@ -1,5 +1,7 @@
 """Immutable revision history for commercial quotes."""
 
+from datetime import datetime, timezone
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -68,6 +70,23 @@ def get_or_create_current_quote_revision(
         snapshot=_build_quote_snapshot(quote),
         created_by_user_id=actor_user_id,
     )
+
+
+def matches_published_revision(quote, revision) -> bool:
+    """Fail closed if sent content drifted without producing another revision."""
+    if revision is None or revision.version != quote.revision_number:
+        return False
+    published = dict(revision.snapshot or {})
+    current = _build_quote_snapshot(quote)
+    try:
+        for snapshot in (published, current):
+            value = snapshot.get("valid_until")
+            if value is not None:
+                instant = datetime.fromisoformat(value.replace("Z", "+00:00"))
+                snapshot["valid_until"] = (instant.astimezone(timezone.utc) if instant.tzinfo else instant.replace(tzinfo=timezone.utc)).isoformat()
+    except (TypeError, ValueError, AttributeError):
+        return False
+    return published == current
 
 
 def get_quote_revisions(db: Session, company_id: int, quote_id: int):

@@ -273,7 +273,8 @@ def _build_pdf(invoice: Invoice, destination: Path) -> None:
     )
     story.append(totals_table)
 
-    footer_blocks = []
+    from app.services.currency_invoice_documents import pdf_block
+    footer_blocks = pdf_block(invoice,styles["BodySmall"])
     if invoice.shipping_address:
         footer_blocks.append(
             Paragraph(
@@ -442,6 +443,7 @@ def generate_invoice_preview_pdf(
     temporary = Path(temporary_name)
     preview = SimpleNamespace(
         company_id=invoice.company_id,
+        currency_snapshot=getattr(invoice,"currency_snapshot",None),
         invoice_number=invoice.invoice_number,
         issue_date=invoice.issue_date,
         due_date=invoice.due_date,

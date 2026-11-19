@@ -82,7 +82,7 @@ async def read_user(
     current_user: User = AsyncActiveUser,
 ):
     return await db.run_sync(
-        lambda sync_db: user_service.get_user(sync_db, user_id, current_user)
+        lambda sync_db: user_service.get_user_view(sync_db, user_id, current_user)
     )
 
 
@@ -105,14 +105,14 @@ def update_user(
     audit_service.record_event(
         db,
         actor=current_user,
-        company_id=updated_user.company_id,
+        company_id=current_user.company_id,
         action="user.updated",
         entity_type="user",
         entity_id=updated_user.id,
         request=request,
         details={"changed_fields": changed_fields},
     )
-    return updated_user
+    return build_current_user_response(db, current_user) if user_id == current_user.id else user_service.get_user_view(db, user_id, current_user)
 
 
 @router.post("/{user_id}/photo", response_model=UserResponse)
@@ -131,6 +131,7 @@ def upload_user_photo(
         identity=str(current_user.id),
     )
     db_user = user_service.get_user(db, user_id, current_user)
+    user_service.require_primary_identity_management(current_user,db_user)
 
     if current_user.id != user_id:
         from app.services.organization_authorization_service import require_capability
@@ -143,14 +144,15 @@ def upload_user_photo(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="La imagen no puede superar 1 MB",
         )
-    if db_user.company_id is None:
+    photo_company_id=current_user.company_id if user_id==current_user.id else db_user.company_id
+    if photo_company_id is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="A company is required to store a profile photo",
         )
     db_user.photo_url = store_image(
         contents,
-        company_id=db_user.company_id,
+        company_id=photo_company_id,
         folder="profile",
     )
     db.add(db_user)
@@ -159,13 +161,13 @@ def upload_user_photo(
     audit_service.record_event(
         db,
         actor=current_user,
-        company_id=db_user.company_id,
+        company_id=current_user.company_id,
         action="user.photo_updated",
         entity_type="user",
         entity_id=db_user.id,
         request=request,
     )
-    return db_user
+    return build_current_user_response(db, current_user) if user_id == current_user.id else user_service.get_user_view(db, user_id, current_user)
 
 
 @router.get("/{user_id}/stats", response_model=UserStatsResponse)

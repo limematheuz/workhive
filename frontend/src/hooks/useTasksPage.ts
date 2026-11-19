@@ -15,6 +15,8 @@ import { useUser } from "@/lib/user-context";
 import { toast } from "@/lib/toast";
 import { useTaskFilters } from "./useTaskFilters";
 import { useTaskCrud } from "./useTaskCrud";
+import { useTaskLocations } from "./useTaskLocations";
+import { taskWorkspaceKey } from "@/lib/task-locations";
 import { useTemplateCrud } from "./useTemplateCrud";
 import { TemplateTaskService } from "@/services/template.service";
 import type { TemplateTask } from "@/types/template";
@@ -48,17 +50,25 @@ export function useTasksPage() {
     const { dict } = useDictionary();
     const { user: currentUser, loading: userLoading } = useUser();
     const [tasks, setTasks] = useState<TaskItem[]>([]);
+    const [taskReadScope, setTaskReadScope] = useState<string | null>(null);
+    const [catalogScope, setCatalogScope] = useState<string | null>(null);
     const [locations, setLocations] = useState<Location[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [templates, setTemplates] = useState<TemplateTask[]>([]);
     const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
-    const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
+    const [loadingTaskVersion, setLoadingTaskVersion] = useState<number | null>(null);
+    const loadingTasks = loadingTaskVersion !== null;
     const [loadError, setLoadError] = useState<TasksLoadErrorKind | null>(null);
     const bootstrappedRef = useRef(false);
     const hasLoadedTasksRef = useRef(false);
     const loadedFilterKeyRef = useRef<string | null>(null);
-    const taskRequestIdRef = useRef(0);
-    const catalogRequestIdRef = useRef(0);
+    const versions = useRef({ task: 0, catalog: 0 });
+    const workspace = taskWorkspaceKey(currentUser);
+
+    useEffect(() => {
+        const pending = versions.current;
+        return () => { pending.task++; pending.catalog++; };
+    }, []);
 
     const {
         selectedStatus,
@@ -71,26 +81,25 @@ export function useTasksPage() {
         setActiveTab,
     } = useTaskFilters();
 
-    const workspaceKey = currentUser
-        ? `${currentUser.id}:${currentUser.company_id ?? "none"}:${currentUser.role?.name ?? "none"}`
-        : "anonymous";
-    const activeWorkspaceKeyRef = useRef(workspaceKey);
+    const activeWorkspaceKeyRef = useRef(workspace);
 
     useEffect(() => {
-        if (activeWorkspaceKeyRef.current === workspaceKey) return;
-        activeWorkspaceKeyRef.current = workspaceKey;
-        taskRequestIdRef.current += 1;
-        catalogRequestIdRef.current += 1;
+        if (activeWorkspaceKeyRef.current === workspace) return;
+        activeWorkspaceKeyRef.current = workspace;
+        versions.current.task += 1;
+        versions.current.catalog += 1;
         bootstrappedRef.current = false;
         hasLoadedTasksRef.current = false;
         loadedFilterKeyRef.current = null;
         setTasks([]);
+        setTaskReadScope(null);
+        setCatalogScope(null);
         setLocations([]);
         setUsers([]);
         setTemplates([]);
         setLoadError(null);
         setCatalogStatus("idle");
-    }, [workspaceKey]);
+    }, [workspace]);
 
     const isAdminOrManager = canManageCompanyTasks(currentUser);
     const canManageCatalog = canManageServiceCatalog(currentUser);
@@ -111,6 +120,8 @@ export function useTasksPage() {
     ) => {
         const effectiveUser = overrides?.currentUser ?? currentUser;
         if (!bootstrappedRef.current || !effectiveUser) return;
+        const owner = taskWorkspaceKey(effectiveUser);
+        const version = ++versions.current.task;
 
         const effectiveTab = overrides?.activeTab ?? activeTab;
         const effectiveSelectedUserId = overrides?.selectedUserId ?? selectedUserId;
@@ -121,31 +132,24 @@ export function useTasksPage() {
             selectedStatus,
             selectedUserId: effectiveSelectedUserId,
         });
-        const requestWorkspaceKey = `${effectiveUser.id}:${effectiveUser.company_id ?? "none"}:${effectiveUser.role?.name ?? "none"}`;
-        const filterKey = `${requestWorkspaceKey}|${effectiveTab}|${filters.locationId ?? "all"}|${filters.userId ?? "all"}|${filters.status ?? "all"}`;
-        const requestId = ++taskRequestIdRef.current;
+        const filterKey = `${owner}|${effectiveTab}|${filters.locationId ?? "all"}|${filters.userId ?? "all"}|${filters.status ?? "all"}`;
 
         try {
             if (!silent) {
-                setLoadingTasks(true);
+                setLoadingTaskVersion(version);
                 setLoadError(null);
             }
             const data = await TaskService.getAllTaskItems(filters);
-            if (
-                requestId !== taskRequestIdRef.current
-                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
-            ) {
+            if (version !== versions.current.task || activeWorkspaceKeyRef.current !== owner) {
                 return;
             }
             setTasks(data);
+            setTaskReadScope(`${owner}|${version}`);
             hasLoadedTasksRef.current = true;
             loadedFilterKeyRef.current = filterKey;
             setLoadError(null);
         } catch (error) {
-            if (
-                requestId !== taskRequestIdRef.current
-                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
-            ) {
+            if (version !== versions.current.task || activeWorkspaceKeyRef.current !== owner) {
                 return;
             }
             console.error("Error loading tasks list", error);
@@ -154,6 +158,7 @@ export function useTasksPage() {
                 && loadedFilterKeyRef.current === filterKey;
             if (denied || !hasSameContextSnapshot) {
                 setTasks([]);
+                setTaskReadScope(null);
                 hasLoadedTasksRef.current = false;
                 loadedFilterKeyRef.current = null;
             }
@@ -166,14 +171,14 @@ export function useTasksPage() {
                 );
             }
         } finally {
-            setLoadingTasks(false);
+            setLoadingTaskVersion(current => current === version ? null : current);
         }
     };
 
     const loadCatalogEvent = useEffectEvent(async () => {
         if (!currentUser) return;
-        const requestWorkspaceKey = `${currentUser.id}:${currentUser.company_id ?? "none"}:${currentUser.role?.name ?? "none"}`;
-        const catalogRequestId = ++catalogRequestIdRef.current;
+        const owner = workspace;
+        const version = ++versions.current.catalog;
 
         setLoadError(null);
         setCatalogStatus("loading");
@@ -189,10 +194,7 @@ export function useTasksPage() {
                     ? TemplateTaskService.getTemplates().catch(() => [] as TemplateTask[])
                     : Promise.resolve([] as TemplateTask[])
             ]);
-            if (
-                catalogRequestId !== catalogRequestIdRef.current
-                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
-            ) {
+            if (version !== versions.current.catalog || activeWorkspaceKeyRef.current !== owner) {
                 return;
             }
 
@@ -201,6 +203,7 @@ export function useTasksPage() {
                 : usrs.filter(u => u.role?.name !== "superadmin");
 
             setLocations(locs);
+            setCatalogScope(owner);
             setUsers(filteredUsers);
             setTemplates(tmpls);
 
@@ -219,15 +222,15 @@ export function useTasksPage() {
                 selectedUserId: nextUserId,
             });
         } catch (error) {
-            if (
-                catalogRequestId !== catalogRequestIdRef.current
-                || activeWorkspaceKeyRef.current !== requestWorkspaceKey
-            ) {
+            if (version !== versions.current.catalog || activeWorkspaceKeyRef.current !== owner) {
                 return;
             }
             console.error("Error loading initial tasks page data", error);
             const denied = isAccessDeniedError(error);
+            setCatalogScope(null);
+            setTaskReadScope(null);
             setTasks([]);
+            setLocations([]);
             hasLoadedTasksRef.current = false;
             loadedFilterKeyRef.current = null;
             setLoadError(denied ? "denied" : "unavailable");
@@ -350,12 +353,15 @@ export function useTasksPage() {
     };
 
     const getLocationName = (locId: number) => {
-        const l = locations.find(loc => loc.id === locId);
+        const l = taskLocations.find(loc => loc.id === locId);
         return l ? l.name : `Location ID: ${locId}`;
     };
 
-    const activeTasks = tasks.filter(t => t.status !== "requested" && t.status !== "rejected");
-    const requestedTasks = tasks.filter(t => t.status === "requested");
+    const authorizedRead = taskReadScope?.startsWith(workspace + "|") ? taskReadScope : null;
+    const taskLocations = useTaskLocations(tasks, locations, authorizedRead);
+    const visibleTasks = authorizedRead ? tasks : [];
+    const activeTasks = visibleTasks.filter(t => t.status !== "requested" && t.status !== "rejected");
+    const requestedTasks = visibleTasks.filter(t => t.status === "requested");
 
     const handleAcceptTask = async (taskId: number, input: TaskAcceptanceInput) => {
         if (input.scheduledStartAt && isTaskPlanningDateBeforeToday(input.scheduledStartAt)) {
@@ -390,9 +396,10 @@ export function useTasksPage() {
         requestedTasks,
         handleAcceptTask,
         handleRejectTask,
-        locations,
-        users,
-        templates,
+        locations: catalogScope === workspace ? locations : [],
+        taskLocations,
+        users: catalogScope === workspace ? users : [],
+        templates: catalogScope === workspace ? templates : [],
         currentUser,
         activeTab,
         setActiveTab,
@@ -417,11 +424,11 @@ export function useTasksPage() {
         // Tasks CRUD
         isSaving: crud.isSaving,
         saving: crud.isSaving,
-        isCreateOpen: crud.isCreateOpen,
-        createOpen: crud.isCreateOpen,
+        isCreateOpen: catalogScope === workspace && crud.isCreateOpen,
+        createOpen: catalogScope === workspace && crud.isCreateOpen,
         setIsCreateOpen: openCreateTask,
         setCreateOpen: openCreateTask,
-        selectedTask: crud.selectedTask,
+        selectedTask: authorizedRead ? crud.selectedTask : null,
         setSelectedTask: crud.setSelectedTask,
         houseTemplates: crud.houseTemplates,
         loadingHouseTemplates: crud.loadingHouseTemplates,

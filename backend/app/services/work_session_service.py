@@ -15,6 +15,7 @@ from app.services.entitlement_service import require_company_feature
 from app.services.organization_authorization_service import require_capability
 from app.services.work_session_pause_service import close_open_pause
 from app.services.labor_cost_snapshot_service import refresh_work_session_labor_cost
+from app.repositories.work_session_scope import company_for_session
 
 
 def _require_manageable_active_session(
@@ -36,6 +37,8 @@ def _require_manageable_active_session(
             detail="No active session found",
         )
     if current_user:
+        if company_for_session(db,active_session)!=current_user.company_id:
+            raise HTTPException(409,"La jornada pertenece a otra empresa. Cambia a esa empresa para gestionarla.")
         require_capability(
             db,
             current_user,
@@ -60,8 +63,8 @@ def _require_time_tracking_feature(
         )
 
 
-def _user_with_time_tracking(db: Session, user_id: int) -> User:
-    db_user = user_repo.get_user_by_id(db, user_id)
+def _user_with_time_tracking(db: Session, user_id: int, current_user=None) -> User:
+    db_user = current_user if current_user is not None and current_user.id==user_id else user_repo.get_user_by_id(db, user_id)
     if db_user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -77,14 +80,16 @@ def get_work_sessions(
     skip: int = 0,
     limit: int = 100,
     location_ids: set[int] | None = None,
+    *, current_user=None,
 ) -> list[WorkSession]:
-    _user_with_time_tracking(db, user_id)
+    _user_with_time_tracking(db, user_id,current_user)
     return work_session_repo.get_work_session_by_user(
         db,
         user_id,
         skip,
         limit,
         location_ids,
+        company_id=current_user.company_id if current_user else None,
     )
 
 
@@ -93,13 +98,15 @@ def get_work_session(
     session_id: int,
     user_id: int,
     location_ids: set[int] | None = None,
+    *, current_user=None,
 ) -> WorkSession:
-    _user_with_time_tracking(db, user_id)
+    _user_with_time_tracking(db, user_id,current_user)
     work_session = work_session_repo.get_work_session_by_id(
         db,
         session_id,
         user_id,
         location_ids,
+        company_id=current_user.company_id if current_user else None,
     )
     if work_session is None:
         raise HTTPException(
@@ -108,15 +115,15 @@ def get_work_session(
     return work_session
 
 
-def get_active_session(db: Session, user_id: int) -> WorkSession | None:
-    _user_with_time_tracking(db, user_id)
-    return work_session_repo.get_active_session_by_user(db, user_id)
+def get_active_session(db: Session, user_id: int, *,current_user=None) -> WorkSession | None:
+    _user_with_time_tracking(db, user_id,current_user)
+    return work_session_repo.get_active_session_for_company(db,user_id,current_user.company_id) if current_user else work_session_repo.get_active_session_by_user(db, user_id)
 
 
 def start_work_session(
-    db: Session, user_id: int, session_data: WorkSessionCreate
+    db: Session, user_id: int, session_data: WorkSessionCreate, *,current_user=None
 ) -> WorkSession:
-    db_user = _user_with_time_tracking(db, user_id)
+    db_user = _user_with_time_tracking(db, user_id,current_user)
     task = task_item_repo.get_task_item(
         db, db_user.company_id, session_data.task_item_id
     )
@@ -153,9 +160,10 @@ def end_work_session(
     active_session = _require_manageable_active_session(db, user_id, current_user)
 
     end_time = datetime.now(timezone.utc)
-    db_user = user_repo.get_user_by_id(db, user_id)
+    db_user = current_user if current_user is not None else user_repo.get_user_by_id(db, user_id)
+    session_company=company_for_session(db,active_session)
     task = (
-        task_item_repo.get_task_item(db, db_user.company_id, active_session.task_item_id)
+        task_item_repo.get_task_item(db, session_company, active_session.task_item_id)
         if db_user and active_session.task_item_id
         else None
     )
@@ -203,11 +211,11 @@ def end_work_session(
 
         db.add(task)
 
-    if db_user and db_user.company_id is not None:
+    if db_user and session_company is not None:
         refresh_work_session_labor_cost(
             db,
             work_session=active_session,
-            company_id=db_user.company_id,
+            company_id=session_company,
         )
     db.add(active_session)
     db.commit()

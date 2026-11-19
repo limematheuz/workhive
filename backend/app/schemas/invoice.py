@@ -63,6 +63,7 @@ class InvoiceUpdate(BaseModel):
 
 
 class InvoiceResponse(InvoiceBase):
+    currency_snapshot: dict | None = None
     id: int
     invoice_number: str
     status: str

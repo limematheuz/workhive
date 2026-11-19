@@ -184,3 +184,8 @@ def generate_work_order_task(
         details={"task_item_id": task.id},
     )
     return {"work_order": work_order, "task_item_id": task.id}
+
+
+@router.get("/{work_order_id}/materials/state")
+def consumption_state(work_order_id:int,db:Session=Depends(get_db),current_user:User=ActiveUser):
+    return work_order_inventory_service.consumption_state(db,current_user,work_order_id)

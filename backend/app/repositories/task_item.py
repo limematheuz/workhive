@@ -62,8 +62,8 @@ def get_task_items(
     return query.order_by(TaskItem.id.asc()).offset(skip).limit(limit).all()
 
 
-def get_task_item(db: Session, company_id: int, task_item_id: int) -> TaskItem | None:
-    return (
+def get_task_item(db: Session, company_id: int, task_item_id: int, *, for_update: bool = False) -> TaskItem | None:
+    query = (
         db.query(TaskItem)
         .join(Location)
         .outerjoin(Client)
@@ -84,8 +84,9 @@ def get_task_item(db: Session, company_id: int, task_item_id: int) -> TaskItem |
             )
         )
         .filter(TaskItem.id == task_item_id)
-        .first()
     )
+    if for_update:query=query.with_for_update(of=TaskItem).populate_existing()
+    return query.first()
 
 
 def get_task_items_by_ids(
@@ -142,7 +143,7 @@ def create_task_item(
     work_order_id: int | None = None,
 ) -> TaskItem:
     dump = task_item_data.model_dump(
-        exclude={"zone_ids", "space_ids", "space_task_template_ids"}
+        exclude={"zone_ids", "space_ids", "space_task_template_ids", "space_allocations"}
     )
     if dump.get("created_at") is None:
         dump.pop("created_at", None)
@@ -191,8 +192,10 @@ def count_tasks_by_user(
     start_date: datetime | None = None,
     statuses: Collection[str] | None = None,
     location_ids: set[int] | None = None,
+    company_id: int | None = None,
 ) -> int:
     query = db.query(TaskItem).filter(assigned_task_condition(user_id))
+    if company_id is not None:query=query.filter(TaskItem.company_id==company_id)
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
     if statuses is not None:
@@ -208,12 +211,14 @@ def count_tasks_by_user_and_status(
     status: str,
     start_date: datetime | None = None,
     location_ids: set[int] | None = None,
+    company_id: int | None = None,
 ) -> int:
     query = (
         db.query(TaskItem)
         .filter(assigned_task_condition(user_id))
         .filter(TaskItem.status == status)
     )
+    if company_id is not None:query=query.filter(TaskItem.company_id==company_id)
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
     if location_ids is not None:
@@ -226,12 +231,14 @@ def get_distinct_location_ids_by_user(
     user_id: int,
     start_date: datetime | None = None,
     location_ids: set[int] | None = None,
+    company_id: int | None = None,
 ) -> list[int]:
     query = (
         db.query(TaskItem.location_id)
         .filter(assigned_task_condition(user_id))
         .filter(TaskItem.location_id.isnot(None))
     )
+    if company_id is not None:query=query.filter(TaskItem.company_id==company_id)
     if start_date:
         query = query.filter(TaskItem.created_at >= start_date)
     if location_ids is not None:

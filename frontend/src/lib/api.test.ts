@@ -282,7 +282,7 @@ test("apiFetch redirects dashboard users on authentication denial but keeps vali
 
     await apiFetch("/api/v1/tasks", { method: "GET" });
 
-    assert.deepEqual(first.replaceCalls, ["/login"]);
+    assert.deepEqual(first.replaceCalls, ["/login?next=%2Fdashboard%2Ftasks"]);
     assert.equal(first.localStorage.getItem("token"), null);
     assert.equal(first.sessionStorage.getItem("workhive_user_cache"), null);
 

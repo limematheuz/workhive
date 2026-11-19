@@ -142,6 +142,8 @@ def create_expense(
     company_id: int,
     created_by_user_id: int | None,
     data: ExpenseCreate,
+    *,
+    commit: bool = True,
 ):
     payload = data.model_dump()
     _reject_private_receipt_reference(payload)
@@ -161,6 +163,7 @@ def create_expense(
         db,
         company_id=company_id,
         created_by_user_id=created_by_user_id,
+        commit=commit,
         **payload,
     )
 
@@ -169,7 +172,7 @@ def update_expense(
     db: Session,
     company_id: int,
     expense_id: int,
-    data: ExpenseUpdate,
+    data: ExpenseUpdate, *, commit: bool = True,
 ):
     expense = require_mutable_expense(db, company_id, expense_id)
     payload = data.model_dump(exclude_unset=True)
@@ -198,7 +201,7 @@ def update_expense(
     tax_amount = payload.get("tax_amount", expense.tax_amount)
     if "base_amount" in payload or "tax_amount" in payload:
         payload["total_amount"] = _calculate_total(base_amount, tax_amount)
-    return expense_repo.update_expense(db, expense, **payload)
+    return expense_repo.update_expense(db, expense, commit=commit, **payload)
 
 
 def delete_expense(db: Session, company_id: int, expense_id: int) -> None:

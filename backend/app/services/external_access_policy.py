@@ -45,6 +45,8 @@ def require_external_capability(
 ) -> ExternalAccessGrant:
     """Authorize the narrow accountant portal without creating a membership."""
 
+    if getattr(current_user, "application_company_id", company_id) != company_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not enough permissions")
     if not current_user.role or current_user.role.name != EXTERNAL_PORTAL_ROLE_NAME:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -60,6 +62,10 @@ def require_external_capability(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not enough permissions",
         )
+    from app.repositories.advisory import area
+    settings = area(db, grant.id)
+    if capability == "finance.read" and settings is not None and not settings.accounting:
+        raise HTTPException(status_code=403, detail="El área contable está desactivada.")
     require_company_feature(
         db,
         company_id=company_id,

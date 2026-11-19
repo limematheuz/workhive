@@ -200,7 +200,7 @@ def email_quote(
     return quote, ", ".join(recipient_emails)
 
 
-def create_quote(db: Session, company_id: int, data: QuoteCreate):
+def create_quote(db: Session, company_id: int, data: QuoteCreate, *, commit: bool = True):
     require_quotes_feature(db, company_id)
     if data.client_id is not None:
         _validate_client(db, company_id, data.client_id)
@@ -231,7 +231,10 @@ def create_quote(db: Session, company_id: int, data: QuoteCreate):
                 unit_price=item.unit_price,
             )
         quote_repo.recalculate_totals(db, quote)
-        db.commit()
+        if commit:
+            db.commit()
+        else:
+            db.flush()
         return quote_repo.get_quote(db, company_id, quote.id)
     except Exception:
         db.rollback()

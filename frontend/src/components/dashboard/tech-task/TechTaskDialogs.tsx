@@ -9,6 +9,7 @@ import type { ChecklistItem } from "./hooks/useTechTaskChecklist";
 import type { User } from "@/types/user";
 
 type TechTaskDialogsProps = {
+    workerMode?: boolean;
     requisitosOpen: boolean;
     setRequisitosOpen: (open: boolean) => void;
     adjuntosOpen: boolean;
@@ -45,6 +46,7 @@ export function TechTaskDialogs(props: TechTaskDialogsProps) {
     return (
         <>
             <TechTaskChecklistDialog
+                workerMode={props.workerMode}
                 open={props.requisitosOpen}
                 onOpenChange={props.setRequisitosOpen}
                 checklist={props.checklist}

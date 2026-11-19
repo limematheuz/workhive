@@ -17,6 +17,7 @@ from app.db.session import Base
 
 class Invoice(Base):
     __tablename__ = "invoices"
+    currency_snapshot = Column(JSON, nullable=True)
     __table_args__ = (
         UniqueConstraint(
             "company_id", "invoice_number", name="uq_company_invoice_number"

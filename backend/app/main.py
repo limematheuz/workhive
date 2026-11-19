@@ -26,6 +26,7 @@ from app.services.payment_reminder_service import periodic_payment_reminder_chec
 from app.services.fiscal_deadline_notification_service import (
     periodic_fiscal_deadline_notification_check,
 )
+from app.services.operations_automation_background import periodic_operations_automation
 from app.services.realtime_event_service import (
     start_realtime_events,
     stop_realtime_events,
@@ -41,6 +42,7 @@ logger = logging.getLogger("workhive.http")
 async def lifespan(app: FastAPI):
     tasks = []
     await start_realtime_events()
+    tasks.append(asyncio.create_task(periodic_operations_automation()))
     if settings.RUN_CALENDAR_BACKGROUND_SYNC:
         tasks.append(asyncio.create_task(periodic_calendar_sync()))
     if settings.TRIAL_EXPIRY_REMINDERS_ENABLED:

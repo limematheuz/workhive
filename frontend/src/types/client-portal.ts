@@ -1,3 +1,5 @@
+import type { PublicCurrencySnapshot } from "./transaction-currency";
+
 export type ClientPortalLine = {
     description: string;
     quantity: number;
@@ -29,6 +31,7 @@ export type ClientPortalInvoice = {
     payment_method?: string | null;
     paid_at?: string | null;
     lines: ClientPortalLine[];
+    currency_snapshot?: PublicCurrencySnapshot | null;
 };
 
 export type ClientPortalQuote = {
@@ -134,6 +137,12 @@ export type ClientPortalInvitation = {
     status: "pending" | "accepted" | "revoked" | "expired";
     expires_at: string;
     created_at: string;
+};
+
+export type ClientPortalInvitationCreated = ClientPortalInvitation & {
+    delivery: "email" | "link";
+    invitation_url?: string;
+    verification_code?: string;
 };
 
 export type ClientPortalGrant = {

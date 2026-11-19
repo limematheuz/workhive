@@ -12,6 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import type { Client } from "@/services/client.service";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 type QuotesFiltersSectionProps = {
     clients: Client[];
@@ -57,21 +58,12 @@ export function QuotesFiltersSection({
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="block">
                     <Label className="sr-only">Todos los clientes</Label>
-                    <Select
+                    <SearchableSelect
                         aria-label="Todos los clientes"
                         value={selectedClientId || "all"}
                         onValueChange={(value) => onClientChange(value === "all" ? "" : value)}
-                    >
-                        <SelectTrigger aria-label="Todos los clientes" className="h-11 w-full rounded-xl px-3 text-sm font-semibold">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                        <SelectItem value="all">Todos los clientes</SelectItem>
-                        {clients.map((c) => (
-                            <SelectItem key={c.id} value={c.id.toString()}>{c.name}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
+                        options={[{value:"all",label:"Todos los clientes"},...clients.map(client=>({value:String(client.id),label:client.name}))]}
+                    />
                 </div>
                 <div className="block">
                     <Label className="sr-only">Todos los estados</Label>

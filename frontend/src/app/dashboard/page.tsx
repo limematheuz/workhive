@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
+import {FinancePriorities} from "@/components/dashboard/role-home/FinancePriorities";
+import {OfficePriorities} from "@/components/dashboard/role-home/OfficePriorities";
 import { TechDashboard } from "@/components/dashboard/TechDashboard";
 import { WorkspaceOverview } from "@/components/dashboard/WorkspaceOverview";
+import { OperationsDashboard } from "@/components/dashboard/overview/OperationsDashboard";
 import { SuperadminDashboard } from "@/components/dashboard/superadmin/SuperadminDashboard";
 import { GuidedTour } from "@/components/onboarding/GuidedTour";
 import { useDictionary } from "@/lib/dictionary-context";
@@ -13,9 +16,18 @@ import { Button } from "@/components/ui/button";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { canViewCompanyTasks, isPlatformSuperadmin } from "@/domain/access/roles";
+import {
+    canManageCompanyTasks,
+    canManageTime,
+    canViewCompanyTasks,
+    canViewFinance,
+    canViewLaborCosts,
+    canViewQuality,
+    canViewWorkReports,
+    isPlatformSuperadmin,
+} from "@/domain/access/roles";
 
-function DashboardOverviewContent() {
+function OperationalHome() {
     const { dict } = useDictionary();
     const { user, loading: loadingUser } = useUser();
 
@@ -104,12 +116,21 @@ function DashboardOverviewContent() {
                 </div>
             )}
 
-            {!(taskFailed && tasks.length === 0) && <TechDashboard
-                currentUser={user}
-                tasks={tasks}
-                locations={locations}
-                onTaskUpdate={loadDashboardData}
-            />}
+            {!(taskFailed && tasks.length === 0) && (canManageCompanyTasks(user) ? (
+                <OperationsDashboard
+                    currentUser={user}
+                    tasks={tasks}
+                    locations={locations}
+                    onTaskUpdate={() => void loadDashboardData()}
+                />
+            ) : (
+                <TechDashboard
+                    currentUser={user}
+                    tasks={tasks}
+                    locations={locations}
+                    onTaskUpdate={loadDashboardData}
+                />
+            ))}
 
             {showGuidedTour && (
                 <GuidedTour
@@ -119,6 +140,16 @@ function DashboardOverviewContent() {
             )}
         </>
     );
+}
+
+function DashboardOverviewContent(){
+    const {user,loading}=useUser();
+    if(loading||!user)return <p role="status" className="p-6 text-sm text-muted-foreground">Cargando tu espacio de trabajo…</p>;
+    if(isPlatformSuperadmin(user)||canManageCompanyTasks(user)||canViewCompanyTasks(user))return <OperationalHome/>;
+    if(canViewFinance(user))return <div className="dashboard-page-content p-4 sm:p-6"><FinancePriorities/></div>;
+    if(canViewLaborCosts(user)||canViewQuality(user))return <OfficePriorities/>;
+    if(canViewWorkReports(user)||canManageTime(user))return <OperationalHome/>;
+    return <OfficePriorities/>;
 }
 
 export default function DashboardOverview() {

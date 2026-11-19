@@ -104,7 +104,7 @@ test("invoice and quote lists paginate both desktop tables and mobile cards cons
 
     for (const [name, file, collection] of [["invoices", invoices, "invoices"], ["quotes", quotes, "quotes"]] as const) {
         assert.match(file, /DataTablePagination/);
-        assert.match(file, new RegExp(`useDataTablePagination\\(${collection}, 10\\)`));
+        assert.match(file, new RegExp(`useDataTablePagination\\(${collection}, 10, "${collection === "invoices" ? "InvoicesListSection.invoices.0" : "QuotesListSection.quotes.0"}"\\)`));
         assert.match(file, /pagination\.pageItems\.map/);
         assert.match(file, /<TableRow/, `${name} should use the shared row separator`);
         assert.match(file, /text-\[var\(--btn-secondary-text\)\]/, `${name} should use the shared blue table headings`);

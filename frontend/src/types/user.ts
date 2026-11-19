@@ -27,6 +27,8 @@ export interface User {
     can_approve_time?: boolean;
     can_view_work_reports?: boolean;
     can_manage_work_reports?: boolean;
+    can_manage_work?: boolean;
+    is_initial_worker?: boolean;
 }
 
 export interface UserStatsResponse {

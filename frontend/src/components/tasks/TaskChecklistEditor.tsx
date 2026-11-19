@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
@@ -93,7 +94,7 @@ export function TaskChecklistEditor({
 
                         {canEdit ? (
                             <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
-                                <Select
+                                <FormSelect searchable aria-label={`Asignar trabajador: ${item.text}`} className="h-9 w-full sm:w-44 text-left text-xs font-semibold"
                                     value={item.assignedUserIds && item.assignedUserIds.length > 1 ? "multiple" : item.assignedUserId?.toString() || "unassigned"}
                                     onValueChange={(value) => {
                                         if (!assignmentDiffers(item, value)) return;
@@ -101,13 +102,13 @@ export function TaskChecklistEditor({
                                         onAssign(item.index, value);
                                     }}
                                 >
-                                    <SelectTrigger aria-label={`Asignar trabajador: ${item.text}`} className="h-9 w-full sm:w-44 text-left text-xs font-semibold"><SelectValue /></SelectTrigger>
-                                    <SelectContent data-form-guard-ignore>{item.assignedUserIds && item.assignedUserIds.length > 1 && <SelectItem value="multiple" disabled>{item.assignedUserIds.length} responsables</SelectItem>}<SelectItem value="unassigned">Sin asignar</SelectItem>{users.map((user) => (
-                                        <SelectItem key={user.id} value={user.id.toString()}>
+
+                                    {item.assignedUserIds && item.assignedUserIds.length > 1 && <option value="multiple" disabled>{item.assignedUserIds.length} responsables</option>}<option value="unassigned">Sin asignar</option>{users.map((user) => (
+                                        <option key={user.id} value={user.id.toString()}>
                                             {user.full_name || user.email}
-                                        </SelectItem>
-                                    ))}</SelectContent>
-                                </Select>
+                                        </option>
+                                    ))}
+                                </FormSelect>
                             </div>
                         ) : (
                             item.assignedUserId && (

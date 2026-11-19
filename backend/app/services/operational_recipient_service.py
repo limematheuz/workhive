@@ -46,4 +46,11 @@ def eligible_users(
     query = eligible_ids_query(
         company_id, location_id=location_id, capabilities=capabilities
     )
-    return select_users(db, query)
+    users = select_users(db, query)
+    if any(user.company_id != company_id for user in users):
+        from app.services.company_notification_recipients import (
+            recipients as company_recipients,
+        )
+
+        return company_recipients(db, {company_id}, user_ids={user.id for user in users})
+    return users

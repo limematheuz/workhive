@@ -23,6 +23,7 @@ import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
 import type { User } from "@/types/user";
+import { useViewState } from "@/hooks/useViewState";
 
 type QuotesLoadErrorKind = "denied" | "unavailable";
 
@@ -61,8 +62,8 @@ function QuotesWorkspace({ user }: { user: User }) {
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedStatus, setSelectedStatus] = useState("");
-    const [selectedClientId, setSelectedClientId] = useState("");
+    const [selectedStatus, setSelectedStatus] = useViewState("quotes.status", "");
+    const [selectedClientId, setSelectedClientId] = useViewState("quotes.client", "");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);

@@ -27,7 +27,11 @@ function readCachedUser(): User | null {
         if (raw) return JSON.parse(raw) as User;
 
         const legacyRaw = sessionStorage.getItem(LEGACY_USER_CACHE_KEY);
-        if (!legacyRaw) return null;
+        if (!legacyRaw) {
+            return !navigator.onLine
+                ? JSON.parse(localStorage.getItem("workhive_offline_identity:v1") ?? "null") as User | null
+                : null;
+        }
 
         const legacyUser = JSON.parse(legacyRaw) as User;
         sessionStorage.setItem(USER_CACHE_KEY, legacyRaw);
@@ -66,6 +70,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             setUser(userData);
             writeCachedUser(userData);
         } catch {
+            if (!navigator.onLine) { setUser(readCachedUser()); return; }
             setUser(null);
             writeCachedUser(null);
         } finally {
@@ -92,8 +97,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                 }
             } catch {
                 if (!cancelled) {
-                    setUser(null);
-                    writeCachedUser(null);
+                    const offlineUser = !navigator.onLine ? readCachedUser() : null;
+                    setUser(offlineUser);
+                    if (!offlineUser) writeCachedUser(null);
                 }
             } finally {
                 if (!cancelled) setLoading(false);

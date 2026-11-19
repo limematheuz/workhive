@@ -1,0 +1,9 @@
+"use client";
+import {SearchableMultiSelect} from "@/components/ui/searchable-multi-select";
+import {SearchableSelect} from "@/components/ui/searchable-select";
+import {SelectField} from "@/components/ui/select-field";
+import type {QuickChoices} from "@/services/quick-work.service";
+export function GeneralStaffPicker({choices,employeeIds,crewId,change,disabled}:{choices:QuickChoices;employeeIds:number[];crewId:string;change:(employees:number[],crew:string)=>void;disabled:boolean}){
+ const mode=crewId?"crew":"people";
+ return <div className="space-y-3"><div className="grid gap-3 sm:grid-cols-2"><label className="space-y-1 text-sm">Asignar a<SelectField aria-label="Tipo de asignación" disabled={disabled} value={mode} onValueChange={value=>change([],value==="crew"?"pending":"")} options={[{value:"people",label:"Trabajadores"},{value:"crew",label:"Equipo de trabajo"}]}/></label>{mode==="crew"?<label className="space-y-1 text-sm">Equipo<SearchableSelect aria-label="Equipo de trabajo" value={crewId==="pending"?"":crewId} disabled={disabled} onValueChange={value=>change([],value)} options={choices.crews.map(crew=>({value:String(crew.id),label:crew.name}))} placeholder="Buscar equipo…"/></label>:<label className="space-y-1 text-sm">Trabajadores<SearchableMultiSelect aria-label="Trabajadores del trabajo" value={employeeIds.map(String)} disabled={disabled} maxSelected={100} onValueChange={ids=>change(ids.map(Number),"")} options={choices.people.map(person=>({value:String(person.id),label:person.name,description:person.position}))} placeholder="Buscar y añadir trabajadores…"/></label>}</div>{!employeeIds.length&&(!crewId||crewId==="pending")&&<p className="text-xs text-orange-700 dark:text-orange-300">Sin personal asignado. Puedes crear el trabajo y completar su asignación después.</p>}</div>;
+}

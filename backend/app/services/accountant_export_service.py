@@ -272,6 +272,9 @@ def build_accountant_export(
                 EXPENSE_HEADERS, [_expense_row(expense) for expense in expenses]
             ),
         )
+        from app.services.currency_export_service import csv_export
+        native_export=csv_export(db,company_id,period.start,period.end)
+        if native_export:zip_file.writestr(f"monedas_originales_{period.suffix}.csv",native_export)
         zip_file.writestr(
             "LEEME.txt",
             _readme(period, len(invoices) + len(manual_records), len(expenses)),

@@ -115,7 +115,8 @@ export const UserService = {
         email: string;
         full_name?: string;
         role_id: number;
-    }): Promise<void> => {
+        delivery?: "email" | "link";
+    }): Promise<{ delivery: "email" | "link"; email: string; expires_at: string; invitation_url?: string; verification_code?: string }> => {
         const response = await apiFetch(`/api/v1/user-invitations/`, {
             method: "POST",
             body: JSON.stringify(buildWorkerInvitationPayload(data)),
@@ -124,6 +125,7 @@ export const UserService = {
             const errData = await response.json().catch(() => ({}));
             throw new Error(errData.detail || "Error sending invitation");
         }
+        return response.json();
     },
 
     getInvitations: async (): Promise<UserInvitation[]> => {

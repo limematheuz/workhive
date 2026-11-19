@@ -576,8 +576,8 @@ def test_space_catalog_generates_editable_office_suggestions(client, db):
     assert [space["name"] for space in response.json()["spaces"]] == [
         "Despacho 1",
         "Despacho 2",
-        "Baño 1",
-        "Cocina",
+        "Office 1",
+        "Baño o aseo 1",
     ]
     assert response.json()["spaces"][2]["tasks"]
 

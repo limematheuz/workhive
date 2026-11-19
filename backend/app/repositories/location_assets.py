@@ -17,16 +17,8 @@ def list_documents(db: Session, location_id: int) -> list[LocationDocument]:
 
 def active_document_bytes_for_company(db: Session, company_id: int) -> int:
     """Return active document usage. Caller owns any required quota lock."""
-
-    return int(
-        db.query(func.coalesce(func.sum(LocationDocument.size_bytes), 0))
-        .filter(
-            LocationDocument.company_id == company_id,
-            LocationDocument.archived_at.is_(None),
-        )
-        .scalar()
-        or 0
-    )
+    from app.repositories.document_register import used_bytes
+    return used_bytes(db,company_id)
 
 
 def list_documents_for_locations(

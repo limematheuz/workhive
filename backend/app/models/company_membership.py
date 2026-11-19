@@ -61,6 +61,9 @@ class CompanyMembership(Base):
     status = Column(String(20), nullable=False, default="active", index=True)
     # An explicit empty permission selection must not restore a legacy role.
     permissions_configured = Column(Boolean, nullable=False, default=False, server_default=false())
+    # Revocation belongs to this company relationship, not the global identity.
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
+    __mapper_args__ = {"version_id_col":session_version,"version_id_generator":False}
     started_at = Column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -107,6 +110,7 @@ class CompanyMembership(Base):
 class Department(Base):
     __tablename__ = "departments"
     __table_args__ = (
+        CheckConstraint("unit_type IN ('area','branch')",name="ck_department_unit_type"),
         CheckConstraint(
             "parent_department_id IS NULL OR parent_department_id <> id",
             name="ck_department_not_own_parent",
@@ -133,6 +137,7 @@ class Department(Base):
         index=True,
     )
     parent_department_id = Column(Integer, nullable=True, index=True)
+    unit_type = Column(String(20), nullable=False, default="area")
     name = Column(String(120), nullable=False)
     normalized_name = Column(String(120), nullable=False)
     code = Column(String(50), nullable=True)

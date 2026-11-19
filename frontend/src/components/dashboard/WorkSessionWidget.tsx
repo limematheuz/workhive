@@ -23,15 +23,20 @@ import { getTaskScheduleDate } from "@/domain/tasks/task-schedule"
 import { getCurrentWorkEndLocation } from "@/lib/work-start-location"
 
 interface WorkSessionWidgetProps {
-    allowedLocations: Location[];
-    allowedTasks: TaskItem[];
-    onOpenTask: (task: TaskItem) => void;
+    allowedLocations?: Location[];
+    allowedTasks?: TaskItem[];
+    onOpenTask?: (task: TaskItem) => void;
 }
 
-function useWorkSessionWidget({ allowedLocations, allowedTasks, onOpenTask }: WorkSessionWidgetProps) {
+export function useWorkSessionWidget({
+    allowedLocations = [],
+    allowedTasks = [],
+    onOpenTask = () => {},
+}: WorkSessionWidgetProps = {}) {
     const { dict } = useDictionary()
     const { user } = useUser()
     const { activeSession, setActiveSession, loading, sessionFailed, refreshSession } = useActiveWorkSession(user)
+    const sessionError = sessionFailed ? (dict.work_sessions?.widget_read_error || "No se pudo consultar el fichaje. Comprueba la conexión y tus permisos.") : ""
     const allLocations = allowedLocations
     const availableTasks = useMemo(() => {
         if (!user) return []
@@ -247,6 +252,7 @@ function useWorkSessionWidget({ allowedLocations, allowedTasks, onOpenTask }: Wo
     }
 
     return {
+        sessionError,
         actionLoading,
         activeSession,
         allLocations,

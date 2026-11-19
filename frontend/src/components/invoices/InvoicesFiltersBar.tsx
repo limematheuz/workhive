@@ -1,17 +1,12 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 import type { Client } from "@/services/client.service";
 
@@ -85,23 +80,18 @@ export function InvoicesFiltersBar({
                 </div>
                 <div className="block">
                     <span className="sr-only">{labels.filter_all_clients || "Todos los clientes"}</span>
-                    <Select
+                    <FormSelect searchable aria-label={labels.filter_all_clients || "Todos los clientes"} className="h-11 w-full" placeholder={labels.filter_all_clients || "Todos los clientes"}
                         value={selectedClientId}
                         onValueChange={(value) => onClientChange(value === "__all-clients__" ? "" : value)}
                     >
-                        <SelectTrigger
-                            aria-label={labels.filter_all_clients || "Todos los clientes"}
-                            className="h-11 w-full"
-                        >
-                            <SelectValue placeholder={labels.filter_all_clients || "Todos los clientes"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="__all-clients__">{labels.filter_all_clients || "Todos los clientes"}</SelectItem>
+
+
+                            <option value="__all-clients__">{labels.filter_all_clients || "Todos los clientes"}</option>
                             {clients.map((client) => (
-                                <SelectItem key={client.id} value={client.id.toString()}>{client.name}</SelectItem>
+                                <option key={client.id} value={client.id.toString()}>{client.name}</option>
                             ))}
-                        </SelectContent>
-                    </Select>
+
+                    </FormSelect>
                 </div>
                 <div className="block">
                     <span className="sr-only">{labels.filter_all_statuses || "Todos los estados"}</span>

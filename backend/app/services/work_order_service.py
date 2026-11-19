@@ -1,7 +1,6 @@
 """Plan contractual and ad-hoc work without mutating legacy task records."""
 
-from calendar import monthrange
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -22,6 +21,7 @@ from app.services.entitlement_service import require_company_feature
 from app.services.service_contract_execution_policy import require_occurrence_within_contract
 from app.services.organization_authorization_service import permitted_location_ids
 from app.services.user_scope import require_company_context
+from app.services.initial_membership_policy import is_initial_worker
 
 
 def _require_work_orders(company_id: int, db: Session) -> None:
@@ -68,13 +68,8 @@ def _advance_occurrence(work_order: WorkOrder) -> None:
         work_order.next_occurrence_at = None
         work_order.status = "completed"
         return
-    if work_order.recurrence_unit == "weekly":
-        candidate = current + timedelta(weeks=work_order.recurrence_interval or 1)
-    else:
-        month = current.month - 1 + (work_order.recurrence_interval or 1)
-        year = current.year + month // 12
-        month = month % 12 + 1
-        candidate = current.replace(year=year, month=month, day=min(current.day, monthrange(year, month)[1]))
+    from app.services.work_order_calendar import next_occurrence
+    candidate=next_occurrence(current,work_order.recurrence_unit,work_order.recurrence_interval)
     if work_order.recurrence_ends_at is not None and (
         normalize_work_order_date(candidate) > normalize_work_order_date(work_order.recurrence_ends_at)
     ):
@@ -87,6 +82,8 @@ def _advance_occurrence(work_order: WorkOrder) -> None:
 def list_work_orders(db: Session, current_user: User, *, status_filter: str | None = None):
     company_id = require_company_context(current_user)
     _require_work_orders(company_id, db)
+    if is_initial_worker(db, current_user):
+        raise HTTPException(status_code=403, detail="Tu acceso inicial permite consultar tus tareas asignadas, no la programación general de la empresa.")
     return work_order_repo.list_work_orders(
         db,
         company_id=company_id,
@@ -119,6 +116,8 @@ def list_contract_candidates(db: Session, current_user: User):
 def get_work_order(db: Session, current_user: User, work_order_id: int) -> WorkOrder:
     company_id = require_company_context(current_user)
     _require_work_orders(company_id, db)
+    if is_initial_worker(db, current_user):
+        raise HTTPException(status_code=403, detail="Tu acceso inicial permite consultar tus tareas asignadas, no la programación general de la empresa.")
     work_order = work_order_repo.get_work_order(
         db, company_id=company_id, work_order_id=work_order_id
     )
@@ -130,7 +129,7 @@ def get_work_order(db: Session, current_user: User, work_order_id: int) -> WorkO
     return work_order
 
 
-def create_work_order(db: Session, current_user: User, data: WorkOrderCreate) -> WorkOrder:
+def create_work_order(db: Session, current_user: User, data: WorkOrderCreate, *, commit: bool = True) -> WorkOrder:
     company_id = require_company_context(current_user)
     _require_work_orders(company_id, db)
     location_access_service.require_location_capability(
@@ -152,7 +151,7 @@ def create_work_order(db: Session, current_user: User, data: WorkOrderCreate) ->
     )
     try:
         work_order = work_order_repo.create_work_order(db, **values)
-        db.commit()
+        if commit:db.commit()
     except Exception:
         db.rollback()
         raise
@@ -222,7 +221,7 @@ def update_work_order(
     return work_order
 
 
-def generate_next_task(db: Session, current_user: User, work_order_id: int):
+def generate_next_task(db: Session, current_user: User, work_order_id: int, *, commit: bool = True):
     company_id = require_company_context(current_user)
     _require_work_orders(company_id, db)
     work_order = work_order_repo.get_work_order(
@@ -233,6 +232,8 @@ def generate_next_task(db: Session, current_user: User, work_order_id: int):
     location_access_service.require_location_capability(
         db, current_user, work_order.location_id, "can_manage_tasks", permission_code="work.manage"
     )
+    if work_order.order_type == "recurring":
+        require_company_feature(db,company_id=company_id,code="features.recurrence")
     if work_order.status != "active" or work_order.next_occurrence_at is None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -254,6 +255,8 @@ def generate_next_task(db: Session, current_user: User, work_order_id: int):
             status_code=status.HTTP_409_CONFLICT,
             detail="La próxima ejecución ya fue creada",
         )
+    from app.services.service_planning_service import generation_scope
+    scope={"unit":"service",**generation_scope(db,company_id,work_order.id)}
     occurrence_at = work_order.next_occurrence_at
     _advance_occurrence(work_order)
     task = task_item_service.create_task_item(
@@ -263,10 +266,13 @@ def generate_next_task(db: Session, current_user: User, work_order_id: int):
             title=work_order.title,
             description=work_order.description,
             location_id=work_order.location_id,
-            unit="service",
             scheduled_start_at=occurrence_at,
             service_context="contract" if work_order.service_contract_id else "standalone",
+            **scope,
         ),
         work_order_id=work_order.id,
+        commit=False,
     )
+    if commit:
+        db.commit();db.refresh(task);task_item_service.publish_created_task(db,task)
     return work_order, task

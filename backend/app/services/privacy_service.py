@@ -18,7 +18,8 @@ from app.models.user import User
 from app.models.work_session import WorkSession
 from app.schemas.privacy import PrivacyRequestCreate, PrivacyRequestResolve
 from app.services import email_service, privacy_request_context
-from app.services.user_scope import is_company_admin, is_superadmin
+from app.services.user_scope import is_superadmin
+from app.services.privacy_administration_guard import primary_company_to_close
 
 
 logger = logging.getLogger(__name__)
@@ -333,34 +334,22 @@ def _anonymize_user(db: Session, user_id: int | None) -> None:
     user = db.get(User, user_id) if user_id is not None else None
     if not user:
         return
-    if is_company_admin(user) and user.company_id is not None:
-        active_admins = (
+    company = primary_company_to_close(db, user)
+    if company:
+        company.is_active = False
+        company.subscription_plan = "none"
+        company.subscription_status = "inactive"
+        company.trial_started_at = None
+        company.trial_ends_at = None
+        db.add(company)
+        (
             db.query(User)
-            .join(User.role)
-            .filter(
-                User.company_id == user.company_id,
-                User.is_active.is_(True),
-                User.role.has(name="admin"),
+            .filter(User.company_id == user.company_id)
+            .update(
+                {User.session_version: User.session_version + 1},
+                synchronize_session=False,
             )
-            .count()
         )
-        if active_admins <= 1:
-            company = db.get(Company, user.company_id)
-            if company:
-                company.is_active = False
-                company.subscription_plan = "none"
-                company.subscription_status = "inactive"
-                company.trial_started_at = None
-                company.trial_ends_at = None
-                db.add(company)
-            (
-                db.query(User)
-                .filter(User.company_id == user.company_id)
-                .update(
-                    {User.session_version: User.session_version + 1},
-                    synchronize_session=False,
-                )
-            )
     user.email = f"deleted+{user.id}@invalid.workhive.local"
     user.full_name = "Deleted user"
     user.photo_url = None

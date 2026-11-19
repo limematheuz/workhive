@@ -1,3 +1,4 @@
+from app.repositories.company_membership_scope import active_member_predicate
 from dataclasses import dataclass
 
 from sqlalchemy import MetaData, Table, and_, exists, func, inspect, or_, select
@@ -81,10 +82,7 @@ def _foreign_key_orphans(engine: Engine) -> list[IntegrityIssue]:
 
 def _task_company_issues(db: Session) -> list[IntegrityIssue]:
     issues: list[IntegrityIssue] = []
-    mismatched_filter = or_(
-        User.company_id.is_(None),
-        User.company_id != TaskItem.company_id,
-    )
+    mismatched_filter = ~active_member_predicate(TaskItem.company_id)
 
     mismatched_assignee = db.scalars(
         select(TaskItem.id)

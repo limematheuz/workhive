@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
@@ -10,12 +11,13 @@ class UserInvitationCreate(BaseModel):
     email: EmailStr
     full_name: str | None = Field(default=None, max_length=100)
     role_id: int
+    delivery: Literal["email", "link"] = "email"
 
 
 class UserInvitationAccept(BaseModel):
     token: str = Field(min_length=32, max_length=128)
     code: str = Field(min_length=8, max_length=8)
-    password: str
+    password: str | None = None
     accept_terms: bool = False
     accept_privacy: bool = False
     marketing_consent: bool = False
@@ -29,8 +31,8 @@ class UserInvitationAccept(BaseModel):
 
     @field_validator("password")
     @classmethod
-    def validate_password(cls, value: str) -> str:
-        return validate_user_password(value)
+    def validate_password(cls, value: str | None) -> str | None:
+        return validate_user_password(value) if value is not None else None
 
     @model_validator(mode="after")
     def validate_legal_acknowledgements(self) -> "UserInvitationAccept":
@@ -41,6 +43,15 @@ class UserInvitationAccept(BaseModel):
 
 class UserInvitationAccepted(BaseModel):
     status: str = "accepted"
+
+
+class UserInvitationCreated(BaseModel):
+    status: str = "accepted"
+    delivery: Literal["email", "link"]
+    email: EmailStr
+    expires_at: datetime
+    invitation_url: str | None = None
+    verification_code: str | None = None
 
 
 class UserInvitationResponse(BaseModel):

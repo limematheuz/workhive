@@ -13,7 +13,7 @@ type ClientDetailBillingTabProps = { invoices: Invoice[]; };
 const STATUS_LABELS: Record<Invoice["status"], string> = { draft: "Borrador", issued: "Emitida", partially_paid: "Parcialmente cobrada", paid: "Cobrada", overdue: "Vencida", cancelled: "Anulada", rectified: "Rectificada" };
 
 export function ClientDetailBillingTab({ invoices }: ClientDetailBillingTabProps) {
-    const pagination = useDataTablePagination(invoices, 10);
+    const pagination = useDataTablePagination(invoices, 10, "ClientDetailBillingTab.invoices.0");
     return <section className="billing-surface overflow-hidden rounded-[22px]">
         <header className="flex items-center justify-between gap-3 px-5 py-4"><div><h3 className="text-sm font-semibold text-[var(--text-main)]">Facturación</h3><p className="mt-1 text-xs text-[var(--text-muted)]">Facturas asociadas a este cliente.</p></div><p className="text-sm font-medium text-[var(--text-muted)]">{invoices.length} {invoices.length === 1 ? "factura" : "facturas"}</p></header>
         {invoices.length === 0 ? <div className="px-5 py-16 text-center"><FileText className="mx-auto size-8 text-[var(--text-muted)]" /><p className="mt-3 text-sm text-[var(--text-muted)]">No hay facturas de este cliente.</p></div> : <>

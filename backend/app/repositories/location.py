@@ -68,7 +68,7 @@ def get_locations_by_client(
                 ),
             )
         )
-    query = query.filter(Location.is_active.is_(True))
+    query = query.filter(Location.is_active.is_(True),Location.is_temporary.is_(False))
 
     if client_id is not None:
         query = query.filter(Location.client_id == client_id)
@@ -130,3 +130,10 @@ def delete_location(db: Session, db_location: Location) -> Location:
     db.commit()
     db.refresh(db_location)
     return db_location
+
+
+def search_work_locations(db,company,query,ids):
+    rows=db.query(Location).outerjoin(Client).filter(Location.is_active.is_(True),Location.is_temporary.is_(False),or_(Location.owner_company_id==company,Location.managing_company_id==company,Client.company_id==company,Location.company_access.any(LocationCompanyAccess.company_id==company)))
+    if ids is not None:rows=rows.filter(Location.id.in_(ids))
+    if query:rows=rows.filter(or_(Location.name.ilike("%"+query+"%"),Location.address.ilike("%"+query+"%"),Location.city.ilike("%"+query+"%")))
+    return rows.order_by(Location.name,Location.id).limit(40).all()

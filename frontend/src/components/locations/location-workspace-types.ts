@@ -82,17 +82,3 @@ export interface LocationFeaturesStepProps {
     serviceWindows: LocationServiceWindow[];
     setServiceWindows: (value: LocationServiceWindow[]) => void;
 }
-
-export interface LocationSpacesStepProps {
-    editingExistingLocation: boolean;
-    profile: LocationProfileDraft;
-    spaces: LocationSpace[];
-    spaceName: string;
-    spaceType: string;
-    suggesting: boolean;
-    setSpaceName: (value: string) => void;
-    setSpaceType: (value: string) => void;
-    removeSpace: (index: number) => void;
-    addSpace: () => void;
-    suggestSpaces: () => void;
-}

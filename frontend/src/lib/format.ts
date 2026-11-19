@@ -13,6 +13,22 @@ const spanishDateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
     timeStyle: "short",
 })
 
+const spanishShortDateTimeFormatter = new Intl.DateTimeFormat("es-ES", {
+    dateStyle: "short",
+    timeStyle: "short",
+})
+
+const spanishTimeFormatter = new Intl.DateTimeFormat("es-ES", {
+    hour: "2-digit",
+    minute: "2-digit",
+})
+
+const spanishShortWeekdayDateFormatter = new Intl.DateTimeFormat("es-ES", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+})
+
 export function formatCurrency(amount: number): string {
     return currencyFormatter.format(amount)
 }
@@ -46,6 +62,20 @@ export function formatDateLong(dateStr: string | null | undefined, locale = "es-
 export function formatSpanishDateTime(value: string): string {
     const date = new Date(value)
     return Number.isNaN(date.getTime()) ? value : spanishDateTimeFormatter.format(date)
+}
+
+export function formatSpanishShortDateTime(value: string): string {
+    const date = new Date(value)
+    return Number.isNaN(date.getTime()) ? value : spanishShortDateTimeFormatter.format(date)
+}
+
+export function formatSpanishTime(value: string | Date): string {
+    const date = value instanceof Date ? value : new Date(value)
+    return Number.isNaN(date.getTime()) ? (typeof value === "string" ? value : "") : spanishTimeFormatter.format(date)
+}
+
+export function formatSpanishShortWeekdayDate(value: Date): string {
+    return Number.isNaN(value.getTime()) ? "" : spanishShortWeekdayDateFormatter.format(value)
 }
 
 export function buildLocalDateTimeIso(dateValue: string, timeValue: string): string | null {

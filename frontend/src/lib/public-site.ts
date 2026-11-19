@@ -1,3 +1,4 @@
+import { isDedicatedApplicationPath } from "./auth-routes.ts";
 import type { Metadata } from "next";
 
 export const PUBLIC_SITE_METADATA: Metadata = {
@@ -43,7 +44,7 @@ const APP_ONLY_PATHS = new Set([
 ]);
 
 export function isAppOnlyPath(pathname: string): boolean {
-    return APP_ONLY_PATHS.has(pathname)
+    return isDedicatedApplicationPath(pathname) || APP_ONLY_PATHS.has(pathname)
         || pathname === "/dashboard"
         || pathname.startsWith("/dashboard/")
         || pathname === "/subscription"

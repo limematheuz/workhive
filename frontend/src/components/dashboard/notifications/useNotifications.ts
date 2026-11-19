@@ -46,6 +46,7 @@ interface UseNotificationsParams {
     enabled?: boolean;
     taskDataEnabled?: boolean;
     reservationDataEnabled?: boolean;
+    canReadTasks?: boolean;
     userId: number | undefined;
     companyId: number | undefined;
     roleName: string | undefined;
@@ -55,8 +56,9 @@ interface UseNotificationsParams {
 
 export function useNotifications({
     enabled = true,
-    taskDataEnabled = true,
+    taskDataEnabled,
     reservationDataEnabled = true,
+    canReadTasks,
     userId,
     companyId,
     roleName,
@@ -72,8 +74,9 @@ export function useNotifications({
     const { persistentNotifications, taskAcknowledgements, setPersistentNotifications, loadPersistentNotifications,
         persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
+    const effectiveTaskDataEnabled = taskDataEnabled ?? canReadTasks ?? true;
     const { notificationTasks, loadTaskNotifications, taskLoadFailed, taskLoading } = useTaskNotificationFeed(
-        enabled && taskDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
+        enabled && effectiveTaskDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
     );
 
     const { notificationReservations, upcomingArrivals, loadReservationNotifications, reservationLoadFailed, reservationLoading } = useReservationNotificationFeed(

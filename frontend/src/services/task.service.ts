@@ -1,3 +1,4 @@
+import type {SpaceAllocation} from "@/services/service-planning.service";
 import type { TaskItemUpdate } from "@/types/task-update"
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
 import {
@@ -12,6 +13,7 @@ import { collectPaginated } from "@/lib/pagination"
 export type { TaskItem };
 
 export interface TaskItemCreate {
+    space_allocations?:SpaceAllocation[];
     title: string;
     description?: string | null;
     notes?: string | null;

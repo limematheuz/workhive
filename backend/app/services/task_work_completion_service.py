@@ -37,7 +37,9 @@ def mark_task_completed(
     *,
     completed_at: datetime | None = None,
 ) -> datetime:
+    from app.services.workflow_approval_policy import defer_completion
     stamped_at = completed_at or datetime.now(timezone.utc)
+    if defer_completion(db,task):return stamped_at
     task_billing_service.lock_task_pricing(task, locked_at=stamped_at)
     task.status = "completed"
     task.date_done = stamped_at
@@ -50,6 +52,8 @@ def mark_task_completed(
 
 
 def complete_task_when_checklist_is_done(db: Session, task: TaskItem) -> bool:
+    from app.services.workflow_approval_policy import enforce_current_approval
+    enforce_current_approval(db,task)
     if task.status in {"requested", "rejected", "completed"}:
         return False
     if not task_assignment_service.all_task_checklist_items_are_complete(task):

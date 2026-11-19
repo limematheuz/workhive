@@ -10,16 +10,13 @@ import { useSidebarTaskCounts } from "./notifications/useSidebarTaskCounts";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
-import { canAdministerCompany, canManageCompanyTasks, canManageTime, canViewCompanyTasks, canViewLocations, canViewFinance, canViewLaborCosts, canViewQuality, canViewWorkReports, isCompanyTaskManagerRole, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
-import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
-import { ClientService } from "@/services/client.service";
-import { OrganizationService } from "@/services/organization.service";
+import { canManageCompanyTasks, canViewCompanyTasks, canViewWorkReports, isClientPortalRole, isExternalPortalRole, isPartnerPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useNotificationReportCount } from "./notifications/useNotificationReportCount";
 import { NOTIFICATIONS_UPDATED_EVENT } from "./notifications/notification-utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sidebar as ShadcnSidebar, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar";
 import { UserAvatar } from "@/components/ui/user-avatar";
-import { buildSidebarNavLinks } from "./sidebar-nav-config";
+import {useWorkspaceNavigation} from "./WorkspaceNavigationProvider";
 import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
@@ -31,67 +28,13 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const { user } = useUser();
     const pathname = usePathname();
     const { isMobile, state, setOpenMobile } = useSidebar();
-    const [loadedFeatures, setLoadedFeatures] = useState<{
-        context: string;
-        values: Set<string> | null;
-    } | null>(null);
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-    const [organizationAccess, setOrganizationAccess] = useState<{ context: string; allowed: boolean; capabilities: Record<string, boolean> } | null>(null);
-    const [clientAccess, setClientAccess] = useState<{ context: string; canRead: boolean } | null>(null);
+    const { navigation } = useWorkspaceNavigation();
     const isAdminOrManager = canManageCompanyTasks(user);
-    const isCompanyAdmin = canAdministerCompany(user);
-    const canManageTimeAccess = canManageTime(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const isPartnerPortal = isPartnerPortalRole(user?.role?.name);
     const isClientPortal = isClientPortalRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
-    const featureContext = user && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal
-        ? `${user.id}:${user.company_id ?? "none"}`
-        : null;
-
-    useEffect(() => {
-        if (!featureContext) return;
-        let cancelled = false;
-        void OrganizationService.getAccess().then(access => {
-            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: ["access.members.read", "access.profiles.read", "organization.departments.read", "organization.teams.read"].some(code => access[code] === true), capabilities: access });
-        }).catch(() => {
-            if (!cancelled) setOrganizationAccess({ context: featureContext, allowed: false, capabilities: {} });
-        });
-        return () => { cancelled = true; };
-    }, [featureContext]);
-
-    useEffect(() => {
-        if (!featureContext) return;
-        let cancelled = false;
-        void ClientService.getAccess().then(access => {
-            if (!cancelled) setClientAccess({ context: featureContext, canRead: access.can_read_clients });
-        }).catch(() => {
-            if (!cancelled) setClientAccess({ context: featureContext, canRead: false });
-        });
-        return () => { cancelled = true; };
-    }, [featureContext]);
-
-    useEffect(() => {
-        if (!featureContext) return;
-        let cancelled = false;
-        void CompanyPlanAccessService.getCurrentEntitlements().then(access => {
-            if (cancelled) return;
-            const grantedFeatures = new Set<string>();
-            for (const entitlement of access.entitlements) {
-                if (entitlement.value_type === "boolean" && entitlement.value === true) {
-                    grantedFeatures.add(entitlement.code);
-                }
-            }
-            setLoadedFeatures({ context: featureContext, values: grantedFeatures });
-        }).catch(() => {
-            if (!cancelled) setLoadedFeatures({ context: featureContext, values: null });
-        });
-        return () => { cancelled = true; };
-    }, [featureContext]);
-
-    const enabledFeatures = loadedFeatures?.context === featureContext
-        ? loadedFeatures.values
-        : null;
 
     const { pendingRequestsCount, taskPendingCount, refreshPending, refreshTasks } = useSidebarTaskCounts(
         canViewCompanyTasks(user) && !userIsPlatformSuperadmin && !isAccountant && !isPartnerPortal && !isClientPortal,
@@ -115,8 +58,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         void refreshReports();
     });
 
-    const navigation = buildSidebarNavLinks(dict, { isAdminOrManager, canViewPlanning: (isCompanyTaskManagerRole(user?.role?.name) || isAdminOrManager) && canViewLocations(user), canManageExternalNetwork: isCompanyTaskManagerRole(user?.role?.name), canViewTasks: canViewCompanyTasks(user), canViewLocations: canViewLocations(user), canReadInventory: organizationAccess?.context === featureContext && organizationAccess?.capabilities["inventory.read"] === true, isCompanyAdmin, canReadClients: clientAccess?.context === featureContext && clientAccess.canRead === true, canManageTime: canManageTimeAccess, canViewWorkReports: canViewWorkReports(user), canViewQuality: canViewQuality(user), canViewOrganization: organizationAccess?.context === featureContext && organizationAccess?.allowed === true, canViewFinance: canViewFinance(user), canViewLaborCosts: canViewLaborCosts(user), isAccountant, isPartnerPortal, isClientPortal, userIsPlatformSuperadmin, enabledFeatures });
-    const expanded = state === "expanded";
+    const expanded = state === "expanded" || isMobile;
     return <ShadcnSidebar collapsible="icon" id="tour-sidebar">
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>
         <SidebarNavigation pathname={pathname} {...navigation} pendingRequestsCount={pendingRequestsCount} taskPendingCount={taskPendingCount} reportAlertsCount={reportAlertsCount} openGroups={openGroups} onOpenGroupChange={(id, open) => setOpenGroups(current => open ? Object.fromEntries(navigation.navGroups.map(group => [group.id, group.id === id])) : { ...current, [id]: false })} />
@@ -126,7 +68,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
                 <SidebarMenuItem>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <SidebarMenuButton tooltip="Perfil y preferencias" className="h-11"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-7 shrink-0" />{expanded && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{user.full_name || "Usuario"}</span><span className="block truncate text-xs text-[var(--text-muted)]">{user.role?.name || "Sin rol"}</span></span><ChevronUp className="size-4" /></>}</SidebarMenuButton>
+                            <SidebarMenuButton tooltip="Perfil y preferencias" aria-label="Perfil y preferencias" className="h-11"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-7 shrink-0" />{expanded && <><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{user.full_name || "Usuario"}</span><span className="block truncate text-xs text-[var(--text-muted)]">{user.role?.name || "Sin rol"}</span></span><ChevronUp className="size-4" /></>}</SidebarMenuButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent side={isMobile ? "top" : "right"} align={isMobile ? "start" : "end"} sideOffset={10} className="sidebar-account-menu w-60 rounded-2xl p-0">
                             <div className="flex min-w-0 items-center gap-2.5 px-3 py-3"><UserAvatar name={user.full_name} email={user.email} photoUrl={user.photo_url} className="size-9 shrink-0" /><div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--text-main)]">{user.full_name || "Usuario"}</p><p className="truncate text-xs text-[var(--text-muted)]">{user.email}</p></div></div>

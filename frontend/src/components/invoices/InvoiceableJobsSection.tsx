@@ -1,4 +1,5 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { BriefcaseBusiness, Loader2, Receipt, RotateCcw, Search, SlidersHorizontal } from "lucide-react";
 
@@ -10,13 +11,7 @@ import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { InvoiceableTask as InvoiceableJob } from "@/services/invoice.service";
 import type { Client } from "@/services/client.service";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -174,7 +169,7 @@ export function InvoiceableJobsSection({
     const selectedJobIdSet = new Set(selectedJobIds);
     const selectedCount = selectedJobIds.length;
     const hasFilters = Boolean(search || partyFilter || invoiceFilter !== "pending" || dateFrom || dateTo);
-    const pagination = useDataTablePagination(tasks, 10);
+    const pagination = useDataTablePagination(tasks, 10, "InvoiceableJobsSection.tasks.0");
 
     const resetFilters = () => {
         onSearchChange("");
@@ -237,23 +232,21 @@ export function InvoiceableJobsSection({
                         </div>
                         <div className="block">
                             <span className="sr-only">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</span>
-                            <Select
+                            <FormSelect searchable aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"} className="h-11 w-full rounded-xl px-3 text-sm font-semibold" placeholder={labels.filter_all_parties || "Todos los clientes y colaboradores"}
                                 value={partyFilter}
                                 onValueChange={(value) => onPartyFilterChange(value === "__all-parties__" ? "" : value)}
                             >
-                                <SelectTrigger aria-label={labels.filter_all_parties || "Todos los clientes y colaboradores"} className="h-11 w-full rounded-xl px-3 text-sm font-semibold">
-                                    <SelectValue placeholder={labels.filter_all_parties || "Todos los clientes y colaboradores"} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="__all-parties__">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</SelectItem>
+
+
+                                    <option value="__all-parties__">{labels.filter_all_parties || "Todos los clientes y colaboradores"}</option>
                                     {clients.map((c) => (
-                                        <SelectItem key={c.id} value={`client:${c.id}`}>{c.name}</SelectItem>
+                                        <option key={c.id} value={`client:${c.id}`}>{c.name}</option>
                                     ))}
                                     {collaboratorOptions.map(([id, name]) => (
-                                        <SelectItem key={id} value={`collaborator:${id}`}>{name}</SelectItem>
+                                        <option key={id} value={`collaborator:${id}`}>{name}</option>
                                     ))}
-                                </SelectContent>
-                            </Select>
+
+                            </FormSelect>
                         </div>
                         <div className="block">
                             <span className="sr-only">Filtrar por estado de facturación</span>

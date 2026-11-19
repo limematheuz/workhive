@@ -93,9 +93,11 @@ export function useTemplateCrud({ dict, setTemplates }: UseTemplateCrudParams) {
 
             const freshTemplates = await TemplateTaskService.getTemplates();
             setTemplates(freshTemplates);
+            return true;
         } catch (error: unknown) {
             console.error("Error deleting template", error);
             toast.error(getErrorMessage(error, "Error al eliminar la plantilla"));
+            return false;
         } finally {
             setIsDeletingTemplate(false);
         }

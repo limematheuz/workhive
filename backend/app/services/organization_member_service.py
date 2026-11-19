@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
 
-from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.company_membership import (
@@ -11,14 +10,13 @@ from app.models.company_membership import (
 from app.models.permission_profile import MembershipPermissionProfileAssignment
 from app.models.user import User
 from app.repositories import organization as organization_repo
-from app.repositories import role as role_repo
 from app.schemas.organization import (
     OrganizationMemberProfileAssignmentResponse,
     OrganizationMemberProfileScopeResponse,
     OrganizationMemberResponse,
     OrganizationMemberUpdate,
 )
-from app.services import organization_bootstrap_service
+from app.services.organization_membership_lifecycle import sync_administrator_profile
 from app.services.entitlement_service import require_internal_member_capacity
 from app.services.organization_department_membership_service import (
     replace_department_memberships as replace_department_memberships_for_member,
@@ -66,7 +64,7 @@ def member_response(
         status=membership.status,
         ended_at=membership.ended_at,
         is_anonymized=is_anonymized_member(user),
-        legacy_role_name=user.role.name if user and user.role else None,
+        legacy_role_name={"admin": "admin", "responsible": "manager", "worker": "viewer"}.get(membership.access_class),
         department_ids=sorted(
             assignment.department_id
             for assignment in organization_repo.list_department_memberships(
@@ -166,7 +164,6 @@ def update_member(
             exclude_membership_id=membership.id,
         )
 
-    security_changed = next_status != membership.status or next_access_class != membership.access_class
     previous_status = membership.status
     membership.access_class = next_access_class
     membership.status = next_status
@@ -174,27 +171,7 @@ def update_member(
         membership.ended_at = datetime.now(timezone.utc)
     elif next_status == "active":
         membership.ended_at = None
-    membership.user.is_active = next_status == "active"
-    if security_changed:
-        membership.user.session_version += 1
-    db.add_all([membership, membership.user])
-    if (
-        payload.access_class
-        and membership.user.role
-        and membership.user.role.name != "external_portal"
-    ):
-        role_name = {"admin": "admin", "responsible": "manager", "worker": "viewer"}[
-            payload.access_class
-        ]
-        legacy_role = role_repo.get_role_by_name(db, role_name)
-        if not legacy_role:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Legacy role '{role_name}' not configured",
-            )
-        membership.user.role_id = legacy_role.id
-        membership.user.role = legacy_role
-        db.add(membership.user)
+    db.add(membership)
     if payload.department_ids is not None:
         replace_department_memberships_for_member(
             db,
@@ -209,7 +186,7 @@ def update_member(
             membership_id=membership.id,
             team_ids=payload.team_ids,
         )
-    organization_bootstrap_service.ensure_user_membership(db, membership.user)
+    sync_administrator_profile(db, membership, actor_id=current_user.id)
     if commit:
         db.commit()
     else:
@@ -292,22 +269,10 @@ def remove_member(
         )
     )
 
-    viewer_role = role_repo.get_role_by_name(db, "viewer")
-    if not viewer_role:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Legacy role 'viewer' not configured",
-        )
-
     membership.status = "archived"
     membership.ended_at = now
-    membership.user.company_id = None
-    membership.user.role_id = viewer_role.id
-    membership.user.role = viewer_role
-    # The person still owns a WorkHive identity and can sign in to manage their
-    # privacy requests or accept a new invitation.  Existing sessions are
-    # invalidated so the revoked company access cannot remain in a browser.
-    membership.user.is_active = True
-    membership.user.session_version += 1
-    db.add_all([membership, membership.user])
+    # Explicit revocation must not opt the member back into initial permissions
+    # if a later invitation reactivates the historical company relationship.
+    membership.permissions_configured = True
+    db.add(membership)
     db.commit()
