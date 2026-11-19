@@ -23,6 +23,26 @@ test('subscription response preserves canonical header code for login recovery',
         return true;
     });
 });
+test('inactive access uses canonical codes only with their matching status', async () => {
+    for (const [status, code, reason] of [
+        [400, 'auth.user_inactive', 'user_inactive'],
+        [403, 'auth.company_inactive', 'company_inactive'],
+    ] as const) {
+        await assert.rejects(assertApiResponseOk(new Response(JSON.stringify({detail: 'Private diagnostic'}), {
+            status, headers: {'X-WorkHive-Error-Code': code},
+        }), 'Fallback'), error => {
+            assert.equal(getLoginFailureReason(error), reason);
+            for (const locale of ['es', 'en'] as const) {
+                assert.match(getLoginFailureMessage(reason, locale), /administrador|administrator/);
+                assert.ok(!getLoginFailureMessage(reason, locale).includes('Private diagnostic'));
+            }
+            return true;
+        });
+        assert.equal(getLoginFailureReason(new ApiResponseError('Denied', 401, code)), 'credentials');
+        assert.equal(getLoginFailureReason(new ApiResponseError('Denied', 500, code)), 'unavailable');
+    }
+    assert.equal(getLoginFailureReason(new ApiResponseError('Inactive user', 400)), 'unavailable');
+});
 test('only payment-blocked identities show subscription recovery',()=>{
     for(const status of [400,401,403,404,429,500]) assert.equal(getLoginAccessBlock(new ApiResponseError('Denied',status,'subscription.trial_expired')),null);
     assert.equal(getLoginAccessBlock(new Error('The company trial has expired')),null);
