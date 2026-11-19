@@ -20,7 +20,7 @@ async function setup(context: BrowserContext, page: Page, width: number) {
     // Simulate the notification invalidation after the fixture adds new report notices.
     await page.evaluate(() => window.dispatchEvent(new Event("workhive:notifications-updated")));
     if (width < 768) await page.getByRole("button", { name: "Alternar navegación", exact: true }).click();
-    await page.getByRole("button", { name: "Operación", exact: true }).click();
+    await page.getByRole("button", { name: "Trabajos", exact: true }).click();
     const link = page.locator('a[href="/dashboard/task-reports"]:visible');
     await expect(link).toContainText("2");
     return { state, inbox, link };
@@ -36,7 +36,7 @@ for (const width of [1440, 768, 390]) {
             state.userId = 2;
             state.companyId = 2;
             await refreshIdentity(page);
-            await expect(page.getByRole("button", { name: /QA avisos 2/ })).toBeVisible();
+            await expect(page.getByText("QA avisos 2", { exact: true }).filter({ visible: true })).toBeVisible();
         } else await refreshReports(page);
         await expect(link).not.toContainText("2");
         inbox.status = 200;
