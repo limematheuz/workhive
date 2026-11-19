@@ -168,6 +168,8 @@ def update_department(
     if next_kind == "branch":
         require_company_feature(db, company_id=company_id, code="features.branches")
     updates = payload.model_dump(exclude_unset=True)
+    if updates.get("is_active") is True and not department.is_active:
+        require_department_capacity(db, company_id=company_id)
     if updates.get("is_active") is False and department.is_active:
         usage = department_repo.get_department_usage(
             db,
@@ -262,6 +264,8 @@ def update_team(
     if not team:
         not_found("Team")
     updates = payload.model_dump(exclude_unset=True)
+    if updates.get("is_active") is True and not team.is_active:
+        require_team_capacity(db, company_id=company_id)
     if updates.get("is_active") is False and team.is_active:
         usage = organization_repo.get_team_usage(
             db, company_id=company_id, team_id=team.id

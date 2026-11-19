@@ -1,27 +1,22 @@
-from datetime import datetime, timezone
-
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException, status
 from app.models.user import User
-from app.models.external_access_grant import ExternalAccessGrant
 from app.schemas.user import UserStatsResponse, UserUpdate
 from app.repositories import user as user_repo
 from app.repositories import role as role_repo
 from app.repositories import organization as organization_repo
 from app.services.company_member_user_views import views as member_user_views
 from app.core.security import get_password_hash, verify_password
-from app.services.entitlement_service import (
-    require_accountant_portal_capacity,
-    require_company_feature,
-    require_internal_member_capacity,
-)
 from app.services import organization_bootstrap_service
 from app.services.external_access_policy import EXTERNAL_PORTAL_ROLE_NAME
+from app.services.user_access_update_policy import (
+    enforce_internal_membership_update,
+    sync_external_portal_grant_activation,
+)
 from app.services.user_scope import is_superadmin
 from app.services.user_scope import is_platform_superadmin, require_company_context
 from app.services.organization_authorization_service import require_capability
-from app.services.organization_member_service import active_admin_count
 from app.services.user_stats_service import get_user_stats as _get_user_stats
 from app.services.user_assignable_policy import list_assignable_users as get_assignable_users  # noqa: F401
 from app.services.user_session_policy import requires_session_revocation
@@ -150,69 +145,16 @@ def update_user(
             detail="Not enough permissions to change user activation",
         )
 
-    activating_user = (
-        user_data.is_active is True
-        and not db_user.is_active
-        and db_user.company is not None
-    )
     is_external_portal_user = bool(
         db_user.role and db_user.role.name == EXTERNAL_PORTAL_ROLE_NAME
     )
     if is_external_portal_user and user_data.is_active is not None:
-        portal_grant = (
-            db.query(ExternalAccessGrant)
-            .filter(
-                ExternalAccessGrant.company_id == db_user.company_id,
-                ExternalAccessGrant.user_id == db_user.id,
-                ExternalAccessGrant.access_type == "accountant",
-            )
-            .first()
+        sync_external_portal_grant_activation(
+            db,
+            db_user=db_user,
+            is_active=user_data.is_active,
+            actor_user_id=current_user.id,
         )
-        if portal_grant is None:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="The external portal grant is missing",
-            )
-        if user_data.is_active is False and db_user.is_active:
-            portal_grant.status = "revoked"
-            portal_grant.revoked_at = datetime.now(timezone.utc)
-            portal_grant.revoked_by_user_id = current_user.id
-            db.add(portal_grant)
-        elif user_data.is_active is True and not db_user.is_active:
-            expires_at = portal_grant.expires_at
-            if expires_at is not None and expires_at.tzinfo is None:
-                expires_at = expires_at.replace(tzinfo=timezone.utc)
-            if (
-                expires_at is not None
-                and expires_at <= datetime.now(timezone.utc)
-            ):
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="The external portal grant has expired and must be issued again",
-                )
-            require_company_feature(
-                db,
-                company_id=db_user.company_id,
-                code="features.accountant_portal",
-            )
-            require_accountant_portal_capacity(
-                db,
-                company_id=db_user.company_id,
-            )
-            portal_grant.status = "active"
-            portal_grant.revoked_at = None
-            portal_grant.revoked_by_user_id = None
-            db.add(portal_grant)
-    membership = None
-    if activating_user and not is_external_portal_user:
-        membership = organization_bootstrap_service.ensure_user_membership(db, db_user)
-        if membership:
-            require_internal_member_capacity(
-                db,
-                company_id=db_user.company_id,
-                access_class=membership.access_class,
-                exclude_membership_id=membership.id,
-            )
 
     if user_data.password is not None:
         if not is_own_profile:
@@ -287,23 +229,13 @@ def update_user(
         "manager": "responsible",
         "viewer": "worker",
     }.get(target_role_name)
-    suspending_member = user_data.is_active is False and db_user.is_active
-    demoting_admin = bool(
-        membership
-        and membership.access_class == "admin"
-        and next_access_class is not None
-        and next_access_class != "admin"
-    )
-    if (
-        membership
-        and membership.access_class == "admin"
-        and membership.status == "active"
-        and (suspending_member or demoting_admin)
-        and active_admin_count(db, db_user.company_id) == 1
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A company must keep at least one active administrator",
+    if membership:
+        enforce_internal_membership_update(
+            db,
+            db_user=db_user,
+            membership=membership,
+            user_data=user_data,
+            next_access_class=next_access_class,
         )
     if requires_session_revocation(db_user, user_data):
         db_user.session_version += 1
