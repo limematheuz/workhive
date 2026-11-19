@@ -6,23 +6,32 @@ const date=new Date();date.setHours(10,0,0,0);
 const task={id:301,title,description:"Trabajo asignado",unit:"servicio",price:999,quantity:2,location_id:11,user_id:701,status:"accepted",priority:"medium",scheduled_start_at:date.toISOString(),due_at:date.toISOString(),is_invoiced:false,created_at:date.toISOString(),updated_at:date.toISOString(),checklist_items:[{id:41,position:0,text:"Limpiar los espacios asignados",completed:false,assignments:[{user_id:701,user_name:"María",status:"accepted"}]}],assignments:[{user_id:701,user_name:"María",status:"accepted",source:"direct"}],spaces:[{id:51,space_id:51,name:"Planta cuarta · zona este",zone_type:"office"}]};
 const features=["features.work_orders","features.time_tracking","features.hr"];
 
-async function fixture(context:BrowserContext,page:Page,{linked=true,track=true}={}){
+async function fixture(context:BrowserContext,page:Page,{linked=true,track=true,notice=false}={}){
  const base=test.info().project.use.baseURL;
  if(!base)throw new Error("E2E_BASE_URL is required");
  const payload=Buffer.from(JSON.stringify({exp:Math.floor(Date.now()/1000)+3600})).toString("base64url");
  await context.addCookies([{name:"auth_token",value:"fixture."+payload+".signature",url:base}]);
  await page.addInitScript(()=>localStorage.setItem("locale","es"));
- let disconnected=false,failPhoto=true;
+ let disconnected=false,failPhoto=true,unread=notice,identityDenied=false;
+ const acknowledgements:string[]=[];
  const partEvents:string[]=[],photoEvents:string[]=[];
  let submitted:Record<string,unknown>|null=null;
- await page.route("**/api/v1/**",async route=>{
+ await context.route("**/api/v1/**",async route=>{
   if(disconnected){await route.abort("internetdisconnected");return;}
   const request=route.request(),path=new URL(request.url()).pathname.replace(/\/$/,"");
   let body:unknown=[];
-  if(path==="/api/v1/users/me")body=actor;
+  if(path==="/api/v1/users/me"){
+   if(identityDenied){await route.fulfill({status:401,json:{detail:"Not authenticated"}});return;}
+   body=actor;
+  }
   else if(path==="/api/v1/worker-workspace")body={employee:linked?{id:31,name:actor.full_name,position:"Limpiadora"}:null,features,can_track_time:track};
   else if(path==="/api/v1/session/companies")body={current_company_id:91,companies:[{id:91,name:"Empresa de limpieza QA",access_class:"admin",disabled:false}]};
   else if(path==="/api/v1/task-items")body=[task];
+  else if(path==="/api/v1/task-items/301")body=task;
+  else if(path==="/api/v1/work-sessions/active")body=null;
+  else if(path==="/api/v1/work-sessions/task/301/detailed-summary")body={task_item_id:301,total_seconds:0,active_workers:0,workers:[]};
+  else if(path==="/api/v1/notifications")body=unread?[{id:94,event_type:"task.assigned",title:"Nuevo trabajo asignado",message:title,entity_type:"task_item",entity_id:301,href:"/dashboard?taskId=301",metadata_json:{},read_at:null,created_at:date.toISOString()}]:[];
+  else if(path==="/api/v1/notifications/task-items/301/read"){unread=false;acknowledgements.push(path);await route.fulfill({status:204});return;}
   else if(path==="/api/v1/locations")body=[{id:11,name:"Centro logístico y oficinas de administración · Edificio Norte",address:"Calle de prueba 1",city:"Madrid"}];
   else if(path==="/api/v1/offline-work"&&request.method()==="POST"){submitted=request.postDataJSON();partEvents.push(String(submitted?.event_id));body={...submitted,id:801,user_id:701,status:"pending"};}
   else if(path==="/api/v1/offline-work")body=submitted?[{...submitted,id:801,user_id:701,status:"pending"}]:[];
@@ -37,8 +46,50 @@ async function fixture(context:BrowserContext,page:Page,{linked=true,track=true}
   }
   await route.fulfill({json:body});
  });
- return {partEvents,photoEvents,offline:async(value:boolean)=>{disconnected=value;await context.setOffline(value);}};
+ return {partEvents,photoEvents,acknowledgements,renewNotice:()=>{unread=true;},denyIdentity:()=>{identityDenied=true;},offline:async(value:boolean)=>{disconnected=value;await context.setOffline(value);}};
 }
+
+test("a rejected session cannot reopen prepared worker data",async({context,page})=>{
+ const flow=await fixture(context,page);
+ await page.goto("/worker");
+ await page.getByRole("button",{name:"Preparar mi jornada",exact:true}).click();
+ await expect(page.getByText("App y trabajos preparados.",{exact:false})).toBeVisible({timeout:60000});
+ flow.denyIdentity();
+ await page.reload();
+ await expect(page).toHaveURL(/\/login\?next=/);
+ await expect(page.getByRole("heading",{name:"Mi jornada",exact:true})).toHaveCount(0);
+ expect(await page.evaluate(()=>localStorage.getItem("workhive_offline_identity:v1"))).toBeNull();
+});
+
+for(const width of [390,1440])test(`worker opens and acknowledges task notifications within its application at ${width}px`,async({context,page})=>{
+ await page.setViewportSize({width,height:900});
+ const flow=await fixture(context,page,{notice:true});
+ await page.goto("/worker");
+ const bell=page.getByRole("button",{name:"Notifications",exact:true});
+ await expect(bell).toHaveText("1");
+ await bell.click();
+ await page.getByRole("button").filter({hasText:"Nuevo trabajo asignado"}).click();
+ await expect(page).toHaveURL(/\/worker\/jobs\?taskId=301$/);
+ await expect(page.getByRole("dialog",{name:title,exact:true})).toBeVisible();
+ await page.getByRole("dialog").getByRole("button",{name:"Close",exact:true}).click();
+ await expect(page).toHaveURL(/\/worker\/jobs$/);
+ await expect(bell).toHaveText("");
+ expect(flow.acknowledgements).toEqual(["/api/v1/notifications/task-items/301/read"]);
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ flow.renewNotice();
+ await bell.click();
+ await page.getByRole("button").filter({hasText:"Nuevo trabajo asignado"}).click();
+ await expect(page.getByRole("dialog",{name:title,exact:true})).toBeVisible();
+ expect(flow.acknowledgements).toHaveLength(2);
+});
+
+test("worker deep links never open a task outside the authorized workspace",async({context,page})=>{
+ await fixture(context,page);
+ await page.goto("/worker/jobs?taskId=999");
+ await expect(page.getByRole("status").filter({hasText:"Este trabajo ya no está disponible"})).toBeVisible();
+ await expect(page.getByRole("dialog")).toHaveCount(0);
+ await expect(page.getByRole("heading",{name:title,exact:true})).toBeVisible();
+});
 
 test("worker mobile shows own operations and clear missing-link and disabled-clock states",async({context,page})=>{
  await page.setViewportSize({width:390,height:844});

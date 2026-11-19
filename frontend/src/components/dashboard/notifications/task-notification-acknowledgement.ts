@@ -13,9 +13,9 @@ import {
  * keeps that interaction instant, while the server request makes it durable
  * across sessions and devices without delaying navigation.
  */
-export function acknowledgeTaskOpened(userId: number, task: TaskItem): void {
+export function acknowledgeTaskOpened(userId: number, task: TaskItem): Promise<void> {
     dismissTaskNotification(userId, task);
-    void NotificationService.markTaskItemRead(task.id).then(
+    return NotificationService.markTaskItemRead(task.id).then(
         () => {
             if (typeof window !== "undefined") {
                 window.dispatchEvent(new CustomEvent(NOTIFICATIONS_UPDATED_EVENT, {
