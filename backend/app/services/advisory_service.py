@@ -18,7 +18,8 @@ def companies(db, user):
         if not accounting and not payroll:raise HTTPException(403,"No tienes acceso a estas áreas.")
         return [{"id":company, "name":repo.company_name(db, company), "accounting":accounting, "payroll":payroll}]
     result = []
-    for grant in repo.grants(db, user.id, datetime.now(timezone.utc)).all():
+    for grant in repo.grants(db, user.id, datetime.now(timezone.utc), grant_id=getattr(user,"application_grant_id",None)).all():
+        if getattr(user, "application_grant_id", grant.id) != grant.id:continue
         settings = repo.area(db, grant.id)
         result.append(dict(id=grant.company_id, name=repo.company_name(db, grant.company_id),
                            accounting=settings.accounting if settings else True,
@@ -27,12 +28,14 @@ def companies(db, user):
 
 
 def require_area(db, user, company, area):
+    if getattr(user, "application_company_id", company) != company:
+        raise HTTPException(403, "Esta empresa no pertenece al acceso activo.")
     if not is_external_portal_user(user):
         if company != require_company_context(user):
             raise HTTPException(404, "Empresa no encontrada")
         require_capability(db, user, "finance.read" if area == "accounting" else "labor_costs.read")
     else:
-        grant = repo.grants(db, user.id, datetime.now(timezone.utc)).filter_by(company_id=company).first()
+        grant = repo.grants(db, user.id, datetime.now(timezone.utc), grant_id=getattr(user,"application_grant_id",None)).filter_by(company_id=company).first()
         settings = repo.area(db, grant.id) if grant else None
         enabled = getattr(settings, area) if settings else area == "accounting"
         if not grant or not enabled:

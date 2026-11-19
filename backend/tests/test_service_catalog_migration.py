@@ -168,7 +168,9 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
     # These established entities are FK targets of the new accounting and
     # organization revisions. Clone their stable schema instead of adding only
     # an ID whenever another migration starts reflecting one of their FKs.
-    ExternalAccessGrant.__table__.to_metadata(metadata)
+    external_grants = ExternalAccessGrant.__table__.to_metadata(metadata)
+    # The application-context migration adds this after the historical baseline.
+    external_grants._columns.remove(external_grants.c.session_version)
     department = Department.__table__.to_metadata(metadata)
     # unit_type belongs to the delivery migration, not this legacy baseline.
     for constraint in list(department.constraints):
@@ -210,6 +212,10 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         command.upgrade(Config("alembic.ini"), "head")
 
         inspector = inspect(engine)
+        for table in ("client_portal_grants", "external_access_grants"):
+            assert "session_version" in {
+                column["name"] for column in inspector.get_columns(table)
+            }
         assert {
             "catalog_version",
             "estimated_duration_minutes",

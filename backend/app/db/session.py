@@ -28,3 +28,5 @@ install_task_closure_guard()
 
 from app.services.membership_session_guard import install as install_membership_session_guard
 install_membership_session_guard()
+from app.services.portal_session_guard import install as install_portal_session_guard
+install_portal_session_guard()

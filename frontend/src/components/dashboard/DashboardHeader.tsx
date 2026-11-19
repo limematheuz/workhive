@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useDictionary } from "@/lib/dictionary-context";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NotificationPanel } from "./notifications/NotificationPanel";
+import { ApplicationSwitchLink } from "@/components/applications/ApplicationSwitchLink";
 
 const titles:Record<string,string>={
         "/dashboard/planificar":"Planificar trabajo",
@@ -93,6 +94,6 @@ export function DashboardHeader() {
             {group && <><span className="hidden shrink-0 text-[var(--text-muted)] md:inline">{group.label[locale === "en" ? "en" : "es"]}</span><ChevronRight aria-hidden="true" className="hidden size-3.5 shrink-0 text-[var(--text-muted)] md:block" /></>}
             <span aria-current="page" className="min-w-0 truncate font-medium text-[var(--text-main)]">{pageTitle}</span>
         </nav></div>
-        <div className="flex shrink-0 items-center gap-2"><CompanySwitcher /><NotificationPanel /></div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2"><ApplicationSwitchLink /><CompanySwitcher /><NotificationPanel /></div>
     </header>;
 }

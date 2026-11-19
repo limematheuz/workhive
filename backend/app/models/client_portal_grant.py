@@ -48,6 +48,8 @@ class ClientPortalGrant(Base):
     )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    session_version = Column(Integer, nullable=False, default=0, server_default="0")
+    __mapper_args__ = {"version_id_col": session_version, "version_id_generator": False}
     company_id = Column(
         Integer,
         ForeignKey("companies.id", ondelete="CASCADE"),

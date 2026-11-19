@@ -36,7 +36,8 @@ test("only login and registration are authentication entry screens", () => {
 
 test("dedicated applications retain safe login return paths and role boundaries",()=>{
  for(const path of ["/worker","/worker/jobs?task=8","/portal-cliente","/gestoria"]){assert.equal(requiresAuthenticatedSession(path.split("?")[0]),true);assert.equal(resolvePostLoginPath(path),path);}
- for(const path of ["/worker-evil","/gestoria-falsa","/accesos"]){assert.equal(requiresAuthenticatedSession(path),false);assert.equal(resolvePostLoginPath(path),DEFAULT_POST_LOGIN_PATH);}
+ for(const path of ["/worker-evil","/gestoria-falsa"]){assert.equal(requiresAuthenticatedSession(path),false);assert.equal(resolvePostLoginPath(path),DEFAULT_POST_LOGIN_PATH);}
+ assert.equal(requiresAuthenticatedSession("/accesos"),false);assert.equal(resolvePostLoginPath("/accesos"),"/accesos");assert.equal(resolvePostLoginPath("/accesos-falso"),DEFAULT_POST_LOGIN_PATH);
  assert.equal(applicationHome("client_portal"),"/portal-cliente");assert.equal(applicationHome("external_portal"),"/gestoria");assert.equal(applicationHome("viewer"),"/worker");assert.equal(applicationHome("admin"),"/dashboard");assert.equal(applicationHome("admin","/worker/jobs"),"/worker/jobs");
  assert.equal(applicationRoleAllowed("worker","viewer",2),true);assert.equal(applicationRoleAllowed("worker","viewer",null),false);assert.equal(applicationRoleAllowed("worker","client_portal",2),false);assert.equal(applicationRoleAllowed("client","admin",2),false);assert.equal(applicationRoleAllowed("adviser","client_portal",null),false);assert.equal(applicationRoleAllowed("client","client_portal",null),true);assert.equal(applicationRoleAllowed("adviser","external_portal",null),true);
 });
