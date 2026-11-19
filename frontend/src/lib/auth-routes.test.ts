@@ -44,4 +44,7 @@ test("dedicated applications retain safe login return paths and role boundaries"
 
 test("office responsibilities keep a worker-class account in its authorized workspace",()=>{
  assert.equal(applicationHome({role:{name:"viewer"},can_view_finance:true}),"/dashboard");assert.equal(applicationHome({role:{name:"viewer"},can_view_labor_costs:true}),"/dashboard");assert.equal(applicationHome({role:{name:"viewer"},can_view_quality:true}),"/dashboard");assert.equal(applicationHome({role:{name:"viewer"},can_view_finance:false}),"/worker");assert.equal(applicationHome({role:{name:"viewer"},can_view_finance:true},"/worker"),"/worker");
+ assert.equal(applicationHome({role:{name:"viewer"},can_view_tasks:false,can_manage_time:false}),"/dashboard");
+ assert.equal(applicationHome({role:{name:"viewer"},can_view_tasks:true,can_manage_time:false}),"/worker");
+ assert.equal(applicationHome({role:{name:"viewer"},can_view_tasks:false,can_manage_time:true}),"/worker");
 });

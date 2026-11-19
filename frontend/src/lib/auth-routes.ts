@@ -53,14 +53,15 @@ export function resolvePostLoginPath(
 }
 
 /** The route changes presentation only; each application/API still checks its own permissions. */
-export type ApplicationIdentity={role?:{name?:string};can_view_finance?:boolean;can_view_labor_costs?:boolean;can_view_quality?:boolean;can_manage_work_reports?:boolean;can_manage_work?:boolean};
+export type ApplicationIdentity={role?:{name?:string};can_view_finance?:boolean;can_view_labor_costs?:boolean;can_view_quality?:boolean;can_manage_work_reports?:boolean;can_manage_work?:boolean;can_view_tasks?:boolean;can_manage_time?:boolean};
 export function applicationHome(identity: string | ApplicationIdentity | undefined, requested = DEFAULT_POST_LOGIN_PATH): string {
     const role=typeof identity==="string"?identity:identity?.role?.name;
     const office=typeof identity==="object"&&Boolean(identity.can_view_finance||identity.can_view_labor_costs||identity.can_view_quality||identity.can_manage_work||identity.can_manage_work_reports);
+    const fieldAccess=typeof identity!=="object"||identity.can_view_tasks!==false||identity.can_manage_time!==false;
     if (requested !== DEFAULT_POST_LOGIN_PATH) return requested;
     if (role === "client_portal") return "/portal-cliente";
     if (role === "external_portal") return "/gestoria";
-    if (role === "viewer"&&!office) return "/worker";
+    if (role === "viewer"&&!office&&fieldAccess) return "/worker";
     return DEFAULT_POST_LOGIN_PATH;
 }
 export type ApplicationKind = "worker" | "client" | "adviser";

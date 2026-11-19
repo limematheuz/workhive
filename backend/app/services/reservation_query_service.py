@@ -253,7 +253,13 @@ def get_reservation(
             scope_type="location",
             scope_id=reservation.location_id,
         )
-    if current_user.role.name == "viewer":
+    if current_user.role.name == "viewer" and not organization_authorization_service.has_capability(
+        db,
+        current_user,
+        "work.manage",
+        scope_type="location",
+        scope_id=reservation.location_id,
+    ):
         assigned_link = (
             db.query(TaskItem.id)
             .filter(

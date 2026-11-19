@@ -33,6 +33,7 @@ export function NotificationPanel() {
     const notifications = useNotifications({
         enabled,
         taskDataEnabled: canViewCompanyTasks(user),
+        canManageTasks: canManageCompanyTasks(user),
         reservationDataEnabled: canManageCompanyTasks(user) && canViewLocations(user),
         userId: user?.id,
         companyId: user?.company_id ?? undefined,

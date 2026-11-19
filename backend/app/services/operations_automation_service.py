@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.models.operations_automation import OperationsAutomation
 from app.repositories import operations_automation as repo
 from app.services import notification_service,work_order_service
+from app.services.company_notification_recipients import recipients as company_recipients
 from app.services.organization_authorization_service import require_capability,has_capability
 from app.services.user_scope import require_company_context
 
@@ -50,7 +51,7 @@ def run_company(db,settings):
             except HTTPException as exc:
                 db.rollback()
                 issues.append(f"Orden {order.id} · {exc.detail}")
-    users=repo.recipients(db,company)
+    users=company_recipients(db,{company})
     if settings.documents:
         recipients=[u for u in users if has_capability(db,u,"labor_costs.read")]
         from app.services.staff_documentation_service import digest

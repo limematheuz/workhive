@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback } from "react";
-import { isCompanyTaskManagerRole } from "@/domain/access/roles";
 import { ReservationService } from "@/services/reservation.service";
 import { useNotificationSnapshot } from "./useNotificationSnapshot";
 
 export function useReservationNotificationFeed(enabled: boolean, userId: number | undefined,
     companyId: number | undefined, roleName: string | undefined, onLoaded: (now: number) => void) {
-    const context = enabled && userId && companyId && isCompanyTaskManagerRole(roleName) ? `${userId}:${companyId}:${roleName}` : null;
+    const context = enabled && userId && companyId ? `${userId}:${companyId}:${roleName ?? "none"}` : null;
     const read = useCallback(async (readContext: string) => {
         const [reservations, arrivals] = await Promise.all([
             ReservationService.getReservations({}, `notification-reservations:${readContext}`),
