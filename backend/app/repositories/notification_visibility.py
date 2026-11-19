@@ -1,6 +1,6 @@
 """Apply current operational recipient eligibility before inbox pagination."""
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, false, func, or_, select
 
 from app.models.notification import Notification
 from app.models.task_item import TaskItem
@@ -17,6 +17,7 @@ def operational_visibility(
     user_id: int,
     legacy_roles: tuple[str, ...],
     management_roles: tuple[str, ...],
+    work_available,
 ):
     readers = eligible_user_ids(
         company_id=company_id,
@@ -72,7 +73,7 @@ def operational_visibility(
         select(TaskReport.id)
         .where(
             TaskReport.id == Notification.entity_id,
-            ~report_company_condition(company_id),
+            ~func.coalesce(report_company_condition(company_id), false()),
         )
         .exists()
     )
@@ -107,6 +108,7 @@ def operational_visibility(
         Notification.event_type == "task.requested",
     )
     return and_(
+        or_(~operational, work_available),
         or_(
             ~operational,
             company_visible,

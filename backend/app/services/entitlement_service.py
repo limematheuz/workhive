@@ -15,6 +15,9 @@ from app.models.subscription_entitlement import (
 from app.repositories import subscription_entitlement as entitlement_repo
 from app.services.entitlement_catalog import (
     ALL_ENTITLEMENT_CODES,
+    FEATURE_CODES,
+    LEGACY_PLAN_CODES,
+    PLAN_CODES,
     EntitlementValue,
     default_plan_values,
     legacy_plan_code,
@@ -30,6 +33,22 @@ class EffectiveEntitlements:
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def boolean_entitlement_predicate(company_id: int, code: str, *, now: datetime | None = None):
+    """Apply catalogue defaults and persisted contract precedence inside a read query."""
+    from app.repositories.entitlement_predicate import boolean_entitlement
+
+    if code not in FEATURE_CODES:
+        raise ValueError(f"Unknown boolean entitlement code: {code}")
+    legacy_values = {
+        plan: default_plan_values(plan)[code] is True
+        for plan in (*PLAN_CODES, *LEGACY_PLAN_CODES)
+    }
+    return boolean_entitlement(
+        company_id, code, now or _utcnow(), legacy_values,
+        default_plan_values("basic")[code] is True,
+    )
 
 
 def _value_from_entitlement(entitlement: PlanEntitlement) -> EntitlementValue:
