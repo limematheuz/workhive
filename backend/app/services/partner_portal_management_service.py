@@ -165,10 +165,11 @@ def grant_portal_access(
             status_code=status.HTTP_409_CONFLICT,
             detail="A paying collaborator keeps its full workspace and cannot use the sponsored portal.",
         )
+    now = _utcnow()
     active_grant = partner_portal_repo.get_active_grant_for_user(
         db,
         user_id=partner_user.id,
-        now=_utcnow(),
+        now=now,
     )
     if active_grant and active_grant.collaboration_id != collaboration.id:
         raise HTTPException(
@@ -180,7 +181,15 @@ def grant_portal_access(
         collaboration_id=collaboration.id,
         user_id=partner_user.id,
     )
-    if grant is None or grant.status != "active":
+    grant_expires_at = grant.expires_at if grant else None
+    if grant_expires_at is not None and grant_expires_at.tzinfo is None:
+        grant_expires_at = grant_expires_at.replace(tzinfo=timezone.utc)
+    grant_is_currently_active = bool(
+        grant is not None
+        and grant.status == "active"
+        and (grant_expires_at is None or grant_expires_at > now)
+    )
+    if not grant_is_currently_active:
         require_partner_portal_capacity(db, company_id=host_company_id)
     partner_portal_role = role_repo.get_role_by_name(db, PARTNER_PORTAL_ROLE_NAME)
     if partner_portal_role is None:
@@ -188,7 +197,6 @@ def grant_portal_access(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Partner portal role is not configured.",
         )
-    now = _utcnow()
     if grant is None:
         grant = PartnerPortalGrant(
             host_company_id=host_company_id,
