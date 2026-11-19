@@ -51,10 +51,16 @@ def login_context(db,user):
     if not user.role or user.role.name not in INTERNAL_ROLES:return user
     contexts=repo.contexts(db,user.id)
     candidates=sorted(contexts,key=lambda pair:(pair[0].company_id!=user.company_id,pair[1].name))
+    fallback=None
     for membership,company in candidates:
         if not active_membership(membership):continue
+        if fallback is None:
+            fallback = (membership, company)
         try:require_company_access(company)
         except HTTPException:continue
+        return bind(repo.authenticate(db,user.email,company.id),company.id,user.session_version,membership.session_version)
+    if fallback is not None:
+        membership,company=fallback
         return bind(repo.authenticate(db,user.email,company.id),company.id,user.session_version,membership.session_version)
     return user
 

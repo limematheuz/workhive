@@ -34,9 +34,13 @@ def area(db, grant_id):
     return db.get(AdvisoryAccess, grant_id)
 
 
+def company(db, company_id):
+    return db.get(Company, company_id)
+
+
 def company_name(db, company_id):
-    company = db.get(Company, company_id)
-    return company.name if company else str(company_id)
+    row = company(db, company_id)
+    return row.name if row else str(company_id)
 
 
 def payroll_data(db, company, starts, ends):

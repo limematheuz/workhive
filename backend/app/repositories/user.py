@@ -187,6 +187,14 @@ def revoke_company_sessions(db: Session, *, company_id: int) -> None:
             synchronize_session=False,
         )
     )
+    (
+        db.query(CompanyMembership)
+        .filter(CompanyMembership.company_id == company_id)
+        .update(
+            {CompanyMembership.session_version: CompanyMembership.session_version + 1},
+            synchronize_session=False,
+        )
+    )
 
 
 def has_protected_user_data(db: Session, user_id: int) -> bool:

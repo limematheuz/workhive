@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.models.client_portal_grant import ClientPortalGrant
 from app.models.user import User
 from app.repositories import client_portal as client_portal_repo
-from app.services.subscription_policy import require_company_access
+from app.services.subscription_policy import evaluate_company_access, require_company_access
 from app.services.entitlement_service import company_feature_enabled, require_company_feature
 
 
@@ -96,6 +96,7 @@ def list_active_client_portal_grants(
             grant.company is not None
             and grant.company_id in enabled_companies
             and grant.company.is_active
+            and evaluate_company_access(grant.company).allowed
             and grant.client is not None
             and grant.client.is_active
             and grant.client.company_id == grant.company_id
