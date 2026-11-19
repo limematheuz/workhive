@@ -34,7 +34,7 @@ def get_client(db: Session, company_id: int | None, client_id: int) -> Client:
     return client
 
 
-def create_client(db: Session, client_data: ClientCreate) -> Client:
+def create_client(db: Session, client_data: ClientCreate, *, commit=True) -> Client:
     _require_clients_feature(db, client_data.company_id)
     if client_data.legal_number:
         existing_client = client_repo.get_client_by_legal_number(
@@ -44,7 +44,7 @@ def create_client(db: Session, client_data: ClientCreate) -> Client:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Legal Number already exists"
             )
-    return client_repo.create_client(db, client_data)
+    return client_repo.create_client(db, client_data, commit=commit)
 
 
 def update_client(

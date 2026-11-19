@@ -30,6 +30,7 @@ def get_user_stats(
         not is_own_profile
         and not is_platform_superadmin(current_user)
         and db_user.company_id != current_user.company_id
+        and not user_repo.is_active_company_member(db,current_user.company_id,db_user.id)
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -75,7 +76,8 @@ def get_user_stats(
                 day = 28
             start_date = now.replace(year=year, day=day)
 
-    active_session = work_session_repo.get_active_session_by_user(db, user_id)
+    company=db_user.company_id if is_platform_superadmin(current_user) else current_user.company_id
+    active_session = work_session_repo.get_active_session_for_company(db,user_id,company) if company else work_session_repo.get_active_session_by_user(db,user_id)
     if (
         active_session is not None
         and visible_location_ids is not None
@@ -85,7 +87,7 @@ def get_user_stats(
     active_session_id = active_session.id if active_session else None
 
     closed_sessions = work_session_repo.get_closed_sessions_by_user(
-        db, user_id, start_date, visible_location_ids
+        db, user_id, start_date, visible_location_ids,company_id=company
     )
     total_seconds = sum(
         elapsed_seconds(session, now=session.end_time) for session in closed_sessions
@@ -98,19 +100,20 @@ def get_user_stats(
         start_date,
         statuses=task_assignment_service.OPERATIONAL_VIEWER_STATUSES,
         location_ids=visible_location_ids,
+        company_id=company,
     )
     tasks_completed = task_item_repo.count_tasks_by_user_and_status(
-        db, user_id, "completed", start_date, visible_location_ids
+        db, user_id, "completed", start_date, visible_location_ids,company_id=company
     )
     tasks_pending = task_item_repo.count_tasks_by_user_and_status(
-        db, user_id, "pending", start_date, visible_location_ids
+        db, user_id, "pending", start_date, visible_location_ids,company_id=company
     )
 
     session_locations = work_session_repo.get_distinct_location_ids_by_user(
-        db, user_id, start_date, visible_location_ids
+        db, user_id, start_date, visible_location_ids,company_id=company
     )
     task_locations = task_item_repo.get_distinct_location_ids_by_user(
-        db, user_id, start_date, visible_location_ids
+        db, user_id, start_date, visible_location_ids,company_id=company
     )
     locations_worked_count = len(set(session_locations) | set(task_locations))
 

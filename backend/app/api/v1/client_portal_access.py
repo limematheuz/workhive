@@ -12,6 +12,7 @@ from app.schemas.client_portal import (
     ClientPortalInvitationAccept,
     ClientPortalInvitationAccepted,
     ClientPortalInvitationCreate,
+    ClientPortalInvitationCreated,
     ClientPortalInvitationResponse,
 )
 from app.services import audit_service, client_portal_invitation_service
@@ -56,7 +57,8 @@ def read_client_portal_invitations(
 
 @router.post(
     "/clients/{client_id}/invitations",
-    response_model=ClientPortalInvitationResponse,
+    response_model=ClientPortalInvitationCreated,
+    response_model_exclude_none=True,
     status_code=status.HTTP_201_CREATED,
 )
 def create_client_portal_invitation(

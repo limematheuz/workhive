@@ -37,9 +37,20 @@ def test_foreign_admin_cannot_read_or_delete_existing_operational_parents(
                 continue  # Portal grants have separate principals and dedicated isolation tests.
             name = parameters[0]["name"]
             target = path.replace("{" + name + "}", str(parents[name]))
+            query_params = {}
+            for param in definition.get("parameters", []):
+                if param.get("in") == "query" and param.get("required"):
+                    pname = param["name"]
+                    if pname == "month":
+                        query_params[pname] = "2026-11"
+                    elif pname == "year" or param.get("schema", {}).get("type") == "integer":
+                        query_params[pname] = "2026"
+                    else:
+                        query_params[pname] = "1"
             response = client.request(
                 method.upper(),
                 target,
+                params=query_params or None,
                 headers=qa.headers["outsider"],
                 follow_redirects=False,
             )

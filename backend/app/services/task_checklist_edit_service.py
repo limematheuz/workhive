@@ -7,8 +7,9 @@ from app.models.task_item import TaskItem
 from app.models.task_structure import TaskChecklistAssignment
 from app.models.user import User
 from app.repositories import task_item as task_repo
+from app.repositories import task_space_scope as scope_repo
 from app.schemas.task_item import TaskChecklistEdit, TaskItemUpdate
-from app.services import task_structure_service, task_update_policy_service
+from app.services import task_structure_service, task_update_policy_service, workforce_execution_service
 
 
 def apply_checklist_edits(
@@ -30,6 +31,8 @@ def apply_checklist_edits(
     if loaded is None:
         raise HTTPException(status_code=404, detail="Task Item not found")
     items = {item.id: item for item in loaded.checklist_items}
+    assignment_changes = {edit.id for edit in edits if edit.assigned_user_ids is not None and edit.id in items and set(edit.assigned_user_ids) != {assignment.user_id for assignment in items[edit.id].assignments}}
+    allocated_items = scope_repo.staff_checklist_ids(db, task.company_id, task.id, assignment_changes)
     assignee_ids: set[int] = set()
     for edit in edits:
         item = items.get(edit.id)
@@ -39,6 +42,8 @@ def apply_checklist_edits(
             raise HTTPException(
                 status_code=400, detail="This checklist item belongs to the description"
             )
+        if edit.id in allocated_items:
+            raise HTTPException(409, "Cambia los trabajadores de esta tarea desde Editar reparto por espacios.")
         assignee_ids.update(edit.assigned_user_ids or [])
     task_structure_service.validate_assignee_ids(db, task.company_id, assignee_ids, task.location_id)
 
@@ -58,13 +63,15 @@ def apply_checklist_edits(
                 for user_id in edit.assigned_user_ids
             ]
         if edit.completed is not None:
-            item.completed = edit.completed
+            aggregate = workforce_execution_service.from_account(db, task, item, current_user, edit.completed)
+            if aggregate is False:
+                item.completed = edit.completed
             for assignment in item.assignments:
-                assignment.status = "completed" if edit.completed else "pending"
+                assignment.status = "completed" if item.completed else "pending"
             key = f"item_{item.id}"
             evidence[key] = {
                 **(evidence.get(key) or {}),
-                "answer": "yes" if edit.completed else None,
+                "answer": (aggregate if aggregate != "pending" else None) if isinstance(aggregate, str) else "yes" if edit.completed else None,
             }
     task.checklist_evidence = evidence
     return True

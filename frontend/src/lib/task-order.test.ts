@@ -5,6 +5,7 @@ import {
     getOverviewDateRange,
     getTasksForOverviewTab,
     getTaskScheduleDate,
+    isTaskDateOnlyValue,
     isDateInRange,
     sortTasksByOperationalPriority,
     toTaskPlanningDateInput,
@@ -159,4 +160,22 @@ test("dashboard excludes malformed planning dates instead of leaking them into t
 
     assert.deepEqual(getTasksForOverviewTab([malformed], "hoy", now), []);
     assert.deepEqual(getTasksForOverviewTab([malformed], "todo", now), [malformed]);
+});
+
+test("UTC task API schedules show Madrid worker hours and preserve date-only markers", () => {
+    const previousTimezone = process.env.TZ;
+    process.env.TZ = "Europe/Madrid";
+    try {
+        assert.equal(toTaskPlanningTimeInput("2026-11-17T12:00:00Z"), "13:00");
+        assert.equal(toTaskPlanningTimeInput("2026-11-17T12:40:00Z"), "13:40");
+        assert.equal(toTaskPlanningTimeInput("2026-07-17T12:00:00Z"), "14:00");
+        for (const marker of ["2026-11-17T00:00:00Z", "2026-11-17T22:59:59.999000Z"]) {
+            assert.equal(isTaskDateOnlyValue(marker), true);
+            assert.equal(toTaskPlanningDateInput(marker), "2026-11-17");
+            assert.equal(toTaskPlanningTimeInput(marker), "");
+        }
+    } finally {
+        if (previousTimezone === undefined) delete process.env.TZ;
+        else process.env.TZ = previousTimezone;
+    }
 });

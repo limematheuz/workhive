@@ -210,8 +210,8 @@ function TechDashboardInner({
                     )}
                 />
 
-                <div className="grid min-w-0 grid-cols-1 items-start gap-6 sm:gap-8 lg:grid-cols-3">
-                    <div className="min-w-0 space-y-6 lg:col-span-2">
+                <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-3">
+                    <div className="min-w-0 space-y-3 lg:col-span-2">
                         <PremiumTabs
                             layout="fit"
                             tabs={[
@@ -234,7 +234,7 @@ function TechDashboardInner({
                         />
 
                         {dashboardTasks.standardTasks.length === 0 && dashboardTasks.overdueTasks.length === 0 ? (
-                            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)]/30 py-20 text-center">
+                            <div className="rounded-2xl border border-dashed border-[var(--border-soft)] bg-[var(--bg-card)]/30 py-8 text-center">
                                 <CheckSquare className="mx-auto mb-3 h-10 w-10 text-[var(--text-main)] opacity-20" />
                                 <p className="text-sm font-semibold text-[var(--text-muted)]">
                                     {dict.tech.no_scheduled_tasks}
@@ -243,7 +243,7 @@ function TechDashboardInner({
                         ) : (
                             <div className="min-w-0 space-y-6">
                                 {dashboardTasks.tasksByLocation.map(item => (
-                                    <div key={item.location.id} className="min-w-0 space-y-4 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm ui-motion hover:shadow-md sm:p-6">
+                                    <div key={item.location.id} className="min-w-0 space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm ui-motion hover:shadow-md sm:p-6">
                                         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3">
                                             <div className="flex min-w-0 items-center gap-2.5">
                                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-accent/20 bg-accent/10 text-[var(--text-main)]">

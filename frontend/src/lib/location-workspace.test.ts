@@ -21,27 +21,27 @@ test("location workspace has optional profiles, spaces, and a catalog in one API
     assert.match(workspaceService, /importBulkLocations/);
 });
 
-test("the location workspace uses shadcn tabs as four visible steps and keeps suggestions optional", () => {
-    const form = read("../components/locations/LocationWorkspaceForm.tsx");
+test("the location workspace uses shadcn tabs as five visible steps and keeps suggestions optional", () => {
+    const form = read("../components/locations/LocationWorkspaceForm.tsx") + read("../components/locations/useLocationWorkspace.ts");
     const infoStep = read("../components/locations/LocationInfoAccessStep.tsx");
     const types = read("../types/location.ts");
     const typeStep = read("../components/locations/LocationTypeStep.tsx");
-    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
-    const spacesStep = read("../components/locations/LocationSpacesStep.tsx");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx") + read("../components/locations/LocationContactsSection.tsx");
+    const spacesStep = read("../components/locations/LocationTasksStep.tsx");
 
     assert.match(infoStep, /Información y acceso/);
     assert.match(typeStep, /Tipo de ubicación/);
     assert.match(featuresStep, /Características/);
     assert.match(spacesStep, /Espacios y tareas/);
-    assert.match(spacesStep, /Sugerir espacios/);
+    assert.match(spacesStep, /Generar espacios y tareas/);
     assert.match(spacesStep, /from "@\/components\/ui\/select"/);
-    assert.match(spacesStep, /<SelectTrigger aria-label="Tipo de espacio">/);
+    assert.match(spacesStep, /<SelectTrigger aria-label="Añadir otro espacio de la biblioteca"/);
     assert.doesNotMatch(spacesStep, /<select/);
     assert.match(form, /WORKSPACE_STEPS/);
     assert.match(form, /PremiumTabsNavigation/);
-    assert.match(form, /onChange=\{goToStep\}/);
-    assert.match(form, /Operación/);
-    assert.match(form, /Contactos, riesgos y horario/);
+    assert.match(form, /onChange=\{state\.goToStep\}/);
+    assert.match(form, /id: "operations", label: "Características"/);
+    assert.match(form, /id: "review", label: "Resumen"/);
     assert.match(form, /profile/);
     assert.match(form, /spaces/);
     assert.match(form, /flex h-full min-h-0 flex-col/);
@@ -83,8 +83,8 @@ test("location room and catalog actions reuse the shared button primitive", () =
 
 test("location contacts are operational, scoped to the site, and separate from account contacts", () => {
     const types = read("../types/location.ts");
-    const form = read("../components/locations/LocationWorkspaceForm.tsx");
-    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
+    const form = read("../components/locations/LocationWorkspaceForm.tsx") + read("../components/locations/useLocationWorkspace.ts");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx") + read("../components/locations/LocationContactsSection.tsx");
 
     assert.match(types, /LocationContactRole/);
     assert.match(types, /contacts\?: LocationContact\[\]/);
@@ -99,8 +99,8 @@ test("location contacts are operational, scoped to the site, and separate from a
 
 test("location risks stay attached to the site with severity and mitigation guidance", () => {
     const types = read("../types/location.ts");
-    const form = read("../components/locations/LocationWorkspaceForm.tsx");
-    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
+    const form = read("../components/locations/LocationWorkspaceForm.tsx") + read("../components/locations/useLocationWorkspace.ts");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx") + read("../components/locations/LocationContactsSection.tsx");
     const risksSection = read("../components/locations/LocationRisksSection.tsx");
 
     assert.match(types, /LocationRiskSeverity/);
@@ -116,8 +116,8 @@ test("location risks stay attached to the site with severity and mitigation guid
 
 test("service schedules are distinct from access and support multiple weekday windows", () => {
     const types = read("../types/location.ts");
-    const form = read("../components/locations/LocationWorkspaceForm.tsx");
-    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx");
+    const form = read("../components/locations/LocationWorkspaceForm.tsx") + read("../components/locations/useLocationWorkspace.ts");
+    const featuresStep = read("../components/locations/LocationFeaturesStep.tsx") + read("../components/locations/LocationContactsSection.tsx");
     const windowsSection = read("../components/locations/LocationServiceWindowsSection.tsx");
 
     assert.match(types, /LocationServiceWindow/);
@@ -185,7 +185,7 @@ test("location operational data does not reload when polling replaces the locati
     assert.match(hook, /\[open, locationId\]/);
     assert.doesNotMatch(hook, /\[open, location\]/);
     assert.match(detail, /showSpaces=\{false\}/);
-    assert.match(detail, /Estructura de espacios/);
+    assert.match(detail, /Gestionar espacios y tareas de la ubicación/);
 });
 
 test("location task assignment loads people only with the directory-read capability", () => {

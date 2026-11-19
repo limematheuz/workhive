@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import (
     AsyncAuthenticatedAdmin,
-    AsyncAuthenticatedUser,
+    AsyncAuthenticatedIdentity,
     AuthenticatedAdmin,
-    AuthenticatedUser,
+    AuthenticatedIdentity,
     get_async_db,
     get_db,
 )
@@ -27,7 +27,7 @@ router = APIRouter()
 @router.get("/export")
 async def export_personal_data(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncAuthenticatedUser,
+    current_user: User = AsyncAuthenticatedIdentity,
 ):
     payload = await db.run_sync(
         lambda sync_db: privacy_service.export_user_data(sync_db, current_user)
@@ -45,7 +45,7 @@ async def export_personal_data(
 @router.get("/consents", response_model=list[PrivacyConsentResponse])
 async def read_consents(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncAuthenticatedUser,
+    current_user: User = AsyncAuthenticatedIdentity,
 ):
     return await db.run_sync(
         lambda sync_db: privacy_service.list_consents(sync_db, current_user)
@@ -61,7 +61,7 @@ def create_privacy_request(
     data: PrivacyRequestCreate,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: User = AuthenticatedUser,
+    current_user: User = AuthenticatedIdentity,
 ):
     created = privacy_service.create_request(db, current_user, data)
     audit_service.record_event(
@@ -80,7 +80,7 @@ def create_privacy_request(
 @router.get("/requests/me", response_model=list[PrivacyRequestResponse])
 async def read_my_privacy_requests(
     db: AsyncSession = Depends(get_async_db),
-    current_user: User = AsyncAuthenticatedUser,
+    current_user: User = AsyncAuthenticatedIdentity,
 ):
     return await db.run_sync(
         lambda sync_db: privacy_service.list_user_requests(sync_db, current_user)

@@ -16,9 +16,12 @@ from app.services.organization_location_scope_service import (
 )
 from app.services.organization_legacy_authorization_service import (
     has_explicit_profile_assignments,
-    legacy_role_allows,
 )
-from app.services.organization_permission_policy import is_system_only_permission
+from app.services.organization_permission_policy import (
+    feature_code_for_capability,
+    is_system_only_permission,
+)
+from app.services.initial_membership_policy import operational_role_allows,is_initial_worker
 from app.services.user_scope import (
     is_platform_superadmin,
     require_company_context,
@@ -43,33 +46,7 @@ def _require_active_company_principal(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Company not found"
         )
-    feature_code = {
-        "organization.departments.read": "features.organization",
-        "organization.departments.manage": "features.organization",
-        "organization.teams.read": "features.teams",
-        "organization.teams.manage": "features.teams",
-        "clients.read": "features.clients",
-        "clients.manage": "features.clients",
-        "commercial.follow_ups.read": "features.clients",
-        "commercial.follow_ups.manage": "features.clients",
-        "locations.read": "features.locations",
-        "locations.manage": "features.locations",
-        "work.read": "features.work_orders",
-        "work.manage": "features.work_orders",
-        "time.read": "features.time_tracking",
-        "time.manage": "features.time_tracking",
-        "time.approve": "features.time_tracking",
-        "inventory.read": "features.inventory",
-        "inventory.manage": "features.inventory",
-        "quality.templates.read": "features.quality",
-        "quality.templates.manage": "features.quality",
-        "quality.inspections.read": "features.quality",
-        "quality.inspections.manage": "features.quality",
-        "quality.incidents.read": "features.quality",
-        "quality.incidents.manage": "features.quality",
-        "quality.complaints.read": "features.quality",
-        "quality.complaints.manage": "features.quality",
-    }.get(capability)
+    feature_code = feature_code_for_capability(capability)
     if feature_code:
         require_feature(db, company, feature_code)
     grant = require_external_company_capability(
@@ -80,11 +57,9 @@ def _require_active_company_principal(
     )
     if grant is not None:
         return company_id, grant
-    membership = organization_repo.get_user_membership(
-        db,
-        company_id=company_id,
-        user_id=current_user.id,
-    )
+    membership = getattr(current_user,"active_membership",None)
+    if membership is None or membership.company_id!=company_id or membership.user_id!=current_user.id:
+        membership = organization_repo.get_user_membership(db,company_id=company_id,user_id=current_user.id)
     if not membership:
         from app.services.organization_bootstrap_service import ensure_legacy_membership
 
@@ -98,6 +73,9 @@ def _require_active_company_principal(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Active company membership required",
         )
+    from app.services.company_session_principal import CompanyUser
+    if isinstance(current_user, CompanyUser):
+        current_user.active_membership = membership
     return company_id, membership
 
 
@@ -126,7 +104,7 @@ def require_capability(
     membership = principal
 
     target_id = scope_id if scope_id is not None else company_id
-    legacy_allowed = legacy_role_allows(
+    legacy_allowed = operational_role_allows(
         db,
         current_user,
         capability,
@@ -207,7 +185,11 @@ def uses_legacy_role_authorization(
     current_user: User,
     capability: str,
 ) -> bool:
-    """Whether this user still relies on the temporary role compatibility path."""
+    """Whether operative reads need the role-based own-assignment filter.
+
+    This does not grant a capability: the canonical resolver checks the legacy
+    base or the separate verified initial membership policy first.
+    """
 
     company_id, principal = _require_active_company_principal(
         db, current_user, capability
@@ -251,14 +233,14 @@ def resolve_location_read_scope(
             detail="Not enough permissions",
         )
     membership = principal
-    if legacy_role_allows(
+    if operational_role_allows(
         db,
         current_user,
         capability,
         company_id=company_id,
         membership=membership,
     ):
-        if capability == "locations.read" and role_name(current_user) == "viewer":
+        if role_name(current_user) == "viewer" and (capability == "locations.read" or is_initial_worker(db,current_user)):
             return list_legacy_viewer_location_ids(
                 db, company_id=company_id, user_id=current_user.id
             ), True
@@ -302,7 +284,7 @@ def resolve_location_capabilities(
         company_id=company_id,
         membership_id=membership.id,
     )
-    if legacy_role_allows(
+    if operational_role_allows(
         db,
         current_user,
         read_capability,
@@ -312,7 +294,7 @@ def resolve_location_capabilities(
     ):
         legacy_manage_locations = (
             None
-            if legacy_role_allows(
+            if operational_role_allows(
                 db,
                 current_user,
                 manage_capability,
@@ -324,7 +306,8 @@ def resolve_location_capabilities(
         )
         legacy_read_locations = (
             list_legacy_viewer_location_ids(db, company_id=company_id, user_id=current_user.id)
-            if read_capability == "locations.read" and role_name(current_user) == "viewer"
+            if (read_capability == "locations.read" and role_name(current_user) == "viewer")
+            or is_initial_worker(db, current_user)
             else None
         )
         return legacy_read_locations, legacy_manage_locations, True

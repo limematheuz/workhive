@@ -23,7 +23,7 @@ function getInvoiceActions(invoice: Invoice, onOpenInvoice: (invoiceId: number, 
 }
 
 export function InvoicesListSection({ invoices, loading, loadingLabel, emptyLabel, getClientName, getStatusText, onOpenInvoice, labels, canManage }: InvoicesListSectionProps) {
-    const pagination = useDataTablePagination(invoices, 10);
+    const pagination = useDataTablePagination(invoices, 10, "InvoicesListSection.invoices.0");
 
     if (loading) return <section className="billing-surface flex min-h-64 items-center justify-center gap-3 rounded-[26px]"><Loader2 className="size-6 animate-spin text-accent" /><span className="text-xs text-[var(--text-muted)]">{loadingLabel}</span></section>;
 

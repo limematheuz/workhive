@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { InvoiceCreateSheet } from "@/components/invoices/InvoiceCreateSheet";
@@ -38,7 +39,7 @@ function InvoiceDetailDialog({ invoiceId, initialEdit, onClose, onInvoiceChanged
     )
 }
 
-export default function InvoicesPage() {
+function InvoicesPageContent() {
     const workspace = useInvoicesWorkspace();
     const {
         activeView, clients, collaboratorOptions, createSheet, dict, filteredInvoiceableTasks,
@@ -167,3 +168,5 @@ export default function InvoicesPage() {
         </div>
     );
 }
+
+export default function InvoicesPage(){return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Cargando facturación…</p>}><InvoicesPageContent/></Suspense>;}

@@ -6,9 +6,11 @@ import { ClipboardList, Plus } from "lucide-react";
 import { MarginForecastDialog } from "@/components/margin-forecast/MarginForecastDialog";
 import { EditWorkOrderDialog } from "@/components/work-orders/EditWorkOrderDialog";
 import { WorkOrderList } from "@/components/work-orders/WorkOrderList";
-import { CreateWorkOrderDialog } from "@/components/work-orders/CreateWorkOrderDialog";
+import { ServicePlanner } from "@/components/operations/ServicePlanner";
 import { WorkOrderMaterialsDialog } from "@/components/work-orders/WorkOrderMaterialsDialog";
+import { WorkOrderScopeDialog } from "@/components/work-orders/WorkOrderScopeDialog";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/ui/page-header";
 import { getErrorMessage } from "@/lib/errors";
 import { canManageFinance, canViewFinance, canViewLaborCosts, isPlatformSuperadmin } from "@/domain/access/roles";
@@ -20,6 +22,9 @@ import type { User } from "@/types/user";
 import { LocationService, type Location } from "@/services/location.service";
 import { WorkOrderService } from "@/services/work-order.service";
 import type { WorkOrder, WorkOrderContractCandidate } from "@/types/work-order";
+function CreateWorkOrderDialog({open,onOpenChange,locations,contracts,onCreated}:{open:boolean;onOpenChange:(value:boolean)=>void;locations:Location[];contracts:WorkOrderContractCandidate[];onCreated:(order:WorkOrder)=>void}){
+    return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-6xl" confirmDiscard><DialogHeader><DialogTitle>Planificar trabajo</DialogTitle><DialogDescription>Selecciona la ubicación, los espacios que se van a limpiar y las personas de cada espacio.</DialogDescription></DialogHeader><ServicePlanner locations={locations} contracts={contracts} saved={order=>{onCreated(order);onOpenChange(false);}}/></DialogContent></Dialog>;
+}
 
 export default function WorkOrdersPage() {
     const { user } = useUser();
@@ -31,6 +36,7 @@ function WorkOrdersWorkspace({ user }: { user: User }) {
     const { dict } = useDictionary();
     const canViewMargin = canViewFinance(user) && canViewLaborCosts(user) && !isPlatformSuperadmin(user);
     const canManageMargin = canManageFinance(user) && canViewMargin;
+    const [orderFilter, setOrderFilter] = React.useState("all");
     const [workOrders, setWorkOrders] = React.useState<WorkOrder[]>([]);
     const [locations, setLocations] = React.useState<Location[]>([]);
     const [contracts, setContracts] = React.useState<WorkOrderContractCandidate[]>([]);
@@ -40,6 +46,7 @@ function WorkOrdersWorkspace({ user }: { user: User }) {
     const [creating, setCreating] = React.useState(false);
     const [editing, setEditing] = React.useState<WorkOrder | null>(null);
     const [generatingId, setGeneratingId] = React.useState<number | null>(null);
+    const [scopeFor,setScopeFor]=React.useState<WorkOrder|null>(null);
     const [materialsFor, setMaterialsFor] = React.useState<WorkOrder | null>(null);
     const [marginFor, setMarginFor] = React.useState<WorkOrder | null>(null);
 
@@ -86,22 +93,28 @@ function WorkOrdersWorkspace({ user }: { user: User }) {
     };
 
     return <div className="dashboard-page-content px-[3%] py-6 md:p-8">
-        <PageHeader icon={ClipboardList} title="Órdenes de trabajo" subtitle="Planifica una intervención o recurrencia. Las tareas se crean solo cuando generas una ejecución." className="mb-6" actions={!loading && manageableLocationIds.size > 0 ? <Button className={PAGE_ACTION_BUTTON_PRIMARY} onClick={() => setCreating(true)}><Plus className="size-4" />Nueva orden</Button> : undefined} />
+        <PageHeader icon={ClipboardList} title="Trabajos programados" subtitle="Servicios puntuales y recurrentes, con espacios y equipos asignados." className="mb-6" actions={!loading && manageableLocationIds.size > 0 ? <Button className={PAGE_ACTION_BUTTON_PRIMARY} onClick={() => setCreating(true)}><Plus className="size-4" />Planificar trabajo</Button> : undefined} />
         {loadFailed && <div role="alert" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4"><p className="text-sm text-[var(--text-muted)]">{dict.workOrderValidation.read_error}</p><Button variant="outline" onClick={() => void reload()} disabled={loading}>{dict.workOrderValidation.retry}</Button></div>}
+        <div className="mb-3 flex flex-wrap gap-2" aria-label="Tipo de trabajo">
+            {[["all","Todos"],["one_off","Puntuales"],["recurring","Servicios recurrentes"]].map(([value,label]) =>
+                <Button key={value} size="sm" aria-pressed={orderFilter === value} variant={orderFilter === value ? "default" : "outline"} onClick={() => setOrderFilter(value)}>{label}</Button>)}
+        </div>
         {(!loadFailed || loaded) && <WorkOrderList
-            workOrders={workOrders}
+            workOrders={workOrders.filter(order => orderFilter === "all" || order.order_type === orderFilter)}
             loading={loading}
             locationName={locationName}
             generatingId={generatingId}
             canViewMargin={canViewMargin}
             canManageOrder={canManageOrder}
             onEdit={setEditing}
+            onScope={setScopeFor}
             onMaterials={setMaterialsFor}
             onMargin={setMarginFor}
             onGenerate={(order) => void generate(order)}
         />}
         <CreateWorkOrderDialog open={creating} onOpenChange={setCreating} locations={locations} contracts={contracts} onCreated={(workOrder) => setWorkOrders((current) => [workOrder, ...current])} />
         {editing && <EditWorkOrderDialog key={editing.id} workOrder={editing} readOnly={!canManageOrder(editing)} open onOpenChange={(open) => !open && setEditing(null)} onUpdated={(workOrder) => setWorkOrders((current) => current.map((item) => item.id === workOrder.id ? workOrder : item))} />}
+        {scopeFor && <WorkOrderScopeDialog order={scopeFor} open onOpenChange={(open) => !open && setScopeFor(null)} updated={() => void reload()} />}
         {materialsFor && <WorkOrderMaterialsDialog key={materialsFor.id} workOrder={materialsFor} open onOpenChange={(open) => !open && setMaterialsFor(null)} />}
         {marginFor && <MarginForecastDialog scopeType="work_order" scopeId={marginFor.id} scopeName={marginFor.title} canManage={canManageMargin} open onOpenChange={(open) => !open && setMarginFor(null)} />}
     </div>;

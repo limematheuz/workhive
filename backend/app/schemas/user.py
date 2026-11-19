@@ -88,6 +88,8 @@ class UserResponse(UserBase):
     can_approve_time: bool = False
     can_view_work_reports: bool = False
     can_manage_work_reports: bool = False
+    can_manage_work: bool = False
+    is_initial_worker: bool = False
 
 
 class AssignableUserResponse(BaseModel):

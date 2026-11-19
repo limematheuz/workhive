@@ -49,9 +49,12 @@ def get_all_clients(
     return query.offset(skip).limit(limit).all()
 
 
-def create_client(db: Session, client_data: ClientCreate) -> Client:
+def create_client(db: Session, client_data: ClientCreate, *, commit=True) -> Client:
     db_client = stage_client(db, client_data)
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(db_client)
     return db_client
 

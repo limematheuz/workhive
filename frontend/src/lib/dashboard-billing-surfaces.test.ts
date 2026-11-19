@@ -54,7 +54,7 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     assert.match(ledgerSummary, /SummaryMetricCard/);
     assert.doesNotMatch(ledgerSummary, /function SummaryMetric\(/);
     assert.match(metricCard, /const TrendIcon = value > 0 \? ArrowUpRight : value < 0 \? ArrowDownRight : Minus/);
-    assert.match(metricCard, /size-10 shrink-0 items-center justify-center rounded-xl bg-\[var\(--brand-blue-soft\)\] text-accent/);
+    assert.match(metricCard, /size-8 shrink-0 items-center justify-center rounded-lg bg-\[var\(--brand-blue-soft\)\] text-accent/);
     assert.match(globals, /--status-active-text: #047857/);
 
     // Keep the plot fill as a light neutral so chart lines stay readable.

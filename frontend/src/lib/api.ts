@@ -1,3 +1,4 @@
+import { requiresAuthenticatedSession } from "./auth-routes.ts";
 import { clearSessionCache, getCsrfToken, getSessionReadContext, setCsrfToken } from "./auth.ts";
 import { createInflightRequestDeduper } from "./inflight-request.ts";
 
@@ -107,8 +108,8 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
 
         if (response.status === 401 && sessionContext === getSessionReadContext()) {
             clearSessionCache();
-            if (typeof window !== "undefined" && window.location.pathname.startsWith("/dashboard")) {
-                window.location.replace("/login");
+            if (typeof window !== "undefined" && requiresAuthenticatedSession(window.location.pathname)) {
+                window.location.replace("/login?next=" + encodeURIComponent(window.location.pathname + (window.location.search || "")));
             }
         }
 

@@ -240,3 +240,6 @@ api_router.include_router(
     tags=["client-portal"],
 )
 register_api_access_routes(api_router)
+
+from app.api.v1.operations_extensions import api_router as operations_extensions_router
+api_router.include_router(operations_extensions_router)

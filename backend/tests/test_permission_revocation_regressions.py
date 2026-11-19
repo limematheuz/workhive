@@ -106,10 +106,17 @@ def test_explicit_empty_assignment_disables_legacy_access_even_on_first_configur
 
 
 def test_suspended_session_does_not_return_when_membership_is_reactivated(client, db):
+    from app.core.security import get_password_hash
+    from tests.credentials import TEST_SECRET
     company, admin, user, member, profile, path = _setup(db, client)
+    user.email="reactivated-session@example.com";user.hashed_password=get_password_hash(TEST_SECRET);db.commit()
     old_session = _headers(user)
     for status in ("suspended", "active"):
         response = client.patch(f"/api/v1/organization/members/{member.id}", headers=_headers(admin), json={"status": status})
         assert response.status_code == 200, response.text
     assert client.get("/api/v1/clients/", headers=old_session).status_code == 401
-    assert client.get("/api/v1/clients/", headers=_headers(user)).status_code == 200
+    # A new session must carry the current company epoch; rebuilding a legacy
+    # token with only the unchanged global identity version is still revoked.
+    login=client.post("/api/v1/auth/login",data={"username":user.email,"password":TEST_SECRET})
+    assert login.status_code==200,login.text
+    assert client.get("/api/v1/clients/", headers={"Authorization":"Bearer "+login.json()["access_token"]}).status_code == 200

@@ -29,16 +29,30 @@ def legacy_access_condition(company_id: int, role_names: tuple[str, ...]):
         Assignment.company_membership_id == CompanyMembership.id,
         Assignment.company_id == company_id,
     )
-    return and_(
-        Role.name.in_(role_names),
-        or_(
-            CompanyMembership.id.is_(None),
-            and_(
-                CompanyMembership.permissions_configured.is_(False),
-                ~history,
-            ),
-        ),
+    unconfigured = and_(
+        CompanyMembership.permissions_configured.is_(False),
+        ~history,
     )
+    primary = and_(
+        User.company_id == company_id,
+        Role.name.in_(role_names),
+        or_(CompanyMembership.id.is_(None), unconfigured),
+    )
+    secondary_classes = tuple(
+        access_class
+        for access_class, role in (("worker", "viewer"), ("responsible", "manager"))
+        if role in role_names
+    )
+    if not secondary_classes:
+        return primary
+    secondary = and_(
+        or_(User.company_id.is_(None), User.company_id != company_id),
+        CompanyMembership.id.is_not(None),
+        CompanyMembership.status == "active",
+        CompanyMembership.access_class.in_(secondary_classes),
+        unconfigured,
+    )
+    return or_(primary, secondary)
 
 
 def legacy_viewer_ids(company_id: int):
@@ -53,7 +67,10 @@ def legacy_viewer_ids(company_id: int):
             ),
         )
         .where(
-            User.company_id == company_id,
+            or_(
+                User.company_id == company_id,
+                CompanyMembership.status == "active",
+            ),
             legacy_access_condition(company_id, ("viewer",)),
         )
     )
@@ -178,11 +195,16 @@ def eligible_user_ids(
             ),
         )
         .where(
-            User.company_id == company_id,
+            or_(
+                and_(
+                    User.company_id == company_id,
+                    or_(CompanyMembership.id.is_(None), CompanyMembership.status == "active"),
+                ),
+                CompanyMembership.status == "active",
+            ),
             User.is_active.is_(True),
             Role.name.in_(("admin", "manager", "viewer")),
             ~User.email.endswith("@invalid.workhive.local"),
-            or_(CompanyMembership.id.is_(None), CompanyMembership.status == "active"),
             or_(legacy, explicit),
         )
     )

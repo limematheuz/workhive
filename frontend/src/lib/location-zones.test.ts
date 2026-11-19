@@ -25,6 +25,7 @@ test("location zones keep a small reusable set of operational types", () => {
 test("spaces are optional in configuration and task creation", () => {
     const spacesTab = read("../components/locations/LocationSpacesTab.tsx");
     const taskZones = read("../components/tasks/TaskCreateZonesSection.tsx");
+    const spaceEditor = read("../components/operations/SpaceWorkforceEditor.tsx");
 
     assert.match(spacesTab, /Espacios y tareas/);
     assert.match(spacesTab, /LocationService/);
@@ -33,11 +34,12 @@ test("spaces are optional in configuration and task creation", () => {
     assert.match(spacesTab, /<SelectTrigger aria-label="Espacio padre">/);
     assert.match(spacesTab, /value === "none" \? "" : value/);
     assert.doesNotMatch(spacesTab, /<select/);
-    assert.match(taskZones, /Selecciona solo los espacios/);
-    assert.match(taskZones, /Tareas sugeridas/);
-    assert.match(taskZones, /from "@\/components\/ui\/checkbox"/);
-    assert.match(taskZones, /<Checkbox/);
-    assert.doesNotMatch(taskZones, /<input\b/);
+    assert.match(spaceEditor, /Selecciona únicamente la parte/);
+    assert.match(spaceEditor, /Tareas incluidas/);
+    assert.match(spaceEditor, /from "@\/components\/ui\/checkbox"/);
+    assert.match(spaceEditor, /<Checkbox/);
+    assert.doesNotMatch(spaceEditor, /<input\b/);
+    assert.match(taskZones, /SpaceWorkforceEditor/);
     assert.match(taskZones, /selectedZoneIds/);
 });
 

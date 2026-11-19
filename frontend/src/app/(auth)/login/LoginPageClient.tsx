@@ -18,12 +18,15 @@ import {
     loginStatusRedirectDelayMs,
     resolveLoginStatusPhrases,
 } from "@/lib/login-status";
+import { applicationHome } from "@/lib/auth-routes";
 import { authService } from "@/services/auth.service";
 
 export default function LoginPageClient({ returnTo }: { returnTo: string }) {
     const router = useRouter();
     const { dict, locale } = useDictionary();
     const copy = dict.auth;
+    const [resolvedDestination, setResolvedDestination] = useState<string | null>(null);
+    const destination = resolvedDestination ?? returnTo;
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -46,8 +49,8 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
     useEffect(() => {
         let cancelled = false;
         void authService.getMe()
-            .then(() => {
-                if (!cancelled) window.location.replace(returnTo);
+            .then(user => {
+                if (!cancelled) window.location.replace(applicationHome(user, returnTo));
             })
             .catch((error: unknown) => {
                 if (!cancelled) {
@@ -64,11 +67,11 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
     useEffect(() => {
         if (outcome.kind !== "success") return;
         const timer = window.setTimeout(
-            () => window.location.assign(returnTo),
+            () => window.location.assign(destination),
             loginStatusRedirectDelayMs(successPhrases.length),
         );
         return () => window.clearTimeout(timer);
-    }, [outcome.kind, returnTo, successPhrases.length]);
+    }, [outcome.kind, destination, successPhrases.length]);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -88,7 +91,8 @@ export default function LoginPageClient({ returnTo }: { returnTo: string }) {
         try {
             clearSessionCache();
             await authService.login(prepared.credentials.email, prepared.credentials.password);
-            await authService.getMe();
+            const person = await authService.getMe();
+            setResolvedDestination(applicationHome(person, returnTo));
             setOutcome({ kind: "success" });
         } catch (error: unknown) {
             const reason = getLoginAccessBlock(error);

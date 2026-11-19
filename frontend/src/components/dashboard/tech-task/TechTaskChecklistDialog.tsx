@@ -34,6 +34,7 @@ import { ChecklistItem } from "./hooks/useTechTaskChecklist";
 import type { Dictionary } from "@/lib/dictionary-context";
 
 interface TechTaskChecklistDialogProps {
+    workerMode?: boolean;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     checklist: ChecklistItem[];
@@ -103,6 +104,7 @@ export function TechTaskChecklistDialog(props: TechTaskChecklistDialogProps) {
 }
 
 function TechTaskChecklistDialogContent({
+    workerMode = false,
     open,
     onOpenChange,
     checklist,
@@ -207,7 +209,7 @@ function TechTaskChecklistDialogContent({
                         />
                     </nav>
 
-                    {isCurrentTaskSessionActive && (
+                    {!workerMode && isCurrentTaskSessionActive && (
                         <ChecklistExtraWorkForm
                             dict={dict}
                             availableAssignees={availableAssignees}
@@ -228,7 +230,7 @@ function TechTaskChecklistDialogContent({
                         uploadingChecklistItem={uploadingChecklistItem}
                     />
 
-                    <Button
+                    {!workerMode && <Button
                         type="button"
                         variant="cancel"
                         onClick={onResetChecklist}
@@ -236,7 +238,7 @@ function TechTaskChecklistDialogContent({
                     >
                         <RotateCcw className="h-3.5 w-3.5" />
                         {dict.tech.reset_checklist}
-                    </Button>
+                    </Button>}
                 </main>
 
                 <footer data-form-guard-ignore className="dialog-glass-chrome flex shrink-0 items-center gap-3 border-t border-[var(--border-soft)] px-3 py-3 sm:px-5">

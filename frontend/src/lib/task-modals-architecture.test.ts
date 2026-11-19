@@ -152,7 +152,10 @@ test("task template and zone editors use shared form controls", () => {
     }
     assert.match(checklistSteps, /from "@\/components\/ui\/input"/);
     assert.match(locationTemplates, /from "@\/components\/ui\/checkbox"/);
-    assert.match(taskZones, /from "@\/components\/ui\/checkbox"/);
+    const sharedSpaces=read("../components/operations/SpaceWorkforceEditor.tsx");
+    assert.match(taskZones,/SpaceWorkforceEditor/);
+    assert.match(sharedSpaces, /from "@\/components\/ui\/checkbox"/);
+    assert.doesNotMatch(sharedSpaces, /<input\b|<textarea\b/);
 });
 
 test("tasks page forwards pricing state required by the task edit modal", () => {
@@ -244,7 +247,8 @@ test("monetary inputs keep numeric validation without native increment buttons",
     const checklistSection = read("../components/tasks/TaskCreateHouseChecklistSection.tsx");
     assert.match(checklistSection, /from "@\/components\/ui\/checkbox"/);
     assert.match(checklistSection, /from "@\/components\/ui\/input"/);
-    assert.match(checklistSection, /from "@\/components\/ui\/select"/);
+    assert.match(checklistSection, /from "@\/components\/ui\/form-select"/);
+    assert.match(checklistSection, /<FormSelect searchable/);
     assert.doesNotMatch(checklistSection, /<input|<select/);
 });
 
@@ -253,7 +257,7 @@ test("location history uses shared form controls", () => {
 
     assert.match(history, /from "@\/components\/ui\/input"/);
     assert.match(history, /from "@\/components\/ui\/select"/);
-    assert.match(history, /<SelectTrigger aria-label="Asignar a un trabajador de tu equipo"/);
+    assert.match(history, /<FormSelect searchable aria-label="Asignar a un trabajador de tu equipo"/);
     assert.match(history, /<SelectTrigger aria-label="Filtrar por estado"/);
     assert.doesNotMatch(history, /<select|<input/);
     assert.doesNotMatch(history, /bg-black|hover:bg-neutral-800/);

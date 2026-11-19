@@ -41,3 +41,4 @@ uvicorn==0.34.3
 uvloop==0.22.1
 watchfiles==1.1.1
 websockets==16.0
+defusedxml==0.7.1

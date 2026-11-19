@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { formatCurrency, formatDate } from "@/lib/format"
 import { getErrorMessage } from "@/lib/errors"
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel"
 import { toast } from "@/lib/toast"
 import { ContractLocationPicker } from "./ContractLocationPicker"
 import { ContractTermsSaveButton } from "./ContractTermsSaveButton"
@@ -373,6 +374,7 @@ function ServiceContractDetailDialogContent({
                             </div>
                         )}
                     </section>
+                    <RecordHistoryPanel entityType="service_contract" entityId={contract.id} />
                 </div>
             </DialogContent>
         </Dialog>

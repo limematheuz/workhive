@@ -57,6 +57,41 @@ PERMISSION_RECOMMENDED_AUDIENCES: dict[str, tuple[str, ...]] = {
 }
 
 
+CAPABILITY_FEATURE_CODES: dict[str, str] = {
+    "organization.departments.read": "features.organization",
+    "organization.departments.manage": "features.organization",
+    "organization.teams.read": "features.teams",
+    "organization.teams.manage": "features.teams",
+    "clients.read": "features.clients",
+    "clients.manage": "features.clients",
+    "commercial.follow_ups.read": "features.clients",
+    "commercial.follow_ups.manage": "features.clients",
+    "locations.read": "features.locations",
+    "locations.manage": "features.locations",
+    "work.read": "features.work_orders",
+    "work.manage": "features.work_orders",
+    "labor_costs.read": "features.hr",
+    "labor_costs.manage": "features.hr",
+    "time.read": "features.time_tracking",
+    "time.manage": "features.time_tracking",
+    "time.approve": "features.time_tracking",
+    "inventory.read": "features.inventory",
+    "inventory.manage": "features.inventory",
+    "quality.templates.read": "features.quality",
+    "quality.templates.manage": "features.quality",
+    "quality.inspections.read": "features.quality",
+    "quality.inspections.manage": "features.quality",
+    "quality.incidents.read": "features.quality",
+    "quality.incidents.manage": "features.quality",
+    "quality.complaints.read": "features.quality",
+    "quality.complaints.manage": "features.quality",
+}
+
+
+def feature_code_for_capability(capability: str) -> str | None:
+    return CAPABILITY_FEATURE_CODES.get(capability)
+
+
 def is_system_only_permission(permission_code: str) -> bool:
     return permission_code in SYSTEM_ONLY_PERMISSION_CODES
 

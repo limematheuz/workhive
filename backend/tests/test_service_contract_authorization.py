@@ -6,6 +6,7 @@ from app.models.audit_log import AuditLog
 from app.models.permission_profile import MembershipPermissionProfileAssignment
 from app.models.service_contract import ServiceContract
 from app.models.task_item import TaskItem
+from app.services import organization_bootstrap_service
 from test_client_permission_authorization import (
     _assign_company_profile,
     _bootstrap_admin,
@@ -73,6 +74,13 @@ def test_contract_access_matrix_denies_every_unauthorized_operation(client, db, 
                 scope_id=location["id"] if principal == "location_reader" else None,
             )
         else:
+            # An existing member with no profile exercises denial without the
+            # unrelated first-login legacy membership creation/audit.
+            membership = organization_bootstrap_service.ensure_legacy_membership(db, actor)
+            assert membership is not None
+            assert not db.query(MembershipPermissionProfileAssignment).filter_by(
+                company_membership_id=membership.id,
+            ).count()
             db.commit()
         headers = _headers(actor)
         if principal == "revoked_reader":

@@ -21,7 +21,7 @@ const bulkImportDialog = readFileSync(
     "utf8",
 );
 const spacesStep = readFileSync(
-    new URL("../components/locations/LocationSpacesStep.tsx", import.meta.url),
+    new URL("../components/locations/LocationTasksStep.tsx", import.meta.url),
     "utf8",
 );
 const spacesTab = readFileSync(
@@ -29,7 +29,7 @@ const spacesTab = readFileSync(
     "utf8",
 );
 const workspaceForm = readFileSync(
-    new URL("../components/locations/LocationWorkspaceForm.tsx", import.meta.url),
+    new URL("../components/locations/useLocationWorkspace.ts", import.meta.url),
     "utf8",
 );
 const taskZones = readFileSync(
@@ -39,7 +39,7 @@ const taskZones = readFileSync(
 
 
 test("React Doctor blocks newly introduced findings without blocking historical debt", () => {
-    assert.match(workflow, /^permissions:\n  contents: read$/m);
+    assert.match(workflow, /^permissions:\r?\n  contents: read\r?$/m);
     assert.doesNotMatch(workflow, /pull-requests: write|issues: write|statuses: write/);
     assert.match(workflow, /uses: millionco\/react-doctor@v2/);
     assert.match(workflow, /directory: frontend/);
@@ -69,10 +69,12 @@ test("location workspace keeps the React Doctor constraints that previously bloc
     assert.match(bulkImportDialog, /function downloadLocationTemplate/);
     assert.match(bulkImportDialog, /aria-label="Archivo CSV de ubicaciones"/);
     assert.doesNotMatch(spacesStep, /key=\{`\$\{space\.name\}-\$\{index\}`\}/);
-    assert.match(spacesStep, /aria-label="Tipo de espacio"/);
+    assert.match(spacesStep, /aria-label="Añadir otro espacio de la biblioteca"/);
     assert.match(spacesTab, /aria-label=\{`Añadir tarea a \$\{space\.name\}`\}/);
     assert.match(workspaceForm, /useState\(\(\) => location\?\.client_id/);
-    assert.match(taskZones, /new Set\(selectedZoneIds\)/);
-    assert.match(taskZones, /selectedZoneIdSet\.has/);
-    assert.match(taskZones, /selectedSpaceTaskTemplateIdSet\.has/);
+    assert.match(taskZones, /<SpaceWorkforceEditor/);
+    const sharedEditor=readFileSync(new URL("../components/operations/SpaceWorkforceEditor.tsx",import.meta.url),"utf8");
+    assert.match(sharedEditor, /new Map\(value\.map/);
+    assert.match(sharedEditor, /selected\.has/);
+    assert.match(sharedEditor, /selectedTaskIds\.has/);
 });

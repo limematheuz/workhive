@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Archive, ArrowDownToLine, Boxes, Building2, CircleDollarSign, Layers3, PackagePlus, ShieldAlert, type LucideIcon, Warehouse } from "lucide-react";
 
 import { InventoryMovementForm } from "@/components/inventory/InventoryMovementForm";
@@ -11,6 +12,7 @@ import { DataListTable, type DataListColumn } from "@/components/ui/data-list-ta
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { Input } from "@/components/ui/input";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { PageHeader } from "@/components/ui/page-header";
 import { InventoryNavigation } from "@/components/inventory/InventoryNavigation";
 import { reconcileInventoryMovementDraft, type InventoryMovementDraft } from "@/lib/inventory-movement-draft";
@@ -21,6 +23,7 @@ import { toast } from "@/lib/toast";
 import { useUser } from "@/lib/user-context";
 import { InventoryService } from "@/services/inventory.service";
 import { OrganizationService } from "@/services/organization.service";
+import { purchaseRequestId } from "@/lib/inventory-purchase-flow";
 import type {
     InventoryMaterial,
     InventoryMovement,
@@ -109,8 +112,12 @@ function optional(value: string): string | null {
     return trimmed || null;
 }
 
-export default function InventoryPage() {
+function InventoryPageContent() {
     const { user, loading: userLoading } = useUser();
+    const searchParams = useSearchParams();
+    const sourceRequestId = purchaseRequestId(searchParams.get("request_id"));
+    const focusPurchaseId = purchaseRequestId(searchParams.get("purchase_id"));
+    const focusApprovalId = purchaseRequestId(searchParams.get("approval_id"));
     const [inventoryAccess, setInventoryAccess] = useState<{
         canRead: boolean;
         canManage: boolean;
@@ -121,7 +128,13 @@ export default function InventoryPage() {
     const canManagePurchases = canManageFinance(user)
         && canManageInventory
         && !isPlatformSuperadmin(user);
-    const [activeTab, setActiveTab] = useState<InventoryTab>("stock");
+    const canProposePurchases = canManageInventory && canViewPurchases;
+    const query = searchParams.toString();
+    const [view, setView] = useState<{ query: string; tab: InventoryTab }>({ query: "", tab: "stock" });
+    const linkedPurchase = Boolean(sourceRequestId || focusPurchaseId || focusApprovalId || searchParams.get("tab") === "purchases");
+    const requestedTab = view.query === query ? view.tab : linkedPurchase ? "purchases" : "stock";
+    const activeTab = requestedTab === "purchases" && !canViewPurchases ? "stock" : requestedTab;
+    const setActiveTab = (tab: InventoryTab) => setView({ query, tab });
     const [inventoryData, setInventoryData] = useState({
         suppliers: [] as InventorySupplier[],
         materials: [] as InventoryMaterial[],
@@ -352,7 +365,7 @@ export default function InventoryPage() {
         columns={materialColumns}
         loading={loading}
         header={{ title: "Catálogo de material", subtitle: "Cada SKU pertenece a esta empresa y conserva su unidad de stock.", countLabel: `${materials.length} materiales` }}
-        toolbar={canManageInventory ? <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_7rem_auto]"><Input value={materialSku} onChange={(event) => setMaterialSku(event.target.value)} placeholder="SKU" aria-label="SKU" /><Input value={materialName} onChange={(event) => setMaterialName(event.target.value)} placeholder="Nombre del material" aria-label="Nombre del material" /><Select value={materialUnit} onValueChange={(value) => setMaterialUnit(value as InventoryUnit)}><SelectTrigger aria-label="Unidad"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(unitLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><Select value={materialSupplierId} onValueChange={setMaterialSupplierId}><SelectTrigger aria-label="Proveedor preferido"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Sin proveedor</SelectItem>{suppliers.map((supplier) => <SelectItem key={supplier.id} value={String(supplier.id)}>{supplier.name}</SelectItem>)}</SelectContent></Select><Input value={reorderPoint} onChange={(event) => setReorderPoint(event.target.value)} type="number" min="0" step="0.001" aria-label="Punto de reposición" /><Button type="button" className="sm:col-span-2 2xl:col-span-1" disabled={!materialSku.trim() || !materialName.trim() || saving} onClick={() => void addMaterial()}><PackagePlus className="size-4" />Añadir material</Button></div> : undefined}
+        toolbar={canManageInventory ? <div className="grid gap-2 sm:grid-cols-2 2xl:grid-cols-[minmax(0,0.55fr)_minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_7rem_auto]"><Input value={materialSku} onChange={(event) => setMaterialSku(event.target.value)} placeholder="SKU" aria-label="SKU" /><Input value={materialName} onChange={(event) => setMaterialName(event.target.value)} placeholder="Nombre del material" aria-label="Nombre del material" /><Select value={materialUnit} onValueChange={(value) => setMaterialUnit(value as InventoryUnit)}><SelectTrigger aria-label="Unidad"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(unitLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><SearchableSelect aria-label="Proveedor preferido" value={materialSupplierId} onValueChange={setMaterialSupplierId} options={[{ value: "none", label: "Sin proveedor" }, ...suppliers.map(supplier => ({ value: String(supplier.id), label: supplier.name, description: supplier.tax_id ?? undefined }))]} /><Input value={reorderPoint} onChange={(event) => setReorderPoint(event.target.value)} type="number" min="0" step="0.001" aria-label="Punto de reposición" /><Button type="button" className="sm:col-span-2 2xl:col-span-1" disabled={!materialSku.trim() || !materialName.trim() || saving} onClick={() => void addMaterial()}><PackagePlus className="size-4" />Añadir material</Button></div> : undefined}
         empty={<p className="text-sm text-[var(--text-muted)]">Crea el catálogo antes de registrar stock.</p>}
         renderDesktopRow={(item) => [
             <div key="material" className="min-w-0"><p className="truncate font-semibold text-[var(--text-main)]">{item.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{item.sku}</p></div>,
@@ -427,7 +440,13 @@ export default function InventoryPage() {
     return <div className="dashboard-page-content px-[3%] py-6 md:p-8">
         <PageHeader icon={Boxes} title="Inventario" subtitle="Material, stock y movimientos operativos separados de gastos y activos por ubicación." className="mb-6" />
         <InventoryNavigation tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-        <div className="mt-5">{activeTab === "stock" ? renderStock() : activeTab === "materials" ? renderMaterials() : activeTab === "suppliers" ? renderSuppliers() : activeTab === "warehouses" ? renderWarehouses() : activeTab === "movements" ? renderMovements() : activeTab === "lots" ? <InventoryLotsSection lots={lots} loading={loading} /> : <InventoryPurchasesSection purchases={purchases} suppliers={suppliers} materials={materials} warehouses={warehouses} loading={loading} canManage={canManagePurchases} onChanged={reload} />}</div>
+        <div className="mt-5">{activeTab === "stock" ? renderStock() : activeTab === "materials" ? renderMaterials() : activeTab === "suppliers" ? renderSuppliers() : activeTab === "warehouses" ? renderWarehouses() : activeTab === "movements" ? renderMovements() : activeTab === "lots" ? <InventoryLotsSection lots={lots} loading={loading} /> : <InventoryPurchasesSection purchases={purchases} suppliers={suppliers} materials={materials} warehouses={warehouses} loading={loading} canManage={canManagePurchases} canPropose={canProposePurchases} sourceRequestId={sourceRequestId} focusPurchaseId={focusPurchaseId} focusApprovalId={focusApprovalId} onChanged={reload} />}</div>
         <DeleteConfirmDialog open={archiveTarget !== null} onOpenChange={(open) => !open && setArchiveTarget(null)} title="Archivar registro de inventario" description="Dejará de aparecer en el catálogo operativo; el historial de movimientos se conserva." confirmText="Archivar" cancelText="Cancelar" confirmVariant="soft-danger" isDeleting={saving} onConfirm={() => void archiveCatalogEntity()} />
     </div>;
+}
+
+export default function InventoryPage() {
+    const { user, loading } = useUser();
+    if (loading) return <p role="status">Cargando inventario…</p>;
+    return <Suspense fallback={<p role="status">Cargando inventario…</p>}><InventoryPageContent key={`${user?.company_id}:${user?.id}`} /></Suspense>;
 }

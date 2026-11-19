@@ -1,4 +1,5 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { BillingPartyCard, BillingPartyFields } from "@/components/billing/BillingPartyCard";
 import { DocumentFormAdvancedPanel } from "@/components/billing/DocumentFormAdvancedPanel";
@@ -10,13 +11,7 @@ import { DocumentFormField } from "@/components/billing/DocumentFormField";
 import { DocumentFormSection } from "@/components/billing/DocumentFormSection";
 import { InvoiceConceptsTable } from "./InvoiceConceptsTable";
 import { InvoiceAdditionalInfo } from "./InvoiceAdditionalInfo";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DatePicker } from "@/components/ui/date-picker";
 import type { Client } from "@/services/client.service";
 import type { InvoiceableTask } from "@/services/invoice.service";
@@ -145,26 +140,20 @@ export function InvoiceCreateSheetDetails({
                                 className="dialog-compact-control bg-[var(--bg-primary)]"
                             />
                         ) : (
-                            <Select
+                            <FormSelect searchable aria-label={dict.invoices?.client_select} id="invoice-client" className="h-11 w-full rounded-xl px-3 text-sm" placeholder={dict.invoices?.client_select_placeholder || "-- Selecciona un cliente --"}
                                 value={selectedClientId}
                                 onValueChange={setSelectedClientId}
                             >
-                                <SelectTrigger
-                                    id="invoice-client"
-                                    aria-label={dict.invoices?.client_select}
-                                    className="h-11 w-full rounded-xl px-3 text-sm"
-                                >
-                                    <SelectValue placeholder={dict.invoices?.client_select_placeholder || "-- Selecciona un cliente --"} />
-                                </SelectTrigger>
-                                <SelectContent>
+
+
                                     {clients.map((client) => (
-                                        <SelectItem key={client.id} value={client.id.toString()}>
+                                        <option key={client.id} value={client.id.toString()}>
                                             {client.name}
                                             {client.legal_number?.trim() ? ` (${client.legal_number.trim()})` : ""}
-                                        </SelectItem>
+                                        </option>
                                     ))}
-                                </SelectContent>
-                            </Select>
+
+                            </FormSelect>
                         )}
                     </DocumentFormField>
 

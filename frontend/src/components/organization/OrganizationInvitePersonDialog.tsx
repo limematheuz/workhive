@@ -20,6 +20,8 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { toast } from "@/lib/toast";
 import type { Role } from "@/services/role.service";
 import { UserService } from "@/services/user.service";
+import { InvitationLinkDialog } from "@/components/invitations/InvitationLinkDialog";
+import { SelectField } from "@/components/ui/select-field";
 
 type OrganizationInvitePersonDialogProps = {
     open: boolean;
@@ -54,6 +56,8 @@ export function OrganizationInvitePersonDialog({
     const [email, setEmail] = useState("");
     const [roleId, setRoleId] = useState(defaultRoleId);
     const [saving, setSaving] = useState(false);
+    const [delivery, setDelivery] = useState<"email" | "link">("email");
+    const [createdLink, setCreatedLink] = useState<{ email: string; invitationUrl: string; verificationCode: string; expiresAt: string } | null>(null);
 
     const selectedRole = invitationRoles.find((role) => String(role.roleId) === roleId);
 
@@ -63,11 +67,16 @@ export function OrganizationInvitePersonDialog({
 
         try {
             setSaving(true);
-            await UserService.inviteUser({
+            const result = await UserService.inviteUser({
                 email: email.trim(),
                 full_name: fullName.trim() || undefined,
                 role_id: Number(roleId),
+                delivery,
             });
+            if (result.delivery === "link" && result.invitation_url && result.verification_code) {
+                setCreatedLink({ email: result.email, invitationUrl: result.invitation_url, verificationCode: result.verification_code, expiresAt: result.expires_at });
+                return;
+            }
             await onSent();
             toast.success(copy.sent);
             onOpenChange(false);
@@ -77,6 +86,12 @@ export function OrganizationInvitePersonDialog({
             setSaving(false);
         }
     };
+
+    if (createdLink) return <InvitationLinkDialog {...createdLink} onClose={() => {
+        setCreatedLink(null);
+        onOpenChange(false);
+        void onSent();
+    }} />;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -139,11 +154,20 @@ export function OrganizationInvitePersonDialog({
                         <p>{selectedRole?.roleName === "admin" ? copy.admin_notice : copy.notice}</p>
                     </div>
 
+                    <div className="space-y-2">
+                        <Label htmlFor="organization-invite-delivery">Entrega de la invitación</Label>
+                        <SelectField id="organization-invite-delivery" aria-label="Entrega de la invitación" value={delivery} onValueChange={value => setDelivery(value === "link" ? "link" : "email")} options={[
+                            { value: "email", label: "Enviar por correo" },
+                            { value: "link", label: "Crear enlace y código para compartir" },
+                        ]} />
+                        <p className="text-xs leading-5 text-muted-foreground">{delivery === "link" ? "El enlace y el código se mostrarán una sola vez. No requiere correo configurado." : "La persona acepta su invitación. Si ya tiene cuenta, conserva sus accesos y su contraseña."}</p>
+                    </div>
+
                     <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>{dict.organization.actions.cancel}</Button>
                         <Button type="submit" disabled={saving || !roleId}>
                             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {dict.organization.actions.send_invitation}
+                            {delivery === "link" ? "Crear enlace de invitación" : dict.organization.actions.send_invitation}
                         </Button>
                     </DialogFooter>
                 </form>

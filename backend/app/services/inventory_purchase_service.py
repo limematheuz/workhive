@@ -144,7 +144,7 @@ def list_purchases(db: Session, current_user: User):
 
 
 def create_purchase(
-    db: Session, current_user: User, payload: InventoryPurchaseCreate
+    db: Session, current_user: User, payload: InventoryPurchaseCreate, *, approval_id: int | None = None, commit: bool = True
 ):
     company_id = _company_id(
         db,
@@ -152,6 +152,8 @@ def create_purchase(
         inventory_capability=INVENTORY_MANAGE,
         finance_capability=FINANCE_MANAGE,
     )
+    from app.services.workflow_approval_policy import require_purchase
+    require_purchase(db,current_user,payload,approval_id)
     supplier = _validate_purchase_references(db, company_id=company_id, payload=payload)
     base_amount = _expense_base_amount(payload)
     try:
@@ -222,6 +224,8 @@ def create_purchase(
             status_code=status.HTTP_409_CONFLICT,
             detail="No se pudo registrar la compra por un conflicto de datos",
         ) from error
+    if not commit:
+        db.flush();return purchase
     return _commit_purchase(db, company_id=company_id, purchase_id=purchase.id)
 
 

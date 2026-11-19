@@ -176,7 +176,7 @@ def create_manual_record(
     db: Session,
     company_id: int,
     created_by_user_id: int,
-    data: SalesLedgerManualRecordCreate,
+    data: SalesLedgerManualRecordCreate, *, commit: bool = True,
 ) -> SalesLedgerEntryResponse:
     payload = data.model_dump()
     _ensure_available_document_number(db, company_id, payload["document_number"])
@@ -188,7 +188,7 @@ def create_manual_record(
         **payload,
     )
     try:
-        db.commit()
+        db.commit() if commit else db.flush()
     except IntegrityError as error:
         db.rollback()
         raise HTTPException(
@@ -203,7 +203,7 @@ def update_manual_record(
     db: Session,
     company_id: int,
     record_id: int,
-    data: SalesLedgerManualRecordUpdate,
+    data: SalesLedgerManualRecordUpdate, *, commit: bool = True,
 ) -> SalesLedgerEntryResponse:
     record = _get_manual_record_or_404(db, company_id, record_id)
     payload = data.model_dump(exclude_unset=True)
@@ -221,7 +221,7 @@ def update_manual_record(
     payload["total_amount"] = _calculate_total(base_amount, tax_amount)
     for field, value in payload.items():
         setattr(record, field, value)
-    db.commit()
+    db.commit() if commit else db.flush()
     db.refresh(record)
     return _to_manual_entry(record)
 

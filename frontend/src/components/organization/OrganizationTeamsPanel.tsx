@@ -86,7 +86,7 @@ export function OrganizationTeamsPanel({ teams, departments, members, onChanged 
         () => filterOrganizationTeams(teams, filters),
         [teams, filters],
     );
-    const pagination = useDataTablePagination(filteredTeams, TEAMS_PAGE_SIZE);
+    const pagination = useDataTablePagination(filteredTeams, TEAMS_PAGE_SIZE, "OrganizationTeamsPanel.filteredTeams.0");
     const hasActiveFilters = filters.search.trim() !== "" || filters.status !== "all" || filters.departmentId !== "all";
     const updateFilters = (update: Partial<TeamFilters>) => {
         setFilters((current) => ({ ...current, ...update }));

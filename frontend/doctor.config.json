@@ -3,6 +3,7 @@
   "ignore": {
     "files": [
       ".next-e2e/**",
+      ".next-preview/**",
       "playwright-report/**"
     ]
   },

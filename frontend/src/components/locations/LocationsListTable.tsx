@@ -21,7 +21,7 @@ type Props = {
 export function LocationsListTable({ locations, tasks, getClientName, renderActions, onOpen }: Props) {
     const { dict, locale } = useDictionary()
     const workspace = dict.locations.workspace
-    const pagination = useDataTablePagination(locations, 10)
+    const pagination = useDataTablePagination(locations, 10, "LocationsListTable.locations.0")
     const statusBadge = (location: Location) => <Badge variant="secondary" className={`shrink-0 whitespace-nowrap text-[11px] ${location.is_active ? "border-[var(--status-active-border)] bg-[var(--status-active-bg)] text-[var(--status-active-text)]" : ""}`}>{location.is_active ? dict.locations.table.active : dict.locations.table.inactive}</Badge>
 
     return <section className="@container/locations-list overflow-hidden rounded-xl border border-[var(--border-soft)]">
@@ -30,7 +30,7 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
                 <TableRow className="hover:bg-transparent">
                     <TableHead className="px-4 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] @min-[800px]/locations-list:w-[32%]">{dict.locations.title}</TableHead>
                     <TableHead className="hidden w-[25%] px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] @min-[800px]/locations-list:table-cell">{dict.locations.form.client_label}</TableHead>
-                    <TableHead className="hidden w-20 px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] @min-[650px]/locations-list:table-cell">Total</TableHead>
+                    <TableHead className="hidden w-20 px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] @min-[650px]/locations-list:table-cell">{locale === "es" ? "Tareas" : "Tasks"}</TableHead>
                     <TableHead className="hidden w-[110px] px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] @min-[650px]/locations-list:table-cell">{workspace.pending_tasks}</TableHead>
                     <TableHead className="hidden w-[100px] px-3 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)] @min-[650px]/locations-list:table-cell">{dict.locations.table.status}</TableHead>
                     <TableHead className="w-12"><span className="sr-only">{locale === "es" ? "Acciones" : "Actions"}</span></TableHead>
@@ -55,6 +55,7 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
                                 <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${visual.className}`}><Icon className="h-4 w-4" /></span>
                                 <div className="min-w-0 flex-1 space-y-1">
                                     <p className="min-w-0 break-words text-sm font-semibold text-[var(--text-main)]">{location.name}</p>
+                                    {(location.address || location.city) && <p className="break-words text-xs text-[var(--text-muted)]">{[location.address, location.city].filter(Boolean).join(", ")}</p>}
                                     <p className="break-words text-xs text-[var(--text-muted)] @min-[800px]/locations-list:hidden">{getClientName(location.client_id)}</p>
                                     <div className="flex flex-wrap items-center gap-2 pt-1 @min-[650px]/locations-list:hidden">
                                         <span className="text-xs text-[var(--text-muted)]">{work?.length ?? "—"} {taskLabel} · {pending} {pendingLabel}</span>

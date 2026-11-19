@@ -22,8 +22,8 @@ type SummaryMetricGridProps = {
 const desktopGridClassName = {
     3: "lg:grid-cols-3",
     4: "lg:grid-cols-4",
-    5: "xl:grid-cols-5",
-    6: "xl:grid-cols-6",
+    5: "md:grid-cols-3 xl:grid-cols-5",
+    6: "md:grid-cols-3 xl:grid-cols-6",
 } as const;
 
 /**
@@ -32,7 +32,7 @@ const desktopGridClassName = {
  */
 export function SummaryMetricGrid({ children, desktopColumns = 4, className, "aria-label": ariaLabel }: SummaryMetricGridProps) {
     return (
-        <section aria-label={ariaLabel} className={cn("grid grid-cols-2 gap-3", desktopGridClassName[desktopColumns], className)}>
+        <section aria-label={ariaLabel} className={cn("wh-metric-grid grid grid-cols-2 gap-3", desktopGridClassName[desktopColumns], className)}>
             {children}
         </section>
     );
@@ -61,20 +61,22 @@ export function SummaryMetricCard({
         ? "text-[var(--status-active-text)]"
         : valueTone === "negative"
             ? "text-[var(--priority-high-text)]"
-            : "text-[var(--text-main)]";
+            : "text-accent";
 
     return (
-        <article className={`billing-block rounded-[22px] p-4 ${className}`}>
-            <div className="flex items-start justify-between gap-3">
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--brand-blue-soft)] text-accent" aria-hidden="true">
+        <article className={`billing-block summary-metric-card relative rounded-xl p-3 ${className}`}>
+            <div className="flex min-w-0 items-center justify-between gap-2">
+                <p className="text-xs font-medium leading-snug text-[var(--text-muted)]">{label}</p>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-blue-soft)] text-accent" aria-hidden="true">
                     <Icon className="h-4 w-4" />
                 </span>
-                {trend ? <SummaryMetricTrendBadge trend={trend} /> : null}
             </div>
-            <div className="mt-3 min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)] sm:text-[11px]">{label}</p>
-                <p className={`mt-1 font-mono text-xl font-semibold leading-tight ${valueToneClassName} sm:text-2xl`}>{value}</p>
-                {description ? <p className="mt-2 text-[11px] font-medium text-[var(--text-muted)] sm:text-xs">{description}</p> : null}
+            <div className="min-w-0">
+                <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <p className={`min-w-0 break-words text-xl font-semibold leading-tight tabular-nums ${valueToneClassName}`}>{value}</p>
+                    {trend ? <SummaryMetricTrendBadge trend={trend} /> : null}
+                </div>
+                {description ? <p className="mt-1 text-xs leading-snug text-[var(--text-muted)]">{description}</p> : null}
             </div>
         </article>
     );

@@ -100,6 +100,11 @@ class WorkOrderResponse(BaseModel):
     created_at: datetime
     updated_at: datetime | None
 
+    _normalize_response_dates = field_validator(
+        "scheduled_start_at", "next_occurrence_at", "recurrence_ends_at",
+        "created_at", "updated_at",
+    )(normalize_work_order_date)
+
     model_config = ConfigDict(from_attributes=True)
 
 

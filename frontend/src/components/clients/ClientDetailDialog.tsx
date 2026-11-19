@@ -48,7 +48,7 @@ function ClientDetailDialogSession({ client, workspaceRow, open, onOpenChange, .
 
     return (
         <Dialog open={open} onOpenChange={changeOpen}>
-            <DialogContent className="flex max-h-[92vh] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[86rem]">
+            <DialogContent className="wh-client-detail flex max-h-[96dvh] w-full max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[86rem]">
                 {open && <ClientDetailDialogBody {...bodyProps} client={client} workspaceRow={workspaceRow} onOpenChange={changeOpen} navigation={navigation} onNavigationChange={(patch) => setNavigation(current => ({ ...current, ...patch }))} onNavigateAway={() => onOpenChange(false)} />}
             </DialogContent>
         </Dialog>
@@ -122,7 +122,7 @@ function ClientDetailDialogBody({
                 onDeleteClient={onDeleteClient}
                 onClose={() => onOpenChange(false)}
             />
-            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
                 <ClientDetailDialogTabsSection
                     activeTab={activeTab}
                     onActiveTabChange={(activeTab) => onNavigationChange({ activeTab })}

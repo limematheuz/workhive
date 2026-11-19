@@ -15,6 +15,7 @@ import { toast } from "@/lib/toast";
 import { WorkOrderService } from "@/services/work-order.service";
 import type { WorkOrder, WorkOrderUpdate } from "@/types/work-order";
 import { toDateTimeInput, workOrderStatusCopy } from "./work-order-form";
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel";
 
 type WorkOrderUpdateDraft = {
     title: string;
@@ -146,6 +147,7 @@ export function EditWorkOrderDialog({ workOrder, open, onOpenChange, onUpdated, 
                     <Button type="button" variant="cancel" onClick={() => onOpenChange(false)}>{readOnly ? dict.workOrderValidation.close : "Cancelar"}</Button>
                     {!readOnly && <Button type="button" onClick={() => void save()} disabled={saving}>{saving && <Loader2 className="size-4 animate-spin" />}Guardar cambios</Button>}
                 </DialogFooter>
+                <RecordHistoryPanel entityType="work_order" entityId={workOrder.id} />
             </DialogContent>
         </Dialog>
     );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useViewState } from "@/hooks/useViewState";
+import { useId, useMemo } from "react";
 import { Pagination, PaginationContent, PaginationItem, PaginationNext, PaginationPrevious } from "@/components/ui/pagination";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,11 +18,12 @@ type DataTablePaginationProps = {
     nextLabel: string;
 };
 
-export function useDataTablePagination<T>(items: T[], pageSize = 20) {
-    const [page, setPage] = useState(1);
-    const [rowsPerPage, setRowsPerPage] = useState(pageSize);
+export function useDataTablePagination<T>(items: T[], pageSize = 20, storageKey = "table") {
+    const [page, setPage] = useViewState(storageKey+".page",1);
+    const [savedPageSize, setRowsPerPage] = useViewState(storageKey+".size",pageSize);
+    const rowsPerPage=Number.isInteger(savedPageSize)&&savedPageSize>=1&&savedPageSize<=100?savedPageSize:pageSize;
     const totalPages = Math.max(1, Math.ceil(items.length / rowsPerPage));
-    const safePage = Math.min(Math.max(page, 1), totalPages);
+    const safePage = Math.min(Math.max(Math.floor(page), 1), totalPages);
     const pageItems = useMemo(
         () => items.slice((safePage - 1) * rowsPerPage, safePage * rowsPerPage),
         [items, rowsPerPage, safePage],
@@ -44,7 +46,7 @@ export function DataTablePagination({ page, totalItems, pageSize, onPageChange, 
     const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
     const safePage = Math.min(Math.max(page, 1), totalPages);
     return (
-        <footer className="flex flex-col gap-3 border-t border-[color-mix(in_srgb,var(--border-color)_12%,transparent)] px-5 py-3 text-xs text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
+        <footer className="flex flex-col gap-2 border-t border-[color-mix(in_srgb,var(--border-color)_12%,transparent)] px-4 py-2.5 text-xs text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-3">
                 <p>{summary}</p>
                 <div className="flex items-center gap-2">

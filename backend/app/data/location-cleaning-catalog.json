@@ -1,0 +1,1426 @@
+{
+  "site_types": [
+    {
+      "id": "office",
+      "label": "Oficina",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "work_area",
+        "office",
+        "meeting_room",
+        "reception",
+        "office_kitchen",
+        "bathroom",
+        "corridor"
+      ],
+      "template_labels": {
+        "work_area": "Puestos de trabajo",
+        "office": "Despachos individuales",
+        "meeting_room": "Salas para reuniones",
+        "reception": "Zona de recepción",
+        "office_kitchen": "Zona de descanso con cocina auxiliar",
+        "bathroom": "Baños o aseos",
+        "corridor": "Pasillos o distribuidores"
+      }
+    },
+    {
+      "id": "hotel",
+      "label": "Hotel",
+      "description": "Vincular cada baño privado a su habitación. Crear los aseos comunes por separado.",
+      "guidance": "Vincular cada baño privado a su habitación. Crear los aseos comunes por separado.",
+      "templates": [
+        "hotel_room",
+        "bathroom",
+        "reception",
+        "corridor",
+        "elevator",
+        "stairs",
+        "dining_room",
+        "kitchen",
+        "laundry",
+        "terrace"
+      ],
+      "template_labels": {
+        "hotel_room": "Habitaciones de huéspedes",
+        "bathroom": "Baños o aseos",
+        "reception": "Zona de recepción",
+        "corridor": "Pasillos o distribuidores",
+        "elevator": "Ascensores",
+        "stairs": "Escaleras incluidas en el servicio",
+        "dining_room": "Zona para comer",
+        "kitchen": "Cocina",
+        "laundry": "Zona de lavado de ropa",
+        "terrace": "Terrazas o balcones"
+      }
+    },
+    {
+      "id": "tourist_apartment",
+      "label": "Apartamento turístico",
+      "description": "En la salida de huéspedes, activar el cambio de ropa de cama en los dormitorios. Para un estudio, crear un único espacio de estar y dormir y combinar sus tareas sin duplicar la limpieza del suelo.",
+      "guidance": "En la salida de huéspedes, activar el cambio de ropa de cama en los dormitorios. Para un estudio, crear un único espacio de estar y dormir y combinar sus tareas sin duplicar la limpieza del suelo.",
+      "templates": [
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "living_room",
+        "terrace",
+        "laundry"
+      ],
+      "template_labels": {
+        "bedroom": "Dormitorios",
+        "bathroom": "Baños o aseos",
+        "kitchen": "Cocina",
+        "living_room": "Zona de estar",
+        "terrace": "Terrazas o balcones",
+        "laundry": "Zona de lavado de ropa"
+      }
+    },
+    {
+      "id": "private_home",
+      "label": "Vivienda particular",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "living_room",
+        "dining_room",
+        "laundry",
+        "terrace"
+      ],
+      "template_labels": {
+        "bedroom": "Dormitorios",
+        "bathroom": "Baños o aseos",
+        "kitchen": "Cocina",
+        "living_room": "Zona de estar",
+        "dining_room": "Zona para comer",
+        "laundry": "Zona de lavado de ropa",
+        "terrace": "Terrazas o balcones"
+      }
+    },
+    {
+      "id": "house",
+      "label": "Casa / chalet",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "bedroom",
+        "bathroom",
+        "kitchen",
+        "living_room",
+        "dining_room",
+        "stairs",
+        "terrace",
+        "garden",
+        "parking_area",
+        "storage",
+        "laundry"
+      ],
+      "template_labels": {
+        "bedroom": "Dormitorios",
+        "bathroom": "Baños o aseos",
+        "kitchen": "Cocina",
+        "living_room": "Zona de estar",
+        "dining_room": "Zona para comer",
+        "stairs": "Escaleras incluidas en el servicio",
+        "terrace": "Terrazas o balcones",
+        "garden": "Patios o jardines",
+        "parking_area": "Zonas de estacionamiento",
+        "storage": "Trasteros o cuartos de almacenaje incluidos",
+        "laundry": "Zona de lavado de ropa"
+      }
+    },
+    {
+      "id": "community",
+      "label": "Comunidad de vecinos",
+      "description": "Seleccionar solo los espacios incluidos en el servicio comunitario.",
+      "guidance": "Seleccionar solo los espacios incluidos en el servicio comunitario.",
+      "templates": [
+        "entrance",
+        "corridor",
+        "stairs",
+        "elevator",
+        "garden",
+        "parking_area",
+        "storage"
+      ],
+      "template_labels": {
+        "entrance": "Acceso interior compartido",
+        "corridor": "Pasillos o distribuidores",
+        "stairs": "Escaleras incluidas en el servicio",
+        "elevator": "Ascensores",
+        "garden": "Patios o jardines",
+        "parking_area": "Zonas de estacionamiento",
+        "storage": "Trasteros o cuartos de almacenaje incluidos"
+      }
+    },
+    {
+      "id": "commercial",
+      "label": "Local comercial",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "sales_area",
+        "checkout",
+        "shop_window",
+        "fitting_room",
+        "warehouse_area",
+        "bathroom"
+      ],
+      "template_labels": {
+        "sales_area": "Superficie de venta",
+        "checkout": "Puestos de cobro independientes",
+        "shop_window": "Escaparates",
+        "fitting_room": "Probadores",
+        "warehouse_area": "Zonas de almacenaje",
+        "bathroom": "Baños o aseos"
+      }
+    },
+    {
+      "id": "restaurant",
+      "label": "Restaurante",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "dining_room",
+        "kitchen",
+        "wash_area",
+        "bar",
+        "terrace",
+        "warehouse_area",
+        "bathroom",
+        "changing_room"
+      ],
+      "template_labels": {
+        "dining_room": "Zona para comer",
+        "kitchen": "Cocina",
+        "wash_area": "Zona independiente de lavado de vajilla",
+        "bar": "Barra de servicio",
+        "terrace": "Terrazas o balcones",
+        "warehouse_area": "Zonas de almacenaje",
+        "bathroom": "Baños o aseos",
+        "changing_room": "Vestuarios"
+      }
+    },
+    {
+      "id": "cafe",
+      "label": "Bar / cafetería",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "bar",
+        "dining_room",
+        "kitchen",
+        "wash_area",
+        "terrace",
+        "warehouse_area",
+        "bathroom"
+      ],
+      "template_labels": {
+        "bar": "Barra de servicio",
+        "dining_room": "Zona para comer",
+        "kitchen": "Cocina",
+        "wash_area": "Zona independiente de lavado de vajilla",
+        "terrace": "Terrazas o balcones",
+        "warehouse_area": "Zonas de almacenaje",
+        "bathroom": "Baños o aseos"
+      }
+    },
+    {
+      "id": "clinic",
+      "label": "Clínica / centro sanitario",
+      "description": "Aplicar el plan de limpieza y desinfección del centro en todas las zonas según su uso asistencial.",
+      "guidance": "Aplicar el plan de limpieza y desinfección del centro en todas las zonas según su uso asistencial.",
+      "templates": [
+        "reception",
+        "waiting_room",
+        "consulting_room",
+        "treatment_room",
+        "corridor",
+        "bathroom",
+        "changing_room"
+      ],
+      "template_labels": {
+        "reception": "Zona de recepción",
+        "waiting_room": "Zona de espera",
+        "consulting_room": "Consultas asistenciales",
+        "treatment_room": "Salas de curas",
+        "corridor": "Pasillos o distribuidores",
+        "bathroom": "Baños o aseos",
+        "changing_room": "Vestuarios"
+      }
+    },
+    {
+      "id": "dental_clinic",
+      "label": "Clínica dental",
+      "description": "Las tareas de esta plantilla cubren superficies ambientales. El reprocesado de instrumental tiene su propio protocolo clínico.",
+      "guidance": "Las tareas de esta plantilla cubren superficies ambientales. El reprocesado de instrumental tiene su propio protocolo clínico.",
+      "templates": [
+        "reception",
+        "waiting_room",
+        "dental_room",
+        "consulting_room",
+        "bathroom",
+        "changing_room"
+      ],
+      "template_labels": {
+        "reception": "Zona de recepción",
+        "waiting_room": "Zona de espera",
+        "dental_room": "Gabinetes de atención dental",
+        "consulting_room": "Consultas asistenciales",
+        "bathroom": "Baños o aseos",
+        "changing_room": "Vestuarios"
+      }
+    },
+    {
+      "id": "school",
+      "label": "Colegio",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "classroom",
+        "corridor",
+        "bathroom",
+        "dining_room",
+        "kitchen",
+        "garden",
+        "exercise_room",
+        "changing_room",
+        "office"
+      ],
+      "template_labels": {
+        "classroom": "Aulas",
+        "corridor": "Pasillos o distribuidores",
+        "bathroom": "Baños o aseos",
+        "dining_room": "Zona para comer",
+        "kitchen": "Cocina",
+        "garden": "Patios o jardines",
+        "exercise_room": "Salas de ejercicio",
+        "changing_room": "Vestuarios",
+        "office": "Despachos individuales"
+      }
+    },
+    {
+      "id": "nursery",
+      "label": "Guardería",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "classroom",
+        "play_room",
+        "nap_room",
+        "changing_area",
+        "bathroom",
+        "dining_room",
+        "kitchen",
+        "garden"
+      ],
+      "template_labels": {
+        "classroom": "Aulas",
+        "play_room": "Salas de juego",
+        "nap_room": "Zona de siesta",
+        "changing_area": "Zona de cambio infantil",
+        "bathroom": "Baños o aseos",
+        "dining_room": "Zona para comer",
+        "kitchen": "Cocina",
+        "garden": "Patios o jardines"
+      }
+    },
+    {
+      "id": "gym",
+      "label": "Gimnasio",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "reception",
+        "exercise_room",
+        "changing_room",
+        "shower_area",
+        "bathroom",
+        "corridor"
+      ],
+      "template_labels": {
+        "reception": "Zona de recepción",
+        "exercise_room": "Salas de ejercicio",
+        "changing_room": "Vestuarios",
+        "shower_area": "Duchas colectivas independientes",
+        "bathroom": "Baños o aseos",
+        "corridor": "Pasillos o distribuidores"
+      }
+    },
+    {
+      "id": "industrial",
+      "label": "Nave industrial",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "production_area",
+        "warehouse_area",
+        "loading_area",
+        "work_area",
+        "changing_room",
+        "bathroom",
+        "office_kitchen"
+      ],
+      "template_labels": {
+        "production_area": "Zonas de producción incluidas en la limpieza",
+        "warehouse_area": "Zonas de almacenaje",
+        "loading_area": "Zonas de carga o expedición",
+        "work_area": "Puestos de trabajo",
+        "changing_room": "Vestuarios",
+        "bathroom": "Baños o aseos",
+        "office_kitchen": "Zona de descanso con cocina auxiliar"
+      }
+    },
+    {
+      "id": "warehouse",
+      "label": "Almacén",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "warehouse_area",
+        "loading_area",
+        "work_area",
+        "changing_room",
+        "bathroom"
+      ],
+      "template_labels": {
+        "warehouse_area": "Zonas de almacenaje",
+        "loading_area": "Zonas de carga o expedición",
+        "work_area": "Puestos de trabajo",
+        "changing_room": "Vestuarios",
+        "bathroom": "Baños o aseos"
+      }
+    },
+    {
+      "id": "parking",
+      "label": "Parking",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "parking_area",
+        "ramp",
+        "stairs",
+        "elevator",
+        "corridor",
+        "payment_booth",
+        "bathroom"
+      ],
+      "template_labels": {
+        "parking_area": "Zonas de estacionamiento",
+        "ramp": "Rampas de acceso",
+        "stairs": "Escaleras incluidas en el servicio",
+        "elevator": "Ascensores",
+        "corridor": "Pasillos o distribuidores",
+        "payment_booth": "Cabinas de cobro",
+        "bathroom": "Baños o aseos"
+      }
+    },
+    {
+      "id": "public_building",
+      "label": "Edificio público",
+      "description": "Configura los espacios incluidos en el servicio.",
+      "guidance": "",
+      "templates": [
+        "entrance",
+        "care_room",
+        "waiting_room",
+        "work_area",
+        "meeting_room",
+        "multipurpose_room",
+        "corridor",
+        "stairs",
+        "elevator",
+        "bathroom"
+      ],
+      "template_labels": {
+        "entrance": "Acceso interior compartido",
+        "care_room": "Zonas de atención al público",
+        "waiting_room": "Zona de espera",
+        "work_area": "Puestos de trabajo",
+        "meeting_room": "Salas para reuniones",
+        "multipurpose_room": "Salas de actos o actividades",
+        "corridor": "Pasillos o distribuidores",
+        "stairs": "Escaleras incluidas en el servicio",
+        "elevator": "Ascensores",
+        "bathroom": "Baños o aseos"
+      }
+    },
+    {
+      "id": "construction",
+      "label": "Obra / reforma",
+      "description": "Indicar qué estancias y superficies terminadas se entregan para limpieza. Elegir baño o cocina en lugar de estancia genérica para la misma habitación. Para polvo o residuos de obra que necesiten tratamiento especializado, utilizar el procedimiento específico de la obra.",
+      "guidance": "Indicar qué estancias y superficies terminadas se entregan para limpieza. Elegir baño o cocina en lugar de estancia genérica para la misma habitación. Para polvo o residuos de obra que necesiten tratamiento especializado, utilizar el procedimiento específico de la obra.",
+      "templates": [
+        "construction_room",
+        "bathroom",
+        "kitchen",
+        "corridor",
+        "stairs",
+        "terrace"
+      ],
+      "template_labels": {
+        "construction_room": "Estancias terminadas entregadas para limpieza",
+        "bathroom": "Baños o aseos",
+        "kitchen": "Cocina",
+        "corridor": "Pasillos o distribuidores",
+        "stairs": "Escaleras incluidas en el servicio",
+        "terrace": "Terrazas o balcones"
+      }
+    },
+    {
+      "id": "other",
+      "label": "Otro",
+      "description": "Escribir el nombre de la ubicación y seleccionar cualquier combinación de espacios de las otras plantillas. Para un espacio nuevo, escribir su nombre y editar la propuesta siguiente.",
+      "guidance": "Escribir el nombre de la ubicación y seleccionar cualquier combinación de espacios de las otras plantillas. Para un espacio nuevo, escribir su nombre y editar la propuesta siguiente.",
+      "templates": [
+        "other"
+      ],
+      "template_labels": {
+        "other": "Espacios definidos por el usuario"
+      }
+    }
+  ],
+  "space_templates": [
+    {
+      "id": "work_area",
+      "label": "Puestos de trabajo",
+      "name": "Zona de trabajo",
+      "space_type": "work_area",
+      "count_key": "work_area_count",
+      "tasks": [
+        "Limpiar escritorios.",
+        "Limpiar sillas.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "puestos_compartidos",
+          "label": "Puestos compartidos",
+          "tasks": [
+            "Limpiar los puntos de contacto entre turnos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "office",
+      "label": "Despachos individuales",
+      "name": "Despacho",
+      "space_type": "office",
+      "count_key": "office_count",
+      "tasks": [
+        "Quitar el polvo del mobiliario.",
+        "Limpiar el escritorio.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "divisiones_acristaladas",
+          "label": "Divisiones acristaladas",
+          "tasks": [
+            "Eliminar las huellas del cristal."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "meeting_room",
+      "label": "Salas para reuniones",
+      "name": "Sala de reuniones",
+      "space_type": "meeting_room",
+      "count_key": "meeting_room_count",
+      "tasks": [
+        "Limpiar la mesa.",
+        "Limpiar las sillas.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "grupos_sucesivos",
+          "label": "Grupos sucesivos",
+          "tasks": [
+            "Retirar los residuos entre reuniones."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reception",
+      "label": "Zona de recepción",
+      "name": "Recepción",
+      "space_type": "reception",
+      "count_key": "reception_count",
+      "tasks": [
+        "Limpiar el mostrador.",
+        "Limpiar los tiradores.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "entrada_desde_la_calle",
+          "label": "Entrada desde la calle",
+          "tasks": [
+            "Barrer el umbral."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "office_kitchen",
+      "label": "Zona de descanso con cocina auxiliar",
+      "name": "Office",
+      "space_type": "office_kitchen",
+      "count_key": "kitchen_count",
+      "tasks": [
+        "Limpiar la encimera.",
+        "Limpiar las mesas.",
+        "Fregar el suelo."
+      ],
+      "features": [
+        {
+          "id": "se_come_en_la_zona",
+          "label": "Se come en la zona",
+          "tasks": [
+            "Lavar los recipientes de residuos de comida."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bathroom",
+      "label": "Baños o aseos",
+      "name": "Baño o aseo",
+      "space_type": "bathroom",
+      "count_key": "bathroom_count",
+      "tasks": [
+        "Limpiar el inodoro.",
+        "Limpiar el lavabo y los grifos.",
+        "Fregar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_ducha",
+          "label": "Con ducha",
+          "tasks": [
+            "Limpiar las paredes y el plato de ducha."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "corridor",
+      "label": "Pasillos o distribuidores",
+      "name": "Pasillo",
+      "space_type": "corridor",
+      "count_key": "corridor_count",
+      "tasks": [
+        "Limpiar el suelo.",
+        "Quitar el polvo de los rodapiés."
+      ],
+      "features": [
+        {
+          "id": "con_pasamanos",
+          "label": "Con pasamanos",
+          "tasks": [
+            "Limpiar el pasamanos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hotel_room",
+      "label": "Habitaciones de huéspedes",
+      "name": "Habitación de hotel",
+      "space_type": "hotel_room",
+      "count_key": "room_count",
+      "tasks": [
+        "Limpiar las superficies de apoyo.",
+        "Vaciar las papeleras.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "cambio_de_huesped",
+          "label": "Cambio de huésped",
+          "tasks": [
+            "Limpiar el interior del armario y cambiar la ropa de cama."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "elevator",
+      "label": "Ascensores",
+      "name": "Cabina de ascensor",
+      "space_type": "elevator",
+      "count_key": "elevator_count",
+      "tasks": [
+        "Limpiar el suelo.",
+        "Limpiar las paredes y los pulsadores."
+      ],
+      "features": [
+        {
+          "id": "con_espejo",
+          "label": "Con espejo",
+          "tasks": [
+            "Limpiar el espejo."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "stairs",
+      "label": "Escaleras incluidas en el servicio",
+      "name": "Escalera",
+      "space_type": "stairs",
+      "count_key": "stairs_count",
+      "tasks": [
+        "Limpiar los peldaños.",
+        "Limpiar los descansillos."
+      ],
+      "features": [
+        {
+          "id": "con_barandilla",
+          "label": "Con barandilla",
+          "tasks": [
+            "Limpiar el pasamanos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dining_room",
+      "label": "Zona para comer",
+      "name": "Comedor",
+      "space_type": "dining_room",
+      "count_key": "dining_room_count",
+      "tasks": [
+        "Limpiar las mesas.",
+        "Limpiar las sillas.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "servicio_por_turnos",
+          "label": "Servicio por turnos",
+          "tasks": [
+            "Retirar migas y manchas entre servicios."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "kitchen",
+      "label": "Cocina",
+      "name": "Cocina",
+      "space_type": "kitchen",
+      "count_key": "kitchen_count",
+      "tasks": [
+        "Limpiar las encimeras.",
+        "Limpiar el fregadero.",
+        "Fregar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_coccion",
+          "label": "Con zona de cocción",
+          "tasks": [
+            "Quitar la grasa de la placa y la pared cercana."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "laundry",
+      "label": "Zona de lavado de ropa",
+      "name": "Lavadero",
+      "space_type": "laundry",
+      "count_key": "laundry_count",
+      "tasks": [
+        "Limpiar las superficies de trabajo.",
+        "Retirar las pelusas.",
+        "Fregar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_secado",
+          "label": "Con zona de secado",
+          "tasks": [
+            "Limpiar las superficies de tendido."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "terrace",
+      "label": "Terrazas o balcones",
+      "name": "Terraza o balcón",
+      "space_type": "terrace",
+      "count_key": "terrace_count",
+      "tasks": [
+        "Recoger residuos.",
+        "Barrer el pavimento."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_mesas",
+          "label": "Con zona de mesas",
+          "tasks": [
+            "Limpiar mesas y asientos exteriores."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bedroom",
+      "label": "Dormitorios",
+      "name": "Dormitorio",
+      "space_type": "bedroom",
+      "count_key": "bedroom_count",
+      "tasks": [
+        "Quitar el polvo de los muebles.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "cambio_de_ropa_de_cama_incluido",
+          "label": "Cambio de ropa de cama incluido",
+          "tasks": [
+            "Retirar las sábanas usadas y poner sábanas limpias."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "living_room",
+      "label": "Zona de estar",
+      "name": "Salón",
+      "space_type": "living_room",
+      "count_key": "living_room_count",
+      "tasks": [
+        "Quitar el polvo del mobiliario.",
+        "Limpiar las mesas auxiliares.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_tapiceria_textil",
+          "label": "Con tapicería textil",
+          "tasks": [
+            "Aspirar los asientos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "garden",
+      "label": "Patios o jardines",
+      "name": "Patio o jardín",
+      "space_type": "garden",
+      "count_key": "garden_count",
+      "tasks": [
+        "Recoger residuos.",
+        "Barrer las zonas pavimentadas."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_descanso",
+          "label": "Con zona de descanso",
+          "tasks": [
+            "Limpiar los bancos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "parking_area",
+      "label": "Zonas de estacionamiento",
+      "name": "Zona de aparcamiento",
+      "space_type": "parking_area",
+      "count_key": "parking_area_count",
+      "tasks": [
+        "Recoger residuos.",
+        "Limpiar el pavimento."
+      ],
+      "features": [
+        {
+          "id": "con_pasos_peatonales",
+          "label": "Con pasos peatonales",
+          "tasks": [
+            "Retirar la suciedad de los itinerarios peatonales."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "storage",
+      "label": "Trasteros o cuartos de almacenaje incluidos",
+      "name": "Trastero",
+      "space_type": "storage",
+      "count_key": "storage_count",
+      "tasks": [
+        "Retirar telarañas accesibles.",
+        "Limpiar el suelo despejado."
+      ],
+      "features": [
+        {
+          "id": "con_estanterias",
+          "label": "Con estanterías",
+          "tasks": [
+            "Quitar el polvo de las baldas accesibles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "entrance",
+      "label": "Acceso interior compartido",
+      "name": "Portal o vestíbulo",
+      "space_type": "entrance",
+      "count_key": "entrance_count",
+      "tasks": [
+        "Limpiar las puertas de acceso.",
+        "Limpiar los tiradores.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_cristales",
+          "label": "Con cristales",
+          "tasks": [
+            "Eliminar las huellas de los cristales."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sales_area",
+      "label": "Superficie de venta",
+      "name": "Zona de venta",
+      "space_type": "sales_area",
+      "count_key": "sales_area_count",
+      "tasks": [
+        "Quitar el polvo de los expositores.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_vitrinas",
+          "label": "Con vitrinas",
+          "tasks": [
+            "Eliminar las huellas de los cristales."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "checkout",
+      "label": "Puestos de cobro independientes",
+      "name": "Zona de caja",
+      "space_type": "checkout",
+      "count_key": "checkout_count",
+      "tasks": [
+        "Limpiar el mostrador.",
+        "Vaciar la papelera.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_mampara",
+          "label": "Con mampara",
+          "tasks": [
+            "Limpiar ambas caras accesibles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shop_window",
+      "label": "Escaparates",
+      "name": "Escaparate",
+      "space_type": "shop_window",
+      "count_key": "shop_window_count",
+      "tasks": [
+        "Limpiar la cara interior del cristal.",
+        "Quitar el polvo de la base."
+      ],
+      "features": [
+        {
+          "id": "con_acceso_exterior_a_nivel_de_calle",
+          "label": "Con acceso exterior a nivel de calle",
+          "tasks": [
+            "Limpiar la cara exterior accesible."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fitting_room",
+      "label": "Probadores",
+      "name": "Probador",
+      "space_type": "fitting_room",
+      "count_key": "fitting_room_count",
+      "tasks": [
+        "Limpiar las superficies de contacto.",
+        "Retirar pelusas del suelo."
+      ],
+      "features": [
+        {
+          "id": "con_espejo",
+          "label": "Con espejo",
+          "tasks": [
+            "Limpiar el espejo."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "warehouse_area",
+      "label": "Zonas de almacenaje",
+      "name": "Zona de almacén",
+      "space_type": "warehouse_area",
+      "count_key": "warehouse_area_count",
+      "tasks": [
+        "Limpiar los pasillos.",
+        "Retirar residuos de embalaje."
+      ],
+      "features": [
+        {
+          "id": "con_estanterias",
+          "label": "Con estanterías",
+          "tasks": [
+            "Quitar el polvo de las baldas accesibles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wash_area",
+      "label": "Zona independiente de lavado de vajilla",
+      "name": "Zona de lavado",
+      "space_type": "wash_area",
+      "count_key": "wash_area_count",
+      "tasks": [
+        "Lavar la vajilla.",
+        "Limpiar los fregaderos.",
+        "Fregar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_escurrido",
+          "label": "Con zona de escurrido",
+          "tasks": [
+            "Lavar las superficies de escurrido."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bar",
+      "label": "Barra de servicio",
+      "name": "Barra",
+      "space_type": "bar",
+      "count_key": "bar_count",
+      "tasks": [
+        "Limpiar la superficie de la barra.",
+        "Limpiar el frontal.",
+        "Fregar el suelo de servicio."
+      ],
+      "features": [
+        {
+          "id": "se_preparan_bebidas",
+          "label": "Se preparan bebidas",
+          "tasks": [
+            "Lavar las superficies de preparación según el plan de higiene."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "changing_room",
+      "label": "Vestuarios",
+      "name": "Vestuario",
+      "space_type": "changing_room",
+      "count_key": "changing_room_count",
+      "tasks": [
+        "Limpiar los bancos.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_taquillas",
+          "label": "Con taquillas",
+          "tasks": [
+            "Limpiar puertas y tiradores."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "waiting_room",
+      "label": "Zona de espera",
+      "name": "Sala de espera",
+      "space_type": "waiting_room",
+      "count_key": "waiting_room_count",
+      "tasks": [
+        "Limpiar los asientos.",
+        "Limpiar el suelo.",
+        "Vaciar las papeleras."
+      ],
+      "features": [
+        {
+          "id": "tapiceria_textil",
+          "label": "Tapicería textil",
+          "tasks": [
+            "Aspirar las costuras de los asientos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "consulting_room",
+      "label": "Consultas asistenciales",
+      "name": "Consulta",
+      "space_type": "consulting_room",
+      "count_key": "consulting_room_count",
+      "tasks": [
+        "Limpiar las superficies de trabajo según el protocolo del centro.",
+        "Limpiar el suelo según el protocolo del centro."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_exploracion",
+          "label": "Con zona de exploración",
+          "tasks": [
+            "Limpiar y desinfectar las superficies de contacto entre pacientes según el protocolo."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "treatment_room",
+      "label": "Salas de curas",
+      "name": "Sala de curas",
+      "space_type": "treatment_room",
+      "count_key": "treatment_room_count",
+      "tasks": [
+        "Limpiar y desinfectar las superficies asistenciales según el protocolo.",
+        "Limpiar el pavimento según el protocolo."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_preparacion_separada",
+          "label": "Con zona de preparación separada",
+          "tasks": [
+            "Limpiar y desinfectar esa superficie según el protocolo."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dental_room",
+      "label": "Gabinetes de atención dental",
+      "name": "Gabinete dental",
+      "space_type": "dental_room",
+      "count_key": "dental_room_count",
+      "tasks": [
+        "Limpiar el suelo según el protocolo.",
+        "Realizar la limpieza y desinfección de superficies de contacto clínico entre pacientes según el protocolo de barreras del centro."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_preparacion_separada",
+          "label": "Con zona de preparación separada",
+          "tasks": [
+            "Limpiar sus superficies según el protocolo."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "classroom",
+      "label": "Aulas",
+      "name": "Aula",
+      "space_type": "classroom",
+      "count_key": "classroom_count",
+      "tasks": [
+        "Limpiar mesas y sillas.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_manualidades",
+          "label": "Con zona de manualidades",
+          "tasks": [
+            "Retirar los restos de materiales de las superficies de trabajo."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "exercise_room",
+      "label": "Salas de ejercicio",
+      "name": "Sala de ejercicio",
+      "space_type": "exercise_room",
+      "count_key": "exercise_room_count",
+      "tasks": [
+        "Limpiar el suelo deportivo.",
+        "Limpiar las superficies de apoyo."
+      ],
+      "features": [
+        {
+          "id": "con_material_compartido",
+          "label": "Con material compartido",
+          "tasks": [
+            "Limpiar las superficies de agarre del material."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "play_room",
+      "label": "Salas de juego",
+      "name": "Sala de juego",
+      "space_type": "play_room",
+      "count_key": "play_room_count",
+      "tasks": [
+        "Limpiar el suelo.",
+        "Limpiar las superficies de juego."
+      ],
+      "features": [
+        {
+          "id": "con_juguetes_compartidos",
+          "label": "Con juguetes compartidos",
+          "tasks": [
+            "Limpiar los juguetes lavables según el protocolo del centro."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "nap_room",
+      "label": "Zona de siesta",
+      "name": "Sala de siesta",
+      "space_type": "nap_room",
+      "count_key": "nap_room_count",
+      "tasks": [
+        "Limpiar el suelo.",
+        "Limpiar las superficies de descanso."
+      ],
+      "features": [
+        {
+          "id": "con_ropa_de_cama_reutilizable",
+          "label": "Con ropa de cama reutilizable",
+          "tasks": [
+            "Lavar las fundas y sábanas según el protocolo del centro."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "changing_area",
+      "label": "Zona de cambio infantil",
+      "name": "Zona de cambio",
+      "space_type": "changing_area",
+      "count_key": "changing_area_count",
+      "tasks": [
+        "Limpiar y desinfectar la superficie de cambio después de cada uso según el protocolo.",
+        "Fregar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_lavado_infantil",
+          "label": "Con zona de lavado infantil",
+          "tasks": [
+            "Limpiar la cubeta y la grifería."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "shower_area",
+      "label": "Duchas colectivas independientes",
+      "name": "Zona de duchas",
+      "space_type": "shower_area",
+      "count_key": "shower_area_count",
+      "tasks": [
+        "Limpiar paredes y grifería.",
+        "Fregar el pavimento."
+      ],
+      "features": [
+        {
+          "id": "con_separaciones",
+          "label": "Con separaciones",
+          "tasks": [
+            "Limpiar las divisiones de las duchas."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "production_area",
+      "label": "Zonas de producción incluidas en la limpieza",
+      "name": "Zona de producción",
+      "space_type": "production_area",
+      "count_key": "production_area_count",
+      "tasks": [
+        "Recoger residuos ordinarios de las zonas habilitadas.",
+        "Limpiar las superficies de tránsito autorizadas."
+      ],
+      "features": [
+        {
+          "id": "con_separacion_acristalada",
+          "label": "Con separación acristalada",
+          "tasks": [
+            "Limpiar los cristales accesibles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "loading_area",
+      "label": "Zonas de carga o expedición",
+      "name": "Zona de carga",
+      "space_type": "loading_area",
+      "count_key": "loading_area_count",
+      "tasks": [
+        "Recoger restos de embalaje.",
+        "Limpiar el pavimento habilitado."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_preparacion_de_pedidos",
+          "label": "Con zona de preparación de pedidos",
+          "tasks": [
+            "Limpiar las mesas de preparación."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ramp",
+      "label": "Rampas de acceso",
+      "name": "Rampa",
+      "space_type": "ramp",
+      "count_key": "ramp_count",
+      "tasks": [
+        "Retirar residuos.",
+        "Limpiar el pavimento de la rampa."
+      ],
+      "features": [
+        {
+          "id": "al_aire_libre",
+          "label": "Al aire libre",
+          "tasks": [
+            "Retirar las hojas de las rejillas superficiales."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "payment_booth",
+      "label": "Cabinas de cobro",
+      "name": "Cabina de cobro",
+      "space_type": "payment_booth",
+      "count_key": "payment_booth_count",
+      "tasks": [
+        "Limpiar el mostrador.",
+        "Vaciar la papelera.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_mampara",
+          "label": "Con mampara",
+          "tasks": [
+            "Limpiar ambas caras accesibles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "care_room",
+      "label": "Zonas de atención al público",
+      "name": "Sala de atención",
+      "space_type": "care_room",
+      "count_key": "care_room_count",
+      "tasks": [
+        "Limpiar los mostradores.",
+        "Limpiar los asientos.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_mamparas",
+          "label": "Con mamparas",
+          "tasks": [
+            "Limpiar las superficies acristaladas."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "multipurpose_room",
+      "label": "Salas de actos o actividades",
+      "name": "Sala polivalente",
+      "space_type": "multipurpose_room",
+      "count_key": "multipurpose_room_count",
+      "tasks": [
+        "Limpiar el suelo.",
+        "Limpiar las superficies de uso común."
+      ],
+      "features": [
+        {
+          "id": "con_zona_de_publico_sentado",
+          "label": "Con zona de público sentado",
+          "tasks": [
+            "Limpiar las filas de asientos."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "construction_room",
+      "label": "Estancias terminadas entregadas para limpieza",
+      "name": "Estancia de fin de obra",
+      "space_type": "construction_room",
+      "count_key": "construction_room_count",
+      "tasks": [
+        "Retirar el polvo residual de superficies con un método adecuado al material.",
+        "Limpiar el pavimento terminado."
+      ],
+      "features": [
+        {
+          "id": "con_cristaleria_nueva",
+          "label": "Con cristalería nueva",
+          "tasks": [
+            "Limpiar los cristales y marcos accesibles."
+          ]
+        }
+      ]
+    },
+    {
+      "id": "other",
+      "label": "Espacios definidos por el usuario",
+      "name": "Espacio personalizado",
+      "space_type": "other",
+      "count_key": "other_count",
+      "tasks": [
+        "Limpiar las superficies de uso habitual.",
+        "Limpiar el suelo."
+      ],
+      "features": [
+        {
+          "id": "con_superficies_acristaladas",
+          "label": "Con superficies acristaladas",
+          "tasks": [
+            "Limpiar los cristales accesibles."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel";
 import { InvoiceDetailEditModePanel } from "@/components/invoices/InvoiceDetailEditModePanel";
 import { InvoiceDetailFooterSection } from "@/components/invoices/InvoiceDetailFooterSection";
 import { InvoiceDetailHeaderSection } from "@/components/invoices/InvoiceDetailHeaderSection";
@@ -142,6 +143,7 @@ export function InvoiceDetailDocument({
                     />
                 </div>
             </div>
+            <div className="print:hidden"><RecordHistoryPanel entityType="invoice" entityId={invoice.id}/></div>
         </>
     );
 }

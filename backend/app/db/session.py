@@ -18,3 +18,13 @@ else:
 engine = create_engine(settings.sync_database_url, **engine_options)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+# Financial period rules are enforced for synchronous and async ORM sessions.
+from app.services.accounting_period_guard import install as install_accounting_period_guard
+install_accounting_period_guard()
+
+from app.services.task_closure_guard import install as install_task_closure_guard
+install_task_closure_guard()
+
+from app.services.membership_session_guard import install as install_membership_session_guard
+install_membership_session_guard()

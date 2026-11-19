@@ -36,3 +36,10 @@ test("invitation acceptance payload keeps the verification secret out of URLs an
         },
     );
 });
+
+test("existing identities accept without resetting their password and link delivery is explicit", () => {
+    const payload = buildInvitationAcceptancePayload("one-time-token", "12345678");
+    assert.equal("password" in payload, false);
+    assert.equal(payload.accept_terms, true);
+    assert.equal(buildWorkerInvitationPayload({ email: " Person@Example.test ", role_id: 3, delivery: "link" }).delivery, "link");
+});

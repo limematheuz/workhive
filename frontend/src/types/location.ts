@@ -158,10 +158,29 @@ export interface LocationCatalogSiteType {
     label: string;
     description: string;
     attributes: LocationCatalogAttribute[];
+    guidance?: string;
+    space_templates?: LocationSpaceTemplate[];
+}
+
+export interface LocationSpaceFeature {
+    id: string;
+    label: string;
+    tasks: string[];
+}
+
+export interface LocationSpaceTemplate {
+    id: string;
+    label: string;
+    name: string;
+    space_type: string;
+    count_key: string;
+    tasks: string[];
+    features: LocationSpaceFeature[];
 }
 
 export interface LocationCatalog {
     site_types: LocationCatalogSiteType[];
+    space_library?: LocationSpaceTemplate[];
 }
 
 export interface LocationSpaceTask {

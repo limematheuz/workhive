@@ -41,7 +41,7 @@ def _payment_amount(payment: CustomerPayment) -> Decimal:
 
 
 def _allocated_amount(payment: CustomerPayment) -> Decimal:
-    return _money(sum((Decimal(str(item.amount)) for item in payment.allocations), Decimal("0")))
+    return _money(sum(((Decimal(str(item.amount))+Decimal(str(item.exchange_difference_eur or 0))) for item in payment.allocations), Decimal("0")))
 
 
 def _get_payment_or_404(
@@ -85,6 +85,7 @@ def _sync_invoice_collection_status(db: Session, invoice) -> None:
 
 
 def _response(payment: CustomerPayment) -> CustomerPayment:
+    payment.exchange_difference_amount = _money(sum((Decimal(str(item.exchange_difference_eur or 0)) for item in payment.allocations),Decimal("0")))
     payment.allocated_amount = _allocated_amount(payment)
     payment.unapplied_amount = _money(_payment_amount(payment) - payment.allocated_amount)
     return payment
@@ -106,7 +107,7 @@ def list_payments(db: Session, current_user: User, *, client_id: int | None = No
 def create_payment(
     db: Session,
     current_user: User,
-    payload: CustomerPaymentCreate,
+    payload: CustomerPaymentCreate, *, commit: bool = True,
 ) -> CustomerPayment:
     company_id = _company_id(current_user)
     _require_feature(db, company_id)
@@ -164,7 +165,7 @@ def create_payment(
             )
         for invoice in invoices:
             _sync_invoice_collection_status(db, invoice)
-        db.commit()
+        db.commit() if commit else db.flush()
     except IntegrityError as error:
         db.rollback()
         raise HTTPException(

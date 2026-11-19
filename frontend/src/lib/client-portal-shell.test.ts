@@ -23,7 +23,8 @@ test("client portal has an isolated documentary shell and multi-company workspac
     assert.match(workspace, /ClientPortalService\.getWorkspaces/);
     assert.match(workspace, /ClientPortalInspections/);
     assert.match(workspace, /ClientPortalComplaints/);
-    assert.match(workspace, /<Select/);
+    assert.match(workspace, /<SearchableSelect/);
+    assert.match(workspace, /ClientPortalService\.getWorkspaces/);
     assert.match(service, /\/client-portal\/workspaces/);
     assert.match(service, /downloadInvoice/);
     assert.match(service, /acceptInspection/);

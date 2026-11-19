@@ -118,3 +118,47 @@ from app.models.subscription_entitlement import (
     PlanEntitlement,
     SubscriptionPlan,
 )
+
+from app.models.additional_work import AdditionalWork
+
+from app.models.advisory_access import AdvisoryAccess
+
+from app.models.staff_shift import StaffShift
+from app.models.company_preferences import CompanyPreferences
+
+from app.models.offline_work import OfflineWork
+
+from app.models.resource_log import Vehicle, VehicleJourney, ResourceCustody
+
+from app.models.staff_account import StaffAccount, StaffDocumentReceipt
+
+from app.models.internal_request import InternalRequest
+
+from app.models.import_batch import ImportBatch
+
+from app.models.operations_automation import OperationsAutomation
+
+from app.models.staff_document_file import StaffDocumentFile
+from app.models.staff_employee import StaffEmployee
+from app.models.staff_absence import StaffAbsence, StaffReservationDay
+from app.models.service_hours_review import ServiceHoursReview
+
+from app.models.quote_cost_estimate import QuoteCostEstimate
+
+from app.models.material_plan import MaterialPlan
+from app.models.subcontract import Subcontract
+
+from app.models.saved_report import SavedReport
+
+from app.models.advisory_request import AdvisoryRequest
+
+from app.models.company_hierarchy import CompanyHierarchy
+
+from app.models.workforce_plan import WorkCrew,WorkCrewMember,WorkOrderScope,TaskSpaceStaff,StaffChecklistProgress,QuoteWorkScope
+from app.models.task_client_publication import TaskClientPublication,TaskClientPublicationPhoto,TaskClientAcceptance
+
+from app.models.accounting_period import AccountingPeriod,AccountingPeriodEvent  # noqa: F401
+
+from app.models.workflow_approval import OperationsApprovalPolicy,PurchaseApproval,TaskCloseApproval,PurchaseBudgetLink
+from app.models.document_register import RegisteredDocument,DocumentRevision,DocumentSignature
+from app.models.labor_communication import LaborCommunication,LaborCommunicationEvent

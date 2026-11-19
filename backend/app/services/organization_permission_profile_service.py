@@ -24,6 +24,7 @@ from app.services.organization_permission_policy import (
     require_custom_profile_permissions_assignable,
 )
 from app.services.organization_base_profile_service import ADMIN_PROFILE_NAME
+from app.services.record_history_permissions import record_permission_change
 
 
 def _is_protected_administrator_profile(profile: PermissionProfile) -> bool:
@@ -115,6 +116,8 @@ def create_permission_profile(
                 permission_definition_id=definition.id,
             )
         )
+    record_permission_change(db, current_user, company_id, "permission_profile", profile.id,
+        "permission_codes", "", ", ".join(sorted(payload.permission_codes)))
     try:
         db.commit()
     except IntegrityError:
@@ -150,6 +153,7 @@ def update_permission_profile(
     ):
         conflict("Default permission profile names are managed by WorkHive")
     permission_codes = updates.pop("permission_codes", None)
+    previous_codes = ", ".join(sorted(permission.permission_definition.code for permission in profile.permissions if permission.permission_definition is not None))
     for field, value in updates.items():
         setattr(profile, field, value)
     if permission_codes is not None:
@@ -160,6 +164,8 @@ def update_permission_profile(
             profile.permissions.append(
                 PermissionProfilePermission(permission_definition_id=definition.id)
             )
+        record_permission_change(db, current_user, company_id, "permission_profile", profile.id,
+            "permission_codes", previous_codes, ", ".join(sorted(permission_codes)))
     db.add(profile)
     try:
         db.commit()

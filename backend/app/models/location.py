@@ -11,6 +11,7 @@ from sqlalchemy import (
     JSON,
     String,
     func,
+    false,
 )
 
 
@@ -44,6 +45,7 @@ class Location(Base):
     rooms = Column(JSON, nullable=True, default=list)
     max_capacity = Column(Integer, nullable=True, default=0)
     checkout_checklist = Column(JSON, nullable=True, default=list)
+    is_temporary = Column(Boolean, nullable=False, default=False, server_default=false(), index=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(

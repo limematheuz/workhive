@@ -6,12 +6,25 @@ import type {
     ClientPortalComplaint,
     ClientPortalComplaintPayload,
     ClientPortalInvitation,
+    ClientPortalInvitationCreated,
     ClientPortalInvitationAcceptPayload,
     ClientPortalOverview,
     ClientPortalWorkspace,
+    ClientPortalQuote,
 } from "@/types/client-portal";
 
 export const ClientPortalService = {
+    acceptQuote: async (workspaceId: number, quoteId: number, payload: { expected_revision: number; confirmed: true }): Promise<ClientPortalQuote> => {
+        const response = await apiFetch(`/api/v1/client-portal/workspaces/${workspaceId}/quotes/${quoteId}/accept`, { method: "POST", body: JSON.stringify(payload) });
+        await assertApiResponseOk(response, "No se pudo aceptar el presupuesto");
+        return response.json();
+    },
+
+    downloadQuote: async (workspaceId: number, quoteId: number): Promise<Blob> => {
+        const response = await apiFetch(`/api/v1/client-portal/workspaces/${workspaceId}/quotes/${quoteId}/pdf`, { method: "GET", cache: "no-store" });
+        await assertApiResponseOk(response, "No se pudo descargar el presupuesto");
+        return response.blob();
+    },
     getWorkspaces: async (): Promise<ClientPortalWorkspace[]> => {
         const response = await apiFetch("/api/v1/client-portal/workspaces", { method: "GET", cache: "no-store" });
         await assertApiResponseOk(response, "No se pudieron cargar tus empresas");
@@ -61,10 +74,10 @@ export const ClientPortalService = {
         return response.json();
     },
 
-    invite: async (clientId: number, email: string): Promise<ClientPortalInvitation> => {
+    invite: async (clientId: number, email: string, delivery: "email" | "link" = "email"): Promise<ClientPortalInvitationCreated> => {
         const response = await apiFetch(`/api/v1/client-portal/clients/${clientId}/invitations`, {
             method: "POST",
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email, delivery }),
         });
         await assertApiResponseOk(response, "No se pudo enviar la invitación");
         return response.json();

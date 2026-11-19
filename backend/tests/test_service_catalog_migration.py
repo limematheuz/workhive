@@ -15,6 +15,13 @@ from sqlalchemy import (
 )
 
 from app.core.config import settings
+from app.models.company_membership import Department
+from app.models.external_access_grant import ExternalAccessGrant
+from app.models.sales_ledger_record import SalesLedgerRecord
+from app.models.location_zone import LocationZone, LocationSpaceTaskTemplate
+from app.models.task_structure import TaskChecklistItem
+from app.models.client_contact import ClientContact
+from app.models.client_opportunity import ClientOpportunity
 
 
 def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeypatch):
@@ -61,7 +68,8 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         Column("source", String(50), nullable=False),
         Column("external_reference", String(255), nullable=True),
     )
-    Table("users", metadata, Column("id", Integer, primary_key=True))
+    Table("users", metadata, Column("id", Integer, primary_key=True),
+          Column("company_id", Integer), Column("role_id", Integer))
     Table(
         "roles",
         metadata,
@@ -75,6 +83,7 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         metadata,
         Column("id", Integer, primary_key=True),
         Column("end_time", String(64), nullable=True),
+        Column("task_item_id", Integer), Column("user_id", Integer),
     )
     Table(
         "notifications",
@@ -160,6 +169,24 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         Column("created_at", String(64), nullable=False),
         Column("updated_at", String(64), nullable=False),
     )
+    # These established entities are FK targets of the new accounting and
+    # organization revisions. Clone their stable schema instead of adding only
+    # an ID whenever another migration starts reflecting one of their FKs.
+    ExternalAccessGrant.__table__.to_metadata(metadata)
+    department = Department.__table__.to_metadata(metadata)
+    # unit_type belongs to the delivery migration, not this legacy baseline.
+    for constraint in list(department.constraints):
+        if constraint.name == "ck_department_unit_type":
+            department.constraints.remove(constraint)
+    for index in list(department.indexes):
+        if any(column.name == "unit_type" for column in index.columns):
+            department.indexes.remove(index)
+    department._columns.remove(department.c.unit_type)
+    ledger = SalesLedgerRecord.__table__.to_metadata(metadata)
+    ledger._columns.remove(ledger.c.currency_snapshot)
+    for model in (LocationZone, LocationSpaceTaskTemplate, TaskChecklistItem, ClientContact, ClientOpportunity):
+        model.__table__.to_metadata(metadata)
+
     alembic_version = Table(
         "alembic_version",
         metadata,

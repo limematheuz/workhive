@@ -7,6 +7,7 @@ const eslintConfig = defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    ".next-preview/**",
     ".next-e2e/**",
     ".next-portal-e2e/**",
     "playwright-report/**",

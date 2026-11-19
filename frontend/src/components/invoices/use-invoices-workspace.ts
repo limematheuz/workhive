@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { type InvoiceableTask } from "@/components/invoices/InvoiceableJobsSection";
 import {
@@ -22,6 +23,7 @@ import { canManageFinance, canViewFinance } from "@/domain/access/roles";
 import { ClientService, type Client } from "@/services/client.service";
 import { InvoiceService } from "@/services/invoice.service";
 import type { Invoice } from "@/types/invoice";
+import { useViewState } from "@/hooks/useViewState";
 
 type CreateSheetState = {
     open: boolean;
@@ -45,20 +47,21 @@ export function useInvoicesWorkspace() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedStatus, setSelectedStatus] = useState("");
-    const [selectedClientId, setSelectedClientId] = useState("");
-    const [invoiceSearch, setInvoiceSearch] = useState("");
-    const [month, setMonth] = useState(() => getMonthKey(new Date()) ?? "");
+    const [selectedStatus, setSelectedStatus] = useViewState("invoices.status", "");
+    const [selectedClientId, setSelectedClientId] = useViewState("invoices.client", "");
+    const [invoiceSearch, setInvoiceSearch] = useViewState("invoices.search", "");
+    const [month, setMonth] = useViewState("invoices.month", () => getMonthKey(new Date()) ?? "");
     const [createSheet, setCreateSheet] = useState<CreateSheetState>(EMPTY_CREATE_SHEET);
-    const [activeView, setActiveView] = useState<"invoices" | "jobs">("invoices");
+    const router=useRouter();
+    const searchParams=useSearchParams();
     const [invoiceableTasks, setInvoiceableTasks] = useState<InvoiceableTask[]>([]);
     const [loadingJobs, setLoadingJobs] = useState(false);
     const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
-    const [jobPartyFilter, setJobPartyFilter] = useState("");
-    const [jobInvoiceFilter, setJobInvoiceFilter] = useState<"all" | "pending" | "invoiced">("pending");
-    const [jobSearch, setJobSearch] = useState("");
-    const [jobDateFrom, setJobDateFrom] = useState("");
-    const [jobDateTo, setJobDateTo] = useState("");
+    const [jobPartyFilter, setJobPartyFilter] = useViewState("invoices.jobs.party", "");
+    const [jobInvoiceFilter, setJobInvoiceFilter] = useViewState<"all" | "pending" | "invoiced">("invoices.jobs.status", "pending");
+    const [jobSearch, setJobSearch] = useViewState("invoices.jobs.search", "");
+    const [jobDateFrom, setJobDateFrom] = useViewState("invoices.jobs.from", "");
+    const [jobDateTo, setJobDateTo] = useViewState("invoices.jobs.to", "");
     const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
     const [selectedInvoiceIntent, setSelectedInvoiceIntent] = useState<"view" | "edit">("view");
     const openInvoice = (invoiceId: number, intent: "view" | "edit" = "view") => {
@@ -71,6 +74,11 @@ export function useInvoicesWorkspace() {
     };
     const canViewInvoices = canViewFinance(user);
     const canManageInvoices = canManageFinance(user);
+    const activeView: "invoices"|"jobs"=canManageInvoices&&searchParams.get("view")==="jobs"?"jobs":"invoices";
+    const setActiveView=(view:"invoices"|"jobs")=>{
+        const query=new URLSearchParams(searchParams.toString());query.set("view",view);
+        router.replace("/dashboard/invoices?"+query.toString(),{scroll:false});
+    };
 
     const loadInvoices = useCallback(async () => {
         if (userLoading || !user || !canViewInvoices) return;

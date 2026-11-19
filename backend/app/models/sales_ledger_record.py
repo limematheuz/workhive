@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     Column,
@@ -20,6 +21,7 @@ class SalesLedgerRecord(Base):
     """A manually maintained historical sale, kept separate from fiscal invoices."""
 
     __tablename__ = "sales_ledger_records"
+    currency_snapshot = Column(JSON, nullable=True)
     __table_args__ = (
         UniqueConstraint(
             "company_id",

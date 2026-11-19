@@ -20,7 +20,7 @@ test("work orders have an independent operational service and page", () => {
     assert.match(service, /reverseMaterialConsumption/);
     assert.match(page, /WorkOrderList/);
     assert.match(list, /DataListTable/);
-    assert.match(page, /Nueva orden/);
+    assert.match(page, /Planificar trabajo/);
     assert.match(list, /Generar tarea/);
     assert.match(list, /ActionPopover/);
     assert.match(editor, /workOrder\.next_occurrence_at \?\? workOrder\.scheduled_start_at/);

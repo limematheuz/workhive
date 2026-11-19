@@ -20,6 +20,9 @@ export interface OnboardingLocationFields {
 export interface CompanyOnboardingInput {
     operating_model: OperatingModel;
     location?: {
+        client_id?: number | null;
+        department_id?: number | null;
+        team_id?: number | null;
         name: string;
         address: string;
         city: string;

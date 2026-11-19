@@ -49,12 +49,16 @@ class CustomerPaymentAllocationResponse(BaseModel):
     id: int
     invoice_id: int
     amount: Decimal
+    exchange_difference_eur: Decimal = Decimal("0")
+    native_amount: Decimal | None = None
+    native_currency: str | None = None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class CustomerPaymentResponse(BaseModel):
+    currency_snapshot: dict | None = None
     id: int
     client_id: int
     received_at: datetime
@@ -69,6 +73,7 @@ class CustomerPaymentResponse(BaseModel):
     void_reason: str | None
     created_at: datetime
     allocations: list[CustomerPaymentAllocationResponse]
+    exchange_difference_amount: Decimal = Decimal("0")
     allocated_amount: Decimal
     unapplied_amount: Decimal
 

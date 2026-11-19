@@ -22,19 +22,22 @@ test("sidebar groups navigation by domain while preserving role and feature filt
     const navigation = read("../components/dashboard/SidebarNavigation.tsx");
     const sidebar = read("../components/dashboard/Sidebar.tsx");
 
-    for (const group of ["operations", "clients", "billing", "organization", "platform"]) {
-        assert.match(config, new RegExp(`group\\(\\"${group}\\"`));
-    }
+    assert.match(config, /WORKSPACE_NAVIGATION/);
     assert.match(config, /NAVIGATION_FEATURES/);
     assert.match(config, /PLATFORM_SUPERADMIN_HREFS/);
     assert.match(config, /ACCOUNTANT_HREFS/);
     assert.match(config, /canReadClients: boolean/);
     assert.match(config, /flags\.canReadClients \? \[\{ href: "\/dashboard\/clients"/);
-    assert.match(sidebar, /ClientService\.getAccess/);
-    assert.match(sidebar, /canReadClients: clientAccess\?\.context === featureContext && clientAccess\.canRead === true/);
+    const provider=read("../components/dashboard/WorkspaceNavigationProvider.tsx");
+    assert.match(sidebar, /useWorkspaceNavigation\(\)/);
+    assert.match(provider, /ClientService\.getAccess/);
+    assert.match(provider, /snapshot\?\.context===context/);
+    assert.match(provider, /canReadClients:current\?\.clients===true/);
+    assert.match(provider, /navigationCapabilityAllowed/);
     assert.match(navigation, /state === "collapsed"/);
     assert.match(navigation, /!overflow-y-auto/);
-    assert.match(navigation, /scrollbar-width:none/);
+    assert.match(navigation, /sidebar-navigation-scroll/);
+    assert.match(read("../app/globals.css"), /\.sidebar-navigation-scroll\s*\{[^}]*direction:\s*rtl/);
     assert.match(navigation, /sidebar-group-content/);
     assert.match(navigation, /sidebar-group-close_130ms/);
     assert.match(navigation, /tooltip=\{item\.label\}/);

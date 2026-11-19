@@ -1,11 +1,12 @@
 "use client"
+import {FormSelect} from "@/components/ui/form-select";
 
 import { useRef, useState } from "react"
 import { Plus } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { useDialogFormGuardReset } from "@/components/ui/dialog-form-guard"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import type { Location } from "@/types/location"
 
 type ContractLocationPickerProps = {
@@ -29,10 +30,10 @@ export function ContractLocationPicker({ locations, saving, onAdd }: ContractLoc
     }
 
     return <div ref={picker} className="flex min-w-[14rem] gap-2">
-        <Select value={selectedLocationId} onValueChange={setSelectedLocationId} disabled={saving}>
-            <SelectTrigger aria-label="Añadir ubicación cubierta" className="h-9 min-w-0"><SelectValue placeholder="Selecciona ubicación" /></SelectTrigger>
-            <SelectContent>{locations.map(location => <SelectItem key={location.id} value={String(location.id)}>{location.name}</SelectItem>)}</SelectContent>
-        </Select>
+        <FormSelect searchable aria-label="Añadir ubicación cubierta" className="h-9 min-w-0" placeholder="Selecciona ubicación" value={selectedLocationId} onValueChange={setSelectedLocationId} disabled={saving}>
+
+            {locations.map(location => <option key={location.id} value={String(location.id)}>{location.name}</option>)}
+        </FormSelect>
         <Button type="button" size="sm" onClick={addLocation} disabled={saving || !selectedLocationId} aria-label="Añadir ubicación">
             <Plus className="size-4" aria-hidden="true" />
         </Button>

@@ -115,6 +115,9 @@ class CompanyUpdate(BaseModel):
 
 
 class CompanyOnboardingLocationCreate(BaseModel):
+    client_id: int | None = Field(default=None, ge=1)
+    department_id: int | None = Field(default=None, ge=1)
+    team_id: int | None = Field(default=None, ge=1)
     name: str = Field(min_length=1, max_length=100)
     address: str = Field(min_length=1, max_length=255)
     city: str = Field(min_length=1, max_length=100)

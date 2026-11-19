@@ -24,7 +24,9 @@ import { QuoteDetailNotes } from "./QuoteDetailNotes"
 import { QuoteDetailActions } from "./QuoteDetailActions"
 import { QuoteDetailSummaryAside } from "./QuoteDetailSummaryAside"
 import { QuoteRevisionHistoryDialog } from "./QuoteRevisionHistoryDialog"
+import { QuoteCostSimulation } from "./QuoteCostSimulation"
 import { getErrorMessage } from "@/lib/errors"
+import { RecordHistoryPanel } from "@/components/history/RecordHistoryPanel"
 
 interface QuoteDetailSheetProps {
     quote: Quote | null
@@ -222,6 +224,8 @@ export function QuoteDetailSheet({
                                     />
                                     <QuoteDetailItems quote={quote} dict={dict} />
                                     <QuoteDetailNotes quote={quote} dict={dict} />
+                                    <QuoteCostSimulation key={`${quote.id}:${quote.revision_number}`} quote={quote} canManage={canManage} />
+                                    <RecordHistoryPanel entityType="quote" entityId={quote.id} />
                                 </div>
 
                                 <QuoteDetailSummaryAside

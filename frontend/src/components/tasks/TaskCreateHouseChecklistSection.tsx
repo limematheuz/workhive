@@ -1,10 +1,11 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import React, { useState } from "react";
 import { ListTodo, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import type { Dictionary } from "@/lib/dictionary-context";
 import type { TemplateTask, HouseTemplate } from "@/hooks/useTasksPage";
 import type { User } from "@/types/user";
@@ -144,17 +145,17 @@ export function TaskCreateHouseChecklistSection({
                             <label htmlFor="task-create-template" className="text-[10px] uppercase font-bold text-[var(--text-muted)] block">
                                 {dict.locations?.sheet?.select_template_label || "Select the Default Task *"}
                             </label>
-                            <Select
+                            <FormSelect searchable aria-label={dict.locations?.sheet?.select_template_label || "Select the Default Task *"} id="task-create-template" className="h-9 text-xs"
                                 value={selectedTmplId || "none"}
                                 onValueChange={(value) => setSelectedTmplId(value === "none" ? "" : value)}
                             >
-                                <SelectTrigger id="task-create-template" aria-label={dict.locations?.sheet?.select_template_label || "Select the Default Task *"} className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                                <SelectContent><SelectItem value="none">{dict.locations?.sheet?.choose_template || "-- Choose from catalog --"}</SelectItem>{availableTemplates.map(gt => (
-                                    <SelectItem key={gt.id} value={gt.id.toString()}>
+
+                                <option value="none">{dict.locations?.sheet?.choose_template || "-- Choose from catalog --"}</option>{availableTemplates.map(gt => (
+                                    <option key={gt.id} value={gt.id.toString()}>
                                         {gt.name} ({gt.default_price || 0} €)
-                                    </SelectItem>
-                                ))}</SelectContent>
-                            </Select>
+                                    </option>
+                                ))}
+                            </FormSelect>
                         </div>
 
                         <div className="space-y-1">

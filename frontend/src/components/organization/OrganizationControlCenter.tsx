@@ -17,7 +17,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
-import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,7 +29,6 @@ import {
     type MemberFilters,
     type PermissionProfileFilters,
 } from "@/lib/organization-filters";
-import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useDictionary } from "@/lib/dictionary-context";
 import { useUser } from "@/lib/user-context";
@@ -466,7 +464,7 @@ function CurrentMembersTable({
 }) {
     const { dict } = useDictionary();
     const copy = dict.organization.people;
-    const pagination = useDataTablePagination(members, ORGANIZATION_PAGE_SIZE);
+    const pagination = useDataTablePagination(members, ORGANIZATION_PAGE_SIZE, "OrganizationControlCenter.members.0");
     return (
         <section className="billing-surface overflow-hidden rounded-[26px]">
             <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -595,7 +593,7 @@ function MemberHistoryTable({
     );
     const departmentNames = new Map(departments.map((department) => [department.id, department.name]));
     const teamNames = new Map(teams.map((team) => [team.id, team.name]));
-    const pagination = useDataTablePagination(members, ORGANIZATION_PAGE_SIZE);
+    const pagination = useDataTablePagination(members, ORGANIZATION_PAGE_SIZE, "OrganizationControlCenter.members.1");
     return (
         <section className="overflow-hidden rounded-[26px] border border-[var(--border-soft)] bg-[var(--bg-card)]/50">
             <header className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -687,7 +685,7 @@ function ProfilesTable({
         () => filterPermissionProfiles(profiles, filters),
         [profiles, filters],
     );
-    const pagination = useDataTablePagination(filteredProfiles, ORGANIZATION_PAGE_SIZE);
+    const pagination = useDataTablePagination(filteredProfiles, ORGANIZATION_PAGE_SIZE, "OrganizationControlCenter.filteredProfiles.2");
     const hasActiveFilters = filters.search.trim() !== "" || filters.type !== "all" || filters.status !== "all";
     const updateFilters = (update: Partial<PermissionProfileFilters>) => {
         setFilters((current) => ({ ...current, ...update }));

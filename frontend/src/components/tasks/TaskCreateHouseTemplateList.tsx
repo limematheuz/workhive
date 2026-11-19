@@ -1,4 +1,5 @@
 "use client";
+import {FormSelect} from "@/components/ui/form-select";
 
 import { useState } from "react";
 import { Check, ChevronDown, UsersRound } from "lucide-react";
@@ -228,16 +229,16 @@ export function TaskCreateHouseTemplateList({
                                             <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--text-muted)]/40" />
                                             <span className="truncate text-xs font-medium text-[var(--text-main)]">{item.text}</span>
                                         </div>
-                                        <Select
+                                        <FormSelect searchable aria-label={`Asignar trabajador: ${item.text}`} className="h-8 max-w-[140px] shrink-0 rounded-full px-2.5 text-[10px]"
                                             value={fixedChecklistAssignments[`${houseTemplate.template_task_id}-${item.index}`] || "unassigned"}
                                             onValueChange={(value) => setFixedChecklistAssignments((current) => ({
                                                 ...current,
                                                 [`${houseTemplate.template_task_id}-${item.index}`]: value,
                                             }))}
                                         >
-                                            <SelectTrigger aria-label={`Asignar trabajador: ${item.text}`} className="h-8 max-w-[140px] shrink-0 rounded-full px-2.5 text-[10px]"><SelectValue /></SelectTrigger>
-                                            <SelectContent><SelectItem value="unassigned">-- Sin asignar --</SelectItem><SelectItem value={ALL_WORKERS_VALUE}>{dict.tasks?.create_dialog?.assignee_all || "Todos los trabajadores"}</SelectItem>{users.map((user) => <SelectItem key={user.id} value={user.id.toString()}>{user.full_name || user.email}</SelectItem>)}</SelectContent>
-                                        </Select>
+
+                                            <option value="unassigned">-- Sin asignar --</option><option value={ALL_WORKERS_VALUE}>{dict.tasks?.create_dialog?.assignee_all || "Todos los trabajadores"}</option>{users.map((user) => <option key={user.id} value={user.id.toString()}>{user.full_name || user.email}</option>)}
+                                        </FormSelect>
                                     </div>
                                 ))}
                             </div>

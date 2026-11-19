@@ -61,6 +61,7 @@ class SalesLedgerManualRecordUpdate(BaseModel):
 
 
 class SalesLedgerEntryResponse(BaseModel):
+    currency_snapshot: dict | None = None
     source_type: LedgerSourceType
     source_id: int
     document_number: str

@@ -33,6 +33,7 @@ for (const width of [1440, 390]) for (const profile of profiles) {
             if (path === "/api/v1/users/me") body = { id: 1, full_name: "QA", role: { name: profile.financeManage ? "admin" : "viewer" }, company_id: 1, is_active: true, can_view_finance: profile.financeRead, can_manage_finance: profile.financeManage };
             else if (path === "/api/v1/companies/1") body = { id: 1, name: "QA", onboarding_completed: true, subscription_status: "active" };
             else if (path.endsWith("organization/access")) body = { "inventory.read": canRead, "inventory.manage": profile.manage, "finance.read": profile.financeRead, "finance.manage": profile.financeManage };
+            else if (path.endsWith("/workflow-approvals/policy")) body = { available: true, purchases_required: false, task_close_required: false, can_manage: profile.financeManage };
             else if (path === "/api/v1/inventory/purchases") body = [{ id: 1, supplier_name_snapshot: "QA proveedor", status: "received", lines: [{ id: 1 }], expense: { expense_date: "2026-11-01T12:00:00Z", description: "QA compra", total_amount: 1 } }];
             await route.fulfill({ json: body });
         });
@@ -51,7 +52,7 @@ for (const width of [1440, 390]) for (const profile of profiles) {
                 await selectSection(page, page, "Compras", "Área de inventario");
                 await expect(page.getByText("QA compra", { exact: false }).filter({ visible: true })).toBeVisible();
                 const canWrite = profile.manage && profile.financeManage;
-                await expect(page.getByRole("button", { name: "Nueva compra", exact: true }).filter({ visible: true })).toHaveCount(canWrite ? 1 : 0);
+                await expect(page.getByRole("button", { name: "Nueva compra", exact: true }).filter({ visible: true })).toHaveCount(profile.manage ? 1 : 0);
                 await expect(page.getByRole("button", { name: "Corregir", exact: true }).filter({ visible: true })).toHaveCount(canWrite ? 1 : 0);
                 expect(reads).toContain("/api/v1/inventory/purchases");
             } else {

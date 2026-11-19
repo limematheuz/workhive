@@ -106,10 +106,10 @@ def authenticate_user(db: Session, email: str, password: str) -> User:
         )
     if not is_superadmin(user) and user.company:
         if not user.company.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Company account is inactive",
-            )
+            from app.repositories.company_session import contexts
+            from app.services.company_session_principal import active_membership
+            if not any(active_membership(member) for member,_ in contexts(db,user.id)):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Company account is inactive")
     # A valid identity must still be able to reach the billing recovery routes
     # after a cancellation, expiry, or payment failure. Operational routes use
     # get_current_user(), which enforces the subscription separately.

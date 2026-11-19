@@ -2,6 +2,7 @@ export type WorkerInvitationInput = {
     email: string;
     full_name?: string;
     role_id: number;
+    delivery?: "email" | "link";
 };
 
 export function buildWorkerInvitationPayload(input: WorkerInvitationInput): WorkerInvitationInput {
@@ -15,12 +16,12 @@ export function buildWorkerInvitationPayload(input: WorkerInvitationInput): Work
 export function buildInvitationAcceptancePayload(
     token: string,
     code: string,
-    password: string,
+    password?: string,
 ) {
     return {
         token,
         code,
-        password,
+        ...(password === undefined ? {} : { password }),
         accept_terms: true,
         accept_privacy: true,
         marketing_consent: false,

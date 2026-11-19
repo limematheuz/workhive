@@ -2361,8 +2361,8 @@
     "tabs": {
       "people": "Personas",
       "people_compact": "Personas",
-      "departments": "Departamentos",
-      "departments_compact": "Dptos.",
+      "departments": "Áreas y delegaciones",
+      "departments_compact": "Estructura",
       "teams": "Equipos",
       "teams_compact": "Equipos",
       "profiles": "Perfiles de permisos",
@@ -2370,7 +2370,7 @@
     },
     "actions": {
       "invite_person": "Invitar persona",
-      "add_department": "Añadir departamento",
+      "add_department": "Añadir área o delegación",
       "add_team": "Añadir equipo",
       "create_profile": "Crear perfil",
       "preparing": "Preparando…",
@@ -2482,17 +2482,17 @@
       "cancel_error": "No se pudo cancelar la invitación."
     },
     "departments": {
-      "title": "Departamentos",
-      "description": "Agrupan responsabilidades como Comercial, RRHH, Operaciones, Finanzas o Calidad.",
-      "empty": "Crea el primer departamento de la empresa.",
+      "title": "Áreas y delegaciones",
+      "description": "Organiza las áreas de responsabilidad y las delegaciones territoriales de la empresa.",
+      "empty": "Crea la primera área o delegación de la empresa.",
       "parent": "Depende de",
       "parent_optional": "Departamento superior (opcional)",
       "no_parent": "Sin departamento superior",
       "no_code": "Sin código",
       "code": "Código",
       "actions": "Acciones",
-      "edit_title": "Editar departamento",
-      "edit_description": "Actualiza su nombre, código, departamento superior o estado.",
+      "edit_title": "Editar área o delegación",
+      "edit_description": "Actualiza su nombre, código, unidad superior o estado.",
       "linked_data_title": "Este departamento todavía no se puede eliminar",
       "linked_data_description": "Mueve o cierra los datos vinculados antes de eliminar este departamento.",
       "child_departments": "departamentos hijos",
@@ -2739,7 +2739,7 @@
       "worker_description": "Solo verá el trabajo que se le asigne."
     },
     "create_dialog": {
-      "new_department": "Nuevo departamento",
+      "new_department": "Nueva área o delegación",
       "new_team": "Nuevo equipo",
       "new_profile": "Nuevo perfil de permisos",
       "profile_description": "Elige exactamente las acciones que este perfil podrá realizar.",

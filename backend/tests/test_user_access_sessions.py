@@ -1,4 +1,6 @@
 from tests.test_organization_api import _bootstrap_admin, _company, _headers, _user
+from app.core.security import get_password_hash
+from tests.credentials import TEST_SECRET
 
 
 def _accounts(db):
@@ -6,8 +8,15 @@ def _accounts(db):
     owner = _bootstrap_admin(db, company, "account-session-owner")
     worker = _user(db, company, "account-session-worker", 3)
     worker.email = "account-session-worker@example.com"
+    worker.hashed_password=get_password_hash(TEST_SECRET)
     db.commit()
     return owner, worker
+
+
+def _fresh_session(client,worker):
+    response=client.post("/api/v1/auth/login",data={"username":worker.email,"password":TEST_SECRET})
+    assert response.status_code==200,response.text
+    return {"Authorization":"Bearer "+response.json()["access_token"]}
 
 
 def test_deactivation_and_reactivation_never_revive_an_old_session(client, db):
@@ -23,7 +32,7 @@ def test_deactivation_and_reactivation_never_revive_an_old_session(client, db):
         assert updated.status_code == 200, updated.text
     assert client.get("/api/v1/users/me", headers=old_headers).status_code == 401
     db.refresh(worker)
-    assert client.get("/api/v1/users/me", headers=_headers(worker)).status_code == 200
+    assert client.get("/api/v1/users/me", headers=_fresh_session(client,worker)).status_code == 200
 
 
 def test_role_change_invalidates_existing_sessions(client, db):
@@ -35,7 +44,7 @@ def test_role_change_invalidates_existing_sessions(client, db):
     assert changed.status_code == 200, changed.text
     assert client.get("/api/v1/users/me", headers=old_headers).status_code == 401
     db.refresh(worker)
-    assert client.get("/api/v1/users/me", headers=_headers(worker)).status_code == 200
+    assert client.get("/api/v1/users/me", headers=_fresh_session(client,worker)).status_code == 200
 
 
 def test_no_op_administrative_update_preserves_current_sessions(client, db):

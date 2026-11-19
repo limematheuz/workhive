@@ -1,5 +1,7 @@
 "use client";
 
+import {cleanChecklistDescription} from "@/lib/format";
+import type {SpaceAllocation} from "@/services/service-planning.service";
 import { readTaskChecklistEdits } from "@/domain/tasks/task-checklist-edit";
 
 import React, { startTransition, useState, useEffect, useEffectEvent } from "react";
@@ -268,6 +270,7 @@ export function useTaskCrud({
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
+        const allocationField=new FormData(e.currentTarget as HTMLFormElement).get("space_allocations");
         
         if (!useHouseChecklist || selectedHouseTemplateId === null) {
             toast.error("Por favor, selecciona un servicio para el trabajo.");
@@ -333,7 +336,7 @@ export function useTaskCrud({
 
             await TaskService.createTaskItem({
                 title: effective.name || "Limpieza fija",
-                description: buildChecklistDescription({
+                description: selectedZoneIds.length?cleanChecklistDescription(effective.description||""):buildChecklistDescription({
                     description: effective.description,
                     templateTaskId: templateId,
                     users,
@@ -356,6 +359,7 @@ export function useTaskCrud({
                 priority,
                 zone_ids: selectedZoneIds,
                 space_task_template_ids: selectedSpaceTaskTemplateIds,
+                space_allocations:allocationField?JSON.parse(String(allocationField)) as SpaceAllocation[]:[],
             });
             toast.success(newUserId === ALL_WORKERS_VALUE
                 ? "Trabajos registrados para todos los trabajadores."
