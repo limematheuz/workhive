@@ -1,5 +1,8 @@
 "use client";
 
+import {useViewState} from "@/hooks/useViewState";
+import {Input} from "@/components/ui/input";
+import {CompactFilterSelect} from "@/components/ui/compact-filter-select";
 import { Pencil, ShieldCheck } from "lucide-react";
 
 import { ActionPopover } from "@/components/ui/action-popover";
@@ -31,14 +34,17 @@ export function RolesListSection({
     labels,
     onEdit,
 }: RolesListSectionProps) {
+    const [query,setQuery]=useViewState("roles.query", "");
+    const [state,setState]=useViewState("roles.state", "");
+    const visible=roles.filter(role=>[role.name,role.description].filter(Boolean).join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(!state||(state==="active"?role.is_active===true:role.is_active===false)));
     const statusBadge = (role: Role) => (
         <Badge
             variant="outline"
-            className={role.is_active
+            className={role.is_active===true
                 ? "border-accent/25 bg-accent/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent"
                 : "border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"}
         >
-            {role.is_active ? labels.active : labels.inactive}
+            {role.is_active===true?labels.active:role.is_active===false?labels.inactive:"Estado pendiente"}
         </Badge>
     );
 
@@ -53,7 +59,9 @@ export function RolesListSection({
 
     return (
         <DataListTable
-            items={roles}
+            items={visible}
+            persistenceKey="roles.catalog"
+            toolbar={<div className="space-y-2"><div className="grid gap-2 sm:grid-cols-[1fr_12rem]"><Input type="search" aria-label="Buscar rol por nombre o descripción" placeholder="Buscar rol…" value={query} onChange={event=>setQuery(event.target.value)}/><CompactFilterSelect aria-label="Estado del rol" value={state} onValueChange={setState} options={[{value:"",label:"Todos los estados"},{value:"active",label:"Activos"},{value:"inactive",label:"Inactivos"}]}/></div><p className="text-xs text-muted-foreground">{visible.length} de {roles.length} roles. Catálogo global del sistema; la asignación a usuarios y sus concesiones se administran en los apartados correspondientes.</p></div>}
             getRowKey={(role) => role.id}
             desktopFrom="lg"
             header={{
@@ -70,7 +78,7 @@ export function RolesListSection({
             empty={(
                 <>
                     <ShieldCheck className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
-                    <p className="mt-3 text-sm text-[var(--text-muted)]">{labels.empty}</p>
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{query||state?"No hay roles con estos filtros. Cambia la búsqueda o el estado.":labels.empty}</p>
                 </>
             )}
             renderCompactRow={(role) => (

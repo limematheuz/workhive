@@ -12,7 +12,7 @@ import { UserProvider, useUser } from "@/lib/user-context";
 import { useThemeMode } from "@/lib/theme";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { CompanyService } from "@/services/company.service";
-import { shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
+import { COMPANY_ONBOARDING_REQUESTED, shouldShowCompanyOnboarding } from "@/domain/onboarding/cleaning-onboarding";
 import { isClientPortalRole, isExternalPortalRole, isPartnerPortalRole } from "@/domain/access/roles";
 import { canAccessExternalPortalDashboardPath } from "@/domain/access/accountant-dashboard";
 import { canAccessPartnerPortalDashboardPath } from "@/domain/access/partner-portal-dashboard";
@@ -40,6 +40,12 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     const isExternalPortal = isExternalPortalRole(user?.role?.name);
     const isPartnerPortal = isPartnerPortalRole(user?.role?.name);
     const isClientPortal = isClientPortalRole(user?.role?.name);
+    useEffect(() => {
+        if (!user || !shouldShowCompanyOnboarding(user)) return;
+        const resume = () => setShowOnboarding(true);
+        window.addEventListener(COMPANY_ONBOARDING_REQUESTED, resume);
+        return () => window.removeEventListener(COMPANY_ONBOARDING_REQUESTED, resume);
+    }, [user]);
     useRealtimeEvents(Boolean(user) && !isExternalPortal && !isPartnerPortal && !isClientPortal);
 
     // Check if onboarding should be shown
@@ -73,12 +79,9 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     }, [user, loading, isClientPortal, isPartnerPortal]);
 
     const handleLogout = async () => {
-        try {
-            await authService.logout();
-        } finally {
-            clearSessionCache();
-            router.replace("/login");
-        }
+        await authService.logout();
+        clearSessionCache();
+        router.replace("/login");
     };
 
     if (!loading && !user) {
@@ -119,7 +122,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     </SidebarProvider></WorkspaceNavigationProvider>;
 }
 
-function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOnboarding, onOnboardingComplete, user }: { children: React.ReactNode; theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => void; showOnboarding: boolean; onOnboardingComplete: () => void; user: NonNullable<ReturnType<typeof useUser>["user"]> }) {
+function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOnboarding, onOnboardingComplete, user }: { children: React.ReactNode; theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => Promise<void>; showOnboarding: boolean; onOnboardingComplete: () => void; user: NonNullable<ReturnType<typeof useUser>["user"]> }) {
     const { isMobile, setOpen, setOpenMobile } = useSidebar();
     useEffect(() => {
         const handleOpenSidebar = (event: Event) => {
@@ -136,13 +139,12 @@ function DashboardLayoutShell({ children, theme, onThemeChange, onLogout, showOn
             <Sidebar theme={theme} onThemeChange={onThemeChange} onLogout={onLogout} />
 
             <div className="min-h-dvh min-w-0 flex-1 overflow-visible p-0 transition-colors duration-300 lg:h-dvh lg:overflow-hidden lg:p-0">
-                <div className="relative flex min-h-dvh min-w-0 flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:border-l lg:border-[var(--border-soft)]">
+                <div className="wh-workspace-frame relative flex min-h-dvh min-w-0 flex-col bg-[var(--bg-primary)] lg:h-full lg:min-h-0 lg:overflow-hidden lg:border-l lg:border-[var(--border-soft)]">
                     {/* Clip backlight bleed without making this shell a touch scrollport (AuthShell pattern). */}
                     <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
                         <div className="dashboard-shell-backlight" />
                     </div>
-                    <DashboardHeader
-                    />
+                    <DashboardHeader onLogout={onLogout} />
 
                     <main className="wh-compact-workspace dashboard-page-scroll-region relative z-[var(--z-dashboard-content)] min-h-0 min-w-0 flex-1 overflow-x-hidden p-0 lg:overflow-y-auto">
                         <WorkspaceRouteGuard>{children}</WorkspaceRouteGuard>

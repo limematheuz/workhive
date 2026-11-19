@@ -13,16 +13,17 @@ test("invoice stats cards use a 2x2 grid on mobile", () => {
 });
 
 test("invoice stats cards use compact semantic icon chips instead of colour-only bars", () => {
-    assert.match(source, /SummaryMetricCard/);
-    assert.match(source, /CircleCheck/);
+    assert.match(source, /FinanceMetricButton/);
+    assert.match(source, /FilePenLine/);
     assert.match(source, /OctagonAlert/);
     assert.doesNotMatch(source, /h-1\.5 w-full rounded-full/);
     assert.doesNotMatch(source, /green|emerald/);
 });
 
-test("invoice stats cards receive calculated comparisons instead of hard-coded badges", () => {
-    assert.match(source, /getMetricTrend/);
-    assert.match(source, /previousStats/);
-    assert.match(source, /previousStats\.openAmount, "lower"/);
-    assert.doesNotMatch(source, /100%/);
+test("invoice priorities open exact record filters without pretending historical balance trends", () => {
+    assert.match(source, /onAttentionChange/);
+    assert.match(source, /filter: "draft"/);
+    assert.match(source, /filter: "pending"/);
+    assert.match(source, /filter: "overdue"/);
+    assert.doesNotMatch(source, /getMetricTrend|100%/);
 });

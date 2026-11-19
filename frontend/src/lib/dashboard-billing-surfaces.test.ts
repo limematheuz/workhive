@@ -22,10 +22,10 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
 
     assert.match(globals, /\.billing-block\s*\{\s*background-color: var\(--bg-tertiary\);/);
 
-    assert.match(invoicesStats, /SummaryMetricCard/);
-    assert.match(invoicesList, /from "@\/components\/ui\/table"/);
-    assert.match(invoicesList, /<TableHeader>/);
-    assert.match(invoicesList, /<TableBody>/);
+    assert.match(invoicesStats, /FinanceMetricButton/);
+    assert.match(invoicesList, /from "@\/components\/ui\/data-list-table"/);
+    assert.match(invoicesList, /customizable/);
+    assert.match(invoicesList, /INVOICE_TABLE_KEY/);
     assert.match(invoicesList, /Pulsa una fila para abrir/);
     assert.doesNotMatch(invoicesList, /ChevronRight/);
     assert.match(invoicesList, /Vence /);
@@ -49,8 +49,8 @@ test("invoice list, jobs, quotes, and analytics use solid billing blocks without
     assert.match(analytics, /color: "var\(--status-active-text\)"/);
     assert.match(analytics, /comparisonDirection/);
     assert.match(analytics, /SummaryMetricCard/);
-    assert.match(expenses, /SummaryMetricCard/);
-    assert.match(fiscalSummary, /SummaryMetricCard/);
+    assert.match(expenses, /FinanceMetricButton/);
+    assert.match(fiscalSummary, /FinanceMetricButton/);
     assert.match(ledgerSummary, /SummaryMetricCard/);
     assert.doesNotMatch(ledgerSummary, /function SummaryMetric\(/);
     assert.match(metricCard, /const TrendIcon = value > 0 \? ArrowUpRight : value < 0 \? ArrowDownRight : Minus/);

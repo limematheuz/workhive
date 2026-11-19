@@ -192,3 +192,23 @@ test("client CSV escapes spreadsheet formulas and keeps financial columns permis
     assert.match(csv, /"'=IMPORTXML\(A1\)"/);
     assert.doesNotMatch(csv.split("\n")[0], /Facturación/);
 });
+
+
+test("client outstanding balance includes earlier-year debt and deducts partial collections", () => {
+    const prior = { ...invoice(80, 1, "partially_paid", 121), issue_date: "2025-11-01T10:00:00Z", collected_amount: 21 };
+    const settled = { ...invoice(81, 1, "issued", 50), collected_amount: 50 };
+    const workspace = buildClientWorkspace({ clients, locations, tasks: [], invoices: [prior, settled], referenceDate: new Date("2026-08-24T12:00:00Z") });
+    assert.equal(workspace.rows[0].pendingBalance, 100);
+    assert.equal(workspace.rows[0].annualBillingTotal, 50);
+    assert.equal(workspace.summary.pendingBalanceTotal, 100);
+});
+
+test("unavailable operations remain distinct from a loaded empty collection, including CSV", () => {
+    const unknown = buildClientWorkspace({ clients });
+    const empty = buildClientWorkspace({ clients, locations: [], tasks: [] });
+    assert.equal(unknown.rows[0].hasLocationData, false);
+    assert.equal(unknown.rows[0].hasTaskData, false);
+    assert.equal(empty.rows[0].hasTaskData, true);
+    const csv = buildClientWorkspaceCsv(unknown.rows, { includeFinancialData: false, year: 2026 });
+    assert.ok(csv.split("\n")[1].includes(';"";"";"";'));
+});

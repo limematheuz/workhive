@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api";
+import { collectPaginated } from "@/lib/pagination";
 
 export type SalesLedgerSourceType = "invoice" | "manual";
 export type SalesLedgerPaymentStatus = "paid" | "pending";
@@ -56,6 +57,9 @@ async function uploadCsv(path: string, file: File): Promise<Response> {
 }
 
 export const SalesLedgerService = {
+    async getAllEntries(filters: { year?: number; search?: string } = {}): Promise<SalesLedgerEntry[]> {
+        return collectPaginated((skip, limit) => SalesLedgerService.getEntries({ ...filters, skip, limit }));
+    },
     async getEntries(filters: { year?: number; search?: string; skip?: number; limit?: number } = {}): Promise<SalesLedgerEntry[]> {
         const query = queryString(filters);
         const response = await apiFetch(`/api/v1/sales-ledger/${query ? `?${query}` : ""}`, {

@@ -1,16 +1,23 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useResourceEffect } from "@/hooks/useResourceEffect";
+import { formatCurrency, formatDate } from "@/lib/format";
+import { portalTextMatches } from "@/lib/portal-attention";
 import { accountingRecords, type AccountingRecords } from "@/services/advisory-accounting.service";
-export function AdvisoryAccounting({ company, month }: {
-    company: number;
-    month: string;
-}) {
-    const [data, setData] = useState<AccountingRecords | null>(null), [offset, setOffset] = useState(0), [error, setError] = useState("");
-    useEffect(() => { let active = true; accountingRecords(company, month, offset).then(value => { if (active) {
-        setData(value);
-        setError("");
-    } }).catch(e => { if (active)
-        setError(e.message); }); return () => { active = false; }; }, [company, month, offset]);
-    return <section className="space-y-3 rounded-xl border p-4"><h2 className="font-semibold">Facturas, gastos y justificantes del mes</h2>{error && <p role="alert" className="text-orange-700">{error}</p>}{data && <><div className="grid gap-4 lg:grid-cols-2"><div className="space-y-2"><h3 className="text-sm font-semibold">Facturas emitidas</h3>{data.invoices.map(i => <div key={i.id} className="flex justify-between gap-2 border-t pt-2 text-sm"><span>{i.number} · {i.status} · {i.total} €</span><a className="underline" href={i.pdf} download>Descargar PDF</a></div>)}{!data.invoices.length && <p className="text-sm text-muted-foreground">Sin facturas en esta página.</p>}</div><div className="space-y-2"><h3 className="text-sm font-semibold">Gastos registrados</h3>{data.expenses.map(e => <div key={e.id} className="flex justify-between gap-2 border-t pt-2 text-sm"><span>{e.vendor} · {e.description} · {e.total} €</span>{e.receipt ? <a className="underline" href={e.receipt} download>Justificante</a> : <span className="text-orange-700">Sin justificante</span>}</div>)}{!data.expenses.length && <p className="text-sm text-muted-foreground">Sin gastos en esta página.</p>}</div></div><div className="flex gap-2"><Button size="sm" variant="outline" disabled={!offset} onClick={() => setOffset(v => Math.max(0, v - 100))}>Anterior</Button><Button size="sm" variant="outline" disabled={!data.has_more} onClick={() => setOffset(v => v + 100)}>Siguientes 100</Button></div></>}</section>;
+const statuses:Record<string,string>={draft:"Borrador",issued:"Emitida",partially_paid:"Pago parcial",paid:"Pagada",overdue:"Vencida",rectified:"Rectificada",cancelled:"Cancelada"};
+export function AdvisoryAccounting({company,month}:{company:number;month:string}){
+ const [result,setResult]=useState<{key:string;data:AccountingRecords}|null>(null),[offset,setOffset]=useState(0),[error,setError]=useState(""),[revision,setRevision]=useState(0),[search,setSearch]=useState("");
+ const key=company+":"+month+":"+offset+":"+revision;
+ const request=useCallback(()=>accountingRecords(company,month,offset),[company,month,offset]);
+ useResourceEffect(true,key,request,data=>{setResult({key,data});setError("");},cause=>setError(cause instanceof Error?cause.message:"No se pudo consultar el origen contable."));
+ const data=result?.key===key?result.data:null;
+ const invoices=data?.invoices.filter(row=>portalTextMatches(search,[row.number,row.status]))??[];
+ const expenses=data?.expenses.filter(row=>portalTextMatches(search,[row.vendor,row.description]))??[];
+ return <section className="space-y-4 rounded-xl border p-4"><div><h2 className="font-semibold">Documentos contables del periodo</h2><p className="mt-1 text-xs text-muted-foreground">{month} · EUR · Facturas, gastos y justificantes compartidos con esta gestoría.</p></div>
+ <Input aria-label="Buscar en esta página contable" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar referencia o proveedor en esta página…"/>
+ {error&&<div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-400/30 p-3 text-sm"><p>{error}</p><Button size="sm" variant="outline" onClick={()=>{setError("");setRevision(value=>value+1);}}>Reintentar consulta</Button></div>}{!data&&!error&&<p role="status" className="text-sm text-muted-foreground">Consultando documentos autorizados…</p>}
+ {data&&!error&&<><div className="grid gap-4 lg:grid-cols-2"><section className="space-y-3"><h3 className="text-sm font-semibold">Facturas emitidas · {invoices.length}</h3>{invoices.map(row=><div key={row.id} className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-sm"><div><p className="font-medium">{row.number}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(row.date)} · {statuses[row.status]??row.status}</p><p className="mt-1 font-semibold tabular-nums">{formatCurrency(Number(row.total))}</p></div><a className="text-xs font-medium text-accent hover:underline" href={row.pdf} download>Descargar PDF</a></div>)}{!invoices.length&&<p className="py-4 text-sm text-muted-foreground">{search?"No hay facturas coincidentes en esta página.":"Sin facturas en esta página."}</p>}</section><section className="space-y-3"><h3 className="text-sm font-semibold">Gastos registrados · {expenses.length}</h3>{expenses.map(row=><div key={row.id} className="flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-sm"><div className="min-w-0 flex-1"><p className="font-medium">{row.vendor||"Proveedor no informado"}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(row.date)} · {row.description}</p><p className="mt-1 font-semibold tabular-nums">{formatCurrency(Number(row.total))}</p></div>{row.receipt?<a className="text-xs font-medium text-accent hover:underline" href={row.receipt} download>Justificante</a>:<span className="text-xs text-orange-700 dark:text-orange-300">Sin justificante</span>}</div>)}{!expenses.length&&<p className="py-4 text-sm text-muted-foreground">{search?"No hay gastos coincidentes en esta página.":"Sin gastos en esta página."}</p>}</section></div><div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3"><p className="text-xs text-muted-foreground">Página {Math.floor(offset/100)+1} · Hasta 100 registros de cada tipo por página</p><div className="flex gap-2"><Button size="sm" variant="outline" disabled={!offset} onClick={()=>{setError("");setOffset(value=>Math.max(0,value-100));}}>Anterior</Button><Button size="sm" variant="outline" disabled={!data.has_more} onClick={()=>{setError("");setOffset(value=>value+100);}}>Siguiente</Button></div></div></>}
+ </section>;
 }

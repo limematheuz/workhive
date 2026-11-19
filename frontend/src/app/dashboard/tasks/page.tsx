@@ -28,7 +28,7 @@ function TasksWorkspace() {
         <div className="dashboard-page-content max-w-full overflow-x-hidden px-[3%] py-6 md:p-8">
             <PageHeader
                 icon={ListTodo}
-                title={state.dict.tasks?.page_title || "Tareas y Operaciones"}
+                title={state.dict.tasks?.page_title || "Tareas"}
                 subtitle={state.dict.tasks?.page_subtitle || "Planifica el trabajo, sigue su avance y estandariza los servicios."}
                 className="mb-6"
                 actions={(
@@ -49,13 +49,14 @@ function TasksWorkspace() {
                             variant="outline"
                         >
                             <Plus className="w-4 h-4" />
-                            Tarea de catálogo
+                            Usar un servicio
                         </Button></>
                     )}
                     </>
                 )}
             />
 
+            {state.taskError && <div role="alert" className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 p-4"><p>{state.taskError}</p><Button variant="outline" onClick={() => void state.loadTasks()}>Reintentar</Button></div>}
             <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
                 <div className="space-y-4">
                     <PremiumTabs
@@ -93,6 +94,8 @@ function TasksWorkspace() {
 
                             {state.activeTab === "list" && state.isAdminOrManager && (
                                 <TasksList
+                                    onTasksChanged={() => { void state.loadTasks(true); }}
+                                    error={state.taskError}
                                     dict={state.dict}
                                     tasks={state.tasks}
                                     locations={state.taskLocations}

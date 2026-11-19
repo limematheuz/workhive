@@ -53,6 +53,7 @@ const EMPTY_PROVISION: CompanyProvisionData = {
 
 function useCompaniesAdminController() {
     const { user, loading: userLoading } = useUser();
+    const [readError,setReadError]=useState("");
     const [companies, setCompanies] = useState<Company[]>([]);
     const [companyTotal, setCompanyTotal] = useState(0);
     const [companyPage, setCompanyPage] = useState(1);
@@ -78,8 +79,9 @@ function useCompaniesAdminController() {
             const data = await CompanyService.getCompaniesPage((page - 1) * pageSize, pageSize);
             setCompanies(data.items);
             setCompanyTotal(data.total);
+            setReadError("");
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : "No se han podido cargar las empresas");
+            setReadError(error instanceof Error ? error.message : "No se han podido cargar las empresas");
         } finally {
             setLoading(false);
         }
@@ -302,6 +304,8 @@ function useCompaniesAdminController() {
         loadingCompanyId,
         membersByCompany,
         provisionData,
+        readError,
+        retryCompanies:()=>void fetchCompanies(),
         planAccessTarget,
         selectedCompanyRef,
         setDeleteTarget,
@@ -365,6 +369,7 @@ function CompaniesAdminPageContent({
         loadingCompanyId,
         membersByCompany,
         provisionData,
+        readError,retryCompanies,
         planAccessTarget,
         selectedCompanyRef,
         setDeleteTarget,
@@ -404,9 +409,10 @@ function CompaniesAdminPageContent({
                 )}
             />
 
+            {readError&&<div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 p-4"><p>{readError}</p><Button variant="outline" onClick={retryCompanies}>Reintentar</Button></div>}
             <TrialRequestsPanel />
 
-            <CompaniesListSection
+            {!readError&&<CompaniesListSection
                 companies={companies}
                 total={companyTotal}
                 page={companyPage}
@@ -439,7 +445,7 @@ function CompaniesAdminPageContent({
                 loadingCompanyId={loadingCompanyId}
                 membersByCompany={membersByCompany}
                 onToggleMembers={(company) => void handleToggleMembers(company)}
-            />
+            />}
 
             <CompanyProvisionDialog
                 open={isProvisionOpen}

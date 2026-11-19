@@ -24,13 +24,26 @@ test("general task list uses compact billing rows without decorative top borders
     assert.doesNotMatch(card, /emerald|color-green|text-green-|bg-green-/);
     assert.doesNotMatch(card, /indigo-700|border-indigo|text-indigo-700|border-black|text-black/);
 
-    assert.match(list, /items-stretch/);
+    const table = read("../components/tasks/TasksListTable.tsx");
+    const review = read("../components/tasks/TaskConsultationCard.tsx");
+    const controller = read("../hooks/useTaskReview.ts");
     assert.match(list, /filterTasksForGeneralList/);
-    assert.match(list, /paginateTaskListPage|TASK_LIST_PAGE_SIZE/);
-    assert.match(list, /section_active|section_completed|Completadas/);
-    assert.match(list, /Collapsible/);
-    assert.match(list, /dimmed=\{true\}|dimmed/);
-    assert.match(list, /billing-block/);
+    assert.match(list, /TasksListTable/);
+    assert.match(list, /SavedViewsControl/);
+    assert.match(list, /TaskBatchSchedule/);
+    assert.match(table, /DataListTable/);
+    assert.match(table, /customizable selectedRowKey/);
+    assert.match(table, /contentRect.width>=936/);
+    assert.match(table, /minmax\(560px,1fr\) 360px/);
+    assert.match(table, /useListAppearance\(persistenceKey/);
+    assert.match(table, /Dialog open=\{!wide&&Boolean\(card\)\}/);
+    assert.match(table, /DialogContent confirmDiscard=\{false\} showCloseButton=\{false\}/);
+    assert.match(review, /Trabajo anterior|Trabajo siguiente/);
+    assert.match(review, /Guardar y continuar/);
+    assert.match(review, /Descartar cambios/);
+    assert.match(review, /Seguir editando/);
+    assert.match(controller, /TaskService\.getTaskItem/);
+    assert.match(controller, /latest.updated_at !== record.updated_at/);
     assert.doesNotMatch(list, /lg:grid-cols-3/);
     assert.doesNotMatch(list, /surface-glass-card/);
 
@@ -38,7 +51,8 @@ test("general task list uses compact billing rows without decorative top borders
     assert.match(filters, /reservationFilterSelectClass|reservation-filter-styles/);
     assert.match(filters, /CompactFilterSelect/);
     assert.doesNotMatch(filters, /<select\b/);
-    assert.match(filters, /flex flex-wrap gap-2/);
+    assert.match(filters, /tasks-list-filters\.module\.css/);
+    assert.match(filters, /SheetContent/);
     assert.match(filters, /selectedPriority|filter_all_priorities/);
     assert.doesNotMatch(filters, /xl:grid-cols-6|2xl:grid-cols-6/);
     assert.doesNotMatch(filters, /surface-glass-card/);

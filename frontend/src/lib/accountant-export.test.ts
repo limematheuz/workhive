@@ -40,7 +40,7 @@ test("accountant export controls sit below the finance tab with the shared prima
     assert.match(page, /features\.accountant_portal/);
     const exportControls = page.slice(
         page.indexOf('{activeTab === "finance" && canDownloadAccountantPackage'),
-        page.indexOf('{activeTab === "finance" ? ('),
+        page.indexOf('{activeTab === "finance" && loadError'),
     );
     assert.match(exportControls, /<SelectTrigger/);
     assert.match(exportControls, /<Button/);

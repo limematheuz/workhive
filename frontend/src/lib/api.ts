@@ -1,6 +1,7 @@
 import { requiresAuthenticatedSession } from "./auth-routes.ts";
 import { clearSessionCache, getCsrfToken, setCsrfToken } from "./auth.ts";
 import { createInflightRequestDeduper } from "./inflight-request.ts";
+import { readSessionRequestScope } from "./request-read-context.ts";
 
 let activeMutationsCount = 0;
 const dedupeRead = createInflightRequestDeduper();
@@ -81,8 +82,9 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
             .sort(([left], [right]) => left.localeCompare(right))
             .map(([name, value]) => `${name}:${value}`)
             .join("|");
-        let response = method === "GET"
-            ? (await dedupeRead(`${method}:${url}:${headerKey}`, execute)).clone()
+        const readScope = method === "GET" && !options.signal ? readSessionRequestScope() : null;
+        let response = readScope !== null
+            ? (await dedupeRead(`${readScope}:${method}:${url}:${headerKey}`, execute)).clone()
             : await execute();
 
         if (isMutation && response.status === 403) {

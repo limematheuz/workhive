@@ -67,8 +67,8 @@ export function InvoicesFiltersBar({
                     </Button>
                 )}
             </div>
-            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_13rem_13rem_11rem]">
-                <div className="relative block">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(15rem,1fr)_minmax(10rem,13rem)_minmax(10rem,13rem)_11rem]">
+                <div className="relative block min-w-0">
                     <span className="sr-only">{labels.search_invoice_placeholder}</span>
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                     <Input
@@ -78,7 +78,7 @@ export function InvoicesFiltersBar({
                         className="h-11 w-full rounded-xl pl-10 pr-3 text-sm"
                     />
                 </div>
-                <div className="block">
+                <div className="block min-w-0">
                     <span className="sr-only">{labels.filter_all_clients || "Todos los clientes"}</span>
                     <FormSelect searchable aria-label={labels.filter_all_clients || "Todos los clientes"} className="h-11 w-full" placeholder={labels.filter_all_clients || "Todos los clientes"}
                         value={selectedClientId}
@@ -93,7 +93,7 @@ export function InvoicesFiltersBar({
 
                     </FormSelect>
                 </div>
-                <div className="block">
+                <div className="block min-w-0">
                     <span className="sr-only">{labels.filter_all_statuses || "Todos los estados"}</span>
                     <Select
                         value={selectedStatus}
@@ -116,7 +116,7 @@ export function InvoicesFiltersBar({
                         </SelectContent>
                     </Select>
                 </div>
-                <div className="block">
+                <div className="block min-w-0">
                     <span className="sr-only">{monthLabel}</span>
                     <DatePicker
                         id="invoices-month-filter"

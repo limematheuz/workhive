@@ -11,6 +11,12 @@ import { InvoicesStatsCards } from "@/components/invoices/InvoicesStatsCards";
 import { InvoicesTabPanels } from "@/components/invoices/InvoicesTabPanels";
 import { useInvoicesWorkspace } from "@/components/invoices/use-invoices-workspace";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import Link from "next/link";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { Button } from "@/components/ui/button";
+import { SavedViewsControl } from "@/components/ui/saved-views-control";
+import { INVOICE_TABLE_KEY } from "@/components/invoices/InvoicesListSection";
+import { INVOICE_VIEW_FILTER_KEYS, invoiceViewFilters } from "@/lib/invoice-view-state";
 
 type InvoiceDetailDialogProps = {
     invoiceId: number | null
@@ -70,7 +76,11 @@ function InvoicesPageContent() {
             <div className="mx-auto max-w-[90rem] space-y-5">
                 <InvoicesPageHeader title={dict.invoices.list_title} subtitle={dict.invoices.list_subtitle} newInvoiceLabel={dict.invoices.new_invoice} onCreateInvoice={() => openCreateSheet()} canManage={canManageInvoices} />
 
-                {activeView === "invoices" ? <InvoicesStatsCards stats={invoiceStats} previousStats={previousInvoiceStats} statusCounts={statusCounts} labels={dict.invoices} /> : null}
+                {activeView === "invoices" && <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground"><p>{month ? `Emisión: ${month}` : "Todas las emisiones"} · EUR · Saldo a {workspace.asOf}</p><Link href="/dashboard/invoice-summary" className="font-medium text-accent hover:underline">Ver cobros por fecha y resumen financiero</Link></div>}
+                {activeView === "invoices" && workspace.loadError ? <FinanceLoadError message="No se han podido cargar todas las facturas. Vuelve a intentarlo para consultar importes y registros completos." onRetry={() => void loadInvoices()} /> : null}
+                {activeView === "invoices" && !workspace.loadError ? <InvoicesStatsCards stats={invoiceStats} previousStats={previousInvoiceStats} statusCounts={statusCounts} labels={dict.invoices} attention={workspace.attention} onAttentionChange={workspace.setAttention} draftCount={workspace.draftCount} recordCount={workspace.recordCount} /> : null}
+                {activeView === "invoices" && workspace.attention !== "all" && <div className="flex items-center gap-3 rounded-xl border border-accent/20 bg-accent/5 px-3 py-2 text-xs"><span className="flex-1">{workspace.attention === "draft" ? "Borradores" : workspace.attention === "pending" ? "Con saldo pendiente" : "Con saldo vencido"} · {visibleInvoices.length} facturas</span><Button variant="ghost" size="sm" onClick={() => workspace.setAttention("all")}>Quitar filtro</Button></div>}
+                {activeView === "invoices" && <SavedViewsControl viewKey="invoices" tableKey={INVOICE_TABLE_KEY} filterKeys={INVOICE_VIEW_FILTER_KEYS} filters={{ month, client: selectedClientId, status: selectedStatus, search: invoiceSearch, attention: workspace.attention }} onApply={(values) => { const filters = invoiceViewFilters(values); setMonth(filters.month); setSelectedClientId(filters.client); setSelectedStatus(filters.status); setInvoiceSearch(filters.search); workspace.setAttention(filters.attention); }} />}
 
                 <InvoicesTabPanels
                     activeView={activeView}
@@ -123,7 +133,7 @@ function InvoicesPageContent() {
                         },
                     }}
                     listProps={{
-                        invoices: visibleInvoices,
+                        invoices: workspace.loadError ? [] : visibleInvoices,
                         loading,
                         loadingLabel: dict.dashboard.invoices_loading,
                         emptyLabel: dict.invoices.empty,

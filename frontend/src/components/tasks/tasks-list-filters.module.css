@@ -1,0 +1,14 @@
+.root { container: taskFilters / inline-size; }
+.bar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.bar > * { min-width: 0; }
+.search { position: relative; grid-column: 1 / -1; min-width: 0; }
+.desktopEntity { display: none; min-width: 0; }
+.status { min-width: 0; }
+@container taskFilters (min-width: 600px) {
+  .bar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .desktopEntity { display: block; }
+}
+@container taskFilters (min-width: 950px) {
+  .bar { grid-template-columns: minmax(200px, 1.4fr) minmax(160px, 1fr) minmax(160px, 1fr) minmax(140px, .8fr) auto; }
+  .search { grid-column: auto; }
+}

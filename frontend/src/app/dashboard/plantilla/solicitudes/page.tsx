@@ -1,4 +1,5 @@
 "use client";
+import { CompanyViewSession } from "@/components/company/CompanyViewSession";
 import { FormSelect } from "@/components/ui/form-select";
 import { useResourceEffect } from "@/hooks/useResourceEffect";
 import Link from "next/link";
@@ -12,6 +13,9 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { useUser } from "@/lib/user-context";
 import { readInternalRequests, readInternalRequestAccess, writeInternalRequest, requestKinds, type InternalRequest, type InternalRequestAccess } from "@/services/internal-request.service";
 export default function InternalRequestsPage() {
+    return <CompanyViewSession><InternalRequestsWorkspace/></CompanyViewSession>;
+}
+function InternalRequestsWorkspace() {
     const { user, loading } = useUser();
     const [people, setPeople] = useState<{
         id: number;

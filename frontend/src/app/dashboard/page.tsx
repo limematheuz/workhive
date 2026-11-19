@@ -56,7 +56,7 @@ function OperationalHome() {
             }
 
             const [fetchedLocs, fetchedTasks] = await Promise.all([
-                LocationService.getLocations().catch(() => [] as Location[]),
+                LocationService.getAllLocations().catch(() => [] as Location[]),
                 TaskService.getAllTaskItems(),
             ]);
 
@@ -114,13 +114,8 @@ function OperationalHome() {
     }, [user]);
 
     const loadDashboardLocations = useCallback(async () => {
-        if (!user || (user.role?.name === "superadmin" && !user.company_id)) return;
-        try {
-            setLocations(await LocationService.getLocations());
-        } catch (err) {
-            console.error("Error refreshing dashboard locations", err);
-        }
-    }, [user]);
+        await loadDashboardData(true);
+    }, [loadDashboardData]);
 
     useEffect(() => {
         if (user) {

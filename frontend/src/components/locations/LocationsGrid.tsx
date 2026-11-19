@@ -37,7 +37,8 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
 
     const renderActions = (location: Location) => {
         const ownerCompanyId = location.owner_company_id ?? location.managing_company_id
-        const isReadOnly = readOnlyRole || (ownerCompanyId != null && ownerCompanyId !== user?.company_id)
+        const canEdit = location.can_manage_location === true
+        const canDelete = !readOnlyRole && ownerCompanyId === user?.company_id
 
         return (
             <div onClick={(event) => event.stopPropagation()}>
@@ -45,14 +46,15 @@ export function LocationsGrid({ locations, clients, tasks, onEdit, onDelete }: L
                     align="end"
                     triggerLabel={workspace.actions_for.replace("{name}", location.name)}
                     options={[
-                        ...(!isReadOnly ? [
+                        ...(canEdit ? [
                             {
                                 label: dict.locations.table.edit,
                                 icon: Pencil,
                                 onClick: () => onEdit(location),
                                 variant: "edit" as const,
                             },
-                            {
+                        ] : []),
+                        ...(canDelete ? [{
                                 label: dict.locations.table.delete,
                                 icon: Trash2,
                                 onClick: () => onDelete(location),

@@ -25,14 +25,18 @@ test("tasks page shell uses billing surface without top accent pad", () => {
     assert.match(filters, /reservation-filter-styles/);
     assert.match(filters, /value: "accepted"/);
     assert.match(filters, /from "@\/components\/ui\/input"/);
-    assert.match(filters, /flex flex-wrap gap-2/);
+    assert.match(filters, /tasks-list-filters\.module\.css/);
+    assert.match(filters, /SheetTrigger/);
+    assert.match(filters, /Más filtros/);
     assert.match(filterStyles, /w-auto min-w-\[9\.5rem\]/);
     assert.doesNotMatch(filters, /xl:grid-cols-6|2xl:grid-cols-6/);
 
-    assert.match(list, /Collapsible/);
-    assert.match(list, /section_active/);
-    assert.match(list, /section_completed/);
-    assert.match(list, /renderCards\([^,]+,\s*true\)/);
+    assert.match(list, /TasksListTable/);
+    assert.match(list, /TasksListInsights/);
+    assert.match(list, /completedOpen/);
+    assert.match(list, /Filtros activos/);
+    assert.match(list, /tasks=\{tasks\}/);
+
 
     assert.match(card, /billing-block/);
     assert.match(card, /getTaskListDisplayStatus/);

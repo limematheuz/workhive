@@ -9,6 +9,7 @@ import { ExpenseReceiptDialog } from "@/components/expenses/ExpenseReceiptDialog
 import { ExpenseSummaryCards } from "@/components/expenses/ExpenseSummaryCards";
 import { ExpensesListSection } from "@/components/expenses/ExpensesListSection";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { ApiResponseError } from "@/lib/api";
@@ -37,6 +38,10 @@ import type { Expense, ExpensePayload } from "@/types/expense";
 import { toast } from "@/lib/toast";
 import { getMonthKey, getPreviousMonthKey } from "@/lib/metric-trend";
 import { getExpenseComparisonRange } from "@/lib/expense-period";
+import { comparableMonthDay, throughComparableDay } from "@/lib/finance-workspace";
+import { useViewState } from "@/hooks/useViewState";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { ExpenseCategoryBreakdown } from "@/components/expenses/ExpenseCategoryBreakdown";
 
 function summarizeExpenses(expenses: Expense[]) {
     return expenses.reduce(
@@ -61,9 +66,11 @@ export default function ExpensesPage() {
     const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("");
-    const [month, setMonth] = useState(() => getMonthKey(new Date()) ?? "");
+    const [search, setSearch] = useViewState("expenses.search", "");
+    const [categoryFilter, setCategoryFilter] = useViewState("expenses.category", "");
+    const [month, setMonth] = useViewState("expenses.month", () => getMonthKey(new Date()) ?? "");
+    const [receiptOnly, setReceiptOnly] = useViewState("expenses.receipt", false);
+    const [loadError, setLoadError] = useState(false);
     const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [keepAdding, setKeepAdding] = useState(true);
@@ -78,9 +85,10 @@ export default function ExpensesPage() {
         const requestId = ++loadRequestRef.current;
         try {
             setLoading(true);
+            setLoadError(false);
             const [expenseResult, clientResult, contractResult, workOrderResult] = await Promise.allSettled([
                 ExpenseService.getAllExpenses(getExpenseComparisonRange(month)),
-                canManageExpenses ? ClientService.getClients(null) : Promise.resolve([]),
+                canManageExpenses ? ClientService.getAllClients(null) : Promise.resolve([]),
                 canManageExpenses ? ServiceContractService.getContracts() : Promise.resolve([]),
                 canManageExpenses ? WorkOrderService.getWorkOrders() : Promise.resolve([]),
             ]);
@@ -101,6 +109,7 @@ export default function ExpensesPage() {
             setWorkOrders(workOrderResult.status === "fulfilled" ? workOrderResult.value : []);
         } catch (error) {
             if (requestId === loadRequestRef.current) {
+                setLoadError(true);
                 console.error("Error loading expenses", error);
                 toast.error(text.error_load);
             }
@@ -124,7 +133,7 @@ export default function ExpensesPage() {
     const previousMonthExpenses = useMemo(() => {
         const previousMonth = getPreviousMonthKey(month);
         if (!previousMonth) return [];
-        return filterExpenses(expenses.filter((expense) => getMonthKey(expense.expense_date) === previousMonth), search, categoryFilter);
+        return filterExpenses(throughComparableDay(expenses.filter((expense) => getMonthKey(expense.expense_date) === previousMonth), (expense) => expense.expense_date, comparableMonthDay(month)), search, categoryFilter);
     }, [categoryFilter, expenses, month, search]);
     const totals = useMemo(() => summarizeExpenses(filteredExpenses), [filteredExpenses]);
     const previousTotals = useMemo(() => summarizeExpenses(previousMonthExpenses), [previousMonthExpenses]);
@@ -277,10 +286,12 @@ export default function ExpensesPage() {
                         </Button>
                     ) : undefined}
                 />
-                <ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} />
+                <div className="billing-surface flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><label className="flex items-center gap-3 text-sm font-medium">Periodo de gastos<DatePicker aria-label="Mes de gastos" value={`${month}-01`} onValueChange={(value) => value && setMonth(value.slice(0, 7))} /></label><span className="text-xs text-muted-foreground">EUR · Comparación con los mismos días del mes anterior</span></div>
+                {loadError ? <FinanceLoadError message="No se han podido cargar todos los gastos del periodo." onRetry={() => void loadExpenses()} /> : <><ExpenseSummaryCards total={totals.total} tax={totals.tax} records={filteredExpenses.length} previous={previousTotals} missingReceipts={filteredExpenses.filter((expense) => !expense.receipt_url).length} receiptOnly={receiptOnly} onReceiptFilter={setReceiptOnly} /><ExpenseCategoryBreakdown expenses={filterExpenses(expenses.filter((expense) => getMonthKey(expense.expense_date) === month), search, "")} category={categoryFilter} onCategoryChange={setCategoryFilter} /></>}
+                {receiptOnly && <div className="flex items-center justify-between rounded-xl border border-orange-400/40 p-3 text-xs">Gastos sin justificante<Button variant="ghost" size="sm" onClick={() => setReceiptOnly(false)}>Quitar filtro</Button></div>}
 
                 <ExpensesListSection
-                    expenses={filteredExpenses}
+                    expenses={loadError ? [] : filteredExpenses.filter((expense) => !receiptOnly || !expense.receipt_url)}
                     hasAnyExpenses={expenses.length > 0}
                     search={search}
                     onSearchChange={setSearch}

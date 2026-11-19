@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 import { PlatformCalendarOverview } from "@/components/integrations/PlatformCalendarOverview";
@@ -20,14 +21,16 @@ export default function PlatformIntegrationsPage() {
     const { user, loading: userLoading } = useUser();
     const [status, setStatus] = useState<PlatformCalendarStatus | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error,setError]=useState("");
     const [saving, setSaving] = useState(false);
 
-    const loadStatus = useCallback(async () => {
-        setLoading(true);
+    const loadStatus = useCallback(async (showLoader=true) => {
+        if(showLoader)setLoading(true);
         try {
             setStatus(await CalendarService.getPlatformStatus());
+            setError("");
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : labels.load_error);
+            setError(error instanceof Error ? error.message : labels.load_error);
         } finally {
             setLoading(false);
         }
@@ -53,7 +56,8 @@ export default function PlatformIntegrationsPage() {
         );
     }
 
-    if (!status || !isPlatformSuperadmin(user)) return null;
+    if (!isPlatformSuperadmin(user)) return null;
+    if(!status)return <main className="dashboard-page-content p-6"><h1 className="text-2xl font-semibold">Integraciones de la plataforma</h1><div role="alert" className="mt-4 space-y-3 rounded-xl border border-orange-400/40 p-4"><p>{error||"El estado de las integraciones no está disponible."}</p><Button variant="outline" onClick={()=>void loadStatus()}>Reintentar</Button></div></main>;
 
     const updateAvailability = async (enabled: boolean) => {
         setSaving(true);
@@ -77,13 +81,13 @@ export default function PlatformIntegrationsPage() {
     };
 
     return (
-        <PlatformCalendarOverview
+        <>{error&&<div role="alert" className="mx-6 mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 p-4"><p className="flex-1">{error} Se conserva el último estado consultado.</p><Button variant="outline" size="sm" onClick={()=>void loadStatus(false)}>Reintentar</Button></div>}<PlatformCalendarOverview
             status={status}
             labels={labels}
             saving={saving}
             onToggle={(enabled) => { void updateAvailability(enabled); }}
-            onRefresh={() => { void loadStatus(); }}
+            onRefresh={() => { void loadStatus(false); }}
             onCopyCallback={() => { void copyCallback(); }}
-        />
+        /><p className="mx-6 mb-6 text-xs text-muted-foreground">Este panel muestra configuración global. La respuesta disponible no incluye historial de sincronizaciones por empresa.</p></>
     );
 }

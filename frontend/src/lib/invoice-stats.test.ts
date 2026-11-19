@@ -4,7 +4,7 @@ import test from "node:test";
 import { computeInvoiceStats, countOpenInvoices } from "../components/invoices/invoice-stats.ts";
 import type { Invoice } from "../types/invoice.ts";
 
-const invoice = (status: Invoice["status"], total_amount: number, is_rectification = false, collected_amount = 0) => ({ status, total_amount, is_rectification, collected_amount }) as Invoice;
+const invoice = (status: Invoice["status"], total_amount: number, is_rectification = false, collected_amount = 0) => ({ status, total_amount, is_rectification, collected_amount, due_date: status === "overdue" ? "2000-01-01" : null }) as Invoice;
 
 test("invoice summary excludes drafts and cancellations from billed and collectible amounts", () => {
     const invoices = [invoice("draft", 12), invoice("cancelled", 9), invoice("issued", 5)];

@@ -1,18 +1,25 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { Children, Fragment, isValidElement, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { Children, Fragment, isValidElement, useMemo, useRef, type KeyboardEvent, type ReactNode } from "react";
 
 import {useListScroll} from "@/hooks/useListScroll";
 import { Card, CardContent } from "@/components/ui/card";
 import { DataTablePagination, useDataTablePagination } from "@/components/ui/data-table-pagination";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { useListAppearance } from "@/hooks/useListAppearance";
+import { orderedListItems } from "@/lib/list-appearance";
+import { ListAppearanceMenu } from "@/components/ui/list-appearance-menu";
+
+const EMPTY_SORT_OPTIONS: never[] = [];
 
 export type DataListColumn = {
     key: string;
     label: ReactNode;
     className?: string;
+    labelText?: string;
+    hideable?: boolean;
 };
 
 type DataListHeader = {
@@ -28,6 +35,7 @@ type DataListTableProps<T> = {
     renderDesktopRow: (item: T) => ReactNode;
     renderCompactRow: (item: T) => ReactNode;
     onRowClick?: (item: T) => void;
+    selectedRowKey?: string | number | null;
     rowAriaLabel?: (item: T) => string;
     header?: DataListHeader;
     empty?: ReactNode;
@@ -42,9 +50,11 @@ type DataListTableProps<T> = {
     toolbar?: ReactNode;
     /** Pagination or other controls rendered below both desktop and compact rows. */
     footer?: ReactNode;
-    /** Disable the shared footer only for compact status summaries, not data lists. */
+    /** False renders all supplied rows, for summaries or an upstream paginated collection. */
     pagination?: boolean;
     persistenceKey?: string;
+    customizable?: boolean;
+    sortOptions?: { value: string; label: string; compare: (first: T, second: T) => number }[];
 };
 
 export function DataListRow({
@@ -108,6 +118,7 @@ export function DataListTable<T>({
     renderDesktopRow,
     renderCompactRow,
     onRowClick,
+    selectedRowKey,
     rowAriaLabel,
     header,
     empty,
@@ -120,17 +131,25 @@ export function DataListTable<T>({
     footer,
     pagination: showPagination = true,
     persistenceKey,
+    customizable = false,
+    sortOptions = EMPTY_SORT_OPTIONS,
 }: DataListTableProps<T>) {
     const tableElement=useRef<HTMLElement|null>(null);
     const listKey=persistenceKey??("list."+(header?.title??columns.map(column=>column.key).join(".")));
+    const { appearance, change, error: appearanceError } = useListAppearance(listKey, columns);
+    const activeSort = customizable ? sortOptions.find(option => option.value === appearance.sort) : undefined;
+    const compare = activeSort?.compare;
+    const orderedItems = useMemo(() => orderedListItems(items, compare), [items, compare]);
+    const hiddenColumns = new Set(appearance.hidden);
+    const visibleColumns = columns.flatMap((column, index) => !customizable || !hiddenColumns.has(column.key) ? [{ column, index }] : []);
     const rememberPosition=useListScroll(listKey,!loading&&items.length>0,tableElement);
     const compactHidden = desktopFrom === "lg" ? "lg:hidden" : "md:hidden";
     const desktopHidden = desktopFrom === "lg" ? "hidden lg:block" : "hidden md:block";
     const shellClass = variant === "surface"
         ? "billing-surface overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--border-color)_32%,transparent)]"
         : "overflow-hidden rounded-2xl border border-[color-mix(in_srgb,var(--border-color)_32%,transparent)]";
-    const pagination = useDataTablePagination(items, 10, listKey);
-    const pageItems = pagination.pageItems;
+    const pagination = useDataTablePagination(orderedItems, 10, listKey);
+    const pageItems = showPagination ? pagination.pageItems : orderedItems;
     const defaultFooter = showPagination ? (
         <DataTablePagination
             page={pagination.page}
@@ -155,7 +174,7 @@ export function DataListTable<T>({
     }
 
     return (
-        <section ref={tableElement} onClickCapture={event=>{if((event.target as HTMLElement).closest("a[href]"))rememberPosition();}} onKeyDownCapture={event=>{if(event.key==="Enter"&&(event.target as HTMLElement).closest("a[href]"))rememberPosition();}} className={cn(shellClass, className)}>
+        <section ref={tableElement} data-list-density={customizable ? appearance.density : undefined} onClickCapture={event=>{if((event.target as HTMLElement).closest("a[href]"))rememberPosition();}} onKeyDownCapture={event=>{if(event.key==="Enter"&&(event.target as HTMLElement).closest("a[href]"))rememberPosition();}} className={cn(shellClass, className)}>
             {header && (
                 <header className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -164,13 +183,15 @@ export function DataListTable<T>({
                             <p className="mt-1 text-xs text-[var(--text-muted)]">{header.subtitle}</p>
                         )}
                     </div>
-                    {header.countLabel && (
+                    <div className="flex items-center gap-2">{header.countLabel && (
                         <span className="w-fit rounded-full bg-[var(--bg-tertiary)] px-3 py-1 text-xs font-semibold text-[var(--text-main)]">
                             {header.countLabel}
                         </span>
-                    )}
+                    )}{customizable && <ListAppearanceMenu columns={columns} appearance={appearance} change={change} sortOptions={sortOptions} />}</div>
                 </header>
             )}
+            {!header && customizable && <div className="flex justify-end px-3 py-2"><ListAppearanceMenu columns={columns} appearance={appearance} change={change} sortOptions={sortOptions} /></div>}
+            {customizable && appearanceError && <p role="status" className="px-4 pb-2 text-xs text-orange-700">{appearanceError}</p>}
 
             {toolbar && <div className="border-t border-[var(--table-divider)] px-4 py-3 sm:px-4">{toolbar}</div>}
 
@@ -197,7 +218,7 @@ export function DataListTable<T>({
                 <Table className="table-fixed">
                     <TableHeader>
                         <TableRow className="hover:bg-transparent">
-                            {columns.map((column) => (
+                            {visibleColumns.map(({ column }) => (
                                 <TableHead key={column.key} className={cn("bg-muted/50 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-accent", column.className)}>
                                     {column.label}
                                 </TableHead>
@@ -222,14 +243,15 @@ export function DataListTable<T>({
                             return (
                                 <TableRow
                                     key={getRowKey(item)}
-                                    className={cn(interactive && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40")}
+                                    aria-selected={selectedRowKey == null ? undefined : getRowKey(item) === selectedRowKey}
+                                    className={cn(interactive && "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40", getRowKey(item) === selectedRowKey && "wh-selected-row")}
                                     onClick={onRowClick ? () => {rememberPosition();onRowClick(item);} : undefined}
                                     onKeyDown={openWithKeyboard}
                                     tabIndex={interactive ? 0 : undefined}
                                     aria-label={rowAriaLabel?.(item)}
                                 >
-                                    {columns.map((column, index) => (
-                                        <TableCell key={column.key} className={cn("min-w-0 whitespace-normal break-words px-3 py-2.5", column.className)}>
+                                    {visibleColumns.map(({ column, index }) => (
+                                        <TableCell key={column.key} className={cn("min-w-0 whitespace-normal break-words px-3 py-2.5", customizable && appearance.density === "compact" && "py-1.5 text-xs", column.className)}>
                                             {desktopCells[index]}
                                         </TableCell>
                                     ))}

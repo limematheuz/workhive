@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import type { Client } from "@/services/client.service";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Input } from "@/components/ui/input";
 
 type QuotesFiltersSectionProps = {
     clients: Client[];
@@ -21,6 +22,8 @@ type QuotesFiltersSectionProps = {
     selectedStatus: string;
     onStatusChange: (value: string) => void;
     statusLabels: Record<string, string>;
+    search?: string;
+    onSearchChange?: (value: string) => void;
 };
 
 export function QuotesFiltersSection({
@@ -30,8 +33,10 @@ export function QuotesFiltersSection({
     selectedStatus,
     onStatusChange,
     statusLabels,
+    search = "",
+    onSearchChange,
 }: QuotesFiltersSectionProps) {
-    const hasFilters = Boolean(selectedClientId || selectedStatus);
+    const hasFilters = Boolean(selectedClientId || selectedStatus || search);
 
     return (
         <section className="billing-surface mb-4 rounded-[22px] p-3 sm:p-4">
@@ -48,6 +53,7 @@ export function QuotesFiltersSection({
                         onClick={() => {
                             onClientChange("");
                             onStatusChange("");
+                            onSearchChange?.("");
                         }}
                     >
                         <RotateCcw />
@@ -55,7 +61,8 @@ export function QuotesFiltersSection({
                     </Button>
                 )}
             </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <Input aria-label="Buscar presupuesto" placeholder="Referencia, título o cliente…" value={search} onChange={(event) => onSearchChange?.(event.target.value)} />
                 <div className="block">
                     <Label className="sr-only">Todos los clientes</Label>
                     <SearchableSelect

@@ -147,8 +147,8 @@ export const InvoiceService = {
         return await response.json()
     },
 
-    getAllInvoices: async (): Promise<Invoice[]> => collectPaginated(
-        (skip, limit) => InvoiceService.getInvoices({ skip, limit }),
+    getAllInvoices: async (filters: { clientId?: number; status?: string } = {}): Promise<Invoice[]> => collectPaginated(
+        (skip, limit) => InvoiceService.getInvoices({ ...filters, skip, limit }),
     ),
 
     getCompletedJobs: async (): Promise<InvoiceableTask[]> => {

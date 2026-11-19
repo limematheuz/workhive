@@ -9,7 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { canManageFinance, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { financeLocalDay } from "@/lib/finance-priorities";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
     buildUpcomingFiscalDeadlines,
@@ -50,23 +52,29 @@ export default function FiscalCalendarPage() {
     const text = dict.fiscal_calendar;
     const { user, loading: userLoading } = useUser();
     const canManage = canManageFinance(user) && !isPlatformSuperadmin(user);
+    const canView = canViewFinance(user) && !isPlatformSuperadmin(user);
     const [settings, setSettings] = useState<CompanyFiscalSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [reminderDays, setReminderDays] = useState("7");
+    const [loadError, setLoadError] = useState(false);
+    const [reloadKey, setReloadKey] = useState(0);
 
     useEffect(() => {
-        if (userLoading || !canManage) return;
+        if (userLoading || !canView) return;
 
         let cancelled = false;
 
         const requestSettings = async () => {
             try {
+                setLoading(true);
+                setLoadError(false);
                 const loaded = await FiscalSettingsService.getSettings();
                 if (cancelled) return;
                 setSettings(loaded);
                 setReminderDays(String(loaded.fiscal_reminder_days));
             } catch {
+                if (!cancelled) setLoadError(true);
                 if (!cancelled) toast.error(text.error_load);
             } finally {
                 if (!cancelled) setLoading(false);
@@ -77,7 +85,7 @@ export default function FiscalCalendarPage() {
         return () => {
             cancelled = true;
         };
-    }, [canManage, text.error_load, userLoading]);
+    }, [canView, text.error_load, userLoading, reloadKey]);
 
     const deadlines = useMemo(
         () => settings
@@ -91,7 +99,7 @@ export default function FiscalCalendarPage() {
     };
 
     const save = async () => {
-        if (!settings) return;
+        if (!settings || !canManage) return;
         const parsedReminderDays = Number(reminderDays);
         if (!Number.isInteger(parsedReminderDays) || parsedReminderDays < 1 || parsedReminderDays > 30) {
             toast.error(text.invalid_reminder);
@@ -115,9 +123,9 @@ export default function FiscalCalendarPage() {
         }
     };
 
-    if (!userLoading && !canManage) redirect("/dashboard");
+    if (!userLoading && !canView) redirect("/dashboard");
 
-    if (userLoading || (loading && canManage)) {
+    if (userLoading || (loading && canView)) {
         return (
             <div className="flex h-full items-center justify-center gap-3 text-[var(--text-muted)]">
                 <Loader2 className="h-5 w-5 animate-spin text-accent" />
@@ -126,7 +134,7 @@ export default function FiscalCalendarPage() {
         );
     }
 
-    if (!canManage) return null;
+    if (!canView) return null;
 
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
@@ -137,7 +145,9 @@ export default function FiscalCalendarPage() {
                     subtitle={text.subtitle}
                 />
 
-                <section className="billing-surface rounded-[24px] p-4 sm:p-5">
+                {loadError && <FinanceLoadError message="No se ha podido consultar el calendario configurado." onRetry={() => setReloadKey((key) => key + 1)} />}
+                {!loadError && deadlines[0] && <section className="billing-surface rounded-xl p-4"><p className="text-xs text-muted-foreground">Próximo vencimiento orientativo</p><div className="mt-2 flex flex-wrap items-end justify-between gap-3"><div><h2 className="text-xl font-semibold">{formatDeadlineDate(deadlines[0].dueDate, locale)}</h2><p className="mt-1 text-sm">Modelo {deadlines[0].model} · {deadlines[0].periodLabel}</p></div><p className="text-xs text-muted-foreground">{deadlines.filter((deadline) => Date.parse(deadline.dueDate) - Date.parse(financeLocalDay(new Date())) <= 30 * 86_400_000).length} obligaciones en los próximos 30 días · Presentación no registrada</p></div></section>}
+                {canManage && !loadError && <section className="billing-surface order-3 rounded-[24px] p-4 sm:p-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="min-w-0">
                             <div className="flex items-center gap-2 text-[var(--text-main)]">
@@ -181,10 +191,10 @@ export default function FiscalCalendarPage() {
                             </span>
                         </label>
                     </div>
-                </section>
+                </section>}
 
-                {deadlines.length ? (
-                    <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {!loadError && (deadlines.length ? (
+                    <section aria-label="Próximas obligaciones por fecha" className="order-1 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                         {deadlines.map((deadline) => (
                             <DeadlineCard
                                 key={deadline.id}
@@ -200,9 +210,9 @@ export default function FiscalCalendarPage() {
                         <h2 className="mt-3 text-base font-bold text-[var(--text-main)]">{text.empty_title}</h2>
                         <p className="mt-1 max-w-md text-sm text-[var(--text-muted)]">{text.empty_description}</p>
                     </section>
-                )}
+                ))}
 
-                <aside className="flex flex-col gap-3 rounded-[20px] border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
+                <aside className="order-4 flex flex-col gap-3 rounded-[20px] border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-4 py-3 text-sm text-[var(--text-muted)] sm:flex-row sm:items-center sm:justify-between">
                     <span className="flex items-start gap-2"><Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{text.official_notice}</span>
                     <a
                         className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-accent hover:underline"

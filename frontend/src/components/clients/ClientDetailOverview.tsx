@@ -66,13 +66,12 @@ export function ClientDetailOverview({
     }
     const locationPagination = useDataTablePagination(locations, 10, "ClientDetailOverview.locations.0");
     const stats = [
-        { label: "Trabajos realizados", value: String(completedTasks), detail: "Completados en el historial", icon: ListChecks },
-        { label: "Próximo trabajo", value: row.nextScheduledAt ? formatDate(row.nextScheduledAt) : "Sin programar", detail: row.nextScheduledAt ? "Planificado" : "Añádelo desde Trabajos", icon: CalendarDays },
+        ...(row.hasTaskData !== false ? [{ label: "Trabajos realizados", value: String(completedTasks), detail: "Completados en el historial", icon: ListChecks },
+        { label: "Próximo trabajo", value: row.nextScheduledAt ? formatDate(row.nextScheduledAt) : "Sin programar", detail: row.nextScheduledAt ? "Planificado" : "Sin próximo trabajo registrado", icon: CalendarDays }] : []),
         ...(financialDataAvailable ? [
             { label: "Facturación", value: formatCurrency(row.annualBillingTotal), detail: "Ejercicio actual", icon: ReceiptText },
             { label: "Saldo pendiente", value: formatCurrency(row.pendingBalance), detail: row.pendingBalance > 0 ? "Pendiente de cobro" : "Al día", icon: CircleDollarSign },
         ] : []),
-        { label: "Ubicaciones", value: String(row.locationCount), detail: "Vinculadas a este cliente", icon: MapPin },
     ];
 
     const sendEmail = async (data: InvoiceEmailPayload): Promise<boolean> => {
@@ -102,9 +101,10 @@ export function ClientDetailOverview({
 
     return (
         <div className="wh-client-overview space-y-3">
-            <SummaryMetricGrid desktopColumns={financialDataAvailable ? 5 : 3} aria-label="Resumen operativo">
+            {stats.length > 0 && <SummaryMetricGrid desktopColumns={4} aria-label="Resumen del cliente">
                 {stats.map((stat) => <SummaryMetricCard key={stat.label} label={stat.label} value={stat.value} description={stat.detail} icon={stat.icon} valueTone={stat.label === "Saldo pendiente" && row.pendingBalance > 0 ? "negative" : "default"} />)}
-            </SummaryMetricGrid>
+            </SummaryMetricGrid>}
+            {row.hasTaskData === false && <p className="rounded-xl border border-orange-400/30 p-3 text-xs text-muted-foreground">Actividad operativa no disponible para esta consulta.</p>}
 
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(18rem,1fr)]">
                 <section className="billing-surface rounded-xl p-4">
@@ -134,10 +134,10 @@ export function ClientDetailOverview({
             </div>
 
 
-            <section className="billing-surface overflow-hidden rounded-xl">
+            {row.hasLocationData !== false && <section className="billing-surface overflow-hidden rounded-xl">
                 <header className="flex items-center justify-between gap-3 px-4 py-3"><div><h3 className="text-sm font-semibold text-[var(--text-main)]">Ubicaciones</h3><p className="mt-1 text-xs text-[var(--text-muted)]">Sedes vinculadas y actividad de los trabajos registrados.</p></div><Button type="button" variant="ghost" size="xs" onClick={onOpenLocations}>Ver todas</Button></header>
                 {locations.length === 0 ? <p className="px-5 py-10 text-center text-sm text-[var(--text-muted)]">Aún no hay ubicaciones asignadas.</p> : <><div className="hidden lg:block"><Table className="table-fixed text-left"><TableHeader><TableRow className="bg-[var(--bg-secondary)]/40 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]"><TableHead className="w-[28%] text-[var(--btn-secondary-text)]">Nombre</TableHead><TableHead className="w-[38%] text-[var(--btn-secondary-text)]">Dirección</TableHead><TableHead className="w-[21%] text-[var(--btn-secondary-text)]">Actividad</TableHead><TableHead className="w-[13%] text-right text-[var(--btn-secondary-text)]">Acciones</TableHead></TableRow></TableHeader><TableBody>{locationPagination.pageItems.map((location) => <TableRow key={location.id} className="bg-[var(--bg-secondary)]/20"><TableCell className="truncate font-semibold text-[var(--text-main)]">{location.name}</TableCell><TableCell className="truncate text-xs text-[var(--text-muted)]">{location.address}, {location.city}</TableCell><TableCell className="text-xs text-[var(--text-muted)]"><strong className="block font-semibold text-accent">{activityByLocation.get(location.id)?.completed || 0} completados</strong><span className="mt-1 block">{activityByLocation.get(location.id)?.pending || 0} pendientes · {activityByLocation.get(location.id)?.total || 0} en total</span></TableCell><TableCell className="text-right"><Button type="button" variant="outline" size="xs" onClick={() => onViewLocationTasks(location)}>Ver tareas</Button></TableCell></TableRow>)}</TableBody></Table></div><div className="grid gap-2.5 p-3 lg:hidden">{locationPagination.pageItems.map((location) => <Card key={location.id}><CardContent className="space-y-3"><div><p className="truncate text-sm font-semibold text-[var(--text-main)]">{location.name}</p><p className="mt-1 text-xs text-[var(--text-muted)]">{location.address}, {location.city}</p></div><div className="flex items-center justify-between gap-3 border-t border-[var(--border-soft)] pt-2"><span className="text-xs text-[var(--text-muted)]"><strong className="font-semibold text-accent">{activityByLocation.get(location.id)?.completed || 0} completados</strong><span className="mt-1 block">{activityByLocation.get(location.id)?.pending || 0} pendientes · {activityByLocation.get(location.id)?.total || 0} en total</span></span><Button type="button" variant="outline" size="sm" onClick={() => onViewLocationTasks(location)}>Ver tareas</Button></div></CardContent></Card>)}</div><DataTablePagination page={locationPagination.page} totalItems={locations.length} pageSize={locationPagination.pageSize} onPageChange={locationPagination.setPage} onPageSizeChange={locationPagination.setPageSize} summary={`${(locationPagination.page - 1) * locationPagination.pageSize + 1}-${Math.min(locationPagination.page * locationPagination.pageSize, locations.length)} de ${locations.length} ubicaciones`} rowsPerPageLabel="Filas por página" previousLabel="Página anterior" nextLabel="Página siguiente" /></>}
-            </section>
+            </section>}
             <ClientContactsTab client={client} canManage={canManage} />
             <DocumentEmailDialog
                 open={emailDialogOpen}

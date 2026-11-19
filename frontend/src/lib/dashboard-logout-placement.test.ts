@@ -10,7 +10,8 @@ test("dashboard logout is exposed from the sidebar account menu and wired to the
     const sidebarFooter = read("../components/dashboard/SidebarFooterControls.tsx");
 
     assert.match(sidebar, /onLogout: \(\) => void/);
-    assert.match(sidebar, /onSelect=\{onLogout\}/);
+    assert.match(sidebar, /SessionLogoutDialog/);
+    assert.match(sidebar, /onLogout=\{onLogout\}/);
     assert.match(layout, /<Sidebar[\s\S]*?onLogout=\{onLogout\}/);
     assert.doesNotMatch(sidebarFooter, /onLogout|logoutLabel/);
 });

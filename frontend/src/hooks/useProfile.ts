@@ -1,13 +1,10 @@
 "use client";
 
-import { startTransition, useState, useEffect, useEffectEvent, useMemo } from "react";
+import { startTransition, useState, useEffect, useEffectEvent, useMemo, useRef } from "react";
 import { useUser } from "@/lib/user-context";
 import { useDictionary } from "@/lib/dictionary-context";
-import { UserService } from "@/services/user.service";
-import { LocationService, Location } from "@/services/location.service";
-import { InvoiceService } from "@/services/invoice.service";
-import { TaskService } from "@/services/task.service";
-import { CompanyService } from "@/services/company.service";
+import type { Location } from "@/services/location.service";
+import { ProfileWorkspaceService } from "@/services/profile-workspace.service";
 import { ActiveCompanySession, UserStatsResponse, WorkSession, TaskItem } from "@/types/user";
 import { WorkSessionService } from "@/services/work-session.service";
 import { Invoice } from "@/types/invoice";
@@ -100,6 +97,10 @@ export function useProfile() {
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [activityWarning, setActivityWarning] = useState("");
+    const [activityAccess, setActivityAccess] = useState({ sessions: false, tasks: false, team: false });
+    const requestVersion = useRef(0);
+    useEffect(() => () => { requestVersion.current++; }, []);
 
     // Self-profile edit state
     const [isEditing, setIsEditing] = useState(false);
@@ -254,56 +255,23 @@ export function useProfile() {
     const isViewer = user?.role?.name === "viewer";
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const userIsPlatformSuperadmin = isPlatformSuperadmin(user);
-    const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin;
-    const canViewActiveTeam = (isAdminOrSuperadmin || isManager) && !userIsPlatformSuperadmin;
+    const canViewActiveTeam = activityAccess.team && !userIsPlatformSuperadmin;
 
-    // Load all profile data
+    // Activity is optional; an unavailable business module never blocks personal account settings.
     const loadProfileData = async () => {
         if (!user) return;
+        const version = ++requestVersion.current;
+        setLoading(true); setError(null);
         try {
-            setLoading(true);
-            setError(null);
-
-            const isAdm = user.role?.name === "admin" || user.role?.name === "superadmin";
-            const isMgr = user.role?.name === "manager";
-
-            const [userStats, userSessions, userTasks, allLocations, fetchedInvoices, fetchedCompanyTasks, fetchedExpenses] = await Promise.all([
-                canLoadOperationalData
-                    ? UserService.getUserStats(user.id).catch(() => null)
-                    : Promise.resolve(null),
-                canLoadOperationalData ? UserService.getUserWorkSessions(10) : Promise.resolve([]),
-                canLoadOperationalData ? UserService.getUserTasks(user.id, 100).catch(() => [] as TaskItem[]) : Promise.resolve([]),
-                canLoadOperationalData ? LocationService.getLocations() : Promise.resolve([]),
-                isAdm && canLoadOperationalData ? InvoiceService.getAllInvoices().catch(() => [] as Invoice[]) : Promise.resolve([] as Invoice[]),
-                (isAdm || isMgr) && canLoadOperationalData ? TaskService.getAllTaskItems().catch(() => [] as TaskItem[]) : Promise.resolve([] as TaskItem[]),
-                isAdm && user.company_id && canLoadOperationalData
-                    ? CompanyService.getCompanyExpenses(user.company_id).catch(() => [] as CompanyExpense[])
-                    : Promise.resolve([] as CompanyExpense[])
-            ]);
-
-            setStats(userStats);
-            setSessions(userSessions);
-            setTasks(userTasks);
-            setLocations(allLocations);
-            setAllInvoices(fetchedInvoices);
-            setAllCompanyTasks(fetchedCompanyTasks);
-            setCompanyExpenses(fetchedExpenses);
-
-            if (user.company_id && canLoadOperationalData) {
-                try {
-                    const comp = await CompanyService.getCompany(user.company_id);
-                    setCompanyName(comp.name);
-                } catch (e) {
-                    console.error("Failed to fetch company name:", e);
-                }
-            } else {
-                setCompanyName("");
-            }
-        } catch (err: unknown) {
-            console.error("Error loading profile data:", err);
-            setError(getErrorMessage(err, "Failed to load profile data"));
+            const data = await ProfileWorkspaceService.read(user);
+            if (version !== requestVersion.current) return;
+            setStats(data.stats); setSessions(data.sessions); setTasks(data.tasks); setLocations(data.locations);
+            setAllInvoices(data.invoices); setAllCompanyTasks(data.companyTasks); setCompanyExpenses(data.expenses);
+            setCompanyName(data.companyName); setActivityAccess(data.access); setActivityWarning(data.warning);
+        } catch (cause) {
+            if (version === requestVersion.current) setActivityWarning(getErrorMessage(cause, "No se pudo consultar tu actividad. Tus datos personales siguen disponibles."));
         } finally {
-            setLoading(false);
+            if (version === requestVersion.current) setLoading(false);
         }
     };
 
@@ -328,7 +296,11 @@ export function useProfile() {
                 const data = await WorkSessionService.getActiveCompanySessions();
                 if (!cancelled) setActiveCompanySessions(data);
             } catch {
-                if (!cancelled) setActiveCompanySessions([]);
+                if (!cancelled) {
+                    setActiveCompanySessions([]);
+                    setActivityAccess(current => ({ ...current, team: false }));
+                    setActivityWarning("No se pudo consultar el equipo en vivo con este acceso. Puedes reintentar la actividad sin salir de tu perfil.");
+                }
             }
         };
         void loadActiveTeam();
@@ -337,7 +309,7 @@ export function useProfile() {
             cancelled = true;
             window.clearInterval(interval);
         };
-    }, [canViewActiveTeam]);
+    }, [canViewActiveTeam, user?.id, user?.company_id]);
 
     // Mapping of Location ID -> Name to render human-readable names
     const locationsMap = useMemo(() => {
@@ -351,10 +323,9 @@ export function useProfile() {
     const visibleTasks = useMemo(
         () => tasks.filter(
             task =>
-                locationsMap.has(task.location_id)
-                && !["requested", "rejected", "cancelled"].includes(task.status)
+                !["requested", "rejected", "cancelled"].includes(task.status)
         ),
-        [locationsMap, tasks]
+        [tasks]
     );
 
     // Find the current active session in the work sessions list
@@ -411,6 +382,8 @@ export function useProfile() {
         setActiveTab,
         loading,
         error,
+        activityWarning,
+        activityAccess,
         isEditing,
         setIsEditing,
         activeSessionTime,

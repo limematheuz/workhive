@@ -26,3 +26,12 @@ test("mixed financial permissions remain conjunctive and own-time views do not r
  assert.equal(allowed("/dashboard/mi-jornada",{"time.manage":true,"time.read":false}),true);
  assert.equal(allowed("/dashboard/time-corrections",{"time.approve":true}),true);
 });
+
+test("quality navigation follows authorized sections and denies unrelated capabilities", () => {
+ for (const section of ["templates", "inspections", "incidents", "complaints"]) {
+  assert.equal(allowed("/dashboard/quality", { [`quality.${section}.read`]: true }), true);
+ }
+ assert.equal(allowed("/dashboard/quality", {}), false);
+ assert.equal(allowed("/dashboard/quality", { "work.read": true, "finance.read": true }), false);
+ assert.equal(allowed("/dashboard/quality", { "quality.incidents.read": false }), false);
+});

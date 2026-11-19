@@ -24,6 +24,7 @@ test("client contact requests keep API errors actionable", () => {
 
 test("optional client selectors stay empty when the user cannot read clients", () => {
     assert.match(source, /getClients: async/);
-    assert.match(source, /if \(response\.status === 403\) \{\s*return \[\]/);
+    assert.match(source, /if \(response\.status === 403 && !pagination\?\.strict\) \{\s*return \[\]/);
+    assert.match(source, /getAllClients:[\s\S]*?getClients\(isActive, \{ skip, limit, strict: true \}\)/);
     assert.match(source, /assertApiResponseOk\(response, "No se pudieron cargar los clientes"\)/);
 });

@@ -8,6 +8,8 @@ import { useDictionary } from "@/lib/dictionary-context";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { NotificationPanel } from "./notifications/NotificationPanel";
 import { ApplicationSwitchLink } from "@/components/applications/ApplicationSwitchLink";
+import { WorkspaceSearch } from "./search/WorkspaceSearch";
+import { HeaderAccountMenu } from "./HeaderAccountMenu";
 
 const titles:Record<string,string>={
         "/dashboard/planificar":"Planificar trabajo",
@@ -44,7 +46,7 @@ const englishTitles: Record<string, string> = {
     "/dashboard/automations": "Automations",
 };
 
-export function DashboardHeader() {
+export function DashboardHeader({ onLogout }: { onLogout?: () => void | Promise<void> }) {
     const { dict, locale } = useDictionary();
     const pathname = usePathname();
     const defaultPageTitle = pathname === "/dashboard" ? dict.dashboard.overview
@@ -90,10 +92,10 @@ export function DashboardHeader() {
     const pageTitle = (locale === "en" ? englishTitles[pathname] : titles[pathname]) ?? defaultPageTitle;
     const group = navigationGroupForPath(pathname);
     return <header className="relative z-[var(--z-header)] wh-dashboard-header flex h-14 shrink-0 min-w-0 items-center justify-between gap-3 border-b border-[var(--border-soft)] bg-transparent px-[max(3%,env(safe-area-inset-left))] pr-[max(3%,env(safe-area-inset-right))] transition-colors duration-300 md:px-6">
-        <div className="flex min-w-0 items-center gap-3"><SidebarTrigger /><nav aria-label={locale === "en" ? "Current location" : "Ubicación actual"} className="flex min-w-0 items-center gap-2 text-sm">
+        <div className="flex min-w-0 items-center gap-3"><SidebarTrigger aria-label={locale === "en" ? "Open or close menu" : "Abrir o cerrar menú"} /><nav aria-label={locale === "en" ? "Current location" : "Ubicación actual"} className="wh-dashboard-breadcrumb hidden min-w-0 items-center gap-2 text-sm sm:flex">
             {group && <><span className="hidden shrink-0 text-[var(--text-muted)] md:inline">{group.label[locale === "en" ? "en" : "es"]}</span><ChevronRight aria-hidden="true" className="hidden size-3.5 shrink-0 text-[var(--text-muted)] md:block" /></>}
             <span aria-current="page" className="min-w-0 truncate font-medium text-[var(--text-main)]">{pageTitle}</span>
         </nav></div>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2"><ApplicationSwitchLink /><CompanySwitcher /><NotificationPanel /></div>
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2"><WorkspaceSearch /><ApplicationSwitchLink /><CompanySwitcher /><NotificationPanel />{onLogout && <HeaderAccountMenu onLogout={onLogout} />}</div>
     </header>;
 }

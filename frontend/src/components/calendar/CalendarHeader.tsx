@@ -1,6 +1,8 @@
 "use client";
 
-import { CalendarDays } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { CalendarDays, Plus } from "lucide-react";
 
 import { PageHeader } from "@/components/ui/page-header";
 import type { Dictionary } from "@/lib/dictionary-context";
@@ -9,6 +11,7 @@ import { CalendarGoogleControls } from "./CalendarGoogleControls";
 import { CalendarOwnershipRequests } from "./CalendarOwnershipRequests";
 
 type CalendarHeaderProps = {
+    canEdit: boolean;
     calendarDict: Dictionary["calendar"];
     status: CalendarConnectionStatus | null;
     loading: boolean;
@@ -29,7 +32,7 @@ type CalendarHeaderProps = {
 };
 
 export function CalendarHeader({
-    calendarDict,
+    calendarDict, canEdit,
     status,
     loading,
     connecting,
@@ -51,7 +54,7 @@ export function CalendarHeader({
                 title={calendarDict.title}
                 subtitle={calendarDict.subtitle}
                 actions={(
-                    <CalendarGoogleControls
+                    <>{canEdit && <Button asChild><Link href="/dashboard/planificar"><Plus aria-hidden="true" />Nuevo trabajo</Link></Button>}<details className="relative"><summary className="cursor-pointer rounded-xl border px-3 py-2 text-sm">Google Calendar</summary><div className="absolute right-0 z-20 mt-2 min-w-64 rounded-xl border bg-card p-3 shadow-lg"><CalendarGoogleControls
                         status={status}
                         loading={loading}
                         connecting={connecting}
@@ -63,7 +66,7 @@ export function CalendarHeader({
                         onSync={onSync}
                         onDisconnectRequest={onDisconnectRequest}
                         onRequestOwnership={onRequestOwnership}
-                    />
+                    /></div></details></>
                 )}
             />
             {status && !status.connected && (

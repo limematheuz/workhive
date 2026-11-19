@@ -1,13 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Building2, ClipboardCheck, ClipboardList, FileCheck2, FileText, Loader2, MessageSquareWarning, ReceiptText, UserRound } from "lucide-react";
+import { Building2, ClipboardCheck, ClipboardList, FileCheck2, FileText, Loader2, MessageSquareWarning, ReceiptText, RefreshCw, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { PageHeader } from "@/components/ui/page-header";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Input } from "@/components/ui/input";
+import { ApiResponseError } from "@/lib/api";
+import { clientQuoteNeedsDecision, portalComplaintUnresolved, portalTextMatches, type ClientPortalAttention } from "@/lib/portal-attention";
 import { useUser } from "@/lib/user-context";
 import { ClientPortalOverviewSummary } from "@/components/client-portal/ClientPortalOverviewSummary";
 import { ClientPortalInspections } from "@/components/client-portal/ClientPortalInspections";
@@ -46,7 +50,8 @@ function EmptyState({ title, description }: { title: string; description: string
 
 function StatusBadge({ status }: { status: string }) {
     const active = ["issued", "paid", "accepted", "active"].includes(status);
-    return <Badge className={active ? "border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-700" : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"}>{status}</Badge>;
+    const labels: Record<string,string> = {issued:"Emitido",paid:"Pagado",accepted:"Aceptado",active:"Activo",terminated:"Finalizado",expired:"Caducado"};
+    return <Badge className={active ? "border border-emerald-500/20 bg-emerald-500/10 text-[10px] font-semibold uppercase tracking-wide text-emerald-700" : "border border-[var(--border-soft)] bg-[var(--bg-tertiary)] text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]"}>{labels[status] ?? status}</Badge>;
 }
 
 function Contracts({ contracts }: { contracts: ClientPortalContract[] }) {
@@ -62,27 +67,38 @@ export function ClientPortalWorkspace({ initialTab }: { initialTab: ClientPortal
     const [overview, setOverview] = useState<ClientPortalOverview | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+    const [attention, setAttention] = useState<ClientPortalAttention>("all");
     const loadStarted = useRef(false);
+    const requestVersion = useRef(0);
 
     const load = useCallback(async (requestedWorkspaceId?: number) => {
+        const version = ++requestVersion.current;
         setLoading(true);
         setError(null);
         try {
             const nextWorkspaces = await ClientPortalService.getWorkspaces();
-            setWorkspaces(nextWorkspaces);
+            if (version !== requestVersion.current) return;
             const preferredId = requestedWorkspaceId ?? workspaceId;
             const selectedId = nextWorkspaces.some(workspace => workspace.id === preferredId) ? preferredId : nextWorkspaces[0]?.id ?? null;
             if (selectedId == null) {
+                setWorkspaces(nextWorkspaces);
                 setWorkspaceId(null);
                 setOverview(null);
                 return;
             }
+            const nextOverview = await ClientPortalService.getOverview(selectedId);
+            if (version !== requestVersion.current) return;
+            setWorkspaces(nextWorkspaces);
             setWorkspaceId(selectedId);
-            setOverview(await ClientPortalService.getOverview(selectedId));
+            setOverview(nextOverview);
+            if (selectedId !== workspaceId) { setSearch(""); setAttention("all"); }
         } catch (cause) {
+            if (version !== requestVersion.current) return;
+            if (cause instanceof ApiResponseError && [401, 403, 404].includes(cause.status)) setOverview(null);
             setError(cause instanceof Error ? cause.message : "No se pudo abrir el portal.");
         } finally {
-            setLoading(false);
+            if (version === requestVersion.current) setLoading(false);
         }
     }, [workspaceId]);
 
@@ -95,21 +111,29 @@ export function ClientPortalWorkspace({ initialTab }: { initialTab: ClientPortal
     const currentWorkspace = useMemo(() => workspaces.find((workspace) => workspace.id === workspaceId) ?? overview?.workspace ?? null, [overview?.workspace, workspaceId, workspaces]);
     const changeWorkspace = (value: string) => void load(Number(value));
 
-    if (loading) return <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="size-7 animate-spin text-accent" /><span className="sr-only">Cargando portal de cliente</span></div>;
-    if (error) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No se pudo abrir el portal" description={error} /><div className="mt-4 text-center"><Button type="button" variant="outline" onClick={() => void load()}>Reintentar</Button></div></div>;
+    if (loading && !overview) return <div className="flex min-h-[360px] items-center justify-center"><Loader2 className="size-7 animate-spin text-accent" /><span className="sr-only">Cargando portal de cliente</span></div>;
+    if (error && !overview) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No se pudo abrir el portal" description={error} /><div className="mt-4 text-center"><Button type="button" variant="outline" onClick={() => void load()}>Reintentar</Button></div></div>;
     if (!currentWorkspace || !overview || workspaceId == null) return <div className="mx-auto max-w-xl px-[3%] py-8"><EmptyState title="No tienes accesos activos" description="Pide a tu proveedor que te invite al portal documental de tu empresa." /></div>;
+    const visibleQuotes = overview.quotes.filter((quote) => (attention !== "respond" || clientQuoteNeedsDecision(quote)) && portalTextMatches(search, [quote.quote_number, quote.title]));
+    const visibleInvoices = overview.invoices.filter((invoice) => portalTextMatches(search, [invoice.invoice_number]));
+    const visibleInspections = overview.inspections.filter((inspection) => (attention !== "validate" || !inspection.acceptance) && portalTextMatches(search, [inspection.template_title, inspection.location_name]));
+    const visibleComplaints = overview.complaints.filter((complaint) => (attention !== "unresolved" || portalComplaintUnresolved(complaint)) && portalTextMatches(search, [complaint.title, complaint.location_name, complaint.description, complaint.customer_response]));
+    const visibleContracts = overview.contracts.filter((contract) => portalTextMatches(search, [contract.contract_number, contract.title]));
 
-    return <div className="mx-auto max-w-6xl space-y-5 px-[3%] py-6 pb-12 md:p-8">
-        <header className="billing-surface billing-surface-accent-pad rounded-[24px]"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-accent">Portal de cliente</p><h1 className="mt-1 text-2xl font-bold tracking-tight">{currentWorkspace.client_name}</h1><p className="mt-2 text-sm text-[var(--text-muted)]">Documentos comerciales, calidad y reclamaciones emitidos por {currentWorkspace.company_name}.</p></div>{workspaces.length > 1 && <div className="w-full sm:w-72"><SearchableSelect aria-label="Seleccionar empresa del portal" value={String(workspaceId)} onValueChange={changeWorkspace} options={workspaces.map(workspace => ({ value: String(workspace.id), label: workspace.company_name, description: workspace.client_name }))} /></div>}</div></header>
-        <PremiumTabs tabs={PORTAL_TABS} activeTab={activeTab} onChange={setActiveTab} mobileLabel="Sección del portal" />
-        {activeTab === "overview" && <ClientPortalOverviewSummary overview={overview} clientName={currentWorkspace.client_name} />}
+    return <div className="mx-auto max-w-7xl space-y-4 px-4 py-6 pb-12 md:px-6">
+        <PageHeader icon={Building2} title={currentWorkspace.client_name} subtitle={`Empresa proveedora: ${currentWorkspace.company_name} · Cliente: ${currentWorkspace.client_name}`} actions={<Button variant="outline" size="sm" disabled={loading} onClick={() => void load(workspaceId)}><RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Actualizar</Button>} />
+        {workspaces.length > 1 && <section className="billing-surface rounded-xl border p-4"><label className="mb-2 block text-sm font-medium" htmlFor="client-portal-workspace">Empresa autorizada</label><SearchableSelect id="client-portal-workspace" disabled={loading} aria-label="Seleccionar empresa del portal" value={String(workspaceId)} onValueChange={changeWorkspace} options={workspaces.map(workspace => ({ value: String(workspace.id), label: workspace.company_name, description: workspace.client_name }))} /></section>}
+        {error && <div role="alert" className="rounded-xl border border-orange-400/30 p-3 text-sm">{error} · Se conserva la última consulta.</div>}
+        <PremiumTabs tabs={PORTAL_TABS} activeTab={activeTab} onChange={(tab) => { setActiveTab(tab); setAttention("all"); setSearch(""); }} mobileLabel="Sección del portal" />
+        {["quotes", "invoices", "contracts", "inspections", "complaints"].includes(activeTab) && <div className="flex flex-wrap items-center gap-2"><Input aria-label="Buscar en los documentos del portal" placeholder="Referencia, título o ubicación…" value={search} onChange={(event) => setSearch(event.target.value)} className="min-w-48 flex-1" />{(attention !== "all" || search) && <Button variant="outline" size="sm" onClick={() => { setAttention("all"); setSearch(""); }}>Mostrar todos</Button>}{attention !== "all" && <p className="w-full text-xs text-orange-700 dark:text-orange-300">{attention === "respond" ? "Presupuestos pendientes de tu decisión" : attention === "validate" ? "Inspecciones pendientes de tu validación" : "Reclamaciones sin resolver"}</p>}</div>}
+        {activeTab === "overview" && <ClientPortalOverviewSummary overview={overview} clientName={currentWorkspace.client_name} onNavigate={(tab, next) => { setActiveTab(tab); setAttention(next); setSearch(""); }} />}
         {activeTab === "services" && <ClientPortalServiceParts key={workspaceId} workspaceId={workspaceId} defaultSignerName={user?.full_name || ""} />}
         {activeTab === "documents" && <ClientPortalDocuments key={workspaceId} workspaceId={workspaceId} signerName={user?.full_name ?? ""} />}
-        {activeTab === "quotes" && <ClientPortalQuotes quotes={overview.quotes} workspaceId={workspaceId} refresh={() => void load(workspaceId)} onAccepted={quote => setOverview(current => current ? { ...current, quotes: current.quotes.map(item => item.id === quote.id ? quote : item) } : current)} />}
-        {activeTab === "contracts" && <Contracts contracts={overview.contracts} />}
-        {activeTab === "invoices" && <ClientPortalInvoices invoices={overview.invoices} workspaceId={workspaceId} />}
-        {activeTab === "inspections" && <ClientPortalInspections inspections={overview.inspections} workspaceId={workspaceId} defaultSignerName={user?.full_name || ""} onAccepted={(inspection) => setOverview((current) => current ? { ...current, inspections: current.inspections.map((item) => item.id === inspection.id ? inspection : item) } : current)} />}
-        {activeTab === "complaints" && <ClientPortalComplaints complaints={overview.complaints} locations={overview.complaint_locations} workspaceId={workspaceId} onCreated={(complaint) => setOverview((current) => current ? { ...current, complaints: [complaint, ...current.complaints] } : current)} />}
+        {activeTab === "quotes" && <ClientPortalQuotes quotes={visibleQuotes} filtered={Boolean(search || attention !== "all")} workspaceId={workspaceId} refresh={() => void load(workspaceId)} onAccepted={quote => setOverview(current => current ? { ...current, quotes: current.quotes.map(item => item.id === quote.id ? quote : item) } : current)} />}
+        {activeTab === "contracts" && <Contracts contracts={visibleContracts} />}
+        {activeTab === "invoices" && <ClientPortalInvoices invoices={visibleInvoices} filtered={Boolean(search)} workspaceId={workspaceId} />}
+        {activeTab === "inspections" && <ClientPortalInspections inspections={visibleInspections} filtered={Boolean(search || attention !== "all")} workspaceId={workspaceId} defaultSignerName={user?.full_name || ""} onAccepted={(inspection) => setOverview((current) => current ? { ...current, inspections: current.inspections.map((item) => item.id === inspection.id ? inspection : item) } : current)} />}
+        {activeTab === "complaints" && <ClientPortalComplaints complaints={visibleComplaints} filtered={Boolean(search || attention !== "all")} locations={overview.complaint_locations} workspaceId={workspaceId} onCreated={(complaint) => setOverview((current) => current ? { ...current, complaints: [complaint, ...current.complaints] } : current)} />}
         {activeTab === "profile" && <Card><CardContent className="space-y-4"><div className="flex items-center gap-3"><UserRound className="size-8 text-accent" /><div><h2 className="font-semibold">{user?.full_name || "Usuario"}</h2><p className="text-sm text-[var(--text-muted)]">{user?.email}</p></div></div><p className="border-t border-[var(--border-soft)] pt-4 text-sm leading-6 text-[var(--text-muted)]">Este acceso es revocable por {currentWorkspace.company_name}. Si necesitas añadir otra empresa, solicita una invitación al administrador de esa empresa.</p></CardContent></Card>}
     </div>;
 }

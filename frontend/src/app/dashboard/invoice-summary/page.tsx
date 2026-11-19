@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 
 import { SalesLedgerImportDialog } from "@/components/invoices/SalesLedgerImportDialog";
 import { SalesLedgerRecordDialog } from "@/components/invoices/SalesLedgerRecordDialog";
+import { FinanceOverview } from "@/components/finance/FinanceOverview";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { PremiumTabs } from "@/components/ui/premium-tabs";
+import { useViewState } from "@/hooks/useViewState";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
@@ -68,6 +72,8 @@ export default function InvoiceSummaryPage() {
     const canManageSummary = canManageFinance(user) && !isPlatformSuperadmin(user);
     const [entries, setEntries] = useState<SalesLedgerEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [view, setView] = useViewState<"summary" | "ledger">("invoice.summary.view", "summary");
     const [saving, setSaving] = useState(false);
     const [year, setYear] = useState("");
     const [search, setSearch] = useState("");
@@ -79,8 +85,10 @@ export default function InvoiceSummaryPage() {
         if (!canViewSummary) return;
         try {
             setLoading(true);
-            setEntries(await SalesLedgerService.getEntries({ limit: 500 }));
+            setLoadError(false);
+            setEntries(await SalesLedgerService.getAllEntries());
         } catch (error) {
+            setLoadError(true);
             toast.error(errorMessage(error, copy.error_load));
         } finally {
             setLoading(false);
@@ -177,7 +185,10 @@ export default function InvoiceSummaryPage() {
     return (
         <div className="min-h-full px-3 py-3 sm:px-5 lg:px-6">
             <div className="mx-auto flex w-full max-w-[112rem] flex-col gap-4">
-                <PageHeader icon={ReceiptText} title={copy.ledger_title} subtitle={copy.ledger_subtitle} />
+                <PageHeader icon={ReceiptText} title="Resumen de facturación" subtitle="Facturación, cobros y saldos con acceso a cada documento de origen." />
+                <PremiumTabs activeTab={view} onChange={setView} tabs={[{ id: "summary", label: "Resumen" }, { id: "ledger", label: copy.ledger_title }]} />
+                {loadError && <FinanceLoadError message="El libro de ventas no está disponible. No se muestran totales de una colección incompleta." onRetry={() => void loadLedger()} />}
+                {view === "summary" ? <FinanceOverview entries={entries} ledgerAvailable={!loading && !loadError} /> : !loadError && <>
 
                 <SummaryMetricGrid desktopColumns={5} aria-label={copy.ledger_totals}>
                     <SummaryMetricCard label={copy.ledger_base} value={formatCurrency(totals.base)} icon={FileText} trend={previousTotals ? toTrend(totals.base, previousTotals.base) : undefined} />
@@ -228,6 +239,7 @@ export default function InvoiceSummaryPage() {
                     renderDesktopRow={(entry) => renderLedgerDesktopCells(entry, copy, openEditRecord, canManageSummary)}
                     renderCompactRow={(entry) => <LedgerCompactRow entry={entry} copy={copy} onEdit={openEditRecord} canManage={canManageSummary} />}
                 />
+                </>}
             </div>
 
             {canManageSummary && <SalesLedgerRecordDialog key={`${recordDialogOpen}-${selectedEntry?.source_id ?? "new"}`} entry={selectedEntry} open={recordDialogOpen} busy={saving} onOpenChange={setRecordDialogOpen} onSave={saveRecord} onDelete={deleteRecord} />}

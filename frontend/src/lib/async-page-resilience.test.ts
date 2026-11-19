@@ -7,11 +7,12 @@ const calendarPageSource = readFileSync(
     "utf8",
 );
 
-test("calendar initial async load handles rejection before finishing loading", () => {
-    const initialLoad = calendarPageSource.slice(
-        calendarPageSource.indexOf("const initialLoad"),
-        calendarPageSource.indexOf("return () => window.clearTimeout"),
-    );
-
-    assert.match(initialLoad, /loadData\(\)[\s\S]*\.catch\([\s\S]*\.finally\(/);
+test("calendar loads the complete authorized schedule and exposes recoverable failures", () => {
+    assert.match(calendarPageSource, /TaskService\.getAllTaskItems\(\)/);
+    assert.doesNotMatch(calendarPageSource, /getTaskItems\(\{ limit: 500|UserService\.getUsers/);
+    assert.match(calendarPageSource, /try \{[\s\S]+catch \(cause\)/);
+    assert.match(calendarPageSource, /currentScope\.current !== scope/);
+    assert.match(calendarPageSource, /data\?\.scope === scope/);
+    assert.match(calendarPageSource, /role="alert"[\s\S]+Reintentar/);
+    assert.match(calendarPageSource, /role="status"[\s\S]+Cargando todos los trabajos/);
 });

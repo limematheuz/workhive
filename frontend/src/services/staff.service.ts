@@ -10,6 +10,11 @@ export function blankEmployee():Employee {
     return {id:0,name:"",position:"",team:"",monthly_hours:"160",hourly_cost:"0",profile:{contract:"Indefinido",state:"Activo",identifier:"",availability:"",documents:[],gross:"0",extra:"0",bonus:"0",insurance:"0",other:"0"}};
 }
 export const StaffService = {
+    async get(employeeId:number,signal?:AbortSignal):Promise<Employee> {
+        const response=await apiFetch("/api/v1/staff/"+employeeId,{cache:"no-store",signal});
+        await assertApiResponseOk(response,"No se pudo consultar este trabajador. Comprueba que existe y que tienes acceso.");
+        return response.json();
+    },
     async uploadDocument(employeeId:number,file:File):Promise<{name:string;url:string}> {
         const body=new FormData();body.append("file",file);
         const response=await apiFetch("/api/v1/staff-files/"+employeeId,{method:"POST",body});

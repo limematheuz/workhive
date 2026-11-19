@@ -74,3 +74,14 @@ test("older unfinished work stays visible as a separate alert without inflating 
     assert.deepEqual(data.carriedOver.map(item => item.id), [1]);
     assert.deepEqual(data.planned.map(item => item.id), [4]);
 });
+
+test("today's attention cohort remains today's when consulting tomorrow's planned work", () => {
+    const old = new Date(2026, 10, 13, 9).toISOString();
+    const tomorrow = new Date(2026, 10, 15, 9).toISOString();
+    const tasks = [task(1, { scheduled_start_at: old }), task(2, { scheduled_start_at: scheduled(9) }), task(3, { scheduled_start_at: tomorrow })];
+    const selected = buildOperationsOverview(tasks, overviewRange("tomorrow", "", now), now);
+    const attention = buildOperationsOverview(tasks, overviewRange("today", "", now), now);
+    assert.deepEqual(selected.planned.map(row => row.id), [3]);
+    assert.deepEqual(attention.late.map(row => row.id), [2]);
+    assert.deepEqual(attention.carriedOver.map(row => row.id), [1]);
+});

@@ -22,11 +22,12 @@ function expiry(value: string | null | undefined) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-export function ClientPortalQuotes({ quotes, workspaceId, onAccepted, refresh }: {
+export function ClientPortalQuotes({ quotes, workspaceId, onAccepted, refresh, filtered = false }: {
     quotes: ClientPortalQuote[];
     workspaceId: number;
     onAccepted: (quote: ClientPortalQuote) => void;
     refresh: () => void;
+    filtered?: boolean;
 }) {
     const [selected, setSelected] = useState<ClientPortalQuote | null>(null);
     const [confirmed, setConfirmed] = useState(false);
@@ -55,7 +56,7 @@ export function ClientPortalQuotes({ quotes, workspaceId, onAccepted, refresh }:
         finally { setDownloading(null); }
     }
 
-    if (!quotes.length) return <Card><CardContent className="py-12 text-center"><p className="font-semibold">No hay presupuestos disponibles</p><p className="mt-2 text-sm text-muted-foreground">Aquí aparecerán los presupuestos enviados para esta empresa.</p></CardContent></Card>;
+    if (!quotes.length) return <Card><CardContent className="py-12 text-center"><p className="font-semibold">{filtered ? "No hay presupuestos para esta selección" : "No hay presupuestos disponibles"}</p><p className="mt-2 text-sm text-muted-foreground">{filtered ? "Modifica la búsqueda o muestra todos los documentos." : "Aquí aparecerán los presupuestos enviados para esta empresa."}</p></CardContent></Card>;
     return <>
         <div className="grid items-start gap-4 lg:grid-cols-2">{quotes.map(quote => {
             const until = expiry(quote.valid_until);

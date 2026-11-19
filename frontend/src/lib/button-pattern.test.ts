@@ -7,9 +7,9 @@ const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf
 test("shared buttons use the profile export dimensions and semantic palette", () => {
     const button = read("../components/ui/button-variants.ts");
 
-    assert.match(button, /rounded-lg text-xs font-semibold/);
-    assert.match(button, /default: "px-5 py-2.5/);
-    assert.match(button, /gap-1\.5 rounded-lg text-xs font-semibold/);
+    assert.match(button, /rounded-lg text-sm font-medium/);
+    assert.match(button, /default: "min-h-10 px-4 py-2/);
+    assert.match(button, /gap-1\.5 rounded-lg text-sm font-medium/);
     assert.match(button, /dangerSoft:/);
     assert.match(button, /cancel:/);
     assert.match(button, /--btn-primary-bg/);

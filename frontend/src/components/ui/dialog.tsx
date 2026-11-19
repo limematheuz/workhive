@@ -86,8 +86,8 @@ function DialogContentSession({
         aria-describedby={undefined}
         className={cn(
           compact
-            ? "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-[calc(100vw-2rem)] max-w-2xl gap-4 overflow-y-auto rounded-2xl border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none"
-            : "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-2xl border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none sm:max-w-2xl",
+            ? "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-[calc(100vw-2rem)] max-w-2xl gap-4 overflow-y-auto rounded-xl border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none"
+            : "dialog-glass fixed inset-0 z-[10001] m-auto grid h-fit max-h-[min(92vh,calc(100%-2rem))] w-full max-w-[calc(100%-2rem)] gap-4 overflow-y-auto rounded-xl border border-[var(--border-soft)] border-t-[3px] !border-t-[var(--accent-color)] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] outline-none sm:max-w-2xl",
           className
         )}
         onInputCapture={(event) => {
@@ -166,7 +166,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-xl leading-tight font-black text-[var(--text-main)]", className)}
+      className={cn("text-xl leading-7 font-semibold text-[var(--text-main)]", className)}
       {...props}
     />
   )

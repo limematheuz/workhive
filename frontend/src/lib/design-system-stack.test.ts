@@ -40,7 +40,7 @@ test("the document workspace uses semantic action variants without altering glob
     assert.match(globals, /\.billing-surface/);
     assert.match(globals, /\.billing-block/);
     assert.doesNotMatch(globals, /\.billing-workspace/);
-    assert.match(globals, /background-color: rgba\(213, 224, 231, 0\.54\)/);
+    assert.match(globals, /--surface-card-bg:\s*#FFFFFF/);
     assert.match(globals, /\.billing-surface\s*\{\s*background-color: var\(--surface-card-bg\);\s*box-shadow:/);
     assert.match(globals, /\.billing-block\s*\{\s*background-color: var\(--bg-tertiary\);/);
     assert.doesNotMatch(globals, /--bg-primary: #f4f6f8/);
@@ -55,8 +55,8 @@ test("the document workspace uses semantic action variants without altering glob
     assert.match(invoiceNotice, /tone === "warning" && "bg-\[color-mix/);
     assert.match(invoiceNotice, /var\(--bg-tertiary\)/);
     assert.match(invoiceList, /Facturas registradas/);
-    assert.match(invoiceList, /from "@\/components\/ui\/table"/);
-    assert.match(invoiceList, /<TableHeader>/);
-    assert.match(invoiceList, /<TableBody>/);
-    assert.doesNotMatch(invoiceList, /DataListTable/);
+    assert.match(invoiceList, /DataListTable/);
+    assert.match(invoiceList, /renderDesktopRow/);
+    assert.match(invoiceList, /renderCompactRow/);
+    assert.match(invoiceList, /customizable/);
 });

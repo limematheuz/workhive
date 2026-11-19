@@ -7,11 +7,14 @@ import { redirect } from "next/navigation";
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
+import { SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { canViewFinance, isPlatformSuperadmin } from "@/domain/access/roles";
 import { useDictionary } from "@/lib/dictionary-context";
 import { formatCurrency } from "@/lib/format";
-import { getMetricTrend } from "@/lib/metric-trend";
+import { FinanceMetricButton } from "@/components/finance/FinanceMetricButton";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { FiscalSourceDialog } from "@/components/finance/FiscalSourceDialog";
+import { Button } from "@/components/ui/button";
 import {
     getFiscalPeriodActivityLabel,
     getFiscalSummaryYearOptions,
@@ -46,7 +49,9 @@ export default function FiscalSummaryPage() {
     const currentYear = new Date().getFullYear();
     const [year, setYear] = useState(currentYear);
     const [summary, setSummary] = useState<FiscalSummary | null>(null);
-    const [previousSummary, setPreviousSummary] = useState<FiscalSummary | null>(null);
+    const [selectedPeriod, setSelectedPeriod] = useState("annual");
+    const [sourceScope, setSourceScope] = useState<"sales" | "expenses" | "all" | "withholding" | null>(null);
+    const [loadError, setLoadError] = useState(false);
     const [loading, setLoading] = useState(true);
     const text = dict.fiscal_summary;
 
@@ -54,13 +59,11 @@ export default function FiscalSummaryPage() {
         if (!canViewSummary) return;
         try {
             setLoading(true);
-            const [current, previous] = await Promise.all([
-                FiscalSummaryService.getSummary(year),
-                FiscalSummaryService.getSummary(year - 1).catch(() => null),
-            ]);
-            setSummary(current);
-            setPreviousSummary(previous);
+            setLoadError(false);
+            setSummary(await FiscalSummaryService.getSummary(year));
         } catch {
+            setSummary(null);
+            setLoadError(true);
             toast.error(text.error_load);
         } finally {
             setLoading(false);
@@ -86,9 +89,10 @@ export default function FiscalSummaryPage() {
 
     if (!canViewSummary) return null;
 
-    if (!summary) return <FiscalSummaryLoading label={text.loading} />;
+    if (loadError || !summary) return <div className="p-5"><FinanceLoadError message="No se ha podido consultar un resumen fiscal válido. Revisa el origen o vuelve a intentarlo." onRetry={() => void loadSummary()} /></div>;
+    const selected = selectedPeriod === "annual" ? summary.annual : summary.periods.find((item) => item.key === selectedPeriod) ?? summary.annual;
 
-    const vatBalanceState = getFiscalVatBalanceState(summary.annual.estimated_vat_balance);
+    const vatBalanceState = getFiscalVatBalanceState(selected.estimated_vat_balance);
     const vatBalanceLabel = vatBalanceState === "payable"
         ? text.vat_payable
         : vatBalanceState === "credit"
@@ -103,26 +107,29 @@ export default function FiscalSummaryPage() {
                     title={text.title}
                     subtitle={text.subtitle}
                     actions={(
-                        <Select value={String(year)} onValueChange={(value) => setYear(Number(value))}>
+                        <Select value={String(year)} onValueChange={(value) => { setYear(Number(value)); setSelectedPeriod("annual"); }}>
                             <SelectTrigger aria-label={text.year} className="h-10 min-w-20 text-sm font-semibold"><SelectValue /></SelectTrigger>
                             <SelectContent>{yearOptions.map((option) => <SelectItem key={option} value={String(option)}>{option}</SelectItem>)}</SelectContent>
                         </Select>
                     )}
                 />
 
+                <section className="billing-surface flex flex-wrap items-center justify-between gap-3 rounded-xl p-3"><label className="flex items-center gap-3 text-sm font-medium">Periodo fiscal<Select value={selectedPeriod} onValueChange={setSelectedPeriod}><SelectTrigger aria-label="Periodo fiscal" className="min-w-36"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="annual">Año completo</SelectItem>{summary.periods.map((item) => <SelectItem key={item.key} value={item.key}>{item.label}</SelectItem>)}</SelectContent></Select></label><span className="text-xs text-muted-foreground">EUR · Ejercicio {year} · Actualizado al consultar</span><Button variant="outline" size="sm" onClick={() => setSourceScope("all")}>Ver y exportar origen</Button></section>
                 <SummaryMetricGrid desktopColumns={4} aria-label={text.annual_totals}>
-                    <SummaryMetricCard label={text.output_vat} value={formatCurrency(summary.annual.output_vat_amount)} description={text.output_vat_desc} icon={ReceiptText} trend={previousSummary ? getMetricTrend(summary.annual.output_vat_amount, previousSummary.annual.output_vat_amount) : undefined} />
-                    <SummaryMetricCard label={text.input_vat} value={formatCurrency(summary.annual.registered_input_vat_amount)} description={text.input_vat_desc} icon={FileText} trend={previousSummary ? getMetricTrend(summary.annual.registered_input_vat_amount, previousSummary.annual.registered_input_vat_amount) : undefined} />
-                    <SummaryMetricCard label={vatBalanceLabel} value={formatCurrency(Math.abs(summary.annual.estimated_vat_balance))} description={text.vat_balance_desc} icon={Landmark} trend={previousSummary ? getMetricTrend(Math.abs(summary.annual.estimated_vat_balance), Math.abs(previousSummary.annual.estimated_vat_balance)) : undefined} />
-                    <SummaryMetricCard label={text.irpf_withheld} value={formatCurrency(summary.annual.withheld_irpf_amount)} description={text.irpf_withheld_desc} icon={Calculator} trend={previousSummary ? getMetricTrend(summary.annual.withheld_irpf_amount, previousSummary.annual.withheld_irpf_amount) : undefined} />
+                    <FinanceMetricButton label={text.output_vat} value={formatCurrency(selected.output_vat_amount)} description={`Base de ventas: ${formatCurrency(selected.output_base_amount)} · ver documentos`} icon={ReceiptText} onClick={() => setSourceScope("sales")} />
+                    <FinanceMetricButton label={text.input_vat} value={formatCurrency(selected.registered_input_vat_amount)} description={`Base de gastos: ${formatCurrency(selected.registered_expense_base_amount)} · ver registros`} icon={FileText} onClick={() => setSourceScope("expenses")} />
+                    <FinanceMetricButton label={vatBalanceLabel} value={formatCurrency(Math.abs(selected.estimated_vat_balance))} description="Orientativo · repercutido menos soportado registrado" icon={Landmark} onClick={() => setSourceScope("all")} />
+                    <FinanceMetricButton label={text.irpf_withheld} value={formatCurrency(selected.withheld_irpf_amount)} description="Retenciones en las facturas del periodo" icon={Calculator} onClick={() => setSourceScope("withholding")} />
                 </SummaryMetricGrid>
+                {sourceScope && <FiscalSourceDialog year={year} period={selectedPeriod} scope={sourceScope} onClose={() => setSourceScope(null)} />}
 
                 <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-muted)]">
                     {text.disclaimer}
                 </p>
 
                 <DataListTable
-                    items={summary.periods}
+                    items={selectedPeriod === "annual" ? summary.periods : summary.periods.filter((item) => item.key === selectedPeriod)}
+                    onRowClick={(item) => setSelectedPeriod(item.key)}
                     getRowKey={(period) => period.key}
                     columns={COLUMNS.map((column) => ({
                         ...column,

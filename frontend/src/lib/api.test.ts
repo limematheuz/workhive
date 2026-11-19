@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readSessionRequestScope } from "./request-read-context.ts";
 
 import {
     ApiResponseError,
@@ -73,6 +74,87 @@ function jsonResponse(data: unknown, init?: ResponseInit) {
         ...init,
     });
 }
+
+test("shared collection reads belong to the cached actor and active company", async () => {
+    const browser = installBrowser();
+    const owner = { id: 7, company_id: 1, role: { name: "admin" }, can_view_labor_costs: true };
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify(owner));
+    const releases: Array<(response: Response) => void> = [];
+    globalThis.fetch = (() => new Promise<Response>(resolve => releases.push(resolve))) as typeof fetch;
+    try {
+        const first = apiFetch("/api/v1/staff");
+        const sameOwner = apiFetch("/api/v1/staff");
+        assert.equal(releases.length, 1);
+        browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ ...owner, company_id: 2 }));
+        const nextCompany = apiFetch("/api/v1/staff");
+        assert.equal(releases.length, 2);
+        releases[1](jsonResponse([{ name: "Company two" }]));
+        assert.deepEqual(await (await nextCompany).json(), [{ name: "Company two" }]);
+        releases[0](jsonResponse([{ name: "Company one" }]));
+        assert.deepEqual(await (await first).json(), [{ name: "Company one" }]);
+        assert.deepEqual(await (await sameOwner).json(), [{ name: "Company one" }]);
+    } finally { restoreBrowser(); }
+});
+
+test("actor, role and permission changes invalidate the read namespace without using credentials", () => {
+    const browser = installBrowser();
+    const owner = { id: 7, company_id: 1, role: { name: "admin" }, can_view_labor_costs: true };
+    try {
+        browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify(owner));
+        const first = readSessionRequestScope();
+        assert.ok(first);
+        for (const next of [{ ...owner, id: 8 }, { ...owner, role: { name: "viewer" } }, { ...owner, can_view_labor_costs: false }]) {
+            browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify(next));
+            assert.notEqual(readSessionRequestScope(), first);
+        }
+    } finally { restoreBrowser(); }
+});
+
+test("missing, invalid and portal context never share in-flight reads", async () => {
+    for (const raw of [null, "invalid-json", "null", JSON.stringify({ id: 7, role: { name: "admin" } }),
+            JSON.stringify({ id: 7, company_id: 1, role: { name: "client_portal" } })]) {
+        const browser = installBrowser();
+        if (raw !== null) browser.sessionStorage.setItem("workhive_user_cache:v1", raw);
+        let reads = 0;
+        globalThis.fetch = (async () => { reads++; return jsonResponse([]); }) as typeof fetch;
+        try {
+            assert.equal(readSessionRequestScope(), null);
+            await Promise.all([apiFetch("/api/v1/scoped-read"), apiFetch("/api/v1/scoped-read")]);
+            assert.equal(reads, 2);
+        } finally { restoreBrowser(); }
+    }
+});
+
+test("server reads have no browser identity and remain independent", async () => {
+    let reads = 0;
+    globalThis.fetch = (async () => { reads++; return jsonResponse([]); }) as typeof fetch;
+    try {
+        assert.equal(readSessionRequestScope(), null);
+        await Promise.all([apiFetch("/api/v1/server-scoped-read"), apiFetch("/api/v1/server-scoped-read")]);
+        assert.equal(reads, 2);
+    } finally { restoreBrowser(); }
+});
+
+test("cancelling one owned read never aborts another read of the same record", async () => {
+    const browser = installBrowser();
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ id: 7, company_id: 1, role: { name: "admin" } }));
+    const releases: Array<(response: Response) => void> = [];
+    globalThis.fetch = ((_input, init) => new Promise<Response>((resolve, reject) => {
+        releases.push(resolve);
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("Read aborted", "AbortError")), { once: true });
+    })) as typeof fetch;
+    try {
+        const old = new AbortController(), current = new AbortController();
+        const first = apiFetch("/api/v1/staff/42", { signal: old.signal });
+        const second = apiFetch("/api/v1/staff/42", { signal: current.signal });
+        assert.equal(releases.length, 2);
+        old.abort();
+        await assert.rejects(first, { name: "AbortError" });
+        releases[1](jsonResponse({ id: 42, name: "Current selection" }));
+        assert.deepEqual(await (await second).json(), { id: 42, name: "Current selection" });
+        assert.equal(current.signal.aborted, false);
+    } finally { restoreBrowser(); }
+});
 
 test("extractErrorMessage supports FastAPI string detail", async () => {
     const message = await extractErrorMessage(
@@ -203,7 +285,9 @@ test("apiFetch attaches JSON defaults and cookie csrf for mutations", async () =
     restoreBrowser();
 });
 
-test("apiFetch shares concurrent identical GET requests and returns readable clones", async () => {
+test("apiFetch shares identical GET requests within one known actor and company and returns readable clones", async () => {
+    const browser = installBrowser();
+    browser.sessionStorage.setItem("workhive_user_cache:v1", JSON.stringify({ id: 2, company_id: 1, role: { name: "viewer" } }));
     let calls = 0;
     let release!: (response: Response) => void;
     const pending = new Promise<Response>((resolve) => {

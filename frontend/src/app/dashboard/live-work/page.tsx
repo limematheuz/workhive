@@ -9,6 +9,8 @@ import type { ActiveCompanySession } from "@/types/user";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
+import { Button } from "@/components/ui/button";
+import { useViewState } from "@/hooks/useViewState";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
@@ -16,11 +18,15 @@ import { LiveWorkStatsCards } from "@/components/dashboard/live-work/LiveWorkSta
 import { LiveWorkSessionList } from "@/components/dashboard/live-work/LiveWorkSessionList";
 
 export default function LiveWorkPage() {
+    const {user}=useUser();
+    return <LiveWorkWorkspace key={`${user?.id}:${user?.company_id}`}/>;
+}
+function LiveWorkWorkspace() {
     const { user, loading: userLoading } = useUser();
     const { dict, locale } = useDictionary();
     const [sessions, setSessions] = useState<ActiveCompanySession[]>([]);
     const [activeScope, setActiveScope] = useState<"own" | "collaborator">("own");
-    const [query, setQuery] = useState("");
+    const [query, setQuery] = useViewState("live.query", "");
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [now, setNow] = useState(() => Date.now());
@@ -172,14 +178,16 @@ export default function LiveWorkPage() {
             <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
                 <div className="space-y-4">
                     <LiveWorkStatsCards
-                        workerCount={scopedSessions.length}
+                        workerCount={new Set(scopedSessions.map(session=>session.user_id)).size}
                         locationCount={locationCount}
                         lastUpdatedAt={lastUpdatedAt}
                     />
 
+                    <p className="text-xs text-muted-foreground">Sesiones activas del equipo seleccionado. Las horas totales del día y las sesiones cerradas se consultan en Jornada y Control del servicio.</p>
+                    {scopedSessions.some(session=>!session.task_item_id) && <details className="rounded-xl border border-orange-400/40 p-3"><summary className="cursor-pointer text-sm font-medium text-orange-700 dark:text-orange-300">{scopedSessions.filter(session=>!session.task_item_id).length} sesiones sin trabajo vinculado</summary><p className="mt-2 text-xs text-muted-foreground">Comprueba si corresponden a trabajo general o necesitan asociarse a un servicio. La falta de vínculo no implica un fichaje incorrecto.</p><ul className="mt-2 space-y-1 text-sm">{scopedSessions.filter(session=>!session.task_item_id).map(session=><li key={session.id}>{session.user_name} · {session.location_name}</li>)}</ul></details>}
                     {error && (
                         <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-600">
-                            {error}
+                            {error}<Button className="ml-3" variant="outline" size="sm" onClick={()=>void loadSessions(false)}>Reintentar</Button>
                         </div>
                     )}
 

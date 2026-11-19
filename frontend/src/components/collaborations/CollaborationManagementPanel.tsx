@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {Button} from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { ActiveCollaboratorsPanel } from "@/components/collaborations/ActiveCollaboratorsPanel";
@@ -29,6 +30,7 @@ export function CollaborationManagementPanel({
     const [collaborations, setCollaborations] = useState<CompanyCollaboration[]>([]);
     const [sentInvitations, setSentInvitations] = useState<CompanyCollaborationInvitation[]>([]);
     const [sponsoredInvitations, setSponsoredInvitations] = useState<SponsoredPartnerInvitation[]>([]);
+    const [loadError,setLoadError]=useState(false);
     const [loading, setLoading] = useState(true);
     const [unlinkTarget, setUnlinkTarget] = useState<CompanyCollaboration | null>(null);
     const [unlinking, setUnlinking] = useState(false);
@@ -76,6 +78,7 @@ export function CollaborationManagementPanel({
         }
 
         setLoading(false);
+        setLoadError(hasLoadError);
         if (!hasLoadError) lastLoadError.current = null;
     }, [canInviteByEmail, canManage, dict.collaborations.load_error, dict.collaborations.sponsored_invitations_load_error]);
 
@@ -133,10 +136,12 @@ export function CollaborationManagementPanel({
 
     return (
         <div className="space-y-5">
-            <SentCompanyInvitationsPanel invitations={sentInvitations} onRevoke={handleRevokeInvitation} />
-            <SentSponsoredPartnerInvitationsPanel invitations={sponsoredInvitations} onRevoke={handleRevokeSponsoredInvitation} />
+            {loadError&&<div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 p-3"><p className="text-sm">No se pudo actualizar toda la red. Los datos visibles pueden estar incompletos.</p><Button variant="outline" size="sm" onClick={()=>void loadData()}>Reintentar</Button></div>}
+            {!loading&&!loadError&&<div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{[{label:"Colaboradores activos",count:collaborations.filter(row=>row.status==="accepted").length,target:"network-active"},{label:"Colaboraciones pendientes",count:collaborations.filter(row=>row.status==="pending").length,target:"network-active"},{label:"Invitaciones pendientes",count:[...sentInvitations,...sponsoredInvitations].filter(row=>row.status==="pending").length,target:"network-invites"}].map(metric=><a key={metric.label} href={"#"+metric.target} className="rounded-xl border bg-card p-3 focus-visible:outline-2 focus-visible:outline-accent"><span className="text-xs text-muted-foreground">{metric.label}</span><strong className="mt-1 block text-2xl font-semibold">{metric.count}</strong></a>)}</div>}
+            <div id="network-invites"><SentCompanyInvitationsPanel invitations={sentInvitations} onRevoke={handleRevokeInvitation} />
+            <SentSponsoredPartnerInvitationsPanel invitations={sponsoredInvitations} onRevoke={handleRevokeSponsoredInvitation} /></div>
             {!canInviteByEmail && <p className="text-sm text-[var(--text-muted)]">{dict.collaborations.invite_admin_only}</p>}
-            <ActiveCollaboratorsPanel collaborations={collaborations} loading={loading} companyId={user?.company_id} canManagePartnerPortal={canInviteByEmail} onUnlink={setUnlinkTarget} />
+            <div id="network-active"><ActiveCollaboratorsPanel collaborations={collaborations} loading={loading} companyId={user?.company_id} canManagePartnerPortal={canInviteByEmail} onUnlink={setUnlinkTarget} /></div>
             <DeleteConfirmDialog
                 open={unlinkTarget !== null}
                 onOpenChange={(open) => !open && setUnlinkTarget(null)}

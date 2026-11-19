@@ -30,6 +30,8 @@ import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { CalendarHeader } from "./CalendarHeader";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { CalendarUnscheduledSection } from "./CalendarUnscheduledSection";
+import { overviewStatus } from "@/domain/tasks/operations-overview";
+import { CalendarPlanningAttention } from "./CalendarPlanningAttention";
 import { CalendarBoard } from "./CalendarBoard";
 import { buildCalendarEvents, resolveTaskWorkerNames } from "./buildCalendarEvents";
 import { isTaskPlanningDateBeforeToday } from "@/domain/tasks/task-schedule";
@@ -38,7 +40,7 @@ import { acknowledgeTaskOpened } from "@/components/dashboard/notifications/task
 interface CompanyCalendarProps {
     tasks: TaskItem[];
     locations: Location[];
-    users: User[];
+    users: Pick<User, "id" | "full_name" | "email">[];
     currentUser: User | null;
     onTasksChanged: () => Promise<void> | void;
 }
@@ -56,9 +58,11 @@ export function CompanyCalendar({
     const canView = canViewCompanyCalendar(currentUser);
     const canEdit = canManageCompanyCalendar(currentUser);
     const [calendarTitle, setCalendarTitle] = useState("");
+    const [visibleRange, setVisibleRange] = useState<{start:Date;end:Date}|null>(null);
     const [calendarView, setCalendarView] = useState("timeGridWeek");
     const [locationFilter, setLocationFilter] = useState("");
     const [userFilter, setUserFilter] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
     const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null);
     const [disconnectDialogOpen, setDisconnectDialogOpen] = useState(false);
     const dateLocale = locale === "es" ? "es-ES" : "en-US";
@@ -106,15 +110,16 @@ export function CompanyCalendar({
 
     const filteredTasks = useMemo(
         () => tasks.filter((task) => {
+            if (statusFilter && overviewStatus(task) !== statusFilter) return false;
             if (locationFilter && task.location_id !== Number(locationFilter)) return false;
             if (userFilter && !isTaskAssignedToUser(task, Number(userFilter))) return false;
-            return isOperationalStatus(task.status);
+            return task.status !== "cancelled" && isOperationalStatus(task.status);
         }),
-        [locationFilter, tasks, userFilter],
+        [locationFilter, tasks, userFilter, statusFilter],
     );
 
     const locationName = useCallback((id: number) => (
-        locations.find((location) => location.id === id)?.name || ""
+        locations.find((location) => location.id === id)?.name || `Ubicación #${id}`
     ), [locations]);
     const userName = useCallback((id: number | null | undefined) => {
         const user = users.find((candidate) => candidate.id === id);
@@ -204,6 +209,7 @@ export function CompanyCalendar({
         <div className="space-y-5">
             <CalendarHeader
                 calendarDict={calendarDict}
+                canEdit={canEdit}
                 status={googleCalendar.status}
                 loading={googleCalendar.loading}
                 connecting={googleCalendar.connecting}
@@ -225,6 +231,10 @@ export function CompanyCalendar({
                 <CalendarToolbar
                     calendarDict={calendarDict}
                     calendarTitle={calendarTitle}
+                    calendarView={calendarView}
+                    onViewChange={setCalendarView}
+                    statusFilter={statusFilter}
+                    onStatusFilterChange={setStatusFilter}
                     locationFilter={locationFilter}
                     userFilter={userFilter}
                     locations={locations}
@@ -239,7 +249,7 @@ export function CompanyCalendar({
                     locale={locale}
                     canEdit={canEdit}
                     events={calendarEvents}
-                    onDatesSet={(arg) => setCalendarTitle(arg.view.title)}
+                    onDatesSet={(arg) => { setCalendarTitle(arg.view.title); setVisibleRange({start:arg.start,end:arg.end}); }}
                     onEventClick={handleEventClick}
                     onEventDrop={(arg) => {
                         if (!canEdit) return arg.revert();
@@ -252,6 +262,7 @@ export function CompanyCalendar({
                 />
             </section>
 
+            <CalendarPlanningAttention range={visibleRange} tasks={filteredTasks} locationName={locationName} workerName={userName} onOpen={setSelectedTaskId} />
             <CalendarUnscheduledSection
                 calendarDict={calendarDict}
                 tasks={unscheduledTasks}

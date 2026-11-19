@@ -10,9 +10,6 @@ const THEME_STORAGE_KEY = "theme";
 
 export function resolveTheme(stored: string | null): ThemeMode {
     if (stored === "dark" || stored === "light") return stored;
-    if (typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-        return "dark";
-    }
     return DEFAULT_THEME;
 }
 

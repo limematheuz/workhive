@@ -102,3 +102,4 @@ export function buildCompanyOnboardingInput(
         },
     };
 }
+export const COMPANY_ONBOARDING_REQUESTED = "workhive:onboarding-requested";

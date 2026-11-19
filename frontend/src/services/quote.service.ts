@@ -1,6 +1,7 @@
 import { apiFetch, assertApiResponseOk } from "@/lib/api"
 import type { QuoteClientRegistrationInput } from "@/lib/quote-client-registration"
 import { Quote, QuoteItem, QuoteRevision } from "@/types/quote"
+import { collectPaginated } from "@/lib/pagination"
 
 export interface QuoteCreate {
     client_id?: number | null;
@@ -67,6 +68,9 @@ export interface QuoteEmailPayload {
 }
 
 export const QuoteService = {
+    getAllQuotes: async (filters: { clientId?: number; status?: string } = {}): Promise<Quote[]> => collectPaginated(
+        (skip, limit) => QuoteService.getQuotes({ ...filters, skip, limit }),
+    ),
     getQuotes: async (filters: {
         clientId?: number;
         status?: string;

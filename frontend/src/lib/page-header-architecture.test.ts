@@ -4,12 +4,12 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("shared PageHeader uses squarish brand icon well", () => {
+test("shared PageHeader uses the manual hierarchy and a decorative icon", () => {
     const header = read("../components/ui/page-header.tsx");
     assert.match(header, /rounded-md/);
     assert.match(header, /brand-blue-border/);
     assert.match(header, /brand-blue-soft/);
-    assert.match(header, /text-xl font-bold/);
+    assert.match(header, /text-2xl font-semibold/);
     assert.doesNotMatch(header, /rounded-full|rounded-2xl|rounded-3xl/);
 });
 

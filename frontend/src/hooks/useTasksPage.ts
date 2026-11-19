@@ -47,6 +47,7 @@ export function useTasksPage() {
     const [users, setUsers] = useState<User[]>([]);
     const [templates, setTemplates] = useState<TemplateTask[]>([]);
     const [catalogStatus, setCatalogStatus] = useState<"idle" | "loading" | "ready" | "error">("idle");
+    const [taskError, setTaskError] = useState<string|null>(null);
     const [loadingTasks, setLoadingTasks] = useState<boolean>(false);
     const bootstrappedRef = useRef(false);
     const versions = useRef({ task: 0, catalog: 0 });
@@ -89,17 +90,19 @@ export function useTasksPage() {
             const filters: TaskItemFilters = buildTaskListFilters({
                 currentUser: effectiveUser,
                 activeTab: overrides?.activeTab ?? activeTab,
-                selectedLocationId,
-                selectedStatus,
-                selectedUserId: overrides?.selectedUserId ?? selectedUserId,
+                selectedLocationId: "",
+                selectedStatus: "",
+                selectedUserId: "",
             });
 
             const data = await TaskService.getAllTaskItems(filters);
             if (version !== versions.current.task) return;
             setTasks(data);
+            setTaskError(null);
             setTaskReadScope(`${owner}|${version}`);
         } catch (error) {
             if (version !== versions.current.task) return;
+            setTaskError("No se pudieron cargar los trabajos. Reintenta para consultar su estado actual.");
             setTasks([]); setTaskReadScope(null);
             console.error("Error loading tasks list", error);
             if (!silent) toast.error(dict.tasks.error_update);
@@ -118,7 +121,7 @@ export function useTasksPage() {
             const canManageTasks = canManageCompanyTasks(currentUser);
 
             const [locs, usrs, tmpls] = await Promise.all([
-                LocationService.getLocations(),
+                LocationService.getAllLocations(),
                 canManageTasks
                     ? UserService.getUsers().catch(() => [currentUser] as User[])
                     : Promise.resolve([currentUser] as User[]),
@@ -153,6 +156,7 @@ export function useTasksPage() {
             });
         } catch (error) {
             if (version !== versions.current.catalog) return;
+            setTaskError("No se pudieron cargar los datos de este espacio. Actualiza la pantalla para reintentar.");
             setCatalogScope(null); setTaskReadScope(null); setTasks([]); setLocations([]);
             console.error("Error loading initial tasks page data", error);
             toast.error(dict.tasks.error_update);
@@ -175,7 +179,7 @@ export function useTasksPage() {
     useEffect(() => {
         if (!bootstrappedRef.current || !currentUser) return;
         loadTasksEvent();
-    }, [selectedStatus, selectedLocationId, selectedUserId, activeTab, currentUser]);
+    }, [activeTab, currentUser]);
 
     useBackgroundPolling(
         () => loadTasks(true),
@@ -246,7 +250,7 @@ export function useTasksPage() {
 
     const getLocationName = (locId: number) => {
         const l = taskLocations.find(loc => loc.id === locId);
-        return l ? l.name : `Location ID: ${locId}`;
+        return l ? l.name : "Ubicación no disponible";
     };
 
     const authorizedRead = taskReadScope?.startsWith(workspace + "|") ? taskReadScope : null;
@@ -296,6 +300,7 @@ export function useTasksPage() {
         setActiveTab,
         loadingData,
         loadingTasks,
+        taskError,
         selectedStatus,
         setSelectedStatus,
         selectedLocationId,

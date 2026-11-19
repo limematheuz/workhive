@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
+import { collectPaginated } from "@/lib/pagination"
 import {
     Client,
     ClientAccess,
@@ -48,18 +49,22 @@ export const ClientService = {
         return await response.json();
     },
 
-    getClients: async (isActive: boolean | null = true): Promise<Client[]> => {
-        const query = isActive === null
-            ? "include_inactive=true"
-            : `is_active=${isActive}`
-        const response = await apiFetch(`/api/v1/clients/?${query}`, {
+    getAllClients: async (isActive: boolean | null = true): Promise<Client[]> => collectPaginated(
+        (skip, limit) => ClientService.getClients(isActive, { skip, limit, strict: true }),
+    ),
+
+    getClients: async (isActive: boolean | null = true, pagination?: { skip?: number; limit?: number; strict?: boolean }): Promise<Client[]> => {
+        const query = new URLSearchParams(isActive === null ? { include_inactive: "true" } : { is_active: String(isActive) })
+        if (pagination?.skip) query.set("skip", String(pagination.skip))
+        if (pagination?.limit) query.set("limit", String(pagination.limit))
+        const response = await apiFetch(`/api/v1/clients/?${query.toString()}`, {
             method: "GET",
             cache: "no-store"
         })
         // Several workspaces use this only to populate an optional client
         // selector. A denied client capability is not an application failure:
         // the backend remains authoritative and the caller receives no choices.
-        if (response.status === 403) {
+        if (response.status === 403 && !pagination?.strict) {
             return []
         }
         await assertApiResponseOk(response, "No se pudieron cargar los clientes")

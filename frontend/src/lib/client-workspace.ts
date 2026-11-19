@@ -2,6 +2,7 @@ import type { Client } from "../types/client.ts";
 import type { Invoice } from "../types/invoice.ts";
 import type { Location } from "../types/location.ts";
 import type { TaskItem } from "../types/user.ts";
+import { invoiceOutstandingCents } from "./finance-priorities.ts";
 
 export type ClientWorkspaceRow = {
     client: Client;
@@ -13,6 +14,8 @@ export type ClientWorkspaceRow = {
     lastActivityAt: string | null;
     nextScheduledAt: string | null;
     hasContact: boolean;
+    hasLocationData?: boolean;
+    hasTaskData?: boolean;
 };
 
 export type ClientWorkspaceSummary = {
@@ -43,12 +46,13 @@ export type ClientWorkspaceFilter = {
     relationship: "all" | "lead" | "client";
     city: string;
     contact: "all" | "complete" | "missing";
+    withBalance?: boolean;
 };
 
 type BuildClientWorkspaceInput = {
     clients: Client[];
-    locations: Location[];
-    tasks: TaskItem[];
+    locations?: Location[];
+    tasks?: TaskItem[];
     invoices?: Invoice[];
     referenceDate?: Date;
 };
@@ -60,7 +64,6 @@ const REVENUE_STATUSES = new Set<Invoice["status"]>([
     "overdue",
     "rectified",
 ]);
-const PENDING_PAYMENT_STATUSES = new Set<Invoice["status"]>(["issued", "partially_paid", "overdue"]);
 const COMPLETE_TASK_STATUSES = new Set(["completed", "cancelled"]);
 
 function validDate(value: string | null | undefined): Date | null {
@@ -126,19 +129,21 @@ export function buildClientWorkspace({
                 lastActivityAt: null,
                 nextScheduledAt: null,
                 hasContact: clientHasContact(client),
+                hasLocationData: locations !== undefined,
+                hasTaskData: tasks !== undefined && locations !== undefined,
             },
         ]),
     );
     const locationClientIds = new Map<number, number>();
 
-    for (const location of locations) {
+    for (const location of locations ?? []) {
         if (location.client_id == null || !rowsByClientId.has(location.client_id)) continue;
         locationClientIds.set(location.id, location.client_id);
         const row = rowsByClientId.get(location.client_id);
         if (row) row.locationCount += 1;
     }
 
-    for (const task of tasks) {
+    for (const task of tasks ?? []) {
         const clientId = locationClientIds.get(task.location_id);
         if (clientId == null) continue;
         const row = rowsByClientId.get(clientId);
@@ -154,9 +159,9 @@ export function buildClientWorkspace({
         const row = rowsByClientId.get(invoice.client_id);
         if (!row) continue;
         row.lastActivityAt = latestActivity(row.lastActivityAt, invoice.updated_at || invoice.created_at);
+        row.pendingBalance += invoiceOutstandingCents(invoice) / 100;
         if (!isInvoiceFromYear(invoice, year)) continue;
         if (REVENUE_STATUSES.has(invoice.status)) row.annualBillingTotal += invoice.total_amount;
-        if (PENDING_PAYMENT_STATUSES.has(invoice.status)) row.pendingBalance += invoice.total_amount;
     }
 
     const rows = clients
@@ -233,7 +238,7 @@ export function filterClientWorkspaceRows(
             client.city,
         ].some((value) => value?.toLocaleLowerCase().includes(search));
 
-        return matchesStatus && matchesType && matchesRelationship && matchesCity && matchesContact && matchesSearch;
+        return matchesStatus && matchesType && matchesRelationship && matchesCity && matchesContact && matchesSearch && (!filters.withBalance || row.pendingBalance > 0);
     });
 }
 
@@ -278,9 +283,9 @@ export function buildClientWorkspaceCsv(
         row.client.phone,
         row.client.address,
         row.client.city,
-        row.locationCount,
-        row.taskCount,
-        row.pendingTaskCount,
+        row.hasLocationData === false ? null : row.locationCount,
+        row.hasTaskData === false ? null : row.taskCount,
+        row.hasTaskData === false ? null : row.pendingTaskCount,
         ...(options.includeFinancialData ? [row.annualBillingTotal, row.pendingBalance] : []),
         row.client.is_active ? "Activo" : "Inactivo",
     ].map(csvCell).join(";"));

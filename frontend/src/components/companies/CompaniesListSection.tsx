@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useState } from "react";
 import { Building2, ChevronDown, Loader2 } from "lucide-react";
 
 import { ActionPopover, type PopoverOption } from "@/components/ui/action-popover";
@@ -13,6 +13,8 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination";
+import {Input} from "@/components/ui/input";
+import {CompactFilterSelect} from "@/components/ui/compact-filter-select";
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -34,6 +36,7 @@ import type { Company } from "@/services/company.service";
 import type { CompanyMember } from "./company-members";
 import { CompanyMembersPanel } from "./CompanyMembersPanel";
 import {
+    isCompanyAccessEnabled,
     getCompanyAccessBadgeClass,
     getCompanyAccessLabel,
     getCompanyContactEmail,
@@ -91,6 +94,8 @@ export function CompaniesListSection({
     membersByCompany,
     onToggleMembers,
 }: CompaniesListSectionProps) {
+    const [query,setQuery]=useState(""),[state,setState]=useState(""),[plan,setPlan]=useState("");
+    const visible=companies.filter(company=>[company.name,company.tax_id,company.cif,company.email].filter(Boolean).join(" ").toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(!state||(state==="active"?isCompanyAccessEnabled(company):!isCompanyAccessEnabled(company)))&&(!plan||company.subscription_plan===plan));
     const pageCount = Math.max(1, Math.ceil(total / pageSize));
     const membersLabels = {
         admins: labels.admins,
@@ -155,10 +160,11 @@ export function CompaniesListSection({
                 </Badge>
             </div>
 
-            {companies.length === 0 ? (
+            <div className="space-y-2 px-5 pb-4"><p className="text-xs font-medium text-muted-foreground">Filtrar registros de esta página ({visible.length}/{companies.length})</p><div className="grid gap-2 sm:grid-cols-[1fr_10rem_10rem]"><Input type="search" aria-label="Buscar empresa en esta página" placeholder="Nombre, NIF o correo de esta página…" value={query} onChange={event=>setQuery(event.target.value)}/><CompactFilterSelect aria-label="Estado de acceso en esta página" value={state} onValueChange={setState} options={[{value:"",label:"Todos los accesos"},{value:"active",label:"Habilitado"},{value:"inactive",label:"No habilitado"}]}/><CompactFilterSelect aria-label="Plan de esta página" value={plan} onValueChange={setPlan} options={[{value:"",label:"Todos los planes"},...Array.from(new Set(companies.map(company=>company.subscription_plan).filter((value):value is NonNullable<typeof value>=>Boolean(value)))).map(value=>({value,label:value}))]}/></div><p className="text-xs text-muted-foreground">Los filtros se aplican a la página cargada. Usa la paginación para consultar el resto de empresas.</p>{(query||state||plan)&&<Button variant="ghost" size="sm" onClick={()=>{setQuery("");setState("");setPlan("");}}>Limpiar filtros de la página</Button>}</div>
+            {visible.length === 0 ? (
                 <div className="border-t border-[var(--border-soft)] px-5 py-12 text-center">
                     <Building2 className="mx-auto h-8 w-8 text-[var(--text-muted)]" aria-hidden="true" />
-                    <p className="mt-3 text-sm text-[var(--text-muted)]">{emptyLabel}</p>
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{companies.length?"No hay empresas con estos filtros en esta página.":emptyLabel}</p>
                 </div>
             ) : (
                 <>
@@ -175,7 +181,7 @@ export function CompaniesListSection({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {companies.map((company) => (
+                                {visible.map((company) => (
                                     <Fragment key={company.id}>
                                         <TableRow
                                             className="bg-[var(--bg-secondary)]/20 hover:bg-[var(--bg-secondary)]/55"
@@ -199,7 +205,7 @@ export function CompaniesListSection({
                     </div>
 
                     <div className="space-y-2.5 p-3 md:hidden">
-                        {companies.map((company) => (
+                        {visible.map((company) => (
                             <article
                                 key={company.id}
                                 className="billing-block rounded-2xl p-3"

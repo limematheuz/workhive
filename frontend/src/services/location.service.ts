@@ -1,4 +1,5 @@
 import { apiFetch, assertApiResponseOk, extractErrorMessage } from "@/lib/api"
+import { collectPaginated } from "@/lib/pagination"
 import { LocationWorkspaceService } from "@/services/location-workspace.service"
 import type {
     Location,
@@ -53,10 +54,16 @@ export interface LocationOperationalHistory {
 export const LocationService = {
     ...LocationWorkspaceService,
 
-    getLocations: async (clientId?: number): Promise<Location[]> => {
-        const path = clientId
-            ? `/api/v1/locations/?client_id=${clientId}`
-            : `/api/v1/locations/`
+    getAllLocations: async (clientId?: number): Promise<Location[]> => collectPaginated(
+        (skip, limit) => LocationService.getLocations(clientId, { skip, limit }),
+    ),
+
+    getLocations: async (clientId?: number, pagination?: { skip?: number; limit?: number }): Promise<Location[]> => {
+        const params = new URLSearchParams()
+        if (clientId) params.set("client_id", String(clientId))
+        if (pagination?.skip) params.set("skip", String(pagination.skip))
+        if (pagination?.limit) params.set("limit", String(pagination.limit))
+        const path = `/api/v1/locations/${params.size ? `?${params}` : ""}`
 
         const response = await apiFetch(path, {
             method: "GET",

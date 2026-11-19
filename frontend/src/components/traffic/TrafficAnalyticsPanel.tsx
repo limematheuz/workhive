@@ -88,7 +88,7 @@ export function TrafficAnalyticsPanel({
     return (
         <div className="space-y-4">
             <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                {traffic.reach_period}
+                {locale==="es"?"Muestra de los últimos 500 registros de auditoría. Los periodos se calculan respecto a la fecha actual.":"Sample of the latest 500 audit records. Periods are measured from the current date."}
             </p>
 
             <TrafficStatsCards
@@ -155,7 +155,7 @@ export function TrafficAnalyticsPanel({
 
                 <article className="billing-block rounded-[18px] border border-[var(--border-soft)] p-3.5">
                     <div className="flex items-center justify-between gap-3">
-                        <h2 className="text-sm font-semibold text-[var(--text-main)]">{traffic.users_by_platform}</h2>
+                        <h2 className="text-sm font-semibold text-[var(--text-main)]">{locale==="es"?"Inicios de sesión por dispositivo":"Sign-ins by device"}</h2>
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                             {traffic.month}
                         </span>

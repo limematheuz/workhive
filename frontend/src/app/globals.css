@@ -23,10 +23,11 @@
 }
 
 :root {
-  --radius: 0.625rem;
-  --radius-md: calc(var(--radius) - 2px);
-  --brand-blue: #2563eb;
-  --brand-blue-hover: #1d4ed8;
+  color-scheme: dark;
+  --radius: 0.75rem;
+  --radius-md: 0.5rem;
+  --brand-blue: #8AB4FF;
+  --brand-blue-hover: #A7C8FF;
   --brand-blue-mid: #3b82f6;
   --brand-blue-bright: #60a5fa;
   --brand-blue-sky: #93c5fd;
@@ -47,10 +48,10 @@
   --bg-primary: #191919;
   --bg-card-solid: #2c2c30;            /* Opaque for selects / solid cards */
   --dialog-control-bg: #36363b;
-  --dialog-control-border: rgba(255, 255, 255, 0.16);
+  --dialog-control-border: #8B93A1;
   --bg-secondary: rgba(28, 28, 32, 0.78);
   --bg-tertiary: rgba(255, 255, 255, 0.11);
-  --bg-card: rgba(44, 44, 48, 0.88);
+  --bg-card: #2c2c30;
   --sidebar-bg: var(--bg-primary);
   --border-color: rgba(255, 255, 255, 0.14);
   --border-soft: rgba(255, 255, 255, 0.10);
@@ -74,7 +75,7 @@
    * Modal sheet: light translucency + frosted blur (glassmorphism).
    * Alpha stays high enough for readability; blur carries the frost look.
    */
-  --glass-sheet-bg: rgba(28, 28, 32, 0.72);
+  --glass-sheet-bg: #25252a;
   --glass-sheet-border: rgba(255, 255, 255, 0.16);
   --glass-sheet-highlight: rgba(255, 255, 255, 0.2);
   --glass-sheet-shadow: 0 40px 120px rgba(0, 0, 0, 0.6);
@@ -87,9 +88,9 @@
   --glass-close-bg: rgba(255, 255, 255, 0.16);
   --glass-close-border: rgba(255, 255, 255, 0.28);
   --glass-close-hover-bg: rgba(255, 255, 255, 0.28);
-  --surface-card-bg: rgba(44, 44, 48, 0.88);
+  --surface-card-bg: #2c2c30;
   --surface-card-border: var(--glass-sheet-border);
-  --surface-card-shadow: 0 12px 36px rgba(0, 0, 0, 0.42);
+  --surface-card-shadow: none;
 
   /*
    * Header popovers (profile / notifications): frosted rim, opaque fill.
@@ -101,7 +102,7 @@
   --popover-surface-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
 
   /* Default modal panel = frosted translucent sheet */
-  --dialog-bg: rgba(28, 28, 32, 0.72);
+  --dialog-bg: #25252a;
   --dialog-surface-blur: 48px;
 
   /*
@@ -152,10 +153,10 @@
   --btn-secondary-hover-bg: rgba(37, 99, 235, 0.18);
 
   /* Solid blue is reserved for selecting a view, option, or assignment. */
-  --btn-select-bg: var(--brand-blue);
+  --btn-select-bg: #0054D6;
   --btn-select-text: #ffffff;
-  --btn-select-border: var(--brand-blue);
-  --btn-select-hover-bg: var(--brand-blue-hover);
+  --btn-select-border: #0054D6;
+  --btn-select-hover-bg: #0048BA;
 
   /* Neutral Button (grey/add) - Dark mode */
   --btn-neutral-bg: rgba(255, 255, 255, 0.06);
@@ -217,7 +218,7 @@
   --color-surface-light: #FFFFFF;
   --color-bg-light: #FAFAFA;
   
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
   /* Map shadcn tokens to solid background so Dialogs/Popovers/Selects are opaque */
@@ -311,165 +312,121 @@
 }
 
 .light-mode {
-  --brand-blue: #2563eb;
-  --brand-blue-hover: #1d4ed8;
-  --brand-blue-mid: #3b82f6;
-  --brand-blue-bright: #60a5fa;
-  --brand-blue-sky: #93c5fd;
-  --brand-blue-sky-deep: #7dd3fc;
-  --brand-blue-mist: #bfdbfe;
-  --brand-blue-soft: rgba(37, 99, 235, 0.09);
-  --brand-blue-border: rgba(37, 99, 235, 0.22);
-  --brand-blue-glow: rgba(37, 99, 235, 0.14);
-  --brand-ring: rgba(37, 99, 235, 0.35);
-  --accent-color: var(--brand-blue); /* High-contrast dark blue */
-  --accent-light-color: var(--brand-blue-hover);
-  --accent-toast-color: rgba(37, 99, 235, 0.15);
-  --status-active-bg: rgba(16, 185, 129, 0.1);
-  --status-active-text: #047857;
-  --status-active-border: rgba(16, 185, 129, 0.2);
-
-  /* Standardized amber and orange colors in light mode */
-  --color-amber-500: #e78a08; /* Vibrant, accessible golden amber-orange intermediate */
+  color-scheme: light;
+  --brand-blue: #0054D6;
+  --brand-blue-hover: #0048BA;
+  --brand-blue-mid: #0066FF;
+  --brand-blue-bright: #0066FF;
+  --brand-blue-sky: #C5D8FF;
+  --brand-blue-sky-deep: #C5D8FF;
+  --brand-blue-mist: #EAF0FF;
+  --brand-blue-soft: #EAF0FF;
+  --brand-blue-border: #AFC7F3;
+  --brand-blue-glow: transparent;
+  --brand-ring: #0054D6;
+  --accent-color: #0054D6;
+  --accent-light-color: #0048BA;
+  --accent-toast-color: #EAF0FF;
+  --bg-primary: #FAFAFA;
+  --bg-card-solid: #FFFFFF;
+  --bg-secondary: #F4F6F9;
+  --bg-tertiary: #F4F6F9;
+  --bg-card: #FFFFFF;
+  --sidebar-bg: #FFFFFF;
+  --border-color: #D8DEE8;
+  --border-soft: #D8DEE8;
+  --table-divider: #D8DEE8;
+  --text-main: #171D26;
+  --text-muted: #465266;
+  --text-inverse: #FFFFFF;
+  --control-border: #727987;
+  --dialog-control-bg: #FFFFFF;
+  --dialog-control-border: #727987;
+  --logo-filter: none;
+  --shadow-color: rgb(23 29 38 / 12%);
+  --glass-blur: 0px;
+  --glass-blur-strong: 0px;
+  --glass-saturate: 1;
+  --glass-sheet-bg: #FFFFFF;
+  --glass-sheet-border: #D8DEE8;
+  --glass-sheet-highlight: transparent;
+  --glass-sheet-shadow: 0 12px 40px rgb(23 29 38 / 14%);
+  --glass-panel-bg: #FFFFFF;
+  --glass-panel-border: #D8DEE8;
+  --glass-overlay-bg: rgb(23 29 38 / 40%);
+  --glass-overlay-blur: 0px;
+  --glass-close-bg: #FFFFFF;
+  --glass-close-border: #D8DEE8;
+  --glass-close-hover-bg: #F4F6F9;
+  --surface-card-bg: #FFFFFF;
+  --surface-card-border: #D8DEE8;
+  --surface-card-shadow: none;
+  --popover-surface-bg: #FFFFFF;
+  --popover-surface-border: #D8DEE8;
+  --popover-surface-blur: 0px;
+  --popover-surface-shadow: 0 6px 20px rgb(23 29 38 / 12%);
+  --dialog-bg: #FFFFFF;
+  --dialog-surface-blur: 0px;
+  --pill-bg: #F4F6F9;
+  --pill-active: #FFFFFF;
+  --pill-active-text: #0054D6;
+  --sidebar-active-bg: #EAF0FF;
+  --sidebar-active-text: #0054D6;
+  --sidebar-active-border: #0054D6;
+  --popover-tour-bg: #FFFFFF;
+  --popover-tour-text: #171D26;
+  --popover-tour-text-muted: #465266;
+  --popover-tour-border: #D8DEE8;
+  --btn-primary-bg: #0054D6;
+  --btn-primary-text: #FFFFFF;
+  --btn-primary-hover-bg: #0048BA;
+  --btn-cancel-bg: #FDEBE8;
+  --btn-cancel-text: #8F271F;
+  --btn-cancel-border: #E9BDB7;
+  --btn-cancel-hover-bg: #8F271F;
+  --btn-cancel-hover-text: #FFFFFF;
+  --btn-secondary-bg: #FFFFFF;
+  --btn-secondary-text: #0054D6;
+  --btn-secondary-border: #727987;
+  --btn-secondary-hover-bg: #EAF0FF;
+  --btn-select-bg: #0054D6;
+  --btn-select-text: #FFFFFF;
+  --btn-select-border: #0054D6;
+  --btn-select-hover-bg: #0048BA;
+  --btn-neutral-bg: #FFFFFF;
+  --btn-neutral-text: #465266;
+  --btn-neutral-border: #727987;
+  --btn-neutral-hover-bg: #F4F6F9;
+  --status-active-bg: #E6F5EB;
+  --status-active-text: #12573D;
+  --status-active-border: #A9D7BD;
+  --alert-warning-bg: #FFF3D6;
+  --alert-warning-text: #663C00;
+  --alert-warning-border: #DBBD82;
+  --priority-high-bg: #FDEBE8;
+  --priority-high-text: #8F271F;
+  --priority-high-border: #E9BDB7;
+  --priority-medium-bg: #FFF3D6;
+  --priority-medium-text: #663C00;
+  --priority-medium-border: #DBBD82;
+  --priority-low-bg: #EAF0FF;
+  --priority-low-text: #183D91;
+  --priority-low-border: #AFC7F3;
+  --badge-collaborator-bg: #EAF0FF;
+  --badge-collaborator-text: #183D91;
+  --badge-collaborator-border: #AFC7F3;
+  --color-amber-500: #9B5700;
   --color-orange-300: var(--color-amber-500);
   --color-orange-400: var(--color-amber-500);
   --color-orange-500: var(--color-amber-500);
   --color-orange-600: var(--color-amber-500);
   --color-orange-700: var(--color-amber-500);
   --color-orange-800: var(--color-amber-500);
-
-  --bg-primary: #cbd4db;
-  --bg-card-solid: #f4f8fb;            /* Opaque for selects / solid cards (light) */
-  --dialog-control-bg: #f8fbfd;
-  --dialog-control-border: var(--border-color);
-  --bg-secondary: rgba(213, 224, 231, 0.78);
-  --bg-tertiary: rgba(236, 244, 246, 0.62);
-  --bg-card: rgba(248, 252, 252, 0.5);
-  --sidebar-bg: var(--bg-primary);
-  --border-color: rgba(145, 166, 184, 0.32);
-  --border-soft: var(--border-color);
-  --table-divider: var(--border-soft);
-  --text-main: #111827;
-  --text-muted: #526070;
-  --text-inverse: #ffffff;
-  --logo-filter: brightness(0); /* Black */
-  --shadow-color: rgba(52, 74, 94, 0.22);
-
-  /* Glass / translucent surfaces (light) — keep translucency, moderate blur */
-  --glass-blur: 32px;
-  --glass-blur-strong: 140px;
-  --glass-saturate: 1.8;
-  --glass-sheet-bg: rgba(248, 252, 252, 0.7);
-  --glass-sheet-border: var(--border-soft);
-  --glass-sheet-highlight: rgba(255, 255, 255, 0.9);
-  --glass-sheet-shadow: 0 40px 120px rgba(52, 74, 94, 0.28);
-  --glass-panel-bg: rgba(255, 255, 255, 0.55);
-  --glass-panel-border: var(--border-soft);
-  --glass-overlay-bg: rgba(15, 23, 42, 0.4);
-  --glass-overlay-blur: 28px;
-  --glass-close-bg: rgba(255, 255, 255, 0.92);
-  --glass-close-border: var(--border-soft);
-  --glass-close-hover-bg: #ffffff;
-  --surface-card-bg: rgba(248, 252, 252, 0.82);
-  --surface-card-border: var(--glass-sheet-border);
-  --surface-card-shadow: 0 12px 32px rgba(52, 74, 94, 0.12);
-
-  /* Floating menus (light) — cool gray-blue paper (never pure / near-white) */
-  --popover-surface-bg: #d8e2e9;
-  --popover-surface-border: var(--border-soft);
-  --popover-surface-blur: 18px;
-  --popover-surface-shadow: 0 18px 48px rgba(52, 74, 94, 0.22);
-
-  --dialog-bg: rgba(248, 252, 252, 0.7);
-  --dialog-surface-blur: 48px;
-
-  --z-dashboard-content: 10;
-  --z-header: 20;
-  --z-header-popover: 25;
-  --z-sidebar-overlay: 30;
-  --z-sidebar: 40;
-  --z-sidebar-mobile-open: 60;
-
-  /* Map shadcn tokens for light mode */
-  --color-background: var(--bg-card-solid);
-  --color-popover: var(--bg-card-solid);
-  --color-card: var(--bg-card-solid);
-
-  /* Pill Switch Variables */
-  --pill-bg: rgba(227, 234, 238, 0.7);
-  --pill-active: rgba(255, 255, 255, 0.78);
-  --pill-active-text: #111827;
-
-  /* Sidebar Active Link */
-  --sidebar-active-bg: rgba(255, 255, 255, 0.66);
-  --sidebar-active-text: #111827;
-  --sidebar-active-border: var(--border-soft);
-
-  /* Onboarding / Guided Tour Popovers - Light Mode: Black background, white text */
-  --popover-tour-bg: #09090b;         /* zinc-950 */
-  --popover-tour-text: #ffffff;
-  --popover-tour-text-muted: #a1a1aa; /* zinc-400 */
-  --popover-tour-border: #27272a;     /* zinc-800 */
-
-  /* Primary Button Variables - Light mode: Black background, white text */
-  --btn-primary-bg: #09090b;          /* zinc-950 */
-  --btn-primary-text: #ffffff;
-  --btn-primary-hover-bg: #27272a;    /* zinc-800 */
-
-  /* Cancel Button Variables - Light mode: Red outline/translucent bg */
-  --btn-cancel-bg: rgba(220, 38, 38, 0.08);
-  --btn-cancel-text: #dc2626;
-  --btn-cancel-border: rgba(220, 38, 38, 0.25);
-  --btn-cancel-hover-bg: #dc2626;
-  --btn-cancel-hover-text: #ffffff;
-
-  /* Secondary Button (blue/action) - Light mode */
-  --btn-secondary-bg: rgba(37, 99, 235, 0.08);
-  --btn-secondary-text: var(--brand-blue-hover);
-  --btn-secondary-border: rgba(37, 99, 235, 0.18);
-  --btn-secondary-hover-bg: rgba(37, 99, 235, 0.16);
-
-  /* Solid blue is reserved for selecting a view, option, or assignment. */
-  --btn-select-bg: var(--brand-blue);
-  --btn-select-text: #ffffff;
-  --btn-select-border: var(--brand-blue);
-  --btn-select-hover-bg: var(--brand-blue-hover);
-
-  /* Neutral Button (grey/add) - Light mode */
-  --btn-neutral-bg: rgba(241, 245, 248, 0.58);
-  --btn-neutral-text: #3f4c5a;
-  --btn-neutral-border: var(--border-soft);
-  --btn-neutral-hover-bg: rgba(250, 252, 253, 0.72);
-
-  /* Warning Alert - Light mode */
-  --alert-warning-bg: rgba(217, 119, 6, 0.08);
-  --alert-warning-text: #b45309;
-  --alert-warning-border: rgba(217, 119, 6, 0.15);
-
-  /* Priority Badges - Light mode */
-  --priority-high-bg: rgba(220, 38, 38, 0.09);
-  --priority-high-text: #dc2626;
-  --priority-high-border: rgba(220, 38, 38, 0.25);
-
-  --priority-medium-bg: rgba(231, 138, 8, 0.1);
-  --priority-medium-text: var(--color-amber-500);
-  --priority-medium-border: rgba(231, 138, 8, 0.3);
-
-  --priority-low-bg: rgba(37, 99, 235, 0.09);
-  --priority-low-text: var(--brand-blue-hover);
-  --priority-low-border: rgba(37, 99, 235, 0.25);
-
-  --badge-collaborator-bg: rgba(124, 58, 237, 0.1);
-  --badge-collaborator-text: #6d28d9;
-  --badge-collaborator-border: rgba(124, 58, 237, 0.25);
 }
 @layer base {
   /* Dark mode body gradient (default) */
   body {
-    background:
-      radial-gradient(circle at 15% 10%, rgba(0, 230, 118, 0.03), transparent 30%),
-      radial-gradient(circle at 85% 20%, rgba(35, 35, 45, 0.6), transparent 35%),
-      linear-gradient(135deg, #191919 0%, #242424 50%, #191919 100%);
+    background: var(--bg-primary);
     color: var(--text-main);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
@@ -487,8 +444,7 @@
 [data-slot="dialog-content"].dialog-glass,
 [data-slot="alert-dialog-content"].dialog-glass {
   background-color: var(--glass-sheet-bg) !important;
-  -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
-  backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: none;
   border: 1px solid var(--glass-sheet-border) !important;
   opacity: 1 !important;
   transform: none !important;
@@ -505,8 +461,7 @@
 [data-slot="alert-dialog-header"],
 [data-slot="alert-dialog-footer"] {
   background: transparent !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  backdrop-filter: none;
 }
 
 .dialog-glass-chrome {
@@ -517,8 +472,7 @@
 .glass-panel {
   background-color: var(--glass-panel-bg) !important;
   border: 1px solid var(--glass-panel-border) !important;
-  backdrop-filter: blur(40px) saturate(1.5);
-  -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  backdrop-filter: none;
   box-shadow: inset 0 1px 0 var(--glass-sheet-highlight);
 }
 
@@ -537,8 +491,7 @@
 .dialog-glass-overlay,
 [data-slot="dialog-overlay"] {
   background-color: var(--glass-overlay-bg) !important;
-  -webkit-backdrop-filter: blur(var(--glass-overlay-blur)) saturate(var(--glass-saturate)) !important;
-  backdrop-filter: blur(var(--glass-overlay-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: none;
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
@@ -551,8 +504,7 @@
  */
 [data-slot="dialog-content"].tech-task-details-dialog {
   background-color: color-mix(in srgb, var(--bg-card-solid) 76%, var(--bg-primary)) !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  backdrop-filter: none;
   /* layout only — paint containment drops hero filter:blur compositing */
   contain: layout;
   will-change: auto;
@@ -560,8 +512,7 @@
 
 .tech-task-details-overlay {
   background-color: rgba(15, 23, 42, 0.54) !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  backdrop-filter: none;
   will-change: auto;
 }
 
@@ -646,8 +597,7 @@
   box-shadow:
     0 4px 14px var(--shadow-color),
     inset 0 1px 0 var(--glass-sheet-highlight) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
 }
 
 [data-slot="dialog-close"]:hover {
@@ -669,8 +619,7 @@
 .surface-glass-card {
   background-color: var(--surface-card-bg) !important;
   border: 1px solid var(--surface-card-border) !important;
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
   box-shadow:
     var(--surface-card-shadow),
     inset 0 1px 0 var(--glass-sheet-highlight);
@@ -692,10 +641,8 @@
 }
 
 .light-mode .billing-surface {
-  background-color: rgba(213, 224, 231, 0.54);
-  box-shadow: 0 10px 26px rgba(52, 74, 94, 0.1);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background-color: var(--surface-card-bg);
+  box-shadow: none;
 }
 
 /* Offset content below absolute accent bar (top-3 + h-1.5 ≈ 18px). */
@@ -709,8 +656,7 @@
 }
 
 .light-mode .billing-block {
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
 }
 
 @media print {
@@ -748,13 +694,12 @@
 }
 
 .light-mode .surface-popover {
-  backdrop-filter: blur(var(--popover-surface-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--popover-surface-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
 }
 
 /* Sidebar account menu: compact dropdown, not a modal card. */
 .sidebar-account-menu {
-  background-color: color-mix(in srgb, var(--popover-surface-bg) 74%, transparent) !important;
+  background-color: var(--popover-surface-bg) !important;
 }
 
 .sidebar-account-menu [data-slot="dropdown-menu-item"]:hover,
@@ -784,9 +729,8 @@
 }
 
 .light-mode .billing-surface.header-popover-layer {
-  background-color: color-mix(in srgb, #d5e0e7 90%, #cbd4db);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  background-color: var(--popover-surface-bg);
+  box-shadow: var(--popover-surface-shadow);
 }
 
 :root:not(.light-mode) .billing-surface.header-popover-layer,
@@ -906,13 +850,11 @@ a#tv-attr-logo {
 
 /* Soft translucency on layout/card containers (less blur than classic glass) */
 .bg-\[var\(--bg-secondary\)\] {
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
 }
 
 .bg-\[var\(--bg-card\)\] {
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
   box-shadow:
     inset 0 1px 0 var(--glass-sheet-highlight),
     0 14px 36px var(--shadow-color);
@@ -921,8 +863,7 @@ a#tv-attr-logo {
 .light-mode .bg-\[var\(--bg-primary\)\],
 .light-mode .bg-\[var\(--bg-secondary\)\],
 .light-mode .bg-\[var\(--bg-tertiary\)\] {
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: none;
 }
 
 .light-mode input:not(.dialog-compact-control),
@@ -936,13 +877,8 @@ select option {
   color: var(--text-main) !important;
 }
 
-.light-mode .shadow-md,
-.light-mode .shadow-lg,
-.light-mode .shadow-xl,
-.light-mode .shadow-2xl {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.48),
-    0 18px 46px rgba(77, 96, 116, 0.14);
+.light-mode :is(.shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl) {
+  box-shadow: none;
 }
 
 .dialog-compact-control {
@@ -1153,7 +1089,7 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 [data-slot="sheet-content"] textarea:not(.dialog-compact-control) {
   background-color: var(--bg-tertiary) !important;
   border: 1px solid var(--border-soft) !important;
-  border-radius: 0.875rem !important; /* rounded-xl (14px) */
+  border-radius: 0.5rem !important;
   color: var(--text-main) !important;
   outline: none !important;
   font-size: 0.875rem !important; /* text-sm */
@@ -1170,8 +1106,7 @@ body.light-mode input:focus, body.light-mode textarea:focus, body.light-mode sel
 .light-mode [data-slot="sheet-content"] {
   background-color: var(--glass-sheet-bg) !important;
   border-color: var(--glass-sheet-border) !important;
-  -webkit-backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
-  backdrop-filter: blur(var(--dialog-surface-blur)) saturate(var(--glass-saturate)) !important;
+  backdrop-filter: none;
   opacity: 1 !important;
   transform: none !important;
   filter: none !important;
@@ -1316,39 +1251,11 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--text-main);
 }
 
-.invoice-detail-backlight {
-  pointer-events: none;
-  position: absolute;
-  inset: -3rem 0;
-  z-index: 0;
-  border-radius: 2.5rem;
-  opacity: 0.42;
-  filter: blur(34px);
-  transform: translate3d(0, 0, 0);
-  animation: invoice-detail-backlight-drift 13s ease-in-out infinite alternate;
-  background:
-    radial-gradient(circle at 28% 18%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 42%),
-    radial-gradient(circle at 74% 68%, color-mix(in srgb, var(--accent-color) 10%, transparent), transparent 48%);
-}
+.invoice-detail-backlight { display: none; }
 
-.light-mode .invoice-detail-backlight {
-  opacity: 0.58;
-  background:
-    radial-gradient(circle at 28% 18%, color-mix(in srgb, var(--accent-color) 24%, transparent), transparent 42%),
-    radial-gradient(circle at 74% 68%, color-mix(in srgb, var(--accent-color) 14%, transparent), transparent 48%);
-}
 
-.dashboard-shell-backlight {
-  pointer-events: none;
-  position: absolute;
-  inset: -10%;
-  z-index: 0;
-  opacity: 0.3;
-  background:
-    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 34%),
-    radial-gradient(circle at 78% 26%, color-mix(in srgb, var(--accent-color) 14%, transparent), transparent 38%),
-    radial-gradient(circle at 48% 86%, color-mix(in srgb, var(--accent-color) 12%, transparent), transparent 42%);
-}
+
+.dashboard-shell-backlight { display: none; }
 
 .dashboard-page-content {
   min-height: 100%;
@@ -1356,7 +1263,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 /* Shared reading rhythm across every dashboard route. Controls keep their native size. */
 .wh-compact-workspace { --workspace-panel-space:14px; --workspace-block-gap:12px; }
-.wh-compact-workspace > :is(div, main, section) { padding:14px 20px!important; row-gap:var(--workspace-block-gap); }
+.wh-compact-workspace > :is(div, main, section) { padding:24px!important; row-gap:var(--workspace-block-gap); }
 .wh-compact-workspace > :is(div, main, section) > :not(:last-child) { margin-block-end:var(--workspace-block-gap); }
 .wh-compact-workspace .wh-page-header { margin-bottom:12px; }
 .wh-compact-workspace :is(.billing-surface,.glass-panel):is([class~="p-5"],[class~="p-6"],[class~="p-8"]) { padding:var(--workspace-panel-space); }
@@ -1366,20 +1273,14 @@ input[type="number"]::-webkit-outer-spin-button {
 .wh-compact-workspace [data-slot="table-head"] { padding-block:8px; height:34px; letter-spacing:.025em; }
 .wh-compact-workspace [data-slot="table-cell"] { padding-block:8px; line-height:1.4; }
 .wh-compact-workspace [data-slot="table-body"] [data-slot="table-row"] { border-bottom-color:var(--border-soft)!important; }
-.wh-compact-workspace [data-slot="table-body"] [data-slot="table-row"]:nth-child(even) { background:color-mix(in srgb,var(--bg-secondary) 45%,transparent)!important; }
+.wh-compact-workspace [data-slot="table-body"] [data-slot="table-row"]:nth-child(even) { background:transparent; }
 .wh-compact-workspace [data-slot="table-body"] [data-slot="table-row"]:hover { background:var(--brand-blue-soft)!important; }
 @media(max-width:640px) {
-  .wh-compact-workspace > :is(div, main, section) { padding:12px!important; }
+  .wh-compact-workspace > :is(div, main, section) { padding:16px!important; }
   .wh-compact-workspace { --workspace-panel-space:12px; }
 }
 
-.light-mode .dashboard-shell-backlight {
-  opacity: 0.48;
-  background:
-    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--accent-color) 24%, transparent), transparent 34%),
-    radial-gradient(circle at 78% 26%, color-mix(in srgb, var(--accent-color) 18%, transparent), transparent 38%),
-    radial-gradient(circle at 48% 86%, color-mix(in srgb, var(--accent-color) 16%, transparent), transparent 42%);
-}
+
 
 @keyframes invoice-detail-backlight-drift {
   0% {
@@ -1488,65 +1389,9 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--color-amber-500) !important;
 }
 
-/* WorkHive shared visual system: the approved blue/white management interface. */
-:root, .light-mode {
-  --brand-blue: #2b64d8;
-  --brand-blue-hover: #2455ba;
-  --accent-color: var(--brand-blue);
-  --accent-light-color: var(--brand-blue-hover);
-  --btn-primary-bg: var(--brand-blue);
-  --btn-primary-hover-bg: var(--brand-blue-hover);
-  --btn-primary-text: #fff;
-  --radius: .625rem;
-  --priority-high-text: #b75900;
-}
-.light-mode {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f7f8fa;
-  --bg-tertiary: #f0f2f5;
-  --bg-card: #ffffff;
-  --bg-card-solid: #ffffff;
-  --sidebar-bg: #ffffff;
-  --text-main: #1f2937;
-  --text-muted: #667085;
-  --border-color: #e5e7eb;
-  --border-soft: #e5e7eb;
-  --brand-blue-soft: #eef4ff;
-  --brand-blue-border: #d6e3fa;
-  --brand-blue-glow: transparent;
-  --brand-ring: #2b64d840;
-  --btn-neutral-bg: #ffffff;
-  --btn-neutral-border: #cbd7e8;
-  --btn-neutral-text: #314c70;
-  --btn-neutral-hover-bg: #f3f6fb;
-  --btn-secondary-bg: #eef4ff;
-  --btn-secondary-border: #d6e3fa;
-  --btn-secondary-text: #2455ba;
-  --btn-secondary-hover-bg: #e4edfc;
-  --sidebar-active-bg: #eef4ff;
-  --sidebar-active-text: #2b64d8;
-  --sidebar-active-border: transparent;
-  --dialog-control-bg: #fff;
-  --dialog-control-border: #ccd8e9;
-  --glass-sheet-bg: #ffffff;
-  --glass-sheet-border: #dfe7f1;
-  --glass-panel-bg: #ffffff;
-  --glass-panel-border: #dfe7f1;
-  --surface-card-bg: #ffffff;
-  --surface-card-border: #dfe7f1;
-  --popover-surface-bg: #ffffff;
-  --popover-surface-border: #dfe7f1;
-  --popover-surface-shadow: 0 8px 28px #172b451a;
-  --dialog-bg: #ffffff;
-  --glass-sheet-shadow: 0 20px 70px #172b4526;
-  --glass-blur: 0px;
-  --glass-blur-strong: 0px;
-  --dialog-surface-blur: 0px;
-  --shadow-color: #172b451a;
-}
 .light-mode .dashboard-shell-backlight { display:none; }
-.light-mode .dashboard-page-scroll-region { background:var(--bg-secondary); }
-.light-mode .billing-surface, .light-mode .billing-block, .light-mode .glass-panel { background:#fff; border-color:var(--border-soft); box-shadow:0 1px 2px #172b4504; }
+.light-mode .dashboard-page-scroll-region { background:var(--bg-primary); }
+.light-mode .billing-surface, .light-mode .billing-block, .light-mode .glass-panel { background:#fff; border-color:var(--border-soft); box-shadow:none; }
 .light-mode [data-slot="card"] { background:#fff; }
 .light-mode .summary-metric-card { background:var(--bg-card); border-color:var(--border-soft); }
 .sidebar-navigation-scroll { direction:rtl; scrollbar-width:thin; scrollbar-color:#b8c8df transparent; }
@@ -1777,3 +1622,51 @@ input[type="number"]::-webkit-outer-spin-button {
 .wh-navigation-popover [aria-current="page"] { background:var(--sidebar-active-bg); color:var(--sidebar-active-text); font-weight:600; }
 .wh-dashboard-header { background:var(--bg-primary); }
 @media (prefers-reduced-motion:reduce) { .wh-navigation-group-trigger,.wh-navigation .sidebar-group-content { animation:none!important; transition:none!important; } }
+
+/* WorkHive interface: flat surfaces, legible controls and explicit selection. */
+.brand-art-light { display: none; }
+.light-mode .brand-art-light { display: block; }
+.light-mode .brand-art-dark { display: none; }
+.wh-dashboard-header { background: var(--bg-card-solid); }
+.billing-surface, .surface-glass-card { border-color: var(--border-color); border-radius:12px; }
+.light-mode :is(.billing-block, .summary-metric-card) { background:#FFFFFF; }
+.summary-metric-card { border:1px solid var(--border-color); }
+.light-mode :is(.glass-panel, .surface-glass-card) { box-shadow:none; }
+[data-slot="table-body"] [data-slot="table-row"] { height:44px; }
+.wh-compact-workspace [data-slot="table-head"] { color:var(--text-muted); font-size:12px; text-transform:none; letter-spacing:normal; }
+.wh-compact-workspace [data-slot="table-cell"] { font-size:14px; line-height:20px; }
+.wh-compact-workspace [data-slot="table-body"] .wh-selected-row,
+.wh-selected-row { background:var(--brand-blue-soft)!important; box-shadow:inset 3px 0 var(--accent-color); }
+.wh-selected-row [data-slot="table-cell"]:first-child { font-weight:600; }
+.light-mode :is([data-slot="input"], [data-slot="textarea"], [data-slot="select-trigger"], .expense-input) {
+  background:#FFFFFF; border-color:var(--control-border); border-radius:8px; box-shadow:none;
+}
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline:2px solid var(--accent-color)!important; outline-offset:2px!important;
+}
+.light-mode :is(input, textarea, select):focus { border-color:var(--accent-color)!important; }
+@media (pointer:coarse) {
+  [data-slot="button"], [data-slot="select-trigger"], [data-slot="sidebar-menu-button"] { min-height:44px; }
+}
+
+.wh-metric-grid .summary-metric-card { padding:16px; background:var(--bg-card-solid); border-radius:12px; }
+.wh-metric-grid .summary-metric-card::before { display:none; }
+.wh-panel, .wh-overview-panel { background:var(--bg-card-solid); border-radius:12px; }
+[data-list-density="compact"] [data-slot="table-cell"] { padding-block:6px; font-size:13px; line-height:18px; }
+[data-list-density="comfortable"] [data-slot="table-body"] [data-slot="table-row"] { min-height:56px; height:56px; }
+@media (pointer:coarse) {
+  [data-sidebar="menu-button"], [data-sidebar="menu-sub-button"], .wh-navigation-group-trigger { min-height:44px; }
+}
+
+/* Adapt layout to the usable workspace width, including an expanded menu. */
+.wh-workspace-frame { container: workspace / inline-size; }
+.summary-metric-card { container-type:inline-size; }
+.wh-metric-value { white-space:nowrap; overflow-wrap:normal; }
+@container workspace (max-width:950px) {
+  .wh-dashboard-breadcrumb, .wh-application-switch-label { display:none; }
+}
+@container workspace (max-width:850px) {
+  .wh-page-header { flex-direction:column; align-items:stretch; }
+  .wh-page-header > div:last-child { width:100%; justify-content:flex-start; }
+  .wh-metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}

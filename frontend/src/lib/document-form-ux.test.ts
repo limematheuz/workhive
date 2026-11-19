@@ -110,7 +110,7 @@ test("local shadcn controls share one WorkHive surface contract", () => {
     ];
 
     assert.match(surface, /formControlSurfaceClassName/);
-    assert.match(surface, /bg-\[var\(--bg-primary\)\]/);
+    assert.match(surface, /bg-\[var\(--dialog-control-bg\)\]/);
     assert.match(surface, /focus-visible:ring-2/);
     for (const primitive of primitives) {
         assert.match(primitive, /formControlSurfaceClassName/);

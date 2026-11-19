@@ -6,6 +6,7 @@ const requirements:Record<string,string|readonly string[]|{all:readonly string[]
  "/dashboard/live-work":"time.read","/dashboard/time-corrections":["time.read","time.manage","time.approve"],"/dashboard/control-servicio":"time.read","/dashboard/offline-review":"time.approve","/dashboard/mi-jornada":"time.manage",
  "/dashboard/invoices":"finance.read","/dashboard/invoice-summary":"finance.read","/dashboard/quotes":"finance.read","/dashboard/contracts":"finance.read","/dashboard/expenses":"finance.read","/dashboard/currencies":"finance.read","/dashboard/consolidation":"finance.read","/dashboard/analytics":"finance.read","/dashboard/fiscal-summary":"finance.read","/dashboard/fiscal-calendar":"finance.read","/dashboard/labor-costs":"labor_costs.read",
  "/dashboard/inventory":"inventory.read","/dashboard/resources":"inventory.read","/dashboard/subcontracts":{all:["inventory.read","finance.read"]},
+ "/dashboard/quality":["quality.templates.read","quality.inspections.read","quality.incidents.read","quality.complaints.read"],
  "/dashboard/organization":["access.members.read","access.profiles.read","organization.departments.read","organization.teams.read"],"/dashboard/portals":"access.members.manage","/dashboard/api-access":"access.members.manage","/dashboard/automations":"access.members.manage","/dashboard/data-import":["clients.manage","locations.manage","labor_costs.manage","work.manage"],
 };
 export function navigationCapabilityAllowed(path:string,permissions:Readonly<Record<string,boolean>>):boolean{

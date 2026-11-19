@@ -15,6 +15,7 @@ import { formatOverviewDate } from "./overview-format";
 export type OverviewTaskPresentation = {
     c: OverviewCopy; locale: string; now: Date;
     locationName: (id: number) => string;
+    locationAddress?: (id: number) => string;
     workerName: (id: number, fallback?: string | null) => string;
 };
 

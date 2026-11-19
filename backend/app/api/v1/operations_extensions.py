@@ -109,3 +109,6 @@ api_router.include_router(application_session_router, tags=["application-session
 
 from app.api.v1.quick_work import router as quick_work_router
 api_router.include_router(quick_work_router,tags=["workforce-execution"])
+
+from app.api.v1.workspace_search import router as workspace_search_router
+api_router.include_router(workspace_search_router, tags=["workspace-search"])

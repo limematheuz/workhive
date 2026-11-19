@@ -85,5 +85,5 @@ test("create CTA Plus icons rely on gap-1.5 without mr-2", () => {
     assert.doesNotMatch(location, /Plus className="[^"]*mr-2/);
     assert.match(PAGE_ACTION_BUTTON_BASE, /gap-1\.5/);
     assert.doesNotMatch(PAGE_ACTION_BUTTON_BASE, /gap-1\.5[^"]*gap-/);
-    assert.match(button, /gap-1\.5 rounded-lg text-xs font-semibold/);
+    assert.match(button, /gap-1\.5 rounded-lg text-sm font-medium/);
 });

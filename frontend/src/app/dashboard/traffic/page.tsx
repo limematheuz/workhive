@@ -5,6 +5,8 @@ import { Activity, Loader2, Shield } from "lucide-react";
 
 import { TrafficAnalyticsPanel } from "@/components/traffic/TrafficAnalyticsPanel";
 import { TrafficEventsTable } from "@/components/traffic/TrafficEventsTable";
+import { Button } from "@/components/ui/button";
+import { trafficMetrics } from "@/lib/traffic/traffic-metrics";
 import { PageHeader } from "@/components/ui/page-header";
 import { useDictionary } from "@/lib/dictionary-context";
 import { authService } from "@/services/auth.service";
@@ -30,6 +32,8 @@ export default function TrafficPage() {
     const [loginPage, setLoginPage] = useState(1);
     const [urlOnlyPage, setUrlOnlyPage] = useState(1);
     const [loading, setLoading] = useState(true);
+    const [error,setError] = useState("");
+    const [revision,setRevision] = useState(0);
 
     useEffect(() => {
         let mounted = true;
@@ -41,7 +45,10 @@ export default function TrafficPage() {
                 if (!isPlatformSuperadmin(me)) return;
                 const auditEvents = await AuditLogService.getAuditLogs(500);
                 if (!mounted) return;
-                setEvents(auditEvents.filter((event) => event.action === "auth.login" || event.action === "public.page_view"));
+                setEvents(auditEvents.filter((event) => (event.action === "auth.login" || event.action === "public.page_view")&&Number.isFinite(Date.parse(event.created_at))&&Date.parse(event.created_at)<=Date.now()));
+                setError("");
+            } catch(cause) {
+                if(mounted)setError(cause instanceof Error?cause.message:"No se pudieron cargar los eventos de acceso.");
             } finally {
                 if (mounted) setLoading(false);
             }
@@ -50,7 +57,7 @@ export default function TrafficPage() {
         return () => {
             mounted = false;
         };
-    }, []);
+    }, [revision]);
 
     const loginEvents = useMemo(
         () => events.filter((event) => event.action === "auth.login"),
@@ -84,19 +91,7 @@ export default function TrafficPage() {
     );
 
     const stats = useMemo(() => {
-        const dayMs = 24 * 60 * 60 * 1000;
-        const referenceTime = events.reduce((latest, event) => {
-            const eventTime = new Date(event.created_at).getTime();
-            return Number.isFinite(eventTime) ? Math.max(latest, eventTime) : latest;
-        }, 0);
-        const last24h = events.filter((event) => referenceTime - new Date(event.created_at).getTime() <= dayMs);
-        const last7d = events.filter((event) => referenceTime - new Date(event.created_at).getTime() <= 7 * dayMs);
-        const uniqueUsers = new Set(
-            events.flatMap((event) => {
-                const identifier = event.details.user_email || event.actor_user_id || event.details.visitor_id;
-                return identifier ? [identifier] : [];
-            }),
-        );
+        const metrics=trafficMetrics(events);
         const locations = new Set(
             events.flatMap((event) => {
                 const label = getGeoLabel(event);
@@ -104,10 +99,7 @@ export default function TrafficPage() {
             }),
         );
         return {
-            total: events.length,
-            last24h: last24h.length,
-            last7d: last7d.length,
-            uniqueUsers: uniqueUsers.size,
+            ...metrics,
             locations: locations.size,
         };
     }, [events]);
@@ -161,7 +153,7 @@ export default function TrafficPage() {
 
     const heatmap = useMemo(() => {
         const days = locale === "en" ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-        const hours = [6, 7, 8, 9, 10, 11, 12, 13];
+        const hours = Array.from({length:24},(_,hour)=>hour);
         const counts = new Map<string, number>();
         events.forEach((event) => {
             const date = new Date(event.created_at);
@@ -224,9 +216,11 @@ export default function TrafficPage() {
                 title={traffic.title}
                 subtitle={traffic.subtitle}
                 className="mb-6"
+                actions={<Button variant="outline" onClick={()=>setRevision(value=>value+1)}>Actualizar eventos</Button>}
             />
 
-            <section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
+            {error&&<div role="alert" className="mb-4 rounded-xl border border-orange-400/40 p-4"><p>{error}</p><Button variant="outline" size="sm" onClick={()=>setRevision(value=>value+1)}>Reintentar</Button></div>}
+            {error&&events.length===0?<p className="text-sm text-muted-foreground">Indicadores no disponibles hasta completar la carga.</p>:<section className="billing-surface relative overflow-hidden rounded-[24px] p-4 sm:p-5">
                 <div className="space-y-4">
                     <TrafficAnalyticsPanel
                         traffic={traffic}
@@ -255,7 +249,7 @@ export default function TrafficPage() {
                         onPageChange={handlePageChange}
                     />
                 </div>
-            </section>
+            </section>}
         </div>
     );
 }

@@ -91,7 +91,7 @@ test("finance summary keeps operating results net of VAT and exposes VAT separat
     });
 });
 
-test("manual ledger history contributes revenue once with a documented payment fallback", () => {
+test("manual ledger history contributes revenue without fabricating a receipt date", () => {
     const entry: SalesLedgerEntry = {
         source_type: "manual",
         source_id: 9,
@@ -116,14 +116,16 @@ test("manual ledger history contributes revenue once with a documented payment f
     assert.deepEqual(revenue, {
         issue_date: "2026-07-04T12:00:00",
         due_date: null,
-        paid_at: "2026-07-04T12:00:00",
+        paid_at: null,
+        source_type: "manual",
+        document_number: "HIST-2026-0001",
         status: "paid",
         base_amount: 100,
         tax_amount: 21,
         total_amount: 121,
     });
     assert.deepEqual(current, {
-        paid: 121,
+        paid: 0,
         pending: 0,
         overdue: 0,
         revenue: 100,
@@ -229,9 +231,9 @@ test("finance period comparison separates current and previous period values", (
     );
 
     assert.deepEqual(comparison.current, {
-        paid: 100,
+        paid: 0,
         pending: 70,
-        overdue: 30,
+        overdue: 0,
         revenue: 180,
         expenses: 20,
         profit: 160,
@@ -243,12 +245,12 @@ test("finance period comparison separates current and previous period values", (
     assert.equal(comparison.previous.expenses, 10);
 });
 
-test("paid totals use collection date while revenue keeps issue date", () => {
+test("legacy paid flags cannot replace receipt records while revenue keeps issue date", () => {
     const comparison = summarizeFinancePeriod(
         [
             makeInvoice({
                 status: "paid",
-                issue_date: "2026-06-20T10:00:00",
+                issue_date: "2026-06-04T10:00:00",
                 paid_at: "2026-07-06T10:00:00",
                 total_amount: 121,
                 tax_amount: 21,
@@ -259,7 +261,7 @@ test("paid totals use collection date while revenue keeps issue date", () => {
         new Date("2026-07-07T12:00:00"),
     );
 
-    assert.equal(comparison.current.paid, 121);
+    assert.equal(comparison.current.paid, 0);
     assert.equal(comparison.current.revenue, 0);
     assert.equal(comparison.previous.paid, 0);
     assert.equal(comparison.previous.revenue, 100);
@@ -319,7 +321,7 @@ test("overdue totals use due date instead of issue date", () => {
 
     assert.equal(comparison.current.overdue, 300);
     assert.equal(comparison.previous.overdue, 0);
-    assert.equal(comparison.previous.revenue, 250);
+    assert.equal(comparison.previous.revenue, 0);
 });
 
 test("the latest chart bucket exactly matches every current-period summary", () => {

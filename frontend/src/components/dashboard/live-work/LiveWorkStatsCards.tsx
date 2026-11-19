@@ -33,7 +33,7 @@ export function LiveWorkStatsCards({
             label: dict.work_sessions?.last_update || "Última actualización",
             value: new Date(lastUpdatedAt).toLocaleTimeString(
                 locale === "es" ? "es-ES" : "en-US",
-                { timeZone: "UTC" },
+                { hour:"2-digit",minute:"2-digit",second:"2-digit" },
             ),
             icon: <Clock3 className="h-4 w-4" />,
         },

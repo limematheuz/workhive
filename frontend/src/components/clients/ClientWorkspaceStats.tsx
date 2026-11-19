@@ -1,75 +1,19 @@
 "use client";
-
-import { CircleAlert, CircleCheck, Clock3, ReceiptText, UsersRound } from "lucide-react";
-
-import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
+import { CircleAlert, CircleCheck, Clock3, UsersRound } from "lucide-react";
+import { SummaryMetricGrid } from "@/components/ui/summary-metric-card";
+import { FinanceMetricButton } from "@/components/finance/FinanceMetricButton";
 import { formatCurrency } from "@/lib/format";
 import { useDictionary } from "@/lib/dictionary-context";
-import { getPercentageChange } from "@/lib/metric-trend";
 import type { ClientWorkspaceMonthlyRevenue, ClientWorkspaceSummary } from "@/lib/client-workspace";
-
-type ClientWorkspaceStatsProps = {
-    summary: ClientWorkspaceSummary;
-    monthlyRevenue: ClientWorkspaceMonthlyRevenue | null;
-};
-
-export function ClientWorkspaceStats({ summary, monthlyRevenue }: ClientWorkspaceStatsProps) {
-    const { dict } = useDictionary();
-    const workspace = dict.clients.workspace;
-    const monthlyRevenueTrend = monthlyRevenue
-        ? getPercentageChange(monthlyRevenue.current, monthlyRevenue.previous)
-        : null;
-    const cards = [
-        {
-            label: workspace.stats_total,
-            value: String(summary.clientCount),
-            icon: UsersRound,
-        },
-        {
-            label: workspace.stats_active,
-            value: String(summary.activeClientCount),
-            icon: CircleCheck,
-        },
-        {
-            label: workspace.stats_pending_contact,
-            description: workspace.stats_pending_contact_description,
-            value: String(summary.missingContactCount),
-            icon: Clock3,
-        },
-        summary.hasFinancialData
-            ? {
-                label: workspace.stats_balance,
-                value: formatCurrency(summary.pendingBalanceTotal),
-                icon: CircleAlert,
-            }
-            : {
-                label: workspace.stats_locations,
-                value: String(summary.locationCount),
-                icon: UsersRound,
-            },
-        summary.hasFinancialData
-            ? {
-                label: workspace.stats_billing_month,
-                value: formatCurrency(monthlyRevenue?.current ?? 0),
-                icon: ReceiptText,
-                trend: monthlyRevenueTrend !== null
-                    ? { value: monthlyRevenueTrend }
-                    : undefined,
-            }
-            : {
-                label: workspace.stats_pending_jobs,
-                value: String(summary.pendingTaskCount),
-                icon: CircleAlert,
-            },
-    ];
-
-    return (
-        <SummaryMetricGrid desktopColumns={5} aria-label={workspace.stats_label}>
-            {cards.map((card) => {
-                return (
-                    <SummaryMetricCard key={card.label} {...card} />
-                );
-            })}
-        </SummaryMetricGrid>
-    );
+export function ClientWorkspaceStats({ summary, onFilter }: {
+ summary: ClientWorkspaceSummary; monthlyRevenue: ClientWorkspaceMonthlyRevenue | null;
+ onFilter?: (kind: "all" | "active" | "missing" | "balance") => void;
+}) {
+ const { dict } = useDictionary(); const text = dict.clients.workspace;
+ return <SummaryMetricGrid desktopColumns={4} aria-label={text.stats_label}>
+ <FinanceMetricButton label={text.stats_total} value={String(summary.clientCount)} description="Clientes de esta vista · abrir listado" icon={UsersRound} onClick={() => onFilter?.("all")} />
+ <FinanceMetricButton label={text.stats_active} value={String(summary.activeClientCount)} description="Activos · ver clientes" icon={CircleCheck} onClick={() => onFilter?.("active")} />
+ <FinanceMetricButton label={text.stats_pending_contact} value={String(summary.missingContactCount)} description={text.stats_pending_contact_description} icon={Clock3} attention={summary.missingContactCount > 0} onClick={() => onFilter?.("missing")} />
+ {summary.hasFinancialData && <FinanceMetricButton label={text.stats_balance} value={formatCurrency(summary.pendingBalanceTotal)} description="Saldo actual · todas las emisiones · EUR" icon={CircleAlert} attention={summary.pendingBalanceTotal > 0} onClick={() => onFilter?.("balance")} />}
+ </SummaryMetricGrid>;
 }

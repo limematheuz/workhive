@@ -13,9 +13,6 @@ export function OverviewTeam({ data, sessions, presentation: p, containsNow }: {
 }) {
     const { c } = p;
     const people = new Map(data.team.map(person => [person.id, person]));
-    if (containsNow && sessions.state === "ready") for (const session of sessions.value) {
-        if (session.user_id != null && !people.has(session.user_id)) people.set(session.user_id, { id: session.user_id, name: session.user_name, tasks: [] });
-    }
     const items = [...people.values()].sort((a, b) => p.workerName(a.id, a.name).localeCompare(p.workerName(b.id, b.name), p.locale));
     const personInfo = (person: OperationsOverview["team"][number]) => {
         const live = containsNow ? sessions.value.find(session => session.user_id === person.id) : undefined;
@@ -25,7 +22,7 @@ export function OverviewTeam({ data, sessions, presentation: p, containsNow }: {
         return { live, completed, next, state };
     };
     return <section id="overview-team" className="wh-overview-panel" aria-labelledby="overview-team-title">
-        <header className="wh-overview-section-heading"><div><h2 id="overview-team-title">{c.teamTitle} <span className="wh-overview-heading-count">{items.length}</span></h2><p>{c.teamHint}</p></div>{sessions.state !== "denied" && <Button asChild variant="ghost" size="sm"><Link href="/dashboard/live-work"><Activity />{c.liveLink}</Link></Button>}</header>
+        <header className="wh-overview-section-heading"><div><h2 id="overview-team-title">{c.teamTitle} <span className="wh-overview-heading-count">{items.length}</span></h2></div>{sessions.state !== "denied" && <Button asChild variant="ghost" size="sm"><Link href="/dashboard/live-work"><Activity />{c.liveLink}</Link></Button>}</header>
         {items.length === 0 ? <div className="wh-overview-empty"><Users aria-hidden="true" /><p>{c.noTeam}</p></div> : <DataListTable items={items} getRowKey={person => person.id} variant="plain" columns={[
             { key: "name", label: c.assignee, className: "w-[28%]" }, { key: "state", label: c.status, className: "w-[22%]" }, { key: "next", label: c.next, className: "w-[30%]" }, { key: "progress", label: c.completed, className: "w-[20%]" },
         ]} renderDesktopRow={person => {

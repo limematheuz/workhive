@@ -21,6 +21,7 @@ import type {
     FiscalReadiness,
 } from "@/services/invoice.service";
 import type { Invoice } from "@/types/invoice";
+import { invoiceOutstandingCents } from "@/lib/finance-priorities";
 
 import {
     actionButtonClass,
@@ -273,6 +274,12 @@ export function InvoiceDetailActionBar({
                         </p>
                     </div>
                 ))}
+            </section>
+
+            <section aria-label="Total, cobrado y saldo" className="mt-3 grid grid-cols-3 gap-2 rounded-xl border border-[var(--border-soft)] p-3 text-xs">
+                <div><p className="text-muted-foreground">Total · EUR</p><strong className="mt-1 block font-mono text-sm">{formatCurrency(invoice.total_amount)}</strong></div>
+                <div><p className="text-muted-foreground">Cobrado</p><strong className="mt-1 block font-mono text-sm">{formatCurrency(invoice.collected_amount ?? 0)}</strong></div>
+                <div><p className="text-muted-foreground">Saldo pendiente</p><strong className="mt-1 block font-mono text-sm">{formatCurrency(invoiceOutstandingCents(invoice) / 100)}</strong></div>
             </section>
 
             {(nextStates.length > 0 || actionButtonsVisible) && (

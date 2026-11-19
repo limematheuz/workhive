@@ -24,6 +24,8 @@ import { ClientService, type Client } from "@/services/client.service";
 import { InvoiceService } from "@/services/invoice.service";
 import type { Invoice } from "@/types/invoice";
 import { useViewState } from "@/hooks/useViewState";
+import { financeLocalDay, isInvoiceOverdue } from "@/lib/finance-priorities";
+import { selectInvoiceAttention, type InvoiceAttention } from "@/lib/finance-workspace";
 
 type CreateSheetState = {
     open: boolean;
@@ -47,6 +49,8 @@ export function useInvoicesWorkspace() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [attention, setAttention] = useViewState<InvoiceAttention>("invoices.attention", "all");
     const [selectedStatus, setSelectedStatus] = useViewState("invoices.status", "");
     const [selectedClientId, setSelectedClientId] = useViewState("invoices.client", "");
     const [invoiceSearch, setInvoiceSearch] = useViewState("invoices.search", "");
@@ -54,6 +58,19 @@ export function useInvoicesWorkspace() {
     const [createSheet, setCreateSheet] = useState<CreateSheetState>(EMPTY_CREATE_SHEET);
     const router=useRouter();
     const searchParams=useSearchParams();
+    const queryState = searchParams.toString();
+    useEffect(() => {
+        const query = new URLSearchParams(queryState);
+        startTransition(() => {
+            const queryMonth = query.get("month");
+            if (queryMonth !== null && (/^\d{4}-\d{2}$/.test(queryMonth) || queryMonth === "")) setMonth(queryMonth);
+            if (query.has("client")) setSelectedClientId(query.get("client") ?? "");
+            if (query.has("status")) setSelectedStatus(query.get("status") ?? "");
+            if (query.has("search")) setInvoiceSearch(query.get("search") ?? "");
+            const queryAttention = query.get("attention");
+            if (queryAttention && ["all", "draft", "pending", "overdue"].includes(queryAttention)) setAttention(queryAttention as InvoiceAttention);
+        });
+    }, [queryState, setMonth, setSelectedClientId, setSelectedStatus, setInvoiceSearch, setAttention]);
     const [invoiceableTasks, setInvoiceableTasks] = useState<InvoiceableTask[]>([]);
     const [loadingJobs, setLoadingJobs] = useState(false);
     const [selectedJobIds, setSelectedJobIds] = useState<number[]>([]);
@@ -62,8 +79,20 @@ export function useInvoicesWorkspace() {
     const [jobSearch, setJobSearch] = useViewState("invoices.jobs.search", "");
     const [jobDateFrom, setJobDateFrom] = useViewState("invoices.jobs.from", "");
     const [jobDateTo, setJobDateTo] = useViewState("invoices.jobs.to", "");
-    const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
+    useEffect(() => {
+        const status = new URLSearchParams(queryState).get("jobStatus");
+        if (status && ["all", "pending", "invoiced"].includes(status)) startTransition(() => setJobInvoiceFilter(status as "all" | "pending" | "invoiced"));
+    }, [queryState, setJobInvoiceFilter]);
+    const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(() => {
+        const id = Number(searchParams.get("invoice"));
+        return Number.isSafeInteger(id) && id > 0 ? id : null;
+    });
     const [selectedInvoiceIntent, setSelectedInvoiceIntent] = useState<"view" | "edit">("view");
+    const requestedInvoice = searchParams.get("invoice");
+    useEffect(() => {
+        const id = Number(requestedInvoice);
+        if (Number.isSafeInteger(id) && id > 0) startTransition(() => { setSelectedInvoiceId(id); setSelectedInvoiceIntent("view"); });
+    }, [requestedInvoice]);
     const openInvoice = (invoiceId: number, intent: "view" | "edit" = "view") => {
         setSelectedInvoiceId(invoiceId);
         setSelectedInvoiceIntent(intent);
@@ -71,6 +100,10 @@ export function useInvoicesWorkspace() {
     const closeInvoice = () => {
         setSelectedInvoiceId(null);
         setSelectedInvoiceIntent("view");
+        if (searchParams.has("invoice")) {
+            const query = new URLSearchParams(searchParams.toString()); query.delete("invoice");
+            router.replace(`/dashboard/invoices${query.size ? `?${query}` : ""}`, { scroll: false });
+        }
     };
     const canViewInvoices = canViewFinance(user);
     const canManageInvoices = canManageFinance(user);
@@ -84,22 +117,21 @@ export function useInvoicesWorkspace() {
         if (userLoading || !user || !canViewInvoices) return;
         try {
             setLoading(true);
+            setLoadError(false);
             const [data, clientsData] = await Promise.all([
-                InvoiceService.getInvoices({
-                    clientId: selectedClientId ? Number.parseInt(selectedClientId, 10) : undefined,
-                    status: selectedStatus || undefined,
-                }),
-                clients.length === 0 ? ClientService.getClients() : Promise.resolve(null),
+                InvoiceService.getAllInvoices(),
+                clients.length === 0 ? ClientService.getAllClients(null).catch(() => null) : Promise.resolve(null),
             ]);
             setInvoices(data);
             if (clientsData) setClients(clientsData);
         } catch (error) {
+            setLoadError(true);
             console.error("Error loading invoices", error);
             toast.error(dict.invoices.error_load);
         } finally {
             setLoading(false);
         }
-    }, [canViewInvoices, clients.length, dict.invoices.error_load, selectedClientId, selectedStatus, user, userLoading]);
+    }, [canViewInvoices, clients.length, dict.invoices.error_load, user, userLoading]);
 
     useEffect(() => {
         if (userLoading || !user || !canViewInvoices) return;
@@ -113,7 +145,7 @@ export function useInvoicesWorkspace() {
         try {
             if (showLoader) setLoadingJobs(true);
             const jobs = await InvoiceService.getCompletedJobs();
-            const refreshedClients = await ClientService.getClients(true).catch(() => null);
+            const refreshedClients = await ClientService.getAllClients(true).catch(() => null);
             if (refreshedClients) setClients((previous) => mergeClientsIfChanged(previous, refreshedClients));
             setInvoiceableTasks((previous) => mergeInvoiceableTasksIfChanged(previous, mapCompletedJobsToTasks(jobs)));
             jobsLoadedRef.current = true;
@@ -132,16 +164,20 @@ export function useInvoicesWorkspace() {
 
     const getClientName = (clientId: number) => clients.find((client) => client.id === clientId)?.name || `Client ID: ${clientId}`;
     const getStatusText = (status: Invoice["status"]) => getInvoiceStatusText(status, dict.invoices);
-    const invoicesForMonth = invoices.filter((invoice) => getMonthKey(invoice.issue_date) === month);
+    const asOf = financeLocalDay(new Date());
+    const filteredInvoices = invoices.filter((invoice) => (!selectedClientId || String(invoice.client_id) === selectedClientId) && (!selectedStatus || (selectedStatus === "overdue" ? isInvoiceOverdue(invoice, asOf) : invoice.status === selectedStatus)));
+    const invoicesForMonth = filteredInvoices.filter((invoice) => !month || getMonthKey(invoice.issue_date) === month);
     const previousMonth = getPreviousMonthKey(month);
     const previousInvoicesForMonth = previousMonth
-        ? invoices.filter((invoice) => getMonthKey(invoice.issue_date) === previousMonth)
+        ? filteredInvoices.filter((invoice) => getMonthKey(invoice.issue_date) === previousMonth)
         : [];
-    const visibleInvoices = filterVisibleInvoices(invoicesForMonth, invoiceSearch, getClientName, dict.invoices);
+    const cohortInvoices = filterVisibleInvoices(invoicesForMonth, invoiceSearch, getClientName, dict.invoices);
+    const visibleInvoices = selectInvoiceAttention(cohortInvoices, attention, asOf);
     const previousVisibleInvoices = filterVisibleInvoices(previousInvoicesForMonth, invoiceSearch, getClientName, dict.invoices);
-    const invoiceStats = computeInvoiceStats(visibleInvoices);
+    const invoiceStats = computeInvoiceStats(cohortInvoices, asOf);
     const previousInvoiceStats = computeInvoiceStats(previousVisibleInvoices);
-    const statusCounts = computeStatusCounts(visibleInvoices);
+    const statusCounts = computeStatusCounts(cohortInvoices);
+    statusCounts.overdue = selectInvoiceAttention(cohortInvoices, "overdue", asOf).length;
     const filteredInvoiceableTasks = filterInvoiceableTasks(invoiceableTasks, {
         partyFilter: jobPartyFilter,
         invoiceFilter: jobInvoiceFilter,
@@ -182,10 +218,17 @@ export function useInvoicesWorkspace() {
         setSelectedClientId("");
         setSelectedStatus("");
         setMonth(getMonthKey(new Date()) ?? "");
+        setAttention("all");
     };
 
     return {
         activeView,
+        attention,
+        setAttention,
+        asOf,
+        loadError,
+        draftCount: cohortInvoices.filter((invoice) => invoice.status === "draft").length,
+        recordCount: cohortInvoices.length,
         clients,
         collaboratorOptions,
         createSheet,

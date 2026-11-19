@@ -10,6 +10,7 @@ import { toast } from "@/lib/toast";
 import { getErrorMessage } from "@/lib/errors";
 import { RoleFormDialogs } from "@/components/roles/RoleFormDialogs";
 import { RolesListSection } from "@/components/roles/RolesListSection";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { isPlatformSuperadmin } from "@/domain/access/roles";
@@ -18,6 +19,7 @@ export default function RolesAdminPage() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const [roles, setRoles] = useState<Role[]>([]);
+    const [error,setError]=useState("");
     const [loading, setLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [isEditOpen, setIsEditOpen] = useState(false);
@@ -34,9 +36,10 @@ export default function RolesAdminPage() {
             setLoading(true);
             const data = await RoleService.getRoles();
             setRoles(data);
+            setError("");
         } catch (error) {
             console.error(error);
-            toast.error(dict.roles.toast_error_load);
+            setError(dict.roles.toast_error_load);
         } finally {
             setLoading(false);
         }
@@ -123,18 +126,19 @@ export default function RolesAdminPage() {
                 subtitle={dict.roles.subtitle}
                 className="mb-0"
                 actions={(
-                    <button
+                    <Button
                         type="button"
                         onClick={handleCreateClick}
                         className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
                     >
                         <Plus className="h-4 w-4" />
                         {dict.roles.new_role}
-                    </button>
+                    </Button>
                 )}
             />
 
-            <RolesListSection
+            {error&&<div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 p-4"><p>{error}</p><Button variant="outline" onClick={()=>void fetchRoles()}>Reintentar</Button></div>}
+            {!error&&<RolesListSection
                 roles={roles}
                 labels={{
                     listTitle: dict.roles.list_title,
@@ -151,7 +155,7 @@ export default function RolesAdminPage() {
                     countMany: dict.roles.count_many,
                 }}
                 onEdit={handleEditClick}
-            />
+            />}
 
             <RoleFormDialogs
                 copy={{

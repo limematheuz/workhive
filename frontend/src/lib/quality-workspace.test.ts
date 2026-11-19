@@ -11,7 +11,9 @@ const complaintsSection = readFileSync(new URL("../components/quality/QualityCom
 const image = readFileSync(new URL("./image.ts", import.meta.url), "utf8");
 
 test("quality has a protected dedicated workspace in Operations", () => {
-    assert.match(page, /canViewQuality\(user\) && !isPlatformSuperadmin\(user\)/);
+    assert.match(page, /Boolean\(user\?\.company_id\).*isPlatformSuperadmin\(user\)/);
+    assert.doesNotMatch(page, /canViewQuality\(user\)/);
+    assert.match(page, /access\.read\.incidents/);
     const data = readFileSync(new URL("../components/quality/useQualityWorkspaceData.ts", import.meta.url), "utf8");
     assert.match(data, /QualityService\.getAccess/);
     assert.match(data, /nextAccess\.read\.templates \? QualityService\.getTemplates/);

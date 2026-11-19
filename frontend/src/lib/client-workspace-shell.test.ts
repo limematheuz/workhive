@@ -32,8 +32,8 @@ test("client workspace uses shared surfaces and keeps all API reads in services"
     assert.match(page, /ClientWorkspaceFilters/);
     assert.match(page, /ClientWorkspaceExportButton/);
     assert.match(page, /ClientService\.getAccess/);
-    assert.match(page, /ClientService\.getClients/);
-    assert.match(page, /LocationService\.getLocations\(\)\.catch/);
+    assert.match(page, /ClientService\.getAllClients/);
+    assert.match(page, /LocationService\.getAllLocations\(\)\.catch/);
     assert.match(page, /TaskService\.getAllTaskItems\(\)\.catch/);
     assert.doesNotMatch(page, /fetch\s*\(/);
     assert.match(table, /from "@\/components\/ui\/table"/);
@@ -183,7 +183,7 @@ test("client dialogs keep their chrome translucent and reuse the shared form sur
 
 test("client workspace keeps dark search placeholders and only shows data-backed percent badges", () => {
     assert.match(clientFilters, /placeholder:text-\[var\(--text-muted\)\]/);
-    assert.match(clientStats, /SummaryMetricCard/);
+    assert.match(clientStats, /FinanceMetricButton/);
     assert.match(clientStats, /SummaryMetricGrid/);
     assert.match(overview, /SummaryMetricGrid/);
     assert.doesNotMatch(clientStats, /percentageOf|PercentageBadge/);

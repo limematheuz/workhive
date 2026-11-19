@@ -5,4 +5,4 @@
  * and Checkbox instead of reintroducing dialog-specific form CSS.
  */
 export const formControlSurfaceClassName =
-  "dialog-compact-control border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-main)] shadow-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/25"
+  "dialog-compact-control border-[var(--dialog-control-border)] bg-[var(--dialog-control-bg)] text-[var(--text-main)] shadow-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/25"

@@ -41,6 +41,16 @@ function SidebarProvider({ defaultOpen = true, open: controlledOpen, onOpenChang
     const isMobile = useIsMobile();
     const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
     const [openMobile, setOpenMobile] = React.useState(false);
+    React.useEffect(() => {
+        if (controlledOpen !== undefined) return;
+        const wide = window.matchMedia("(min-width: 1280px)");
+        const update = () => {
+            const saved = document.cookie.split("; ").find(value => value.startsWith("sidebar_state="))?.split("=")[1];
+            setUncontrolledOpen(saved === "true" ? true : saved === "false" ? false : wide.matches);
+        };
+        update(); wide.addEventListener("change", update);
+        return () => wide.removeEventListener("change", update);
+    }, [controlledOpen]);
     const open = controlledOpen ?? uncontrolledOpen;
     const setOpen = React.useCallback((value: boolean | ((current: boolean) => boolean)) => {
         const next = typeof value === "function" ? value(open) : value;

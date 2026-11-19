@@ -145,8 +145,8 @@ export function ClientsTable({
                                         <p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.account_assignment?.owner_name || dict.clients.account_assignment.unassigned}</p>
                                         {row.client.account_assignment?.owner_email && <p className="mt-0.5 truncate text-xs text-[var(--text-muted)]">{row.client.account_assignment.owner_email}</p>}
                                     </TableCell>
-                                    <TableCell className="align-top px-2.5 text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.locationCount}</TableCell>
-                                    <TableCell className="align-top px-2.5 text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.taskCount}</TableCell>
+                                    <TableCell className="align-top px-2.5 text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.hasLocationData === false ? "—" : row.locationCount}</TableCell>
+                                    <TableCell className="align-top px-2.5 text-right font-mono text-sm font-semibold text-[var(--text-main)]">{row.hasTaskData === false ? "—" : row.taskCount}</TableCell>
                                     <TableCell className="align-top px-2.5">{statusBadge(row.client)}</TableCell>
                                     {canManage && <TableCell className="align-top px-2.5 text-right" onClick={(event) => event.stopPropagation()}>{renderActions(row.client)}</TableCell>}
                                 </TableRow>
@@ -172,8 +172,8 @@ export function ClientsTable({
                                     <div className="min-w-0"><p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--text-muted)]">{dict.clients.account_assignment.table_label}</p><p className="truncate text-xs font-medium text-[var(--text-main)]">{row.client.account_assignment?.owner_name || dict.clients.account_assignment.unassigned}</p></div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 text-xs">
-                                    <span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.locationCount}</b> {workspace.locations.toLowerCase()}</span>
-                                    <span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.taskCount}</b> {workspace.jobs.toLowerCase()}</span>
+                                    <span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.hasLocationData === false ? "—" : row.locationCount}</b> {workspace.locations.toLowerCase()}</span>
+                                    <span className="rounded-lg bg-[var(--bg-tertiary)] px-2.5 py-2 text-[var(--text-muted)]"><b className="font-mono text-sm text-[var(--text-main)]">{row.hasTaskData === false ? "—" : row.taskCount}</b> {workspace.jobs.toLowerCase()}</span>
                                 </div>
                                 <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => onDetails(row.client)}>{workspace.view_client.replace("{name}", row.client.name)}</Button>
                             </CardContent>

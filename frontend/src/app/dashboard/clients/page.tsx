@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Building2, Loader2, ShieldAlert } from "lucide-react";
 
 import { ClientDetailDialog } from "@/components/clients/ClientDetailDialog";
@@ -17,6 +18,9 @@ import { LocationTasksSheet } from "@/components/locations/LocationTasksSheet";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { useWorkspaceNavigation } from "@/components/dashboard/WorkspaceNavigationProvider";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { canViewFinance } from "@/domain/access/roles";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
@@ -53,11 +57,14 @@ type ClientsPageState = {
     clients: Client[];
     locations: Location[];
     tasks: TaskItem[];
+    locationsAvailable: boolean;
+    tasksAvailable: boolean;
     invoices: Invoice[] | undefined;
     portfolioClientIds: number[];
     portfolioView: "all" | "mine";
     filters: ClientWorkspaceFilter;
     loading: boolean;
+    loadError: boolean;
     access: ClientAccess | null;
     accessResolved: boolean;
     editingClient: Client | null;
@@ -92,11 +99,14 @@ const CLIENTS_PAGE_INITIAL_STATE: ClientsPageState = {
     clients: [],
     locations: [],
     tasks: [],
+    locationsAvailable: false,
+    tasksAvailable: false,
     invoices: undefined,
     portfolioClientIds: [],
     portfolioView: "all",
     filters: EMPTY_FILTERS,
     loading: true,
+    loadError: false,
     access: null,
     accessResolved: false,
     editingClient: null,
@@ -133,8 +143,18 @@ function clientsPageReducer(
 }
 
 export default function ClientsPage() {
+    return <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Cargando clientes…</p>}><ClientsPageContent /></Suspense>;
+}
+
+function ClientsPageContent() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
+    const params = useSearchParams();
+    const router = useRouter();
+    const requestedClientId = Number(params.get("clientId"));
+    const { canAccessPath, loading: accessLoading } = useWorkspaceNavigation();
+    const canReadLocations = canAccessPath("/dashboard/locations");
+    const canReadTasks = canReadLocations && canAccessPath("/dashboard/tasks");
     const [pageState, dispatch] = useReducer(clientsPageReducer, CLIENTS_PAGE_INITIAL_STATE);
     const {
         clients,
@@ -173,11 +193,34 @@ export default function ClientsPage() {
     const canManageClients = access?.can_manage_clients === true;
     const canViewClientFinancials = canViewFinance(user) && Boolean(user?.company_id);
     const deletingClientRef = useRef<Client | null>(null);
+    const openedRequest = useRef("");
+    useEffect(() => {
+        if (!Number.isSafeInteger(requestedClientId) || requestedClientId <= 0) { openedRequest.current = ""; return; }
+        if (!canReadClients || loading) return;
+        const key = `${user?.id}:${user?.company_id}:${requestedClientId}`;
+        if (openedRequest.current === key) return;
+        let active = true;
+        const open = async () => {
+            try {
+                const client = clients.find((item) => item.id === requestedClientId) ?? await ClientService.getClient(requestedClientId);
+                if (!active) return;
+                openedRequest.current = key;
+                if (!clients.some((item) => item.id === client.id)) setPageState("clients", [...clients, client]);
+                setPageState("detailsClient", client);
+                setPageState("detailsDialogOpen", true);
+            } catch {
+                if (active) { openedRequest.current = key; toast.error("El cliente solicitado no está disponible con tus permisos actuales."); }
+            }
+        };
+        const timer = window.setTimeout(() => void open(), 0);
+        return () => { active = false; window.clearTimeout(timer); };
+    }, [canReadClients, clients, loading, requestedClientId, setPageState, user?.company_id, user?.id]);
 
     const loadClients = useCallback(async () => {
-        if (userLoading || !user) return;
+        if (userLoading || accessLoading || !user) return;
         const isInitialLoad = !hasLoadedRef.current;
         if (isInitialLoad) setPageState("loading", true);
+        setPageState("loadError", false);
 
         try {
             const clientAccess = await ClientService.getAccess();
@@ -191,27 +234,30 @@ export default function ClientsPage() {
                 return;
             }
             const [clientData, portfolioData, locationData, taskData, invoiceData] = await Promise.all([
-                ClientService.getClients(null),
+                ClientService.getAllClients(null),
                 ClientAccountAssignmentService.getMyPortfolio().catch(() => []),
-                LocationService.getLocations().catch(() => [] as Location[]),
-                TaskService.getAllTaskItems().catch(() => [] as TaskItem[]),
+                canReadLocations ? LocationService.getAllLocations().catch(() => undefined) : Promise.resolve(undefined),
+                canReadTasks ? TaskService.getAllTaskItems().catch(() => undefined) : Promise.resolve(undefined),
                 canViewClientFinancials
                     ? InvoiceService.getAllInvoices().catch(() => undefined)
                     : Promise.resolve(undefined),
             ]);
             setPageState("clients", clientData);
             setPageState("portfolioClientIds", portfolioData.map((item) => item.client.id));
-            setPageState("locations", locationData);
-            setPageState("tasks", taskData);
+            setPageState("locations", locationData ?? []);
+            setPageState("tasks", taskData ?? []);
+            setPageState("locationsAvailable", locationData !== undefined);
+            setPageState("tasksAvailable", taskData !== undefined && locationData !== undefined);
             setPageState("invoices", invoiceData);
         } catch {
+            setPageState("loadError", true);
             if (isInitialLoad) toast.error(dict.clients.workspace.load_error);
         } finally {
             setPageState("accessResolved", true);
             hasLoadedRef.current = true;
             setPageState("loading", false);
         }
-    }, [canViewClientFinancials, dict.clients.workspace.load_error, setPageState, user, userLoading]);
+    }, [canViewClientFinancials, dict.clients.workspace.load_error, setPageState, user, userLoading, accessLoading, canReadLocations, canReadTasks]);
 
     useEffect(() => {
         if (userLoading || !user) return;
@@ -229,8 +275,8 @@ export default function ClientsPage() {
     });
 
     const workspace = useMemo(
-        () => buildClientWorkspace({ clients, locations, tasks, invoices, referenceDate: workspaceReferenceDate }),
-        [clients, invoices, locations, tasks, workspaceReferenceDate],
+        () => buildClientWorkspace({ clients, locations: pageState.locationsAvailable ? locations : undefined, tasks: pageState.tasksAvailable ? tasks : undefined, invoices, referenceDate: workspaceReferenceDate }),
+        [clients, invoices, locations, tasks, workspaceReferenceDate, pageState.locationsAvailable, pageState.tasksAvailable],
     );
     const filteredRows = useMemo(() => filterClientWorkspaceRows(workspace.rows, filters), [filters, workspace.rows]);
     const portfolioClientIdSet = useMemo(() => new Set(portfolioClientIds), [portfolioClientIds]);
@@ -313,7 +359,7 @@ export default function ClientsPage() {
                         <Loader2 className="h-8 w-8 animate-spin text-accent" aria-hidden="true" />
                         <p className="text-sm text-[var(--text-muted)]">{dict.clients.workspace.loading}</p>
                     </section>
-                ) : !canReadClients ? (
+                ) : pageState.loadError ? <FinanceLoadError message="No se ha podido consultar la lista completa de clientes. Vuelve a intentarlo para ver sus datos." onRetry={() => void loadClients()} /> : !canReadClients ? (
                     <Card className="mx-auto max-w-xl">
                         <CardContent className="py-14 text-center">
                             <ShieldAlert className="mx-auto size-7 text-accent" aria-hidden="true" />
@@ -323,7 +369,9 @@ export default function ClientsPage() {
                     </Card>
                 ) : (
                     <>
-                        <ClientWorkspaceStats summary={visibleSummary} monthlyRevenue={monthlyRevenue} />
+                        <ClientWorkspaceStats summary={visibleSummary} monthlyRevenue={monthlyRevenue} onFilter={(kind) => setPageState("filters", kind === "all" ? filters : { ...filters, ...(kind === "active" ? { status: "active" as const } : kind === "missing" ? { contact: "missing" as const } : { withBalance: true }) })} />
+                        {(!pageState.locationsAvailable || !pageState.tasksAvailable) && <p role="status" className="rounded-xl border border-orange-400/30 bg-orange-400/5 p-3 text-xs">La actividad de {(!pageState.locationsAvailable ? "ubicaciones y trabajos" : "trabajos")} no está disponible para esta consulta. Un guion indica información no consultada.</p>}
+                        {filters.withBalance && <div className="flex items-center justify-between rounded-xl border border-accent/20 p-3 text-xs">Clientes con saldo pendiente · {visibleRows.length}<Button variant="ghost" size="sm" onClick={() => setPageState("filters", { ...filters, withBalance: false })}>Quitar filtro</Button></div>}
                         {!workspace.summary.hasFinancialData && (
                             <p className="rounded-xl border border-[var(--border-soft)] bg-[var(--bg-tertiary)] px-3 py-2 text-xs text-[var(--text-muted)]">
                                 {dict.clients.workspace.financial_access_hint}
@@ -377,7 +425,10 @@ export default function ClientsPage() {
                 invoices={invoices ?? []}
                 financialDataAvailable={workspace.summary.hasFinancialData}
                 open={detailsDialogOpen}
-                onOpenChange={(open) => setPageState("detailsDialogOpen", open)}
+                onOpenChange={(open) => {
+                    setPageState("detailsDialogOpen", open);
+                    if (!open && params.has("clientId")) { const query = new URLSearchParams(params.toString()); query.delete("clientId"); router.replace(`/dashboard/clients${query.size ? `?${query}` : ""}`, { scroll: false }); }
+                }}
                 onViewLocationTasks={(location) => {
                     setPageState("tasksLocation", location);
                     setPageState("tasksSheetOpen", true);

@@ -7,6 +7,7 @@ import {
     useState,
 } from "react";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
     Activity,
     ArrowDownRight,
@@ -16,14 +17,12 @@ import {
     Download,
     Inbox,
     Loader2,
-    Package,
-    PieChart,
     ReceiptText,
     TriangleAlert,
     UsersRound,
 } from "lucide-react";
 
-import { canManageFinance, canViewFinance, canViewLaborCosts, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
+import { canManageFinance, canViewFinance, canViewLaborCosts, canViewWorkReports, isExternalPortalRole, isPlatformSuperadmin } from "@/domain/access/roles";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
@@ -61,6 +60,12 @@ import {
 import { DataListTable, type DataListColumn } from "@/components/ui/data-list-table";
 import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
 import { Button } from "@/components/ui/button";
+import { FinanceMetricButton } from "@/components/finance/FinanceMetricButton";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { FinanceAnalysisSources, type FinanceSourceScope } from "@/components/analytics/FinanceAnalysisSources";
+import { financeChange } from "@/lib/finance-workspace";
+import { financeLocalDay } from "@/lib/finance-priorities";
+import { useViewState } from "@/hooks/useViewState";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CompanyPlanAccessService } from "@/services/company-plan-access.service";
 import { CustomerPaymentService } from "@/services/customer-payment.service";
@@ -92,16 +97,18 @@ export default function FinanceAnalyticsPage() {
     const canViewAnalytics = canViewFinance(user) && !isPlatformSuperadmin(user);
     const canManageAnalytics = canManageFinance(user) && !isPlatformSuperadmin(user);
     const canViewOperationalMargin = canViewFinance(user) && canViewLaborCosts(user) && !isPlatformSuperadmin(user);
+    const canViewOperations = canViewWorkReports(user) && !isExternalPortalRole(user?.role?.name);
     const isAccountant = isExternalPortalRole(user?.role?.name);
     const text = dict.finance_analytics;
     const profileCharts = useProfile();
 
-    const [activeTab, setActiveTab] = useState<AnalyticsTab>("finance");
-    const [period, setPeriod] = useState<FinancePeriod>("month");
+    const [activeTab, setActiveTab] = useViewState<AnalyticsTab>("analytics.tab", "finance");
+    const [period, setPeriod] = useViewState<FinancePeriod>("analytics.period", "month");
     const [revenueRecords, setRevenueRecords] = useState<FinanceRevenueRecord[]>([]);
     const [expenses, setExpenses] = useState<Expense[]>([]);
     const [payments, setPayments] = useState<FinancePaymentRecord[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [exportYear, setExportYear] = useState(() => new Date().getFullYear());
     const [exportPeriod, setExportPeriod] = useState<AccountantExportPeriod>("month");
     const [exportPeriodNumber, setExportPeriodNumber] = useState(() => new Date().getMonth() + 1);
@@ -149,6 +156,7 @@ export default function FinanceAnalyticsPage() {
         if (!canViewAnalytics) return;
         try {
             setLoading(true);
+            setLoadError(false);
             const [invoiceData, expenseData, salesLedgerEntries, customerPayments] = await Promise.all([
                 InvoiceService.getAllInvoices(),
                 ExpenseService.getAllExpenses(),
@@ -166,6 +174,7 @@ export default function FinanceAnalyticsPage() {
             setExpenses(expenseData);
             setPayments(customerPayments);
         } catch (error) {
+            setLoadError(true);
             console.error("Error loading finance analytics", error);
             toast.error(text.error_load);
         } finally {
@@ -243,11 +252,12 @@ export default function FinanceAnalyticsPage() {
         if (
             (!canViewProfitability && activeTab === "profitability")
             || (!(canViewProfitability && canViewOperationalMargin) && activeTab === "operational_margin")
+            || (!canViewOperations && activeTab === "operations")
         ) {
             const timer = window.setTimeout(() => setActiveTab("finance"), 0);
             return () => window.clearTimeout(timer);
         }
-    }, [activeTab, canViewOperationalMargin, canViewProfitability]);
+    }, [activeTab, canViewOperationalMargin, canViewProfitability, setActiveTab, canViewOperations]);
 
     const downloadAccountantPackage = useCallback(async () => {
         try {
@@ -320,7 +330,7 @@ export default function FinanceAnalyticsPage() {
                                     ...(canViewProfitability ? [{ id: "profitability" as const, label: text.tab_profitability }] : []),
                                     ...(canViewProfitability && canViewOperationalMargin ? [{ id: "operational_margin" as const, label: text.tab_operational_margin }] : []),
                                     { id: "reconciliation", label: text.tab_reconciliation },
-                                    { id: "operations", label: text.tab_operations },
+                                    ...(canViewOperations ? [{ id: "operations" as const, label: text.tab_operations }] : []),
                                 ]}
                             activeTab={activeTab}
                             onChange={setActiveTab}
@@ -386,13 +396,16 @@ export default function FinanceAnalyticsPage() {
                     </div>
                 ) : null}
 
-                {activeTab === "finance" ? (
+                {activeTab === "finance" && loadError ? <FinanceLoadError message="No se han podido cargar todos los movimientos financieros. Los importes no están disponibles." onRetry={() => void loadAnalytics()} /> : activeTab === "finance" ? (
                     <FinanceDashboard
                         text={text}
                         series={series}
                         comparison={comparison}
                         categoryTotals={categoryTotals}
                         categoryLabels={dict.expenses.categories}
+                        revenueRecords={revenueRecords}
+                        expenses={expenses}
+                        payments={payments}
                         period={period}
                         setPeriod={setPeriod}
                     />
@@ -417,7 +430,7 @@ export default function FinanceAnalyticsPage() {
                     />
                 ) : activeTab === "reconciliation" ? (
                     <BankReconciliationSection copy={text} canManage={canManageAnalytics} />
-                ) : (
+                ) : profileCharts.error ? <FinanceLoadError message="La actividad operativa no está disponible. Vuelve a consultar el origen para ver sus cifras." onRetry={() => void profileCharts.loadProfileData()} /> : (
                     <OperationsDashboard
                         text={text}
                         dict={dict}
@@ -430,95 +443,34 @@ export default function FinanceAnalyticsPage() {
     );
 }
 
-function FinanceDashboard({
-    text,
-    series,
-    comparison,
-    categoryTotals,
-    categoryLabels,
-    period,
-    setPeriod,
-}: {
-    text: Record<string, string>;
-    series: FinanceSeriesPoint[];
-    comparison: { current: FinancePeriodSummary; previous: FinancePeriodSummary };
-    categoryTotals: Array<{ category: string; total: number }>;
-    categoryLabels: Record<string, string>;
-    period: FinancePeriod;
-    setPeriod: (period: FinancePeriod) => void;
+function FinanceDashboard({ text, series, comparison, categoryTotals, categoryLabels, period, setPeriod, revenueRecords, expenses, payments }: {
+ text: Record<string, string>; series: FinanceSeriesPoint[];
+ comparison: { current: FinancePeriodSummary; previous: FinancePeriodSummary };
+ categoryTotals: Array<{ category: string; total: number }>; categoryLabels: Record<string, string>;
+ period: FinancePeriod; setPeriod: (period: FinancePeriod) => void;
+ revenueRecords: FinanceRevenueRecord[]; expenses: Expense[]; payments: FinancePaymentRecord[];
 }) {
-    const { current, previous } = comparison;
-    const metricCards = [
-        {
-            label: text.paid_collected,
-            value: current.paid,
-            previous: previous.paid,
-            icon: CheckCircle2,
-            comparisonDirection: "higher" as const,
-        },
-        {
-            label: text.pending,
-            value: current.pending,
-            previous: previous.pending,
-            icon: Clock3,
-            comparisonDirection: "lower" as const,
-        },
-        {
-            label: text.expenses,
-            value: current.expenses,
-            previous: previous.expenses,
-            icon: ReceiptText,
-            comparisonDirection: "lower" as const,
-        },
-        {
-            label: text.profit,
-            value: current.profit,
-            previous: previous.profit,
-            icon: BarChart3,
-            comparisonDirection: "higher" as const,
-        },
-        {
-            label: text.overdue,
-            value: current.overdue,
-            previous: previous.overdue,
-            icon: TriangleAlert,
-            comparisonDirection: "lower" as const,
-        },
-        {
-            label: text.vat_balance,
-            value: current.vatBalance,
-            previous: previous.vatBalance,
-            icon: ReceiptText,
-            comparisonDirection: "lower" as const,
-        },
-    ];
-
-    return (
-        <>
-            <SummaryMetricGrid desktopColumns={6} className="gap-2.5 sm:grid-cols-3">
-                {metricCards.map(({ label, value, previous, icon, comparisonDirection }) => {
-                    const change = getPercentageChange(value, previous);
-                    return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
-                })}
-            </SummaryMetricGrid>
-
-            <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.62fr)]">
-                <FinanceTrendCard
-                    text={text}
-                    series={series}
-                    current={current}
-                    period={period}
-                    setPeriod={setPeriod}
-                />
-                <ExpenseBreakdownCard
-                    text={text}
-                    categoryTotals={categoryTotals}
-                    categoryLabels={categoryLabels}
-                    totalExpenses={current.expenses}
-                />
-            </section>
-        </>
-    );
+ const { current, previous } = comparison;
+ const [source, setSource] = useState<FinanceSourceScope>("revenue");
+ const [category, setCategory] = useState("");
+ const metrics = [
+  { key: "revenue" as const, label: text.revenue, value: current.revenue, previous: previous.revenue, icon: ReceiptText, description: "Emisión · base sin impuestos" },
+  { key: "payments" as const, label: text.paid_collected, value: current.paid, previous: previous.paid, icon: CheckCircle2, description: "Recepción de cobros · con impuestos" },
+  { key: "expenses" as const, label: text.expenses, value: current.expenses, previous: previous.expenses, icon: ArrowDownRight, description: "Registro de gastos · base sin impuestos" },
+  { key: "balance" as const, label: "Saldo de ingresos y gastos", value: current.profit, previous: previous.profit, icon: BarChart3, description: "Importes registrados · cobertura de costes parcial" },
+ ];
+ return <>
+ <section className="billing-surface rounded-xl p-3"><div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-sm font-semibold">Periodo de actividad</h2><p className="text-xs text-muted-foreground">EUR · Hasta {financeLocalDay(new Date())} · Comparación con los mismos días previos</p></div><PremiumTabs tabs={PERIODS.map(item => ({ id: item, label: text[`period_${item}`] }))} activeTab={period} onChange={setPeriod} className="mb-0 mt-2" /></section>
+ <SummaryMetricGrid desktopColumns={4}>{metrics.map(metric => {
+  const change = financeChange(metric.value, metric.previous);
+  const comparisonLabel = change.kind === "absolute" ? `${formatCurrency(change.value)} frente al periodo comparable` : `${change.value > 0 ? "+" : ""}${change.value.toFixed(1)}% frente al periodo comparable`;
+  return <FinanceMetricButton key={metric.key} label={metric.label} value={formatCurrency(metric.value)} description={`${metric.description} · ${comparisonLabel}`} icon={metric.icon} active={source === metric.key && !category} onClick={() => { setSource(metric.key); setCategory(""); }} />;
+ })}</SummaryMetricGrid>
+ {revenueRecords.some(record => record.source_type === "manual") && <p role="status" className="rounded-xl border border-orange-400/40 bg-orange-400/5 p-3 text-xs">Cobros con datos parciales: las ventas históricas sin fecha de recepción se incluyen en ingresos, pero no se asignan a un periodo de cobro. Consulta sus estados en el Libro de ventas.</p>}
+ <p className="text-xs text-muted-foreground">El saldo de ingresos y gastos no incorpora costes todavía sin registrar ni permite deducir un beneficio neto. <Link href="/dashboard/invoice-summary" className="text-accent hover:underline">Ver saldo pendiente y vencido a fecha actual</Link>.</p>
+ <section className="grid gap-4 xl:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.62fr)]"><FinanceTrendCard text={text} series={series} current={current} period={period} setPeriod={setPeriod}/><section className="billing-surface rounded-xl p-4"><h2 className="text-sm font-semibold">Gastos por categoría</h2><p className="mt-1 text-xs text-muted-foreground">Base sin impuestos · pulsa para consultar el origen.</p><div className="mt-3 space-y-2">{categoryTotals.map(item => <Button key={item.category} type="button" variant="outline" className="h-auto w-full justify-between gap-3 p-3" onClick={() => { setSource("expenses"); setCategory(item.category); }}><span className="text-xs">{categoryLabels[item.category] || item.category}</span><strong className="text-xs tabular-nums">{formatCurrency(item.total)}</strong></Button>)}{!categoryTotals.length && <p className="py-5 text-xs text-muted-foreground">Sin gastos en este periodo.</p>}</div></section></section>
+ <FinanceAnalysisSources revenue={revenueRecords} expenses={expenses} payments={payments} period={period} scope={source} category={category} onClearCategory={() => setCategory("")}/>
+ </>;
 }
 
 function FinanceTrendCard({
@@ -624,59 +576,6 @@ function FinanceLineChart({
     );
 }
 
-function ExpenseBreakdownCard({
-    text,
-    categoryTotals,
-    categoryLabels,
-    totalExpenses,
-}: {
-    text: Record<string, string>;
-    categoryTotals: Array<{ category: string; total: number }>;
-    categoryLabels: Record<string, string>;
-    totalExpenses: number;
-}) {
-    return (
-        <article className="billing-surface rounded-[22px] p-4">
-            <div className="mb-4 flex items-center gap-3">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--bg-tertiary)] text-accent">
-                    <PieChart className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <div>
-                    <h2 className="text-base font-semibold text-[var(--text-main)]">{text.categories_title}</h2>
-                    <p className="text-xs text-[var(--text-muted)]">{text.categories_subtitle}</p>
-                </div>
-            </div>
-
-            <div className="space-y-2.5">
-                {categoryTotals.map((item) => {
-                    const percent = totalExpenses > 0 ? Math.round((item.total / totalExpenses) * 100) : 0;
-                    return (
-                        <div key={item.category} className="billing-block rounded-2xl p-3">
-                            <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-                                <span className="font-semibold text-[var(--text-main)]">
-                                    {categoryLabels[item.category] || item.category}
-                                </span>
-                                <span className="font-semibold text-[var(--text-main)]">{formatCurrency(item.total)}</span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--bg-card-solid)]">
-                                    <div className="h-full rounded-full bg-accent/55" style={{ width: `${percent}%` }} />
-                                </div>
-                                <span className="w-10 text-right text-xs font-semibold text-[var(--text-muted)]">{percent}%</span>
-                            </div>
-                        </div>
-                    );
-                })}
-                {categoryTotals.length === 0 && (
-                    <div className="billing-block rounded-2xl p-6 text-center text-sm text-[var(--text-muted)]">
-                        {text.empty_categories}
-                    </div>
-                )}
-            </div>
-        </article>
-    );
-}
-
 function ClientProfitabilityDashboard({
     text,
     data,
@@ -708,10 +607,7 @@ function ClientProfitabilityDashboard({
     }
 
     const { current, previous } = data;
-    const hasUnassignedMaterial = (
-        current.unassigned_material_cost_base_amount > 0
-        || previous.unassigned_material_cost_base_amount > 0
-    );
+
     const metrics = [
         {
             label: text.profitability_revenue,
@@ -734,20 +630,6 @@ function ClientProfitabilityDashboard({
             icon: BarChart3,
             comparisonDirection: "higher" as const,
         },
-        {
-            label: text.profitability_unassigned_expenses,
-            value: current.unassigned_expense_base_amount,
-            previous: previous.unassigned_expense_base_amount,
-            icon: Inbox,
-            comparisonDirection: "lower" as const,
-        },
-        ...(hasUnassignedMaterial ? [{
-            label: text.profitability_unassigned_material,
-            value: current.unassigned_material_cost_base_amount,
-            previous: previous.unassigned_material_cost_base_amount,
-            icon: Package,
-            comparisonDirection: "lower" as const,
-        }] : []),
     ];
     const columns: DataListColumn[] = [
         { key: "client", label: text.profitability_client },
@@ -796,13 +678,14 @@ function ClientProfitabilityDashboard({
 
             {data ? (
                 <>
-                    <SummaryMetricGrid desktopColumns={hasUnassignedMaterial ? 5 : 4} className="gap-2.5">
+                    <SummaryMetricGrid desktopColumns={3} className="gap-2.5">
                         {metrics.map(({ label, value, previous: previousValue, icon, comparisonDirection }) => {
                             const change = getPercentageChange(value, previousValue);
                             return <SummaryMetricCard key={label} label={label} value={formatCurrency(value)} icon={icon} trend={change === null ? undefined : { value: change, comparisonDirection }} />;
                         })}
                     </SummaryMetricGrid>
 
+                    <p role="status" className="rounded-xl border border-orange-400/30 bg-orange-400/5 p-3 text-xs">Cobertura de costes: parcial, sin porcentaje verificable. Se muestran costes directos registrados. Gastos sin imputar: {formatCurrency(current.unassigned_expense_base_amount)} · Material sin imputar: {formatCurrency(current.unassigned_material_cost_base_amount)} · Ventas históricas sin cliente: {formatCurrency(current.unlinked_historical_sales_base_amount)}.</p>
                     <DataListTable
                         items={current.clients}
                         getRowKey={(item) => item.client_id}

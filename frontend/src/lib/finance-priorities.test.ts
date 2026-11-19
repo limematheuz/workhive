@@ -11,9 +11,9 @@ test("financial priorities show the remaining balance and exclude settled or cre
     assert.equal(invoiceOutstandingCents({ ...invoice, collected_amount: 121 }), 0);
     assert.equal(invoiceOutstandingCents({ ...invoice, collected_amount: 200 }), 0);
 });
-test("due today remains current and an explicit overdue status stays actionable", () => {
+test("due today remains current and a status cannot invent a missing or future due date", () => {
     assert.equal(isInvoiceOverdue(invoice, "2026-11-16"), false);
     assert.equal(isInvoiceOverdue({ ...invoice, due_date: null }, "2026-11-17"), false);
-    assert.equal(isInvoiceOverdue({ ...invoice, status: "overdue", due_date: null }, "2026-11-17"), true);
+    assert.equal(isInvoiceOverdue({ ...invoice, status: "overdue", due_date: null }, "2026-11-17"), false);
     assert.equal(invoiceOutstandingCents({ ...invoice, total_amount: 0.3, collected_amount: 0.1 }), 20);
 });

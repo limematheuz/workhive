@@ -1,2 +1,3 @@
 import {WorkerClock} from "@/components/worker/WorkerClock";
-export default function WorkerClockPage(){return <WorkerClock/>;}
+import {Suspense} from "react";
+export default function WorkerClockPage(){return <Suspense fallback={<p role="status">Cargando tus fichajes…</p>}><WorkerClock/></Suspense>;}

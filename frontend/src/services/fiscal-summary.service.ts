@@ -56,7 +56,10 @@ const AMOUNT_FIELDS = [
 
 function amount(value: number | string): number {
     const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
+    if (!Number.isFinite(parsed) || value === "" || value === null || value === undefined) {
+        throw new Error("El resumen fiscal contiene un importe no válido. Revisa el origen antes de utilizar los totales.");
+    }
+    return parsed;
 }
 
 function normalizePeriod(period: FiscalPeriodApiResponse): FiscalPeriodSummary {

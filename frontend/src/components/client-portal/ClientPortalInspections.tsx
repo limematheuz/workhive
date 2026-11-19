@@ -18,6 +18,7 @@ type ClientPortalInspectionsProps = {
     workspaceId: number;
     defaultSignerName: string;
     onAccepted: (inspection: ClientPortalInspection) => void;
+    filtered?: boolean;
 };
 
 const dateTime = new Intl.DateTimeFormat("es-ES", {
@@ -42,6 +43,7 @@ export function ClientPortalInspections({
     workspaceId,
     defaultSignerName,
     onAccepted,
+    filtered = false,
 }: ClientPortalInspectionsProps) {
     const [acknowledgedIds, setAcknowledgedIds] = useState<Set<number>>(new Set());
     const [signerNames, setSignerNames] = useState<Record<number, string>>({});
@@ -76,7 +78,7 @@ export function ClientPortalInspections({
     };
 
     if (inspections.length === 0) {
-        return <Card><CardContent className="py-12 text-center"><ClipboardCheck className="mx-auto size-8 text-accent" aria-hidden="true" /><p className="mt-3 font-semibold text-[var(--text-main)]">No hay inspecciones para revisar</p><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-[var(--text-muted)]">Aquí aparecerán las inspecciones cerradas de tus ubicaciones cuando estén listas para su revisión.</p></CardContent></Card>;
+        return <Card><CardContent className="py-12 text-center"><ClipboardCheck className="mx-auto size-8 text-accent" aria-hidden="true" /><p className="mt-3 font-semibold text-[var(--text-main)]">{filtered ? "No hay inspecciones para esta selección" : "No hay inspecciones para revisar"}</p><p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-[var(--text-muted)]">Aquí aparecerán las inspecciones cerradas de tus ubicaciones cuando estén listas para su revisión.</p></CardContent></Card>;
     }
 
     return <div className="space-y-4">{inspections.map((inspection) => {

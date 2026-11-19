@@ -59,10 +59,14 @@ test("profile identity, privacy, and stats use billing surfaces without touching
 test("external portal profiles skip operational data and notification polling", () => {
     const page = source("../app/dashboard/profile/page.tsx");
     const hook = source("../hooks/useProfile.ts");
+    const data = source("../services/profile-workspace.service.ts");
+    const access = source("./profile-workspace-access.ts");
     const notifications = source("../components/dashboard/notifications/NotificationPanel.tsx");
 
     assert.match(hook, /const isAccountant = isExternalPortalRole\(user\?\.role\?\.name\)/);
-    assert.match(hook, /const canLoadOperationalData = !isAccountant && !userIsPlatformSuperadmin/);
+    assert.match(data, /const internal = isInternalProfile\(user\)/);
+    assert.match(data, /optionalSource\(internal/);
+    assert.match(access, /\["admin", "manager", "viewer"\]\.includes\(user\.role\.name\)/);
     assert.match(page, /!state\.isAccountant && \(/);
     assert.match(notifications, /Boolean\(user\)[\s\S]*!isExternalPortalRole\(user\?\.role\?\.name\)[\s\S]*!isPartnerPortalRole\(user\?\.role\?\.name\)[\s\S]*!isClientPortalRole\(user\?\.role\?\.name\)/);
 });

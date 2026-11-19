@@ -1,7 +1,6 @@
 export function tabLimitForViewport(width: number): number {
     if (width >= 1024) return 6;
-    if (width >= 768) return 5;
-    return 4;
+    return 0;
 }
 
 export function shouldCollapseTabs({ count, viewportWidth, availableWidth, requiredWidth }: {

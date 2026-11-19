@@ -1,4 +1,5 @@
 import type { Invoice } from "@/types/invoice";
+import { financeLocalDay, isInvoiceOverdue } from "../../lib/finance-priorities.ts";
 
 const BILLED_STATUSES: ReadonlySet<Invoice["status"]> = new Set([
     "issued", "partially_paid", "paid", "overdue", "rectified",
@@ -7,12 +8,12 @@ const OPEN_STATUSES: ReadonlySet<Invoice["status"]> = new Set([
     "issued", "partially_paid", "overdue",
 ]);
 
-const isOpenInvoice = (invoice: Invoice) => !invoice.is_rectification && OPEN_STATUSES.has(invoice.status);
+const isOpenInvoice = (invoice: Invoice) => !invoice.is_rectification && OPEN_STATUSES.has(invoice.status) && outstanding(invoice) > 0;
 const outstanding = (invoice: Invoice) => Math.max(0, Math.round((invoice.total_amount - (invoice.collected_amount ?? 0)) * 100) / 100);
 
 export const countOpenInvoices = (invoices: Invoice[]) => invoices.filter(isOpenInvoice).length;
 
-export const computeInvoiceStats = (invoices: Invoice[]) => ({
+export const computeInvoiceStats = (invoices: Invoice[], asOf = financeLocalDay(new Date())) => ({
     totalCount: invoices.filter((invoice) => BILLED_STATUSES.has(invoice.status)).length,
     totalAmount: invoices
         .filter((invoice) => BILLED_STATUSES.has(invoice.status))
@@ -23,6 +24,6 @@ export const computeInvoiceStats = (invoices: Invoice[]) => ({
     openCount: countOpenInvoices(invoices),
     openAmount: invoices.filter(isOpenInvoice).reduce((sum, invoice) => sum + outstanding(invoice), 0),
     overdueAmount: invoices
-        .filter((invoice) => invoice.status === "overdue" && !invoice.is_rectification)
+        .filter((invoice) => isInvoiceOverdue(invoice, asOf))
         .reduce((sum, invoice) => sum + outstanding(invoice), 0),
 });

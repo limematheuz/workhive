@@ -8,6 +8,8 @@ import { DataTablePagination, useDataTablePagination } from "@/components/ui/dat
 import { useDictionary } from "@/lib/dictionary-context"
 import type { Location } from "@/services/location.service"
 import type { TaskItem } from "@/services/task.service"
+import {taskMoment} from "@/domain/tasks/task-moment";
+import {plannedDate,overviewStatus} from "@/domain/tasks/operations-overview";
 import { getLocationTypeVisual } from "./location-visuals"
 
 type Props = {
@@ -39,7 +41,8 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
             <TableBody>
                 {pagination.pageItems.map(location => {
                     const work = tasks.filter(task => task.location_id === location.id)
-                    const pending = work.filter(task => task.status !== "completed").length
+                    const pending = work.filter(task => !["completed","cancelled"].includes(overviewStatus(task))).length
+                    const upcoming=work.filter(task=>!["completed","cancelled"].includes(overviewStatus(task))&&plannedDate(task)&&plannedDate(task)!>=new Date()).sort((a,b)=>plannedDate(a)!.getTime()-plannedDate(b)!.getTime())[0]
                     const visual = getLocationTypeVisual(location.profile?.site_type)
                     const Icon = visual.icon
                     const taskLabel = work.length === 1 ? (locale === "es" ? "tarea" : "task") : workspace.tasks
@@ -57,6 +60,7 @@ export function LocationsListTable({ locations, tasks, getClientName, renderActi
                                     <p className="min-w-0 break-words text-sm font-semibold text-[var(--text-main)]">{location.name}</p>
                                     {(location.address || location.city) && <p className="break-words text-xs text-[var(--text-muted)]">{[location.address, location.city].filter(Boolean).join(", ")}</p>}
                                     <p className="break-words text-xs text-[var(--text-muted)] @min-[800px]/locations-list:hidden">{getClientName(location.client_id)}</p>
+                                    {upcoming&&<p className="text-xs text-muted-foreground">{locale==="es"?"Próximo servicio":"Next service"}: {taskMoment(upcoming.scheduled_start_at||upcoming.due_at,locale==="es"?"es-ES":"en-GB")}</p>}
                                     <div className="flex flex-wrap items-center gap-2 pt-1 @min-[650px]/locations-list:hidden">
                                         <span className="text-xs text-[var(--text-muted)]">{work.length} {taskLabel} · {pending} {pendingLabel}</span>
                                         {statusBadge(location)}

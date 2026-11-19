@@ -22,7 +22,7 @@ export function SuperadminActivityPanels({
     pendingRequests,
     loading = false,
 }: SuperadminActivityPanelsProps) {
-    const { dict } = useDictionary();
+    const { dict,locale } = useDictionary();
     const text = dict.superadmin;
 
     return (
@@ -87,7 +87,7 @@ export function SuperadminActivityPanels({
                             <Building2 className="h-4 w-4" />
                         </span>
                         <h2 className="truncate text-sm font-bold text-[var(--text-main)]">
-                            {text.section_companies}
+                            {locale==="es"?"Empresas · orden alfabético":"Companies · alphabetical order"}
                         </h2>
                     </div>
                     <Link

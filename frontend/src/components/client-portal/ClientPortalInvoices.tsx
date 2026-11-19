@@ -16,7 +16,7 @@ import { ClientPortalDocumentLines } from "./ClientPortalDocumentLines";
 const date = new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeZone: "Europe/Madrid" });
 const formatDate = (value?: string | null) => value ? date.format(new Date(value)) : "—";
 const statuses: Record<string, string> = { issued: "Emitida", paid: "Pagada", overdue: "Vencida", partially_paid: "Pago parcial", rectified: "Rectificada", cancelled: "Cancelada" };
-export function ClientPortalInvoices({ invoices, workspaceId }: { invoices: ClientPortalInvoice[]; workspaceId: number }) {
+export function ClientPortalInvoices({ invoices, workspaceId, filtered = false }: { invoices: ClientPortalInvoice[]; workspaceId: number; filtered?: boolean }) {
     const [downloading, setDownloading] = useState<number | null>(null);
     const download = async (invoice: ClientPortalInvoice) => {
         try {
@@ -26,7 +26,7 @@ export function ClientPortalInvoices({ invoices, workspaceId }: { invoices: Clie
         } catch (cause) { toast.error(cause instanceof Error ? cause.message : "No se pudo descargar la factura."); }
         finally { setDownloading(null); }
     };
-    if (!invoices.length) return <Card><CardContent className="py-12 text-center"><h2 className="font-semibold">No hay facturas disponibles</h2><p className="mt-2 text-sm text-muted-foreground">Las facturas emitidas para esta empresa aparecerán aquí.</p></CardContent></Card>;
+    if (!invoices.length) return <Card><CardContent className="py-12 text-center"><h2 className="font-semibold">{filtered ? "No hay facturas para esta selección" : "No hay facturas disponibles"}</h2><p className="mt-2 text-sm text-muted-foreground">{filtered ? "Prueba con otra referencia o muestra todas las facturas." : "Las facturas emitidas para esta empresa aparecerán aquí."}</p></CardContent></Card>;
     return <div className="space-y-4">{invoices.map(invoice => {
         const snapshot = invoice.currency_snapshot;
         return <Card key={invoice.id}><CardContent><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-mono text-xs text-muted-foreground">{invoice.invoice_number}</p><Badge variant="secondary">{statuses[invoice.status] ?? invoice.status}</Badge>{invoice.is_rectification && <Badge variant="secondary">Rectificativa</Badge>}</div><p className="mt-2 text-sm text-muted-foreground">Emitida el {formatDate(invoice.issue_date)} · Vence {formatDate(invoice.due_date)}</p></div><div className="flex shrink-0 items-center gap-3"><div className="text-right"><p className="font-mono text-lg font-bold">{snapshot ? currencyMoney(snapshot.original_amounts.total_amount, snapshot.currency) : currencyMoney(invoice.total_amount)}</p>{snapshot && snapshot.currency !== "EUR" && <p className="mt-1 text-xs text-muted-foreground">Equivalencia contable {currencyMoney(invoice.total_amount)}</p>}</div><Button type="button" variant="outline" size="sm" disabled={downloading === invoice.id} onClick={() => void download(invoice)}><Download className="size-4" />{downloading === invoice.id ? "Descargando…" : "PDF"}</Button></div></div>

@@ -78,12 +78,19 @@ test("invoice and quote lists use the shared shadcn table primitive", () => {
     const companies = source("../components/companies/CompaniesListSection.tsx");
     const clients = source("../components/clients/ClientsTable.tsx");
 
-    for (const [name, file] of [["invoices", invoices], ["quotes", quotes], ["invoiceable jobs", jobs], ["companies", companies]] as const) {
+    for (const [name, file] of [["quotes", quotes], ["invoiceable jobs", jobs], ["companies", companies]] as const) {
         assert.match(file, /from "@\/components\/ui\/table"/, `${name} should use the local shadcn Table`);
         assert.match(file, /<TableHeader>/, `${name} should render a TableHeader`);
         assert.match(file, /<TableBody>/, `${name} should render a TableBody`);
         assert.doesNotMatch(file, /DataListTable/, `${name} should not use the generic list table`);
     }
+
+    assert.match(invoices, /from "@\/components\/ui\/data-list-table"/);
+    assert.match(invoices, /customizable/);
+    assert.match(invoices, /INVOICE_TABLE_KEY/);
+    assert.match(invoices, /renderDesktopRow/);
+    assert.match(invoices, /renderCompactRow/);
+    assert.match(source("../components/ui/data-list-table.tsx"), /from "@\/components\/ui\/table"/);
 
     assert.match(clients, /from "@\/components\/ui\/table"/);
     assert.match(clients, /from "@\/components\/ui\/card"/);
@@ -102,13 +109,20 @@ test("invoice and quote lists paginate both desktop tables and mobile cards cons
     const invoices = source("../components/invoices/InvoicesListSection.tsx");
     const quotes = source("../components/quotes/QuotesListSection.tsx");
 
-    for (const [name, file, collection] of [["invoices", invoices, "invoices"], ["quotes", quotes, "quotes"]] as const) {
-        assert.match(file, /DataTablePagination/);
-        assert.match(file, new RegExp(`useDataTablePagination\\(${collection}, 10, "${collection === "invoices" ? "InvoicesListSection.invoices.0" : "QuotesListSection.quotes.0"}"\\)`));
-        assert.match(file, /pagination\.pageItems\.map/);
-        assert.match(file, /<TableRow/, `${name} should use the shared row separator`);
-        assert.match(file, /text-\[var\(--btn-secondary-text\)\]/, `${name} should use the shared blue table headings`);
-    }
+    const sharedList = source("../components/ui/data-list-table.tsx");
+    assert.match(invoices, /<DataListTable items=\{invoices\}/);
+    assert.match(invoices, /persistenceKey=\{INVOICE_TABLE_KEY\}/);
+    assert.match(invoices, /renderDesktopRow/);
+    assert.match(invoices, /renderCompactRow/);
+    assert.match(sharedList, /useDataTablePagination\(orderedItems/);
+    assert.match(sharedList, /const pageItems = showPagination \? pagination\.pageItems : orderedItems/);
+    assert.equal([...sharedList.matchAll(/pageItems\.map/g)].length, 2, "desktop and mobile consume the same page");
+    assert.match(sharedList, /<DataTablePagination/);
+    assert.match(quotes, /DataTablePagination/);
+    assert.match(quotes, /useDataTablePagination\(quotes, 10, "QuotesListSection.quotes.0"\)/);
+    assert.match(quotes, /pagination\.pageItems\.map/);
+    assert.match(quotes, /<TableRow/);
+    assert.match(quotes, /text-\[var\(--btn-secondary-text\)\]/);
 
     assert.match(quotes, /hidden xl:block/);
     assert.match(quotes, /xl:hidden/);

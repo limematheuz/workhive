@@ -129,7 +129,7 @@ export function PlatformCalendarOverview({
                 icon={CloudCog}
                 title={labels.title}
                 subtitle={labels.subtitle}
-                titleAs="h2"
+                titleAs="h1"
                 className="mb-0"
                 actions={(
                     <>

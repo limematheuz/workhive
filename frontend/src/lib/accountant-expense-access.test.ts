@@ -18,7 +18,7 @@ test("accountant reaches the read-only expense and receipt screen, not managemen
     assert.match(page, /canManageExpenses && <ExpenseReceiptDialog/);
     assert.match(page, /canManageExpenses && <ExpenseFormDialog/);
     assert.match(page, /canManageExpenses \? text\.subtitle : text\.readonly_subtitle/);
-    assert.match(page, /canManageExpenses \? ClientService\.getClients\(null\) : Promise\.resolve\(\[\]\)/);
+    assert.match(page, /canManageExpenses \? ClientService\.getAllClients\(null\) : Promise\.resolve\(\[\]\)/);
     assert.match(page, /canManageExpenses \? ServiceContractService\.getContracts\(\) : Promise\.resolve\(\[\]\)/);
     assert.match(page, /canManageExpenses \? WorkOrderService\.getWorkOrders\(\) : Promise\.resolve\(\[\]\)/);
     assert.match(read("../dictionaries/es.json"), /"readonly_subtitle": "Consulta los gastos/);

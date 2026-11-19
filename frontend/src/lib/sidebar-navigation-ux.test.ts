@@ -45,13 +45,13 @@ test("sidebar groups navigation by domain while preserving role and feature filt
     assert.match(sidebar, /Object\.fromEntries\(navigation\.navGroups\.map/);
 });
 
-test("profile actions have one home in the sidebar footer, not a duplicate header menu", () => {
+test("account actions reuse the same logout flow in the header and sidebar", () => {
     const header = read("../components/dashboard/DashboardHeader.tsx");
     const sidebar = read("../components/dashboard/Sidebar.tsx");
 
     assert.match(sidebar, /SidebarFooter/);
     assert.match(sidebar, /isPartnerPortal \? "\/dashboard\/partner\/profile" : isClientPortal \? "\/dashboard\/client\/profile" : "\/dashboard\/profile"/);
-    assert.match(sidebar, /onSelect=\{onLogout\}/);
+    assert.match(sidebar, /SessionLogoutDialog/);
     assert.doesNotMatch(header, /UserAvatar/);
     assert.doesNotMatch(header, /Abrir menú de perfil/);
 });

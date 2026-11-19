@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LocationService, Location } from "@/services/location.service";
 import { ClientService, Client } from "@/services/client.service";
 import { TaskService, TaskItem } from "@/services/task.service";
 import { CollaborationService } from "@/services/collaboration.service";
 import { CompanyCollaboration } from "@/types/collaboration";
+import { LocationDeepLink } from "@/components/locations/LocationDeepLink";
+import { Button } from "@/components/ui/button";
 import { LocationsGrid } from "@/components/locations/LocationsGrid";
 import { EditLocationSheet } from "@/components/locations/EditLocationSheet";
 import { CreateLocationSheet } from "@/components/locations/CreateLocationSheet";
@@ -28,6 +30,7 @@ const getOwnerCompanyId = (location: Location) =>
 export default function LocationsPage() {
     const { dict } = useDictionary();
     const { user } = useUser();
+    const [locationState, setLocationState] = useState<"loading"|"ready"|"error">("loading");
     const [locations, setLocations] = useState<Location[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [tasks, setTasks] = useState<TaskItem[]>([]);
@@ -88,13 +91,15 @@ export default function LocationsPage() {
     const loadLocations = useCallback(async () => {
         try {
             const clientIdParam = selectedClientId === "ALL" ? undefined : selectedClientId;
-            const data = await LocationService.getLocations(clientIdParam);
+            const data = await LocationService.getAllLocations(clientIdParam);
             setLocations(data);
 
-            const tasksData = await TaskService.getTaskItems().catch(() => [] as TaskItem[]);
+            const tasksData = await TaskService.getAllTaskItems().catch(() => [] as TaskItem[]);
             setTasks(tasksData);
+            setLocationState("ready");
         } catch (error) {
             console.error("Error loading locations", error);
+            setLocationState("error");
         }
     }, [selectedClientId]);
 
@@ -188,6 +193,9 @@ export default function LocationsPage() {
 
     return (
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
+            <Suspense fallback={null}><LocationDeepLink onEdit={handleEdit}/></Suspense>
+            {locationState === "loading" && <p role="status" className="p-4 text-sm text-muted-foreground">Cargando ubicaciones…</p>}
+            {locationState === "error" && <div role="alert" className="flex flex-wrap items-center gap-3 rounded-xl border border-orange-400/40 p-4"><p>No se pudieron cargar las ubicaciones.</p><Button variant="outline" onClick={() => void loadLocations()}>Reintentar</Button></div>}
             <PageHeader
                 icon={MapPin}
                 title={dict.locations.title}

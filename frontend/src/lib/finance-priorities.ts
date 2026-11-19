@@ -8,7 +8,7 @@ export function invoiceOutstandingCents(invoice: InvoiceBalance): number {
 
 export function isInvoiceOverdue(invoice: InvoiceBalance, today: string): boolean {
     const due = invoice.due_date?.slice(0, 10);
-    return invoiceOutstandingCents(invoice) > 0 && (invoice.status === "overdue" || Boolean(due && /^\d{4}-\d{2}-\d{2}$/.test(due) && due < today));
+    return invoiceOutstandingCents(invoice) > 0 && Boolean(due && /^\d{4}-\d{2}-\d{2}$/.test(due) && Number.isFinite(Date.parse(due)) && due < today);
 }
 
 export function financeLocalDay(date: Date): string {

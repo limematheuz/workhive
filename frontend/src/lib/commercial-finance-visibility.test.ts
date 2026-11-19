@@ -23,7 +23,8 @@ test("financial routes and navigation follow explicit finance capabilities", () 
     assert.match(expenses, /const canManageExpenses = canManageFinance\(user\)/);
     assert.match(expenses, /!userLoading && !canViewExpenses\) redirect\("\/dashboard"\)/);
     assert.match(invoiceSummary, /!userLoading && !canViewSummary\) redirect\("\/dashboard"\)/);
-    assert.match(fiscalCalendar, /!userLoading && !canManage\) redirect\("\/dashboard"\)/);
+    assert.match(fiscalCalendar, /!userLoading && !canView\) redirect\("\/dashboard"\)/);
+    assert.match(fiscalCalendar, /if \(!settings \|\| !canManage\) return/);
     assert.match(analytics, /!userLoading && !canViewAnalytics\) redirect\("\/dashboard"\)/);
     assert.match(fiscalSummary, /!userLoading && !canViewSummary\) redirect\("\/dashboard"\)/);
 });

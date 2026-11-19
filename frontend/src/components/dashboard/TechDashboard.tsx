@@ -14,6 +14,7 @@ import { toast } from "@/lib/toast";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import {
+    getUserTaskStatus,
     getUserChecklistItems,
     setChecklistAssigneeStatus,
     UserTaskStatus,
@@ -22,6 +23,7 @@ import {
     getOverviewTabForDate,
     type OverviewTab,
 } from "@/domain/tasks/task-schedule";
+import { sortWorkerTasks } from "@/domain/tasks/worker-day";
 import { useTechDashboardTasks } from "@/hooks/useTechDashboardTasks";
 import { canManageCompanyTasks as canManageTasks } from "@/domain/access/roles";
 import { useTaskWorkSummaries } from "@/hooks/useTaskWorkSummaries";
@@ -190,6 +192,8 @@ function TechDashboardInner({
         }
     };
 
+    const pendingInView=sortWorkerTasks([...dashboardTasks.overdueTasks,...dashboardTasks.standardTasks].filter(task=>!["completed","cancelled","rejected"].includes(getUserTaskStatus(task,currentUser.id))));
+    const nextTask=pendingInView.find(task=>getUserTaskStatus(task,currentUser.id)==="progress")??pendingInView[0]??null;
     const handleStatusUpdate = () => {
         onTaskUpdate();
     };
@@ -212,6 +216,7 @@ function TechDashboardInner({
 
                 <div className="grid min-w-0 grid-cols-1 items-start gap-4 lg:grid-cols-3">
                     <div className="min-w-0 space-y-3 lg:col-span-2">
+                        {nextTask&&<section className="space-y-3"><h2 className="text-base font-semibold">Siguiente trabajo del periodo</h2><TechTaskCard task={nextTask} locationName={dashboardTasks.getLocationName(nextTask.location_id)} locationAddress={locations.find(location=>location.id===nextTask.location_id)?.address} currentUser={currentUser} onAccept={handleAccept} onReject={handleReject} onViewDetails={openTaskDetail} workSummary={workSummaries[nextTask.id]}/></section>}
                         <PremiumTabs
                             layout="fit"
                             tabs={[
@@ -241,8 +246,8 @@ function TechDashboardInner({
                                 </p>
                             </div>
                         ) : (
-                            <div className="min-w-0 space-y-6">
-                                {dashboardTasks.tasksByLocation.map(item => (
+                            <div className="order-first min-w-0 space-y-6 lg:order-last">
+                                {dashboardTasks.tasksByLocation.filter(item=>[...item.overdue,...item.standard].some(task=>task.id!==nextTask?.id)).map(item => (
                                     <div key={item.location.id} className="min-w-0 space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-4 shadow-sm ui-motion hover:shadow-md sm:p-6">
                                         <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--border-soft)] pb-3">
                                             <div className="flex min-w-0 items-center gap-2.5">
@@ -266,7 +271,7 @@ function TechDashboardInner({
                                         </div>
 
                                         <div className="min-w-0 space-y-3">
-                                            {item.overdue.map(task => (
+                                            {item.overdue.filter(task=>task.id!==nextTask?.id).map(task => (
                                                 <TechTaskCard
                                                     key={task.id}
                                                     task={task}
@@ -281,7 +286,7 @@ function TechDashboardInner({
                                                 />
                                             ))}
 
-                                            {item.standard.map(task => (
+                                            {item.standard.filter(task=>task.id!==nextTask?.id).map(task => (
                                                 <TechTaskCard
                                                     key={task.id}
                                                     task={task}
@@ -302,7 +307,7 @@ function TechDashboardInner({
                         )}
                     </div>
 
-                    <div className="min-w-0 space-y-6">
+                    <div className="order-first min-w-0 space-y-6 lg:order-last">
                         <div className="min-w-0 space-y-3 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-3 shadow-sm sm:p-4">
                             <div className="flex items-center gap-2.5 border-b border-[var(--border-soft)] pb-2">
                                 <Calendar className="h-4.5 w-4.5 shrink-0 text-[var(--text-main)]" />

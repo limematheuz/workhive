@@ -34,25 +34,25 @@ export function TrafficStatsCards({
 }: TrafficStatsCardsProps) {
     const cards = [
         {
-            label: traffic.total_accesses,
+            label: locale==="es"?"Eventos registrados":"Recorded events",
             value: formatCount(total, locale),
-            hint: `+${last7d} ${traffic.last_7d}`,
+            hint: `${last24h} ${traffic.last_24h} · ${last7d} ${traffic.last_7d}`,
             icon: <MousePointerClick className="h-4 w-4" />,
         },
         {
-            label: traffic.first_time_visits,
+            label: locale==="es"?"Visitantes sin sesión":"Visitors without a session",
             value: formatCount(firstTimeVisits, locale),
-            hint: `+${last24h} ${traffic.last_24h}`,
+            hint: locale==="es"?"Navegadores identificados en la muestra":"Identified browsers in this sample",
             icon: <Eye className="h-4 w-4" />,
         },
         {
-            label: traffic.repeat_viewers,
+            label: locale==="es"?"Inicios de sesión":"Sign-in events",
             value: formatCount(loginEventCount, locale),
-            hint: `${formatCount(uniqueUsers, locale)} ${traffic.unique_users}`,
+            hint: `${formatCount(uniqueUsers, locale)} ${locale==="es"?"usuarios autenticados distintos":"distinct authenticated users"}`,
             icon: <LogIn className="h-4 w-4" />,
         },
         {
-            label: traffic.avg_engagement,
+            label: locale==="es"?"Último evento registrado":"Latest recorded event",
             value: lastEventLabel,
             hint: traffic.last_event,
             icon: <Clock3 className="h-4 w-4" />,

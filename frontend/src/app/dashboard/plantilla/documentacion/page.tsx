@@ -1,4 +1,5 @@
 "use client";
+import { CompanyViewSession } from "@/components/company/CompanyViewSession";
 import { useResourceEffect } from "@/hooks/useResourceEffect";
 import { useCallback, useState } from "react";
 import Link from "next/link";
@@ -10,6 +11,9 @@ import { useUser } from "@/lib/user-context";
 import { canViewLaborCosts } from "@/domain/access/roles";
 import { readStaffDocumentation, acknowledgeStaffDocument, type StaffDocument } from "@/services/staff-documentation.service";
 export default function StaffDocumentationPage() {
+    return <CompanyViewSession><StaffDocumentationWorkspace/></CompanyViewSession>;
+}
+function StaffDocumentationWorkspace() {
     const { user, loading } = useUser();
     const [own, setOwn] = useState(true);
     const [rows, setRows] = useState<StaffDocument[]>([]);

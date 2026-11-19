@@ -1,6 +1,6 @@
 "use client";
 
-import {useViewState} from "@/hooks/useViewState";
+import {useTaskQueryState} from "@/hooks/useTaskQueryState";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { parseTaskPageTab, type TaskPageTab } from "@/domain/tasks/task-list";
@@ -8,17 +8,17 @@ import { parseTaskPageTab, type TaskPageTab } from "@/domain/tasks/task-list";
 export function useTaskFilters() {
     const searchParams = useSearchParams();
     const tabFromUrl = parseTaskPageTab(searchParams.get("tab"));
-    const [selectedStatus, setSelectedStatus] = useViewState("tasks.status","");
-    const [selectedLocationId, setSelectedLocationId] = useViewState("tasks.location","");
-    const [selectedUserId, setSelectedUserId] = useViewState("tasks.worker","");
-    const [activeTab, setActiveTab] = useState<TaskPageTab>(() => tabFromUrl ?? "kanban");
+    const [selectedStatus, setSelectedStatus] = useTaskQueryState("status","");
+    const [selectedLocationId, setSelectedLocationId] = useTaskQueryState("location","");
+    const [selectedUserId, setSelectedUserId] = useTaskQueryState("worker","");
+    const [activeTab, writeActiveTab] = useState<TaskPageTab>(() => tabFromUrl ?? "kanban");
     const [urlTabSnapshot, setUrlTabSnapshot] = useState(tabFromUrl);
 
     // Sync from the URL when the query param changes (render-time adjust, no effect).
     if (tabFromUrl !== urlTabSnapshot) {
         setUrlTabSnapshot(tabFromUrl);
         if (tabFromUrl) {
-            setActiveTab(tabFromUrl);
+            writeActiveTab(tabFromUrl);
         }
     }
 
@@ -30,6 +30,6 @@ export function useTaskFilters() {
         selectedUserId,
         setSelectedUserId,
         activeTab,
-        setActiveTab,
+        setActiveTab: (tab:TaskPageTab) => { writeActiveTab(tab); const target=new URL(window.location.href);target.searchParams.set("tab",tab);window.history.replaceState(null,"",target.pathname+target.search+target.hash); },
     };
 }

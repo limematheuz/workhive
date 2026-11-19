@@ -5,6 +5,7 @@ import { Calendar, Inbox, Sparkles } from "lucide-react";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
 import { ReservationFormDialog } from "@/features/reservations/ReservationFormDialog";
 import { ReservationsCancelDialog } from "@/features/reservations/ReservationsCancelDialog";
+import { ReservationsOperationSummary } from "./ReservationsOperationSummary";
 import { ReservationsListSection } from "@/features/reservations/ReservationsListSection";
 import { ReservationsPageHeader } from "@/features/reservations/ReservationsPageHeader";
 import { ReservationsRequestsSection } from "@/features/reservations/ReservationsRequestsSection";
@@ -147,6 +148,7 @@ export function ReservationsPageLayout({
                         onChange={onTabChange}
                     />
 
+                    <ReservationsOperationSummary reservations={filteredReservations} loading={loading || loadingTasks} requestCount={requestCount} onRequests={() => onTabChange("requests")} locationMap={locationMap} dict={dict} locale={locale} companyId={companyId} onEdit={onEdit} onCancel={onCancel} />
                     {activeTab === "reservations" ? (
                         <ReservationsListSection
                             dict={dict}

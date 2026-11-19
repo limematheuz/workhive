@@ -85,11 +85,12 @@ export function filterTasksForGeneralList<T extends TaskListSearchable>(
     return tasks.filter((task) => {
         if (priority && task.priority !== priority) return false;
 
-        const planningDate = new Date(task.due_at || task.scheduled_start_at || task.created_at);
+        const planningValue = task.scheduled_start_at || task.due_at;
+        const planningDate = planningValue ? new Date(planningValue) : null;
         const matchesDate =
             options.dateScope === "ALL"
-            || (options.dateScope === "UPCOMING" && planningDate >= today)
-            || (options.dateScope === "PAST" && planningDate < today);
+            || (options.dateScope === "UPCOMING" && planningDate !== null && planningDate >= today)
+            || (options.dateScope === "PAST" && planningDate !== null && planningDate < today);
         if (!matchesDate) return false;
         if (!query) return true;
 

@@ -20,8 +20,10 @@ import {useWorkspaceNavigation} from "./WorkspaceNavigationProvider";
 import { SidebarLogo } from "./SidebarLogo";
 import { SidebarNavigation } from "./SidebarNavigation";
 import { SidebarFooterControls } from "./SidebarFooterControls";
+import { WorkspaceHelp } from "./help/WorkspaceHelp";
+import { SessionLogoutDialog } from "@/components/applications/SessionLogoutDialog";
 
-type SidebarProps = { theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => void };
+type SidebarProps = { theme: "dark" | "light"; onThemeChange: (theme: "dark" | "light") => void; onLogout: () => void | Promise<void> };
 
 export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const { dict, locale, setLocale } = useDictionary();
@@ -29,6 +31,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
     const pathname = usePathname();
     const { isMobile, state } = useSidebar();
     const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+    const [logoutOpen, setLogoutOpen] = useState(false);
     const {navigation}=useWorkspaceNavigation();
     const isAdminOrManager = canManageCompanyTasks(user);
     const isAccountant = isExternalPortalRole(user?.role?.name);
@@ -63,6 +66,7 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
         <SidebarHeader className="border-b border-[var(--border-soft)]"><SidebarLogo isOpen={expanded} /></SidebarHeader>
         <SidebarNavigation pathname={pathname} {...navigation} pendingRequestsCount={pendingRequestsCount} taskPendingCount={taskPendingCount} reportAlertsCount={reportAlertsCount} openGroups={openGroups} onOpenGroupChange={(id, open) => setOpenGroups(current => open ? Object.fromEntries(navigation.navGroups.map(group => [group.id, group.id === id])) : { ...current, [id]: false })} />
         <SidebarFooter>
+            <WorkspaceHelp expanded={expanded} />
             <SidebarFooterControls isOpen={expanded} theme={theme} locale={locale} onThemeChange={onThemeChange} onLocaleChange={setLocale} />
             {user && <SidebarMenu>
                 <SidebarMenuItem>
@@ -75,11 +79,12 @@ export function Sidebar({ theme, onThemeChange, onLogout }: SidebarProps) {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem asChild className="h-10 rounded-none px-3 text-sm"><Link href={isPartnerPortal ? "/dashboard/partner/profile" : isClientPortal ? "/dashboard/client/profile" : "/dashboard/profile"}><UserRound className="size-4" />{dict.dashboard.view_profile}</Link></DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem variant="destructive" onSelect={onLogout} className="h-10 rounded-none px-3 text-sm"><LogOut className="size-4" />{dict.dashboard.logout}</DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onSelect={() => setLogoutOpen(true)} className="h-10 rounded-none px-3 text-sm"><LogOut className="size-4" />{dict.dashboard.logout}</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </SidebarMenuItem>
             </SidebarMenu>}
         </SidebarFooter>
+        <SessionLogoutDialog open={logoutOpen} onOpenChange={setLogoutOpen} onLogout={onLogout} />
     </ShadcnSidebar>;
 }

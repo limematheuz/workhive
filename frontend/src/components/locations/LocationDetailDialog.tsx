@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { useDictionary } from "@/lib/dictionary-context"
 import { getLocationTypeLabel } from "@/domain/locations/location-type"
 import type { LocationSpace } from "@/types/location"
+import { LocationUpcomingServices } from "./LocationUpcomingServices";
 import { LocationTasksWorkspace } from "./LocationTasksWorkspace"
 import { LocationSpacesTab } from "./LocationSpacesTab"
 import { LocationDetailAttributes } from "./LocationDetailAttributes"
@@ -80,6 +81,8 @@ export function LocationDetailDialog({
                         </div>
                     </DialogHeader>
 
+                    <p className="mt-3 text-sm text-[var(--text-muted)]">{[location.address,location.city].filter(Boolean).join(", ") || "Dirección pendiente"}</p>
+                    <LocationUpcomingServices locationId={location.id} />
                     <div className="mt-4">{spacesLoading ? <p role="status" className="text-sm text-[var(--text-muted)]">Cargando espacios y tareas…</p> : <LocationSavedSummary location={location} spaces={spaces} clientName={clientName} />}</div>
                     <details className="mt-4 rounded-xl border border-[var(--border-soft)] p-4"><summary className="cursor-pointer text-sm font-semibold">Más datos operativos, mapas e instalaciones</summary>
                     <div className="mt-4 grid gap-4 lg:grid-cols-2">

@@ -1,4 +1,5 @@
 "use client";
+import { CompanyViewSession } from "@/components/company/CompanyViewSession";
 import { useEffect,useState,type FormEvent } from "react";
 import { CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,9 @@ import { readAbsences,saveAbsence,type Absence,type AbsenceDraft } from "@/servi
 
 const blank:AbsenceDraft={employee_id:0,substitute_id:null,kind:"Vacaciones",starts_on:"",ends_on:""};
 export default function AbsencesPage(){
+    return <CompanyViewSession><AbsencesWorkspace/></CompanyViewSession>;
+}
+function AbsencesWorkspace(){
     const {user,loading}=useUser();
     const canRead=canViewLaborCosts(user), canEdit=canManageLaborCosts(user);
     const [rows,setRows]=useState<Absence[]>([]),[staff,setStaff]=useState<Employee[]>([]);

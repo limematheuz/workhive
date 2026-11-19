@@ -64,16 +64,16 @@ export function SummaryMetricCard({
             : "text-accent";
 
     return (
-        <article className={`billing-block summary-metric-card relative rounded-xl p-3 ${className}`}>
+        <article className={`billing-block summary-metric-card relative rounded-xl p-4 ${className}`}>
             <div className="flex min-w-0 items-center justify-between gap-2">
-                <p className="text-xs font-medium leading-snug text-[var(--text-muted)]">{label}</p>
+                <p className="text-sm font-medium leading-5 text-[var(--text-muted)]">{label}</p>
                 <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--brand-blue-soft)] text-accent" aria-hidden="true">
                     <Icon className="h-4 w-4" />
                 </span>
             </div>
             <div className="min-w-0">
                 <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <p className={`min-w-0 break-words text-xl font-semibold leading-tight tabular-nums ${valueToneClassName}`}>{value}</p>
+                    <p style={{ fontSize: `clamp(16px, calc(100cqw / ${Math.max(6, value.length)} * 1.55), 30px)` }} className={`wh-metric-value min-w-0 font-semibold leading-9 tabular-nums ${valueToneClassName}`}>{value}</p>
                     {trend ? <SummaryMetricTrendBadge trend={trend} /> : null}
                 </div>
                 {description ? <p className="mt-1 text-xs leading-snug text-[var(--text-muted)]">{description}</p> : null}

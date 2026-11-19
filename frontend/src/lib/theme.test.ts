@@ -31,7 +31,7 @@ function classList() {
     };
 }
 
-test("resolveTheme accepts stored modes and falls back to system dark", () => {
+test("resolveTheme preserves a chosen mode and starts with the light interface", () => {
     assert.equal(resolveTheme("dark"), "dark");
     assert.equal(resolveTheme("light"), "light");
 
@@ -41,7 +41,8 @@ test("resolveTheme accepts stored modes and falls back to system dark", () => {
         configurable: true,
     });
 
-    assert.equal(resolveTheme("bad-value"), "dark");
+    assert.equal(resolveTheme("bad-value"), "light");
+    assert.equal(resolveTheme(null), "light");
 
     Object.defineProperty(globalThis, "window", {
         value: originalWindow,

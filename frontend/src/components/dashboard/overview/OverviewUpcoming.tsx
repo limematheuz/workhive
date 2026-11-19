@@ -1,12 +1,9 @@
-import { ArrowRight } from "lucide-react";
+import { operationForecast } from "@/domain/tasks/operation-priorities";
+import type { TaskItem } from "@/types/user";
 import { Button } from "@/components/ui/button";
-import { type OperationsOverview } from "@/domain/tasks/operations-overview";
-import type { OverviewTaskPresentation } from "./OverviewAgenda";
 
-export function OverviewTomorrow({ data, presentation: { c }, onTomorrow }: { data: OperationsOverview; presentation: OverviewTaskPresentation; onTomorrow: () => void }) {
-    const covered = data.planned.length - data.unassigned.length;
-    return <section className="wh-overview-panel wh-overview-tomorrow" aria-labelledby="overview-tomorrow-title">
-        <header className="wh-overview-section-heading"><h2 id="overview-tomorrow-title">{c.upcoming}</h2><Button type="button" variant="ghost" size="xs" onClick={onTomorrow}>{c.see}<ArrowRight /></Button></header>
-        {data.planned.length ? <><div className="wh-overview-tomorrow-counts"><div><strong>{data.planned.length}</strong><span>{c.tasks}</span></div><div><strong>{data.team.length}</strong><span>{c.team}</span></div><div><strong>{data.unassigned.length}</strong><span>{c.unassigned}</span></div></div><div className="wh-overview-coverage"><span>{c.coverage}</span><strong>{covered}/{data.planned.length} {c.covered}</strong></div><progress className="wh-overview-progress" value={covered} max={data.planned.length} aria-label={c.coverage} /></> : <p className="wh-overview-footnote">{c.noTomorrow}</p>}
-    </section>;
+export function OverviewForecast({ tasks, now, locale, onDay }: { tasks: TaskItem[]; now: Date; locale: string; onDay: (date: Date, tasks: TaskItem[]) => void }) {
+    const days = operationForecast(tasks, now);
+    const formatter = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "es-ES", { weekday: "short", day: "numeric" });
+    return <section className="wh-overview-panel p-4" aria-labelledby="overview-forecast-title"><header className="mb-3"><h2 id="overview-forecast-title" className="font-semibold">{locale === "en" ? "Next 7 days" : "Próximos 7 días"}</h2><p className="mt-1 text-xs text-muted-foreground">{locale === "en" ? "Scheduled services. Select a day to see its jobs." : "Servicios programados. Pulsa un día para ver sus trabajos."}</p></header><div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">{days.map(day => <Button key={day.date.toISOString()} variant="outline" onClick={() => onDay(day.date, day.tasks)} className="h-auto min-w-0 flex-col items-start gap-2 rounded-xl p-3 text-left"><span className="text-xs capitalize text-muted-foreground">{formatter.format(day.date)}</span><strong>{day.tasks.length} {locale === "en" ? day.tasks.length === 1 ? "service" : "services" : day.tasks.length === 1 ? "servicio" : "servicios"}</strong></Button>)}</div></section>;
 }

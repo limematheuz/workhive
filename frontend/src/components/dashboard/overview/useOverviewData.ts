@@ -9,18 +9,17 @@ import { canManageTime, canViewQuality } from "@/domain/access/roles";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
-import type { ActiveCompanySession, TaskWorkDetailedSummary, User } from "@/types/user";
+import type { ActiveCompanySession, User } from "@/types/user";
 
 export type OverviewResource<T> = { value: T; state: "loading" | "ready" | "error" | "denied" };
 const loading = <T,>(value: T): OverviewResource<T> => ({ value, state: "loading" });
 
-export function useOverviewData(user: User, taskIds: string) {
+export function useOverviewData(user: User) {
     const [sessions, setSessions] = useState(() => loading<ActiveCompanySession[]>([]));
     const [users, setUsers] = useState(() => loading<User[]>([]));
     const [incidents, setIncidents] = useState(() => loading<QualityIncident[]>([]));
-    const [time, setTime] = useState(() => loading<TaskWorkDetailedSummary[]>([]));
     const generation = useRef<object | null>(null);
-    const queryKey = `${user.id}:${user.company_id}:${taskIds}`;
+    const queryKey = `${user.id}:${user.company_id}`;
     const [loadedKey, setLoadedKey] = useState("");
     const reload = useCallback(async () => {
         const request = {};
@@ -37,16 +36,14 @@ export function useOverviewData(user: User, taskIds: string) {
                 if (!access.sections.incidents.can_read) { if (request === generation.current) setIncidents({ value: [], state: "denied" }); return null; }
                 return QualityService.getIncidents();
             }, null, result => { if (result.value !== null) setIncidents({ ...result, value: result.value }); else if (result.state === "error") setIncidents({ value: [], state: "error" }); }) : Promise.resolve(setIncidents({ value: [], state: "denied" })),
-            canManageTime(user) ? read(() => WorkSessionService.getTaskDetailedSummaries(taskIds ? taskIds.split(",").map(Number) : []), [], setTime) : Promise.resolve(setTime({ value: [], state: "denied" })),
         ]);
-    }, [user, taskIds]);
+    }, [user]);
 
     useEffect(() => {
         const timer = window.setTimeout(() => {
             setSessions(loading([]));
             setUsers(loading([]));
             setIncidents(loading([]));
-            setTime(loading([]));
             setLoadedKey(queryKey);
             void reload();
         }, 0);
@@ -55,5 +52,5 @@ export function useOverviewData(user: User, taskIds: string) {
     useBackgroundPolling(reload, POLL_INTERVALS.dashboard, POLL_INTERVALS.realtimeSafety);
     useRealtimeInvalidation(["live-work", "tasks", "dashboard"], () => { void reload(); });
     const current = loadedKey === queryKey;
-    return { sessions: current ? sessions : loading<ActiveCompanySession[]>([]), users: current ? users : loading<User[]>([]), incidents: current ? incidents : loading<QualityIncident[]>([]), time: current ? time : loading<TaskWorkDetailedSummary[]>([]), reload };
+    return { sessions: current ? sessions : loading<ActiveCompanySession[]>([]), users: current ? users : loading<User[]>([]), incidents: current ? incidents : loading<QualityIncident[]>([]), reload };
 }

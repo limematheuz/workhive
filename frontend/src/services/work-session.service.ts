@@ -96,10 +96,11 @@ export const WorkSessionService = {
         return responses.flat();
     },
 
-    getWorkSession: async (id: number): Promise<WorkSession> => {
+    getWorkSession: async (id: number, signal?: AbortSignal): Promise<WorkSession> => {
         const response = await apiFetch(`/api/v1/work-sessions/${id}`, {
             method: "GET",
-            cache: "no-store"
+            cache: "no-store",
+            signal,
         })
         if (!response.ok) {
             throw new Error("Error fetching work session details")

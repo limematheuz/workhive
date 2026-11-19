@@ -18,7 +18,7 @@ test("invoice detail keeps edit out of the action bar and opens it from the list
     assert.match(actionBar, /actionButtonClass\(invoice\.status === \"draft\" \? \"select\" : \"neutral\"\)/);
     assert.match(utils, /btn-neutral-bg/);
     assert.match(utils, /tone === \"select\"/);
-    assert.match(list, /getInvoiceActions/);
+    assert.match(list, /ActionPopover/);
     assert.match(list, /onOpenInvoice\(invoice\.id\)/);
     assert.match(list, /onOpenInvoice\(invoice\.id, "edit"\)/);
     assert.match(workspace, /selectedInvoiceIntent/);

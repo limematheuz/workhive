@@ -1,2 +1,3 @@
 import { StaffDirectory } from "@/components/staff/StaffDirectory";
-export default function Page() { return <StaffDirectory teams={false} />; }
+import { Suspense } from "react";
+export default function Page() { return <Suspense fallback={<p role="status" className="p-6">Cargando plantilla…</p>}><StaffDirectory teams={false} /></Suspense>; }

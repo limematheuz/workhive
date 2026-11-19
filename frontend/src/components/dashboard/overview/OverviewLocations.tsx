@@ -1,12 +1,14 @@
 import type {StaffRoster} from "@/domain/tasks/overview-staff-roster";
 import { useState } from "react";
 import { ChevronRight, MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { groupOverviewLocations, taskWorkers, type OperationsOverview } from "@/domain/tasks/operations-overview";
 import { parseTaskCalendarDate, isTaskDateOnlyValue } from "@/domain/tasks/task-schedule";
 import type { TaskItem } from "@/types/user";
 import type { OverviewTaskPresentation } from "./OverviewAgenda";
 import { formatOverviewDate } from "./overview-format";
+import styles from "./operations-overview.module.css";
 
 
 const warning = "font-medium text-orange-800 dark:text-orange-300";
@@ -72,8 +74,8 @@ function spaceRows(tasks: TaskItem[],roster:StaffRoster[]) {
     return spaces;
 }
 
-export function OverviewLocations({ data, presentation: p, day, onOpen,roster=[] }: {
-    roster?:StaffRoster[];data: OperationsOverview; presentation: OverviewTaskPresentation; day: Date; onOpen: (task:TaskItem) => void;
+export function OverviewLocations({ data, presentation: p, day, onOpen,roster=[],rosterUnavailable=false }: {
+    roster?:StaffRoster[];rosterUnavailable?:boolean;data: OperationsOverview; presentation: OverviewTaskPresentation; day: Date; onOpen: (task:TaskItem) => void;
 }) {
     const [id,setId] = useState<number | null>(null);
     const en = p.locale === "en";
@@ -86,12 +88,12 @@ export function OverviewLocations({ data, presentation: p, day, onOpen,roster=[]
         const date = value && parseTaskCalendarDate(value);
         return date && value && !isTaskDateOnlyValue(value) && !/^\d{4}-\d{2}-\d{2}$/.test(value) ? formatOverviewDate(date,p.locale,"time") : null;
     };
-    return <section className="wh-overview-panel" aria-labelledby="overview-locations-title">
+    return <section id="overview-locations" className="wh-overview-panel" aria-labelledby="overview-locations-title">
         <header className="wh-overview-section-heading flex-wrap gap-2"><div><h2 id="overview-locations-title">{p.c.locationsWithWork} <span className="wh-overview-heading-count">{groups.length}</span></h2><p>{t("Selecciona una ubicación para ver el reparto del trabajo.","Select a location to see the work allocation.")}</p></div></header>
-        {!selected ? <div className="wh-overview-empty"><MapPin aria-hidden="true"/><p>{p.c.noLocationsWork}</p></div> : <div className="grid items-start gap-3 p-3 md:grid-cols-[minmax(12rem,1fr)_2fr]">
-        <div className="grid max-h-72 gap-1 overflow-auto">{groups.map(g => <button key={g.locationId} type="button" aria-pressed={g === selected} onClick={() => setId(g.locationId)} className="flex items-center gap-2 rounded-md border px-3 py-2 text-left text-sm aria-pressed:border-accent aria-pressed:bg-[var(--brand-blue-soft)]"><MapPin size={15}/><span className="flex-1 font-semibold">{name(g.locationId)}</span><span className={g.completed < g.tasks.length ? warning : ""}>{g.completed}/{g.tasks.length}</span><ChevronRight size={14}/></button>)}</div>
-        <article className="min-w-0 rounded-lg border p-3 text-sm"><h3 className="font-semibold">{name(selected.locationId)}</h3><p className="mb-2 text-xs text-[var(--text-muted)]">{t("Por espacio y trabajador · tareas completadas / asignadas","By space and worker · completed / assigned tasks")}</p>
-        {[...spaceRows(selected.tasks,roster)].map(([space,rows]) => <div key={space} className="grid gap-1 border-t py-2 sm:grid-cols-[1fr_2fr]"><strong className={space ? "" : warning}>{space || t("Espacio sin indicar","Space missing")}</strong><div>{[...rows].map(([worker,r]) => <div key={worker ?? "none"} className="flex justify-between gap-2"><span className={worker == null ? warning : ""}>{worker == null ? p.c.unassigned : worker<0?r.name:p.workerName(worker,r.name)}</span><span className={r.total===0||r.done < r.total ? warning : ""}>{r.done}/{r.total}</span></div>)}</div></div>)}
+        {!selected ? <div className="wh-overview-empty"><MapPin aria-hidden="true"/><p>{p.c.noLocationsWork}</p></div> : <div className={styles.locations}>
+        <div className={styles.locationList}>{groups.map(g => <Button variant="outline" key={g.locationId} type="button" aria-pressed={g === selected} onClick={() => setId(g.locationId)} className={`${styles.locationButton} aria-pressed:border-accent aria-pressed:bg-[var(--brand-blue-soft)]`}><MapPin size={15} className="shrink-0" aria-hidden="true"/><span className={styles.locationName}>{name(g.locationId)}{p.locationAddress?.(g.locationId) && <span className="mt-1 block text-xs font-normal text-muted-foreground">{p.locationAddress(g.locationId)}</span>}</span><span className={g.completed < g.tasks.length ? warning : ""}>{g.completed}/{g.tasks.length}</span><ChevronRight size={14} className="shrink-0" aria-hidden="true"/></Button>)}</div>
+        <article className={styles.locationDetail}><h3 className="font-semibold">{t("Ubicación: ", "Location: ")}{name(selected.locationId)}</h3>{p.locationAddress?.(selected.locationId) && <p className="mt-1 text-xs text-muted-foreground">{t("Dirección: ", "Address: ")}{p.locationAddress(selected.locationId)}</p>}<p className="mb-2 mt-2 text-xs text-[var(--text-muted)]">{t("Espacio · trabajador · tareas terminadas / asignadas","Space · worker · finished / assigned tasks")}</p>
+        {rosterUnavailable ? <p role="status" className={`${warning} border-t py-3`}>{t("Asignación no disponible. Actualiza el resumen para comprobar espacios y trabajadores.","Assignment unavailable. Refresh the overview to check spaces and workers.")}</p> : [...spaceRows(selected.tasks,roster)].map(([space,rows]) => <div key={space} className="grid gap-1 border-t py-2 sm:grid-cols-[1fr_2fr]"><strong className={space ? "" : warning}>{space || t("Espacio sin indicar","Space missing")}</strong><div>{[...rows].map(([worker,r]) => <div key={worker ?? "none"} className="flex justify-between gap-2"><span className={worker == null ? warning : ""}>{worker == null ? p.c.unassigned : worker<0?r.name:p.workerName(worker,r.name)}</span><span className={r.total===0||r.done < r.total ? warning : ""}>{r.done}/{r.total}</span></div>)}</div></div>)}
         {roster.filter(row=>row.location_id===selected.locationId).map(row=><p key={row.id} className={row.effective_employee_id===null?warning:"text-xs py-1"}>{row.employee_name??t("Turno sin cubrir","Uncovered shift")} · {formatOverviewDate(new Date(row.starts_at),p.locale,"time")} – {formatOverviewDate(new Date(row.ends_at),p.locale,"time")}{row.account_user_id===null&&<span className={warning}> · {t("Sin acceso vinculado; seguimiento por responsable","No linked access; supervisor tracks tasks")}</span>}{!row.task_id&&<span className={warning}> · {t("Trabajo pendiente de vincular","Work link missing")}</span>}</p>)}
         <h4 className="mt-2 border-t pt-2 font-semibold">{t("Horario de trabajo","Work schedule")}</h4>{selected.tasks.map(task => <div key={task.id} className="flex flex-wrap items-baseline justify-between gap-x-3 py-1 text-xs">{<button type="button" onClick={() => onOpen(task)} className="text-left underline decoration-dotted">{task.title}</button>}<span>{formatOverviewDate(parseTaskCalendarDate(task.scheduled_start_at || task.due_at || "") || day,p.locale,"short")} · <span className={!time(task.scheduled_start_at) ? warning : ""}>{time(task.scheduled_start_at) || t("Inicio pendiente","Start missing")}</span> – <span className={!time(task.due_at) ? warning : ""}>{time(task.due_at) || t("Fin pendiente","End missing")}</span></span></div>)}</article></div>}
     </section>;

@@ -33,10 +33,10 @@ export function CalendarEventContent({
                     {eventInfo.timeText}
                 </div>
             )}
-            <div className="hidden truncate opacity-75 sm:block">
+            <div className="truncate opacity-75">
                 {props.locationName}
             </div>
-            <div className="hidden truncate opacity-70 md:block">
+            <div className="truncate opacity-70">
                 {props.userName}
             </div>
         </div>

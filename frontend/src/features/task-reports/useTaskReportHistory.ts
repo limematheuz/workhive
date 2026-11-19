@@ -6,6 +6,7 @@ import { TaskReportService, type TaskReport } from "@/services/task-report.servi
 
 /** Owned by a keyed workspace: cleanup also prevents an old read acknowledging a new account. */
 export function useTaskReportHistory(context: string, enabled: boolean) {
+    const [revision, setRevision] = useState(0);
     const [reports, setReports] = useState<TaskReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -19,7 +20,7 @@ export function useTaskReportHistory(context: string, enabled: boolean) {
             signal: controller.signal,
         }).then(history => {
             if (!current) return;
-            startTransition(() => { setReports(history); setLoading(false); });
+            startTransition(() => { setReports(history); setError(false); setLoading(false); });
             void TaskReportService.markNotificationsRead(controller.signal).then(() => {
                 if (current) window.dispatchEvent(new Event(NOTIFICATIONS_UPDATED_EVENT));
             }).catch(() => {
@@ -29,7 +30,7 @@ export function useTaskReportHistory(context: string, enabled: boolean) {
             if (current) startTransition(() => { setError(true); setLoading(false); });
         });
         return () => { current = false; controller.abort(); };
-    }, [context, enabled]);
+    }, [context, enabled, revision]);
 
-    return { reports, setReports, loading, error };
+    return { reports, setReports, loading, error, reload: () => setRevision(value => value + 1) };
 }

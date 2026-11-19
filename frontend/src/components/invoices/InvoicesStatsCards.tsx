@@ -1,10 +1,11 @@
 "use client";
 
-import { CircleCheck, Clock3, FileText, OctagonAlert } from "lucide-react";
+import { Clock3, FilePenLine, FileText, OctagonAlert } from "lucide-react";
 
-import { SummaryMetricCard, SummaryMetricGrid } from "@/components/ui/summary-metric-card";
+import { SummaryMetricGrid } from "@/components/ui/summary-metric-card";
+import { FinanceMetricButton } from "@/components/finance/FinanceMetricButton";
 import { formatCurrency } from "@/lib/format";
-import { getMetricTrend } from "@/lib/metric-trend";
+import type { InvoiceAttention } from "@/lib/finance-workspace";
 
 export type InvoiceStats = {
     totalCount: number;
@@ -19,6 +20,10 @@ type InvoicesStatsCardsProps = {
     stats: InvoiceStats;
     previousStats?: InvoiceStats | null;
     statusCounts: Record<string, number>;
+    attention?: InvoiceAttention;
+    onAttentionChange?: (value: InvoiceAttention) => void;
+    draftCount?: number;
+    recordCount?: number;
     labels: {
         stats_total_invoiced: string;
         stats_invoices_count: string;
@@ -31,21 +36,21 @@ type InvoicesStatsCardsProps = {
     };
 };
 
-export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, labels }: InvoicesStatsCardsProps) {
+export function InvoicesStatsCards({ stats, statusCounts, labels, attention = "all", onAttentionChange, draftCount = 0, recordCount = stats.totalCount + draftCount }: InvoicesStatsCardsProps) {
     const cards = [
         {
-            label: labels.stats_total_invoiced,
-            value: formatCurrency(stats.totalAmount),
-            detail: labels.stats_invoices_count.replace("{count}", stats.totalCount.toString()),
+            label: "Facturas de esta vista",
+            value: String(recordCount),
+            detail: `Facturado: ${formatCurrency(stats.totalAmount)} · ver documentos`,
             icon: FileText,
-            trend: previousStats ? getMetricTrend(stats.totalAmount, previousStats.totalAmount) : undefined,
+            filter: "all" as const,
         },
         {
-            label: labels.stats_collected,
-            value: formatCurrency(stats.paidAmount),
-            detail: labels.stats_paid_count.replace("{count}", (statusCounts.paid || 0).toString()),
-            icon: CircleCheck,
-            trend: previousStats ? getMetricTrend(stats.paidAmount, previousStats.paidAmount) : undefined,
+            label: "Borradores",
+            value: String(draftCount),
+            detail: "Pendientes de emitir · ver facturas",
+            icon: FilePenLine,
+            filter: "draft" as const,
         },
         {
             label: labels.stats_pending,
@@ -55,27 +60,29 @@ export function InvoicesStatsCards({ stats, previousStats = null, statusCounts, 
                 stats.openCount.toString(),
             ),
             icon: Clock3,
-            trend: previousStats ? getMetricTrend(stats.openAmount, previousStats.openAmount, "lower") : undefined,
+            filter: "pending" as const,
         },
         {
             label: labels.stats_overdue,
             value: formatCurrency(stats.overdueAmount),
             detail: labels.stats_overdue_count.replace("{count}", (statusCounts.overdue || 0).toString()),
             icon: OctagonAlert,
-            trend: previousStats ? getMetricTrend(stats.overdueAmount, previousStats.overdueAmount, "lower") : undefined,
+            filter: "overdue" as const,
         },
     ];
 
     return (
         <SummaryMetricGrid desktopColumns={4} aria-label="Resumen de facturas">
             {cards.map((stat) => (
-                <SummaryMetricCard
+                <FinanceMetricButton
                     key={stat.label}
                     label={stat.label}
                     value={stat.value}
                     description={stat.detail}
                     icon={stat.icon}
-                    trend={stat.trend}
+                    active={attention === stat.filter}
+                    attention={stat.filter === "overdue" && stats.overdueAmount > 0}
+                    onClick={() => onAttentionChange?.(stat.filter)}
                 />
             ))}
         </SummaryMetricGrid>

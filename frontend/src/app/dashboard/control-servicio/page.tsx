@@ -20,7 +20,13 @@ function duration(minutes: number | null) {
 }
 
 export default function ServiceControl() {
+    const {user}=useUser();
+    return <ServiceControlWorkspace key={`${user?.id}:${user?.company_id}`}/>;
+}
+function ServiceControlWorkspace() {
     const { user, loading } = useUser();
+    const [query,setQuery]=useState("");
+    const [filter,setFilter]=useState("");
     const [rows, setRows] = useState<ServiceHours[]>([]);
     const [page, setPage] = useState(0);
     const [more, setMore] = useState(false);
@@ -82,6 +88,10 @@ export default function ServiceControl() {
             {/^[0-9]{4}-(0[1-9]|1[0-2])$/.test(exportMonth) &&
                 <a className={buttonVariants({variant:"outline"})} href={approvedHoursExportHref(exportMonth)} download>Exportar horas aprobadas</a>}
         </div>}
+        {!fetching && !error && <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{[{key:"approval",label:"Pendientes de aprobación",count:rows.filter(row=>row.approved_seconds===null&&row.can_close).length},{key:"contract",label:"Contratadas sin registrar",count:rows.filter(row=>row.contract_minutes===null).length},{key:"difference",label:"Plan / contrato diferente",count:rows.filter(row=>row.contract_minutes!==null&&row.planned_minutes!==null&&row.contract_minutes!==row.planned_minutes).length}].map(metric=><button key={metric.key} type="button" aria-pressed={filter===metric.key} className="rounded-xl border bg-card p-3 text-left focus-visible:outline-2 focus-visible:outline-accent" onClick={()=>setFilter(filter===metric.key?"":metric.key)}><span className="text-xs text-muted-foreground">{metric.label}</span><strong className="mt-1 block text-2xl font-semibold">{metric.count}</strong></button>)}</div>}
+        <p className="text-xs text-muted-foreground">Comparación de los {rows.length} trabajos de esta página, sin restricción de fecha. El mes sólo afecta a la exportación de horas aprobadas.</p>
+        <Input type="search" aria-label="Buscar servicio en esta página" placeholder="Buscar servicio en esta página…" value={query} onChange={event=>setQuery(event.target.value)}/>
+        {filter && <Button variant="ghost" size="sm" onClick={()=>setFilter("")}>Quitar filtro de revisión</Button>}
         {error && <p role="alert" className={pendingStyle}>{error}</p>}
         <div className="overflow-x-auto rounded-lg border" aria-busy={fetching}>
             <table className="w-full text-left text-sm">
@@ -92,10 +102,10 @@ export default function ServiceControl() {
                 <tbody>
                     {fetching || (!rows.length && !error) ? <tr><td colSpan={6} className="p-4 text-center">
                         {fetching ? "Cargando horas…" : "Sin trabajos en esta página."}
-                    </td></tr> : rows.map(row => <tr key={row.id} className="border-t">
+                    </td></tr> : rows.filter(row=>row.title.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())&&(filter!=="approval"||row.approved_seconds===null&&row.can_close)&&(filter!=="contract"||row.contract_minutes===null)&&(filter!=="difference"||row.contract_minutes!==null&&row.planned_minutes!==null&&row.contract_minutes!==row.planned_minutes)).map(row => <tr key={row.id} className="border-t">
                         <td className="px-3 py-2"><Link className="font-medium hover:underline" href={"/dashboard?taskId=" + row.id}>{row.title}</Link></td>
                         <td className="px-3 py-2">{duration(row.contract_minutes)}</td>
-                        <td className="px-3 py-2">{duration(row.planned_minutes)}</td>
+                        <td className="px-3 py-2">{duration(row.planned_minutes)}{row.planned_minutes!==null&&row.contract_minutes!==null&&row.planned_minutes!==row.contract_minutes&&<p className="mt-1 text-xs text-orange-700 dark:text-orange-300">{row.planned_minutes-row.contract_minutes>0?"+":""}{row.planned_minutes-row.contract_minutes} min sobre contrato</p>}</td>
                         <td className="px-3 py-2">{duration(row.worked_seconds / 60)}</td>
                         <td className="px-3 py-2">{row.approved_seconds === null
                             ? <span className={pendingStyle}>{row.can_close ? "Pendiente de aprobación" : "Pendiente de fichajes"}</span>

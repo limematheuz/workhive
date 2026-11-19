@@ -16,7 +16,7 @@ export function ExternalNetworkControlCenter() {
     const { dict } = useDictionary();
     const { user, loading: userLoading } = useUser();
     const isCompanyAdmin = user?.role?.name === "admin" && Boolean(user.company_id);
-    const canShowProfessionalAccess = userLoading || isCompanyAdmin;
+    const canShowProfessionalAccess = isCompanyAdmin;
     const router = useRouter();
     const searchParams = useSearchParams();
     const activeTab: ExternalNetworkTab = canShowProfessionalAccess && searchParams.get("tab") === "professionals" ? "professionals" : "operations";
@@ -31,11 +31,13 @@ export function ExternalNetworkControlCenter() {
         router.replace(tab === "operations" ? "/dashboard/external-network" : "/dashboard/external-network?tab=professionals");
     };
 
+    if(userLoading) return <p role="status" className="p-6 text-sm text-muted-foreground">Cargando acceso a la red externa…</p>;
     return (
         <div className="dashboard-page-content px-[3%] py-6 md:p-8">
             <PageHeader icon={Network} title={dict.external_network.title} subtitle={dict.external_network.subtitle} className="mb-7" />
             <PremiumTabs tabs={tabs} activeTab={activeTab} onChange={changeTab} mobileLabel={dict.external_network.mobile_tab_label} className="mb-6" />
-            {activeTab === "operations" ? <CollaborationControlCenter embedded /> : <ExternalAccessControlCenter embedded />}
+            <p className="mb-4 text-sm text-muted-foreground">{activeTab === "operations" ? "Empresas colaboradoras, invitaciones y ubicaciones compartidas. Revisa el alcance antes de vincular o desvincular una empresa." : "Accesos profesionales a la empresa activa. Revisa qué información se comparte antes de cambiar o revocar un acceso."}</p>
+            {activeTab === "operations" ? <CollaborationControlCenter embedded key={`${user?.id}:${user?.company_id}`} /> : <ExternalAccessControlCenter embedded key={`${user?.id}:${user?.company_id}`} />}
         </div>
     );
 }

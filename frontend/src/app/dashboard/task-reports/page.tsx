@@ -7,6 +7,9 @@ import { useTaskReportHistory } from "@/features/task-reports/useTaskReportHisto
 import { useTaskReportNavigation } from "@/features/task-reports/useTaskReportNavigation";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/ui/delete-confirm-dialog";
+import { useViewState } from "@/hooks/useViewState";
+import { DatePicker } from "@/components/ui/date-picker";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page-header";
 import { PremiumTabs } from "@/components/ui/premium-tabs";
@@ -50,11 +53,15 @@ function TaskReportsWorkspace({ context, userLoading }: { context: string; userL
     const copy = dict.task_reports;
     const canView = canViewWorkReports(user);
     const canManage = canManageWorkReports(user);
-    const { reports, setReports, loading, error } = useTaskReportHistory(context, !userLoading && canView);
+    const { reports, setReports, loading, error, reload } = useTaskReportHistory(context, !userLoading && canView);
     const { selectedReport, setSelectedReport, linkUnavailable } = useTaskReportNavigation(reports, !loading && !error);
-    const [query, setQuery] = useState("");
-    const [type, setType] = useState<ReportFilter>("all");
-    const [page, setPage] = useState(1);
+    const [query, setQuery] = useViewState("reports.query", "");
+    const [typeValue, setTypeValue] = useViewState("reports.type", "all");
+    const type:ReportFilter = ["issue","note","photo"].includes(typeValue) ? typeValue as ReportFilter : "all";
+    const [dateFrom,setDateFrom] = useViewState("reports.from", "");
+    const [dateTo,setDateTo] = useViewState("reports.to", "");
+    const [site,setSite] = useViewState("reports.site", "");
+    const [page, setPage] = useViewState("reports.page", 1);
     const [selectionMode, setSelectionMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
     const [pendingDelete, setPendingDelete] = useState<"single" | "bulk" | null>(null);
@@ -62,7 +69,10 @@ function TaskReportsWorkspace({ context, userLoading }: { context: string; userL
     const [saving, setSaving] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
 
-    const filtered = useMemo(() => filterTaskReports(reports, { type, query }), [query, reports, type]);
+    const filtered = useMemo(() => filterTaskReports(reports, { type, query }).filter(report => {
+        const day=new Date(report.created_at), from=dateFrom?new Date(dateFrom+"T00:00:00"):null, to=dateTo?new Date(dateTo+"T23:59:59.999"):null;
+        return (!site||report.location_name===site)&&(!from||day>=from)&&(!to||day<=to);
+    }), [query, reports, type, dateFrom, dateTo, site]);
     const totalPages = totalPagesForCount(filtered.length);
     const safePage = clampPage(page, totalPages);
     const pageItems = useMemo(
@@ -81,7 +91,7 @@ function TaskReportsWorkspace({ context, userLoading }: { context: string; userL
     }
 
     function changeType(next: ReportFilter) {
-        setType(next);
+        setTypeValue(next);
         setPage(1);
     }
 
@@ -206,15 +216,18 @@ function TaskReportsWorkspace({ context, userLoading }: { context: string; userL
                 )}
 
                 {canView && <section className="space-y-2.5 rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] p-2.5 shadow-sm sm:p-3">
+                    <div className="grid gap-2 sm:grid-cols-3"><div><p className="mb-1 text-xs text-muted-foreground">Desde</p><DatePicker id="reports-from" aria-label="Partes desde" value={dateFrom} onValueChange={value=>{setDateFrom(value||"");setPage(1);}} /></div><div><p className="mb-1 text-xs text-muted-foreground">Hasta</p><DatePicker id="reports-to" aria-label="Partes hasta" value={dateTo} onValueChange={value=>{setDateTo(value||"");setPage(1);}} /></div><div><p className="mb-1 text-xs text-muted-foreground">Ubicación</p><SearchableSelect aria-label="Ubicación del parte" value={site} onValueChange={value=>{setSite(value);setPage(1);}} options={[{value:"",label:"Todas las ubicaciones"},...Array.from(new Set(reports.map(report=>report.location_name))).sort().map(name=>({value:name,label:name}))]} /></div></div>
                     <div className="relative">
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                         <Input
+                            aria-label="Buscar en los partes"
                             value={query}
                             onChange={event => changeQuery(event.target.value)}
                             placeholder={copy.search}
                             className="h-9 rounded-xl border-[var(--border-soft)] bg-[var(--bg-secondary)] pl-9 text-sm"
                         />
                     </div>
+                    <div className="flex flex-wrap items-center justify-between gap-2"><p className="text-xs text-muted-foreground">{filtered.length} registros en la selección</p><Button variant="ghost" size="sm" onClick={()=>{setDateFrom("");setDateTo("");setSite("");changeQuery("");changeType("all");}}>Limpiar filtros</Button></div>
                     <PremiumTabs<ReportFilter>
                         layout="fit"
                         tabs={[
@@ -231,7 +244,7 @@ function TaskReportsWorkspace({ context, userLoading }: { context: string; userL
                 {canView && loading && <p className="py-14 text-center text-sm text-[var(--text-muted)]">{copy.loading}</p>}
                 {canView && !loading && (error || linkUnavailable) && (
                     <div className="rounded-2xl border border-[var(--btn-cancel-border)] bg-[var(--btn-cancel-bg)] p-4 text-sm text-[var(--btn-cancel-text)]">
-                        {linkUnavailable ? copy.unavailable : copy.error}
+                        {linkUnavailable ? copy.unavailable : copy.error}{error && <Button className="ml-3" size="sm" variant="outline" onClick={reload}>Reintentar</Button>}
                     </div>
                 )}
                 {canView && !loading && !error && filtered.length === 0 && (

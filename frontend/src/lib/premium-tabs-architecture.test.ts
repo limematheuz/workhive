@@ -34,11 +34,11 @@ test("ReservationsFilters reuses PremiumTabs for Vigentes/Historial", () => {
     assert.doesNotMatch(source, /flex bg-\[var\(--bg-primary\)\]\/40 p-1 border/);
 });
 
-test("body uses system --font-sans and layout does not import next/font", () => {
+test("body uses Inter with the local system fallback and layout does not import next/font", () => {
     const globals = read("../app/globals.css");
     const layout = read("../app/layout.tsx");
 
-    assert.match(globals, /--font-sans:\s*system-ui/);
+    assert.match(globals, /--font-sans:\s*Inter, system-ui/);
     assert.match(globals, /font-family:\s*var\(--font-sans\)/);
     assert.doesNotMatch(layout, /next\/font/);
     assert.doesNotMatch(layout, /from ["']next\/font/);

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Building2, CalendarClock, FileText, MapPin, Pencil, Trash2, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -74,23 +75,7 @@ export function TaskReportDetailDialog({
                     </DialogHeader>
 
                     <div className="space-y-3 px-5 py-4 sm:px-5">
-                        {mediaHref && (
-                            <a
-                                href={mediaHref}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="relative mx-auto block h-36 w-full max-w-xs overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] transition hover:border-accent/40"
-                            >
-                                <Image
-                                    src={mediaHref}
-                                    alt={report.title || report.checklist_item_label || copy.view_photo}
-                                    fill
-                                    sizes="(max-width: 640px) calc(100vw - 2.5rem), 20rem"
-                                    unoptimized
-                                    className="object-contain p-2"
-                                />
-                            </a>
-                        )}
+
 
                         {editing ? (
                             <ReportEditForm
@@ -129,6 +114,25 @@ export function TaskReportDetailDialog({
                                     />
                                 )}
                             </dl>
+                        )}
+
+                        <Button asChild variant="outline" className="w-full"><Link href={`/dashboard?taskId=${report.task_item_id}`}>Abrir trabajo relacionado</Link></Button>
+                        {mediaHref && (
+                            <a
+                                href={mediaHref}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="relative mx-auto block h-36 w-full max-w-xs overflow-hidden rounded-xl border border-[var(--border-soft)] bg-[var(--bg-secondary)] transition hover:border-accent/40"
+                            >
+                                <Image
+                                    src={mediaHref}
+                                    alt={report.title || report.checklist_item_label || copy.view_photo}
+                                    fill
+                                    sizes="(max-width: 640px) calc(100vw - 2.5rem), 20rem"
+                                    unoptimized
+                                    className="object-contain p-2"
+                                />
+                            </a>
                         )}
 
                         {!editable && !editing && (

@@ -31,6 +31,8 @@ interface ProfileHistoriesProps {
     activeSessionTime: string;
     activeCompanySessions: ActiveCompanySession[];
     canViewActiveTeam: boolean;
+    canViewSessions: boolean;
+    canViewTasks: boolean;
 }
 
 export function ProfileHistories({
@@ -46,15 +48,19 @@ export function ProfileHistories({
     activeSessionTime,
     activeCompanySessions,
     canViewActiveTeam,
+    canViewSessions,
+    canViewTasks,
 }: ProfileHistoriesProps) {
+    const visibleTab = activeTab === "sessions" && canViewSessions || activeTab === "tasks" && canViewTasks || activeTab === "team" && canViewActiveTeam
+        ? activeTab : canViewSessions ? "sessions" : canViewTasks ? "tasks" : "team";
     return (
         <div className="billing-surface overflow-hidden rounded-[26px]">
             <div className="border-b border-[var(--border-soft)] p-4">
                 <PremiumTabs
                     layout="fit"
                     tabs={[
-                        { id: "sessions" as const, label: dict.profile?.tabs?.work_history || "Historial de Jornadas" },
-                        { id: "tasks" as const, label: dict.profile?.tabs?.task_history || "Historial de Tareas" },
+                        ...(canViewSessions ? [{ id: "sessions" as const, label: dict.profile?.tabs?.work_history || "Historial de Jornadas" }] : []),
+                        ...(canViewTasks ? [{ id: "tasks" as const, label: dict.profile?.tabs?.task_history || "Historial de Tareas" }] : []),
                         ...(canViewActiveTeam
                             ? [{
                                 id: "team" as const,
@@ -65,13 +71,13 @@ export function ProfileHistories({
                             }]
                             : [])
                     ]}
-                    activeTab={activeTab}
+                    activeTab={visibleTab}
                     onChange={setActiveTab}
                 />
             </div>
 
             <div className="p-3 sm:p-4">
-                {activeTab === "team" ? (
+                {visibleTab === "team" ? (
                     activeCompanySessions.length === 0 ? (
                         <div className="billing-block rounded-2xl px-5 py-14 text-center">
                             <Users className="mx-auto h-7 w-7 text-[var(--text-muted)]" aria-hidden="true" />
@@ -131,7 +137,7 @@ export function ProfileHistories({
                             ))}
                         </div>
                     )
-                ) : activeTab === "sessions" ? (
+                ) : visibleTab === "sessions" ? (
                     <DataListTable
                         items={sessions}
                         getRowKey={(session) => session.id}

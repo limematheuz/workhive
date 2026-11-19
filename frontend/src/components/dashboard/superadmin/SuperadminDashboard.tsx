@@ -7,6 +7,8 @@ import { SuperadminActivityPanels } from "@/components/dashboard/superadmin/Supe
 import { CommercialOverviewPanel } from "@/components/dashboard/superadmin/CommercialOverviewPanel";
 import { SuperadminNavCards } from "@/components/dashboard/superadmin/SuperadminNavCards";
 import { SuperadminStatsCards } from "@/components/dashboard/superadmin/SuperadminStatsCards";
+import { Button } from "@/components/ui/button";
+import { collectPaginated } from "@/lib/pagination";
 import { PageHeader } from "@/components/ui/page-header";
 import { useDictionary } from "@/lib/dictionary-context";
 import {
@@ -17,13 +19,12 @@ import {
 } from "@/lib/superadmin-dashboard-stats";
 import { CompanyService, type Company } from "@/services/company.service";
 import { CompanyPlanAccessService, type CommercialOverview } from "@/services/company-plan-access.service";
-import { RoleService, type Role } from "@/services/role.service";
+import { RoleService } from "@/services/role.service";
 import {
     TrialRequestService,
     type TrialRequest,
 } from "@/services/trial-request.service";
 import { UserService } from "@/services/user.service";
-import type { User } from "@/types/user";
 
 const EMPTY_STATS: SuperadminDashboardStats = {
     companies: 0,
@@ -48,13 +49,14 @@ export function SuperadminDashboard() {
     const loadHubData = useCallback(async () => {
         try {
             setError(null);
+            setLoading(true);
             const [fetchedCompanies, fetchedUsers, fetchedRoles, fetchedTrials, fetchedCommercialOverview] =
                 await Promise.all([
-                    CompanyService.getCompanies().catch(() => [] as Company[]),
-                    UserService.getUsers(0, 500).catch(() => [] as User[]),
-                    RoleService.getRoles().catch(() => [] as Role[]),
-                    TrialRequestService.list().catch(() => [] as TrialRequest[]),
-                    CompanyPlanAccessService.getCommercialOverview().catch(() => null),
+                    collectPaginated((skip,limit)=>CompanyService.getCompanies(skip,limit)),
+                    collectPaginated((skip,limit)=>UserService.getUsers(skip,limit)),
+                    RoleService.getRoles(),
+                    TrialRequestService.list(),
+                    CompanyPlanAccessService.getCommercialOverview(),
                 ]);
 
             setCompanies(fetchedCompanies);
@@ -97,6 +99,7 @@ export function SuperadminDashboard() {
                 title={text.title}
                 subtitle={text.subtitle}
                 className="mb-6"
+                actions={<Button variant="outline" disabled={loading} onClick={()=>void loadHubData()}>Actualizar resumen</Button>}
             />
 
             <section className="billing-surface relative w-full min-w-0 max-w-full overflow-hidden rounded-[24px] p-3 sm:p-5">
@@ -112,18 +115,17 @@ export function SuperadminDashboard() {
                         <>
                             {error ? (
                                 <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs font-semibold text-red-600">
-                                    {error}
+                                    {error}<Button variant="outline" size="sm" className="ml-3" onClick={()=>void loadHubData()}>Reintentar</Button>
                                 </div>
                             ) : null}
 
-                            <SuperadminStatsCards stats={stats} loading={loading} />
+                            {error?<p className="text-sm text-muted-foreground">Indicadores no disponibles. Reintenta para consultar los datos reales de la plataforma.</p>:<><SuperadminStatsCards stats={stats} loading={loading} />
                             <CommercialOverviewPanel overview={commercialOverview} loading={loading} />
-                            <SuperadminNavCards />
                             <SuperadminActivityPanels
                                 companies={companyPreview}
                                 pendingRequests={pendingPreview}
                                 loading={loading}
-                            />
+                            /></>}<SuperadminNavCards />
                         </>
                     )}
                 </div>

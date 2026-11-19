@@ -1,6 +1,7 @@
 import {CompanyOperationsSettings} from "@/components/organization/CompanyOperationsSettings";
 import { OrganizationControlCenter } from "@/components/organization/OrganizationControlCenter";
+import {CompanyViewSession} from "@/components/company/CompanyViewSession";
 
 export default function OrganizationPage() {
-    return <><OrganizationControlCenter /><CompanyOperationsSettings/></>;
+    return <CompanyViewSession><OrganizationControlCenter /><CompanyOperationsSettings/></CompanyViewSession>;
 }

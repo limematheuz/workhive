@@ -36,7 +36,14 @@ test("traffic dashboard uses billing surfaces without accent pad or green chrome
 
     assert.match(analytics, /TrafficStatsCards/);
     assert.match(analytics, /billing-block/);
-    assert.match(analytics, /reach_period/);
+    assert.match(analytics, /Muestra de los últimos 500 registros de auditoría/);
+    assert.match(analytics, /periodos se calculan respecto a la fecha actual/);
+    assert.doesNotMatch(analytics, /\{traffic.reach_period\}/);
+    assert.match(page, /trafficMetrics\(events\)/);
+    assert.match(stats, /Eventos registrados/);
+    assert.match(stats, /Inicios de sesión/);
+    assert.match(stats, /usuarios autenticados distintos/);
+    assert.doesNotMatch(stats, /label: traffic.avg_engagement|label: traffic.repeat_viewers|label: traffic.first_time_visits/);
     assert.doesNotMatch(analytics, /from "@\/components\/ui\/button"/);
     assert.doesNotMatch(analytics, /from "@\/components\/ui\/input"/);
     assert.doesNotMatch(analytics, /billing-surface-accent-pad/);

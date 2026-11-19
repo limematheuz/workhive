@@ -12,7 +12,7 @@ test("sales ledger reuses shared UI and keeps issued invoices read-only", () => 
     assert.match(page, /PageHeader/);
     assert.match(page, /canViewFinance\(user\) && !isPlatformSuperadmin\(user\)/);
     assert.match(page, /canManageFinance\(user\) && !isPlatformSuperadmin\(user\)/);
-    assert.match(page, /SalesLedgerService\.getEntries/);
+    assert.match(page, /SalesLedgerService\.getAllEntries/);
     assert.match(page, /SalesLedgerRecordDialog/);
     assert.match(page, /SalesLedgerImportDialog/);
     assert.match(page, /buildSalesLedgerCsv/);

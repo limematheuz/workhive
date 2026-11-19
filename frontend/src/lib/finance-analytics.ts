@@ -3,6 +3,8 @@ import type { SalesLedgerEntry } from "@/services/sales-ledger.service";
 
 export interface FinanceRevenueRecord {
     id?: number;
+    source_type?: "manual";
+    document_number?: string;
     issue_date: string;
     due_date?: string | null;
     paid_at?: string | null;
@@ -180,13 +182,9 @@ function summarizeRange(
     });
     invoices.forEach((invoice) => {
         const issueDate = parseDate(invoice.issue_date);
-        const paymentDate = parseDate(invoice.paid_at || invoice.issue_date);
         const overdueDate = parseDate(invoice.due_date || invoice.issue_date);
         const allocated = invoice.id ? allocatedByInvoice.get(invoice.id) || 0 : 0;
         const pendingAmount = Math.max(0, invoice.total_amount - allocated);
-        if (invoice.status === "paid" && allocated === 0 && isInRange(paymentDate, start, end)) {
-            summary.paid += invoice.total_amount;
-        }
         if (["issued", "partially_paid"].includes(invoice.status) && isInRange(issueDate, start, end)) {
             summary.pending += pendingAmount;
         }
@@ -286,7 +284,7 @@ export function buildFinanceSeries(
     const currentStart = startOfPeriod(now, period);
     return Array.from({ length: count }, (_, index) => {
         const start = addPeriod(currentStart, period, index - count + 1);
-        const end = addPeriod(start, period, 1);
+        const end = index === count - 1 ? new Date(now.getTime() + 1) : addPeriod(start, period, 1);
         return {
             key: periodKey(start, period),
             label: periodLabel(start, period, locale),
@@ -303,11 +301,21 @@ export function summarizeFinancePeriod(
     payments: FinancePaymentRecord[] = [],
 ): FinancePeriodComparison {
     const currentStart = startOfPeriod(now, period);
-    const currentEnd = addPeriod(currentStart, period, 1);
+    const currentEnd = new Date(now.getTime() + 1);
     const previousStart = addPeriod(currentStart, period, -1);
+    const previousEnd = new Date(previousStart);
+    if (period === "month") {
+        const lastDay = new Date(previousStart.getFullYear(), previousStart.getMonth() + 1, 0).getDate();
+        previousEnd.setDate(Math.min(now.getDate(), lastDay));
+        previousEnd.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds() + 1);
+    } else if (period === "year") {
+        const lastDay = new Date(previousStart.getFullYear(), now.getMonth() + 1, 0).getDate();
+        previousEnd.setMonth(now.getMonth(), Math.min(now.getDate(), lastDay));
+        previousEnd.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds() + 1);
+    } else previousEnd.setTime(previousStart.getTime() + currentEnd.getTime() - currentStart.getTime());
     return {
         current: summarizeRange(invoices, expenses, currentStart, currentEnd, payments),
-        previous: summarizeRange(invoices, expenses, previousStart, currentStart, payments),
+        previous: summarizeRange(invoices, expenses, previousStart, new Date(Math.min(previousEnd.getTime(), currentStart.getTime())), payments),
     };
 }
 
@@ -318,9 +326,10 @@ export function manualSalesLedgerToFinanceRevenue(
     return {
         issue_date: entryDate,
         due_date: null,
-        // Imported history has a paid/pending flag but no reliable collection
-        // date. Its accounting entry date is therefore the documented fallback.
-        paid_at: entry.payment_status === "paid" ? entryDate : null,
+        // A paid flag has no receipt date. Only the receipt ledger contributes cash.
+        paid_at: null,
+        source_type: "manual",
+        document_number: entry.document_number,
         status: entry.payment_status === "paid" ? "paid" : "issued",
         base_amount: entry.base_amount,
         tax_amount: entry.tax_amount,
@@ -349,7 +358,7 @@ export function groupExpensesByCategory(
     expenses.forEach((expense) => {
         if (period) {
             const start = startOfPeriod(now, period);
-            const end = addPeriod(start, period, 1);
+            const end = new Date(now.getTime() + 1);
             if (!isInRange(parseDate(expense.expense_date), start, end)) return;
         }
         totals.set(expense.category, (totals.get(expense.category) || 0) + expense.base_amount);
@@ -357,4 +366,8 @@ export function groupExpensesByCategory(
     return Array.from(totals.entries())
         .map(([category, total]) => ({ category, total }))
         .sort((a, b) => b.total - a.total);
+}
+
+export function financePeriodBounds(period: FinancePeriod, now = new Date()): { start: Date; end: Date } {
+    return { start: startOfPeriod(now, period), end: new Date(now.getTime() + 1) };
 }

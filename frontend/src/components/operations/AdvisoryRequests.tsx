@@ -1,47 +1,27 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { FormSelect } from "@/components/ui/form-select";
 import { Button } from "@/components/ui/button";
+import { useResourceEffect } from "@/hooks/useResourceEffect";
+import { advisoryRequestStep, portalTextMatches } from "@/lib/portal-attention";
+import { formatDate } from "@/lib/format";
 import { advisoryRequests, type AdvisoryRequest } from "@/services/advisory-delivery.service";
-function Reply({ company, row, done }: {
-    company: number;
-    row: AdvisoryRequest;
-    done: (row: AdvisoryRequest) => void;
-}) {
-    const [text, setText] = useState(row.response ?? ""), [busy, setBusy] = useState(false), [error, setError] = useState("");
-    return <form className="mt-2 space-y-2" onSubmit={async (e) => { e.preventDefault(); setBusy(true); try {
-        done(await advisoryRequests(company, { response: text }, row.id) as AdvisoryRequest);
-    }
-    catch (e) {
-        setError(e instanceof Error ? e.message : "No se pudo responder.");
-    }
-    finally {
-        setBusy(false);
-    } }}><Textarea disabled={busy} required maxLength={4000} aria-label="Respuesta a la gestoría" value={text} onChange={e => setText(e.target.value)}/><Button size="sm" disabled={busy}>Enviar respuesta</Button>{error && <p role="alert">{error}</p>}</form>;
+function Reply({ company, row, done }: { company: number; row: AdvisoryRequest; done: (row: AdvisoryRequest) => void }) {
+ const [text,setText]=useState(row.response??""),[busy,setBusy]=useState(false),[error,setError]=useState("");
+ return <form className="mt-3 space-y-2" onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");try{done(await advisoryRequests(company,{response:text},row.id) as AdvisoryRequest);}catch(cause){setError(cause instanceof Error?cause.message:"No se pudo responder. Se conserva el texto.");}finally{setBusy(false);}}}><Textarea disabled={busy} required maxLength={4000} aria-label="Respuesta a la gestoría" value={text} onChange={event=>setText(event.target.value)}/><Button size="sm" disabled={busy||!text.trim()}>{busy?"Enviando…":"Enviar respuesta"}</Button>{error&&<p role="alert" className="text-sm text-orange-700 dark:text-orange-300">{error}</p>}</form>;
 }
-export function AdvisoryRequests({ company, external, accounting, payroll, canReply }: {
-    company: number;
-    external: boolean;
-    accounting: boolean;
-    payroll: boolean;
-    canReply: boolean;
-}) {
-    const [rows, setRows] = useState<AdvisoryRequest[]>([]), [description, setDescription] = useState(""), [area, setArea] = useState(accounting ? "accounting" : "payroll"), [busy, setBusy] = useState(false), [error, setError] = useState("");
-    useEffect(() => { let active = true; advisoryRequests(company).then(data => { if (active)
-        setRows(data as AdvisoryRequest[]); }).catch(e => { if (active)
-        setError(e.message); }); return () => { active = false; }; }, [company]);
-    return <section className="space-y-3 rounded-xl border p-4"><h2 className="font-semibold">Peticiones de información</h2>{error && <p role="alert" className="text-orange-700">{error}</p>}
- {external && <form className="space-y-2" onSubmit={async (e) => { e.preventDefault(); setBusy(true); try {
-        const item = await advisoryRequests(company, { area, description }) as AdvisoryRequest;
-        setRows(current => [item, ...current]);
-        setDescription("");
-    }
-    catch (e) {
-        setError(e instanceof Error ? e.message : "No se pudo solicitar.");
-    }
-    finally {
-        setBusy(false);
-    } }}><fieldset disabled={busy} className="space-y-2"><label className="text-sm">Área<FormSelect aria-label="Área de la petición" className="staff-select" value={area} onValueChange={setArea}>{accounting && <option value="accounting">Contabilidad</option>}{payroll && <option value="payroll">Laboral</option>}</FormSelect></label><Textarea required maxLength={2000} aria-label="Información pendiente" value={description} onChange={e => setDescription(e.target.value)} placeholder="Qué información necesitas de la empresa"/><Button size="sm">Solicitar información</Button></fieldset></form>}
- {rows.map(row => <article key={row.id} className="border-t pt-3"><p className="text-sm font-medium">{row.area === "payroll" ? "Laboral" : "Contabilidad"} · {row.description}</p><p className={row.response ? "mt-1 whitespace-pre-wrap text-sm" : "mt-1 text-sm text-orange-700"}>{row.response ?? "Pendiente de respuesta de la empresa"}</p>{!external && canReply && !row.response && <Reply company={company} row={row} done={updated => setRows(current => current.map(r => r.id === updated.id ? updated : r))}/>}</article>)}</section>;
+export function AdvisoryRequests({company,external,accounting,payroll,canReply,initialFilter="pending"}:{company:number;external:boolean;accounting:boolean;payroll:boolean;canReply:boolean;initialFilter?:"pending"|"answered"|"all"}){
+ const [rows,setRows]=useState<AdvisoryRequest[]>([]),[description,setDescription]=useState(""),[area,setArea]=useState(accounting?"accounting":"payroll"),[busy,setBusy]=useState(false),[error,setError]=useState(""),[loading,setLoading]=useState(true),[revision,setRevision]=useState(0),[filter,setFilter]=useState(initialFilter),[search,setSearch]=useState("");
+ const request=useCallback(()=>advisoryRequests(company),[company]);
+ useResourceEffect(true,company+":"+revision,request,data=>{setRows(data as AdvisoryRequest[]);setLoading(false);setError("");},cause=>{setRows([]);setLoading(false);setError(cause instanceof Error?cause.message:"No se pudieron consultar las peticiones.");});
+ const visible=rows.filter(row=>(filter==="all"||(filter==="pending"?advisoryRequestStep(row)==="company":advisoryRequestStep(row)==="response_available"))&&portalTextMatches(search,[row.description,row.response])).sort((a,b)=>a.created_at.localeCompare(b.created_at));
+ return <section className="space-y-4 rounded-xl border p-4"><div><h2 className="font-semibold">Peticiones de información</h2><p className="mt-1 text-xs text-muted-foreground">La empresa responde las peticiones; la gestoría consulta la información entregada.</p></div>
+ {error&&<div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-400/30 p-3 text-sm"><p>{error}</p><Button size="sm" variant="outline" onClick={()=>{setLoading(true);setError("");setRevision(value=>value+1);}}>Reintentar consulta</Button></div>}
+ {external&&<form className="space-y-2 rounded-xl bg-muted/30 p-3" onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");try{const item=await advisoryRequests(company,{area,description}) as AdvisoryRequest;setRows(current=>[item,...current]);setDescription("");setFilter("pending");}catch(cause){setError(cause instanceof Error?cause.message:"No se pudo solicitar. Se conserva el formulario.");}finally{setBusy(false);}}}><fieldset disabled={busy||loading} className="space-y-2"><label className="text-sm">Área<FormSelect aria-label="Área de la petición" value={area} onValueChange={setArea}>{accounting&&<option value="accounting">Contabilidad</option>}{payroll&&<option value="payroll">Laboral</option>}</FormSelect></label><Textarea required maxLength={2000} aria-label="Información pendiente" value={description} onChange={event=>setDescription(event.target.value)} placeholder="Qué información necesitas de la empresa"/><Button size="sm" disabled={busy||!description.trim()}>{busy?"Enviando…":"Solicitar información"}</Button></fieldset></form>}
+ <div className="flex flex-wrap items-center gap-3"><Input aria-label="Buscar petición o respuesta" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Buscar petición o respuesta…" className="min-w-48 flex-1"/><FormSelect aria-label="Estado de la información" value={filter} onValueChange={value=>setFilter(value as typeof filter)}><option value="pending">Pendiente de la empresa</option><option value="answered">Con respuesta</option><option value="all">Todas</option></FormSelect><span className="text-xs text-muted-foreground">{visible.length} peticiones</span></div>
+ {loading&&<p role="status" className="text-sm text-muted-foreground">Consultando peticiones compartidas…</p>}{!loading&&!error&&!visible.length&&<p className="py-6 text-center text-sm text-muted-foreground">{rows.length?"No hay peticiones para esta selección.":"Todavía no hay peticiones de información."}</p>}
+ {visible.map(row=><article key={row.id} className="space-y-2 border-t pt-3"><div className="flex flex-wrap justify-between gap-2"><p className="text-xs text-muted-foreground">{row.area==="payroll"?"Laboral":"Contabilidad"} · Solicitada {formatDate(row.created_at)}</p><p className={row.response===null?"text-xs font-medium text-orange-700 dark:text-orange-300":"text-xs text-muted-foreground"}>{row.response===null?"Siguiente paso: empresa":"Respuesta disponible para la gestoría"}</p></div><p className="whitespace-pre-wrap text-sm font-medium">{row.description}</p>{row.response!==null&&<div className="rounded-xl bg-muted/40 p-3"><p className="whitespace-pre-wrap text-sm">{row.response}</p>{row.answered_at&&<p className="mt-2 text-xs text-muted-foreground">Respondida {formatDate(row.answered_at)}</p>}</div>}{!external&&canReply&&row.response===null&&<Reply company={company} row={row} done={updated=>setRows(current=>current.map(item=>item.id===updated.id?updated:item))}/>}</article>)}
+ </section>;
 }

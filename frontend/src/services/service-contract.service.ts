@@ -4,8 +4,12 @@ import type {
     ServiceContractTermsUpdate,
 } from "@/types/service-contract"
 import type { Location, LocationSpace } from "@/types/location"
+import { collectPaginated } from "@/lib/pagination"
 
 export const ServiceContractService = {
+    getAllContracts: async (filters: { status?: string } = {}): Promise<ServiceContract[]> => collectPaginated(
+        (skip, limit) => ServiceContractService.getContracts({ ...filters, skip, limit }),
+    ),
     getContracts: async (filters: {
         status?: string
         skip?: number

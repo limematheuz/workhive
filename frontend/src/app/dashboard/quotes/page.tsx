@@ -22,6 +22,10 @@ import { CompanyService } from "@/services/company.service";
 import { QuoteService } from "@/services/quote.service";
 import { Quote } from "@/types/quote";
 import { useViewState } from "@/hooks/useViewState";
+import { QuotesOverview } from "@/components/quotes/QuotesOverview";
+import { FinanceLoadError } from "@/components/finance/FinanceLoadError";
+import { filterWorkspaceQuotes, type QuoteAttention } from "@/lib/quote-workspace";
+import { financeLocalDay } from "@/lib/finance-priorities";
 
 function QuotesPageLoading() {
     return (
@@ -41,6 +45,9 @@ function QuotesPageContent() {
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [search, setSearch] = useViewState("quotes.search", "");
+    const [attention, setAttention] = useViewState<QuoteAttention>("quotes.attention", "all");
     const [selectedStatus, setSelectedStatus] = useViewState("quotes.status", "");
     const [selectedClientId, setSelectedClientId] = useViewState("quotes.client", "");
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -64,7 +71,7 @@ function QuotesPageContent() {
 
         const load = async () => {
             try {
-                const [clientsData] = await Promise.all([ClientService.getClients()]);
+                const [clientsData] = await Promise.all([ClientService.getAllClients(null)]);
                 if (cancelled) return;
                 setClients(clientsData);
 
@@ -87,22 +94,16 @@ function QuotesPageContent() {
         if (userLoading || !user || !canViewQuotes) return;
         try {
             setLoading(true);
-            const data = await QuoteService.getQuotes({
-                clientId: selectedClientId ? parseInt(selectedClientId) : undefined,
-                status: selectedStatus || undefined,
-            });
+            setLoadError(false);
+            const data = await QuoteService.getAllQuotes();
             setQuotes(data);
-
-            if (user.company_id) {
-                const company = await CompanyService.getCompany(user.company_id);
-                setCompanyName(company.name);
-            }
         } catch {
+            setLoadError(true);
             toast.error(dict.quotes?.error_load ?? "Error al cargar presupuestos");
         } finally {
             setLoading(false);
         }
-    }, [canViewQuotes, dict.quotes?.error_load, selectedClientId, selectedStatus, user, userLoading]);
+    }, [canViewQuotes, dict.quotes?.error_load, user, userLoading]);
 
     useEffect(() => {
         if (!canViewQuotes) return;
@@ -133,7 +134,8 @@ function QuotesPageContent() {
             const fresh = await QuoteService.getQuote(quote.id);
             setSelectedQuote(fresh);
         } catch {
-            setSelectedQuote(quote);
+            toast.error("No se ha podido abrir la versión actual del presupuesto. Vuelve a intentarlo.");
+            return;
         }
         setIsDetailOpen(true);
     };
@@ -159,12 +161,14 @@ function QuotesPageContent() {
                     setSelectedQuote(quote);
                     setIsDetailOpen(true);
                 }
-                router.replace("/dashboard/quotes", { scroll: false });
+                const query = new URLSearchParams(searchParams.toString()); query.delete("quote"); query.delete("edit");
+                router.replace(`/dashboard/quotes${query.size ? `?${query}` : ""}`, { scroll: false });
             })
             .catch(() => {
                 if (!cancelled) {
                     toast.error(dict.quotes?.error_load ?? "Presupuesto no encontrado");
-                    router.replace("/dashboard/quotes", { scroll: false });
+                    const query = new URLSearchParams(searchParams.toString()); query.delete("quote"); query.delete("edit");
+                    router.replace(`/dashboard/quotes${query.size ? `?${query}` : ""}`, { scroll: false });
                 }
             });
         return () => {
@@ -207,7 +211,7 @@ function QuotesPageContent() {
                 icon={FileText}
                 title={dict.quotes?.list_title ?? "Presupuestos"}
                 subtitle={dict.quotes?.list_subtitle ?? "Crea y gestiona presupuestos para tus clientes."}
-                className="mb-8"
+                className="mb-4"
                 actions={canManageQuotes ? (
                     <Button
                         type="button"
@@ -220,6 +224,7 @@ function QuotesPageContent() {
                 ) : undefined}
             />
 
+            {loadError ? <FinanceLoadError message="No se ha podido consultar la cartera completa de presupuestos." onRetry={() => void loadQuotes()} /> : <QuotesOverview quotes={filterWorkspaceQuotes(quotes, { search, clientId: selectedClientId, status: "", attention: "all", today: financeLocalDay(new Date()), clientName: getClientName })} today={financeLocalDay(new Date())} attention={attention} onAttentionChange={(value) => { setAttention(value); setSelectedStatus(""); }} statusLabels={STATUS_LABELS} onStatusChange={setSelectedStatus} />}
             <QuotesFiltersSection
                 clients={clients}
                 selectedClientId={selectedClientId}
@@ -227,10 +232,12 @@ function QuotesPageContent() {
                 selectedStatus={selectedStatus}
                 onStatusChange={setSelectedStatus}
                 statusLabels={STATUS_LABELS}
+                search={search}
+                onSearchChange={setSearch}
             />
 
             <QuotesListSection
-                quotes={quotes}
+                quotes={loadError ? [] : filterWorkspaceQuotes(quotes, { search, clientId: selectedClientId, status: selectedStatus, attention, today: financeLocalDay(new Date()), clientName: getClientName })}
                 statusLabels={STATUS_LABELS}
                 emptyLabel={dict.quotes?.empty ?? "No hay presupuestos. Crea el primero."}
                 columnLabels={{

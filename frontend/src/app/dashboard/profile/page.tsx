@@ -21,8 +21,13 @@ import {
 } from "@/components/ui/dialog";
 import { PAGE_ACTION_BUTTON_PRIMARY } from "@/lib/page-action-button";
 import { canViewCompanyPlanSummary } from "@/lib/company-plan-summary";
+import { COMPANY_ONBOARDING_REQUESTED } from "@/domain/onboarding/cleaning-onboarding";
+import { CompanyViewSession } from "@/components/company/CompanyViewSession";
 
 export default function ProfilePage() {
+    return <CompanyViewSession><ProfileWorkspace/></CompanyViewSession>;
+}
+function ProfileWorkspace() {
     const state = useProfile();
     const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -129,6 +134,7 @@ export default function ProfilePage() {
                 </div>
             </section>
 
+            {state.activityWarning && <div role="alert" className="space-y-2 rounded-xl border border-orange-400/40 bg-card p-4 text-sm"><p className="text-orange-700 dark:text-orange-300">{state.activityWarning}</p><Button variant="outline" size="sm" onClick={() => void state.loadProfileData()}>Reintentar actividad</Button></div>}
             {state.isEditing && state.user && (
                 <section className="billing-surface billing-surface-accent-pad relative w-full animate-fade-in overflow-hidden rounded-[24px]">
                     <div className="absolute left-4 right-4 top-3 h-1.5 rounded-full bg-accent" aria-hidden="true" />
@@ -180,15 +186,15 @@ export default function ProfilePage() {
 
             {!state.isAccountant && (
                 <>
-                    <ProfileStats
+                    {state.stats && <ProfileStats
                         stats={state.stats}
                         dict={state.dict}
                         activeSession={state.activeSession}
                         activeSessionTime={state.activeSessionTime}
                         formatTime={state.formatTime}
-                    />
+                    />}
 
-                    <ProfileHistories
+                    {(state.activityAccess.sessions || state.activityAccess.tasks || state.canViewActiveTeam) ? <ProfileHistories
                         activeTab={state.activeTab}
                         setActiveTab={state.setActiveTab}
                         sessions={state.sessions}
@@ -201,7 +207,9 @@ export default function ProfilePage() {
                         activeSessionTime={state.activeSessionTime}
                         activeCompanySessions={state.activeCompanySessions}
                         canViewActiveTeam={state.canViewActiveTeam}
-                    />
+                        canViewSessions={state.activityAccess.sessions}
+                        canViewTasks={state.activityAccess.tasks}
+                    /> : <p className="rounded-xl border bg-card p-4 text-sm text-muted-foreground">No hay datos de actividad disponibles en este momento.</p>}
                 </>
             )}
             {/* Custom confirmation dialog */}
@@ -232,7 +240,8 @@ export default function ProfilePage() {
                                 localStorage.removeItem(`workhive_onboarding_done_${state.user?.id}`);
                                 localStorage.removeItem(`workhive_guided_tour_done_${state.user?.id}`);
                                 localStorage.setItem(`workhive_onboarding_forced_${state.user?.id}`, "true");
-                                window.location.href = "/dashboard";
+                                setShowResetConfirm(false);
+                                window.dispatchEvent(new Event(COMPANY_ONBOARDING_REQUESTED));
                             }}
                             className={PAGE_ACTION_BUTTON_PRIMARY}
                         >
