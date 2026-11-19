@@ -5,7 +5,8 @@ import { WorkSessionService } from "@/services/work-session.service";
 import { UserService } from "@/services/user.service";
 import { QualityService, type QualityIncident } from "@/services/quality.service";
 import { collectPaginated } from "@/lib/pagination";
-import { canManageTime, canViewQuality } from "@/domain/access/roles";
+import { overviewResourceFailureState } from "@/lib/overview-resource";
+import { canAdministerCompany, canManageTime, canViewQuality } from "@/domain/access/roles";
 import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
 import { useRealtimeInvalidation } from "@/hooks/useRealtimeEvents";
 import { POLL_INTERVALS } from "@/lib/polling";
@@ -27,11 +28,13 @@ export function useOverviewData(user: User, taskIds: string) {
         generation.current = request;
         const read = async <T,>(job: () => Promise<T>, fallback: T, set: (data: OverviewResource<T>) => void) => {
             try { const value = await job(); if (request === generation.current) set({ value, state: "ready" }); }
-            catch { if (request === generation.current) set({ value: fallback, state: "error" }); }
+            catch (error) { if (request === generation.current) set({ value: fallback, state: overviewResourceFailureState(error) }); }
         };
         await Promise.all([
             canManageTime(user) ? read(() => WorkSessionService.getActiveCompanySessions(), [], setSessions) : Promise.resolve(setSessions({ value: [], state: "denied" })),
-            read(() => collectPaginated((skip, limit) => UserService.getUsers(skip, limit)), [], setUsers),
+            read(() => canAdministerCompany(user)
+                ? collectPaginated((skip, limit) => UserService.getUsers(skip, limit))
+                : UserService.getAssignableUsers(), [], setUsers),
             canViewQuality(user) ? read(async () => {
                 const access = await QualityService.getAccess();
                 if (!access.sections.incidents.can_read) { if (request === generation.current) setIncidents({ value: [], state: "denied" }); return null; }

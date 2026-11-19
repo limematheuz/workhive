@@ -263,6 +263,7 @@ def company_status(db: Session, current_user: User) -> dict:
 def _add_notification(
     db: Session,
     *,
+    company_id: int,
     user: User,
     event_type: str,
     title: str,
@@ -272,7 +273,7 @@ def _add_notification(
     db.add(
         Notification(
             user_id=user.id,
-            company_id=user.company_id,
+            company_id=company_id,
             event_type=event_type,
             title=title,
             message=message,
@@ -319,6 +320,7 @@ def request_ownership(db: Session, current_user: User) -> dict:
         db.flush()
         _add_notification(
             db,
+            company_id=company_id,
             user=owner,
             event_type="calendar.ownership_requested",
             title="Solicitud de control del calendario",
@@ -416,6 +418,7 @@ def review_ownership_request(
     db.add(ownership_request)
     _add_notification(
         db,
+        company_id=company_id,
         user=requester,
         event_type=(
             "calendar.ownership_approved"

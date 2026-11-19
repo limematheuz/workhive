@@ -39,6 +39,10 @@ import {
     getPersistentNotificationPriority,
     getTaskNotificationPriority,
 } from "@/lib/notification-priority";
+import {
+    canQueryManagementTaskFeed,
+    canQueryReservationNotificationFeed,
+} from "@/lib/notification-feed-access";
 
 const ACTIVE_PRIVACY_REQUEST_STATUSES = new Set(["pending", "processing"]);
 
@@ -47,6 +51,7 @@ interface UseNotificationsParams {
     taskDataEnabled?: boolean;
     reservationDataEnabled?: boolean;
     canReadTasks?: boolean;
+    canManageTasks?: boolean;
     userId: number | undefined;
     companyId: number | undefined;
     roleName: string | undefined;
@@ -59,6 +64,7 @@ export function useNotifications({
     taskDataEnabled,
     reservationDataEnabled = true,
     canReadTasks,
+    canManageTasks,
     userId,
     companyId,
     roleName,
@@ -76,12 +82,14 @@ export function useNotifications({
         persistentLoadFailed, persistentLoading } = usePersistentNotificationFeed(enabled, userId, companyId, pendingTaskAcknowledgements);
 
     const effectiveTaskDataEnabled = taskDataEnabled ?? canReadTasks ?? true;
+    const effectiveCanManageTasks = canQueryManagementTaskFeed(canManageTasks, roleName);
     const { notificationTasks, loadTaskNotifications, taskLoadFailed, taskLoading } = useTaskNotificationFeed(
-        enabled && effectiveTaskDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
+        enabled && effectiveTaskDataEnabled, userId, companyId, roleName, effectiveCanManageTasks, setNotificationReferenceTime,
     );
 
     const { notificationReservations, upcomingArrivals, loadReservationNotifications, reservationLoadFailed, reservationLoading } = useReservationNotificationFeed(
-        enabled && reservationDataEnabled, userId, companyId, roleName, setNotificationReferenceTime,
+        canQueryReservationNotificationFeed(enabled, reservationDataEnabled, canManageTasks, roleName),
+        userId, companyId, roleName, setNotificationReferenceTime,
     );
     const { privacyRequests, loadPrivacyNotifications, privacyLoadFailed, privacyLoading } = usePrivacyNotificationFeed(enabled, userId, companyId, roleName);
 

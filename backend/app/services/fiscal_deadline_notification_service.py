@@ -13,6 +13,7 @@ from app.models.company_fiscal_settings import CompanyFiscalSettings
 from app.models.user import User
 from app.repositories import fiscal_deadline_notification as fiscal_deadline_notification_repo
 from app.services import notification_service
+from app.services.company_notification_recipients import recipients as company_recipients
 
 
 logger = logging.getLogger("workhive.fiscal_deadlines")
@@ -38,15 +39,13 @@ def _today() -> date:
     return datetime.now(timezone.utc).date()
 
 
-def _company_admins(fiscal_settings: CompanyFiscalSettings) -> list[User]:
-    company = fiscal_settings.company
-    if not company or not company.users:
+def _company_admins(
+    db: Session,
+    fiscal_settings: CompanyFiscalSettings,
+) -> list[User]:
+    if not fiscal_settings.company_id:
         return []
-    return [
-        user
-        for user in company.users
-        if user.is_active and user.role and user.role.name == "admin"
-    ]
+    return company_recipients(db, {fiscal_settings.company_id}, {"admin"})
 
 
 def _enabled_models(fiscal_settings: CompanyFiscalSettings) -> tuple[str, ...]:
@@ -125,7 +124,7 @@ def send_fiscal_deadline_notifications(
     for fiscal_settings in (
         fiscal_deadline_notification_repo.list_companies_with_fiscal_reminders(db)
     ):
-        recipients = _company_admins(fiscal_settings)
+        recipients = _company_admins(db, fiscal_settings)
         if not recipients:
             continue
         for deadline in fiscal_deadlines_due_this_calendar_year(

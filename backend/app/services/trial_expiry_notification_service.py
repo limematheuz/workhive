@@ -9,6 +9,7 @@ from app.db.session import SessionLocal
 from app.models.company import Company
 from app.models.user import User
 from app.services import email_service
+from app.services.company_notification_recipients import recipients as company_recipients
 
 
 logger = logging.getLogger("workhive.trial_expiry")
@@ -31,14 +32,12 @@ def _is_due(company: Company, now: datetime) -> bool:
     )
 
 
-def _company_admin_emails(company: Company) -> list[str]:
-    return sorted(
-        {
-            user.email.strip().lower()
-            for user in company.users
-            if user.is_active and user.email and user.role and user.role.name == "admin"
-        }
-    )
+def _company_admins(db: Session, company: Company) -> list[User]:
+    by_email: dict[str, User] = {}
+    for user in company_recipients(db, {company.id}, {"admin"}):
+        if user.email:
+            by_email.setdefault(user.email.strip().lower(), user)
+    return [by_email[email] for email in sorted(by_email)]
 
 
 def _superadmin_emails(db: Session, exclude: set[str]) -> list[str]:
@@ -88,9 +87,10 @@ def send_due_trial_expiry_notifications(
         if not _is_due(company, current_time):
             continue
 
-        company_admin_emails = _company_admin_emails(company)
+        company_admins = _company_admins(db, company)
+        company_admin_emails = [user.email.strip().lower() for user in company_admins]
         superadmin_emails = _superadmin_emails(db, set(company_admin_emails))
-        if not company_admin_emails or not superadmin_emails:
+        if not company_admins or not superadmin_emails:
             logger.warning(
                 "Trial warning recipients are incomplete",
                 extra={"company_id": company.id},
@@ -98,15 +98,14 @@ def send_due_trial_expiry_notifications(
             continue
 
         delivered = True
-        for user in company.users:
-            if user.email and user.email.strip().lower() in company_admin_emails:
-                delivered = _deliver(
-                    email_service.send_trial_expiring_email,
-                    recipient_email=user.email,
-                    recipient_name=user.full_name or user.email,
-                    company_name=company.name,
-                    trial_ends_at=_as_utc(company.trial_ends_at),
-                ) and delivered
+        for user in company_admins:
+            delivered = _deliver(
+                email_service.send_trial_expiring_email,
+                recipient_email=user.email,
+                recipient_name=user.full_name or user.email,
+                company_name=company.name,
+                trial_ends_at=_as_utc(company.trial_ends_at),
+            ) and delivered
         for recipient_email in superadmin_emails:
             delivered = _deliver(
                 email_service.send_trial_expiring_superadmin_email,

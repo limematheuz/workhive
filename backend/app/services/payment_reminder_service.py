@@ -10,6 +10,7 @@ from app.models.invoice import Invoice
 from app.models.user import User
 from app.repositories import payment_reminder as payment_reminder_repo
 from app.services import notification_service
+from app.services.company_notification_recipients import recipients as company_recipients
 
 
 logger = logging.getLogger("workhive.payment_reminders")
@@ -27,14 +28,10 @@ def _as_utc(value: datetime) -> datetime:
     )
 
 
-def _company_admins(invoice: Invoice) -> list[User]:
-    if not invoice.company or not invoice.company.users:
+def _company_admins(db: Session, invoice: Invoice) -> list[User]:
+    if not invoice.company_id:
         return []
-    return [
-        user
-        for user in invoice.company.users
-        if user.is_active and user.role and user.role.name == "admin"
-    ]
+    return company_recipients(db, {invoice.company_id}, {"admin"})
 
 
 def _notification_payload(
@@ -82,7 +79,7 @@ def send_due_payment_notifications(
         if not invoice.company or not invoice.company.is_active:
             continue
         payload = _notification_payload(invoice, now=current_time)
-        recipients = _company_admins(invoice)
+        recipients = _company_admins(db, invoice)
         if payload is None or not recipients:
             continue
 
