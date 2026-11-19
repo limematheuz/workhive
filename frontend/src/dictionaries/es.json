@@ -1886,7 +1886,7 @@
     "stats_paid_count": "{count} pagadas por completo",
     "stats_open_count": "{count} abiertas",
     "stats_overdue_count": "{count} vencidas",
-    "summary_nav": "Resumen",
+    "summary_nav": "Resumen de facturación",
     "ledger_title": "Libro de ventas",
     "ledger_subtitle": "Facturas emitidas y registros históricos en un único resumen fiscal.",
     "ledger_records": "{count} registros",

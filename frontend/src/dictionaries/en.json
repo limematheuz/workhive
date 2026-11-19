@@ -1886,7 +1886,7 @@
     "stats_paid_count": "{count} paid in full",
     "stats_open_count": "{count} open",
     "stats_overdue_count": "{count} overdue",
-    "summary_nav": "Summary",
+    "summary_nav": "Billing overview",
     "ledger_title": "Sales ledger",
     "ledger_subtitle": "Issued invoices and historical records in one fiscal summary.",
     "ledger_records": "{count} records",
