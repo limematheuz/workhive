@@ -53,7 +53,7 @@ test("a changed recipient cannot inherit cached notifications when its request f
     state.failInbox = true;
     // Exercise the provider's public bfcache recovery path with a new principal.
     await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })));
-    await expect(page.getByRole("button", { name: /QA avisos 2/ })).toBeVisible();
+    await expect(page.getByText("QA avisos 2", { exact: true }).filter({ visible: true })).toBeVisible();
     await expect(page.getByRole("alert").filter({ hasText: "No se pudieron actualizar los avisos." })).toBeVisible();
     await expect(page.getByText("QA aviso persistente", { exact: true })).toHaveCount(0);
     state.failInbox = false;

@@ -45,7 +45,11 @@ for (const width of [1440, 768, 390]) for (const feed of ["privacy", "arrivals"]
         await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true })));
         await (await identityResponse).finished();
         await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
-        if (width >= 768) await expect(page.getByRole("button", { name: new RegExp(`QA avisos ${state.userId}.*${role}`) })).toBeVisible();
+        if (width >= 768) {
+            const identity = page.getByRole("button", { name: "Perfil y preferencias", exact: true });
+            await expect(identity).toContainText(`QA avisos ${state.userId}`);
+            await expect(identity).toContainText(role);
+        }
         await page.evaluate(text => {
             const tracker = { leaked: Boolean(document.body.textContent?.includes(text)), observer: null as MutationObserver | null };
             tracker.observer = new MutationObserver(() => { if (document.body.textContent?.includes(text)) tracker.leaked = true; });

@@ -11,6 +11,9 @@ export async function setupNotificationWorkspace(context: BrowserContext, page: 
         const path = new URL(route.request().url()).pathname.replace(/\/$/, "");
         let body: unknown = [];
         if (path.endsWith("users/me")) body = { id: state.userId, full_name: `QA avisos ${state.userId}`, role: { name: "viewer" }, company_id: state.companyId, is_active: true, can_view_quality: true };
+        else if (path.endsWith("session/companies")) body = { current_company_id: state.companyId, companies: [{ id: state.companyId, name: "QA", access_class: "worker", disabled: false, disabled_reason: null }] };
+        else if (path.endsWith("session/applications")) body = { current_application: "internal", current_key: `internal:${state.companyId}`, applications: [{ key: `internal:${state.companyId}`, kind: "internal", label: "QA", description: "QA workspace", company_id: state.companyId, company_name: "QA", href: "/dashboard" }] };
+        else if (path.endsWith("companies/current/entitlements")) body = { entitlements: ["features.quality", "features.work_orders", "features.locations", "features.time_tracking"].map(code => ({ code, label: code, group: "Funciones", value_type: "boolean", value: true, source: "plan", availability: "available" })) };
         else if (/\/companies\/\d+$/.test(path)) body = { id: state.companyId, name: "QA", onboarding_completed: true, subscription_status: "active" };
         else if (path.endsWith("organization/access")) {
             state.accessReads++;
@@ -35,7 +38,7 @@ export async function setupNotificationWorkspace(context: BrowserContext, page: 
     });
     if (!options.deferNavigation) {
         await page.goto(destination);
-        if (destination === "/dashboard/quality") await expect(page.getByRole("heading", { name: "Incidencias y acciones correctivas", exact: true })).toBeVisible();
+        if (destination === "/dashboard/quality") await expect(page.locator("main").getByRole("heading", { name: "Calidad", exact: true })).toBeVisible();
     }
     return state;
 }
