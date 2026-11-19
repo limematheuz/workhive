@@ -270,14 +270,7 @@ def update_company(
 
     updated_company = company_repo.update_company(db, db_company, company_update)
     if should_revoke_company_sessions:
-        (
-            db.query(User)
-            .filter(User.company_id == company_id)
-            .update(
-                {User.session_version: User.session_version + 1},
-                synchronize_session=False,
-            )
-        )
+        user_repo.revoke_company_sessions(db, company_id=company_id)
         db.commit()
         db.refresh(updated_company)
     return updated_company
