@@ -8,6 +8,7 @@ from app.models.user import User
 from app.repositories import notification_delivery, notification_inbox
 from app.repositories.notification_acknowledgement import list_task_acknowledgements
 from app.services.user_scope import require_company_context
+from app.services.entitlement_service import boolean_entitlement_predicate
 
 
 def notify_users(
@@ -95,6 +96,7 @@ def _read_visibility(user: User):
         user.id,
         legacy_roles_for_capabilities(("work.read",)),
         legacy_roles_for_capabilities(("work.manage",)),
+        boolean_entitlement_predicate(require_company_context(user), "features.work_orders"),
     )
 
 
