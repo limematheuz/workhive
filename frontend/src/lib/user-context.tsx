@@ -10,17 +10,21 @@ import React, {
 } from "react";
 import { authService } from "@/services/auth.service";
 import { User } from "@/types/user";
-import { USER_CACHE_KEY, LEGACY_USER_CACHE_KEY } from "@/lib/auth";
+import { USER_CACHE_KEY, LEGACY_USER_CACHE_KEY, getSessionReadContext } from "@/lib/auth";
+import { mayRecoverCachedSession } from "@/lib/session-read-recovery";
+import { useBackgroundPolling } from "@/hooks/useBackgroundPolling";
+import { POLL_INTERVALS } from "@/lib/polling";
 
 interface UserContextType {
     user: User | null;
     loading: boolean;
+    connectionUnavailable: boolean;
     refreshUser: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-function readCachedUser(): User | null {
+function readCachedUser(allowOfflineIdentity = false): User | null {
     if (typeof window === "undefined") return null;
     try {
         const raw = sessionStorage.getItem(USER_CACHE_KEY);
@@ -28,7 +32,7 @@ function readCachedUser(): User | null {
 
         const legacyRaw = sessionStorage.getItem(LEGACY_USER_CACHE_KEY);
         if (!legacyRaw) {
-            return !navigator.onLine
+            return allowOfflineIdentity || !navigator.onLine
                 ? JSON.parse(localStorage.getItem("workhive_offline_identity:v1") ?? "null") as User | null
                 : null;
         }
@@ -55,8 +59,17 @@ function writeCachedUser(user: User | null): void {
 export function UserProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [connectionUnavailable, setConnectionUnavailable] = useState(false);
+    const recoverRead = useCallback((error: unknown) => {
+        const recover = mayRecoverCachedSession(error, window.location.pathname, navigator.onLine);
+        const cached = recover ? readCachedUser(true) : null;
+        setUser(cached);
+        setConnectionUnavailable(Boolean(cached));
+        if (!cached) writeCachedUser(null);
+    }, []);
 
     const refreshUser = useCallback(async () => {
+        const sessionContext = getSessionReadContext();
         try {
             const userData = await Promise.race([
                 authService.getMe(),
@@ -67,19 +80,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                     )
                 ),
             ]);
+            if (sessionContext !== getSessionReadContext()) return;
             setUser(userData);
+            setConnectionUnavailable(false);
             writeCachedUser(userData);
-        } catch {
-            if (!navigator.onLine) { setUser(readCachedUser()); return; }
-            setUser(null);
-            writeCachedUser(null);
+        } catch (error) {
+            if (sessionContext === getSessionReadContext()) recoverRead(error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [recoverRead]);
+    useBackgroundPolling(() => {
+        if (connectionUnavailable) return refreshUser();
+    }, POLL_INTERVALS.liveWork);
 
     useEffect(() => {
         let cancelled = false;
+        const sessionContext = getSessionReadContext();
         (async () => {
             try {
                 const userData = await Promise.race([
@@ -91,15 +108,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
                         )
                     ),
                 ]);
-                if (!cancelled) {
+                if (!cancelled && sessionContext === getSessionReadContext()) {
                     setUser(userData);
+                    setConnectionUnavailable(false);
                     writeCachedUser(userData);
                 }
-            } catch {
-                if (!cancelled) {
-                    const offlineUser = !navigator.onLine ? readCachedUser() : null;
-                    setUser(offlineUser);
-                    if (!offlineUser) writeCachedUser(null);
+            } catch (error) {
+                if (!cancelled && sessionContext === getSessionReadContext()) {
+                    recoverRead(error);
                 }
             } finally {
                 if (!cancelled) setLoading(false);
@@ -109,7 +125,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [recoverRead]);
 
     useEffect(() => {
         const onPageShow = (event: PageTransitionEvent) => {
@@ -127,8 +143,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }, [refreshUser]);
 
     const value = useMemo(
-        () => ({ user, loading, refreshUser }),
-        [user, loading, refreshUser]
+        () => ({ user, loading, connectionUnavailable, refreshUser }),
+        [user, loading, connectionUnavailable, refreshUser]
     );
 
     return (

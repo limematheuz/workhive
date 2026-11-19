@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { TaskItem, TaskService } from "@/services/task.service";
 import { useNotificationLocations } from "./useNotificationLocations";
 import { usePersistentNotificationFeed } from "./usePersistentNotificationFeed";
@@ -30,9 +30,9 @@ import { acknowledgeTaskOpened } from "./task-notification-acknowledgement";
 import type { Dictionary } from "@/lib/dictionary-context";
 import { NotificationService, PersistentNotification } from "@/services/notification.service";
 import {
-    getPersistentNotificationHref,
     getPersistentTaskNotificationIds,
 } from "@/lib/task-reporting";
+import { getNotificationDestination } from "@/lib/notification-destination";
 import { getTaskScheduleDate, isTaskOverdue } from "@/domain/tasks/task-schedule";
 import { isOperationalStatus } from "@/domain/tasks/task-status";
 import {
@@ -66,6 +66,7 @@ export function useNotifications({
     setIsNotificationsOpen,
 }: UseNotificationsParams) {
     const router = useRouter();
+    const workerMode = usePathname().startsWith("/worker");
     const { loadLocationNotifications, getNotificationLocationName } = useNotificationLocations(enabled, userId, companyId);
     const [notificationReferenceTime, setNotificationReferenceTime] = useState(0);
     const [dismissedNotificationKeys, setDismissedNotificationKeys] = useState<string[]>([]);
@@ -397,16 +398,17 @@ export function useNotifications({
         tasksById,
     ]);
 
-    const handlePersistentNotificationClick = useCallback((notification: PersistentNotification) => {
+    const handlePersistentNotificationClick = useCallback(async (notification: PersistentNotification) => {
         const key = `persistent:${notification.id}`;
         setOpeningNotificationKey(key);
+        let acknowledgement: Promise<void> | undefined;
         if (notification.entity_type === "task_item" && typeof notification.entity_id === "number") {
             const taskItemId = notification.entity_id;
             pendingTaskAcknowledgements.add(taskItemId);
             setPersistentNotifications((items) => items.filter((item) => (
                 item.entity_type !== "task_item" || item.entity_id !== taskItemId
             )));
-            void NotificationService.markTaskItemRead(taskItemId).then(
+            acknowledgement = NotificationService.markTaskItemRead(taskItemId).then(
                 () => {
                     if (typeof window !== "undefined") {
                         window.dispatchEvent(new CustomEvent(NOTIFICATIONS_UPDATED_EVENT, {
@@ -426,11 +428,18 @@ export function useNotifications({
             });
         }
         setIsNotificationsOpen(false);
-        router.push(getPersistentNotificationHref(notification));
+        const destination = getNotificationDestination(notification, workerMode);
+        // Reload the worker workspace so a just-assigned task is in its authorized list.
+        if (workerMode && notification.entity_type === "task_item") {
+            await acknowledgement;
+            window.location.assign(destination);
+        }
+        else router.push(destination);
         setOpeningNotificationKey(null);
-    }, [loadNotifications, pendingTaskAcknowledgements, router, setIsNotificationsOpen, setPersistentNotifications, userId]);
+    }, [loadNotifications, pendingTaskAcknowledgements, router, setIsNotificationsOpen, setPersistentNotifications, userId, workerMode]);
 
     const getNotificationHref = useCallback((task: TaskItem) => {
+        if (workerMode) return getNotificationDestination({ href: "/worker/jobs", entity_type: "task_item", entity_id: task.id }, true);
         if (task.status === "requested") {
             return `/dashboard/reservations?tab=requests&taskId=${task.id}`;
         }
@@ -442,7 +451,7 @@ export function useNotifications({
             taskDate: (getTaskScheduleDate(task) || new Date(task.created_at)).toISOString(),
         });
         return `/dashboard?${params.toString()}`;
-    }, []);
+    }, [workerMode]);
 
     const handleTaskNotificationClick = useCallback(async (task: TaskItem) => {
         if (!userId) return;
@@ -457,16 +466,21 @@ export function useNotifications({
 
         try {
             const currentTask = await TaskService.getTaskItem(task.id);
-            acknowledgeTaskOpened(userId, currentTask);
+            const acknowledgement = acknowledgeTaskOpened(userId, currentTask);
             dismissNotifications([...relatedArrivalKeys]);
             setIsNotificationsOpen(false);
-            router.push(getNotificationHref(currentTask));
+            const destination = getNotificationHref(currentTask);
+            if (workerMode) {
+                await acknowledgement;
+                window.location.assign(destination);
+            }
+            else router.push(destination);
         } catch {
             void loadNotifications();
         } finally {
             setOpeningNotificationKey(null);
         }
-    }, [upcomingArrivals, dismissNotifications, getNotificationHref, loadNotifications, setIsNotificationsOpen, router, userId]);
+    }, [upcomingArrivals, dismissNotifications, getNotificationHref, loadNotifications, setIsNotificationsOpen, router, userId, workerMode]);
 
     const handleReservationNotificationClick = useCallback(async (reservation: Reservation) => {
         const notificationKey = getReservationNotificationKey(reservation);
