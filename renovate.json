@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "description": "Keep WorkHive dependencies, runtimes, container images, and CI actions current through reviewable pull requests.",
+  "timezone": "Europe/Madrid",
+  "schedule": ["before 06:00 on Monday"],
+  "enabledManagers": [
+    "npm",
+    "pip_requirements",
+    "nvm",
+    "pyenv",
+    "dockerfile",
+    "docker-compose",
+    "github-actions"
+  ],
+  "dependencyDashboard": true,
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 0,
+  "automerge": false,
+  "packageRules": [
+    {
+      "description": "Major upgrades can change behavior and require explicit approval before a PR is opened.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Runtime and container-image upgrades must always be individually reviewed.",
+      "matchManagers": ["nvm", "pyenv", "dockerfile", "docker-compose"],
+      "dependencyDashboardApproval": true
+    }
+  ]
+}
