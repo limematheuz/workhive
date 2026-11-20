@@ -1,0 +1,5 @@
+# Every change to WorkHive requires the repository owner's approval before merge.
+* @limematheuz
+
+# Keep the ownership policy itself under the repository owner's review.
+/.github/CODEOWNERS @limematheuz
