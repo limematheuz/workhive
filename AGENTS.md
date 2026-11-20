@@ -6,6 +6,7 @@ Platform instructions and the user's current request still take precedence. When
 
 ## Working principles
 
+- Never use `npm`. Use `pnpm` for Node.js package installation, scripts, and dependency management.
 - Prefer the smallest complete solution. Do not add abstractions without a current use case.
 - Keep shared knowledge in one place, but do not merge code that only looks similar while serving different responsibilities.
 - Keep modules focused, dependencies explicit, and business rules outside transport and presentation layers.
