@@ -27,7 +27,7 @@ export const WORKSPACE_NAVIGATION: readonly NavigationGroupSpec[] = [
     { id: "documents", label: { es: "Documentación", en: "Documents" }, section: "administration", hrefs: ["/dashboard/documents"] },
     { id: "applications", label: { es: "Portales y aplicaciones", en: "Portals and apps" }, section: "administration", hrefs: ["/dashboard/portals"] },
     { id: "organization", label: { es: "Organización y ajustes", en: "Organization and settings" }, section: "administration", hrefs: ["/dashboard/organization", "/dashboard/automations", "/dashboard/data-import", "/dashboard/api-access"] },
-    { id: "platform", label: { es: "Plataforma WorkHive", en: "WorkHive platform" }, section: "administration", hrefs: ["/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"] },
+    { id: "platform", label: { es: "Plataforma WorkHive", en: "WorkHive platform" }, section: "administration", hrefs: ["/dashboard/equipo-plataforma", "/dashboard/companies", "/dashboard/integrations", "/dashboard/roles", "/dashboard/traffic"] },
 ];
 
 export function navigationFeatureEnabled(enabled: ReadonlySet<string> | null | undefined, requirement?: string | readonly string[]): boolean {

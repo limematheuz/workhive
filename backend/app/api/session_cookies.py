@@ -13,7 +13,9 @@ def delete_cookie_options():
     return options
 
 
-def set_session_cookies(response,token,csrf):
+def set_session_cookies(response,token,csrf,*,max_age=None):
     options=cookie_options()
+    if max_age is not None:
+        options["max_age"] = max_age
     response.set_cookie(key=settings.SESSION_COOKIE_NAME,value=token,httponly=True,**options)
     response.set_cookie(key=settings.CSRF_COOKIE_NAME,value=csrf,httponly=False,**options)

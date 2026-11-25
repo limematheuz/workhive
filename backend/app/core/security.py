@@ -16,17 +16,17 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 
-def create_access_token(data: dict[str, Any]) -> str:
+def create_access_token(data: dict[str, Any], *, expires_minutes: int | None = None) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES if expires_minutes is None else expires_minutes
     )
     to_encode.update({"exp": expire})
 
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def create_password_reset_token(email: str) -> str:
+def create_password_reset_token(email: str, *, user_id: int | None = None, version: int | None = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=15)
     to_encode = {
         "sub": email,
@@ -34,6 +34,8 @@ def create_password_reset_token(email: str) -> str:
         "type": "password_reset",
         "jti": uuid4().hex,
     }
+    if user_id is not None and version is not None:
+        to_encode.update(user_id=user_id, ver=version)
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 

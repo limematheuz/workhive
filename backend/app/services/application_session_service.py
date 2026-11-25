@@ -9,6 +9,7 @@ from app.services.company_session_principal import INTERNAL_ROLES, active_member
 from app.services.entitlement_service import resolve_effective_entitlements
 from app.services.session_token_claims import invalid_session
 from app.services.subscription_policy import require_company_access
+from app.services.user_scope import is_platform_superadmin
 
 
 def _company_features(db, company, cache):
@@ -30,6 +31,8 @@ def _choice(kind, key_id, company, label, description, href):
 
 
 def available_applications(db, person):
+    if is_platform_superadmin(person):
+        return []
     now, cache, rows = datetime.now(timezone.utc), {}, []
     if person.role and person.role.name in INTERNAL_ROLES:
         workers = repo.worker_companies(db, person.id)

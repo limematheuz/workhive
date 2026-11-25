@@ -11,7 +11,9 @@ ROUTER_PATH = REPOSITORY_ROOT / "backend/app/api/v1/router.py"
 
 def test_inventory_covers_every_directly_registered_api_prefix():
     inventory = INVENTORY_PATH.read_text(encoding="utf-8")
-    router = ROUTER_PATH.read_text(encoding="utf-8")
+    router = "\n".join(path.read_text(encoding="utf-8") for path in (
+        ROUTER_PATH, ROUTER_PATH.with_name("platform_routes.py"),
+    ))
     registered_prefixes = set(re.findall(r'prefix="([^"]+)"', router))
 
     missing_prefixes = sorted(

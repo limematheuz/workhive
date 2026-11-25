@@ -223,7 +223,7 @@ def approve_trial_request(
         now=now,
     )
 
-    reset_token = create_password_reset_token(owner.email)
+    reset_token = create_password_reset_token(owner.email, user_id=owner.id, version=owner.session_version)
     reset_url = (
         f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={reset_token}"
     )

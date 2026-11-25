@@ -10,6 +10,7 @@ from app.db import base as _models  # noqa: F401 — registers all SQLAlchemy mo
 from app.db.session import SessionLocal
 from app.models.user import User
 from app.repositories.role import get_role_by_name
+from app.repositories.platform_access import claim_setup, has_platform_superadmin, setup_completed
 from app.repositories.user import get_user_by_email
 from app.schemas.user import validate_user_password
 
@@ -34,9 +35,10 @@ def read_password() -> str:
 def main() -> None:
     args = parse_args()
     email = str(TypeAdapter(EmailStr).validate_python(args.email)).lower()
-    password = read_password()
 
     with SessionLocal() as db:
+        if setup_completed(db) or has_platform_superadmin(db):
+            raise SystemExit("Platform initialization is closed. Use the platform console.")
         if get_user_by_email(db, email):
             raise SystemExit("A user with this email already exists.")
 
@@ -44,6 +46,7 @@ def main() -> None:
         if role is None:
             raise SystemExit("The superadmin role does not exist. Run migrations first.")
 
+        password = read_password()
         user = User(
             email=email,
             hashed_password=get_password_hash(password),
@@ -52,6 +55,7 @@ def main() -> None:
             role_id=role.id,
             company_id=None,
         )
+        claim_setup(db)
         db.add(user)
         db.commit()
 
