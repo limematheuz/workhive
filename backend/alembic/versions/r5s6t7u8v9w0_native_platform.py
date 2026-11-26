@@ -9,10 +9,14 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("platform_invitations", sa.Column("token_digest", sa.String(64), unique=True))
+    with op.batch_alter_table("platform_invitations") as batch:
+        batch.add_column(sa.Column("token_digest", sa.String(64)))
+        batch.create_unique_constraint("platform_invitations_token_digest_key", ["token_digest"])
     op.execute("UPDATE platform_invitations SET expires_at = 0 WHERE member_id IS NULL")
     op.execute("UPDATE users SET session_version = session_version + 1 WHERE platform_oidc_subject IS NOT NULL")
 
 
 def downgrade():
-    op.drop_column("platform_invitations", "token_digest")
+    with op.batch_alter_table("platform_invitations") as batch:
+        batch.drop_constraint("platform_invitations_token_digest_key", type_="unique")
+        batch.drop_column("token_digest")

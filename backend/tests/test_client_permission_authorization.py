@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from app.core.security import create_access_token
+from app.services.company_session_service import token_claims
 from app.models.client import Client
 from app.models.company import Company
 from app.models.company_membership import Department, Team
@@ -54,7 +55,7 @@ def _user(db, company: Company | None, suffix: str, role_id: int) -> User:
 
 
 def _headers(user: User) -> dict[str, str]:
-    token = create_access_token({"sub": user.email, "ver": user.session_version})
+    token = create_access_token(token_claims(user))
     return {"Authorization": f"Bearer {token}"}
 
 

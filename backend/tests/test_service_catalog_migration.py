@@ -69,6 +69,7 @@ def test_service_catalog_revision_backfills_existing_templates(tmp_path, monkeyp
         Column("external_reference", String(255), nullable=True),
     )
     Table("users", metadata, Column("id", Integer, primary_key=True),
+          Column("session_version", Integer, nullable=False, server_default="0"),
           Column("company_id", Integer), Column("role_id", Integer))
     Table(
         "roles",
