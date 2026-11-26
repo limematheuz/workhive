@@ -39,6 +39,7 @@ www.{$MARKETING_DOMAIN} {
 		/reset-password \
 		/accept-invitation \
 		/confirm-email-change \
+		/plataforma \
 		/dashboard* \
 		/subscription*
 	redir @app_routes https://{$APP_DOMAIN}{uri} permanent

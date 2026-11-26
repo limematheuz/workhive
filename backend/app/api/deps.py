@@ -13,13 +13,13 @@ from app.repositories import async_user as async_user_repo
 from app.repositories import user as user_repo
 from app.services.subscription_policy import require_company_access
 from app.services.organization_authorization_service import require_capability
-from app.services.user_scope import is_superadmin
+from app.services.user_scope import is_platform_superadmin, is_superadmin
 from app.models.partner_portal_grant import PartnerPortalGrant
 from app.services import partner_portal_policy
 from app.models.client_portal_grant import ClientPortalGrant
 from app.services import client_portal_policy
 from app.repositories import company_session as company_session_repo
-from app.services.session_token_claims import session_claims
+from app.services.session_token_claims import SessionClaims, invalid_session, session_claims
 from app.services import application_session_service
 
 
@@ -43,14 +43,6 @@ oauth2_scheme = OAuth2PasswordBearer(
 )
 
 
-def _session_identity(
-    bearer_token: str | None,
-    session_token: str | None,
-) -> tuple[str, int, int | None, int]:
-    claims = session_claims(bearer_token, session_token)
-    return claims.email, claims.version, claims.company_id, claims.membership_version
-
-
 def get_session_claims(
     bearer_token: str | None = Depends(oauth2_scheme),
     session_token: str | None = Cookie(default=None, alias=settings.SESSION_COOKIE_NAME),
@@ -58,19 +50,17 @@ def get_session_claims(
     return session_claims(bearer_token, session_token)
 
 
-def _validate_authenticated_user(user: User | None, session_version: int, *, check_company=True) -> User:
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    if user.session_version != session_version:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+def _validate_authenticated_user(user: User | None, claims: SessionClaims, *, check_company=True) -> User:
+    if not user or user.session_version != claims.version:
+        raise invalid_session()
+    if claims.platform_user_id is not None:
+        if (
+            claims.platform_user_id != user.id
+            or not is_platform_superadmin(user)
+        ):
+            raise invalid_session()
+    elif is_platform_superadmin(user):
+        raise invalid_session()
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
@@ -94,12 +84,12 @@ def get_authenticated_user(
     clear_actor(db)
     claims = session_claims(bearer_token, session_token)
     if claims.application_kind in {"client", "adviser"}:
-        person = _validate_authenticated_user(user_repo.get_user_by_email(db, claims.email), claims.version, check_company=False)
+        person = _validate_authenticated_user(user_repo.get_user_by_email(db, claims.email), claims, check_company=False)
         user = application_session_service.bind_portal(db, person, claims)
     else:
         row = company_session_repo.authenticate(db, claims.email, claims.company_id)
-        _validate_authenticated_user(row[0] if row else None, claims.version, check_company=False)
-        user = _validate_authenticated_user(application_session_service.bind_internal_application(db, row, claims), claims.version)
+        _validate_authenticated_user(row[0] if row else None, claims, check_company=False)
+        user = _validate_authenticated_user(application_session_service.bind_internal_application(db, row, claims), claims)
     bind_actor(db, user)
     return user
 
@@ -116,8 +106,8 @@ def get_optional_authenticated_identity(
     bearer_token = auth_header[7:].strip() if auth_header.lower().startswith("bearer ") else None
     if not bearer_token and not session_token:
         return None
-    email, version, _, _ = _session_identity(bearer_token, session_token)
-    return _validate_authenticated_user(user_repo.get_user_by_email(db, email), version, check_company=False)
+    claims = session_claims(bearer_token, session_token)
+    return _validate_authenticated_user(user_repo.get_user_by_email(db, claims.email), claims, check_company=False)
 
 
 def get_authenticated_identity(
@@ -128,8 +118,8 @@ def get_authenticated_identity(
     """Authenticate only identity for personal rights, without granting tenant access."""
     from app.services.record_history_capture import clear_actor
     clear_actor(db)
-    email,version,_,_ = _session_identity(bearer_token,session_token)
-    return _validate_authenticated_user(user_repo.get_user_by_email(db,email),version,check_company=False)
+    claims = session_claims(bearer_token, session_token)
+    return _validate_authenticated_user(user_repo.get_user_by_email(db, claims.email), claims, check_company=False)
 
 
 async def get_authenticated_identity_async(
@@ -139,9 +129,9 @@ async def get_authenticated_identity_async(
 ) -> User:
     from app.services.record_history_capture import clear_actor
     clear_actor(db)
-    email,version,_,_ = _session_identity(bearer_token,session_token)
-    person=await async_user_repo.get_user_by_email(db,email)
-    return _validate_authenticated_user(person,version,check_company=False)
+    claims = session_claims(bearer_token, session_token)
+    person = await async_user_repo.get_user_by_email(db, claims.email)
+    return _validate_authenticated_user(person, claims, check_company=False)
 
 
 async def get_authenticated_user_async(
@@ -155,13 +145,13 @@ async def get_authenticated_user_async(
     clear_actor(db)
     claims = session_claims(bearer_token, session_token)
     if claims.application_kind in {"client", "adviser"}:
-        person = _validate_authenticated_user(await async_user_repo.get_user_by_email(db, claims.email), claims.version, check_company=False)
+        person = _validate_authenticated_user(await async_user_repo.get_user_by_email(db, claims.email), claims, check_company=False)
         user = await db.run_sync(lambda sync: application_session_service.bind_portal(sync, person, claims))
     else:
         row = await company_session_repo.authenticate_async(db, claims.email, claims.company_id)
-        _validate_authenticated_user(row[0] if row else None, claims.version, check_company=False)
+        _validate_authenticated_user(row[0] if row else None, claims, check_company=False)
         user = await db.run_sync(lambda sync: _validate_authenticated_user(
-            application_session_service.bind_internal_application(sync, row, claims), claims.version))
+            application_session_service.bind_internal_application(sync, row, claims), claims))
     bind_actor(db, user)
     return user
 

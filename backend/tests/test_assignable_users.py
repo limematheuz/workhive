@@ -2,6 +2,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token
+from app.services.company_session_service import token_claims
 from app.models.company import Company
 from app.models.location import Location
 from app.models.user import User
@@ -58,7 +59,7 @@ def _user(
 
 
 def _headers(user: User) -> dict[str, str]:
-    token = create_access_token({"sub": user.email, "ver": user.session_version})
+    token = create_access_token(token_claims(user))
     return {"Authorization": f"Bearer {token}"}
 
 

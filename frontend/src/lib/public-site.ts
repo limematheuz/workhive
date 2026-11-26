@@ -41,6 +41,7 @@ const APP_ONLY_PATHS = new Set([
     "/reset-password",
     "/accept-invitation",
     "/confirm-email-change",
+    "/plataforma",
 ]);
 
 export function isAppOnlyPath(pathname: string): boolean {

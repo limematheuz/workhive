@@ -462,7 +462,8 @@ def test_client_portal_access_endpoints_return_403_for_platform_superadmin(clien
     )
     db.add(superadmin)
     db.commit()
-    token = create_access_token({"sub": superadmin.email, "ver": superadmin.session_version})
+    from app.services.company_session_service import token_claims
+    token = create_access_token(token_claims(superadmin))
     headers = {"Authorization": f"Bearer {token}"}
 
     assert client.get("/api/v1/client-portal/clients/1/invitations", headers=headers).status_code == 403

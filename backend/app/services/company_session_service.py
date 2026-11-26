@@ -4,6 +4,7 @@ from app.models.audit_log import AuditLog
 from app.repositories import company_session as repo
 from app.services.company_session_principal import identity,bind,active_membership,INTERNAL_ROLES,CompanyUser
 from app.services.subscription_policy import require_company_access
+from app.services.user_scope import is_platform_superadmin
 
 
 def _internal(user):
@@ -67,6 +68,9 @@ def login_context(db,user):
 
 def token_claims(user):
     claims={"sub":user.email,"ver":user.session_version}
+    if is_platform_superadmin(user):
+        claims.update(session_scope="platform", platform_user_id=user.id)
+        return claims
     if isinstance(user,CompanyUser) and user.active_membership is not None:
         claims.update(company_id=user.company_id,membership_version=user.membership_session_version)
     return claims

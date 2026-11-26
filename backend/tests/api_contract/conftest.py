@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.core.security import create_access_token
+from app.services.company_session_service import token_claims
 from app.models.client import Client
 from app.models.company import Company
 from app.models.location import Location
@@ -107,7 +108,7 @@ def api_workspace(db):
     headers = {
         name: {
             "Authorization": "Bearer "
-            + create_access_token({"sub": actor.email, "ver": actor.session_version})
+            + create_access_token(token_claims(actor))
         }
         for name, actor in actors.items()
     }

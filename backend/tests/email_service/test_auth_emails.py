@@ -59,3 +59,20 @@ def test_email_changed_notice_escapes_dynamic_values(monkeypatch):
     assert 'href="http://localhost:3000/contact"' in html
     assert "contacta con soporte</a>." in html
     assert "Soporte: http://localhost:3000/contact" in plain_body(message)
+
+
+def test_platform_invitation_uses_workhive_template_and_plain_text(monkeypatch):
+    from app.core.config import settings
+    from app.services.email_service.platform_team import notify_invitee
+
+    delivered = capture_send(monkeypatch, embed_logo=True)
+    monkeypatch.setattr(settings, "EMAIL_ENABLED", True)
+    monkeypatch.setattr(settings, "SMTP_HOST", "smtp.example.com")
+    url = "https://example.com/reset-password#token=whi_sample"
+    assert notify_invitee("tech@example.com", url)
+    message = delivered["message"]
+    for body in (html_body(message), plain_body(message)):
+        assert "Activar mi cuenta" in body
+        assert "24 horas" in body
+        assert url in body
+    assert html_body(message).count(f'href="{url}"') >= 2

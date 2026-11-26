@@ -58,11 +58,11 @@ def login(
         identity=form_data.username,
     )
     user = company_session_service.login_context(db,auth_service.authenticate_user(db, form_data.username, form_data.password))
-    access_token = create_access_token(
-        data=company_session_service.token_claims(user)
-    )
+    claims = company_session_service.token_claims(user)
+    lifetime = min(240, settings.ACCESS_TOKEN_EXPIRE_MINUTES) if claims.get("session_scope") == "platform" else None
+    access_token = create_access_token(data=claims, expires_minutes=lifetime)
     csrf_token = secrets.token_urlsafe(32)
-    set_session_cookies(response,access_token,csrf_token)
+    set_session_cookies(response, access_token, csrf_token, max_age=lifetime * 60 if lifetime else None)
     audit_service.record_event(
         db,
         actor=user,

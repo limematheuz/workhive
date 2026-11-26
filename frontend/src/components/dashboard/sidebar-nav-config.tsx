@@ -34,7 +34,7 @@ export type SidebarNavUserFlags = {
     enabledFeatures?: ReadonlySet<string> | null;
 };
 
-const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
+const PLATFORM_SUPERADMIN_HREFS = new Set(["/dashboard", "/dashboard/equipo-plataforma", "/dashboard/companies", "/dashboard/roles", "/dashboard/traffic", "/dashboard/integrations"]);
 const ACCOUNTANT_HREFS = new Set(["/dashboard/advisory", "/dashboard/analytics", "/dashboard/expenses", "/dashboard/fiscal-summary"]);
 const NAVIGATION_FEATURES: Record<string, string | readonly string[]> = {
     "/dashboard/consolidation": "features.corporate_structure",
@@ -122,6 +122,7 @@ function allLinks(dict: Dictionary, flags: SidebarNavUserFlags, locale: "es" | "
             { href: "/dashboard/labor-costs", label: "Costes laborales", exact: false, icon: <CircleDollarSign /> },
         ] : []),
         ...(flags.userIsPlatformSuperadmin ? [
+            { href: "/dashboard/equipo-plataforma", label: "Equipo de plataforma", exact: true, icon: <ShieldAlert /> },
             { href: "/dashboard/companies", label: dict.dashboard.companies, exact: false, icon: <Building2 /> },
             { href: "/dashboard/integrations", label: dict.dashboard.integrations, exact: false, icon: <CloudCog /> },
             { href: "/dashboard/roles", label: dict.dashboard.roles, exact: false, icon: <ShieldAlert /> },

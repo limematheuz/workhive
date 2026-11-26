@@ -8,6 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.config import settings
 from app.core.rate_limit import rate_limiter
 from app.core.security import create_access_token
+from app.services.company_session_service import token_claims
 from app.integrations.google.token_crypto import encrypt_token
 from app.integrations.google import calendar_client
 from app.models.calendar_governance import (
@@ -81,7 +82,7 @@ def _user(
 
 
 def _headers(user: User) -> dict[str, str]:
-    token = create_access_token({"sub": user.email, "ver": user.session_version})
+    token = create_access_token(token_claims(user))
     return {"Authorization": f"Bearer {token}"}
 
 

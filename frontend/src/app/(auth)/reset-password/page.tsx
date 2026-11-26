@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { passwordFormCopy } from "@/lib/password-form-copy";
+import { resolveInvitationToken } from "@/lib/invitation-token";
 import { authService } from "@/services/auth.service";
 import {
     getAuthErrorMessage,
@@ -24,10 +26,12 @@ import { Label } from "@/components/ui/label";
 function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const [token] = useState(() => searchParams.get("token") || "");
+    const [token, setToken] = useState("");
+    const tokenRead = useRef(false);
 
     const { dict, locale } = useDictionary();
     const t = dict.auth;
+    const copy = passwordFormCopy(token, locale);
 
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,15 +48,16 @@ function ResetPasswordContent() {
     };
 
     useEffect(() => {
-        if (!token) return;
+        if (tokenRead.current) return;
         const url = new URL(window.location.href);
-        url.searchParams.delete("token");
-        window.history.replaceState(
-            window.history.state,
-            "",
-            `${url.pathname}${url.search}${url.hash}`
-        );
-    }, [token]);
+        const invitation = resolveInvitationToken({ hash: url.hash, queryToken: searchParams.get("token") });
+        tokenRead.current = true;
+        setToken(invitation.token);
+        if (invitation.shouldClearUrl) {
+            url.searchParams.delete("token");
+            window.history.replaceState(window.history.state, "", url.pathname + url.search);
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -80,7 +85,7 @@ function ResetPasswordContent() {
         } catch (err: unknown) {
             const message = getAuthErrorMessage(
                 err,
-                locale === "es" ? "No se pudo restablecer la contraseña." : "Error resetting password",
+                copy.error,
             );
             showError(message);
         } finally {
@@ -106,12 +111,10 @@ function ResetPasswordContent() {
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
                             <h2 className="text-2xl font-black">
-                                {locale === "es" ? "Contraseña Cambiada" : "Password Changed"}
+                                {copy.success}
                             </h2>
                             <p className="text-[var(--text-muted)] text-sm">
-                                {locale === "es"
-                                    ? "Tu contraseña ha sido restablecida con éxito. Redirigiendo al inicio de sesión..."
-                                    : "Your password has been successfully reset. Redirecting to login..."}
+                                {copy.confirmation}
                             </p>
                         </div>
                     ) : (
@@ -125,12 +128,10 @@ function ResetPasswordContent() {
                                     {locale === "es" ? "Volver" : "Back"}
                                 </Link>
                                 <h1 className="text-2xl font-black mt-2 leading-tight">
-                                    {locale === "es" ? "Nueva contraseña" : "New Password"}
+                                    {copy.title}
                                 </h1>
                                 <p className="text-xs text-[var(--text-muted)] mt-1">
-                                    {locale === "es"
-                                        ? "Elige una contraseña nueva y segura de al menos 8 caracteres."
-                                        : "Choose a new secure password of at least 8 characters."}
+                                    {copy.description}
                                 </p>
                             </div>
 
@@ -237,7 +238,7 @@ function ResetPasswordContent() {
                             >
                                 {submitting
                                     ? (locale === "es" ? "Guardando..." : "Saving...")
-                                    : (locale === "es" ? "Restablecer contraseña" : "Reset Password")}
+                                    : copy.submit}
                             </Button>
                         </form>
                     )}

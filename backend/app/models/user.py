@@ -1,15 +1,25 @@
 from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import CheckConstraint, Column, Integer, String, Boolean, DateTime, ForeignKey, Text, UniqueConstraint
 from sqlalchemy.sql import func
 from app.db.session import Base
 
 
 class User(Base):
     __tablename__ = "users"
+    __table_args__ = (
+        UniqueConstraint("platform_oidc_issuer", "platform_oidc_subject", name="uq_users_platform_oidc_identity"),
+        CheckConstraint(
+            "(platform_oidc_issuer IS NULL AND platform_oidc_subject IS NULL) OR "
+            "(platform_oidc_issuer IS NOT NULL AND platform_oidc_subject IS NOT NULL AND company_id IS NULL)",
+            name="ck_users_platform_oidc_identity",
+        ),
+    )
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    platform_oidc_issuer = Column(String(512), nullable=True)
+    platform_oidc_subject = Column(String(255), nullable=True)
     full_name = Column(String(100), index=True)
     photo_url = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)

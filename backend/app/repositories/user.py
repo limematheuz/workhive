@@ -106,6 +106,11 @@ def get_user_by_email(db: Session, email: str) -> User | None:
     )
 
 
+def lock_password_reset_identity(db: Session, email: str) -> User | None:
+    return (db.query(User).filter(func.lower(User.email) == email.strip().lower())
+            .with_for_update(of=User).populate_existing().first())
+
+
 def get_user_by_id(db: Session, user_id: int) -> User | None:
     return (
         db.query(User)

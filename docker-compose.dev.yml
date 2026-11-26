@@ -11,6 +11,9 @@ services:
       dockerfile: Dockerfile.dev
     env_file:
       - ./backend/.env
+      - path: ${HOME}/.config/workhive/smtp.env
+        required: false
+        format: raw
     environment:
       DATABASE_USE_NULL_POOL: "true"
       ENVIRONMENT: development
@@ -18,7 +21,6 @@ services:
       CORS_ORIGINS: http://localhost:3000
       TRUSTED_HOSTS: localhost,127.0.0.1,backend,testserver
       FORCE_HTTPS: "false"
-      EMAIL_ENABLED: "false"
       CONTACT_FORM_ENABLED: "false"
       ACCOUNT_REQUEST_NOTIFICATIONS_ENABLED: "false"
       BILLING_ENABLED: "false"

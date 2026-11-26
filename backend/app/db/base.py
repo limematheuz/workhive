@@ -75,6 +75,7 @@ from app.models.fiscal_invoice_record import FiscalInvoiceRecord
 from app.models.company_fiscal_settings import CompanyFiscalSettings
 from app.models.invoice_email_contact import InvoiceEmailContact
 from app.models.audit_log import AuditLog
+from app.models.platform_setup import PlatformSetup
 from app.models.google_calendar_connection import GoogleCalendarConnection
 from app.models.calendar_governance import (
     CalendarOwnershipRequest,

@@ -19,6 +19,7 @@ class SessionClaims:
     application_kind: str | None = None
     grant_id: int | None = None
     grant_version: int | None = None
+    platform_user_id: int | None = None
 
 
 def session_claims(bearer_token: str | None, session_token: str | None) -> SessionClaims:
@@ -31,6 +32,15 @@ def session_claims(bearer_token: str | None, session_token: str | None) -> Sessi
         company, membership = payload.get("company_id"), payload.get("membership_version", 0)
         kind, grant, epoch = (payload.get(key) for key in
             ("application_kind", "application_grant_id", "application_grant_version"))
+        platform_user_id = payload.get("platform_user_id")
+        if "session_scope" in payload and (
+            payload["session_scope"] != "platform"
+            or type(platform_user_id) is not int or platform_user_id < 1
+            or company is not None or kind is not None or "membership_version" in payload
+        ):
+            raise invalid_session()
+        if "platform_user_id" in payload and "session_scope" not in payload:
+            raise invalid_session()
         if not isinstance(email, str) or not email.strip() or type(version) is not int or version < 0:
             raise invalid_session()
         if company is not None and (type(company) is not int or company < 1):
@@ -55,4 +65,4 @@ def session_claims(bearer_token: str | None, session_token: str | None) -> Sessi
             raise invalid_session()
     except PyJWTError as error:
         raise invalid_session() from error
-    return SessionClaims(email, version, company, membership, kind, grant, epoch)
+    return SessionClaims(email, version, company, membership, kind, grant, epoch, platform_user_id)

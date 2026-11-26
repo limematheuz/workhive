@@ -11,7 +11,7 @@ from app.core.config import settings
 from app.services import email_service
 from app.services import privacy_service
 from app.services import security_token_service
-from app.services.user_scope import is_superadmin
+from app.services.user_scope import is_platform_superadmin, is_superadmin
 import logging
 import smtplib
 
@@ -130,11 +130,11 @@ def request_password_reset(db: Session, reset_data: PasswordResetRequest) -> Non
         )
 
     user = user_repo.get_user_by_email(db, reset_data.email)
-    if not user:
+    if not user or not user.is_active:
         return
 
-    token = create_password_reset_token(user.email)
-    reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?token={token}"
+    token = create_password_reset_token(user.email, user_id=user.id, version=user.session_version)
+    reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password#token={token}"
     try:
         sent = email_service.send_password_reset_email(
             recipient_email=user.email,
@@ -156,6 +156,9 @@ def request_password_reset(db: Session, reset_data: PasswordResetRequest) -> Non
 
 
 def verify_and_reset_password(db: Session, reset_confirm: PasswordResetConfirm) -> None:
+    from app.services.platform_team import redeem_invitation
+    if redeem_invitation(db, reset_confirm.token, reset_confirm.new_password):
+        return
     payload = verify_password_reset_token(reset_confirm.token)
     if not payload:
         raise HTTPException(
@@ -176,12 +179,15 @@ def verify_and_reset_password(db: Session, reset_confirm: PasswordResetConfirm) 
         expires_at=expires_at,
     )
 
-    user = user_repo.get_user_by_email(db, email)
-    if not user:
+    user = user_repo.lock_password_reset_identity(db, email)
+    if not user or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
+    if "user_id" in payload or is_platform_superadmin(user):
+        if payload.get("user_id") != user.id or payload.get("ver") != user.session_version:
+            raise HTTPException(400, "El enlace de recuperación ha caducado")
     user.hashed_password = get_password_hash(reset_confirm.new_password)
     user.session_version += 1
     db.add(user)

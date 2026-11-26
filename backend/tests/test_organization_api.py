@@ -58,7 +58,8 @@ def _user(db, company: Company, suffix: str, role_id: int) -> User:
 
 
 def _headers(user: User) -> dict[str, str]:
-    token = create_access_token({"sub": user.email, "ver": user.session_version})
+    from app.services.company_session_service import token_claims
+    token = create_access_token(token_claims(user))
     return {"Authorization": f"Bearer {token}"}
 
 

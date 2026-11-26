@@ -17,6 +17,7 @@ from app.models.user import User
 from app.repositories import user as user_repo
 from app.schemas.user import EmailChangeConfirm, EmailChangeRequest
 from app.services import email_service, security_token_service
+from app.services.user_scope import is_platform_superadmin
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,8 @@ def request_email_change(
     current_user: User,
     change_request: EmailChangeRequest,
 ) -> str:
+    if is_platform_superadmin(current_user):
+        raise HTTPException(403, "Las cuentas técnicas utilizan una dirección dedicada. Invita la nueva dirección desde Equipo de plataforma.")
     if not settings.smtp_is_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -113,6 +116,7 @@ def confirm_email_change(
     new_email = str(payload["new_email"]).strip().lower()
     if (
         not user
+        or is_platform_superadmin(user)
         or user.email.strip().lower() != current_email
         or user.session_version != payload["ver"]
         or not user.is_active

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, Suspense } from "react";
+import Link from "next/link";
 import { AlertCircle, Loader2 } from "lucide-react";
 import {FinancePriorities} from "@/components/dashboard/role-home/FinancePriorities";
 import {OfficePriorities} from "@/components/dashboard/role-home/OfficePriorities";
@@ -99,7 +100,12 @@ function OperationalHome() {
     }
 
     if (userIsPlatformSuperadmin) {
-        return <SuperadminDashboard />;
+        return <>
+            <div className="px-6 pt-4">
+                <Link className="underline" href="/dashboard/equipo-plataforma">Equipo de plataforma</Link>
+            </div>
+            <SuperadminDashboard />
+        </>;
     }
 
     if (!canViewCompanyTasks(user)) return <WorkspaceOverview />;

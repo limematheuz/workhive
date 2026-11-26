@@ -33,5 +33,6 @@ exec uvicorn app.main:app \
     --host 0.0.0.0 \
     --port 8000 \
     --reload \
+    --no-access-log \
     --timeout-graceful-shutdown 5 \
     --reload-dir "$app_dir"

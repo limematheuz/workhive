@@ -145,6 +145,12 @@ def update_user(
             detail="Not enough permissions to change user activation",
         )
 
+    if is_platform_superadmin(db_user) and (
+        (user_data.is_active is not None and user_data.is_active != db_user.is_active)
+        or (user_data.role_id is not None and user_data.role_id != db_user.role_id)
+    ):
+        raise HTTPException(409, "Gestiona el acceso técnico desde Equipo de plataforma")
+
     is_external_portal_user = bool(
         db_user.role and db_user.role.name == EXTERNAL_PORTAL_ROLE_NAME
     )
@@ -213,6 +219,8 @@ def update_user(
                     "membership. Revoke it and issue the appropriate invitation."
                 ),
             )
+        if target_role.name == "superadmin" and db_user.company_id is None:
+            raise HTTPException(409, "Invita al técnico desde Equipo de plataforma")
         if not is_superadmin(current_user):
             if target_role.name == "superadmin":
                 raise HTTPException(
