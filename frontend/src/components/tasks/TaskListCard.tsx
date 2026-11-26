@@ -43,7 +43,7 @@ function TaskStatusCheckbox({
     onToggle: (event: React.MouseEvent) => void;
 }) {
     return (
-        <Button variant="custom"
+        <Button unstyled
             type="button"
             aria-label={label}
             aria-pressed={isCompleted}

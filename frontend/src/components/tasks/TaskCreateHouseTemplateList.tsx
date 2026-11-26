@@ -131,7 +131,7 @@ export function TaskCreateHouseTemplateList({
                         }`}
                     >
                         <div className="flex items-center gap-2.5 p-3">
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 disabled={!useHouseChecklist}
                                 onClick={() => useHouseChecklist && selectHouseTemplate(houseTemplate.template_task_id)}
@@ -156,7 +156,7 @@ export function TaskCreateHouseTemplateList({
                                 </span>
                             </div>
                             {subItems.length > 0 && (
-                                <Button variant="custom"
+                                <Button unstyled
                                     type="button"
                                     onClick={() => toggleTemplateExpanded(houseTemplate.template_task_id)}
                                     className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)]"
@@ -183,7 +183,7 @@ export function TaskCreateHouseTemplateList({
                                             ? (dict.tasks?.create_dialog?.fixed_price || "Precio fijo")
                                             : (dict.tasks?.create_dialog?.hourly_rate || "Por hora");
                                         return (
-                                            <Button variant="custom"
+                                            <Button unstyled
                                                 key={mode}
                                                 type="button"
                                                 aria-pressed={active}

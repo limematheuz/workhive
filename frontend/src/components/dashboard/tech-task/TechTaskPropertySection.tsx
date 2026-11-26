@@ -145,7 +145,7 @@ export function TechTaskPropertySection({
 
     return (
         <div className="billing-block overflow-hidden rounded-2xl">
-            <Button variant="custom" type="button"
+            <Button unstyled type="button"
                 onClick={onToggle}
                 className="flex w-full cursor-pointer items-center justify-between border-none px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
             >
@@ -178,7 +178,7 @@ export function TechTaskPropertySection({
                                         {dict.tech.property_distribution}
                                     </span>
                                     {canEditLocationDetails && (
-                                        <Button variant="custom" type="button"
+                                        <Button unstyled type="button"
                                             onClick={() => setIsEditingFeatures(true)}
                                             className="flex items-center gap-1 text-[10px] font-black text-accent hover:text-accent transition-colors uppercase tracking-wider bg-transparent border-none cursor-pointer"
                                         >

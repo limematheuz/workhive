@@ -87,7 +87,7 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                 placeholder="Introduce tu clave actual"
                                 className="pr-10"
                             />
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 onClick={() => setShowOldPassword(!showOldPassword)}
                                 aria-label={showOldPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
@@ -110,7 +110,7 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                     placeholder="Mín. 6 caracteres"
                                     className="pr-10"
                                 />
-                                <Button variant="custom"
+                                <Button unstyled
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
@@ -132,7 +132,7 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                     placeholder="Repite la clave"
                                     className="pr-10"
                                 />
-                                <Button variant="custom"
+                                <Button unstyled
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                     aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}

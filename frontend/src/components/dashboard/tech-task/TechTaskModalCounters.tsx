@@ -26,7 +26,7 @@ export function TechTaskModalCounters({
 }: TechTaskModalCountersProps) {
     return (
         <div className="grid grid-cols-3 gap-2">
-            <Button variant="custom" type="button" onClick={onOpenRequisitos} className={tileClass}>
+            <Button unstyled type="button" onClick={onOpenRequisitos} className={tileClass}>
                 <CheckCircle2 className="h-4 w-4 text-accent" />
                 <span className="text-sm font-semibold tabular-nums text-[var(--text-main)]">
                     {completedCount}/{totalCount}
@@ -36,7 +36,7 @@ export function TechTaskModalCounters({
                 </span>
             </Button>
 
-            <Button variant="custom" type="button" onClick={onOpenAdjuntos} className={cn(tileClass)}>
+            <Button unstyled type="button" onClick={onOpenAdjuntos} className={cn(tileClass)}>
                 <Paperclip className="h-4 w-4 text-accent" />
                 <span className="text-sm font-semibold text-[var(--text-main)]">+</span>
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
@@ -44,7 +44,7 @@ export function TechTaskModalCounters({
                 </span>
             </Button>
 
-            <Button variant="custom" type="button" onClick={onOpenComentarios} className={cn(tileClass)}>
+            <Button unstyled type="button" onClick={onOpenComentarios} className={cn(tileClass)}>
                 <MessageSquare className="h-4 w-4 text-accent" />
                 <span className="text-sm font-semibold text-[var(--text-main)]">+</span>
                 <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">

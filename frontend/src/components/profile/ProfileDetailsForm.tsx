@@ -166,7 +166,7 @@ export function ProfileDetailsForm({ user, dict, onCancel, onSuccess }: ProfileD
                             </label>
 
                             {profilePhotoUrl && (
-                                <Button variant="custom"
+                                <Button unstyled
                                     type="button"
                                     onClick={() => {
                                         setProfilePhotoUrl("");

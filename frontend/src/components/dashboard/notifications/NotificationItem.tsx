@@ -103,7 +103,7 @@ function NotificationButton({
     className: string;
 }) {
     return (
-        <Button variant="custom"
+        <Button unstyled
             type="button"
             disabled={disabled}
             onClick={onClick}

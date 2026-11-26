@@ -34,7 +34,7 @@ export function TechTaskReservationContext({
 
             {task.checkout_reservation ? (
                 <div className="billing-block overflow-hidden rounded-2xl">
-                    <Button variant="custom"
+                    <Button unstyled
                         type="button"
                         onClick={() => setExpandedReservation(value => value === "checkout" ? null : "checkout")}
                         className="flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
@@ -88,7 +88,7 @@ export function TechTaskReservationContext({
 
             {task.next_reservation ? (
                 <div className="billing-block overflow-hidden rounded-2xl">
-                    <Button variant="custom"
+                    <Button unstyled
                         type="button"
                         onClick={() => setExpandedReservation(value => value === "next" ? null : "next")}
                         className="flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"

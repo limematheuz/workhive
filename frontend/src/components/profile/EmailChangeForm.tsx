@@ -113,7 +113,7 @@ export function EmailChangeForm({ user, dict }: EmailChangeFormProps) {
                                         placeholder={copy.email_change_password_placeholder}
                                         className="pr-10"
                                     />
-                                    <Button variant="custom"
+                                    <Button unstyled
                                         type="button"
                                         onClick={() => setShowPassword((visible) => !visible)}
                                         aria-label={showPassword ? copy.hide_password : copy.show_password}

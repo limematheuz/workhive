@@ -20,7 +20,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                     className="flex items-center rounded-full p-1 w-fit transition-colors"
                     style={{ backgroundColor: "var(--pill-bg)" }}
                 >
-                    <Button variant="custom"
+                    <Button unstyled
                         onClick={() => onThemeChange("light")}
                         type="button"
                         className={`flex items-center justify-center w-8 h-8 rounded-full ui-motion ${
@@ -47,7 +47,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                             />
                         </svg>
                     </Button>
-                    <Button variant="custom"
+                    <Button unstyled
                         onClick={() => onThemeChange("dark")}
                         type="button"
                         className={`flex items-center justify-center w-8 h-8 rounded-full ui-motion ${
@@ -82,7 +82,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                 className="flex items-center rounded-full p-1 w-fit transition-colors"
                 style={{ backgroundColor: "var(--pill-bg)" }}
             >
-                <Button variant="custom"
+                <Button unstyled
                     onClick={() => setLocale("en")}
                     type="button"
                     aria-label={locale === "es" ? "Cambiar idioma a inglés" : "Switch language to English"}
@@ -102,7 +102,7 @@ export function AuthTopControls({ theme, onThemeChange, showThemeToggle = true }
                 >
                     EN
                 </Button>
-                <Button variant="custom"
+                <Button unstyled
                     onClick={() => setLocale("es")}
                     type="button"
                     aria-label={locale === "es" ? "Cambiar idioma a español" : "Switch language to Spanish"}

@@ -51,14 +51,14 @@ export function PendingPrivacyRequests({
                             </p>
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 onClick={() => onResolve(request, "reject")}
                                 className="inline-flex h-8 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-3 text-sm font-medium text-red-600 shadow-sm ui-motion hover:-translate-y-0.5 hover:border-red-600 hover:bg-red-600 hover:text-white hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
                             >
                                 {isSpanish ? "Rechazar" : "Reject"}
                             </Button>
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 onClick={() => onResolve(request, "complete")}
                                 className="inline-flex h-8 items-center justify-center rounded-xl border border-[var(--btn-primary-bg)] bg-[var(--btn-primary-bg)] px-3 text-sm font-medium text-[var(--btn-primary-text)] shadow-sm ui-motion hover:-translate-y-0.5 hover:bg-[var(--btn-primary-hover-bg)] hover:shadow-md active:translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-color)]"
@@ -126,10 +126,10 @@ export function PrivacyResolutionDialog({
                     />
                 </div>
                 <DialogFooter className="gap-2">
-                    <Button variant="custom" type="button" onClick={onClose} disabled={resolving} className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] px-4 text-sm font-medium text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] disabled:opacity-50">
+                    <Button unstyled type="button" onClick={onClose} disabled={resolving} className="inline-flex h-9 items-center justify-center rounded-xl border border-[var(--btn-neutral-border)] bg-[var(--btn-neutral-bg)] px-4 text-sm font-medium text-[var(--btn-neutral-text)] ui-motion hover:bg-[var(--btn-neutral-hover-bg)] hover:text-[var(--text-main)] disabled:opacity-50">
                         {isSpanish ? "Cancelar" : "Cancel"}
                     </Button>
-                    <Button variant="custom"
+                    <Button unstyled
                         type="button"
                         disabled={resolving || !notes.trim()}
                         onClick={onResolve}

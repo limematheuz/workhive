@@ -120,7 +120,7 @@ function ConfirmEmailChangeContent() {
                                 </div>
                             )}
 
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 onClick={confirmChange}
                                 disabled={!token || submitting}

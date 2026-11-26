@@ -114,7 +114,7 @@ function ContractsWorkspace({ user }: { user: User }) {
 
             {renewals.length > 0 && <section className="mb-4 rounded-lg border border-orange-300 p-3">
                 <h2 className="font-semibold">Contratos que requieren revisión ({renewals.length})</h2>
-                {renewals.map(({contract, days}) => <Button variant="custom" type="button" key={contract.id} onClick={() => void openContract(contract)} className="flex w-full flex-wrap justify-between gap-2 border-b py-2 text-left text-sm">
+                {renewals.map(({contract, days}) => <Button unstyled type="button" key={contract.id} onClick={() => void openContract(contract)} className="flex w-full flex-wrap justify-between gap-2 border-b py-2 text-left text-sm">
                     <span>{contract.contract_number} · {contract.title}</span>
                     <strong className="text-orange-700 dark:text-orange-300">{days < 0 ? "Vigencia finalizada" : days === 0 ? "Vence hoy" : `Vence en ${days} días`}</strong>
                 </Button>)}

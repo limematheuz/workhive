@@ -26,7 +26,7 @@ export function SidebarFooterControls({
                         className="flex items-center rounded-full p-1 w-fit transition-colors"
                         style={{ backgroundColor: "var(--pill-bg)" }}
                     >
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => onThemeChange("light")}
                             aria-label="Activar modo claro"
@@ -39,7 +39,7 @@ export function SidebarFooterControls({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         </Button>
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => onThemeChange("dark")}
                             aria-label="Activar modo oscuro"
@@ -58,7 +58,7 @@ export function SidebarFooterControls({
                         className="flex items-center rounded-full p-1 w-fit transition-colors"
                         style={{ backgroundColor: "var(--pill-bg)" }}
                     >
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => onLocaleChange("en")}
                             aria-label="Cambiar idioma a inglés"
@@ -69,7 +69,7 @@ export function SidebarFooterControls({
                         >
                             EN
                         </Button>
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => onLocaleChange("es")}
                             aria-label="Cambiar idioma a español"

@@ -59,7 +59,7 @@ export function TechTaskIssuesSection({
 
     return (
         <div className="billing-block overflow-hidden rounded-2xl">
-            <Button variant="custom" type="button"
+            <Button unstyled type="button"
                 onClick={onToggle}
                 className="flex w-full cursor-pointer items-center justify-between border-none px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
             >
@@ -99,7 +99,7 @@ export function TechTaskIssuesSection({
                                 <h4 className="text-xs font-black uppercase text-[var(--text-main)]">
                                     {dict.tech.issues_new_title}
                                 </h4>
-                                <Button variant="custom"
+                                <Button unstyled
                                     type="button"
                                     onClick={() => setShowNewIssueForm(false)}
                                     aria-label={dict.tech.btn_cancel}
@@ -116,7 +116,7 @@ export function TechTaskIssuesSection({
                                 </span>
                                 <div className="grid grid-cols-3 gap-2">
                                     {(["mantenimiento", "limpieza", "inspeccion"] as const).map((type) => (
-                                        <Button variant="custom"
+                                        <Button unstyled
                                             key={type}
                                             type="button"
                                             onClick={() => setNewIssueType(type)}
@@ -221,7 +221,7 @@ export function TechTaskIssuesSection({
                                                 className="object-cover"
                                                 unoptimized
                                             />
-                                            <Button variant="custom"
+                                            <Button unstyled
                                                 type="button"
                                                 onClick={() => setNewIssuePhoto("")}
                                                 aria-label={dict.tech.btn_delete}

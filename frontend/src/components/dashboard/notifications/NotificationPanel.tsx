@@ -67,7 +67,7 @@ export function NotificationPanel() {
 
     return (
         <div className="relative" ref={notificationsRef}>
-            <Button variant="custom"
+            <Button unstyled
                 type="button"
                 onClick={() => {
                     setIsNotificationsOpen((open) => !open);

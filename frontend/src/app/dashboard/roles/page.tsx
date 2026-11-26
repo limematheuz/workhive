@@ -124,7 +124,7 @@ export default function RolesAdminPage() {
                 subtitle={dict.roles.subtitle}
                 className="mb-0"
                 actions={(
-                    <Button variant="custom"
+                    <Button unstyled
                         type="button"
                         onClick={handleCreateClick}
                         className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}

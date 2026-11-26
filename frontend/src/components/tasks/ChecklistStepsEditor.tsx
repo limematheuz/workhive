@@ -73,7 +73,7 @@ export function ChecklistStepsEditor({
                     </p>
                     {helpText && <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">{helpText}</p>}
                 </div>
-                <Button variant="custom"
+                <Button unstyled
                     type="button"
                     onClick={() => updateSteps([...steps, { id: createEditableLineKey("checklist-step"), text: "" }])}
                     className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-accent/20 bg-accent/10 px-2.5 py-2 text-xs font-bold text-accent ui-motion hover:bg-accent hover:text-white"
@@ -105,7 +105,7 @@ export function ChecklistStepsEditor({
                                 placeholder="Describe un paso concreto"
                                 className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-main)] outline-none focus:border-accent"
                             />
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 onClick={() => updateSteps(steps.filter((item) => item.id !== step.id))}
                                 aria-label={`Eliminar paso ${index + 1}`}

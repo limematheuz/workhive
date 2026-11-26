@@ -178,7 +178,7 @@ export function OperationsCalendar({
                                     </span>
                                 </div>
                                 {state.isAdminOrManager && onCreateTask && (
-                                    <Button variant="custom"
+                                    <Button unstyled
                                         type="button"
                                         onClick={onCreateTask}
                                         className="w-8 h-8 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] flex items-center justify-center transition-colors cursor-pointer"
@@ -220,7 +220,7 @@ export function OperationsCalendar({
                             </div>
 
                             {state.isAdminOrManager && onCreateTask && (
-                                <Button variant="custom"
+                                <Button unstyled
                                     type="button"
                                     onClick={onCreateTask}
                                     className="mt-3 h-11 rounded-2xl border border-dashed border-accent/55 bg-accent/5 text-accent text-sm font-semibold flex items-center justify-center gap-2 hover:bg-accent/10 transition-colors cursor-pointer"

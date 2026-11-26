@@ -185,7 +185,7 @@ export function PrivacyControls({
                     )}
                 </div>
                 <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row">
-                    <Button variant="custom"
+                    <Button unstyled
                         type="button"
                         onClick={exportData}
                         disabled={working !== null}
@@ -196,7 +196,7 @@ export function PrivacyControls({
                             : <Download className="h-4 w-4" />}
                         {isSpanish ? "Exportar mis datos" : "Export my data"}
                     </Button>
-                    <Button variant="custom"
+                    <Button unstyled
                         type="button"
                         onClick={() => setErasureDialogOpen(true)}
                         disabled={loading || loadFailed || working !== null || Boolean(openRequest)}

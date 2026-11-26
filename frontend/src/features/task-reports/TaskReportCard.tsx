@@ -48,7 +48,7 @@ export function TaskReportCard({
                         className="h-4 w-4 shrink-0"
                     />
                 )}
-                <Button variant="custom"
+                <Button unstyled
                     type="button"
                     onClick={() => (selectionMode ? onToggleSelect(report.id) : onOpen(report))}
                     className="flex min-w-0 flex-1 items-center gap-2.5 border-none bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"

@@ -156,7 +156,7 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_16rem]">
                 <div className="relative overflow-hidden rounded-[18px] border border-[var(--border-soft)] bg-[var(--bg-card-solid)]">
                     <div className="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-xl border border-[var(--border-soft)] bg-[var(--bg-card-solid)]/95 p-1 shadow-sm backdrop-blur">
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => zoomBy(1.22)}
                             className="h-8 w-8 rounded-lg bg-accent text-sm font-semibold text-white transition hover:bg-[var(--brand-blue-hover)]"
@@ -164,7 +164,7 @@ export function TrafficAccessMap({ points, emptyDescription, activeLocationsLabe
                         >
                             +
                         </Button>
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => zoomBy(0.82)}
                             className="h-8 w-8 rounded-lg bg-[color-mix(in_srgb,var(--text-main)_10%,var(--bg-card-solid)_90%)] text-sm font-semibold text-[var(--text-main)] transition hover:bg-[color-mix(in_srgb,var(--accent-color)_14%,var(--bg-card-solid)_86%)]"

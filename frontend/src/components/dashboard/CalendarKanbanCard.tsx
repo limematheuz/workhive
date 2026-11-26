@@ -56,7 +56,7 @@ export function CalendarKanbanCard({
             onDragStart={(e) => onDragStart(e, task.id)}
             className={`group relative overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] shadow-sm ui-motion hover:border-accent/40 ${canDrag && !task.is_invoiced ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
         >
-            <Button variant="custom"
+            <Button unstyled
                 type="button"
                 onClick={() => onClick(task)}
                 aria-label={`Abrir tarea: ${task.title}`}

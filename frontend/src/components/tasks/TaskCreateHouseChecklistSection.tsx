@@ -82,7 +82,7 @@ export function TaskCreateHouseChecklistSection({
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                     {isAdminOrManager && availableTemplates.length > 0 && (
-                        <Button variant="custom"
+                        <Button unstyled
                             type="button"
                             onClick={() => setShowQuickAddFixed(!showQuickAddFixed)}
                             className="text-2xs font-bold uppercase text-accent hover:underline cursor-pointer"
@@ -177,7 +177,7 @@ export function TaskCreateHouseChecklistSection({
                         </div>
 
                         <div>
-                            <Button variant="custom"
+                            <Button unstyled
                                 type="button"
                                 disabled={isLinking || !selectedTmplId}
                                 onClick={async () => {

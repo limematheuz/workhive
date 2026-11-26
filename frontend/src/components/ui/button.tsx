@@ -10,10 +10,11 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  unstyled = false,
   ...props
 }: React.ComponentProps<"button"> &
-  Omit<VariantProps<typeof buttonVariants>, "variant"> & {
-    variant?: VariantProps<typeof buttonVariants>["variant"] | "custom"
+  VariantProps<typeof buttonVariants> & {
+    unstyled?: boolean
     asChild?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
@@ -23,7 +24,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={variant === "custom" ? cn("focus-visible:ring-2 focus-visible:ring-ring", className) : cn(buttonVariants({ variant, size, className }))}
+      className={unstyled ? cn("focus-visible:ring-2 focus-visible:ring-ring", className) : cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
   )

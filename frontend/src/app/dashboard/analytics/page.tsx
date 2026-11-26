@@ -721,7 +721,7 @@ function FinanceTrendCard({
                     aria-label={text.trend_title}
                 >
                     {PERIODS.map((item) => (
-                        <Button variant="custom"
+                        <Button unstyled
                             key={item}
                             type="button"
                             onClick={() => setPeriod(item)}
@@ -919,7 +919,7 @@ function ClientProfitabilityDashboard({
                         aria-label={text.profitability_title}
                     >
                         {(["month", "year"] as const).map((item) => (
-                            <Button variant="custom"
+                            <Button unstyled
                                 key={item}
                                 type="button"
                                 onClick={() => setPeriod(item)}

@@ -113,7 +113,7 @@ function JobMobileCard({
                     onCheckedChange={() => onToggle()}
                     aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
                 />
-                <Button variant="custom"
+                <Button unstyled
                     type="button"
                     disabled={disabled}
                     onClick={onToggle}
