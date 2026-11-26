@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 import {FormSelect} from "@/components/ui/form-select";
 
 import { useState } from "react";
@@ -130,7 +131,7 @@ export function TaskCreateHouseTemplateList({
                         }`}
                     >
                         <div className="flex items-center gap-2.5 p-3">
-                            <button
+                            <Button unstyled
                                 type="button"
                                 disabled={!useHouseChecklist}
                                 onClick={() => useHouseChecklist && selectHouseTemplate(houseTemplate.template_task_id)}
@@ -144,7 +145,7 @@ export function TaskCreateHouseTemplateList({
                                 } ${useHouseChecklist ? "cursor-pointer" : "cursor-default"}`}
                             >
                                 {isChecked && useHouseChecklist && <Check className="h-2.5 w-2.5 stroke-[3px]" />}
-                            </button>
+                            </Button>
                             <div className="min-w-0 flex-1">
                                 <span className="block truncate text-xs font-bold text-[var(--text-main)]">{effective.name}</span>
                                 <span className="text-[10px] font-semibold text-accent">
@@ -155,14 +156,14 @@ export function TaskCreateHouseTemplateList({
                                 </span>
                             </div>
                             {subItems.length > 0 && (
-                                <button
+                                <Button unstyled
                                     type="button"
                                     onClick={() => toggleTemplateExpanded(houseTemplate.template_task_id)}
                                     className="flex shrink-0 cursor-pointer items-center gap-1 rounded-lg px-2 py-1 text-[10px] font-bold text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)]"
                                 >
                                     <span>{subItems.length} {subItems.length === 1 ? "paso" : "pasos"}</span>
                                     <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
-                                </button>
+                                </Button>
                             )}
                         </div>
                         {isChecked && useHouseChecklist && (
@@ -182,7 +183,7 @@ export function TaskCreateHouseTemplateList({
                                             ? (dict.tasks?.create_dialog?.fixed_price || "Precio fijo")
                                             : (dict.tasks?.create_dialog?.hourly_rate || "Por hora");
                                         return (
-                                            <button
+                                            <Button unstyled
                                                 key={mode}
                                                 type="button"
                                                 aria-pressed={active}
@@ -194,7 +195,7 @@ export function TaskCreateHouseTemplateList({
                                                 }`}
                                             >
                                                 {label}
-                                            </button>
+                                            </Button>
                                         );
                                     })}
                                 </div>

@@ -1,4 +1,5 @@
 "use client";
+import { Button } from "@/components/ui/button";
 import {FormSelect} from "@/components/ui/form-select";
 
 import React, { useState } from "react";
@@ -81,7 +82,7 @@ export function TaskCreateHouseChecklistSection({
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
                     {isAdminOrManager && availableTemplates.length > 0 && (
-                        <button
+                        <Button unstyled
                             type="button"
                             onClick={() => setShowQuickAddFixed(!showQuickAddFixed)}
                             className="text-2xs font-bold uppercase text-accent hover:underline cursor-pointer"
@@ -89,7 +90,7 @@ export function TaskCreateHouseChecklistSection({
                             {showQuickAddFixed
                                 ? (dict.tasks?.create_dialog?.cancel_link || "Cancel")
                                 : `+ ${dict.tasks?.create_dialog?.link_default_task || "Link Default Task"}`}
-                        </button>
+                        </Button>
                     )}
                     {visibleHouseTemplates.length > 0 && (
                         <div className="flex items-center gap-2">
@@ -176,7 +177,7 @@ export function TaskCreateHouseChecklistSection({
                         </div>
 
                         <div>
-                            <button
+                            <Button unstyled
                                 type="button"
                                 disabled={isLinking || !selectedTmplId}
                                 onClick={async () => {
@@ -203,7 +204,7 @@ export function TaskCreateHouseChecklistSection({
                                 ) : (
                                     dict.locations?.sheet?.associate_btn || "Link as Default Task"
                                 )}
-                            </button>
+                            </Button>
                         </div>
                     </div>
                 </div>

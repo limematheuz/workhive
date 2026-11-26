@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, MailCheck } from "lucide-react";
@@ -119,7 +120,7 @@ function ConfirmEmailChangeContent() {
                                 </div>
                             )}
 
-                            <button
+                            <Button unstyled
                                 type="button"
                                 onClick={confirmChange}
                                 disabled={!token || submitting}
@@ -128,7 +129,7 @@ function ConfirmEmailChangeContent() {
                                 {submitting
                                     ? (isSpanish ? "Confirmando..." : "Confirming...")
                                     : (isSpanish ? "Confirmar correo" : "Confirm email")}
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </section>

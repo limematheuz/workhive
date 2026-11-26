@@ -113,7 +113,7 @@ function JobMobileCard({
                     onCheckedChange={() => onToggle()}
                     aria-label={`${selected ? "Quitar" : "Seleccionar"} ${task.title}`}
                 />
-                <button
+                <Button unstyled
                     type="button"
                     disabled={disabled}
                     onClick={onToggle}
@@ -140,7 +140,7 @@ function JobMobileCard({
                     <p className="mt-2 truncate text-xs text-[var(--text-muted)]">
                         {quantityLabel}{hoursLabel ? ` · ${hoursLabel}` : ""}{workersLine ? ` · ${workersLine}` : ""}
                     </p>
-                </button>
+                </Button>
             </CardContent>
         </Card>
     );

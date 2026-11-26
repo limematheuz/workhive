@@ -59,7 +59,7 @@ export function TechTaskIssuesSection({
 
     return (
         <div className="billing-block overflow-hidden rounded-2xl">
-            <button type="button"
+            <Button unstyled type="button"
                 onClick={onToggle}
                 className="flex w-full cursor-pointer items-center justify-between border-none px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
             >
@@ -72,7 +72,7 @@ export function TechTaskIssuesSection({
                     </span>
                 </div>
                 {expanded ? <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" /> : <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />}
-            </button>
+            </Button>
             {expanded && (
                 <div className="space-y-4 border-t border-[var(--border-soft)] px-3.5 py-3.5">
                     {/* Action Header */}
@@ -99,14 +99,14 @@ export function TechTaskIssuesSection({
                                 <h4 className="text-xs font-black uppercase text-[var(--text-main)]">
                                     {dict.tech.issues_new_title}
                                 </h4>
-                                <button
+                                <Button unstyled
                                     type="button"
                                     onClick={() => setShowNewIssueForm(false)}
                                     aria-label={dict.tech.btn_cancel}
                                     className="surface-control-btn p-1 rounded-full cursor-pointer flex items-center justify-center ui-motion"
                                 >
                                     <X className="w-4 h-4" />
-                                </button>
+                                </Button>
                             </div>
 
                             {/* Type radio buttons */}
@@ -116,7 +116,7 @@ export function TechTaskIssuesSection({
                                 </span>
                                 <div className="grid grid-cols-3 gap-2">
                                     {(["mantenimiento", "limpieza", "inspeccion"] as const).map((type) => (
-                                        <button
+                                        <Button unstyled
                                             key={type}
                                             type="button"
                                             onClick={() => setNewIssueType(type)}
@@ -137,7 +137,7 @@ export function TechTaskIssuesSection({
                                                 ? (dict.tech?.issue_type_cleaning || "Cleaning")
                                                 : (dict.tech?.issue_type_inspection || "Inspection")
                                             }
-                                        </button>
+                                        </Button>
                                     ))}
                                 </div>
                             </div>
@@ -221,14 +221,14 @@ export function TechTaskIssuesSection({
                                                 className="object-cover"
                                                 unoptimized
                                             />
-                                            <button
+                                            <Button unstyled
                                                 type="button"
                                                 onClick={() => setNewIssuePhoto("")}
                                                 aria-label={dict.tech.btn_delete}
                                                 className="absolute -right-1 -top-1 flex size-4 cursor-pointer items-center justify-center rounded-full border-none bg-[var(--btn-cancel-hover-bg)] p-0.5 text-[var(--btn-cancel-hover-text)]"
                                             >
                                                 <X className="w-3 h-3" />
-                                            </button>
+                                            </Button>
                                         </div>
                                     )}
                                 </div>

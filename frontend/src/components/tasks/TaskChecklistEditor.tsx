@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useRef, useState } from "react";
 import {FormSelect} from "@/components/ui/form-select";
 
@@ -61,7 +62,7 @@ export function TaskChecklistEditor({
                         className="grid grid-cols-1 items-center gap-2 py-3 text-xs sm:grid-cols-[minmax(0,1fr)_11rem] sm:gap-4"
                     >
                         <div className="flex min-w-0 flex-1 items-center gap-2">
-                            <button
+                            <Button unstyled
                                 type="button"
                                 disabled={!canEdit}
                                 aria-label={item.checked ? `Marcar pendiente: ${item.text}` : `Marcar completado: ${item.text}`}
@@ -75,8 +76,8 @@ export function TaskChecklistEditor({
                                 )}
                             >
                                 <span className="text-[11px] font-black leading-none">✓</span>
-                            </button>
-                            <button
+                            </Button>
+                            <Button unstyled
                                 type="button"
                                 disabled={!canEdit}
                                 onClick={() => { markDirty(editorRef.current); onToggle(item.index); }}
@@ -89,7 +90,7 @@ export function TaskChecklistEditor({
                                 )}
                             >
                                 {item.text}
-                            </button>
+                            </Button>
                         </div>
 
                         {canEdit ? (

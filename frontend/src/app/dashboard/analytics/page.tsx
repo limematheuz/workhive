@@ -721,7 +721,7 @@ function FinanceTrendCard({
                     aria-label={text.trend_title}
                 >
                     {PERIODS.map((item) => (
-                        <button
+                        <Button unstyled
                             key={item}
                             type="button"
                             onClick={() => setPeriod(item)}
@@ -733,7 +733,7 @@ function FinanceTrendCard({
                             }`}
                         >
                             {text[`period_${item}`]}
-                        </button>
+                        </Button>
                     ))}
                 </div>
             </div>
@@ -919,7 +919,7 @@ function ClientProfitabilityDashboard({
                         aria-label={text.profitability_title}
                     >
                         {(["month", "year"] as const).map((item) => (
-                            <button
+                            <Button unstyled
                                 key={item}
                                 type="button"
                                 onClick={() => setPeriod(item)}
@@ -931,7 +931,7 @@ function ClientProfitabilityDashboard({
                                 }`}
                             >
                                 {item === "month" ? text.profitability_period_month : text.profitability_period_year}
-                            </button>
+                            </Button>
                         ))}
                     </div>
                 </div>

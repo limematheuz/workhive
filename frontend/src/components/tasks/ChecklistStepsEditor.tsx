@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import React from "react";
 import { ListTodo, Plus, Trash2 } from "lucide-react";
 
@@ -72,14 +73,14 @@ export function ChecklistStepsEditor({
                     </p>
                     {helpText && <p className="mt-1 text-xs leading-relaxed text-[var(--text-muted)]">{helpText}</p>}
                 </div>
-                <button
+                <Button unstyled
                     type="button"
                     onClick={() => updateSteps([...steps, { id: createEditableLineKey("checklist-step"), text: "" }])}
                     className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-accent/20 bg-accent/10 px-2.5 py-2 text-xs font-bold text-accent ui-motion hover:bg-accent hover:text-white"
                 >
                     <Plus className="h-3.5 w-3.5" />
                     {addLabel}
-                </button>
+                </Button>
             </div>
 
             {steps.length ? (
@@ -104,14 +105,14 @@ export function ChecklistStepsEditor({
                                 placeholder="Describe un paso concreto"
                                 className="h-10 min-w-0 flex-1 rounded-xl border border-[var(--border-color)] bg-[var(--bg-card)] px-3 text-sm text-[var(--text-main)] outline-none focus:border-accent"
                             />
-                            <button
+                            <Button unstyled
                                 type="button"
                                 onClick={() => updateSteps(steps.filter((item) => item.id !== step.id))}
                                 aria-label={`Eliminar paso ${index + 1}`}
                                 className="shrink-0 rounded-xl p-2 text-[var(--btn-cancel-text)] ui-motion hover:bg-[var(--btn-cancel-bg)]"
                             >
                                 <Trash2 className="h-4 w-4" />
-                            </button>
+                            </Button>
                         </div>
                     ))}
                 </div>

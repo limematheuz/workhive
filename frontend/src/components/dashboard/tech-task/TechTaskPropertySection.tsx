@@ -145,7 +145,7 @@ export function TechTaskPropertySection({
 
     return (
         <div className="billing-block overflow-hidden rounded-2xl">
-            <button type="button"
+            <Button unstyled type="button"
                 onClick={onToggle}
                 className="flex w-full cursor-pointer items-center justify-between border-none px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
             >
@@ -158,7 +158,7 @@ export function TechTaskPropertySection({
                     </span>
                 </div>
                 {expanded ? <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" /> : <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />}
-            </button>
+            </Button>
             {expanded && (
                 <div className="space-y-4 border-t border-[var(--border-soft)] px-3.5 py-3.5">
                     {isEditingFeatures ? (
@@ -178,12 +178,12 @@ export function TechTaskPropertySection({
                                         {dict.tech.property_distribution}
                                     </span>
                                     {canEditLocationDetails && (
-                                        <button type="button"
+                                        <Button unstyled type="button"
                                             onClick={() => setIsEditingFeatures(true)}
                                             className="flex items-center gap-1 text-[10px] font-black text-accent hover:text-accent transition-colors uppercase tracking-wider bg-transparent border-none cursor-pointer"
                                         >
                                             {dict.tech.property_edit_btn}
-                                        </button>
+                                        </Button>
                                     )}
                                 </div>
 

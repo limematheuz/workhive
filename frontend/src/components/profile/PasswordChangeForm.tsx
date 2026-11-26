@@ -87,14 +87,14 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                 placeholder="Introduce tu clave actual"
                                 className="pr-10"
                             />
-                            <button
+                            <Button unstyled
                                 type="button"
                                 onClick={() => setShowOldPassword(!showOldPassword)}
                                 aria-label={showOldPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                 className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] focus:outline-none"
                             >
                                 {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
+                            </Button>
                         </div>
                     </DocumentFormField>
 
@@ -110,14 +110,14 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                     placeholder="Mín. 6 caracteres"
                                     className="pr-10"
                                 />
-                                <button
+                                <Button unstyled
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
                                     aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] focus:outline-none"
                                 >
                                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </button>
+                                </Button>
                             </div>
                         </DocumentFormField>
 
@@ -132,14 +132,14 @@ export function PasswordChangeForm({ user, dict, onCancel, onSuccess }: Password
                                     placeholder="Repite la clave"
                                     className="pr-10"
                                 />
-                                <button
+                                <Button unstyled
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                                     aria-label={showConfirmPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                                     className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] transition-colors hover:text-[var(--text-main)] focus:outline-none"
                                 >
                                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                </button>
+                                </Button>
                             </div>
                         </DocumentFormField>
                     </div>

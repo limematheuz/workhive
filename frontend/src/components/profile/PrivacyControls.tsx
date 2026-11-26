@@ -185,7 +185,7 @@ export function PrivacyControls({
                     )}
                 </div>
                 <div className="flex shrink-0 flex-col gap-2.5 sm:flex-row">
-                    <button
+                    <Button unstyled
                         type="button"
                         onClick={exportData}
                         disabled={working !== null}
@@ -195,8 +195,8 @@ export function PrivacyControls({
                             ? <Loader2 className="h-4 w-4 animate-spin" />
                             : <Download className="h-4 w-4" />}
                         {isSpanish ? "Exportar mis datos" : "Export my data"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button unstyled
                         type="button"
                         onClick={() => setErasureDialogOpen(true)}
                         disabled={loading || loadFailed || working !== null || Boolean(openRequest)}
@@ -206,7 +206,7 @@ export function PrivacyControls({
                             ? <Loader2 className="h-4 w-4 animate-spin" />
                             : <Trash2 className="h-4 w-4" />}
                         {isSpanish ? "Solicitar supresión" : "Request erasure"}
-                    </button>
+                    </Button>
                 </div>
             </div>
             {loadFailed && (

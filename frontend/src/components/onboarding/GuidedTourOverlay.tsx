@@ -1,5 +1,6 @@
 "use client"
 
+import { Button } from "@/components/ui/button";
 import React, { RefObject } from "react"
 import { Sparkles, ChevronRight, ChevronLeft, X } from "lucide-react"
 import { TOUR_STEPS, TourCoords, TourStep } from "./guidedTourSteps"
@@ -52,13 +53,13 @@ export function GuidedTourOverlay({
                 {/* Connecting Arrow (Desktop only) */}
                 {arrowClass !== "hidden" && <div className={arrowClass} />}
 
-                <button type="button"
+                <Button unstyled type="button"
                     onClick={onFinish}
                     aria-label="Cerrar"
                     className="absolute top-3 right-3 text-[var(--popover-tour-text-muted)] hover:text-[var(--popover-tour-text)] p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors border-none bg-transparent cursor-pointer flex items-center justify-center"
                 >
                     <X className="w-3.5 h-3.5" />
-                </button>
+                </Button>
 
                 <div className="flex items-center gap-2 mb-2 text-[var(--popover-tour-text)] font-black">
                     <Sparkles className="w-4 h-4 text-[var(--popover-tour-text)]" />
@@ -75,23 +76,23 @@ export function GuidedTourOverlay({
                     </span>
                     <div className="flex gap-1.5">
                         {step > 0 && (
-                            <button
+                            <Button unstyled
                                 type="button"
                                 onClick={onBack}
                                 className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold text-[var(--popover-tour-text-muted)] hover:text-[var(--popover-tour-text)] bg-transparent border border-[var(--popover-tour-border)] rounded-lg transition-colors cursor-pointer"
                             >
                                 <ChevronLeft className="w-3 h-3" />
                                 Atrás
-                            </button>
+                            </Button>
                         )}
-                        <button
+                        <Button unstyled
                             type="button"
                             onClick={onNext}
                             className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold bg-[var(--popover-tour-text)] text-[var(--popover-tour-bg)] hover:opacity-90 rounded-lg transition-colors cursor-pointer border-none"
                         >
                             {step === TOUR_STEPS.length - 1 ? "Entendido" : "Siguiente"}
                             <ChevronRight className="w-3 h-3" />
-                        </button>
+                        </Button>
                     </div>
                 </div>
             </div>

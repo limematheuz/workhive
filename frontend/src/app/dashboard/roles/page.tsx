@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 import { redirect } from "next/navigation";
 import { useUser } from "@/lib/user-context";
@@ -123,14 +124,14 @@ export default function RolesAdminPage() {
                 subtitle={dict.roles.subtitle}
                 className="mb-0"
                 actions={(
-                    <button
+                    <Button unstyled
                         type="button"
                         onClick={handleCreateClick}
                         className={`${PAGE_ACTION_BUTTON_PRIMARY} cursor-pointer`}
                     >
                         <Plus className="h-4 w-4" />
                         {dict.roles.new_role}
-                    </button>
+                    </Button>
                 )}
             />
 
