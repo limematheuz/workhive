@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import React from "react";
 import {
     CheckCheck,
@@ -177,14 +178,14 @@ export function OperationsCalendar({
                                     </span>
                                 </div>
                                 {state.isAdminOrManager && onCreateTask && (
-                                    <button
+                                    <Button variant="custom"
                                         type="button"
                                         onClick={onCreateTask}
                                         className="w-8 h-8 rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] flex items-center justify-center transition-colors cursor-pointer"
                                         aria-label={`Add task to ${column.title}`}
                                     >
                                         <Plus className="w-4 h-4" />
-                                    </button>
+                                    </Button>
                                 )}
                             </div>
 
@@ -219,14 +220,14 @@ export function OperationsCalendar({
                             </div>
 
                             {state.isAdminOrManager && onCreateTask && (
-                                <button
+                                <Button variant="custom"
                                     type="button"
                                     onClick={onCreateTask}
                                     className="mt-3 h-11 rounded-2xl border border-dashed border-accent/55 bg-accent/5 text-accent text-sm font-semibold flex items-center justify-center gap-2 hover:bg-accent/10 transition-colors cursor-pointer"
                                 >
                                     <Plus className="w-4 h-4" />
                                     {state.dict.tasks?.add_task || "Añadir tarea"}
-                                </button>
+                                </Button>
                             )}
                         </div>
                     );

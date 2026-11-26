@@ -26,7 +26,7 @@ const techTaskCardSupplementaryInfo = readFileSync(
 test("kanban card opens task details from an accessible full-card control", () => {
     assert.match(
         card,
-        /<button[\s\S]*?onClick=\{\(\) => onClick\(task\)\}/,
+        /<Button[\s\S]*?onClick=\{\(\) => onClick\(task\)\}/,
     );
     assert.match(card, /aria-label=\{`Abrir tarea: \$\{task\.title\}`\}/);
 });

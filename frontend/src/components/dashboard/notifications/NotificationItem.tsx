@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { BellRing, MapPin, ShieldAlert } from "lucide-react";
 
 import type { Reservation } from "@/types/reservation";
@@ -102,14 +103,14 @@ function NotificationButton({
     className: string;
 }) {
     return (
-        <button
+        <Button variant="custom"
             type="button"
             disabled={disabled}
             onClick={onClick}
             className={`block w-full rounded-2xl p-3 text-left transition-colors disabled:opacity-60 ${className}`}
         >
             {children}
-        </button>
+        </Button>
     );
 }
 

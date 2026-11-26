@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Camera, ChevronRight, FileText, MapPin, ShieldAlert, UserRound } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +48,7 @@ export function TaskReportCard({
                         className="h-4 w-4 shrink-0"
                     />
                 )}
-                <button
+                <Button variant="custom"
                     type="button"
                     onClick={() => (selectionMode ? onToggleSelect(report.id) : onOpen(report))}
                     className="flex min-w-0 flex-1 items-center gap-2.5 border-none bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
@@ -82,7 +83,7 @@ export function TaskReportCard({
                             <ChevronRight className="h-3.5 w-3.5 text-[var(--text-muted)] transition group-hover:translate-x-0.5 group-hover:text-accent" />
                         )}
                     </span>
-                </button>
+                </Button>
             </div>
         </article>
     );

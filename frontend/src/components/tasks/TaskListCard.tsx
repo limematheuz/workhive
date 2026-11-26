@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import React from "react";
 import { Building2, Check, ChevronRight, Lock, MapPin, UserRound } from "lucide-react";
 import { TaskItem } from "@/services/task.service";
@@ -42,7 +43,7 @@ function TaskStatusCheckbox({
     onToggle: (event: React.MouseEvent) => void;
 }) {
     return (
-        <button
+        <Button variant="custom"
             type="button"
             aria-label={label}
             aria-pressed={isCompleted}
@@ -61,7 +62,7 @@ function TaskStatusCheckbox({
             ) : (
                 <span className="h-5 w-5 rounded-full bg-transparent ring-[1.5px] ring-[color-mix(in_srgb,var(--text-muted)_28%,transparent)] transition-colors group-hover/check:bg-accent/[0.06] group-hover/check:ring-accent/45" />
             )}
-        </button>
+        </Button>
     );
 }
 

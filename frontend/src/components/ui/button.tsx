@@ -12,7 +12,8 @@ function Button({
   asChild = false,
   ...props
 }: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
+  Omit<VariantProps<typeof buttonVariants>, "variant"> & {
+    variant?: VariantProps<typeof buttonVariants>["variant"] | "custom"
     asChild?: boolean
   }) {
   const Comp = asChild ? Slot.Root : "button"
@@ -22,7 +23,7 @@ function Button({
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      className={variant === "custom" ? cn("focus-visible:ring-2 focus-visible:ring-ring", className) : cn(buttonVariants({ variant, size, className }))}
       {...props}
     />
   )

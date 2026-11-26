@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import React from "react";
 import { Calendar, Key, ChevronUp, ChevronDown, Users } from "lucide-react";
 import { TaskItem } from "@/types/user";
@@ -33,7 +34,7 @@ export function TechTaskReservationContext({
 
             {task.checkout_reservation ? (
                 <div className="billing-block overflow-hidden rounded-2xl">
-                    <button
+                    <Button variant="custom"
                         type="button"
                         onClick={() => setExpandedReservation(value => value === "checkout" ? null : "checkout")}
                         className="flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
@@ -61,7 +62,7 @@ export function TechTaskReservationContext({
                         {expandedReservation === "checkout"
                             ? <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" />
                             : <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />}
-                    </button>
+                    </Button>
                     {expandedReservation === "checkout" && (
                         <div className="space-y-2 border-t border-[var(--border-soft)] px-3.5 py-3 text-xs">
                             <div className="flex justify-between gap-4">
@@ -87,7 +88,7 @@ export function TechTaskReservationContext({
 
             {task.next_reservation ? (
                 <div className="billing-block overflow-hidden rounded-2xl">
-                    <button
+                    <Button variant="custom"
                         type="button"
                         onClick={() => setExpandedReservation(value => value === "next" ? null : "next")}
                         className="flex w-full items-center justify-between px-3.5 py-3 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--accent-color)_6%,transparent)]"
@@ -109,7 +110,7 @@ export function TechTaskReservationContext({
                         {expandedReservation === "next"
                             ? <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" />
                             : <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />}
-                    </button>
+                    </Button>
                     {expandedReservation === "next" && (
                         <div className="space-y-2 border-t border-[var(--border-soft)] px-3.5 py-3 text-xs">
                             <div className="flex justify-between gap-4">

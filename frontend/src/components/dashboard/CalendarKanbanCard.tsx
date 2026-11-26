@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import React, { useMemo } from "react";
 import { CalendarDays, Loader2, Lock, MapPin, Timer } from "lucide-react";
 import { TaskItem, TaskWorkDetailedSummary } from "@/types/user";
@@ -55,7 +56,7 @@ export function CalendarKanbanCard({
             onDragStart={(e) => onDragStart(e, task.id)}
             className={`group relative overflow-hidden rounded-2xl border border-[var(--border-soft)] bg-[var(--bg-card)] shadow-sm ui-motion hover:border-accent/40 ${canDrag && !task.is_invoiced ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"}`}
         >
-            <button
+            <Button variant="custom"
                 type="button"
                 onClick={() => onClick(task)}
                 aria-label={`Abrir tarea: ${task.title}`}

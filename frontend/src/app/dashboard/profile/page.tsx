@@ -43,12 +43,12 @@ export default function ProfilePage() {
                 <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
                 <h3 className="text-lg font-black tracking-tight mb-2">Error</h3>
                 <p className="text-[var(--text-muted)] text-sm max-w-md mb-6">{state.error}</p>
-                <button type="button"
+                <Button variant="custom" type="button"
                     onClick={() => window.location.reload()}
                     className="px-4 py-2 bg-[var(--bg-tertiary)] border border-[var(--border-soft)] hover:bg-[var(--bg-secondary)] rounded-xl ui-motion text-sm font-semibold cursor-pointer"
                 >
                     {state.locale === "es" ? "Reintentar" : "Retry"}
-                </button>
+                </Button>
             </div>
         );
     }

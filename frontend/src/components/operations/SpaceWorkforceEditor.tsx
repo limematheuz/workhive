@@ -110,10 +110,10 @@ export function SpaceWorkforceEditor({ spaces, value, onChange, choices, disable
                     const checked = container ? selectedCount === descendantIds.length ? true : selectedCount ? "indeterminate" as const : false : selected.has(node.space.id);
                     return <div key={node.space.id} className={`flex items-center gap-2 rounded-lg border px-2 py-2 ${current?.space.id === node.space.id ? "border-accent bg-accent/5" : "border-transparent hover:bg-muted/50"}`}>
                         <Checkbox disabled={disabled || !matches || (!node.taskIds.length && !container && !selected.has(node.space.id))} aria-label={container ? `Incluir los ${descendantIds.length} espacios con tareas de ${node.breadcrumb}` : `Incluir ${node.breadcrumb}`} checked={checked} onCheckedChange={next => container ? next === true ? include(descendantIds) : onChange(value.filter(item => item.space_id !== node.space.id && !descendantIdSet.has(item.space_id))) : toggle(node)} />
-                        <button type="button" aria-pressed={current?.space.id === node.space.id} className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setFocus(node.space.id)}>
+                        <Button variant="custom" type="button" aria-pressed={current?.space.id === node.space.id} className="flex min-w-0 flex-1 items-center gap-2 text-left" onClick={() => setFocus(node.space.id)}>
                             {container ? <Layers3 aria-hidden="true" size={16} className="shrink-0 text-muted-foreground" /> : <MapPin aria-hidden="true" size={15} className="shrink-0 text-muted-foreground" />}
                             <span className="min-w-0 flex-1"><span className="block truncate text-[10px] text-muted-foreground" title={node.breadcrumb}>{node.breadcrumb}</span><span className="block truncate text-sm font-medium">{node.space.name}</span><small className={node.taskIds.length || container ? "text-muted-foreground" : pending}>{container ? `Grupo · ${descendantIds.length} espacios con tareas` : `${node.taskIds.length} tareas configuradas`}</small></span><ChevronRight aria-hidden="true" size={14} className="shrink-0" />
-                        </button>
+                        </Button>
                     </div>;
                 })}</div>
                 {!visible.length && <p className="py-3 text-sm text-muted-foreground">No hay espacios que coincidan con la búsqueda.</p>}

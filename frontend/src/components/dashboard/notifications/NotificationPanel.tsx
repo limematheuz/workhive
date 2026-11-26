@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 
@@ -66,7 +67,7 @@ export function NotificationPanel() {
 
     return (
         <div className="relative" ref={notificationsRef}>
-            <button
+            <Button variant="custom"
                 type="button"
                 onClick={() => {
                     setIsNotificationsOpen((open) => !open);
@@ -82,7 +83,7 @@ export function NotificationPanel() {
                     </span>
                 )}
                 <Bell className="h-6 w-6" />
-            </button>
+            </Button>
             {isNotificationsOpen && (
                 <NotificationPopoverContent
                     dict={dict}

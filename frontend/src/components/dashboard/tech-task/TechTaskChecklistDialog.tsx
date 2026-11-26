@@ -481,7 +481,7 @@ function ChecklistAnswerButton({
     onClick: () => void;
 }) {
     return (
-        <button
+        <Button variant="custom"
             type="button"
             aria-pressed={active}
             onClick={onClick}
@@ -495,7 +495,7 @@ function ChecklistAnswerButton({
             )}
         >
             {label}
-        </button>
+        </Button>
     );
 }
 
@@ -515,7 +515,7 @@ function ChecklistIconButton({
     onClick: () => void;
 }) {
     return (
-        <button
+        <Button variant="custom"
             type="button"
             title={ariaLabel}
             aria-label={ariaLabel}
@@ -532,6 +532,6 @@ function ChecklistIconButton({
             )}
         >
             {icon}
-        </button>
+        </Button>
     );
 }

@@ -113,14 +113,14 @@ export function EmailChangeForm({ user, dict }: EmailChangeFormProps) {
                                         placeholder={copy.email_change_password_placeholder}
                                         className="pr-10"
                                     />
-                                    <button
+                                    <Button variant="custom"
                                         type="button"
                                         onClick={() => setShowPassword((visible) => !visible)}
                                         aria-label={showPassword ? copy.hide_password : copy.show_password}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer border-none bg-transparent p-0.5 text-[var(--text-muted)] hover:text-[var(--text-main)]"
                                     >
                                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                    </button>
+                                    </Button>
                                 </div>
                             </DocumentFormField>
                         </div>

@@ -133,9 +133,9 @@ export function LoginFormPanel({
                         <div className="relative min-w-0">
                             <LockKeyhole className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
                             <Input id="login-password" type={showPassword ? "text" : "password"} name="password" autoComplete="current-password" enterKeyHint="go" className={`${AUTH_FIELD_CLASS} h-12 rounded-2xl py-3.5 pl-11 pr-12`} placeholder={copy.password_placeholder} required disabled={locked} value={password} onChange={onPasswordChange} />
-                            <button type="button" onClick={onTogglePassword} aria-label={showPassword ? copy.hide_password : copy.show_password} disabled={locked} className="absolute right-2.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)] ui-motion disabled:opacity-50">
+                            <Button variant="custom" type="button" onClick={onTogglePassword} aria-label={showPassword ? copy.hide_password : copy.show_password} disabled={locked} className="absolute right-2.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl text-[var(--text-muted)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-main)] ui-motion disabled:opacity-50">
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
+                            </Button>
                         </div>
                     </div>
 
